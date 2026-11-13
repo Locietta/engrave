@@ -87,10 +87,15 @@ void EIDRegister::retire_slot(SourceHandle handle) {
     free_slot_ = handle.slot;
 }
 
-EID EIDRegister::new_eid_for_item(const EngravingObject *item) {
-    if (!item) return EID::invalid();
+EID EIDRegister::new_eid() {
     EID eid = MScore::test_mode ? EID::new_unique_test_mode(max_val_test_mode_) : EID::new_unique();
     while (eid_to_handle_.contains(eid)) eid = MScore::test_mode ? EID::new_unique_test_mode(max_val_test_mode_) : EID::new_unique();
+    return eid;
+}
+
+EID EIDRegister::new_eid_for_item(const EngravingObject *item) {
+    if (!item) return EID::invalid();
+    const EID eid = new_eid();
     register_item_eid(eid, item);
     return eid;
 }

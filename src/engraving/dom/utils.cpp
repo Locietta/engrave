@@ -1248,11 +1248,6 @@ std::unordered_set<EngravingItem *> collect_elements_anchored_to_note(const Note
             elems.emplace(sp);
         }
     }
-    const NoteParenthesisInfo *note_paren_info = note->parenthesis_info();
-    if (note_paren_info && note_paren_info->notes().size()) {
-        elems.emplace(note_paren_info->left_paren());
-        elems.emplace(note_paren_info->right_paren());
-    }
     return elems;
 }
 

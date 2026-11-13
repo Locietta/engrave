@@ -119,7 +119,6 @@ void EditChord::remove_chord_parentheses(Chord *chord, std::vector<Note *> notes
     if (notes.empty()) {
         return;
     }
-    // Split based on parentheses group
     std::map<const NoteParenthesisInfo *, std::vector<Note *>> notes_by_group;
 
     for (Note *n : notes) {
@@ -143,69 +142,53 @@ void EditChord::remove_chord_parentheses(Chord *chord, std::vector<Note *> notes
         auto group_notes_pair = *pair_iterator;
         const NoteParenthesisInfo *paren_info = group_notes_pair.first;
         if (paren_info->notes().size() == group_notes_pair.second.size()) {
-            // All notes marked for paren removal, clear parentheses group
-            undo_clear_parenthesis_group(chord, paren_info->notes(), paren_info->left_paren(), paren_info->right_paren(), add_to_linked);
+            undo_clear_parenthesis_group(chord, paren_info->notes(), paren_info, add_to_linked);
             continue;
         }
 
         // Only some notes marked for removal. Remove from lowest note up. This keeps the paren group splitting logic safe
         for (auto note_iterator = group_notes_pair.second.begin(); note_iterator != group_notes_pair.second.end();
              note_iterator = std::next(note_iterator)) {
-            // Remove paren from single note and create new paren group for all notes below
             Note *note = *note_iterator;
             const NoteParenthesisInfo *cur_paren_info = note->parenthesis_info();
             const std::vector<Note *> notes_list = cur_paren_info->notes();
-            Parenthesis *left_paren = cur_paren_info->left_paren();
-            Parenthesis *right_paren = cur_paren_info->right_paren();
             auto note_pos = std::find(notes_list.begin(), notes_list.end(), note);
 
             if (note_pos != notes_list.end() && std::next(note_pos) != notes_list.end() && note_pos != notes_list.begin()) {
-                // Create new group
                 std::vector<Note *> new_note_group(note_pos + 1, notes_list.end());
 
                 for (Note *note_to_remove : new_note_group) {
                     if (cur_paren_info->notes().size() == 1) {
-                        undo_clear_parenthesis_group(chord, {note_to_remove}, left_paren, right_paren, add_to_linked);
+                        undo_clear_parenthesis_group(chord, {note_to_remove}, cur_paren_info, add_to_linked);
                     } else {
-                        undo_remove_parentheses_from_note(chord, note_to_remove, left_paren, add_to_linked);
+                        undo_remove_parentheses_from_note(chord, note_to_remove, cur_paren_info, add_to_linked);
                     }
                 }
 
                 undo_add_parentheses_to_notes(chord, new_note_group, add_to_linked, generated);
             }
             if (cur_paren_info->notes().size() == 1) {
-                undo_clear_parenthesis_group(chord, {note}, left_paren, right_paren, add_to_linked);
+                undo_clear_parenthesis_group(chord, {note}, cur_paren_info, add_to_linked);
             } else {
-                undo_remove_parentheses_from_note(chord, note, left_paren, add_to_linked);
+                undo_remove_parentheses_from_note(chord, note, cur_paren_info, add_to_linked);
             }
         }
     }
 }
 
 void EditChord::undo_add_parentheses_to_notes(Chord *chord, std::vector<Note *> notes, bool add_to_linked, bool generated) {
-    track_idx_t track = chord->track();
-    Parenthesis *left_paren = Factory::create_parenthesis(chord);
-    left_paren->set_track(track);
-    left_paren->set_direction(DirectionH::LEFT);
-    left_paren->set_generated(generated);
-    Parenthesis *right_paren = Factory::create_parenthesis(chord);
-    right_paren->set_track(track);
-    right_paren->set_direction(DirectionH::RIGHT);
-    right_paren->set_generated(generated);
-
     if (!add_to_linked) {
-        do_add_note_parentheses(chord, notes, left_paren, right_paren);
+        apply_add_note_parenthesis_info(chord, new NoteParenthesisInfo(notes, generated));
         return;
     }
 
     for (EngravingObject *linked_object : chord->link_list()) {
         if (linked_object == chord) {
-            do_add_note_parentheses(chord, notes, left_paren, right_paren);
+            apply_add_note_parenthesis_info(chord, new NoteParenthesisInfo(notes, generated));
             continue;
         }
 
         Chord *linked_chord = to_chord(linked_object);
-        Score *linked_score = linked_chord->score();
         Staff *linked_staff = linked_chord->staff();
 
         std::vector<Note *> linked_notes;
@@ -221,118 +204,36 @@ void EditChord::undo_add_parentheses_to_notes(Chord *chord, std::vector<Note *> 
             continue;
         }
 
-        Parenthesis *linked_paren_left = to_parenthesis(left_paren->linked_clone());
-        linked_paren_left->set_score(linked_score);
-        linked_paren_left->set_ownership_parent(linked_chord);
-        linked_paren_left->set_track(linked_chord->track());
-        Parenthesis *linked_paren_right = to_parenthesis(right_paren->linked_clone());
-        linked_paren_right->set_score(linked_score);
-        linked_paren_right->set_ownership_parent(linked_chord);
-        linked_paren_right->set_track(linked_chord->track());
-
-        do_add_note_parentheses(linked_chord, linked_notes, linked_paren_left, linked_paren_right);
+        apply_add_note_parenthesis_info(linked_chord, new NoteParenthesisInfo(linked_notes, generated));
     }
 }
 
-void EditChord::undo_remove_parentheses_from_note(Chord *chord, Note *note, Parenthesis *left_paren, bool remove_from_linked) {
+void EditChord::undo_remove_parentheses_from_note(Chord *chord, Note *note, const NoteParenthesisInfo *group, bool remove_from_linked) {
     if (!remove_from_linked) {
-        do_remove_single_note_parenthesis(chord, note, left_paren);
+        apply_remove_single_note_parentheses(chord, note, group);
         return;
     }
-
-    for (EngravingObject *linked_object : chord->link_list()) {
-        if (linked_object == chord) {
-            do_remove_single_note_parenthesis(chord, note, left_paren);
-            continue;
-        }
-
-        Chord *linked_chord = to_chord(linked_object);
-        Staff *linked_staff = linked_chord->staff();
-        Parenthesis *linked_left_paren = to_parenthesis(left_paren->find_linked_in_staff(linked_staff));
-        if (!linked_left_paren) {
-            continue;
-        }
-
-        Note *linked_note = to_note(note->find_linked_in_staff(linked_staff));
-        if (!linked_note) {
-            continue;
-        }
-
-        const NoteParenthesisInfo *note_paren_info = linked_chord->find_note_parenthesis_info(linked_note);
-        if (note_paren_info) {
-            do_remove_single_note_parenthesis(linked_chord, linked_note, linked_left_paren);
-        }
+    for (EngravingObject *object : chord->link_list()) {
+        auto *linked_chord = to_chord(object);
+        auto *linked_note = object == chord ? note : to_note(note->find_linked_in_staff(linked_chord->staff()));
+        if (!linked_note) continue;
+        const auto *linked_group = linked_chord->find_note_parenthesis_info(linked_note);
+        if (linked_group) apply_remove_single_note_parentheses(linked_chord, linked_note, linked_group);
     }
 }
 
-void EditChord::undo_clear_parenthesis_group(Chord *chord, std::vector<Note *> notes, Parenthesis *left_paren, Parenthesis *right_paren,
+void EditChord::undo_clear_parenthesis_group(Chord *chord, std::vector<Note *> notes, const NoteParenthesisInfo *group,
                                              bool remove_from_linked) {
     if (!remove_from_linked) {
-        do_remove_all_note_parentheses(chord, left_paren);
+        apply_remove_note_parenthesis_info(chord, const_cast<NoteParenthesisInfo *>(group));
         return;
     }
-
-    for (EngravingObject *linked_object : chord->link_list()) {
-        if (linked_object == chord) {
-            do_remove_all_note_parentheses(chord, left_paren);
-            continue;
-        }
-
-        Chord *linked_chord = to_chord(linked_object);
-        Staff *linked_staff = linked_chord->staff();
-        Parenthesis *linked_left_paren = to_parenthesis(left_paren->find_linked_in_staff(linked_staff));
-        Parenthesis *linked_right_paren = to_parenthesis(right_paren->find_linked_in_staff(linked_staff));
-
-        if (!linked_left_paren && !linked_right_paren) {
-            continue;
-        }
-
-        std::vector<Note *> linked_notes;
-        linked_notes.reserve(notes.size());
-        for (Note *note : notes) {
-            Note *linked_note = to_note(note->find_linked_in_staff(linked_staff));
-            if (!linked_note) {
-                continue;
-            }
-            linked_notes.push_back(linked_note);
-        }
-
-        do_remove_all_note_parentheses(linked_chord, linked_left_paren);
-    }
-}
-
-void EditChord::do_add_note_parentheses(Chord *chord, std::vector<Note *> notes, Parenthesis *left_paren, Parenthesis *right_paren) {
-    NoteParenthesisInfo *paren_info = new NoteParenthesisInfo(left_paren, right_paren, notes);
-    if (left_paren->generated()) {
-        chord->add_note_parenthesis_info(paren_info);
-    } else {
-        apply_add_note_parenthesis_info(chord, paren_info);
-    }
-}
-
-void EditChord::do_remove_single_note_parenthesis(Chord *chord, Note *note, Parenthesis *left_paren) {
-    if (left_paren->generated()) {
-        chord->remove_note_from_parenthesis_info(note, left_paren);
-
-        chord->trigger_layout();
-    } else {
-        apply_remove_single_note_parentheses(chord, note, left_paren);
-    }
-}
-
-void EditChord::do_remove_all_note_parentheses(Chord *chord, Parenthesis *left_paren) {
-    if (left_paren->generated()) {
-        const NoteParenthesisInfo *note_paren_info = chord->find_note_parenthesis_info(left_paren);
-
-        chord->remove_note_parenthesis_info(note_paren_info);
-        //! HACK: don't delete as it may still be used in PropertiesPanel - see Score::doUndoRemoveElement
-        // delete noteParenInfo
-
-        chord->trigger_layout();
-    } else {
-        NoteParenthesisInfo *note_paren_info = chord->find_note_parenthesis_info(left_paren);
-
-        apply_remove_note_parenthesis_info(chord, note_paren_info);
+    for (EngravingObject *object : chord->link_list()) {
+        auto *linked_chord = to_chord(object);
+        auto *note = object == chord ? notes.front() : to_note(notes.front()->find_linked_in_staff(linked_chord->staff()));
+        if (!note) continue;
+        const auto *linked_group = linked_chord->find_note_parenthesis_info(note);
+        if (linked_group) apply_remove_note_parenthesis_info(linked_chord, const_cast<NoteParenthesisInfo *>(linked_group));
     }
 }
 
@@ -383,11 +284,10 @@ void mu::engraving::apply_remove_note_parenthesis_info(Chord *chord_, NoteParent
     defer_root(*chord_, note_paren_info_);
 }
 
-void mu::engraving::apply_remove_single_note_parentheses(Chord *chord_, Note *note_, Parenthesis *paren_) {
+void mu::engraving::apply_remove_single_note_parentheses(Chord *chord_, Note *note_, const NoteParenthesisInfo *group) {
     note_change(chord_, CommandType::REMOVE_SINGLE_NOTE_PARENTHESES);
-    note_change(paren_, CommandType::REMOVE_SINGLE_NOTE_PARENTHESES);
 
-    chord_->remove_note_from_parenthesis_info(note_, paren_);
+    chord_->remove_note_from_parenthesis_info(note_, group);
 
     chord_->trigger_layout();
 }

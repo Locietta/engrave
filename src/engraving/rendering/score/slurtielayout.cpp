@@ -1898,11 +1898,11 @@ void SlurTieLayout::calculate_laissez_vib_y(LaissezVibSegment *segment, SlurTieP
     Note *note = lv->start_note();
     Chord *chord = note->chord();
 
-    const NoteParenthesisInfo *note_paren_info = chord->find_note_parenthesis_info(note);
+    const auto *note_paren_info = chord->layout_parenthesis_group(note);
 
     Parenthesis *paren = nullptr;
     if (note_paren_info) {
-        paren = note_paren_info->left_paren();
+        paren = note_paren_info->left;
     }
 
     const bool avoid_stem = chord->stem() && chord->stem()->visible() && chord->up() == lv->up();

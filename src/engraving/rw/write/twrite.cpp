@@ -149,6 +149,7 @@
 #include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
 #include "engraving/internal/engravingfont.h"
 #include "global/serialization/textstream.h"
+#include "infrastructure/eidregister.h"
 #include "log.h"
 #include "types/types.h"
 #include "writecontext.h"
@@ -383,36 +384,48 @@ void write_authored_unit(const EngravingItem *owner, AuthoredChildKey child, Xml
     }
 }
 
-const Parenthesis *parenthesis_carrier(const EngravingItem *owner, AuthoredChildKey child) {
-    if (child.role != AuthoredChildRole::PAREN_LEFT && child.role != AuthoredChildRole::PAREN_RIGHT) return nullptr;
-    const bool left = child.role == AuthoredChildRole::PAREN_LEFT;
-    if (child.subordinal == 1 && owner->is_chord()) {
-        const auto &groups = to_chord(owner)->note_parentheses();
-        if (child.ordinal >= groups.size()) return nullptr;
-        return left ? groups[child.ordinal]->left_paren() : groups[child.ordinal]->right_paren();
-    }
-    return left ? owner->left_paren() : owner->right_paren();
-}
-
 void write_authored_common(const EngravingItem *owner, AuthoredChildKey child, XmlWriter &xml, WriteContext &ctx) {
     const auto &table = *authored_override_table(owner);
-    // Parenthesis group identity/links still belong to the structural DOM pair
-    // until L3. Keep its legacy ID/track order and clone/unlink/standalone mapping;
-    // all appearance values continue to come from the source override table.
-    const auto *parenthesis = parenthesis_carrier(owner, child);
-    if (parenthesis) {
-        TWrite::write_item_eid(parenthesis, xml);
-    } else if (const auto *carrier = table.carrier(child)) {
-        if (carrier->legacy_eid.is_valid()) xml.tag("eid", carrier->legacy_eid.to_std_string());
+    const auto *carrier = table.carrier(child);
+    // Preserve the legacy pair's write-time ID order without source display objects.
+    if (carrier && !carrier->legacy_eid.is_valid() && child.subordinal == 1 &&
+        (child.role == AuthoredChildRole::PAREN_LEFT || child.role == AuthoredChildRole::PAREN_RIGHT)) {
+        auto identified = *carrier;
+        identified.legacy_eid = owner->score()->master_score()->eid_register()->new_eid();
+        authored_override_table(const_cast<EngravingItem *>(owner))->set_carrier(identified);
+        carrier = table.carrier(child);
     }
+    if (carrier && carrier->legacy_eid.is_valid()) xml.tag("eid", carrier->legacy_eid.to_std_string());
     write_authored_property(owner, child, xml, Pid::AUTOPLACE);
-    if (parenthesis) TWrite::write_item_link(parenthesis, xml, ctx);
-    if (const auto *carrier = table.carrier(child)) {
-        // Without a live structural group the standalone writer cannot establish
-        // a local target. Keep the stored link for full-score saves only.
-        if (!parenthesis && carrier->linked_to.is_valid() && !ctx.clipboardmode() && !ctx.standalone())
-            xml.tag("linkedTo", carrier->linked_to.to_std_string());
-        const auto track = parenthesis ? parenthesis->track() : carrier->track == muse::nidx ? owner->track() : carrier->track;
+    if (owner->links() && !ctx.clipboardmode() && !ctx.standalone()) {
+        const auto *main = owner->links()->main_element();
+        if (main != owner && main->is_engraving_item()) {
+            const auto *main_table = authored_override_table(to_engraving_item(main));
+            auto matching = child;
+            if (owner->is_chord() && main->is_chord() && child.subordinal == 1 &&
+                (child.role == AuthoredChildRole::PAREN_LEFT || child.role == AuthoredChildRole::PAREN_RIGHT)) {
+                const auto &groups = to_chord(owner)->note_parentheses();
+                const auto &main_groups = to_chord(main)->note_parentheses();
+                matching.ordinal = UINT32_MAX;
+                if (child.ordinal < groups.size() && !groups[child.ordinal]->notes().empty()) {
+                    const auto &notes = groups[child.ordinal]->notes();
+                    // Repeated memberships occur in legacy files; prefer the last definition.
+                    for (size_t i = 0; i < main_groups.size(); ++i) {
+                        const auto &main_notes = main_groups[i]->notes();
+                        if (main_notes.size() == notes.size() && std::ranges::all_of(notes, [&](const Note *note) {
+                                const auto *main_note = note->links() ? note->links()->main_element() : note;
+                                return std::ranges::find(main_notes, main_note) != main_notes.end();
+                            }))
+                            matching.ordinal = static_cast<uint32_t>(i);
+                    }
+                }
+            }
+            const auto *target = main_table ? main_table->carrier(matching) : nullptr;
+            if (target && target->legacy_eid.is_valid()) xml.tag("linkedTo", target->legacy_eid.to_std_string());
+        }
+    }
+    if (carrier) {
+        const auto track = carrier->track == muse::nidx ? owner->track() : carrier->track;
         if (track != ctx.cur_track() && track != muse::nidx) xml.tag("track", static_cast<int>(track) + ctx.track_diff());
     }
     write_authored_unit(owner, child, xml);
@@ -777,7 +790,13 @@ void TWrite::write_item_properties(const EngravingItem *item, XmlWriter &xml, Wr
     bool left_generated = item->left_paren() && item->left_paren()->generated();
     bool right_generated = item->right_paren() && item->right_paren()->generated();
     if (!left_generated || !right_generated) {
-        write_property(item, xml, Pid::HAS_PARENTHESES);
+        const auto *note = item->is_note() ? to_note(item) : nullptr;
+        const auto *group = note && note->chord() ? note->chord()->layout_parenthesis_group(note) : nullptr;
+        if (group && group->info.generated())
+            xml.tag_property(Pid::HAS_PARENTHESES, PropertyValue::from_value(ParenthesesMode::BOTH),
+                             PropertyValue::from_value(ParenthesesMode::NONE));
+        else
+            write_property(item, xml, Pid::HAS_PARENTHESES);
     }
     const auto *overrides = authored_override_table(item);
     const AuthoredChildKey left{AuthoredChildRole::PAREN_LEFT}, right{AuthoredChildRole::PAREN_RIGHT};
@@ -1173,17 +1192,13 @@ void TWrite::write(const Chord *item, XmlWriter &xml, WriteContext &ctx) {
         write(note, xml, ctx);
     }
 
-    // Write parens
     uint32_t paren_ordinal = 0;
     for (const NoteParenthesisInfo *paren_pair : item->note_parentheses()) {
         xml.start_element("NoteParenGroup");
 
         for (auto role : {AuthoredChildRole::PAREN_LEFT, AuthoredChildRole::PAREN_RIGHT}) {
             const AuthoredChildKey key{role, paren_ordinal, 0, 1};
-            if (item->authored_overrides.carrier(key))
-                write_authored_child(item, key, "Parenthesis", xml, ctx);
-            else
-                write(role == AuthoredChildRole::PAREN_LEFT ? paren_pair->left_paren() : paren_pair->right_paren(), xml, ctx);
+            write_authored_child(item, key, "Parenthesis", xml, ctx);
         }
         ++paren_ordinal;
 
@@ -1195,6 +1210,18 @@ void TWrite::write(const Chord *item, XmlWriter &xml, WriteContext &ctx) {
             }
             xml.tag("NoteEID", note_eid.to_std_string());
         }
+        xml.end_element();
+        xml.end_element();
+    }
+
+    // Native export still includes generated groups until the layout-free save cutover.
+    for (size_t i = item->note_parentheses().size(); i < item->layout_parentheses().size(); ++i) {
+        const auto &group = item->layout_parentheses()[i];
+        xml.start_element("NoteParenGroup");
+        write(group.left, xml, ctx);
+        write(group.right, xml, ctx);
+        xml.start_element("Notes");
+        for (const Note *note : group.info.notes()) xml.tag("NoteEID", note->eid().to_std_string());
         xml.end_element();
         xml.end_element();
     }

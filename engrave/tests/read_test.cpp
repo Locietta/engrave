@@ -4819,7 +4819,6 @@ TEST(Read, SparseChildOverridesSurviveLayoutAndMirrorChanges) {
             for (size_t i = 0; i < expected.carriers.size(); ++i) {
                 EXPECT_EQ(expected.carriers[i].child, actual.carriers[i].child);
                 EXPECT_EQ(expected.carriers[i].legacy_eid, actual.carriers[i].legacy_eid);
-                EXPECT_EQ(expected.carriers[i].linked_to, actual.carriers[i].linked_to);
                 EXPECT_EQ(expected.carriers[i].track, actual.carriers[i].track);
             }
         };
@@ -5313,9 +5312,10 @@ TEST(Read, AuthoredParenthesisGroupLegacyBaseline) {
         const auto begin = xml.find("<ChordLine>");
         xml.erase(begin, xml.find("</ChordLine>", begin) + 12 - begin);
         xml.insert(xml.find("<Note>") + 6, "<eid>C_C</eid><parentheses>both</parentheses>");
-        xml.insert(xml.find("</Note>") + 7, "<NoteParenGroup><Parenthesis><eid>D_D</eid><offset x=\"0.25\" y=\"-0.5\"/></Parenthesis>"
-                                            "<Parenthesis><horizontalDirection>right</horizontalDirection><eid>E_E</eid></Parenthesis>"
-                                            "<Notes><NoteEID>C_C</NoteEID></Notes></NoteParenGroup>");
+        xml.insert(xml.find("</Note>") + 7,
+                   "<NoteParenGroup><Parenthesis><eid>D_D</eid><linkedTo>Z_Z</linkedTo><offset x=\"0.25\" y=\"-0.5\"/></Parenthesis>"
+                   "<Parenthesis><horizontalDirection>right</horizontalDirection><eid>E_E</eid></Parenthesis>"
+                   "<Notes><NoteEID>C_C</NoteEID></Notes></NoteParenGroup>");
         if (version == "4.60") {
             const auto note_ref = xml.find("<NoteEID>C_C</NoteEID>");
             xml.replace(note_ref, std::string_view("<NoteEID>C_C</NoteEID>").size(), "<NoteIdx>0</NoteIdx>");
@@ -5328,17 +5328,19 @@ TEST(Read, AuthoredParenthesisGroupLegacyBaseline) {
         const auto *group = chord->note_parentheses().front();
         ASSERT_EQ(group->notes().size(), 1u);
         EXPECT_EQ(group->notes().front(), chord->notes().front());
-        const auto edited = muse::PointF(0.125, -0.25) * master.style().spatium();
-        ASSERT_TRUE(group->left_paren()->set_property(mu::engraving::Pid::OFFSET, edited));
+        EXPECT_TRUE(chord->layout_parentheses().empty());
         const auto bytes = legacy_override_write(chord);
         const auto source = chord->authored_overrides.entries;
-        chord->note_parentheses().front()->left_paren()->set_offset(muse::PointF(99.0, 99.0));
-        EXPECT_EQ(legacy_override_write(chord), bytes);
         std::unique_ptr<mu::engraving::Chord> copy(chord->clone());
-        ASSERT_EQ(copy->note_parentheses().size(), 1u);
+        EXPECT_FALSE(copy->has_layout_data());
+        EXPECT_TRUE(copy->layout_parentheses().empty());
         EXPECT_EQ(copy->note_parentheses().front()->notes().front(), copy->notes().front());
-        EXPECT_EQ(copy->note_parentheses().front()->left_paren()->get_property(mu::engraving::Pid::OFFSET),
-                  mu::engraving::PropertyValue::from_value(edited));
+        mu::engraving::rendering::score::LayoutContext ctx(&master);
+        mu::engraving::rendering::score::ChordLayout::layout(copy.get(), ctx);
+        ASSERT_FALSE(copy->layout_parentheses().empty());
+        EXPECT_EQ(copy->layout_parentheses().front().left->offset(), muse::PointF(0.25, -0.5) * master.style().spatium());
+        master.renderer()->layout_data_store(master).erase(*copy);
+        EXPECT_TRUE(copy->layout_parentheses().empty());
         ASSERT_TRUE((*document)->page_count());
         EXPECT_EQ(legacy_override_write(chord), bytes);
         ASSERT_EQ(chord->authored_overrides.entries.size(), source.size());
@@ -5356,6 +5358,26 @@ TEST(Read, AuthoredParenthesisGroupLegacyBaseline) {
         auto *restored_chord = mu::engraving::to_chord(restored.first_measure()->first(mu::engraving::SegmentType::CHORD_REST)->element(0));
         EXPECT_EQ(legacy_override_write(restored_chord), bytes);
     }
+}
+
+TEST(Read, GhostParenthesesRemainLayoutOutput) {
+    using namespace mu::engraving;
+    auto xml = chordline_offset_fixture();
+    const auto begin = xml.find("<ChordLine>");
+    xml.erase(begin, xml.find("</ChordLine>", begin) + 12 - begin);
+    xml.insert(xml.find("<Note>") + 6, "<ghost>1</ghost>");
+    auto opened = g_engine->open(as_bytes(xml));
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    EXPECT_TRUE(chord->layout_parentheses().empty());
+    ASSERT_TRUE((*opened)->page_count());
+    ASSERT_FALSE(chord->layout_parentheses().empty());
+    EXPECT_TRUE(chord->layout_parentheses().front().left->generated());
+    EXPECT_TRUE(chord->note_parentheses().empty());
+    EXPECT_EQ(chord->notes().front()->parentheses_mode(), ParenthesesMode::NONE);
+    master.renderer()->layout_data_store(master).erase(*chord);
+    EXPECT_TRUE(chord->layout_parentheses().empty());
 }
 
 TEST(Read, VisibilityEditBeforeLayoutHidesTheGeneratedStem) {
@@ -6084,7 +6106,6 @@ void expect_discard_rebuild_parity(engrave::Document &document, mu::engraving::S
                 EXPECT_EQ(before.carriers[i].child, after->carriers[i].child);
                 EXPECT_EQ(before.carriers[i].type, after->carriers[i].type);
                 EXPECT_EQ(before.carriers[i].legacy_eid, after->carriers[i].legacy_eid);
-                EXPECT_EQ(before.carriers[i].linked_to, after->carriers[i].linked_to);
                 EXPECT_EQ(before.carriers[i].track, after->carriers[i].track);
             }
         }
@@ -6503,53 +6524,56 @@ TEST(Read, SpannerRootStylesDoNotBecomeSegmentOverrides) {
     EXPECT_TRUE(bend->authored_overrides.carriers.empty());
 }
 
-TEST(Read, ParenthesisCarrierUsesLiveCloneUnlinkAndRelinkIdentity) {
+TEST(Read, ParenthesisAndStemLinksFollowTheirChord) {
     using namespace mu::engraving;
     auto xml = chordline_offset_fixture();
     const auto begin = xml.find("<ChordLine>");
     xml.erase(begin, xml.find("</ChordLine>", begin) + 12 - begin);
     xml.insert(xml.find("<Note>") + 6, "<eid>C_C</eid><parentheses>both</parentheses>");
-    xml.insert(xml.find("</Note>") + 7, "<NoteParenGroup><Parenthesis><eid>D_D</eid></Parenthesis>"
-                                        "<Parenthesis><horizontalDirection>right</horizontalDirection><eid>E_E</eid></Parenthesis>"
-                                        "<Notes><NoteEID>C_C</NoteEID></Notes></NoteParenGroup>");
+    xml.insert(xml.find("</Note>") + 7,
+               "<Stem><eid>F_F</eid><userLen>0.5</userLen></Stem><NoteParenGroup><Parenthesis><eid>D_D</eid></Parenthesis>"
+               "<Parenthesis><horizontalDirection>right</horizontalDirection><eid>E_E</eid></Parenthesis>"
+               "<Notes><NoteEID>C_C</NoteEID></Notes></NoteParenGroup>"
+               "<Note><eid>J_J</eid><pitch>64</pitch><tpc>18</tpc></Note>"
+               "<NoteParenGroup><Parenthesis><eid>G_G</eid></Parenthesis>"
+               "<Parenthesis><horizontalDirection>right</horizontalDirection><eid>H_H</eid></Parenthesis>"
+               "<Notes><NoteEID>J_J</NoteEID></Notes></NoteParenGroup>");
     auto opened = g_engine->open(as_bytes(xml));
     ASSERT_TRUE(opened);
     auto &master = master_of(**opened);
     auto *source = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
-    std::unique_ptr<Chord> clone(Factory::copy_chord(*source, true));
-    ASSERT_EQ(clone->note_parentheses().size(), 1u);
-    auto *left = clone->note_parentheses().front()->left_paren();
-    left->set_track(1); // Structural clone track can differ from its new owner.
-    const auto left_xml = [&](const std::string &bytes) {
-        const auto start = bytes.find("<Parenthesis>", bytes.find("<NoteParenGroup>"));
-        return bytes.substr(start, bytes.find("</Parenthesis>", start) + 14 - start);
-    };
-    const auto linked = left_xml(legacy_override_write(clone.get()));
+    const auto outline = (*opened)->outline();
+    ASSERT_TRUE(outline);
+    ASSERT_TRUE((*opened)->edit({{engrave::GenerateExcerpts{{outline->parts.front().id}}}}));
+    auto *part = master.excerpts().front()->excerpt_score();
+    auto *clone = to_chord(part->first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    const auto linked = legacy_override_write(clone);
     EXPECT_NE(linked.find("<linkedTo>D_D</linkedTo>"), std::string::npos);
-    EXPECT_NE(linked.find("<track>1</track>"), std::string::npos);
-    const auto identity = left->eid();
-    left->unlink();
-    const auto unlinked = left_xml(legacy_override_write(clone.get()));
-    EXPECT_EQ(unlinked.find("<linkedTo>"), std::string::npos);
-    EXPECT_EQ(left->eid(), identity);
-    left->link_to(source->note_parentheses().front()->left_paren());
-    EXPECT_EQ(left_xml(legacy_override_write(clone.get())), linked);
-    EXPECT_EQ(legacy_override_write(clone.get(), true).find("<linkedTo>"), std::string::npos);
-}
-
-TEST(Read, StandaloneDormantParenthesisCarrierDoesNotLinkOutsideTheExport) {
-    using namespace mu::engraving;
-    auto opened = g_engine->open(as_bytes(chordline_offset_fixture()));
-    ASSERT_TRUE(opened);
-    auto *chord = offset_test_lines(master_of(**opened)).front()->chord();
-    auto *note = chord->notes().front();
-    ASSERT_EQ(note->left_paren(), nullptr);
-    const AuthoredChildKey key{AuthoredChildRole::PAREN_LEFT};
-    const auto target = EID::from_std_string(std::string("D_D"));
-    note->authored_overrides.set_carrier({key, ElementType::PARENTHESIS, EID::from_std_string(std::string("E_E")), target});
-    EXPECT_NE(legacy_override_write(note).find("<linkedTo>D_D</linkedTo>"), std::string::npos);
-    EXPECT_EQ(legacy_override_write(note, true).find("<linkedTo>"), std::string::npos);
-    EXPECT_EQ(note->authored_overrides.carrier(key)->linked_to, target);
+    EXPECT_NE(linked.find("<linkedTo>E_E</linkedTo>"), std::string::npos);
+    EXPECT_NE(linked.find("<linkedTo>F_F</linkedTo>"), std::string::npos);
+    EXPECT_EQ(legacy_override_write(clone, true).find("<linkedTo>"), std::string::npos);
+    clone->unlink();
+    const auto unlinked = legacy_override_write(clone);
+    const auto group_start = unlinked.find("<NoteParenGroup>");
+    ASSERT_NE(group_start, std::string::npos);
+    EXPECT_EQ(unlinked.substr(group_start).find("<linkedTo>"), std::string::npos);
+    const auto stem_start = unlinked.find("<Stem>");
+    ASSERT_NE(stem_start, std::string::npos);
+    EXPECT_EQ(unlinked.substr(stem_start, unlinked.find("</Stem>", stem_start) - stem_start).find("<linkedTo>"), std::string::npos);
+    clone->link_to(source);
+    EXPECT_EQ(legacy_override_write(clone), linked);
+    auto *removed = clone->note_parentheses().front();
+    clone->remove_note_parenthesis_info(removed);
+    delete removed;
+    const auto shifted = legacy_override_write(clone);
+    EXPECT_NE(shifted.find("<linkedTo>G_G</linkedTo>"), std::string::npos);
+    EXPECT_NE(shifted.find("<linkedTo>H_H</linkedTo>"), std::string::npos);
+    EXPECT_EQ(shifted.find("<linkedTo>D_D</linkedTo>"), std::string::npos);
+    removed = source->note_parentheses().back();
+    source->remove_note_parenthesis_info(removed);
+    delete removed;
+    const auto unmatched = legacy_override_write(clone);
+    EXPECT_EQ(unmatched.substr(unmatched.find("<NoteParenGroup>")).find("<linkedTo>"), std::string::npos);
 }
 
 } // namespace

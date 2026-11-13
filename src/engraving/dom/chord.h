@@ -172,12 +172,9 @@ private:
 //---------------------------------------------------------
 
 struct NoteParenthesisInfo {
-    NoteParenthesisInfo(Parenthesis *l_paren, Parenthesis *r_paren, std::vector<Note *> n_list);
-    ~NoteParenthesisInfo();
+    explicit NoteParenthesisInfo(std::vector<Note *> n_list = {}, bool generated = false);
 
-    Parenthesis *left_paren() const { return left_paren_; }
-
-    Parenthesis *right_paren() const { return right_paren_; }
+    bool generated() const { return generated_; }
 
     const std::vector<Note *> &notes() const { return notes_; }
 
@@ -185,8 +182,7 @@ struct NoteParenthesisInfo {
     void remove_note(Note *note);
 
 private:
-    Parenthesis *left_paren_ = nullptr;
-    Parenthesis *right_paren_ = nullptr;
+    bool generated_ = false;
     std::vector<Note *> notes_;
 };
 
@@ -244,11 +240,11 @@ public:
     const NoteParenthesisInfoList &note_parentheses() const { return note_parens_; }
 
     const NoteParenthesisInfo *find_note_parenthesis_info(const Note *note) const;
-    NoteParenthesisInfo *find_note_parenthesis_info(const Parenthesis *paren);
+    size_t parenthesis_group_index(const NoteParenthesisInfo *info) const;
     void add_note_parenthesis_info(NoteParenthesisInfo *note_paren_info);
     void remove_note_parenthesis_info(const NoteParenthesisInfo *note_paren_info);
-    void add_note_to_parenthesis_info(Note *note, const Parenthesis *paren);
-    void remove_note_from_parenthesis_info(Note *note, const Parenthesis *paren);
+    void add_note_to_parenthesis_info(Note *note, NoteParenthesisInfo *group);
+    void remove_note_from_parenthesis_info(Note *note, const NoteParenthesisInfo *group);
 
     bool is_chord_playable() const;
     void set_is_chord_playable(const bool is_playable);
@@ -480,7 +476,18 @@ public:
     bool all_notes_tied_to_next() const;
     bool all_elements_invisible() const;
 
+    struct ParenthesisGroup {
+        NoteParenthesisInfo info;
+        Parenthesis *left = nullptr;
+        Parenthesis *right = nullptr;
+    };
+
+    const std::vector<ParenthesisGroup> &layout_parentheses() const;
+    const ParenthesisGroup *layout_parenthesis_group(const Note *note) const;
+    const ParenthesisGroup *layout_parenthesis_group(const Parenthesis *paren) const;
+
     struct LayoutData : ChordRest::LayoutData {
+        std::vector<ParenthesisGroup> parentheses;
         Stem *stem = nullptr;
         Hook *hook = nullptr;
         StemSlash *stem_slash = nullptr;

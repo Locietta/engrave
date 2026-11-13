@@ -3510,7 +3510,9 @@ static void write_notehead(XmlWriter &xml, const Note *const note) {
         notehead_tagname += color2xml(note);
         notehead_value = "normal";
     }
-    if (note->get_property(Pid::HAS_PARENTHESES).value<ParenthesesMode>() != ParenthesesMode::NONE) {
+    const auto *paren_group = note->chord()->layout_parenthesis_group(note);
+    if (note->get_property(Pid::HAS_PARENTHESES).value<ParenthesesMode>() != ParenthesesMode::NONE ||
+        (paren_group && paren_group->info.generated())) {
         notehead_tagname += u" parentheses=\"yes\"";
         notehead_value = "normal";
     }

@@ -74,14 +74,8 @@ using namespace mu;
 using namespace mu::engraving;
 
 namespace mu::engraving {
-NoteParenthesisInfo::NoteParenthesisInfo(Parenthesis *l_paren, Parenthesis *r_paren, std::vector<Note *> n_list)
-    : left_paren_(l_paren), right_paren_(r_paren), notes_(n_list) {
+NoteParenthesisInfo::NoteParenthesisInfo(std::vector<Note *> n_list, bool generated) : generated_(generated), notes_(std::move(n_list)) {
     std::sort(notes_.begin(), notes_.end(), note_is_before);
-}
-
-NoteParenthesisInfo::~NoteParenthesisInfo() {
-    delete left_paren_;
-    delete right_paren_;
 }
 
 void NoteParenthesisInfo::insert_note(Note *note) {
@@ -277,6 +271,11 @@ Chord::Chord(DummyParentOr<Segment> parent) : ChordRest(ElementType::CHORD, pare
 
 Chord::Chord(const Chord &c, bool link) : ChordRest(c, link) {
     clone_authored_overrides(authored_overrides, c.authored_overrides);
+    // The legacy pair retained its source track when an excerpt remapped the chord.
+    for (auto &carrier : authored_overrides.carriers)
+        if (carrier.child.subordinal == 1 && carrier.track == muse::nidx &&
+            (carrier.child.role == AuthoredChildRole::PAREN_LEFT || carrier.child.role == AuthoredChildRole::PAREN_RIGHT))
+            carrier.track = c.track();
     if (link) {
         score()->apply_link(this, const_cast<Chord *>(&c));
     }
@@ -360,25 +359,13 @@ Chord::Chord(const Chord &c, bool link) : ChordRest(c, link) {
 
     if (!c.note_parentheses().empty()) {
         for (const NoteParenthesisInfo *info : c.note_parentheses()) {
-            Parenthesis *new_left_paren = to_parenthesis(info->left_paren()->clone());
-            new_left_paren->set_ownership_parent(this);
-            Parenthesis *new_right_paren = to_parenthesis(info->right_paren()->clone());
-            new_right_paren->set_ownership_parent(this);
-
-            if (link && !info->left_paren()->generated()) {
-                score()->apply_link(new_left_paren, info->left_paren());
-            }
-            if (link && !info->right_paren()->generated()) {
-                score()->apply_link(new_right_paren, info->right_paren());
-            }
-
             std::vector<Note *> new_notes;
             new_notes.reserve(info->notes().size());
             for (Note *note : info->notes()) {
                 new_notes.push_back(find_note(note->pitch()));
             }
 
-            note_parens_.push_back(new NoteParenthesisInfo(new_left_paren, new_right_paren, new_notes));
+            note_parens_.push_back(new NoteParenthesisInfo(new_notes, info->generated()));
         }
     }
 }
@@ -894,6 +881,10 @@ Chord::LayoutData::~LayoutData() {
     delete stem;
     delete hook;
     delete stem_slash;
+    for (auto &group : parentheses) {
+        delete group.left;
+        delete group.right;
+    }
     muse::delete_all(ledger_lines);
 }
 
@@ -1113,21 +1104,32 @@ void Chord::scan_elements(std::function<void(EngravingItem *)> func) {
         e->scan_elements(func);
     }
 
-    for (auto &p : note_parens_) {
-        p->left_paren()->scan_elements(func);
-        p->right_paren()->scan_elements(func);
+    for (const auto &p : layout_parentheses()) {
+        p.left->scan_elements(func);
+        p.right->scan_elements(func);
     }
     ChordRest::scan_elements(func);
 }
 
-NoteParenthesisInfo *Chord::find_note_parenthesis_info(const Parenthesis *paren) {
-    for (NoteParenthesisInfo *info_ptr : note_parens_) {
-        if (paren == info_ptr->left_paren() || paren == info_ptr->right_paren()) {
-            return info_ptr;
-        }
-    }
+const std::vector<Chord::ParenthesisGroup> &Chord::layout_parentheses() const {
+    static const std::vector<ParenthesisGroup> empty;
+    return has_layout_data() ? ldata()->parentheses : empty;
+}
 
+const Chord::ParenthesisGroup *Chord::layout_parenthesis_group(const Note *note) const {
+    for (const auto &group : layout_parentheses())
+        if (std::ranges::find(group.info.notes(), note) != group.info.notes().end()) return &group;
     return nullptr;
+}
+
+const Chord::ParenthesisGroup *Chord::layout_parenthesis_group(const Parenthesis *paren) const {
+    for (const auto &group : layout_parentheses())
+        if (paren == group.left || paren == group.right) return &group;
+    return nullptr;
+}
+
+size_t Chord::parenthesis_group_index(const NoteParenthesisInfo *info) const {
+    return std::find(note_parens_.begin(), note_parens_.end(), info) - note_parens_.begin();
 }
 
 const NoteParenthesisInfo *Chord::find_note_parenthesis_info(const Note *note) const {
@@ -1143,7 +1145,13 @@ const NoteParenthesisInfo *Chord::find_note_parenthesis_info(const Note *note) c
     return nullptr;
 }
 
-void Chord::add_note_parenthesis_info(NoteParenthesisInfo *note_paren_info) { note_parens_.push_back(note_paren_info); }
+void Chord::add_note_parenthesis_info(NoteParenthesisInfo *note_paren_info) {
+    for (auto role : {AuthoredChildRole::PAREN_LEFT, AuthoredChildRole::PAREN_RIGHT}) {
+        const AuthoredChildKey key{role, static_cast<uint32_t>(note_parens_.size()), 0, 1};
+        if (!authored_overrides.carrier(key)) authored_overrides.set_carrier({key, ElementType::PARENTHESIS});
+    }
+    note_parens_.push_back(note_paren_info);
+}
 
 void Chord::remove_note_parenthesis_info(const NoteParenthesisInfo *note_paren_info) {
     if (note_parens_.empty()) {
@@ -1158,12 +1166,22 @@ void Chord::remove_note_parenthesis_info(const NoteParenthesisInfo *note_paren_i
                            [note_paren_info](const NoteParenthesisInfo *ptr) { return ptr == note_paren_info; });
 
     if (it != note_parens_.end()) {
+        const auto index = it - note_parens_.begin();
+        const auto grouped = [](const auto &entry) {
+            return entry.child.subordinal == 1 &&
+                   (entry.child.role == AuthoredChildRole::PAREN_LEFT || entry.child.role == AuthoredChildRole::PAREN_RIGHT);
+        };
+        std::erase_if(authored_overrides.entries, [&](const auto &entry) { return grouped(entry) && entry.child.ordinal == index; });
+        std::erase_if(authored_overrides.carriers, [&](const auto &entry) { return grouped(entry) && entry.child.ordinal == index; });
+        for (auto &entry : authored_overrides.entries)
+            if (grouped(entry) && entry.child.ordinal > index) --entry.child.ordinal;
+        for (auto &entry : authored_overrides.carriers)
+            if (grouped(entry) && entry.child.ordinal > index) --entry.child.ordinal;
         note_parens_.erase(it);
     }
 }
 
-void Chord::add_note_to_parenthesis_info(Note *note, const Parenthesis *paren) {
-    NoteParenthesisInfo *note_paren_info = find_note_parenthesis_info(paren);
+void Chord::add_note_to_parenthesis_info(Note *note, NoteParenthesisInfo *note_paren_info) {
 
     if (!note_paren_info) {
         return;
@@ -1172,8 +1190,8 @@ void Chord::add_note_to_parenthesis_info(Note *note, const Parenthesis *paren) {
     note_paren_info->insert_note(note);
 }
 
-void Chord::remove_note_from_parenthesis_info(Note *note, const Parenthesis *paren) {
-    NoteParenthesisInfo *note_paren_info = find_note_parenthesis_info(paren);
+void Chord::remove_note_from_parenthesis_info(Note *note, const NoteParenthesisInfo *group) {
+    auto *note_paren_info = const_cast<NoteParenthesisInfo *>(group);
 
     if (!note_paren_info) {
         return;
