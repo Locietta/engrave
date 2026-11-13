@@ -4031,8 +4031,8 @@ TEST(Read, TupletNumberStyleLivesOnSourceBeforeLayoutAndAfterDisplayRemoval) {
         ASSERT_NE(tuplet, nullptr);
         EXPECT_DOUBLE_EQ(tuplet->get_property(mu::engraving::Pid::FONT_SIZE).to_double(), 15.0);
         const auto flags = tuplet->property_flags(mu::engraving::Pid::FONT_SIZE);
-        delete tuplet->number();
-        tuplet->set_number(nullptr);
+        EXPECT_EQ(tuplet->number(), nullptr);
+        EXPECT_FALSE(tuplet->has_layout_data());
         EXPECT_DOUBLE_EQ(tuplet->get_property(mu::engraving::Pid::FONT_SIZE).to_double(), 15.0);
         EXPECT_EQ(tuplet->property_flags(mu::engraving::Pid::FONT_SIZE), flags);
         std::unique_ptr<mu::engraving::Tuplet> copy(tuplet->clone());
@@ -4854,7 +4854,9 @@ TEST(Read, TupletNumberTextSurvivesDisplayDisposalAndLayout) {
             ASSERT_NE(tuplet, nullptr);
             const AuthoredChildKey key{AuthoredChildRole::TUPLET_NUMBER};
             ASSERT_NE(tuplet->authored_overrides.find(key, Pid::TEXT), nullptr);
-            EXPECT_EQ(tuplet->number()->get_property(Pid::TEXT), PropertyValue(String(u"three")));
+            EXPECT_EQ(tuplet->number(), nullptr);
+            EXPECT_EQ(tuplet->authored_overrides.find(key, Pid::TEXT)->value, PropertyValue(String(u"three")));
+            ASSERT_TRUE((*document)->page_count());
             ASSERT_NE(tuplet->authored_overrides.find(key, Pid::OFFSET), nullptr);
             const auto unit = millimetres ? AuthoredOverrideUnit::MILLIMETRE : AuthoredOverrideUnit::SPATIUM;
             EXPECT_EQ(tuplet->authored_overrides.find(key, Pid::OFFSET)->unit, unit);
@@ -4863,7 +4865,7 @@ TEST(Read, TupletNumberTextSurvivesDisplayDisposalAndLayout) {
             const auto before = legacy_override_write(tuplet);
             const auto entries = tuplet->authored_overrides.entries;
             delete tuplet->number();
-            tuplet->set_number(nullptr);
+            tuplet->mutldata()->number = nullptr;
             EXPECT_EQ(legacy_override_write(tuplet), before);
             ASSERT_TRUE((*document)->page_count());
             ASSERT_NE(tuplet->number(), nullptr);
@@ -4986,6 +4988,62 @@ TEST(Read, LegacySegmentTextAppearanceAndExplicitZeroFontSurviveDiscard) {
     EXPECT_EQ(legacy_override_write(restored), bytes);
     ASSERT_NE(restored->authored_overrides.find(key, Pid::FONT_STYLE), nullptr);
     EXPECT_EQ(restored->authored_overrides.find(key, Pid::FONT_STYLE)->flags, PropertyFlags::UNSTYLED);
+}
+
+TEST(Read, ImportedDotColorAndColdVisibilitySurviveCloneAndLayout) {
+    using namespace mu::engraving;
+    for (const std::string version : {"4.60", "5.00"}) {
+        auto input = legacy_segment_fixture("");
+        input.replace(input.find("5.00"), 4, version);
+        input.replace(input.find("<durationType>half</durationType>"), 33, "<durationType>quarter</durationType><dots>1</dots>");
+        input.insert(input.find("</Note>"), "<NoteDot><color r=\"10\" g=\"20\" b=\"30\" a=\"255\"/></NoteDot>");
+        auto opened = g_engine->open(as_bytes(input));
+        ASSERT_TRUE(opened) << opened.error().message;
+        auto &master = master_of(**opened);
+        auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+        auto *original = chord->notes().front();
+        EXPECT_TRUE(original->dots().empty());
+        EXPECT_FALSE(original->has_layout_data());
+        auto *copy = original->clone();
+        chord->remove(original);
+        delete original;
+        chord->add(copy);
+        {
+            Command command(master);
+            auto &tx = master.transaction_manager()->current_or_dummy_transaction();
+            EditVisibility::undo_change_visible(tx, copy, false);
+            command.commit();
+        }
+        EXPECT_TRUE(copy->dots().empty());
+        ASSERT_TRUE((*opened)->page_count());
+        ASSERT_EQ(copy->dots().size(), 1u);
+        EXPECT_EQ(copy->dots().front()->color(), muse::draw::Color(10, 20, 30));
+        EXPECT_FALSE(copy->dots().front()->visible());
+    }
+}
+
+TEST(Read, RestDotsStayColdUntilLayoutAndRespectSourceVisibility) {
+    using namespace mu::engraving;
+    for (const std::string version : {"4.60", "5.00"}) {
+        auto input = legacy_segment_fixture("");
+        input.replace(input.find("5.00"), 4, version);
+        const auto start = input.find("<Chord>");
+        input.replace(start, input.find("</Chord>", start) + 8 - start,
+                      "<Rest><durationType>quarter</durationType><dots>1</dots>"
+                      "<NoteDot><color r=\"30\" g=\"20\" b=\"10\" a=\"255\"/></NoteDot></Rest>");
+        auto opened = g_engine->open(as_bytes(input));
+        ASSERT_TRUE(opened) << opened.error().message;
+        auto &master = master_of(**opened);
+        auto *rest = to_rest(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+        EXPECT_EQ(rest->dot(0), nullptr);
+        EXPECT_FALSE(rest->has_layout_data());
+        rest->undo_change_dots_visible(false);
+        EXPECT_TRUE(rest->dot_list().empty());
+        ASSERT_TRUE((*opened)->page_count());
+        ASSERT_NE(rest->dot(0), nullptr);
+        EXPECT_EQ(rest->dot(0)->color(), muse::draw::Color(30, 20, 10));
+        EXPECT_FALSE(rest->dot(0)->visible());
+    }
 }
 
 TEST(Read, ThirdDotEditKeepsPrecedingLegacyOrdinalCarriers) {

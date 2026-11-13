@@ -3814,12 +3814,6 @@ static void write_type(XmlWriter &xml, const Note *const note) {
     } else {
         xml.tag("type", s);
     }
-
-    if (note->dots().empty()) {
-        for (int ni = dots; ni > 0; --ni) {
-            xml.tag("dot");
-        }
-    }
 }
 
 //---------------------------------------------------------
@@ -4005,17 +3999,23 @@ void ExportMusicXml::chord(Chord *chord, staff_idx_t staff, const std::vector<Ly
         xml_.tag("voice", static_cast<int>(voice));
 
         write_type(xml_, note);
-        for (const NoteDot *dot : note->dots()) {
+        for (uint32_t ordinal = 0; ordinal < uint32_t(chord->dots()); ++ordinal) {
+            const AuthoredChildKey key{AuthoredChildRole::DOT, ordinal};
             String dot_tag = u"dot";
+            if (const auto *visibility = note->authored_overrides.find(key, Pid::VISIBLE); visibility && !visibility->value.to_bool())
+                dot_tag += u" print-object=\"no\"";
             if (note->user_dot_position() != engraving::DirectionV::AUTO) {
-                if (note->dot_position() == engraving::DirectionV::UP) {
+                if (note->user_dot_position() == engraving::DirectionV::UP) {
                     dot_tag += u" placement=\"above\"";
                 } else {
                     dot_tag += u" placement=\"below\"";
                 }
             }
-            dot_tag += color2xml(dot);
-            dot_tag += element_position(this, dot);
+            if (const auto *color = note->authored_overrides.find(key, Pid::COLOR)) {
+                if (color->value.value<Color>() != note->configuration()->default_color())
+                    dot_tag += String(u" color=\"%1\"").arg(String::from_std_string(color->value.value<Color>().to_string()));
+            }
+            if (const auto *dot = ordinal < note->dots().size() ? note->dots()[ordinal] : nullptr) dot_tag += element_position(this, dot);
             xml_.tag_raw(dot_tag);
         }
         if (note->staff() && !note->staff()->is_tab_staff(Fraction(0, 1))) {
@@ -4223,10 +4223,16 @@ void ExportMusicXml::rest(Rest *rest, staff_idx_t staff, const std::vector<Lyric
         } else {
             xml_.tag("type", s);
         }
-        for (NoteDot *dot : rest->dot_list()) {
+        for (uint32_t ordinal = 0; ordinal < uint32_t(rest->dots()); ++ordinal) {
+            const AuthoredChildKey key{AuthoredChildRole::DOT, ordinal};
             String dot_tag = u"dot";
-            dot_tag += color2xml(dot);
-            dot_tag += element_position(this, dot);
+            if (const auto *visibility = rest->authored_overrides.find(key, Pid::VISIBLE); visibility && !visibility->value.to_bool())
+                dot_tag += u" print-object=\"no\"";
+            if (const auto *color = rest->authored_overrides.find(key, Pid::COLOR)) {
+                if (color->value.value<Color>() != rest->configuration()->default_color())
+                    dot_tag += String(u" color=\"%1\"").arg(String::from_std_string(color->value.value<Color>().to_string()));
+            }
+            if (const auto *dot = rest->dot(ordinal)) dot_tag += element_position(this, dot);
             xml_.tag_raw(dot_tag);
         }
     }

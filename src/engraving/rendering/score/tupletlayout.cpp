@@ -152,7 +152,7 @@ void TupletLayout::create_number(Tuplet *item, LayoutContext &ctx) {
                 ctx.deselect(item->number());
             }
             delete item->number();
-            item->set_number(nullptr);
+            item->mutldata()->number = nullptr;
         }
 
         return;
@@ -160,19 +160,19 @@ void TupletLayout::create_number(Tuplet *item, LayoutContext &ctx) {
 
     if (!item->number()) {
         Text *number = Factory::create_text(item, TextStyleType::TUPLET);
+        AuthoredOverrideMirror mirror(*number);
         number->set_composition(true);
         number->set_track(item->track());
+        number->set_selected(item->selected());
         number->set_visible(item->visible());
         number->set_color(item->color());
-        item->set_number(number);
+        item->mutldata()->number = number;
     }
 
     bind_authored_child(*item->number(), {AuthoredChildRole::TUPLET_NUMBER});
     AuthoredOverrideMirror mirror(*item->number());
     item->apply_number_style();
 
-    // tuplet properties are propagated to number automatically by setProperty()
-    // but we need to make sure flags are as well
     item->number()->set_property_flags(Pid::FONT_FACE, item->property_flags(Pid::FONT_FACE));
     item->number()->set_property_flags(Pid::FONT_SIZE, item->property_flags(Pid::FONT_SIZE));
     item->number()->set_property_flags(Pid::FONT_STYLE, item->property_flags(Pid::FONT_STYLE));

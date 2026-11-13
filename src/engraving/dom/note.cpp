@@ -606,8 +606,6 @@ Note::~Note() {
     if (tie_for_ && tie_for_->parent() == this) {
         delete tie_for_;
     }
-
-    muse::delete_all(dots_);
 }
 
 std::vector<Note *> Note::compound_notes() const {
@@ -728,9 +726,6 @@ Note::Note(const Note &n, bool link) : EngravingItem(n, link) {
         }
     }
 
-    for (NoteDot *dot : n.dots_) {
-        add(Factory::copy_note_dot(*dot));
-    }
     mark_ = n.mark_;
 
     set_drop_target(false);
@@ -1256,7 +1251,6 @@ void Note::add(EngravingItem *e) {
     e->set_track(track());
 
     switch (e->type()) {
-        case ElementType::NOTEDOT: dots_.push_back(to_note_dot(e)); break;
         case ElementType::BEND:
         case ElementType::FINGERING:
         case ElementType::IMAGE:
@@ -1315,7 +1309,6 @@ void Note::add(EngravingItem *e) {
 
 void Note::remove(EngravingItem *e) {
     switch (e->type()) {
-        case ElementType::NOTEDOT: dots_.pop_back(); break;
 
         case ElementType::BEND:
         case ElementType::TEXT:
@@ -1604,14 +1597,8 @@ int Note::transposition() const {
 //---------------------------------------------------------
 
 bool Note::dot_is_up() const {
-    if (dots_.empty()) {
-        return true;
-    }
-    if (user_dot_position_ == DirectionV::AUTO) {
-        return dots_[0]->y() < spatium() * .1;
-    } else {
-        return user_dot_position_ == DirectionV::UP;
-    }
+    if (user_dot_position_ != DirectionV::AUTO) return user_dot_position_ == DirectionV::UP;
+    return dots().empty() || dots()[0]->y() < spatium() * .1;
 }
 
 static bool has_altered_unison(Note *note) {
@@ -1774,7 +1761,7 @@ void Note::scan_elements(std::function<void(EngravingItem *)> func) {
     if (accidental_) {
         func(accidental_);
     }
-    for (NoteDot *dot : dots_) {
+    for (NoteDot *dot : dots()) {
         func(dot);
     }
 }
@@ -1822,9 +1809,6 @@ void Note::set_track(track_idx_t val) {
     }
     if (!chord()) { // if note is dragged with shift+ctrl
         return;
-    }
-    for (NoteDot *dot : dots_) {
-        dot->set_track(val);
     }
 }
 
@@ -2216,9 +2200,6 @@ void Note::set_nval(const NoteVal &nval, Fraction tick) {
 
 void Note::local_spatium_changed(double old_value, double new_value) {
     EngravingItem::local_spatium_changed(old_value, new_value);
-    for (EngravingItem *e : dots()) {
-        e->local_spatium_changed(old_value, new_value);
-    }
     for (EngravingItem *e : el()) {
         e->local_spatium_changed(old_value, new_value);
     }
@@ -2436,9 +2417,6 @@ void Note::set_score(Score *s) {
     }
     if (accidental_) {
         accidental_->set_score(s);
-    }
-    for (NoteDot *dot : dots_) {
-        dot->set_score(s);
     }
     for (EngravingItem *el : el_) {
         el->set_score(s);
@@ -3107,5 +3085,14 @@ bool Note::transpose(Interval interval, bool use_double_sharps_flats) {
 staff_idx_t Note::v_staff_idx() const {
     const Chord *c = chord();
     return c ? c->v_staff_idx() : EngravingItem::v_staff_idx();
+}
+} // namespace mu::engraving
+
+namespace mu::engraving {
+Note::LayoutData::~LayoutData() { muse::delete_all(dots); }
+
+const std::vector<NoteDot *> &Note::dots() const {
+    static const std::vector<NoteDot *> empty;
+    return has_layout_data() ? ldata()->dots : empty;
 }
 } // namespace mu::engraving

@@ -28,6 +28,7 @@
 #include "../editing/addremoveelement.h"
 #include "../editing/editchord.h"
 #include "../editing/editmeasurerepeat.h"
+#include "../editing/editvisibility.h"
 #include "../editing/noteinput.h"
 #include "../editing/transaction/transaction.h"
 #include "articulation.h"
@@ -76,9 +77,6 @@ Rest::Rest(const Rest &r, bool link) : ChordRest(r, link) {
     }
     gap_ = r.gap_;
     dotline_ = r.dotline_;
-    for (NoteDot *dot : r.dots_) {
-        add(Factory::copy_note_dot(*dot));
-    }
 
     if (r.dead_slapped_) {
         DeadSlapped *ndc = Factory::copy_dead_slapped(*r.dead_slapped_);
@@ -161,34 +159,14 @@ double Rest::sym_width_no_ledger_lines(LayoutData *ldata) const {
     return sym_width(ldata->sym);
 }
 
-//---------------------------------------------------------
-//   checkDots
-//---------------------------------------------------------
+Rest::LayoutData::~LayoutData() { muse::delete_all(dots); }
 
-void Rest::check_dots() {
-    int n = dots() - int(dots_.size());
-    for (int i = 0; i < n; ++i) {
-        NoteDot *dot = Factory::create_note_dot(this);
-        dot->set_visible(visible());
-        score()->undo_add_element(dot);
-    }
-    if (n < 0) {
-        for (int i = 0; i < -n; ++i) {
-            score()->undo_remove_element(dots_.back());
-        }
-    }
+NoteDot *Rest::dot(int n) const { return n >= 0 && size_t(n) < dot_list().size() ? dot_list()[n] : nullptr; }
+
+const std::vector<NoteDot *> &Rest::dot_list() const {
+    static const std::vector<NoteDot *> empty;
+    return has_layout_data() ? ldata()->dots : empty;
 }
-
-//---------------------------------------------------------
-//   dot
-//---------------------------------------------------------
-
-NoteDot *Rest::dot(int n) {
-    check_dots();
-    return dots_[n];
-}
-
-const std::vector<NoteDot *> &Rest::dot_list() const { return dots_; }
 
 //---------------------------------------------------------
 //   getDotline
@@ -241,7 +219,7 @@ void Rest::scan_elements(std::function<void(EngravingItem *)> func) {
     for (EngravingItem *e : el()) {
         e->scan_elements(func);
     }
-    for (NoteDot *dot : dots_) {
+    for (NoteDot *dot : dot_list()) {
         dot->scan_elements(func);
     }
     if (!is_gap() || debug_draw_gap()) {
@@ -259,12 +237,7 @@ void Rest::scan_elements(std::function<void(EngravingItem *)> func) {
 //   setTrack
 //---------------------------------------------------------
 
-void Rest::set_track(track_idx_t val) {
-    ChordRest::set_track(val);
-    for (NoteDot *dot : dots_) {
-        dot->set_track(val);
-    }
-}
+void Rest::set_track(track_idx_t val) { ChordRest::set_track(val); }
 
 //---------------------------------------------------------
 //   mag
@@ -335,10 +308,6 @@ void Rest::add(EngravingItem *e) {
     e->set_track(track());
 
     switch (e->type()) {
-        case ElementType::NOTEDOT:
-            dots_.push_back(to_note_dot(e));
-            e->added();
-            break;
         case ElementType::DEAD_SLAPPED:
             dead_slapped_ = to_dead_slapped(e);
             e->added();
@@ -353,10 +322,6 @@ void Rest::add(EngravingItem *e) {
 
 void Rest::remove(EngravingItem *e) {
     switch (e->type()) {
-        case ElementType::NOTEDOT:
-            dots_.pop_back();
-            e->removed();
-            break;
         case ElementType::DEAD_SLAPPED: dead_slapped_ = nullptr;
         // fallthrough
         case ElementType::SYMBOL:
@@ -377,9 +342,6 @@ void Rest::remove(EngravingItem *e) {
 
 void Rest::local_spatium_changed(double old_value, double new_value) {
     ChordRest::local_spatium_changed(old_value, new_value);
-    for (EngravingItem *e : dots_) {
-        e->local_spatium_changed(old_value, new_value);
-    }
     for (EngravingItem *e : el()) {
         e->local_spatium_changed(old_value, new_value);
     }
@@ -443,11 +405,7 @@ bool Rest::set_property(Pid property_id, const PropertyValue &v) {
 //   undoChangeDotsVisible
 //---------------------------------------------------------
 
-void Rest::undo_change_dots_visible(bool v) {
-    for (NoteDot *dot : dots_) {
-        dot->undo_change_property(Pid::VISIBLE, v);
-    }
-}
+void Rest::undo_change_dots_visible(bool v) { EditVisibility::change_dots_visible(this, dots(), v); }
 
 //---------------------------------------------------------
 //   nextElement

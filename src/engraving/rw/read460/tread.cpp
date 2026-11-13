@@ -1395,10 +1395,6 @@ void TRead::read(Tuplet *t, XmlReader &e, ReadContext &ctx) {
             TRead::read(number, e, ctx);
             finish_authored_read(*number);
             t->read_number_style(*number);
-            t->set_number(number);
-            number->set_visible(t->visible()); //?? override saved property
-            number->set_color(t->color());
-            number->set_track(t->track());
             // move property flags from _number back to tuplet
             for (auto p : {Pid::FONT_FACE, Pid::FONT_SIZE, Pid::FONT_STYLE, Pid::ALIGN, Pid::POSITION}) {
                 t->set_property_flags(p, number->property_flags(p));
@@ -1408,12 +1404,11 @@ void TRead::read(Tuplet *t, XmlReader &e, ReadContext &ctx) {
         }
     }
 
-    t->set_number(number);
     t->set_base_len(base_len);
     t->set_ratio(ratio);
     if (number) {
         finish_authored_read(*number);
-        apply_authored_overrides(*number);
+        delete number;
     }
 
     Fraction f = t->base_len().fraction() * t->ratio().denominator();
@@ -2912,7 +2907,7 @@ void TRead::read(MMRest *r, XmlReader &e, ReadContext &ctx) {
         } else if (tag == "NoteDot") {
             NoteDot *dot = Factory::create_note_dot(r);
             TRead::read(dot, e, ctx);
-            r->add(dot);
+            delete dot;
         } else if (tag == "mmRestNumberPos") {
             // Old property, deprecated in 4.5
             r->set_number_offset(Spatium(e.read_double()) - ctx.style().style_s(Sid::MM_REST_NUMBER_POS));
@@ -3037,7 +3032,7 @@ bool TRead::read_properties(Note *n, XmlReader &e, ReadContext &ctx) {
     } else if (tag == "NoteDot") {
         NoteDot *dot = Factory::create_note_dot(n);
         TRead::read(dot, e, ctx);
-        n->add(dot);
+        delete dot;
     } else if (tag == "Events") {
         NoteEventList play_events;
         while (e.read_next_start_element()) {
@@ -3101,7 +3096,9 @@ void TRead::read(NoteEvent *item, XmlReader &e, ReadContext &) {
 
 void TRead::read(NoteDot *d, XmlReader &e, ReadContext &ctx) {
     auto *parent = d->ownership_parent();
-    const auto ordinal = parent->is_note() ? to_note(parent)->dots().size() : to_rest(parent)->dot_list().size();
+    const auto *table = authored_override_table(static_cast<EngravingItem *>(parent));
+    uint32_t ordinal = 0;
+    while (table->carrier({AuthoredChildRole::DOT, ordinal})) ++ordinal;
     bind_authored_child(*d, {AuthoredChildRole::DOT, static_cast<uint32_t>(ordinal)});
     while (e.read_next_start_element()) {
         if (!read_item_properties(d, e, ctx)) {
@@ -3328,7 +3325,7 @@ void TRead::read(Rest *r, XmlReader &e, ReadContext &ctx) {
         if (tag == "NoteDot") {
             NoteDot *dot = Factory::create_note_dot(r);
             TRead::read(dot, e, ctx);
-            r->add(dot);
+            delete dot;
         } else if (TRead::read_styled_property(r, tag, e, ctx)) {
         } else if (TRead::read_property(r, tag, e, ctx, Pid::ALIGN_WITH_OTHER_RESTS)) {
         } else if (TRead::read_properties(r, e, ctx)) {

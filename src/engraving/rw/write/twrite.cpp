@@ -2357,26 +2357,8 @@ void TWrite::write(const Note *item, XmlWriter &xml, WriteContext &ctx) {
     }
     write_items(item->el(), xml, ctx);
     const auto &dot_carriers = item->authored_overrides.carriers;
-    const bool source_dots =
-        std::any_of(dot_carriers.begin(), dot_carriers.end(), [](const auto &entry) { return entry.child.role == AuthoredChildRole::DOT; });
-    if (source_dots) {
-        for (const auto &carrier : dot_carriers) {
-            if (carrier.child.role == AuthoredChildRole::DOT) write_authored_child(item, carrier.child, "NoteDot", xml, ctx);
-        }
-    } else {
-        bool write_dots = false;
-        for (NoteDot *dot : item->dots()) {
-            if (!dot->offset().is_null() || !dot->visible() || dot->color() != ctx.configuration()->default_color() ||
-                dot->visible() != item->visible()) {
-                write_dots = true;
-                break;
-            }
-        }
-        if (write_dots) {
-            for (NoteDot *dot : item->dots()) {
-                write(dot, xml, ctx);
-            }
-        }
+    for (const auto &carrier : dot_carriers) {
+        if (carrier.child.role == AuthoredChildRole::DOT) write_authored_child(item, carrier.child, "NoteDot", xml, ctx);
     }
 
     if (item->laissez_vib()) {
@@ -2631,26 +2613,8 @@ void TWrite::write(const Rest *item, XmlWriter &xml, WriteContext &ctx) {
     write_properties(to_chord_rest(item), xml, ctx);
     write_items(item->el(), xml, ctx);
     const auto &dot_carriers = item->authored_overrides.carriers;
-    const bool source_dots =
-        std::any_of(dot_carriers.begin(), dot_carriers.end(), [](const auto &entry) { return entry.child.role == AuthoredChildRole::DOT; });
-    if (source_dots) {
-        for (const auto &carrier : dot_carriers) {
-            if (carrier.child.role == AuthoredChildRole::DOT) write_authored_child(item, carrier.child, "NoteDot", xml, ctx);
-        }
-    } else {
-        bool write_dots = false;
-        for (NoteDot *dot : item->dot_list()) {
-            if (!dot->offset().is_null() || !dot->visible() || dot->color() != ctx.configuration()->default_color() ||
-                dot->visible() != item->visible()) {
-                write_dots = true;
-                break;
-            }
-        }
-        if (write_dots) {
-            for (NoteDot *dot : item->dot_list()) {
-                write(dot, xml, ctx);
-            }
-        }
+    for (const auto &carrier : dot_carriers) {
+        if (carrier.child.role == AuthoredChildRole::DOT) write_authored_child(item, carrier.child, "NoteDot", xml, ctx);
     }
 
     xml.end_element();

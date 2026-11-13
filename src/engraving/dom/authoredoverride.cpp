@@ -317,6 +317,7 @@ AuthoredOverrideTable *authored_override_table(EngravingItem *owner) {
     switch (owner->type()) {
         case ElementType::CHORD: return &static_cast<Chord *>(owner)->authored_overrides;
         case ElementType::NOTE: return &static_cast<Note *>(owner)->authored_overrides;
+        case ElementType::MMREST:
         case ElementType::REST: return &static_cast<Rest *>(owner)->authored_overrides;
         case ElementType::TUPLET: return &static_cast<Tuplet *>(owner)->authored_overrides;
         case ElementType::BEAM: return &static_cast<Beam *>(owner)->authored_overrides;

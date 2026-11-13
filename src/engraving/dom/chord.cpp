@@ -1550,9 +1550,7 @@ void Chord::set_slash(bool flag, bool stemless) {
             n->undo_change_property(Pid::FIXED_LINE, 0);
             n->undo_change_property(Pid::PLAY, true);
             n->undo_change_property(Pid::VISIBLE, true);
-            for (NoteDot *dot : n->dots()) {
-                dot->undo_change_property(Pid::VISIBLE, true);
-            }
+            EditVisibility::change_dots_visible(n, dots(), true);
             if (staff()->is_drum_staff(tick())) {
                 const Drumset *ds = origin_part()->instrument(tick())->drumset();
                 int pitch = n->pitch();
@@ -1613,9 +1611,7 @@ void Chord::set_slash(bool flag, bool stemless) {
         // hide all but first notehead
         if (i) {
             n->undo_change_property(Pid::VISIBLE, false);
-            for (NoteDot *dot : n->dots()) {
-                dot->undo_change_property(Pid::VISIBLE, false);
-            }
+            EditVisibility::change_dots_visible(n, dots(), false);
         }
     }
 }
