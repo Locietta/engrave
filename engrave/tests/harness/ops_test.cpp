@@ -2155,6 +2155,158 @@ TEST(JournalMMRestCreation, CanceledOverlayRetiresBeforeLateExcerptChildDestruct
     EXPECT_FALSE(restored.mutation_journal()->has_active_transaction());
 }
 
+TEST(JournalPolicy, RejectedPartAppearanceAndPositionRelinksRestoreOverrides) {
+    using namespace mu::engraving;
+    for (const auto pid : {Pid::APPEARANCE_LINKED_TO_MASTER, Pid::POSITION_LINKED_TO_MASTER}) {
+        for (bool reset : {false, true}) {
+            SCOPED_TRACE(int(pid));
+            SCOPED_TRACE(reset);
+            auto document = open(fixture_name);
+            ASSERT_TRUE(document);
+            ASSERT_TRUE(document->edit({{engrave::GenerateExcerpts{{find_id(*document, "Part")}}}}));
+            auto &master = engrave::harness::master_of(*document);
+            const auto found = engrave::resolve(master, find_id(*document, "Note"));
+            ASSERT_TRUE(found);
+            auto *master_note = to_note(found->object);
+            Note *part_note = nullptr;
+            for (auto *item : master_note->link_list_for_property_propagation())
+                if (item->is_note() && !item->score()->is_master()) part_note = to_note(item);
+            ASSERT_NE(part_note, nullptr);
+            const auto id = engrave::from_engine(part_note->eid());
+            // Whole staff-space values survive native decimal serialization
+            // exactly, so this checks restoration rather than save rounding.
+            const auto spatium = part_note->spatium();
+            ASSERT_TRUE(document->edit({{SetProperty{id, "color", engrave::Color{17, 53, 91}},
+                                         SetProperty{id, "offset", engrave::Point{2.0 * spatium, 4.0 * spatium}}}}));
+            ASSERT_FALSE(part_note->get_property(pid).to_bool());
+            const auto color = part_note->get_property(Pid::COLOR);
+            const auto offset = part_note->get_property(Pid::OFFSET);
+            const auto color_flags = part_note->property_flags(Pid::COLOR);
+            const auto offset_flags = part_note->property_flags(Pid::OFFSET);
+            const auto copied_pid = pid == Pid::APPEARANCE_LINKED_TO_MASTER ? Pid::COLOR : Pid::OFFSET;
+            ASSERT_NE(part_note->get_property(copied_pid), master_note->get_property(copied_pid));
+            const auto revision = document->revision();
+            const auto *project = engrave::DocumentAccess::project(*document).get();
+            bool copied = false;
+            auto &hooks = engrave::DocumentAccess::edit_hooks(*document);
+            hooks.before_step = [&](std::size_t step) {
+                if (step != 1) return;
+                copied = part_note->get_property(copied_pid) == master_note->get_property(copied_pid);
+                MScore::set_error(MsError::NO_NOTE_SELECTED);
+            };
+            const std::string name = pid == Pid::APPEARANCE_LINKED_TO_MASTER ? "appearanceLinkedToMaster" : "positionLinkedToMaster";
+            const engrave::Op operation = reset ? engrave::Op(ResetProperty{id, name}) : engrave::Op(SetProperty{id, name, true});
+            const auto result = document->edit({{operation}});
+            hooks.before_step = {};
+            ASSERT_FALSE(result);
+            EXPECT_TRUE(copied);
+            EXPECT_EQ(result.error().code, ErrorCode::EDIT_REJECTED);
+            EXPECT_NE(engrave::DocumentAccess::project(*document).get(), project);
+            auto &restored = engrave::harness::master_of(*document);
+            const auto resolved = engrave::resolve(restored, id);
+            ASSERT_TRUE(resolved);
+            auto *note = to_note(resolved->object);
+            EXPECT_EQ(note->get_property(Pid::COLOR), color);
+            EXPECT_EQ(note->get_property(Pid::OFFSET), offset);
+            EXPECT_EQ(note->property_flags(Pid::COLOR), color_flags);
+            EXPECT_EQ(note->property_flags(Pid::OFFSET), offset_flags);
+            EXPECT_FALSE(note->get_property(Pid::APPEARANCE_LINKED_TO_MASTER).to_bool());
+            EXPECT_FALSE(note->get_property(Pid::POSITION_LINKED_TO_MASTER).to_bool());
+            EXPECT_EQ(document->revision(), revision);
+            EXPECT_FALSE(restored.mutation_journal()->has_active_transaction());
+            EXPECT_EQ(restored.layout_state.whole_count + restored.layout_state.range_count, 0u);
+        }
+    }
+}
+
+TEST(JournalPolicy, RejectedPartTextRelinkRestoresMarkupAndFont) {
+    using namespace mu::engraving;
+    for (bool reset : {false, true}) {
+        SCOPED_TRACE(reset);
+        auto document = open(fixture_name);
+        ASSERT_TRUE(document);
+        ASSERT_TRUE(document->edit({{engrave::GenerateExcerpts{{find_id(*document, "Part")}}}}));
+        auto &master = engrave::harness::master_of(*document);
+        auto *part = master.excerpts().front()->excerpt_score();
+        auto *master_text = Factory::create_staff_text(master.first_measure()->first(SegmentType::CHORD_REST));
+        auto *part_text = Factory::create_staff_text(part->first_measure()->first(SegmentType::CHORD_REST));
+        for (auto *text : {master_text, part_text}) {
+            text->set_track(0);
+            text->set_xml_text(u"<b>Master</b>");
+        }
+        ASSERT_TRUE(chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+            master.record_element_add(master_text);
+            master.record_element_add(part_text);
+            master.record_link(part_text, master_text);
+            return {};
+        }}));
+        part_text->set_property(Pid::TEXT_LINKED_TO_MASTER, false);
+        const auto id = engrave::from_engine(part_text->eid());
+        const auto local = document->edit(
+            {{SetProperty{id, "text", std::string("<i>Local override</i>")}, SetProperty{id, "family", std::string("DejaVu Sans")}}});
+        ASSERT_TRUE(local) << local.error().message;
+        const auto text = part_text->xml_text();
+        const auto font = part_text->get_property(Pid::FONT_FACE);
+        const auto flags = part_text->property_flags(Pid::FONT_FACE);
+        ASSERT_NE(text, master_text->xml_text());
+        const auto revision = document->revision();
+        const auto *project = engrave::DocumentAccess::project(*document).get();
+        bool copied = false;
+        auto &hooks = engrave::DocumentAccess::edit_hooks(*document);
+        hooks.before_step = [&](std::size_t step) {
+            if (step != 1) return;
+            copied = part_text->xml_text() == master_text->xml_text();
+            MScore::set_error(MsError::NO_NOTE_SELECTED);
+        };
+        const engrave::Op operation =
+            reset ? engrave::Op(ResetProperty{id, "textLinkedToMaster"}) : engrave::Op(SetProperty{id, "textLinkedToMaster", true});
+        const auto result = document->edit({{operation}});
+        hooks.before_step = {};
+        ASSERT_FALSE(result);
+        EXPECT_TRUE(copied);
+        EXPECT_NE(engrave::DocumentAccess::project(*document).get(), project);
+        auto &restored = engrave::harness::master_of(*document);
+        const auto resolved = engrave::resolve(restored, id);
+        ASSERT_TRUE(resolved);
+        auto *restored_text = to_staff_text(resolved->object);
+        EXPECT_EQ(restored_text->xml_text(), text);
+        EXPECT_EQ(restored_text->get_property(Pid::FONT_FACE), font);
+        EXPECT_EQ(restored_text->property_flags(Pid::FONT_FACE), flags);
+        EXPECT_FALSE(restored_text->get_property(Pid::TEXT_LINKED_TO_MASTER).to_bool());
+        EXPECT_EQ(document->revision(), revision);
+        EXPECT_FALSE(restored.mutation_journal()->has_active_transaction());
+        EXPECT_EQ(restored.layout_state.whole_count + restored.layout_state.range_count, 0u);
+    }
+}
+
+TEST(JournalPolicy, OrdinaryColorFailureKeepsJournalRecovery) {
+    using namespace mu::engraving;
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    const auto id = find_id(*document, "Note");
+    const auto found = engrave::resolve(master, id);
+    ASSERT_TRUE(found);
+    const auto handle = master.eid_register()->handle_of(found->object);
+    const auto before = found->object->get_property(Pid::COLOR);
+    const auto revision = document->revision();
+    const auto *project = engrave::DocumentAccess::project(*document).get();
+    auto &hooks = engrave::DocumentAccess::edit_hooks(*document);
+    hooks.fail_restore = true;
+    hooks.before_step = [](std::size_t step) {
+        if (step == 1) MScore::set_error(MsError::NO_NOTE_SELECTED);
+    };
+    const auto result = document->edit({{SetProperty{id, "color", engrave::Color{17, 53, 91}}}});
+    hooks.before_step = {};
+    ASSERT_FALSE(result);
+    EXPECT_EQ(engrave::DocumentAccess::project(*document).get(), project);
+    EXPECT_EQ(master.eid_register()->live_item(handle), found->object);
+    EXPECT_EQ(found->object->get_property(Pid::COLOR), before);
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+}
+
 TEST(JournalAutomation, SourceSetupRejectsActiveBatchAndPreservesEarlierEditsOnFailure) {
     using namespace mu::engraving;
     auto document = open(fixture_name);

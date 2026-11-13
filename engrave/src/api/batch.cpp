@@ -10,6 +10,7 @@
 #include <variant>
 
 #include "engrave/src/api/handles.h"
+#include "engrave/src/api/pid_support.h"
 #include "engrave/src/api/state.h"
 #include "engrave/src/runtime/score_io.h"
 #include "engrave/src/score/score_semantic.h"
@@ -64,6 +65,19 @@ bool engine_warned() { return MScore::error != MsError::MS_NO_ERROR && MScore::e
 
 Policy recovery_policy(MasterScore &master, const Op &op) {
     const Policy policy = policy_of(op);
+    const std::string *property = nullptr;
+    if (const auto *set = std::get_if<SetProperty>(&op)) property = &set->property;
+    if (const auto *reset = std::get_if<ResetProperty>(&op)) property = &reset->property;
+    if (property) {
+        // Relinking copies a complete master group, beyond the flag inverse.
+        // Keep native source recovery until that whole mutation has an inverse.
+        switch (pid_of(*property)) {
+            case mu::engraving::Pid::APPEARANCE_LINKED_TO_MASTER:
+            case mu::engraving::Pid::POSITION_LINKED_TO_MASTER:
+            case mu::engraving::Pid::TEXT_LINKED_TO_MASTER: return Policy::SNAPSHOT;
+            default: break;
+        }
+    }
     const auto *remove = std::get_if<Remove>(&op);
     if (!remove) return policy;
     const auto *id = std::get_if<ElementId>(&remove->target);
