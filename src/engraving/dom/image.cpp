@@ -176,13 +176,13 @@ void Image::update_image_width(const double &width) {
 //   imageHeight
 //---------------------------------------------------------
 
-double Image::image_height() const { return size_.height(); }
+double Image::image_height() const { return size().height(); }
 
 //---------------------------------------------------------
 //   imageWidth
 //---------------------------------------------------------
 
-double Image::image_width() const { return size_.width(); }
+double Image::image_width() const { return size().width(); }
 
 bool Image::load_from_store(const std::string &store_path) {
     store_path_ = store_path;
@@ -276,9 +276,6 @@ void Image::init() {
         if (store_item_) {
             svg_doc_ = new SvgRenderer(store_item_->buffer());
         }
-    }
-    if (size_.is_null()) {
-        size_ = pixel2size(image_size());
     }
 }
 

@@ -66,7 +66,7 @@ public:
 
     void set_size(const SizeF &s) { size_ = s; }
 
-    const SizeF &size() const { return size_; }
+    SizeF size() const { return size_.is_null() ? pixel2size(image_size()) : size_; }
 
     void update_image_height(const double &height);
     void update_image_width(const double &width);

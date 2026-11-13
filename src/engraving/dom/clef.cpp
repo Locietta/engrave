@@ -103,7 +103,7 @@ Clef::Clef(DummyParentOr<Segment> parent) : EngravingItem(ElementType::CLEF, par
 
 double Clef::mag() const {
     double mag = staff() ? staff()->staff_mag(this) : 1.0;
-    if (is_small_) {
+    if (is_small()) {
         mag *= style().style_d(Sid::SMALL_CLEF_MAG);
     }
     return mag;
@@ -112,6 +112,10 @@ double Clef::mag() const {
 //---------------------------------------------------------
 //   setSmall
 //---------------------------------------------------------
+
+bool Clef::is_small() const {
+    return is_small_ || (ownership_parent() && ownership_parent()->is_segment() && segment()->is_just_type(SegmentType::CLEF));
+}
 
 void Clef::set_small(bool val) { is_small_ = val; }
 

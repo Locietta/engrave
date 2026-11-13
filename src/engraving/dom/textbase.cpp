@@ -1575,9 +1575,9 @@ static double parse_num_property(const String &s) { return parse_string_property
 //---------------------------------------------------------
 void TextBase::create_blocks() { create_blocks(mutldata()); }
 
-void TextBase::create_blocks(LayoutData *ldata, bool source_only) const {
+void TextBase::create_blocks(LayoutData *ldata, bool source_only, const String *display_text) const {
     // Capture markup before clearing blocks: an active editor may own the latest text.
-    const String source = xml_text();
+    const String source = display_text ? *display_text : xml_text();
     // reset all previous formatting information
     ldata->blocks.clear();
     TextCursor cursor = *cursor_;

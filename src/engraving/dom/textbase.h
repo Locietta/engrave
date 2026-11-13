@@ -511,7 +511,7 @@ public:
 
     void create_blocks();
     // Source-only runs retain symbol IDs without loading or measuring glyphs.
-    void create_blocks(LayoutData *ldata, bool source_only = false) const;
+    void create_blocks(LayoutData *ldata, bool source_only = false, const String *display_text = nullptr) const;
     void layout_frame();
     void layout_frame(LayoutData *ldata) const;
 

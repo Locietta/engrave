@@ -338,3 +338,5 @@ void TimeSig::removed() {
     score()->update_ticks_and_time_sig_map_later();
 }
 } // namespace mu::engraving
+
+bool TimeSig::system_flag() const { return style().style_v(Sid::TIME_SIG_PLACEMENT).value<TimeSigPlacement>() != TimeSigPlacement::NORMAL; }

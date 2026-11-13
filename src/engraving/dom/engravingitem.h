@@ -338,7 +338,7 @@ public:
 
     virtual double absolute_from_spatium(const Spatium &sp) const { return sp.val() * spatium(); }
 
-    bool system_flag() const { return flag(ElementFlag::SYSTEM); }
+    virtual bool system_flag() const { return flag(ElementFlag::SYSTEM); }
 
     void set_system_flag(bool v) const { set_flag(ElementFlag::SYSTEM, v); }
 

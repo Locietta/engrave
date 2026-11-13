@@ -56,6 +56,8 @@ public:
 
     void set_ownership_parent(DummyParentOr<Segment> parent);
 
+    bool system_flag() const override;
+
     String ssig() const;
     void set_s_sig(const String &);
 

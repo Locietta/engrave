@@ -22,7 +22,9 @@
 #include "textlayout.h"
 
 #include "dom/box.h"
+#include "dom/capo.h"
 #include "dom/page.h"
+#include "dom/part.h"
 #include "dom/staff.h"
 #include "dom/textlinebase.h"
 #include "log.h"
@@ -54,7 +56,14 @@ void TextLayout::layout_base_text_base1(const TextBase *item, TextBase::LayoutDa
     }
 
     if (ldata->layout_invalid) {
-        item->create_blocks(ldata);
+        if (item->is_capo() && (to_capo(item)->should_automatically_generate_text() || item->empty()) && item->origin_part() &&
+            item->staff()) {
+            const auto *strings = item->origin_part()->string_data(item->tick(), item->staff()->idx());
+            const String display = strings ? to_capo(item)->generate_text(strings->strings()) : item->xml_text();
+            item->create_blocks(ldata, false, &display);
+        } else {
+            item->create_blocks(ldata);
+        }
     }
 
     double y = 0.0;

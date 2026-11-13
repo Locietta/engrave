@@ -43,7 +43,6 @@ void SegmentLayout::layout_measure_independent_elements(const Segment &segment, 
     } else if (segment.is_just_type(SegmentType::CLEF)) {
         Clef *cl = item_cast<Clef *>(segment.element(track));
         if (cl) {
-            cl->set_small(true);
             TLayout::layout_clef(cl, cl->mutldata(), ctx.conf()); // LD_INDEPENDENT
         }
     } else if (segment.is_type(SegmentType::HEADER_CLEF)) {
