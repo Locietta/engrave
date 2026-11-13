@@ -14,6 +14,8 @@ namespace mu::engraving::rendering::score {
 struct LayoutDataStore {
     // Test-only failure seam before a scratch store changes ownership.
     static inline void (*before_adoption)() = nullptr;
+    // Test-only failure seam at an explicit payload allocation boundary.
+    static inline void (*before_allocation)(const EngravingItem &) = nullptr;
     explicit LayoutDataStore(Score &score);
     ~LayoutDataStore();
     LayoutDataStore(const LayoutDataStore &) = delete;
@@ -27,6 +29,9 @@ struct LayoutDataStore {
     EngravingItem::LayoutData *adopt(EngravingItem &item, std::unique_ptr<EngravingItem::LayoutData> data);
     void erase(EngravingItem &item);
     void transfer(EngravingItem &item, LayoutDataStore &destination);
+    // Invalidate geometry before retiring payloads and their generated children.
+    // Call only after active layout borrowers have unwound.
+    void clear();
     void detach_score();
     // Explicit producer pass. The callback may mutate payloads, not membership.
     void for_each_output(const std::function<void(EngravingItem &, EngravingItem::LayoutData &)> &complete);

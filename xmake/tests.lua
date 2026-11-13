@@ -259,6 +259,7 @@ target_end()
 -- The read tests: outline, query and get against the semantic dump, the metadata
 -- export and the positions export, which walk the same score independently.
 target("engrave_read_test")
+    if is_plat("windows") then add_cxxflags("/bigobj") end
     set_kind("binary")
     set_default(false)
     add_defines('ENGRAVE_TEST_SOURCE_ROOT="' .. source_root:gsub("\\", "/") .. '"')

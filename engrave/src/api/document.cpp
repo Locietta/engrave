@@ -79,20 +79,34 @@ void Document::Impl::bind_layout_boundary() {
 
 void Document::Impl::ensure_layout(mu::engraving::Score &score) {
     adopt_layout_output(score);
-    if (score.layout_state.revision != revision && !score.layout_state.dirty)
-        score.invalidate_layout(mu::engraving::Fraction(0, 1), mu::engraving::Fraction(-1, 1));
-    if (score.layout_state.font_generation != engine->font_generation) {
-        // Justified fragments retain font-dependent splits, not only geometry.
-        score.scan_elements([](mu::engraving::EngravingItem *item) {
-            if (item->is_text_base()) mu::engraving::to_text_base(item)->mutldata()->layout_invalid = true;
-        });
-        score.invalidate_layout(mu::engraving::Fraction(0, 1), mu::engraving::Fraction(-1, 1));
-        score.layout_if_dirty();
-        score.layout_state.font_generation = engine->font_generation;
-    } else {
-        score.layout_if_dirty();
+    try {
+        if (score.layout_state.revision != revision && !score.layout_state.dirty)
+            score.invalidate_layout(mu::engraving::Fraction(0, 1), mu::engraving::Fraction(-1, 1));
+        if (score.layout_state.font_generation != engine->font_generation) {
+            // Justified fragments retain font-dependent splits, not only geometry.
+            score.scan_elements([](mu::engraving::EngravingItem *item) {
+                if (item->is_text_base()) mu::engraving::to_text_base(item)->mutldata()->layout_invalid = true;
+            });
+            score.invalidate_layout(mu::engraving::Fraction(0, 1), mu::engraving::Fraction(-1, 1));
+            score.layout_if_dirty();
+            score.layout_state.font_generation = engine->font_generation;
+        } else {
+            score.layout_if_dirty();
+        }
+        score.layout_state.revision = revision;
+    } catch (...) {
+        // LayoutContext and its borrowed payloads have unwound. A later geometry
+        // request must rebuild a complete view, including after a range failure.
+        discard_layout_output(score);
+        throw;
     }
-    score.layout_state.revision = revision;
+}
+
+void Document::Impl::discard_layout_output(mu::engraving::Score &score) {
+    if (auto *output = score.layout_data_store())
+        output->clear();
+    else
+        score.invalidate_layout(mu::engraving::Fraction(0, 1), mu::engraving::Fraction(-1, 1));
 }
 
 Document::Document(std::unique_ptr<Impl> impl) : impl_(std::move(impl)) {}
