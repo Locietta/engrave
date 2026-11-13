@@ -86,7 +86,7 @@ struct ClefInfo {
 ///    Graphic representation of a clef.
 //
 //   @P showCourtesy  bool    show/hide courtesy clef when applicable
-//   @P isSmall       bool    small, mid-staff clef (read only, set by layout)
+//   @P isSmall       bool    small, mid-staff clef
 //---------------------------------------------------------
 
 struct Clef final : EngravingItem {
@@ -103,7 +103,7 @@ public:
 
     Measure *measure() const { return (Measure *) ownership_parent()->ownership_parent(); }
 
-    bool is_small() const { return is_small_; }
+    bool is_small() const;
 
     void set_small(bool val);
 

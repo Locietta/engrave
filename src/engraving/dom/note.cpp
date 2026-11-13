@@ -945,8 +945,8 @@ SymId Note::note_head(int direction) const {
 
     const Staff *st = chord() ? chord()->staff() : nullptr;
 
-    NoteHeadGroup head_group = head_group_;
-    if (head_group_ == NoteHeadGroup::HEAD_CUSTOM) {
+    NoteHeadGroup head_group = dead_note() ? NoteHeadGroup::HEAD_CROSS : harmonic() ? NoteHeadGroup::HEAD_DIAMOND : head_group_;
+    if (head_group == NoteHeadGroup::HEAD_CUSTOM) {
         if (st) {
             if (st->staff_type_for_element(chord())->is_drum_staff()) {
                 Fraction t = chord()->tick();

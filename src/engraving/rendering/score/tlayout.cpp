@@ -1555,6 +1555,7 @@ void TLayout::layout_clef(const Clef *item, Clef::LayoutData *ldata, const Layou
     int step_offset = 0;
     Spatium staff_offset_y = 0_sp;
 
+    ClefType clef_type = item->clef_type();
     Segment *clef_seg = item->segment();
 
     // check clef visibility and type compatibility
@@ -1577,13 +1578,14 @@ void TLayout::layout_clef(const Clef *item, Clef::LayoutData *ldata, const Layou
         }
 
         // check clef is compatible with staff type group:
-        if (ClefInfo::staff_group(item->clef_type()) != staff_group) {
+        if (ClefInfo::staff_group(clef_type) != staff_group) {
             if (tick > Fraction(0, 1) && (!item->generated() || hide_clef)) { // if clef is not generated, hide it
                 show = false;
             } else { // if generated, replace with initial clef type
                 // TODO : instead of initial staff clef (which is assumed to be compatible)
                 // use the last compatible clef previously found in staff
-                const_cast<Clef *>(item)->set_clef_type(item->staff()->clef_type(Fraction(0, 1)));
+                const ClefTypeList initial = item->staff()->clef_type(Fraction(0, 1));
+                clef_type = item->concert_pitch() ? initial.concert_clef : initial.transposing_clef;
             }
         }
 
@@ -1606,14 +1608,14 @@ void TLayout::layout_clef(const Clef *item, Clef::LayoutData *ldata, const Layou
 
     double spatium_value = item->spatium();
     Spatium yoff = 0.0_sp;
-    if (item->clef_type() != ClefType::INVALID && item->clef_type() != ClefType::MAX) {
-        ldata->sym_id = ClefInfo::sym_id(item->clef_type());
-        yoff = line_dist * (5 - ClefInfo::line(item->clef_type()));
+    if (clef_type != ClefType::INVALID && clef_type != ClefType::MAX) {
+        ldata->sym_id = ClefInfo::sym_id(clef_type);
+        yoff = line_dist * (5 - ClefInfo::line(clef_type));
     } else {
         ldata->sym_id = SymId::NO_SYM;
     }
 
-    switch (item->clef_type()) {
+    switch (clef_type) {
         case ClefType::C_19C: // 19th C clef is like a G clef
             yoff = line_dist * 1.5;
             break;
@@ -1649,16 +1651,6 @@ void TLayout::layout_clef(const Clef *item, Clef::LayoutData *ldata, const Layou
 
 void TLayout::layout_capo(const Capo *item, Capo::LayoutData *ldata, const LayoutContext &) {
     LAYOUT_CALL_ITEM(item);
-    //! NOTE Looks like it doesn't belong here
-    if (item->should_automatically_generate_text() || item->empty()) {
-        if (const Part *part = item->origin_part()) {
-            if (const StringData *string_data = part->string_data(item->tick(), item->staff()->idx())) {
-                String text = item->generate_text(string_data->strings());
-                const_cast<Capo *>(item)->set_xml_text(text);
-            }
-        }
-    }
-
     TextLayout::layout_base_text_base(item, ldata);
 
     if (item->autoplace()) {
@@ -2725,11 +2717,6 @@ void TLayout::layout_hairpin_segment(HairpinSegment *item, LayoutContext &ctx) {
     } else {
         item->set_two_lines(true);
 
-        item->hairpin()->set_begin_text_align({AlignH::LEFT, AlignV::VCENTER});
-        item->hairpin()->set_end_text_align({AlignH::RIGHT, AlignV::VCENTER});
-        item->hairpin()->set_begin_text_position(AlignH::LEFT);
-        item->hairpin()->set_end_text_position(AlignH::RIGHT);
-
         double x1 = 0.0;
         layout_text_line_base_segment(item, ctx);
         if (!item->text()->empty()) {
@@ -3071,8 +3058,6 @@ void TLayout::layout_image(const Image *item, Image::LayoutData *ldata) {
             image_size = item->pixel2size(parent_ld->bbox().size());
         }
     }
-
-    const_cast<Image *>(item)->set_size(image_size);
 
     // in any case, adjust position relative to parent
     ldata->set_bbox(RectF(PointF(), item->size2pixel(image_size)));
@@ -3838,12 +3823,6 @@ void TLayout::layout_note(const Note *item, Note::LayoutData *ldata) {
 
         note_b_box = RectF(0, y * mags, w, height * mags);
     } else {
-        if (item->dead_note()) {
-            const_cast<Note *>(item)->set_head_group(NoteHeadGroup::HEAD_CROSS);
-        } else if (item->harmonic()) {
-            const_cast<Note *>(item)->set_head_group(NoteHeadGroup::HEAD_DIAMOND);
-        }
-
         SymId nh = item->note_head();
         ldata->cached_notehead_sym.set_value(nh);
 
@@ -5409,8 +5388,9 @@ void TLayout::layout_text_line_base_segment(TextLineBaseSegment *item, LayoutCon
         item->text()->set_symbol_scale(tl->begin_text_musical_symbols_scale());
         item->text()->set_symbol_size(tl->begin_text_music_symbols_size());
         item->text()->set_offset(tl->begin_text_offset() * item->mag());
-        item->text()->set_align(tl->begin_text_align());
-        item->text()->set_position(tl->begin_text_position());
+        item->text()->set_align(tl->is_hairpin() && !to_hairpin(tl)->is_line_type() ? Align{AlignH::LEFT, AlignV::VCENTER} :
+                                                                                      tl->begin_text_align());
+        item->text()->set_position(tl->is_hairpin() && !to_hairpin(tl)->is_line_type() ? AlignH::LEFT : tl->begin_text_position());
         item->text()->set_font_style(tl->begin_font_style());
     } else {
         item->text()->set_xml_text(tl->continue_text());
@@ -5435,8 +5415,9 @@ void TLayout::layout_text_line_base_segment(TextLineBaseSegment *item, LayoutCon
         item->end_text()->set_symbol_scale(tl->end_text_musical_symbols_scale());
         item->end_text()->set_symbol_size(tl->end_text_music_symbols_size());
         item->end_text()->set_offset(tl->end_text_offset() * item->mag());
-        item->end_text()->set_align(tl->end_text_align());
-        item->end_text()->set_position(tl->end_text_position());
+        item->end_text()->set_align(tl->is_hairpin() && !to_hairpin(tl)->is_line_type() ? Align{AlignH::RIGHT, AlignV::VCENTER} :
+                                                                                          tl->end_text_align());
+        item->end_text()->set_position(tl->is_hairpin() && !to_hairpin(tl)->is_line_type() ? AlignH::RIGHT : tl->end_text_position());
         item->end_text()->set_font_style(tl->end_font_style());
         item->end_text()->set_placement(PlacementV::ABOVE);
         item->end_text()->set_track(item->track());
@@ -5673,11 +5654,6 @@ void TLayout::layout_time_sig(const TimeSig *item, TimeSig::LayoutData *ldata, c
 
     const MStyle &style = item->style();
     TimeSigPlacement time_sig_placement = style.style_v(Sid::TIME_SIG_PLACEMENT).value<TimeSigPlacement>();
-    if (time_sig_placement == TimeSigPlacement::NORMAL) {
-        const_cast<TimeSig *>(item)->set_system_flag(false);
-    } else {
-        const_cast<TimeSig *>(item)->set_system_flag(true);
-    }
 
     double line_dist = 0.0;
     int num_of_lines = 0;
