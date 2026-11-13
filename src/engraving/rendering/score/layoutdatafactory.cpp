@@ -135,6 +135,10 @@ decltype(auto) dispatch_layout_data(ElementType type, Action &&action) {
         case ElementType::LEDGER_LINE: return action.template operator()<LedgerLine::LayoutData>();
         case ElementType::LYRICSLINE_SEGMENT:
         case ElementType::PARTIAL_LYRICSLINE_SEGMENT: return action.template operator()<LyricsLineSegment::LayoutData>();
+        case ElementType::HBOX:
+        case ElementType::VBOX:
+        case ElementType::TBOX:
+        case ElementType::FBOX: return action.template operator()<MeasureBase::LayoutData>();
         case ElementType::MEASURE: return action.template operator()<Measure::LayoutData>();
         case ElementType::MEASURE_REPEAT: return action.template operator()<MeasureRepeat::LayoutData>();
         case ElementType::MMREST: return action.template operator()<MMRest::LayoutData>();

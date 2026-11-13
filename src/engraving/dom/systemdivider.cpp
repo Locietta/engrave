@@ -50,6 +50,20 @@ SystemDivider::SystemDivider(DummyParentOr<System> parent)
 
 SystemDivider::SystemDivider(const SystemDivider &sd) : Symbol(sd) { divider_type_ = sd.divider_type_; }
 
+SystemDivider::~SystemDivider() {
+    // BSymbol's ordinary teardown parks nested symbols on the dummy. Divider
+    // clones instead release their authored leaf tree with the output shell.
+    const auto delete_leafs = [&](auto &&self, BSymbol &symbol) -> void {
+        while (!symbol.leafs().empty()) {
+            auto *leaf = symbol.leafs().back();
+            self(self, *static_cast<BSymbol *>(leaf));
+            symbol.remove(leaf);
+            delete leaf;
+        }
+    };
+    delete_leafs(delete_leafs, *this);
+}
+
 //---------------------------------------------------------
 //   setDividerType
 //---------------------------------------------------------

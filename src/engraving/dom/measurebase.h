@@ -67,9 +67,11 @@ public:
     ~MeasureBase();
 
     //! The system this measure is currently laid out on; null if not placed.
-    System *system() const { return system_; }
+    System *system() const { return ldata()->system; }
 
-    void set_system(System *s) { system_ = s; }
+    void set_system(System *s) {
+        if (s || has_layout_data()) mutldata()->system = s;
+    }
 
     EngravingItem *layout_parent() const override;
 
@@ -188,6 +190,12 @@ public:
     bool is_start_of_page_lock() const;
     bool is_end_of_page_lock() const;
 
+    struct LayoutData : EngravingItem::LayoutData {
+        // A range reset retains placement until System explicitly unlinks it.
+        System *system = nullptr;
+    };
+    DECLARE_LAYOUTDATA_METHODS(MeasureBase)
+
 protected:
     MeasureBase(const ElementType &type, Score *parent);
     MeasureBase(const MeasureBase &);
@@ -199,8 +207,6 @@ protected:
 private:
     MeasureBase *next_ = nullptr;
     MeasureBase *prev_ = nullptr;
-
-    System *system_ = nullptr; // current layout placement; not owned, not copied
 
     Fraction tick_ = Fraction(0, 1);
 };

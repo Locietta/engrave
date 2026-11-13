@@ -46,6 +46,7 @@
 #include "../dom/utils.h"
 #include "dom/masterscore.h"
 #include "log.h"
+#include "rendering/score/layoutdatastore.h"
 
 using namespace muse;
 using namespace mu::engraving;
@@ -250,13 +251,9 @@ void mu::engraving::remove_measure_chain(MeasureBase *fm, MeasureBase *lm, bool 
         }
     }
 
-    std::vector<System *> system_list;
     for (MeasureBase *mb = lm;; mb = mb->prev()) {
         System *system = mb->system();
         if (system) {
-            if (!muse::contains(system_list, system)) {
-                system_list.push_back(system);
-            }
             system->remove_measure(mb);
         }
         if (mb == fm) {
@@ -344,28 +341,7 @@ void mu::engraving::remove_measure_chain(MeasureBase *fm, MeasureBase *lm, bool 
         }
     }
 
-    // remove empty systems
-
-    for (System *s : system_list) {
-        if (s->measures().empty()) {
-            Page *page = s->page();
-            if (page) {
-                // erase system from page
-                muse::remove(page->systems(), s);
-                s->set_page(nullptr);
-            }
-            // erase system from score
-            muse::remove(score->systems(), s);
-            // finally delete system
-            s->delete_later();
-
-            if (page && page->systems().empty()) {
-                // if page is empty, delete it as well
-                muse::remove(score->pages(), page);
-                page->delete_later();
-            }
-        }
-    }
+    score->layout_data_store()->clear();
 
     score->set_layout_all();
 }

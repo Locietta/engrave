@@ -38,6 +38,7 @@ private:
 public:
     SystemDivider(DummyParentOr<System> parent);
     SystemDivider(const SystemDivider &);
+    ~SystemDivider() override;
 
     SystemDivider *clone() const override { return new SystemDivider(*this); }
 
