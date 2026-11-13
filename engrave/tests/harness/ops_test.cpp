@@ -28,6 +28,8 @@
 #include "engrave/src/api/handles.h"
 #include "engrave/src/api/state.h"
 #include "engrave/tests/harness/harness.h"
+#include "engraving/automation/automationdata.h"
+#include "engraving/automation/tempovalues.h"
 #include "engraving/dom/beam.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/chordline.h"
@@ -1688,6 +1690,40 @@ TEST(JournalStaffRows, TrackInsertionRollbackRestoresAuthoredElementOrderAndTrac
         EXPECT_EQ(std::vector<EngravingItem *>(saved.segment->elist().begin(), saved.segment->elist().end()), saved.elements);
         for (const auto &[item, track] : saved.tracks) EXPECT_EQ(item->track(), track);
     }
+}
+
+TEST(JournalAutomation, SourceSetupRejectsActiveBatchAndPreservesEarlierEditsOnFailure) {
+    using namespace mu::engraving;
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    master.init_automation();
+    AutomationPoint initial;
+    initial.value.out_value = normalize_tempo(BeatsPerSecond(2.0));
+    AutomationPointEdits baseline{{0, AutomationPointEdit::SetPoint{initial}}};
+    master.apply_automation_points(tempo_key, baseline);
+    const auto resolved = engrave::resolve(master, find_id(*document, "Note"));
+    ASSERT_TRUE(resolved);
+    auto *note = to_note(resolved->object);
+    const auto color = note->color();
+    const auto curves = master.automation_data()->dump();
+    const auto revision = document->revision();
+    AutomationPoint point;
+    point.value.out_value = normalize_tempo(BeatsPerSecond(3.0));
+    AutomationPointEdits edits{{480, AutomationPointEdit::SetPoint{point}}};
+    const auto result = chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+        note->undo_change_property(Pid::COLOR, muse::draw::Color(111, 122, 133));
+        EXPECT_EQ(master.mutation_journal()->active_transaction()->legacy_entries(), 0u);
+        master.apply_automation_points(tempo_key, edits);
+        return {};
+    }});
+    ASSERT_FALSE(result);
+    EXPECT_EQ(result.error().code, ErrorCode::EDIT_REJECTED);
+    EXPECT_EQ(note->color(), color);
+    EXPECT_EQ(master.automation_data()->dump(), curves);
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
 }
 
 TEST(JournalWholeStyle, ChordSnapshotOwnsItsRenderActions) {

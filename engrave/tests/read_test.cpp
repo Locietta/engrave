@@ -3219,7 +3219,7 @@ TEST(Read, PlaybackFinalizationPublishesStableReadsAndReplay) {
     AutomationPoint point;
     point.value.out_value = normalize_tempo(BeatsPerSecond(3.0));
     AutomationPointEdits edits{{480, AutomationPointEdit::SetPoint{point}}};
-    master.edit_automation_points(tempo_key, edits, false);
+    master.apply_automation_points(tempo_key, edits);
     const auto authored = master.automation_data()->curve(tempo_key).at(480);
     master.init_automation();
     EXPECT_EQ(master.automation_data()->curve(tempo_key).at(480), authored);
