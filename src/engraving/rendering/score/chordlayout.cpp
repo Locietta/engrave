@@ -1349,8 +1349,8 @@ void ChordLayout::update_ledger_lines(Chord *item, LayoutContext &ctx) {
                 l = l & ~1;
             }
 
-            if (note->visible()) { // if one note is visible,
-                visible = true;    // all lines between it and the staff are visible
+            if (note->display_visible()) { // if one note is visible,
+                visible = true;            // all lines between it and the staff are visible
             }
             hw = std::max(hw, note->head_width());
 
@@ -2334,7 +2334,7 @@ double ChordLayout::layout_chords2(std::vector<Note *> &notes, bool up, LayoutCo
         // but no need to do anything about it if either note is invisible
         bool same_track = track_idx == prev_track_idx;
 
-        bool conflict = (std::abs(prev_line - line) < 2) && (prev_staff_idx == staff_idx) && note->visible() && prev_visible &&
+        bool conflict = (std::abs(prev_line - line) < 2) && (prev_staff_idx == staff_idx) && note->display_visible() && prev_visible &&
                         (same_track || Chord::combine_voice(chord, prev_chord));
 
         // this note is on opposite side of stem as previous note
@@ -2388,7 +2388,7 @@ double ChordLayout::layout_chords2(std::vector<Note *> &notes, bool up, LayoutCo
 
         // prepare for next iteration
         prev_chord = chord;
-        prev_visible = note->visible();
+        prev_visible = note->display_visible();
         prev_staff_idx = staff_idx;
         prev_track_idx = track_idx;
         prev_line = line;
@@ -2463,7 +2463,7 @@ void ChordLayout::place_dots(const std::vector<Chord *> &chords, const std::vect
             bool finished = false;
             for (Note *other_note : bottom_up_notes) {
                 // Make sure invisible dots have no effect on visible dots, but are still layed out sensibly
-                if (other_note->visible() != note->visible()) {
+                if (other_note->display_visible() != note->display_visible()) {
                     continue;
                 }
                 int dot_move = other_note->dot_position() == DirectionV::UP ? -1 : 1;
@@ -2486,7 +2486,7 @@ void ChordLayout::place_dots(const std::vector<Chord *> &chords, const std::vect
             if (!finished) {
                 already_added.clear();
                 for (Note *other_note : top_down_notes) {
-                    if (other_note->visible() != note->visible()) {
+                    if (other_note->display_visible() != note->display_visible()) {
                         continue;
                     }
                     int dot_move = other_note->dot_position() == DirectionV::DOWN ? 1 : -1;
@@ -2578,7 +2578,7 @@ void ChordLayout::set_dot_relative_line(Note *note, int dot_move, LayoutContext 
     for (NoteDot *dot : note->dots()) {
         AuthoredOverrideMirror mirror(*dot);
         dot->set_track(note->track());
-        dot->set_visible(note->visible());
+        dot->set_visible(note->display_visible());
         apply_authored_overrides(*dot);
         TLayout::layout_note_dot(dot, dot->mutldata());
         dot->mutldata()->set_pos_y(y);
@@ -2672,7 +2672,7 @@ void ChordLayout::layout_chords3(const std::vector<Chord *> &chords, const std::
         DirectionV dot_position = note->user_dot_position();
         const Chord *chord = note->chord();
         if (chord->dots()) {
-            if (dot_position == DirectionV::AUTO && n_notes > 1 && note->visible() && !note->dots_hidden()) {
+            if (dot_position == DirectionV::AUTO && n_notes > 1 && note->display_visible() && !note->dots_hidden()) {
                 // resolve dot conflicts
                 int line = note->line();
                 Note *above = (i < n_notes - 1) ? notes[i + 1] : nullptr;
@@ -3108,7 +3108,7 @@ void ChordLayout::layout_note2(Note *item, LayoutContext &ctx) {
     const bool tie_back_paren = is_tab_staff && !item->fixed() && item->tie_back() &&
                                 (show_tied_fret != ShowTiedFret::TIE_AND_FRET || item->is_continuation_of_bend()) &&
                                 !item->should_hide_fret();
-    bool use_parens = (tie_back_paren || item->ghost()) && !item->hide_generated_parens();
+    bool use_parens = (tie_back_paren || item->display_ghost()) && !item->hide_generated_parens();
 
     if (item->harmonic() && item->display_fret() != Note::DisplayFretOption::NATURAL_HARMONIC) {
         use_parens = false;
@@ -3116,7 +3116,7 @@ void ChordLayout::layout_note2(Note *item, LayoutContext &ctx) {
 
     if (use_parens) {
         ldata->has_generated_parens = true;
-    } else if (!item->ghost() || item->should_hide_fret() || item->hide_generated_parens()) {
+    } else if (!item->display_ghost() || item->should_hide_fret() || item->hide_generated_parens()) {
         ldata->has_generated_parens = false;
     }
 
@@ -3186,7 +3186,7 @@ void ChordLayout::layout_note2(Note *item, LayoutContext &ctx) {
             // don't set mag; fingerings should not scale with note
             Fingering *f = to_fingering(e);
             if (f->property_flags(Pid::PLACEMENT) == PropertyFlags::STYLED) {
-                f->set_placement(f->calculate_placement());
+                f->mutldata()->placed = f->calculate_placement();
             }
             // layout fingerings that are placed relative to notehead
             // fingerings placed relative to chord will be laid out later
@@ -3230,7 +3230,7 @@ void ChordLayout::create_paren_groups(Chord *chord) {
             paren->set_direction(left ? DirectionH::LEFT : DirectionH::RIGHT);
             paren->set_generated(group.info.generated());
             if (group.info.generated()) paren->assign_new_eid();
-            paren->set_visible(std::ranges::any_of(group.info.notes(), [](const Note *note) { return note->visible(); }));
+            paren->set_visible(std::ranges::any_of(group.info.notes(), [](const Note *note) { return note->display_visible(); }));
             paren->set_color(chord->color());
             paren->set_selected(chord->selected());
             bind_authored_child(*paren,

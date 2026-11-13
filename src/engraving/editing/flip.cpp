@@ -52,7 +52,12 @@ using namespace mu::engraving;
 //---------------------------------------------------------
 
 void Flip::flip(Transaction &, Score *score) {
-    score->ensure_layout();
+    const bool use_layout = !score->layout_state.dirty;
+    // With no valid layout, AUTO flips from the default UP direction.
+    const auto direction = [use_layout](DirectionV authored, bool up, bool valid) {
+        const bool effective_up = authored == DirectionV::AUTO ? (!use_layout || !valid || up) : authored == DirectionV::UP;
+        return effective_up ? DirectionV::DOWN : DirectionV::UP;
+    };
     const std::vector<EngravingItem *> &el = score->selection().elements();
     if (el.empty()) {
         MScore::set_error(MsError::NO_FLIPPABLE_SELECTED);
@@ -68,8 +73,8 @@ void Flip::flip(Transaction &, Score *score) {
 
     for (EngravingItem *e : el) {
         if (e->has_voice_assignment_properties()) {
-            flip_once(e, [e]() {
-                PlacementV cur_placement = e->get_property(Pid::PLACEMENT).value<PlacementV>();
+            flip_once(e, [e, use_layout]() {
+                PlacementV cur_placement = use_layout ? e->placement() : e->get_property(Pid::PLACEMENT).value<PlacementV>();
                 e->undo_change_property(Pid::DIRECTION, cur_placement == PlacementV::ABOVE ? DirectionV::DOWN : DirectionV::UP);
             });
         } else if (e->is_note() || e->is_stem() || e->is_hook()) {
@@ -97,8 +102,9 @@ void Flip::flip(Transaction &, Score *score) {
                     continue;
                 }
             } else {
-                flip_once(chord, [chord]() {
-                    DirectionV dir = chord->up() ? DirectionV::DOWN : DirectionV::UP;
+                flip_once(chord, [chord, direction]() {
+                    DirectionV dir =
+                        direction(chord->stem_direction(), chord->up(), chord->has_layout_data() && chord->ldata()->is_valid());
                     chord->undo_change_property(Pid::STEM_DIRECTION, dir);
                 });
             }
@@ -106,29 +112,34 @@ void Flip::flip(Transaction &, Score *score) {
 
         if (e->is_beam()) {
             Beam *beam = to_beam(e);
-            flip_once(beam, [beam]() {
+            flip_once(beam, [beam, direction, use_layout]() {
                 if (beam->cross()) {
-                    int new_cross_staff_move = beam->cross_staff_move() + 1;
+                    int new_cross_staff_move = (use_layout ? beam->ldata()->effective_cross_staff_move.value_or(beam->cross_staff_move()) :
+                                                             beam->cross_staff_move()) +
+                                               1;
                     if (beam->accept_cross_staff_move(new_cross_staff_move)) {
                         beam->undo_change_property(Pid::BEAM_CROSS_STAFF_MOVE, new_cross_staff_move);
                     } else {
                         beam->undo_change_property(Pid::BEAM_CROSS_STAFF_MOVE, beam->min_cr_move() - beam->default_cross_staff_idx());
                     }
                 } else {
-                    DirectionV dir = beam->up() ? DirectionV::DOWN : DirectionV::UP;
+                    DirectionV dir =
+                        direction(beam->direction(), beam->up(), beam->has_layout_data() && beam->ldata()->computed_up.has_value());
                     beam->undo_change_property(Pid::STEM_DIRECTION, dir);
                 }
             });
         } else if (e->is_type(ElementType::TREMOLO_TWOCHORD)) {
             TremoloTwoChord *tremolo = item_cast<TremoloTwoChord *>(e);
-            flip_once(tremolo, [tremolo]() {
-                DirectionV dir = tremolo->up() ? DirectionV::DOWN : DirectionV::UP;
+            flip_once(tremolo, [tremolo, direction]() {
+                DirectionV dir =
+                    direction(tremolo->direction(), tremolo->up(), tremolo->has_layout_data() && tremolo->ldata()->computed_up.has_value());
                 tremolo->undo_change_property(Pid::STEM_DIRECTION, dir);
             });
         } else if (e->is_slur_tie_segment()) {
             auto slur_tie_segment = to_slur_tie_segment(e)->slur_tie();
-            flip_once(slur_tie_segment, [slur_tie_segment]() {
-                DirectionV dir = slur_tie_segment->up() ? DirectionV::DOWN : DirectionV::UP;
+            flip_once(slur_tie_segment, [slur_tie_segment, direction]() {
+                DirectionV dir = direction(slur_tie_segment->slur_direction(), slur_tie_segment->up(),
+                                           slur_tie_segment->has_layout_data() && slur_tie_segment->ldata()->up.has_value());
                 slur_tie_segment->undo_change_property(Pid::SLUR_DIRECTION, dir);
             });
         } else if (e->is_articulation_family()) {
@@ -148,8 +159,9 @@ void Flip::flip(Transaction &, Score *score) {
             });
         } else if (e->is_tuplet()) {
             auto tuplet = to_tuplet(e);
-            flip_once(tuplet, [tuplet]() {
-                DirectionV dir = tuplet->is_up() ? DirectionV::DOWN : DirectionV::UP;
+            flip_once(tuplet, [tuplet, direction]() {
+                DirectionV dir =
+                    direction(tuplet->direction(), tuplet->is_up(), tuplet->has_layout_data() && tuplet->ldata()->up.has_value());
                 tuplet->undo_change_property(Pid::DIRECTION, PropertyValue::from_value<DirectionV>(dir), PropertyFlags::UNSTYLED);
             });
         } else if (e->is_note_dot() && e->ownership_parent()->is_note()) {
@@ -206,9 +218,11 @@ void Flip::flip(Transaction &, Score *score) {
                 ee = e;
             }
 
-            flip_once(ee, [ee]() {
+            flip_once(ee, [ee, use_layout]() {
                 // getProperty() delegates call from spannerSegment to Spanner
-                PlacementV p = ee->get_property(Pid::PLACEMENT).value<PlacementV>();
+                PlacementV p = ee->is_fingering() && ee->is_styled(Pid::PLACEMENT) && !use_layout ?
+                                   PlacementV::ABOVE :
+                                   ee->get_property(Pid::PLACEMENT).value<PlacementV>();
                 p = (p == PlacementV::ABOVE) ? PlacementV::BELOW : PlacementV::ABOVE;
                 PropertyFlags pf = ee->property_flags(Pid::PLACEMENT);
                 if (pf == PropertyFlags::STYLED) {

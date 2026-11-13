@@ -214,7 +214,7 @@ void BoxLayout::layout_f_box(const FBox *item, FBox::LayoutData *ldata, const La
 
     for (size_t i = 0; i < total_diagrams; ++i) {
         FretDiagram *fret_diagram = fret_diagrams[i];
-        fret_diagram->set_user_mag(item->diagram_scale());
+        fret_diagram->mutldata()->diagram_scale = item->diagram_scale();
 
         Harmony *harmony = fret_diagram->harmony();
         harmony->mutldata()->set_mag(item->text_scale());

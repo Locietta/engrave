@@ -505,20 +505,20 @@ void GuitarBendLayout::layout_bend_tab_staff(GuitarBendSegment *item, LayoutCont
 
     if (start_on_end_note(bend)) {
         if (!start_note->override_bend_visibility_rules()) {
-            start_note->set_visible(false);
+            start_note->mutldata()->visible = false;
         }
         if (!end_note->override_bend_visibility_rules()) {
-            end_note->set_visible(true);
+            end_note->mutldata()->visible = true;
         }
     } else if (bend->bend_type() != GuitarBendType::SLIGHT_BEND &&
                (!style.style_b(Sid::SHOW_FRET_ON_FULL_BEND_RELEASE) || !bend->is_full_release())) {
         if (bend->bend_type() == GuitarBendType::GRACE_NOTE_BEND || bend->bend_type() == GuitarBendType::PRE_BEND) {
             if (!start_note->override_bend_visibility_rules()) {
-                start_note->set_visible(true);
+                start_note->mutldata()->visible = true;
             }
         }
         if (!end_note->override_bend_visibility_rules()) {
-            end_note->set_visible(false);
+            end_note->mutldata()->visible = false;
         }
     }
 

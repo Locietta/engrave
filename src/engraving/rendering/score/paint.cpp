@@ -23,6 +23,7 @@
 
 #include "debugpaint.h"
 #include "dom/engravingitem.h"
+#include "dom/note.h"
 #include "dom/page.h"
 #include "dom/score.h"
 #include "draw/painter.h"
@@ -223,7 +224,8 @@ void Paint::paint_items(Painter &painter, const std::vector<EngravingItem *> &it
     std::sort(sorted_items.begin(), sorted_items.end(), mu::engraving::element_less_than);
 
     for (const EngravingItem *item : sorted_items) {
-        if (!item->is_interaction_available() || (opt.is_printing && !item->get_property(Pid::VISIBLE).to_bool())) {
+        const bool visible = item->is_note() ? to_note(item)->display_visible() : item->get_property(Pid::VISIBLE).to_bool();
+        if (!visible && (opt.is_printing || !item->score()->is_show_invisible())) {
             continue;
         }
 

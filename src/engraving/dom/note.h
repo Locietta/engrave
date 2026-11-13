@@ -286,6 +286,19 @@ public:
 
     bool ghost() const { return ghost_; }
 
+    bool display_ghost() const {
+        const auto *ld = ldata();
+        return ld ? ld->ghost.value_or(ghost_) : ghost_;
+    }
+
+    bool display_visible() const {
+        const auto *ld = ldata();
+        return ld ? ld->visible.value_or(visible()) : visible();
+    }
+
+    bool collect_for_drawing() const override;
+    Color cur_color(const rendering::PaintOptions &opt) const override;
+
     void set_ghost(bool val) { ghost_ = val; }
 
     bool dead_note() const { return dead_note_; }
@@ -513,6 +526,8 @@ public:
     struct LayoutData : public EngravingItem::LayoutData {
         ~LayoutData() override;
         std::vector<NoteDot *> dots;
+        std::optional<bool> visible;
+        std::optional<bool> ghost;
         ld_field<bool> use_tablature = {"[Note] useTablature", false};
         ld_field<SymId> cached_notehead_sym = {"[Note] cachedNoteheadSym",
                                                SymId::NO_SYM};                      // use in draw to avoid recomputing at every update

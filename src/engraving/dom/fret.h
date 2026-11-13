@@ -186,6 +186,11 @@ public:
 
     void set_user_mag(double m) { user_mag_ = m; }
 
+    double display_mag() const {
+        const auto *ld = ldata();
+        return ld ? ld->diagram_scale.value_or(user_mag_) : user_mag_;
+    }
+
     int num_pos() const;
 
     Orientation orientation() const { return orientation_; }
@@ -247,6 +252,7 @@ public:
     };
 
     struct LayoutData : public EngravingItem::LayoutData {
+        std::optional<double> diagram_scale;
         double string_line_width = 0.0;
         double nut_line_width = 0.0;
         double nut_y = 0.0;

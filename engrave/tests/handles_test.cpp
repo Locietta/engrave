@@ -367,8 +367,6 @@ TEST(NativeSave, ColdEqualsWarm) {
     }
     inputs.push_back(g_source_root / "tests/data/inputs/evening.musicxml");
     std::ranges::sort(inputs);
-    const std::map<std::string, std::string> expected_differences{
-        {"tab_grace_prebend.mscx", "S5b: bend layout overwrites destination note visibility"}};
     for (const auto &path : inputs) {
         SCOPED_TRACE(path.filename().string());
         auto opened = path.extension() == ".json" ? g_engine->open(as_bytes(composition_input())) : g_engine->open(path);
@@ -402,23 +400,41 @@ TEST(NativeSave, ColdEqualsWarm) {
             EXPECT_GT(score->layout_state.whole_count, 0u);
             EXPECT_FALSE(score->pages().empty());
         }
-        const auto warm = write();
-        if (const auto expected = expected_differences.find(path.filename().string()); expected != expected_differences.end()) {
-            std::string expected_warm = cold;
-            for (const char *id :
-                 {"J3bObXdmJuD_gotChORMeSP", "vVu2uite2uB_ZUVUtybNh4C", "bp22nIu0vBH_YEsCip0M1LE", "czBTNr7GJ1_p+Yrdsz+uZ"}) {
-                const auto note = expected_warm.find(std::string("<eid>") + id + "</eid>");
-                ASSERT_NE(note, std::string::npos);
-                const auto visible = expected_warm.find("<visible>1</visible>", note);
-                ASSERT_LT(visible, expected_warm.find("</Note>", note));
-                const auto begin = expected_warm.rfind('\n', visible) + 1;
-                expected_warm.erase(begin, expected_warm.find('\n', visible) + 1 - begin);
-            }
-            EXPECT_EQ(expected_warm, warm) << expected->second;
-        } else {
-            EXPECT_EQ(cold, warm);
+        size_t generated = 0;
+        for (auto *object : engrave::document_objects(master)) {
+            if (!object->is_note()) continue;
+            const auto *note = to_note(object);
+            const auto *group = note->chord()->layout_parenthesis_group(note);
+            if (group && group->info.generated()) ++generated;
         }
+        if (generated) std::printf("S5b generated-parenthesis fixture: %s (%zu notes)\n", path.filename().string().c_str(), generated);
+        const auto warm = write();
+        EXPECT_EQ(cold, warm);
     }
+}
+
+TEST(NativeSave, GeneratedGhostParenthesesStayInDisplayOutput) {
+    using namespace mu::engraving;
+    const std::string source = R"(<museScore version="4.70"><Score><Division>480</Division>
+<Part><Staff id="1"/><Instrument><trackName>Piano</trackName></Instrument></Part>
+<Staff id="1"><Measure><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
+<Chord><durationType>whole</durationType><Note><pitch>60</pitch><tpc>14</tpc><ghost>1</ghost></Note></Chord>
+</voice></Measure></Staff></Score></museScore>)";
+    auto opened = g_engine->open(as_bytes(source), {.format = engrave::Format::MSCX});
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    master.ensure_layout();
+    auto *note = first_note(master);
+    ASSERT_NE(note, nullptr);
+    ASSERT_NE(note->chord()->layout_parenthesis_group(note), nullptr);
+    muse::io::Buffer buffer;
+    buffer.open(muse::io::IODevice::WRITE_ONLY);
+    rw::WriteInOutData inout(&master);
+    ASSERT_TRUE(rw::RWRegister::writer()->write_score(&master, &buffer, &inout));
+    const std::string xml(reinterpret_cast<const char *>(buffer.data().const_data()), buffer.data().size());
+    EXPECT_NE(xml.find("<ghost>1</ghost>"), std::string::npos);
+    EXPECT_EQ(xml.find("<NoteParenGroup>"), std::string::npos);
+    EXPECT_EQ(xml.find("<parentheses>"), std::string::npos);
 }
 
 TEST(Handles, PageQueriesFollowRangeLayoutAndOutputDiscard) {

@@ -79,9 +79,12 @@ public:
     int default_cross_staff_idx() const;
     bool accept_cross_staff_move(int move) const;
 
-    bool up() const { return up_; }
+    bool up() const {
+        const auto *ld = ldata();
+        return ld ? ld->computed_up.value_or(direction() != DirectionV::DOWN) : direction() != DirectionV::DOWN;
+    }
 
-    void set_up(bool v) { up_ = v; }
+    void set_up(bool v) { mutldata()->computed_up = v; }
 
     bool user_modified() const;
     void set_user_modified(bool val);
@@ -144,6 +147,8 @@ public:
         const Beam *beam = nullptr;
         const TremoloTwoChord *trem = nullptr;
         bool up = false;
+        std::optional<bool> computed_up;
+        std::optional<int> effective_cross_staff_move;
         Fraction tick = Fraction(0, 1);
         double spatium = 0.;
         PointF start_anchor;
@@ -178,7 +183,6 @@ protected:
     PointF end_anchor_;
 
 private:
-    bool up_ = true;
     bool user_modified_[2]{false}; // 0: auto/down  1: up
     DirectionV direction_ = DirectionV::AUTO;
 };

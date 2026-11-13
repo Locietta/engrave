@@ -299,10 +299,6 @@ void Beam::set_direction(DirectionV d) {
 
     do_set_direction(d);
 
-    if (d != DirectionV::AUTO) {
-        set_up(d == DirectionV::UP);
-    }
-
     for (ChordRest *e : elements()) {
         if (e->is_chord()) {
             to_chord(e)->undo_change_property(Pid::STEM_DIRECTION, d);

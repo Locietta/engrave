@@ -114,8 +114,10 @@ bool NoteInput::resolve_note_input_params(const Score *score, int note, bool add
                         Clef *clef = to_clef(p);
                         // check if it's an actual change or just a courtesy
                         ClefType ctb = staff->clef(clef->tick() - Fraction::eps());
-                        if (ctb != clef->clef_type() || clef->tick().is_zero()) {
-                            cur_pitch = line2pitch(4, clef->clef_type(), Key::C); // C 72 for treble clef
+                        ClefType type = clef->clef_type();
+                        if (type == ClefType::INVALID) type = staff->clef(Fraction(0, 1));
+                        if (ctb != type || clef->tick().is_zero()) {
+                            cur_pitch = line2pitch(4, type, Key::C); // C 72 for treble clef
                             break;
                         }
                     }

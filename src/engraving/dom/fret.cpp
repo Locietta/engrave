@@ -853,7 +853,7 @@ FretItem::Barre FretDiagram::barre(int f) const {
 Font FretDiagram::fret_num_font() const {
     const MStyle &st = style();
     Font f(st.style_st(Sid::FRET_DIAGRAM_FRET_NUMBER_FONT_FACE), Font::Type::TEXT);
-    f.set_point_size_f(st.style_d(Sid::FRET_DIAGRAM_FRET_NUMBER_FONT_SIZE) * user_mag());
+    f.set_point_size_f(st.style_d(Sid::FRET_DIAGRAM_FRET_NUMBER_FONT_SIZE) * display_mag());
     FontStyle f_style = st.style_v(Sid::FRET_DIAGRAM_FRET_NUMBER_FONT_STYLE).value<FontStyle>();
     f.set_bold(f_style & FontStyle::BOLD);
     f.set_italic(f_style & FontStyle::ITALIC);
@@ -865,7 +865,7 @@ Font FretDiagram::fret_num_font() const {
 Font FretDiagram::fingering_font() const {
     const MStyle &st = style();
     Font f(st.style_st(Sid::FRET_DIAGRAM_FINGERING_FONT_FACE), Font::Type::TEXT);
-    f.set_point_size_f(st.style_d(Sid::FRET_DIAGRAM_FINGERING_FONT_SIZE) * user_mag());
+    f.set_point_size_f(st.style_d(Sid::FRET_DIAGRAM_FINGERING_FONT_SIZE) * display_mag());
     FontStyle f_style = st.style_v(Sid::FRET_DIAGRAM_FINGERING_FONT_STYLE).value<FontStyle>();
     f.set_bold(f_style & FontStyle::BOLD);
     f.set_italic(f_style & FontStyle::ITALIC);

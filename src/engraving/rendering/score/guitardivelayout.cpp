@@ -129,27 +129,29 @@ void GuitarDiveLayout::layout_dive_tab_staff(GuitarBendSegment *item, LayoutCont
         bool align_to_grace = ctx.conf().style_b(Sid::ALIGN_PRE_BEND_AND_PRE_DIVE_TO_GRACE_NOTE);
         for (Note *note : start_chord->notes()) {
             if (!note->override_bend_visibility_rules()) {
-                note->set_visible(align_to_grace);
+                note->mutldata()->visible = align_to_grace;
             }
         }
         for (Note *note : end_chord->notes()) {
             if (!note->override_bend_visibility_rules()) {
-                note->set_visible(!align_to_grace);
+                note->mutldata()->visible = !align_to_grace;
             }
         }
     } else if (bend->is_full_release_dive() || item->is_end_type()) {
         for (Note *note : end_chord->notes()) {
             if (!note->override_bend_visibility_rules()) {
-                note->set_visible(true);
+                note->mutldata()->visible = true;
             }
-            note->set_ghost(true);
+            const auto visible = note->mutldata()->visible;
             note->mutldata()->reset();
+            note->mutldata()->visible = visible;
+            note->mutldata()->ghost = true;
         }
         TLayout::layout_chord(end_note->chord(), ctx);
     } else if (!bend->is_full_release_dive() || !ctx.conf().style_b(Sid::SHOW_FRET_ON_FULL_BEND_RELEASE)) {
         for (Note *note : end_chord->notes()) {
             if (!note->override_bend_visibility_rules()) {
-                note->set_visible(false);
+                note->mutldata()->visible = false;
             }
         }
     }

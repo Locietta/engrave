@@ -147,9 +147,6 @@ void TremoloTwoChord::set_direction(DirectionV d) {
 
     do_set_direction(d);
 
-    if (d != DirectionV::AUTO) {
-        set_up(d == DirectionV::UP);
-    }
     if (chord1_) {
         chord1_->set_stem_direction(d);
     }
