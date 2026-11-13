@@ -33,6 +33,7 @@
 #include "dom/measure.h"
 #include "dom/mscore.h"
 #include "dom/staff.h"
+#include "dom/textbase.h"
 
 using namespace mu::engraving;
 
@@ -166,6 +167,7 @@ TouchedSlot EIDRegister::id_state(uint32_t index) const {
     }
     if (object.is_engraving_item()) {
         const auto &item = *to_engraving_item(&object);
+        state.published = !item.generated() && (!item.is_text() || !to_text_base(&item)->empty());
         if (static_cast<long long>(item.track()) >= 0) {
             state.placement.tick = item.tick().ticks();
             state.placement.track = static_cast<int>(item.track());
@@ -176,7 +178,7 @@ TouchedSlot EIDRegister::id_state(uint32_t index) const {
         const auto &item = *to_engraving_item(&object);
         const auto *measure = to_measure(item.ownership_parent());
         const auto staff = item.staff_idx();
-        state.published = (measure->visible(staff) && item.score()->staff(staff)->show()) || measure->is_cutaway_clef(staff);
+        state.published &= (measure->visible(staff) && item.score()->staff(staff)->show()) || measure->is_cutaway_clef(staff);
     }
     return state;
 }
