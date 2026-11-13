@@ -6440,12 +6440,8 @@ void expect_discard_rebuild_parity(engrave::Document &document, mu::engraving::S
         EXPECT_TRUE(score.layout_state.dirty);
         EXPECT_EQ(score.layout_state.start, Fraction(0, 1));
         EXPECT_EQ(score.layout_state.end, Fraction(-1, 1));
-        for (auto *system : score.systems()) {
-            for (auto *staff : system->staves()) {
-                EXPECT_TRUE(staff->skyline().north().elements().empty());
-                EXPECT_TRUE(staff->skyline().south().elements().empty());
-            }
-        }
+        EXPECT_TRUE(score.pages().empty());
+        EXPECT_TRUE(score.systems().empty());
         const auto check_segments = [&](auto &&self, const EngravingObject &owner) -> void {
             if (owner.is_segment()) {
                 const auto *segment = to_segment(&owner);

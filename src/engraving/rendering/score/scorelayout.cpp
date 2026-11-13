@@ -61,10 +61,7 @@ void ScoreLayout::layout_range(Score *score, const Fraction &st, const Fraction 
     // Check empty score
     if (!score->last()) {
         LOGD() << "empty score";
-        muse::delete_all(score->systems());
-        score->systems().clear();
-        muse::delete_all(score->pages());
-        score->pages().clear();
+        ctx.mut_layout_data().discard_score_output();
         PageLayout::get_next_page(ctx);
         for (Page *page : score->pages()) page->rebuild_bsp_tree();
         return;

@@ -101,6 +101,7 @@ struct ScoreRenderer {
 
     // Import/standalone scratch is transferred to Document's runtime owner.
     LayoutDataStore &layout_data_store(Score &score);
+    LayoutDataStore &create_layout_data_store(Score &score);
     std::unique_ptr<LayoutDataStore> take_layout_data_store(Score &score);
     void release_layout_data_store(Score &score);
     // Test-only observation of item-level rendering entry points.

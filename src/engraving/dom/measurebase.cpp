@@ -49,9 +49,7 @@ void MeasureBase::set_ownership_parent(Score *score) { EngravingItem::set_owners
 void MeasureBase::set_ownership_parent(Box *box) { EngravingItem::set_ownership_parent(box); }
 
 EngravingItem *MeasureBase::layout_parent() const {
-    if (system_) {
-        return system_;
-    }
+    if (auto *placed = system()) return placed;
     // e.g. a horizontal frame nested inside a vertical frame is placed within its parent frame
     return EngravingItem::layout_parent();
 }
@@ -101,7 +99,10 @@ void MeasureBase::set_score(Score *score) {
 //   MeasureBase
 //---------------------------------------------------------
 
-MeasureBase::~MeasureBase() { muse::delete_all(el_); }
+MeasureBase::~MeasureBase() {
+    if (auto *placed = system()) placed->remove_measure(this);
+    muse::delete_all(el_);
+}
 
 System *MeasureBase::prev_non_v_box_system() const {
     const System *curr_system = system();

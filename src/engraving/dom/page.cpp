@@ -28,6 +28,7 @@
 #include "rootitem.h"
 #include "score.h"
 #include "system.h"
+#include "text.h"
 
 using namespace mu::engraving;
 
@@ -45,6 +46,8 @@ EngravingItem *Page::layout_parent() const {
 }
 
 Page::~Page() {
+    muse::delete_all(header_texts_);
+    muse::delete_all(footer_texts_);
     for (System *s : systems_) {
         if (s->page() == this) {
             s->set_page(nullptr);
@@ -124,7 +127,7 @@ void Page::scan_elements(std::function<void(EngravingItem *)> func) {
 void Page::invalidate_bsp_tree() {
     bsp_tree_valid_ = false;
     bsp_tree.clear();
-    score()->invalidate_layout(Fraction(0, 1), Fraction(-1, 1));
+    if (Score::is_alive(score())) score()->invalidate_layout(Fraction(0, 1), Fraction(-1, 1));
 }
 
 void Page::rebuild_bsp_tree() {

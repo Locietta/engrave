@@ -76,6 +76,7 @@
 #include "partialtie.h"
 #include "pitchspelling.h"
 #include "rehearsalmark.h"
+#include "rendering/score/layoutdatastore.h"
 #include "repeatlist.h"
 #include "rest.h"
 #include "scoreorder.h"
@@ -155,6 +156,27 @@ Score::Score(const EngravingServices &services) : EngravingObject(ElementType::S
     dummy_ = new DummyParent(this);
 
     update_padding_tables();
+    renderer()->create_layout_data_store(*this);
+}
+
+const std::vector<Page *> &Score::pages() const {
+    static const std::vector<Page *> empty;
+    return layout_data_store_ ? layout_data_store_->score_output().pages : empty;
+}
+
+std::vector<Page *> &Score::pages() {
+    assert(layout_data_store_);
+    return layout_data_store_->score_output().pages;
+}
+
+const std::vector<System *> &Score::systems() const {
+    static const std::vector<System *> empty;
+    return layout_data_store_ ? layout_data_store_->score_output().systems : empty;
+}
+
+std::vector<System *> &Score::systems() {
+    assert(layout_data_store_);
+    return layout_data_store_->score_output().systems;
 }
 
 Score::Score(MasterScore *parent, bool force_part_style /* = true */) : Score{parent->services()} {
@@ -218,9 +240,7 @@ Score::~Score() {
 
     Score::valid_scores.erase(this);
 
-    // deselectAll();
-    muse::delete_all(systems_); // systems are layout-only objects so we delete
-    // them prior to measures.
+    if (layout_data_store_) renderer()->release_layout_data_store(*this);
     for (MeasureBase *m = measures_.first(); m;) {
         MeasureBase *nm = m->next();
         if (m->is_measure() && to_measure(m)->mm_rest()) {
@@ -244,9 +264,6 @@ Score::~Score() {
     muse::delete_all(staves_);
     staves_.clear();
 
-    muse::delete_all(pages_);
-    pages_.clear();
-
     for (auto &bracket_list : brackets_) {
         muse::delete_all(bracket_list);
     }
@@ -257,7 +274,6 @@ Score::~Score() {
     system_dividers_.clear();
     delete dummy_;
     dummy_ = nullptr;
-    if (layout_data_store_) renderer()->release_layout_data_store(*this);
     // Detached score children are deleted later by the base destructor. Their
     // normal hooks can no longer reach this registry after the master is cleared.
     if (master_score_ && Score::is_alive(master_score_)) {
@@ -660,7 +676,7 @@ void Score::set_is_open(bool open) { is_open_ = open; }
 
 Page *Score::search_page(const PointF &p) const {
 
-    for (Page *page : pages_) {
+    for (Page *page : pages()) {
         RectF r = page->ldata()->bbox().translated(page->pos());
         if (r.contains(p)) {
             return page;
@@ -1205,7 +1221,7 @@ void Score::remove_element(EngravingItem *element) {
                 system->set_page(nullptr);
             }
 
-            muse::remove(systems_, system);
+            muse::remove(systems(), system);
             system->delete_later();
 
             if (page && page->systems().empty()) {
@@ -2101,7 +2117,7 @@ void Score::assign_id_if_need(Part &part) const {
 }
 
 void Score::update_staves_number_for_systems() {
-    for (System *system : systems_) {
+    for (System *system : systems()) {
         if (!system->first_measure()) {
             continue;
         }
@@ -2367,8 +2383,7 @@ void Score::sort_system_objects(std::vector<staff_idx_t> &dst) {
 void Score::sort_staves(std::vector<staff_idx_t> &dst) {
     touch_source_subtree(*this);
     sort_system_objects(dst);
-    muse::delete_all(systems());
-    systems().clear(); //??
+    layout_data_store_->clear();
     parts_.clear();
     Part *cur_part = nullptr;
     std::vector<Staff *> dl;

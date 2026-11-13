@@ -8,6 +8,7 @@
 #include <ankerl/unordered_dense.h>
 
 #include "dom/masterscore.h"
+#include "dom/measurebase.h"
 #include "dom/page.h"
 #include "dom/score.h"
 #include "dom/segment.h"
@@ -57,6 +58,10 @@ EngravingItem::LayoutData *LayoutDataStore::adopt(EngravingItem &item, std::uniq
 void LayoutDataStore::erase(EngravingItem &item) {
     const auto it = records_->items.find(&item);
     if (it == records_->items.end()) return;
+    if (item.is_measure_base()) {
+        auto &measure = *to_measure_base(&item);
+        if (auto *system = measure.system()) system->remove_measure(&measure);
+    }
     // Extract before running destructors: Chord payloads still own generated
     // ledger shells, whose destruction recursively retires other records (L3).
     auto data = std::move(it->second.data);
@@ -71,6 +76,7 @@ void LayoutDataStore::for_each_output(const std::function<void(EngravingItem &, 
 }
 
 void LayoutDataStore::detach_score() {
+    discard_score_output();
     while (!records_->items.empty()) erase(*records_->items.begin()->second.item);
     if (score_ && score_->layout_data_store() == this) score_->bind_layout_data_store(nullptr);
     score_ = nullptr;
@@ -80,6 +86,13 @@ void LayoutDataStore::clear() {
     if (score_) {
         if (score_->master_score()->cmd_state().locked()) throw std::logic_error("cannot discard output during layout");
         score_->invalidate_layout(Fraction(0, 1), Fraction(-1, 1));
+    }
+    discard_score_output();
+    while (!records_->items.empty()) erase(*records_->items.begin()->second.item);
+}
+
+void LayoutDataStore::discard_score_output() {
+    if (score_) {
         // These legacy L5 caches can retain pointers to output-owned ledger and
         // Harmony parenthesis shells. Retire their views before deleting shells.
         for (auto *page : score_->pages()) page->invalidate_bsp_tree();
@@ -100,7 +113,11 @@ void LayoutDataStore::clear() {
             if (record.second.item->is_segment()) to_segment(record.second.item)->clear_shapes();
         }
     }
-    while (!records_->items.empty()) erase(*records_->items.begin()->second.item);
+    // Systems unlink their borrowers while pages and source owners are alive.
+    muse::delete_all(output_.systems);
+    output_.systems.clear();
+    muse::delete_all(output_.pages);
+    output_.pages.clear();
 }
 
 struct ScoreRenderer::ScratchLayouts {
@@ -113,6 +130,10 @@ ScoreRenderer::~ScoreRenderer() = default;
 LayoutDataStore &ScoreRenderer::layout_data_store(Score &score) {
     if (auto *master = score.master_score(); master && master->layout_store_boundary) return master->layout_store_boundary(score);
     if (auto *store = score.layout_data_store()) return *store;
+    return create_layout_data_store(score);
+}
+
+LayoutDataStore &ScoreRenderer::create_layout_data_store(Score &score) {
     if (!scratch_layouts_) scratch_layouts_ = std::make_unique<ScratchLayouts>();
     auto store = std::make_unique<LayoutDataStore>(score);
     auto *result = store.get();

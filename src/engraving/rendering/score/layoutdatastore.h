@@ -4,20 +4,31 @@
 #include <cstddef>
 #include <functional>
 #include <memory>
+#include <vector>
 
 #include "dom/engravingitem.h"
 
 namespace mu::engraving::rendering::score {
-// Owns stable heap payloads during the typed-accessor migration. Item addresses
-// are lifetime-qualified by explicit erase before destruction/address reuse.
-// Generated shells retain their current identity until L3/L4.
+// Item addresses are lifetime-qualified by explicit erase before destruction/address reuse.
 struct LayoutDataStore {
     explicit LayoutDataStore(Score &score);
     ~LayoutDataStore();
     LayoutDataStore(const LayoutDataStore &) = delete;
     LayoutDataStore &operator=(const LayoutDataStore &) = delete;
 
+    struct ScoreOutput {
+        // LayoutState temporarily borrows a raw tail during range reuse.
+        std::vector<Page *> pages;
+        std::vector<System *> systems;
+    };
+
     Score *score() const { return score_; }
+
+    const ScoreOutput &score_output() const { return output_; }
+
+    ScoreOutput &score_output() { return output_; }
+
+    void discard_score_output();
 
     size_t size() const;
     const EngravingItem::LayoutData *find(const EngravingItem &item) const;
@@ -35,5 +46,6 @@ private:
     struct Records;
     std::unique_ptr<Records> records_;
     Score *score_;
+    ScoreOutput output_;
 };
 } // namespace mu::engraving::rendering::score

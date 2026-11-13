@@ -28,6 +28,7 @@
 #include "dom/score.h"
 #include "dom/system.h"
 #include "headerfooterlayout.h"
+#include "layoutdatastore.h"
 #include "log.h"
 #include "measurelayout.h"
 #include "pagelayout.h"
@@ -147,17 +148,7 @@ void ScorePageViewLayout::prepare_score(Score *score, const LayoutContext &ctx) 
             // and ~System unlinks itself from its page
         }
 
-        for (MeasureBase *mb = score->first(); mb; mb = mb->next()) {
-            mb->set_system(nullptr);
-            if (mb->is_measure() && to_measure(mb)->mm_rest()) {
-                to_measure(mb)->mm_rest()->set_system(nullptr);
-            }
-        }
-        muse::delete_all(score->systems());
-        score->systems().clear();
-
-        muse::delete_all(score->pages());
-        score->pages().clear();
+        score->layout_data_store()->discard_score_output();
     }
 }
 

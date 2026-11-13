@@ -499,7 +499,9 @@ TEST(Handles, PageQueriesFollowRangeLayoutAndOutputDiscard) {
     EXPECT_TRUE(std::ranges::contains(master.pages().front()->items(area), note));
     master.layout_data_store()->clear();
     const auto layouts = master.layout_state.whole_count + master.layout_state.range_count;
-    EXPECT_TRUE(master.pages().front()->items(area).empty());
+    EXPECT_TRUE(master.pages().empty());
+    EXPECT_TRUE(master.systems().empty());
+    EXPECT_EQ(master.first_measure()->system(), nullptr);
     EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, layouts);
     master.ensure_layout();
     EXPECT_TRUE(std::ranges::contains(master.pages().front()->items(area), note));
