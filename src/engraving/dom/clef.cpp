@@ -32,7 +32,9 @@
 #include "../types/typesconv.h"
 #include "ambitus.h"
 #include "factory.h"
+#include "instrument.h"
 #include "measure.h"
+#include "part.h"
 #include "score.h"
 #include "segment.h"
 #include "staff.h"
@@ -159,6 +161,32 @@ ClefType Clef::clef_type() const {
     } else {
         return clef_types_.transposing_clef;
     }
+}
+
+ClefType Clef::display_clef_type(bool *compatible) const {
+    if (compatible) *compatible = true;
+    ClefType type = clef_type();
+    const Segment *seg = ownership_parent() && ownership_parent()->is_segment() ? segment() : nullptr;
+    const Staff *stave = staff();
+    if (!seg || !stave) return type;
+    const bool end_of_measure = seg->rtick() == seg->measure()->ticks();
+    const Fraction time = end_of_measure && !is_trailer() ? tick() : seg->measure()->tick();
+    const StaffType *staff_type = stave->staff_type(time);
+    StaffGroup group = staff_type->group();
+    if (group != StaffGroup::TAB) {
+        group = origin_part()->instrument(tick())->use_drumset() ? StaffGroup::PERCUSSION : StaffGroup::STANDARD;
+    }
+    if (ClefInfo::staff_group(type) != group) {
+        const bool hide = staff_type->is_tab_staff() ? style().style_b(Sid::HIDE_TAB_CLEF_AFTER_FIRST) : !style().style_b(Sid::GEN_CLEF);
+        if (time > Fraction(0, 1) && (!generated() || hide)) {
+            if (compatible) *compatible = false;
+        } else {
+            // The initial staff clef is assumed to be compatible with its staff group.
+            const ClefTypeList initial = stave->clef_type(Fraction(0, 1));
+            type = concert_pitch() ? initial.concert_clef : initial.transposing_clef;
+        }
+    }
+    return type;
 }
 
 //---------------------------------------------------------
