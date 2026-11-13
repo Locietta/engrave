@@ -28,6 +28,8 @@ Result<EditResult> Document::edit(const Batch &batch, std::optional<std::uint64_
 }
 
 namespace api {
+void (*after_batch_step_for_test)(std::size_t) = nullptr;
+
 namespace {
 using mu::engraving::EngravingObject;
 using mu::engraving::MasterScore;
@@ -200,6 +202,7 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps) {
                     failure = std::move(applied.error());
                     failure->op_index = i;
                 }
+                if (!failure && after_batch_step_for_test) after_batch_step_for_test(i);
             } catch (const std::exception &error) {
                 failure = Error{ErrorCode::EDIT_REJECTED, std::format("the engine failed: {}", error.what()), i};
             }

@@ -42,6 +42,7 @@
 #include "../dom/system.h"
 #include "../dom/timesig.h"
 #include "../dom/tremolotwochord.h"
+#include "../dom/tuplet.h"
 #include "addremoveelement.h"
 #include "editmeasures.h"
 #include "editspanner.h"
@@ -52,6 +53,43 @@
 
 using namespace mu;
 using namespace mu::engraving;
+
+namespace {
+bool tuplets_fit_rewrite(Score *score, Measure *first, const Fraction &length) {
+    Fraction origin = first->tick();
+    for (MeasureBase *mb = first; mb; mb = mb->next()) {
+        if (!mb->is_measure()) {
+            if (mb->section_break()) break;
+            if (mb->next_measure()) origin = mb->next_measure()->tick();
+            continue;
+        }
+        auto *m = to_measure(mb);
+        auto *prev = m->prev_measure();
+        if (m != first && (m->find_segment_r(SegmentType::TIME_SIG, Fraction(0, 1)) ||
+                           (prev && prev->find_segment_r(SegmentType::TIME_SIG, prev->ticks()))))
+            break;
+        // Linked staves can contain independent voices absent from the master.
+        for (Score *linked : score->score_list()) {
+            auto *lm = linked->tick2measure(m->tick());
+            for (Segment *seg = lm->first(SegmentType::CHORD_REST); seg; seg = seg->next(SegmentType::CHORD_REST)) {
+                for (track_idx_t track = 0; track < linked->ntracks(); ++track) {
+                    auto *cr = to_chord_rest(seg->element(track));
+                    auto *tuplet = cr ? cr->top_tuplet() : nullptr;
+                    if (!tuplet) continue;
+                    const Fraction bars = (tuplet->tick() - origin) / length;
+                    const Fraction boundary = origin + length * Fraction(bars.numerator() / bars.denominator() + 1, 1);
+                    if (tuplet->end_tick() > boundary) {
+                        MScore::set_error(MsError::CANNOT_SPLIT_TUPLET);
+                        return false;
+                    }
+                }
+            }
+        }
+        if (m->section_break()) break;
+    }
+    return true;
+}
+} // namespace
 
 //---------------------------------------------------------
 //   rewriteMeasures
@@ -477,6 +515,17 @@ void EditTimeSig::add_time_sig(Transaction &tx, Score *score, Measure *fm, staff
         return;
     }
 
+    if (!local && !(ots && ots->sig() == ns && ots->stretch() == ts->stretch()) &&
+        !score->sigmap()->timesig(tick.ticks()).nominal().identical(ns)) {
+        auto *master = score->master_score();
+        auto *first = master->tick2measure(tick);
+        if (first == master->first_measure() && first->next_measure() && first->ticks() != first->timesig()) {
+            first = first->next_measure();
+            if (first->first(SegmentType::TIME_SIG)) first = nullptr;
+        }
+        if (first && !tuplets_fit_rewrite(master, first, ns)) return;
+    }
+
     seg = fm->undo_get_segment(SegmentType::TIME_SIG, tick);
 
     auto get_staff_idx_range = [score, local, staff_idx](const Score *lscore) -> std::pair<staff_idx_t /*start*/, staff_idx_t /*end*/> {
@@ -649,6 +698,9 @@ void EditTimeSig::remove_time_sig(Transaction &tx, Score *score, TimeSig *ts) {
     Score *r_score = score->master_score();
     Measure *rm = r_score->tick2measure(m->tick());
     Segment *rs = rm->find_segment(SegmentType::TIME_SIG, s->tick());
+    Measure *pm = m->prev_measure();
+    Fraction ns(pm ? pm->timesig() : Fraction(4, 4));
+    if (!tuplets_fit_rewrite(r_score, rm, ns)) return;
     if (rs) {
         r_score->undo_remove_element(rs);
     }
@@ -659,9 +711,6 @@ void EditTimeSig::remove_time_sig(Transaction &tx, Score *score, TimeSig *ts) {
             r_score->undo_remove_element(mm_rest_timesig);
         }
     }
-
-    Measure *pm = m->prev_measure();
-    Fraction ns(pm ? pm->timesig() : Fraction(4, 4));
 
     if (!rewrite_measures(tx, r_score, rm, ns, muse::nidx)) {
         throw std::runtime_error("the engine could not rewrite measures while removing the time signature");
