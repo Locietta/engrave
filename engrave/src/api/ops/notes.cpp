@@ -8,6 +8,7 @@
 
 #include "engrave/src/api/batch.h"
 #include "engraving/dom/chord.h"
+#include "engraving/dom/durationtype.h"
 #include "engraving/dom/engravingitem.h"
 #include "engraving/dom/engravingobject.h"
 #include "engraving/dom/interval.h"
@@ -19,6 +20,8 @@
 #include "engraving/dom/score.h"
 #include "engraving/dom/segment.h"
 #include "engraving/dom/staff.h"
+#include "engraving/dom/tuplet.h"
+#include "engraving/dom/utils.h"
 #include "engraving/editing/editnote.h"
 #include "engraving/editing/noteinput.h"
 #include "engraving/editing/transaction/transaction.h"
@@ -129,10 +132,18 @@ Result<Step> prepare(EditContext &context, const EnterNotes &op) {
         const mu::engraving::Fraction tick = start->tick();
         const mu::engraving::track_idx_t track = mu::engraving::staff2track(at.staff, at.voice);
         const Staff *staff = score->staff(at.staff);
+        if (!staff) return invalid(std::format("the score has no staff {}", at.staff));
         if (staff->is_tab_staff(tick) || staff->is_drum_staff(tick))
             return invalid("EnterNotes enters notes on a pitched staff, not on a tablature or a drum set");
-        if (pitches.size() > 1 && duration > (start->measure()->end_tick() - tick) * staff->time_stretch(tick))
-            return invalid("a chord of several pitches must end in the bar its entry starts in");
+        if (pitches.size() > 1) {
+            if (!mu::engraving::TDuration::is_valid(duration)) return invalid("a chord of several pitches must fit one notated duration");
+            const auto *existing = start->element(track);
+            auto *tuplet = existing && existing->is_chord_rest() ? mu::engraving::to_chord_rest(existing)->tuplet() : nullptr;
+            auto limit = start->measure()->end_tick();
+            if (tuplet) limit = std::min(limit, tuplet->tick() + tuplet->actual_ticks());
+            if (mu::engraving::actual_ticks(duration, tuplet, staff->time_stretch(tick)) > limit - tick)
+                return invalid("a chord of several pitches must end within its bar and tuplet");
+        }
         NoteVal first = pitches.empty() ? NoteVal() : note_value(pitches.front());
         if (!score->set_note_rest_at(start, track, first, duration))
             return std::unexpected(Error{ErrorCode::EDIT_REJECTED, "the engine could not enter a note at this position"});
