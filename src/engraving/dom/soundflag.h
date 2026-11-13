@@ -60,7 +60,7 @@ public:
 
     void clear();
 
-    bool should_hide() const;
+    bool should_hide(bool is_printing) const;
 
     void undo_change_sound_flag(const PresetCodes &presets, const PlayingTechniqueCode &technique);
 

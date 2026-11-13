@@ -65,9 +65,6 @@ void Paint::paint_score(Painter *painter, Score *score, const ScoreRenderer::Sco
 
     // Setup score draw system
 
-    const bool was_printing = score->printing();
-    score->set_printing(opt.is_printing);
-
     // Setup page counts
     int from_page = opt.from_page >= 0 ? opt.from_page : 0;
     int to_page = (opt.to_page >= 0 && opt.to_page < int(pages.size())) ? opt.to_page : (int(pages.size()) - 1);
@@ -169,8 +166,6 @@ void Paint::paint_score(Painter *painter, Score *score, const ScoreRenderer::Sco
             }
         }
     }
-
-    score->set_printing(was_printing);
 }
 
 SizeF Paint::page_size_inch(const Score *score) {
@@ -215,7 +210,6 @@ void Paint::paint_item(Painter &painter, const EngravingItem *item, const PaintO
     if (item->ldata()->is_skip_draw()) {
         return;
     }
-    item->item_discovered = false;
     PointF item_position(item->page_pos());
 
     painter.translate(item_position);
@@ -229,7 +223,7 @@ void Paint::paint_items(Painter &painter, const std::vector<EngravingItem *> &it
     std::sort(sorted_items.begin(), sorted_items.end(), mu::engraving::element_less_than);
 
     for (const EngravingItem *item : sorted_items) {
-        if (!item->is_interaction_available()) {
+        if (!item->is_interaction_available() || (opt.is_printing && !item->get_property(Pid::VISIBLE).to_bool())) {
             continue;
         }
 

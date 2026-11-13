@@ -270,7 +270,6 @@ EngravingItem::EngravingItem(const EngravingItem &e, bool link) : EngravingObjec
     color_ = e.color_;
     min_distance_ = e.min_distance_;
     exclude_vertical_align_ = e.exclude_vertical_align_;
-    item_discovered = false;
 
     if (e.left_parenthesis_) {
         left_parenthesis_ = e.left_parenthesis_->clone();
@@ -356,7 +355,7 @@ double EngravingItem::spatium() const {
 double EngravingItem::default_spatium() const { return style().default_spatium(); }
 
 bool EngravingItem::is_interaction_available() const {
-    if (!get_property(Pid::VISIBLE).to_bool() && (score()->printing() || !score()->is_show_invisible())) {
+    if (!get_property(Pid::VISIBLE).to_bool() && !score()->is_show_invisible()) {
         return false;
     }
 

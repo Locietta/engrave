@@ -114,7 +114,7 @@ void SoundFlag::clear() {
     trigger_layout();
 }
 
-bool SoundFlag::should_hide() const {
+bool SoundFlag::should_hide(bool is_printing) const {
     if (!icon_font_valid_) {
         return true;
     }
@@ -124,7 +124,7 @@ bool SoundFlag::should_hide() const {
             return true;
         }
 
-        if (score->printing()) {
+        if (is_printing) {
             return true;
         }
     }

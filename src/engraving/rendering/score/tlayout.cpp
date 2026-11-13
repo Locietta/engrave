@@ -5511,7 +5511,8 @@ void TLayout::layout_text_line_base_segment(TextLineBaseSegment *item, LayoutCon
     bool begin_hook_drawn_separately = false;
     bool end_hook_drawn_separately = false;
 
-    if (tl->line_visible() || !ctx.conf().is_printing_mode()) {
+    // Both screen and print drawing consume the same line geometry.
+    {
         pp1.rx() += l1;
         pp2.rx() -= l2;
 

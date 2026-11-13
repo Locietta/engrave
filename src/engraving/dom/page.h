@@ -89,7 +89,8 @@ public:
     std::vector<EngravingItem *> items(const RectF &r);
     std::vector<EngravingItem *> items(const PointF &p);
 
-    void invalidate_bsp_tree() { bsp_tree_valid_ = false; }
+    void invalidate_bsp_tree();
+    void rebuild_bsp_tree();
 
     PointF page_pos() const override { return PointF(); } ///< position in page coordinates
 
@@ -113,8 +114,6 @@ public:
 private:
     friend struct Factory;
     Page(Score *parent);
-
-    void do_rebuild_bsp_tree();
 
     std::vector<System *> systems_;
     page_idx_t page_number_ = 0;
