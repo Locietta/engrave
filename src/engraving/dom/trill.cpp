@@ -393,3 +393,17 @@ Sid Trill::default_pos_sid() const { return place_above() ? Sid::TRILL_POS_ABOVE
 void Trill::do_compute_end_element() {
     set_end_element(score()->find_chord_rest_ending_before_tick_in_staff_and_voice(tick2(), track2staff(track2()), voice()));
 }
+
+Accidental *Trill::accidental() const {
+    return ornament_ ? (trill_type_ == TrillType::DOWNPRALL_LINE ? ornament_->accidental_below() : ornament_->accidental_above()) :
+                       accidental_;
+}
+
+Chord *Trill::cue_note_chord() const { return ornament_ ? ornament_->cue_note_chord() : cue_note_chord_; }
+
+PlacementV Trill::placement() const {
+    if (!ornament_) return EngravingItem::placement();
+    const auto anchor = ornament_->anchor();
+    return anchor == ArticulationAnchor::AUTO ? (track() % 2 ? PlacementV::BELOW : PlacementV::ABOVE) :
+                                                (anchor == ArticulationAnchor::TOP ? PlacementV::ABOVE : PlacementV::BELOW);
+}

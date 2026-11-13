@@ -81,6 +81,11 @@ public:
 
     Sid default_pos_sid() const override;
 
+    struct LayoutData : EngravingItem::LayoutData {
+        SymId sym_id = SymId::NO_SYM;
+    };
+    DECLARE_LAYOUTDATA_METHODS(Fermata)
+
 private:
 
     friend struct Factory;

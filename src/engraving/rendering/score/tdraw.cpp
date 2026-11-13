@@ -1017,7 +1017,7 @@ void TDraw::draw(const Expression *item, Painter *painter, const PaintOptions &o
 void TDraw::draw(const Fermata *item, Painter *painter, const PaintOptions &opt) {
     TRACE_DRAW_ITEM;
     painter->set_pen(item->cur_color(opt));
-    item->draw_symbol(item->sym_id(), painter);
+    item->draw_symbol(item->ldata()->sym_id, painter);
 }
 
 void TDraw::draw(const FiguredBass *item, Painter *painter, const PaintOptions &opt) {

@@ -1070,7 +1070,7 @@ PropertyValue EngravingItem::get_property(Pid property_id) const {
         case Pid::SELECTED: return selected();
         case Pid::OFFSET: return PropertyValue::from_value(offset_);
         case Pid::MIN_DISTANCE: return min_distance_;
-        case Pid::PLACEMENT: return placement();
+        case Pid::PLACEMENT: return EngravingItem::placement();
         case Pid::AUTOPLACE: return autoplace();
         case Pid::Z: return z();
         case Pid::SYSTEM_FLAG: return system_flag();
@@ -1331,7 +1331,10 @@ bool EngravingItem::element_applies_to_track(const track_idx_t ref_track) const 
 }
 
 void EngravingItem::set_placement_based_on_voice_assignment(DirectionV styled_direction) {
-    PlacementV old_placement = placement();
+    set_placement(placement_based_on_voice_assignment(styled_direction));
+}
+
+PlacementV EngravingItem::placement_based_on_voice_assignment(DirectionV styled_direction) const {
     PlacementV new_placement = PlacementV::BELOW;
 
     DirectionV internal_direction_property = get_property(Pid::DIRECTION).value<DirectionV>();
@@ -1399,9 +1402,7 @@ void EngravingItem::set_placement_based_on_voice_assignment(DirectionV styled_di
         }
     }
 
-    if (new_placement != old_placement) {
-        set_placement(new_placement);
-    }
+    return new_placement;
 }
 
 void EngravingItem::relink_properties_to_master(PropertyGroup prop_group) {

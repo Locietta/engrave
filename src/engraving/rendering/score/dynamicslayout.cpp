@@ -33,7 +33,7 @@
 
 using namespace mu::engraving::rendering::score;
 
-void DynamicsLayout::layout_dynamic(Dynamic *item, TextBase::LayoutData *ldata, const LayoutConfiguration &conf) {
+void DynamicsLayout::layout_dynamic(Dynamic *item, Dynamic::LayoutData *ldata, const LayoutConfiguration &conf) {
     do_layout_dynamic(item, ldata, conf);
 
     // If the dynamic contains custom text, keep it aligned
@@ -60,7 +60,8 @@ void DynamicsLayout::do_layout_dynamic(Dynamic *item, Dynamic::LayoutData *ldata
     }
     ldata->set_is_skip_draw(false);
 
-    item->set_placement_based_on_voice_assignment(conf.style_v(Sid::DYNAMICS_HAIRPIN_VOICE_BASED_PLACEMENT).value<DirectionV>());
+    ldata->voice_placement =
+        item->placement_based_on_voice_assignment(conf.style_v(Sid::DYNAMICS_HAIRPIN_VOICE_BASED_PLACEMENT).value<DirectionV>());
 
     // If "Center on notehead" is on, override user position. Restore later
     AlignH user_position = item->get_property(Pid::POSITION).value<AlignH>();

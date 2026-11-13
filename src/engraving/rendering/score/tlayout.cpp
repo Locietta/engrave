@@ -1717,8 +1717,8 @@ void TLayout::layout_expression(const Expression *item, Expression::LayoutData *
     LAYOUT_CALL_ITEM(item);
     IF_ASSERT_FAILED(item->ownership_parent()) { return; }
 
-    const_cast<Expression *>(item)->set_placement_based_on_voice_assignment(
-        item->style().style_v(Sid::DYNAMICS_HAIRPIN_VOICE_BASED_PLACEMENT).value<DirectionV>());
+    ldata->voice_placement =
+        item->placement_based_on_voice_assignment(item->style().style_v(Sid::DYNAMICS_HAIRPIN_VOICE_BASED_PLACEMENT).value<DirectionV>());
 
     TextLayout::layout_base_text_base(item, ldata);
 
@@ -1817,20 +1817,19 @@ void TLayout::layout_fermata(const Fermata *item, Fermata::LayoutData *ldata) {
         }
     }
 
+    ldata->sym_id = item->sym_id();
     String name = String::from_ascii(SymNames::name_for_sym_id(item->sym_id()).ascii());
     if (item->place_above()) {
         if (name.ends_with(u"Below")) {
-            //! NOTE It is not clear whether SymId is layout data or given data.
-            const_cast<Fermata *>(item)->set_sym_id(SymNames::sym_id_by_name(name.left(name.size() - 5) + u"Above"));
+            ldata->sym_id = SymNames::sym_id_by_name(name.left(name.size() - 5) + u"Above");
         }
     } else {
         if (name.ends_with(u"Above")) {
-            //! NOTE It is not clear whether SymId is layout data or given data.
-            const_cast<Fermata *>(item)->set_sym_id(SymNames::sym_id_by_name(name.left(name.size() - 5) + u"Below"));
+            ldata->sym_id = SymNames::sym_id_by_name(name.left(name.size() - 5) + u"Below");
         }
     }
 
-    ldata->set_shape(Shape(item->sym_bbox(item->sym_id()), item));
+    ldata->set_shape(Shape(item->sym_bbox(ldata->sym_id), item));
     x -= 0.5 * ldata->bbox().width();
 
     ldata->set_pos(x, y);
@@ -5893,16 +5892,6 @@ void TLayout::layout_trill_segment(TrillSegment *item, LayoutContext &ctx) {
         if (item->is_single_begin_type()) {
             TLayout::layout_ornament(ornament, ornament->mutldata(), ctx.conf());
         }
-        trill->set_accidental(accidental_goes_below ? ornament->accidental_below() : ornament->accidental_above());
-        trill->set_cue_note_chord(ornament->cue_note_chord());
-        ArticulationAnchor anchor = ornament->anchor();
-        if (anchor == ArticulationAnchor::AUTO) {
-            trill->set_placement(trill->track() % 2 ? PlacementV::BELOW : PlacementV::ABOVE);
-        } else {
-            trill->set_placement(anchor == ArticulationAnchor::TOP ? PlacementV::ABOVE : PlacementV::BELOW);
-        }
-        trill->set_property_flags(Pid::PLACEMENT,
-                                  PropertyFlags::STYLED); // Ensures that the property isn't written (it is written by the ornamnent)
     }
 
     if (item->is_single_type() || item->is_begin_type()) {
@@ -6201,7 +6190,7 @@ SpannerSegment *TLayout::layout_system_s_line(SLine *line, System *system, Layou
             sst = SpannerSegmentType::BEGIN;
         }
         if (line->has_voice_assignment_properties()) {
-            line->set_placement_based_on_voice_assignment(
+            to_hairpin(line)->mutldata()->voice_placement = line->placement_based_on_voice_assignment(
                 ctx.conf().style_v(Sid::DYNAMICS_HAIRPIN_VOICE_BASED_PLACEMENT).value<DirectionV>());
         }
     } else if (line->tick() < stick &&

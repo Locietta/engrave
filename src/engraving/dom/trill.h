@@ -105,11 +105,11 @@ public:
 
     String trill_type_user_name() const;
 
-    Accidental *accidental() const { return accidental_; }
+    Accidental *accidental() const;
 
     void set_accidental(Accidental *a) { accidental_ = a; }
 
-    Chord *cue_note_chord() const { return cue_note_chord_; }
+    Chord *cue_note_chord() const;
 
     void set_cue_note_chord(Chord *c) { cue_note_chord_ = c; }
 
@@ -124,6 +124,7 @@ public:
     void set_ornament(Ornament *o) { ornament_ = o; }
 
     Sid default_pos_sid() const override;
+    PlacementV placement() const override;
 
 protected:
     void do_compute_end_element() override;

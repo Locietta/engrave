@@ -83,14 +83,14 @@ void TextLayout::layout_base_text_base1(const TextBase *item, TextBase::LayoutDa
 
     RectF bb = shape.bbox();
 
+    ldata->vertical_align.reset();
     double yoff = 0;
     double h = 0;
     const EngravingItem *parent = item->layout_parent();
     if (parent) {
         if (item->layout_to_parent_width()) {
             if (parent->is_t_box()) {
-                // hack: vertical alignment is always TOP
-                const_cast<TextBase *>(item)->set_align({item->align().horizontal, AlignV::TOP});
+                ldata->vertical_align = AlignV::TOP;
             } else if (parent->is_box()) {
                 // consider inner margins of frame
                 const Box *b = to_box(parent);
@@ -114,11 +114,12 @@ void TextLayout::layout_base_text_base1(const TextBase *item, TextBase::LayoutDa
         ldata->set_pos(PointF());
     }
 
-    if (item->align() == AlignV::BOTTOM) {
+    const AlignV vertical_align = ldata->vertical_align.value_or(item->align().vertical);
+    if (vertical_align == AlignV::BOTTOM) {
         yoff += h - bb.bottom();
-    } else if (item->align() == AlignV::VCENTER) {
+    } else if (vertical_align == AlignV::VCENTER) {
         yoff += (h - (bb.top() + bb.bottom())) * .5;
-    } else if (item->align() == AlignV::BASELINE) {
+    } else if (vertical_align == AlignV::BASELINE) {
         yoff += h * .5 - ldata->blocks.front().line_spacing();
     } else {
         yoff += -bb.top();
@@ -217,7 +218,7 @@ void TextLayout::text_horizontal_layout(const TextBase *item, Shape &shape, doub
         double x_adj = left_margin - text_block.bounding_rect().left();
 
         // Set position relative to reference point
-        AlignH position = item->position();
+        AlignH position = ldata->position.value_or(item->position());
         if (position == AlignH::HCENTER) {
             x_adj += (layout_width - max_block_width) * .5;
         } else if (position == AlignH::RIGHT) {
