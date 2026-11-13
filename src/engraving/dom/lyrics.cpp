@@ -109,7 +109,9 @@ void Lyrics::remove(EngravingItem *el) {
 //   isMelisma
 //---------------------------------------------------------
 
-bool Lyrics::is_melisma() const {
+bool Lyrics::is_melisma() const { return ticks_ > Fraction(0, 1) || (separator_ && source_melisma()); }
+
+bool Lyrics::source_melisma() const {
     // entered as melisma using underscore?
     if (ticks_ > Fraction(0, 1)) {
         return true;
@@ -117,7 +119,7 @@ bool Lyrics::is_melisma() const {
 
     // hyphenated?
     // if so, it is a melisma only if there is no lyric in same verse on next CR
-    if (separator_ && (syllabic_ == LyricsSyllabic::BEGIN || syllabic_ == LyricsSyllabic::MIDDLE)) {
+    if (syllabic_ == LyricsSyllabic::BEGIN || syllabic_ == LyricsSyllabic::MIDDLE) {
         // find next CR and check for existence of lyric in same verse and placement (in any voice)
         const ChordRest *cr = chord_rest();
         if (cr) {
@@ -180,20 +182,7 @@ void Lyrics::adjust_previous() {
     }
 }
 
-void Lyrics::set_need_remove_invalid_segments() {
-    // Allow "invalid" segments when there is a following repeat item
-
-    const Measure *meas = measure();
-    const ChordRest *separator_end_chord = separator_ ? to_chord_rest(separator_->end_element()) : nullptr;
-    const ChordRest *last_chord_rest = meas ? meas->last_chord_rest(track()) : nullptr;
-    const bool end_chord_is_last_in_measure = separator_end_chord == last_chord_rest;
-    const bool has_following_jump = last_chord_rest ? last_chord_rest->has_following_jump_item() : false;
-
-    if (end_chord_is_last_in_measure && has_following_jump) {
-        return;
-    }
-    need_remove_invalid_segments_ = true;
-}
+void Lyrics::set_need_remove_invalid_segments() { need_remove_invalid_segments_ = true; }
 
 //---------------------------------------------------------
 //   removeFromScore
@@ -412,17 +401,23 @@ void Lyrics::reset() {
 
 void Lyrics::remove_invalid_segments() {
     need_remove_invalid_segments_ = false;
-    if (separator_ && is_melisma() && ticks_ < separator_->start_cr()->ticks()) {
+    const Measure *meas = measure();
+    const ChordRest *end_chord = score()->find_cr(end_tick(), track());
+    const ChordRest *last_chord_rest = meas ? meas->last_chord_rest(track()) : nullptr;
+    if (end_chord == last_chord_rest && last_chord_rest && last_chord_rest->has_following_jump_item()) return;
+    if (chord_rest() && source_melisma() && ticks_ < chord_rest()->ticks()) {
         set_ticks(Fraction(0, 1));
-        separator_->set_ticks(Fraction(0, 1));
-        separator_->remove_unmanaged();
-        separator_ = nullptr;
-        set_position(property_default(Pid::POSITION).value<AlignH>());
+        if (separator_) {
+            separator_->set_ticks(Fraction(0, 1));
+            separator_->remove_unmanaged();
+            separator_ = nullptr;
+        }
         if (syllabic_ == LyricsSyllabic::BEGIN || syllabic_ == LyricsSyllabic::SINGLE) {
             undo_change_property(Pid::SYLLABIC, int(LyricsSyllabic::SINGLE));
         } else {
             undo_change_property(Pid::SYLLABIC, int(LyricsSyllabic::END));
         }
+        set_position(property_default(Pid::POSITION).value<AlignH>());
     }
 }
 } // namespace mu::engraving

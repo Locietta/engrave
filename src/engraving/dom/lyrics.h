@@ -97,6 +97,9 @@ public:
 
     void set_separator(LyricsLine *s) { separator_ = s; }
 
+private:
+    bool source_melisma() const;
+public:
     bool is_melisma() const;
 
     bool allow_time_anchor() const override { return false; }
