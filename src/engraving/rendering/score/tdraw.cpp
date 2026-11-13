@@ -427,7 +427,7 @@ void TDraw::draw(const Articulation *item, Painter *painter, const PaintOptions 
     painter->set_pen(item->cur_color(opt));
 
     if (item->text_type() == ArticulationTextType::NO_TEXT) {
-        item->draw_symbol(item->sym_id(), painter);
+        item->draw_symbol(item->ldata()->sym_id.value(), painter);
     } else {
         draw_text_base(item->text(), painter, opt);
     }

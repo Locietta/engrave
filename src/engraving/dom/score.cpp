@@ -1268,24 +1268,6 @@ void Score::remove_element(EngravingItem *element) {
             remove_spanner(spanner);
         } break;
 
-        case ElementType::GUITAR_BEND: {
-            Note *start_note = to_guitar_bend(element)->start_note();
-            if (start_note) {
-                start_note->set_parentheses_mode(ParenthesesMode::NONE);
-                start_note->chord()->set_no_stem(false);
-                start_note->chord()->set_beam_mode(BeamMode::AUTO);
-            }
-            Note *end_note = to_guitar_bend(element)->end_note();
-            if (end_note) {
-                end_note->set_ghost(false);
-                end_note->set_visible(true);
-                const StringData *string_data = end_note->origin_part()->string_data(end_note->tick(), end_note->staff_idx());
-                int end_fret = string_data->fret(end_note->pitch(), end_note->string(), end_note->staff());
-                end_note->set_fret(end_fret);
-            }
-            break;
-        }
-
         case ElementType::OTTAVA: {
             Ottava *o = to_ottava(element);
             o->trigger_layout();
