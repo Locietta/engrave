@@ -175,6 +175,7 @@ Result<Step> prepare(EditContext &context, const SetTimeSig &op) {
         temp->set_sig(sig, TimeSigType::NORMAL);
         const std::size_t before = pushed(context);
         mu::engraving::EditTimeSig::add_time_sig(transaction(context), score, *target, 0, temp, false);
+        if (mu::engraving::MScore::error != mu::engraving::MsError::MS_NO_ERROR) return {};
         if (pushed(context) <= before) return refused("the engine kept the existing time signature");
         return {};
     };

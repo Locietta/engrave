@@ -55,19 +55,24 @@ using namespace mu;
 using namespace mu::engraving;
 
 namespace {
-bool tuplets_fit_rewrite(Score *score, Measure *first, const Fraction &length) {
+bool tuplets_fit_rewrite(Score *score, Measure *first, const Fraction &length, const Segment *removed = nullptr) {
     Fraction origin = first->tick();
+    bool after_frame = false;
     for (MeasureBase *mb = first; mb; mb = mb->next()) {
         if (!mb->is_measure()) {
             if (mb->section_break()) break;
             if (mb->next_measure()) origin = mb->next_measure()->tick();
+            after_frame = true;
             continue;
         }
         auto *m = to_measure(mb);
         auto *prev = m->prev_measure();
-        if (m != first && (m->find_segment_r(SegmentType::TIME_SIG, Fraction(0, 1)) ||
-                           (prev && prev->find_segment_r(SegmentType::TIME_SIG, prev->ticks()))))
+        const auto *previous_sig = prev ? prev->find_segment_r(SegmentType::TIME_SIG, prev->ticks()) : nullptr;
+        if (after_frame ?
+                m->first(SegmentType::TIME_SIG) != nullptr :
+                m != first && (m->find_segment_r(SegmentType::TIME_SIG, Fraction(0, 1)) || (previous_sig && previous_sig != removed)))
             break;
+        after_frame = false;
         // Linked staves can contain independent voices absent from the master.
         for (Score *linked : score->score_list()) {
             auto *lm = linked->tick2measure(m->tick());
@@ -521,7 +526,7 @@ void EditTimeSig::add_time_sig(Transaction &tx, Score *score, Measure *fm, staff
         auto *first = master->tick2measure(tick);
         if (first == master->first_measure() && first->next_measure() && first->ticks() != first->timesig()) {
             first = first->next_measure();
-            if (first->first(SegmentType::TIME_SIG)) first = nullptr;
+            if (first->find_segment(SegmentType::TIME_SIG, first->tick())) first = nullptr;
         }
         if (first && !tuplets_fit_rewrite(master, first, ns)) return;
     }
@@ -700,7 +705,7 @@ void EditTimeSig::remove_time_sig(Transaction &tx, Score *score, TimeSig *ts) {
     Segment *rs = rm->find_segment(SegmentType::TIME_SIG, s->tick());
     Measure *pm = m->prev_measure();
     Fraction ns(pm ? pm->timesig() : Fraction(4, 4));
-    if (!tuplets_fit_rewrite(r_score, rm, ns)) return;
+    if (!tuplets_fit_rewrite(r_score, rm, ns, rs)) return;
     if (rs) {
         r_score->undo_remove_element(rs);
     }
