@@ -8,7 +8,10 @@
 #include <ankerl/unordered_dense.h>
 
 #include "dom/masterscore.h"
+#include "dom/page.h"
 #include "dom/score.h"
+#include "dom/segment.h"
+#include "dom/system.h"
 #include "rendering/score/layoutdatafactory.h"
 #include "rendering/score/scorerenderer.h"
 
@@ -38,6 +41,7 @@ EngravingItem::LayoutData *LayoutDataStore::mut_data(EngravingItem &item) {
         if (item.layout_store_ != this) throw std::logic_error("layout payload belongs to a different store");
         return item.layout_data_;
     }
+    if (before_allocation) before_allocation(item);
     return adopt(item, make_layout_data(item.layout_type_));
 }
 
@@ -71,6 +75,33 @@ void LayoutDataStore::detach_score() {
     while (!records_->items.empty()) erase(*records_->items.begin()->second.item);
     if (score_ && score_->layout_data_store() == this) score_->bind_layout_data_store(nullptr);
     score_ = nullptr;
+}
+
+void LayoutDataStore::clear() {
+    if (score_) {
+        if (score_->master_score()->cmd_state().locked()) throw std::logic_error("cannot discard output during layout");
+        score_->invalidate_layout(Fraction(0, 1), Fraction(-1, 1));
+        // These legacy L5 caches can retain pointers to output-owned ledger and
+        // Harmony parenthesis shells. Retire their views before deleting shells.
+        for (auto *page : score_->pages()) page->invalidate_bsp_tree();
+        for (auto *system : score_->systems()) {
+            for (auto *staff : system->staves()) staff->skyline().clear();
+        }
+        // Ownership traversal includes hidden and MMR display measures, unlike
+        // drawing/source timeline scans. Retain each segment's staff slots.
+        const auto clear_segments = [&](auto &&self, EngravingObject &owner) -> void {
+            if (owner.is_segment()) to_segment(&owner)->clear_shapes();
+            for (auto *child : owner.children()) {
+                if (child->score() == score_) self(self, *child);
+            }
+        };
+        clear_segments(clear_segments, *score_);
+        // Detached scratch segments can also have prepared collision shapes.
+        for (auto &record : records_->items.values()) {
+            if (record.second.item->is_segment()) to_segment(record.second.item)->clear_shapes();
+        }
+    }
+    while (!records_->items.empty()) erase(*records_->items.begin()->second.item);
 }
 
 void LayoutDataStore::transfer(EngravingItem &item, LayoutDataStore &destination) {

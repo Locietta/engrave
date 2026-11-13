@@ -6305,6 +6305,324 @@ TEST(LayoutBounds, RestCollisionAndAlignmentRefreshChangedLedgerGlyphsImmediatel
     }
 }
 
+// Compare the output across an explicit ownership boundary, not only a reflow
+// which can reuse surviving payloads. Source shells remain transitional L3-L6.
+void expect_discard_rebuild_parity(engrave::Document &document, mu::engraving::Score &score, const engrave::ScoreSel &selection = {},
+                                   bool require_chord_overrides = false) {
+    using namespace mu::engraving;
+    const engrave::RenderOptions render{.score = selection, .format = engrave::RenderFormat::SVG};
+    const engrave::ExportOptions save{.format = engrave::Format::MSCX, .score = selection};
+    const auto native = document.export_score(save);
+    ASSERT_TRUE(native);
+    const auto baseline = document.render(render);
+    ASSERT_TRUE(baseline);
+    const auto positions = [&] {
+        std::vector<double> values;
+        for (auto kind : {engrave::PositionKind::MEASURE, engrave::PositionKind::SEGMENT}) {
+            const auto result = document.positions(kind, selection);
+            EXPECT_TRUE(result);
+            if (!result) continue;
+            values.insert(values.end(), {result->page_width, result->page_height});
+            for (const auto &item : result->elements)
+                values.insert(values.end(), {double(item.id), item.x, item.y, item.sx, item.sy, double(item.page)});
+            for (const auto &event : result->events) values.insert(values.end(), {double(event.elid), double(event.position)});
+        }
+        return values;
+    };
+    const auto prepared_positions = positions();
+    const auto source = music::dump_json(music::semantic_dump(score.master_score()), 1);
+    const auto revision = document.revision();
+    auto *store = score.layout_data_store();
+    ASSERT_NE(store, nullptr);
+    std::vector<std::pair<const EngravingItem *, AuthoredOverrideTable>> overrides;
+    const auto *registry = score.master_score()->eid_register();
+    for (const auto &[eid, object] : registry->entries()) {
+        if (!object->is_engraving_item() || object->score() != &score || !registry->published(object->source_handle())) continue;
+        auto *item = to_engraving_item(object);
+        if (const auto *table = authored_override_table(item)) overrides.emplace_back(item, *table);
+    }
+    if (require_chord_overrides) {
+        ASSERT_TRUE(
+            std::ranges::any_of(overrides, [](const auto &entry) { return entry.first->is_chord() && !entry.second.entries.empty(); }));
+    }
+    const auto check_source = [&] {
+        EXPECT_EQ(document.revision(), revision);
+        EXPECT_EQ(music::dump_json(music::semantic_dump(score.master_score()), 1), source);
+        for (const auto &[owner, before] : overrides) {
+            const auto *after = authored_override_table(owner);
+            ASSERT_NE(after, nullptr);
+            ASSERT_EQ(before.entries.size(), after->entries.size());
+            ASSERT_EQ(before.carriers.size(), after->carriers.size());
+            for (size_t i = 0; i < before.entries.size(); ++i) {
+                EXPECT_EQ(before.entries[i].child, after->entries[i].child);
+                EXPECT_EQ(before.entries[i].pid, after->entries[i].pid);
+                EXPECT_EQ(before.entries[i].value, after->entries[i].value);
+                EXPECT_EQ(before.entries[i].flags, after->entries[i].flags);
+                EXPECT_EQ(before.entries[i].unit, after->entries[i].unit);
+            }
+            for (size_t i = 0; i < before.carriers.size(); ++i) {
+                EXPECT_EQ(before.carriers[i].child, after->carriers[i].child);
+                EXPECT_EQ(before.carriers[i].type, after->carriers[i].type);
+                EXPECT_EQ(before.carriers[i].legacy_eid, after->carriers[i].legacy_eid);
+                EXPECT_EQ(before.carriers[i].linked_to, after->carriers[i].linked_to);
+                EXPECT_EQ(before.carriers[i].track, after->carriers[i].track);
+            }
+        }
+    };
+    for (int cycle = 0; cycle < 3; ++cycle) {
+        SCOPED_TRACE(cycle);
+        ASSERT_GT(store->size(), 0u);
+        // Populate the legacy drawing index while it still contains live shells.
+        for (auto *page : score.pages()) std::ignore = page->items(page->page_bounding_rect());
+        const auto layouts = layout_count(score);
+        engrave::DocumentAccess::impl(document).discard_layout_output(score);
+        EXPECT_EQ(score.layout_data_store(), store);
+        EXPECT_EQ(store->size(), 0u);
+        EXPECT_TRUE(score.layout_state.dirty);
+        EXPECT_EQ(score.layout_state.start, Fraction(0, 1));
+        EXPECT_EQ(score.layout_state.end, Fraction(-1, 1));
+        for (auto *system : score.systems()) {
+            for (auto *staff : system->staves()) {
+                EXPECT_TRUE(staff->skyline().north().elements().empty());
+                EXPECT_TRUE(staff->skyline().south().elements().empty());
+            }
+        }
+        const auto check_segments = [&](auto &&self, const EngravingObject &owner) -> void {
+            if (owner.is_segment()) {
+                const auto *segment = to_segment(&owner);
+                for (const auto &shape : segment->shapes()) EXPECT_TRUE(shape.empty());
+                EXPECT_EQ(segment->min_left(), 0.0);
+                EXPECT_EQ(segment->min_right(), 0.0);
+            }
+            for (auto *child : owner.children()) {
+                if (child->score() == &score) self(self, *child);
+            }
+        };
+        check_segments(check_segments, score);
+        check_source();
+        {
+            ItemLayoutSpy reads;
+            for (auto *item : engrave::document_objects(*score.master_score())) {
+                if (!item->is_engraving_item() || item->score() != &score) continue;
+                const auto *view = to_engraving_item(item);
+                EXPECT_FALSE(view->has_layout_data());
+                std::ignore = view->ldata()->bbox();
+                std::ignore = view->shape();
+            }
+            EXPECT_EQ(store->size(), 0u);
+            EXPECT_EQ(ItemLayoutSpy::count, 0u);
+            EXPECT_EQ(layout_count(score), layouts);
+        }
+        const auto rebuilt = document.render(render);
+        ASSERT_TRUE(rebuilt);
+        EXPECT_EQ(rebuilt->pages, baseline->pages);
+        EXPECT_EQ(layout_count(score), layouts + 1);
+        EXPECT_EQ(positions(), prepared_positions);
+        const auto saved = document.export_score(save);
+        ASSERT_TRUE(saved);
+        EXPECT_EQ(*saved, *native);
+        check_source();
+    }
+}
+
+TEST(LayoutDataStore, RepeatedDiscardRebuildPreservesMusicOverridesAndPublishedGeometry) {
+    for (const char *fixture : {"tests/data/inputs/golden/chordline_path.mscx", "tests/data/inputs/golden/layout_elements.mscx",
+                                "tests/data/inputs/golden/tab_grace_prebend.mscx",
+                                "src/engraving/tests/playback/playbackeventsrenderer_data/trill_line_on_tied_notes.mscx",
+                                "src/engraving/tests/playback/playbackmodel_data/spanners/spanners.mscx"}) {
+        SCOPED_TRACE(fixture);
+        auto opened = g_engine->open(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / fixture);
+        ASSERT_TRUE(opened);
+        expect_discard_rebuild_parity(**opened, master_of(**opened));
+    }
+}
+
+TEST(LayoutDataStore, DiscardRebuildPreservesRichTextHarmonyAndExcerptOutput) {
+    auto input = legacy_segment_fixture("");
+    input.insert(input.find("<Chord>"), R"(<StaffText><text><b>Rich</b> <i>source</i><font size="14"/> text</text></StaffText>
+<Harmony><harmonyInfo><root>14</root><name>7(b9)</name></harmonyInfo></Harmony>)");
+    auto opened = g_engine->open(as_bytes(input));
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    using namespace mu::engraving;
+    auto &master = master_of(document);
+    auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    std::unique_ptr<Stem> stem(Factory::create_stem(chord));
+    ASSERT_TRUE(stem->set_property(Pid::OFFSET, PropertyValue(muse::PointF(0.25, -0.5))));
+    ASSERT_FALSE(chord->authored_overrides.entries.empty());
+    ASSERT_TRUE(document.page_count());
+    Harmony *harmony = nullptr;
+    for (auto *object : engrave::document_objects(master)) {
+        if (object->is_harmony()) harmony = to_harmony(object);
+    }
+    ASSERT_NE(harmony, nullptr);
+    ASSERT_EQ(harmony->chords().size(), 1u);
+    ASSERT_EQ(harmony->chords().front()->root_tpc(), 14);
+    ASSERT_FALSE(harmony->ldata()->render_item_list().empty());
+    EXPECT_TRUE(std::ranges::any_of(harmony->ldata()->render_item_list(),
+                                    [](const auto *item) { return dynamic_cast<const ChordSymbolParen *>(item) != nullptr; }));
+    expect_discard_rebuild_parity(document, master_of(document), {}, true);
+    const auto outline = document.outline();
+    ASSERT_TRUE(outline);
+    ASSERT_TRUE(document.edit({{engrave::GenerateExcerpts{{outline->parts.front().id}}}}));
+    const auto parts = document.outline();
+    ASSERT_TRUE(parts);
+    ASSERT_EQ(parts->excerpts.size(), 1u);
+    const engrave::ScoreSel selection{parts->excerpts.front().id};
+    auto selected = engrave::select_score(master_of(document), selection);
+    ASSERT_TRUE(selected);
+    expect_discard_rebuild_parity(document, **selected, selection);
+}
+
+TEST(LayoutDataStore, DiscardRetiresHiddenAndMmrSegmentViewsBeforeLedgerShells) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto *measure = master.first_measure();
+    std::unique_ptr<Measure> mmr(Factory::create_measure(&master));
+    mmr->set_mm_rest_count(2);
+    measure->set_mm_rest(mmr.get());
+    std::unique_ptr<Segment> hidden(Factory::create_segment(measure, SegmentType::CHORD_REST, Fraction(0, 1)));
+    hidden->set_visible(false);
+    std::unique_ptr<Segment> display(Factory::create_segment(mmr.get(), SegmentType::CHORD_REST, Fraction(0, 1)));
+    std::unique_ptr<Chord> chord(Factory::create_chord(hidden.get()));
+    chord->resize_ledger_lines_to(1);
+    auto *ledger = chord->ldata()->ledger_lines.front();
+    hidden->staff_shape(0).add(Shape(muse::RectF(1, 2, 3, 4), ledger));
+    display->staff_shape(0).add(Shape(muse::RectF(1, 2, 3, 4), ledger));
+    engrave::DocumentAccess::impl(**opened).discard_layout_output(master);
+    for (const auto *segment : {hidden.get(), display.get()}) {
+        EXPECT_TRUE(segment->staff_shape(0).empty());
+        EXPECT_EQ(segment->min_right(), 0.0);
+        EXPECT_EQ(segment->min_left(), 0.0);
+    }
+    EXPECT_FALSE(chord->has_layout_data());
+    measure->set_mm_rest(nullptr);
+}
+
+TEST(LayoutDataStore, LedgerOwnershipGrowthFailureDoesNotAttachAnUnownedShell) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    std::unique_ptr<Chord> chord(Factory::create_chord(master.dummy()));
+    chord->resize_ledger_lines_to(1);
+    const auto children = chord->children();
+    const auto &lines = chord->ldata()->ledger_lines;
+    const auto size = lines.size();
+    EXPECT_THROW(chord->resize_ledger_lines_to(lines.max_size() + 1), std::length_error);
+    EXPECT_EQ(chord->children(), children);
+    EXPECT_EQ(lines.size(), size);
+    engrave::DocumentAccess::impl(**opened).discard_layout_output(master);
+    EXPECT_TRUE(chord->children().empty());
+    chord->resize_ledger_lines_to(2);
+    EXPECT_EQ(chord->ldata()->ledger_lines.size(), 2u);
+}
+
+TEST(LayoutDataStore, ActiveBuildRejectsDiscardAndFailedAllocationForcesCompleteRetry) {
+    using namespace mu::engraving;
+    using rendering::score::LayoutDataStore;
+    auto opened = g_engine->open(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "tests/data/inputs/golden/layout_elements.mscx");
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    const auto baseline = document.render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(baseline);
+    auto *store = master.layout_data_store();
+    const auto size = store->size();
+    master.cmd_state().lock();
+    EXPECT_THROW(store->clear(), std::logic_error);
+    master.cmd_state().unlock();
+    EXPECT_EQ(store->size(), size);
+    EXPECT_FALSE(master.layout_state.dirty);
+    const auto source = music::dump_json(music::semantic_dump(&master), 1);
+    const auto revision = document.revision();
+    static size_t remaining;
+
+    struct AllocationFailure {
+        explicit AllocationFailure(size_t countdown) {
+            remaining = countdown;
+            LayoutDataStore::before_allocation = [](const EngravingItem &item) {
+                EXPECT_TRUE(item.score()->master_score()->cmd_state().locked());
+                if (--remaining == 0) throw std::bad_alloc();
+            };
+        }
+
+        ~AllocationFailure() { LayoutDataStore::before_allocation = nullptr; }
+    };
+
+    for (size_t countdown : {1u, 20u, 100u}) {
+        SCOPED_TRACE(countdown);
+        engrave::DocumentAccess::impl(document).discard_layout_output(master);
+        const auto layouts = layout_count(master);
+        {
+            AllocationFailure failure(countdown);
+            EXPECT_THROW(std::ignore = document.page_count(), std::bad_alloc);
+            EXPECT_EQ(remaining, 0u);
+        }
+        EXPECT_FALSE(master.cmd_state().locked());
+        EXPECT_EQ(store->size(), 0u);
+        EXPECT_TRUE(master.layout_state.dirty);
+        EXPECT_EQ(master.layout_state.start, Fraction(0, 1));
+        EXPECT_EQ(master.layout_state.end, Fraction(-1, 1));
+        EXPECT_EQ(document.revision(), revision);
+        EXPECT_EQ(music::dump_json(music::semantic_dump(&master), 1), source);
+        const auto retry = document.render({.format = engrave::RenderFormat::SVG});
+        ASSERT_TRUE(retry);
+        EXPECT_EQ(retry->pages, baseline->pages);
+        EXPECT_FALSE(master.layout_state.dirty);
+        EXPECT_EQ(layout_count(master), layouts + 2);
+    }
+    // A range failure must invalidate even previously reusable output. The font
+    // branch can throw before ScoreLayout locks CmdState, and needs cleanup too.
+    for (bool font_change : {false, true}) {
+        SCOPED_TRACE(font_change);
+        EngravingItem *victim = nullptr;
+        for (auto *object : engrave::document_objects(master)) {
+            if (!object->is_engraving_item() || object->score() != &master || !source_object(*object)) continue;
+            auto *item = to_engraving_item(object);
+            if ((font_change ? item->is_text_base() : item->is_note()) && item->has_layout_data()) {
+                victim = item;
+                break;
+            }
+        }
+        ASSERT_NE(victim, nullptr);
+        store->erase(*victim);
+        if (font_change)
+            ++engrave::DocumentAccess::impl(document).engine->font_generation;
+        else
+            master.invalidate_layout(Fraction(1, 4), Fraction(1, 2));
+        static bool locked_at_failure;
+
+        struct FailureHook {
+            FailureHook() {
+                LayoutDataStore::before_allocation = [](const EngravingItem &item) {
+                    locked_at_failure = item.score()->master_score()->cmd_state().locked();
+                    throw std::bad_alloc();
+                };
+            }
+
+            ~FailureHook() { LayoutDataStore::before_allocation = nullptr; }
+        };
+
+        {
+            FailureHook failure;
+            EXPECT_THROW(std::ignore = document.page_count(), std::bad_alloc);
+        }
+        EXPECT_EQ(locked_at_failure, !font_change);
+        EXPECT_EQ(store->size(), 0u);
+        EXPECT_TRUE(master.layout_state.dirty);
+        EXPECT_EQ(master.layout_state.start, Fraction(0, 1));
+        EXPECT_EQ(master.layout_state.end, Fraction(-1, 1));
+        EXPECT_EQ(document.revision(), revision);
+        EXPECT_EQ(music::dump_json(music::semantic_dump(&master), 1), source);
+        const auto retry = document.render({.format = engrave::RenderFormat::SVG});
+        ASSERT_TRUE(retry);
+        EXPECT_EQ(retry->pages, baseline->pages);
+    }
+}
+
 TEST(LayoutDataStore, ClosedDispatchKeepsColdDefaultsSparseAndPreservesLegacyPayloadProvenance) {
     using namespace mu::engraving;
     auto opened = g_engine->open(write470_fixture());

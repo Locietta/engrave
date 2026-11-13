@@ -933,6 +933,9 @@ Chord::LayoutData::~LayoutData() { muse::delete_all(ledger_lines); }
 
 void Chord::resize_ledger_lines_to(size_t new_size) {
     auto &lines = mutldata()->ledger_lines;
+    // Reserve ownership slots before parenting shells. A failed growth must not
+    // leave an attached ledger line outside the payload's owning vector.
+    lines.reserve(new_size);
     while (lines.size() < new_size) {
         auto *line = new LedgerLine(this);
         line->set_generated(true);

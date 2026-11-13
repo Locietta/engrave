@@ -295,6 +295,10 @@ public:
 
     Shape &staff_shape(staff_idx_t staff_idx) { return shapes_[staff_idx]; }
 
+    void clear_shapes() {
+        for (auto &shape : shapes_) shape.clear();
+    }
+
     void create_shapes();
     void create_shape(staff_idx_t staff_idx);
     double min_right() const;

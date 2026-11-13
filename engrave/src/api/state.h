@@ -68,6 +68,7 @@ struct Document::Impl {
     void bind_layout_boundary();
     mu::engraving::rendering::score::LayoutDataStore &adopt_layout_output(mu::engraving::Score &score);
     void ensure_layout(mu::engraving::Score &score);
+    void discard_layout_output(mu::engraving::Score &score);
     api::EditHooks edit_hooks;
 
     static std::unique_ptr<Document> make(EngineState &engine, music::ScoreProject project, music::ScoreAudioMixDefaults audio_defaults,
