@@ -34,6 +34,7 @@ struct IODevice;
 } // namespace io
 
 struct TextStream {
+    static inline thread_local bool round_trip_doubles = false;
     TextStream() = default;
     explicit TextStream(io::IODevice *device);
     virtual ~TextStream();

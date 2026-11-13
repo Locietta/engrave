@@ -25,6 +25,7 @@
 #include "global/io/buffer.h"
 #include "global/io/writebudget.h"
 #include "global/log.h"
+#include "global/serialization/textstream.h"
 #include "global/serialization/xmlstreamreader.h"
 #include "global/serialization/zipreader.h"
 #include "global/serialization/zipwriter.h"
@@ -221,6 +222,13 @@ std::string export_native_score(const EngineContext &context, const ScoreProject
 
 std::string export_native_score(const EngineContext &context, const ScoreProject &project, const std::string &format,
                                 const ExportOptions &options, [[maybe_unused]] const std::string &soundfont) {
+    struct RestorePrecision {
+        bool previous = TextStream::round_trip_doubles;
+
+        ~RestorePrecision() { TextStream::round_trip_doubles = previous; }
+    } restore_precision;
+
+    if (options.transaction_snapshot) TextStream::round_trip_doubles = true;
     // Audio formats are rendered by the worker's MuseScore engine; the
     // SoundFont parameter is retained for source compatibility.
     auto *score = options.transaction_snapshot ? project->master_score() : select_score(project->master_score(), options.excerpt_id);

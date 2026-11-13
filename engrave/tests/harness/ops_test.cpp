@@ -109,6 +109,87 @@ std::unique_ptr<engrave::Document> open(std::string_view name) {
 
 constexpr std::string_view fixture_name = "chordline_path.mscx";
 
+std::string native_source(engrave::Document &document) {
+    return music::export_native_score(engrave::DocumentAccess::context(document), engrave::DocumentAccess::project(document), "mscx",
+                                      music::ExportOptions{.standalone_score = true, .transaction_snapshot = true}, {});
+}
+
+TEST(Checkpoint, RestoresSourceAndIdsBeforeNativeSave) {
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    const auto before = native_source(*document);
+    std::vector<ElementId> ids;
+    for (const auto &entry : engrave::live_ids(engrave::harness::master_of(*document))) ids.push_back(entry.id);
+    ASSERT_TRUE(document->checkpoint("before"));
+    const auto outline = document->outline();
+    ASSERT_TRUE(outline);
+    ASSERT_TRUE(document->edit({{engrave::InsertMeasures{outline->measures.front().id, 2}}}));
+    ASSERT_TRUE(document->restore_checkpoint("before"));
+    EXPECT_EQ(native_source(*document), before);
+    std::vector<ElementId> restored_ids;
+    for (const auto &entry : engrave::live_ids(engrave::harness::master_of(*document))) restored_ids.push_back(entry.id);
+    EXPECT_EQ(restored_ids, ids);
+    for (const auto *score : engrave::harness::master_of(*document).score_list())
+        EXPECT_EQ(score->layout_state.whole_count + score->layout_state.range_count, 0u);
+    auto saved = document->export_score({.format = engrave::Format::MSCZ});
+    ASSERT_TRUE(saved) << saved.error().message;
+    auto reopened = g_engine->open(*saved);
+    ASSERT_TRUE(reopened) << reopened.error().message;
+    const auto restored_outline = (*reopened)->outline();
+    ASSERT_TRUE(restored_outline);
+    EXPECT_EQ(restored_outline->measures.size(), outline->measures.size());
+}
+
+TEST(Checkpoint, LimitRefusalKeepsExistingCheckpoint) {
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    const auto before = native_source(*document);
+    ASSERT_TRUE(document->checkpoint("before"));
+    auto &state = engrave::DocumentAccess::impl(*document);
+    state.checkpoint_byte_limit = 1;
+    const auto rejected = document->checkpoint("before");
+    ASSERT_FALSE(rejected);
+    EXPECT_EQ(rejected.error().code, ErrorCode::RESOURCE_LIMIT);
+    const auto note = find_id(*document, "Note");
+    ASSERT_TRUE(document->edit({{SetProperty{note, "color", Color{255, 0, 0}}}}));
+    ASSERT_TRUE(document->restore_checkpoint("before"));
+    EXPECT_EQ(native_source(*document), before);
+}
+
+TEST(Checkpoint, RestoresRuntimeTempoForPlayback) {
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    mu::engraving::TempoTimeline timeline;
+    timeline.rebuild(mu::engraving::TempoValues{{0, 3.0}}, {});
+    timeline.set_tempo_multiplier(mu::engraving::BeatsPerSecond(1.5));
+    master.set_tempo_timeline_override(timeline);
+    ASSERT_TRUE(document->checkpoint("tempo"));
+    master.set_tempo_timeline_override(std::nullopt);
+    ASSERT_TRUE(document->restore_checkpoint("tempo"));
+    // Four quarter notes at 4.5 beats per second last eight ninths of a second.
+    EXPECT_DOUBLE_EQ(engrave::harness::master_of(*document).tempo_timeline().utick2utime(1920), 8.0 / 9.0);
+}
+
+TEST(Edit, StaticMeasureErrorsAreRejectedBeforeEarlierWrites) {
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    const auto before = native_source(*document);
+    const auto note = find_id(*document, "Note");
+    const auto outline = document->outline();
+    ASSERT_TRUE(outline);
+    const auto first = outline->measures.front().id;
+    const auto last = outline->measures.back().id;
+    for (const engrave::Op bad : {engrave::Op{engrave::InsertMeasures{note, 1}}, engrave::Op{engrave::RemoveMeasures{note, first}},
+                                  engrave::Op{engrave::RemoveMeasures{first, note}}, engrave::Op{engrave::RemoveMeasures{last, first}}}) {
+        const auto result = document->edit({{SetProperty{note, "color", Color{255, 0, 0}}, bad}});
+        ASSERT_FALSE(result);
+        EXPECT_EQ(result.error().code, ErrorCode::INVALID_ARGUMENT);
+        EXPECT_EQ(result.error().op_index, 1u);
+        EXPECT_EQ(native_source(*document), before);
+    }
+}
+
 TEST(Edit, CommitAdvancesTheRevisionAndClearsTheHistory) {
     auto document = open(fixture_name);
     ASSERT_TRUE(document);
