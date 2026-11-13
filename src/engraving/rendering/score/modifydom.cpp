@@ -292,7 +292,6 @@ void ModifyDom::sort_measure_segments(Measure *measure, LayoutContext &ctx) {
     for (Segment *seg : segs_to_move_to_next_measure) {
         Fraction orig_rtick = seg->rtick();
 
-        seg->undo_change_property(Pid::END_OF_MEASURE_CHANGE, false);
         measure->score()->apply_segment_parent_change(seg, next_measure, Fraction(0, 1));
 
         // Move in underlying segments
@@ -301,7 +300,6 @@ void ModifyDom::sort_measure_segments(Measure *measure, LayoutContext &ctx) {
             if (from_mm_last) {
                 Segment *underlying_seg = from_mm_last->find_segment_r(seg->segment_type(), orig_rtick);
                 if (underlying_seg) {
-                    underlying_seg->undo_change_property(Pid::END_OF_MEASURE_CHANGE, false);
                     if (next_measure->is_mm_rest() && next_measure->mm_rest_first()) {
                         next_measure->score()->apply_segment_parent_change(underlying_seg, next_measure->mm_rest_first(), Fraction(0, 1));
                     } else {
@@ -316,7 +314,7 @@ void ModifyDom::sort_measure_segments(Measure *measure, LayoutContext &ctx) {
             Measure *mm_first = next_measure->mm_rest_first();
             if (mm_first && mm_first != next_measure) {
                 Segment *mm_seg = mm_first->undo_get_segment_r(seg->segment_type(), Fraction(0, 1));
-                mm_seg->undo_change_property(Pid::END_OF_MEASURE_CHANGE, false);
+
                 for (track_idx_t track = 0; track < ctx.dom().ntracks(); track += ::mu::engraving::voices) {
                     EngravingItem *e = seg->element(track);
                     if (!e) {
@@ -337,7 +335,6 @@ void ModifyDom::sort_measure_segments(Measure *measure, LayoutContext &ctx) {
     for (Segment *seg : segs_to_move_to_this_measure) {
         Fraction orig_rtick = seg->rtick();
 
-        seg->undo_change_property(Pid::END_OF_MEASURE_CHANGE, true);
         measure->score()->apply_segment_parent_change(seg, measure, measure->ticks());
 
         // Move in underlying segments
@@ -346,7 +343,6 @@ void ModifyDom::sort_measure_segments(Measure *measure, LayoutContext &ctx) {
             if (from_mm_first) {
                 Segment *underlying_seg = from_mm_first->find_segment_r(seg->segment_type(), orig_rtick);
                 if (underlying_seg) {
-                    underlying_seg->undo_change_property(Pid::END_OF_MEASURE_CHANGE, true);
                     if (measure->is_mm_rest() && measure->mm_rest_last()) {
                         measure->score()->apply_segment_parent_change(underlying_seg, measure->mm_rest_last(),
                                                                       measure->mm_rest_last()->ticks());
@@ -362,7 +358,7 @@ void ModifyDom::sort_measure_segments(Measure *measure, LayoutContext &ctx) {
             Measure *mm_last = measure->mm_rest_last();
             if (mm_last && mm_last != measure) {
                 Segment *mm_seg = mm_last->undo_get_segment_r(seg->segment_type(), measure->ticks());
-                mm_seg->undo_change_property(Pid::END_OF_MEASURE_CHANGE, true);
+
                 // Clone per-track elements from the moved segment into the underlying mmrest segment
                 for (track_idx_t track = 0; track < ctx.dom().ntracks(); track += ::mu::engraving::voices) {
                     EngravingItem *e = seg->element(track);
@@ -378,21 +374,6 @@ void ModifyDom::sort_measure_segments(Measure *measure, LayoutContext &ctx) {
                     }
                 }
             }
-        }
-    }
-
-    // Check end of measure changes for top and underlying measures
-    measure->check_end_of_measure_change();
-    if (measure->is_mm_rest()) {
-        Measure *mm_last = measure->mm_rest_last();
-        if (mm_last) {
-            mm_last->check_end_of_measure_change();
-        }
-    }
-    if (next_measure->is_mm_rest()) {
-        Measure *mm_first = next_measure->mm_rest_first();
-        if (mm_first) {
-            mm_first->check_end_of_measure_change();
         }
     }
 

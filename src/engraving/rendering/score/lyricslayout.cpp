@@ -32,7 +32,6 @@
 #include "dom/stafftype.h"
 #include "dom/system.h"
 #include "log.h"
-#include "normalization/normalize.h"
 #include "style/styledef.h"
 #include "textlayout.h"
 #include "tlayout.h"
@@ -374,9 +373,30 @@ Lyrics *LyricsLayout::find_next_lyrics(const ChordRest *end_chord_rest, int vers
     return nullptr;
 }
 
+// Load and edit finalization repair source ticks. The drawn melisma also
+// includes the duration of its final chord.
+static Fraction lyrics_line_duration(const Lyrics &item) {
+    if (item.ticks().is_zero()) return Lyrics::temp_melisma_ticks;
+    const Segment *start = item.segment();
+    const Fraction target = item.ticks() == Lyrics::temp_melisma_ticks ? start->tick() : item.end_tick();
+    const Segment *end = start;
+    while (end && end->tick() < target) end = end->next_cr(item.track(), true);
+    if (!end) return Fraction(0, 1);
+    const EngravingItem *element = end->element(item.track());
+    if (end->tick() != target || !element || !element->is_chord()) return Fraction(0, 1);
+    const Chord *chord = to_chord(element);
+    const Segment *last_chord = end;
+    end = last_chord->next_cr(item.track(), false);
+    if (!end || end->tick() > chord->end_tick()) {
+        end = last_chord;
+        while (end && end->tick() < chord->end_tick()) end = end->next_cr(muse::nidx, true);
+    }
+    return (end ? end->tick() : item.score()->end_tick()) - start->tick();
+}
+
 void LyricsLayout::create_or_remove_lyrics_line(Lyrics *item, LayoutContext &ctx) {
     auto is_end_melisma = [item]() { return item->ticks().is_not_zero(); };
-    const Fraction lyrics_line_ticks = normalize_lyric_ticks(*item);
+    const Fraction lyrics_line_ticks = lyrics_line_duration(*item);
 
     ChordRest *cr = item->chord_rest();
 
