@@ -291,7 +291,7 @@ EngravingItem::EngravingItem(const EngravingItem &e, bool link) : EngravingObjec
 }
 
 EngravingItem::~EngravingItem() {
-    if (score() && Score::is_alive(score()) && master_score() && Score::is_alive(master_score()))
+    if (source_handle().is_valid() && score() && Score::is_alive(score()) && master_score() && Score::is_alive(master_score()))
         master_score()->eid_register()->touch(*this);
     // Snapping links are reciprocal non-owning display pointers. Detach while
     // both objects are still alive, including deletion between layout runs.
@@ -518,6 +518,9 @@ void EngravingItem::set_track(track_idx_t val) {
         return;
     }
 
+    if (track_ != val && source_handle().is_valid() && score() && Score::is_alive(score()) && master_score() &&
+        Score::is_alive(master_score()))
+        master_score()->eid_register()->touch(*this);
     track_ = val;
 
     if (left_parenthesis_) {

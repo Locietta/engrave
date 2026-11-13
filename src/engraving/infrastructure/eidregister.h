@@ -88,6 +88,8 @@ struct EIDRegister {
     void publish(EngravingObject &item, bool published = true);
     void touch(const EngravingObject &item);
 
+    bool tracking_ids() const { return tracking_; }
+
     void begin_id_diff() {
         touched_.clear();
         tracking_ = true;

@@ -318,10 +318,16 @@ std::vector<LiveId> live_ids(MasterScore &master) {
 
 IdDiff diff_ids(std::span<const LiveId> before, std::span<const LiveId> after) {
     const auto contains = [](std::span<const LiveId> ids, ElementId id) { return std::ranges::binary_search(ids, id, {}, &LiveId::id); };
-    std::vector<Placement> appeared;
+    std::vector<std::pair<Placement, size_t>> appeared;
     for (const auto &entry : after)
-        if (!contains(before, entry.id)) appeared.push_back(entry.placement);
+        if (!contains(before, entry.id)) appeared.emplace_back(entry.placement, 0);
     std::ranges::sort(appeared);
+    for (auto it = appeared.begin(); it != appeared.end();) {
+        const auto end = std::upper_bound(it, appeared.end(), it->first,
+                                          [](const auto &placement, const auto &entry) { return placement < entry.first; });
+        it->second = static_cast<size_t>(end - it);
+        it = end;
+    }
 
     IdDiff diff;
     for (const LiveId &entry : after) {
@@ -329,11 +335,11 @@ IdDiff diff_ids(std::span<const LiveId> before, std::span<const LiveId> after) {
     }
     for (const LiveId &entry : before) {
         if (contains(after, entry.id)) continue;
-        auto count = std::ranges::lower_bound(appeared, entry.placement);
-        if (entry.placement.track == no_position || count == appeared.end() || *count != entry.placement) {
+        auto count = std::ranges::lower_bound(appeared, entry.placement, {}, &std::pair<Placement, size_t>::first);
+        if (entry.placement.track == no_position || count == appeared.end() || count->first != entry.placement || count->second == 0) {
             diff.removed.push_back(entry.id);
         } else {
-            appeared.erase(count);
+            --count->second;
             diff.replaced.push_back(entry.id);
         }
     }

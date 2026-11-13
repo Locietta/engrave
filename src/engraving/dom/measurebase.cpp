@@ -364,7 +364,10 @@ Fraction MeasureBase::tick() const {
     return mb ? mb->tick_ : Fraction(-1, 1);
 }
 
-void MeasureBase::set_tick(const Fraction &f) { tick_ = f; }
+void MeasureBase::set_tick(const Fraction &f) {
+    if (tick_ != f) touch_source_subtree(*this);
+    tick_ = f;
+}
 
 //---------------------------------------------------------
 //   triggerLayout

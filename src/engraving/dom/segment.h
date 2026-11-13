@@ -224,6 +224,7 @@ public:
 
     void set_rtick(const Fraction &v) {
         assert(v >= Fraction(0, 1));
+        if (tick_ != v) touch_source_subtree(*this);
         tick_ = v;
     }
 

@@ -1302,10 +1302,14 @@ bool Staff::set_property(Pid id, const PropertyValue &v) {
         case Pid::SHOW_MEASURE_NUMBERS: show_measure_numbers_ = v.value<AutoOnOff>(); break;
         case Pid::SHOW_IF_ENTIRE_SYSTEM_EMPTY: show_if_entire_system_empty_ = v.to_bool(); break;
         case Pid::VISIBLE:
+            if (visible() != v.to_bool()) touch_source_subtree(*score());
             set_visible(v.to_bool());
             master_score()->rebuild_midi_mapping();
             break;
-        case Pid::STAFF_CUTAWAY: set_cutaway(v.to_bool()); break;
+        case Pid::STAFF_CUTAWAY:
+            if (cutaway() != v.to_bool()) touch_source_subtree(*score());
+            set_cutaway(v.to_bool());
+            break;
         case Pid::STAFF_HIDE_SYSTEM_BARLINE: set_hide_system_bar_line(v.to_bool()); break;
         case Pid::STAFF_MERGE_MATCHING_RESTS: set_merge_matching_rests(AutoOnOff(v.to_int())); break;
         case Pid::STAFF_REFLECT_TRANSPOSITION: set_reflect_transposition_in_linked_tab(v.to_bool()); break;
