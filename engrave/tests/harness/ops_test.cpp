@@ -248,6 +248,12 @@ TEST(Edit, FailedMeasureRewriteLeavesCrossingSlurSafeForReads) {
     const auto failed = document->edit({{engrave::SetTimeSig{engrave::from_engine(measure->eid()), {3, 16}}}});
     ASSERT_FALSE(failed);
     EXPECT_TRUE(failed.error().poisoned);
+    const auto blocked = document->edit({});
+    ASSERT_FALSE(blocked);
+    EXPECT_EQ(blocked.error().code, ErrorCode::POISONED);
+    const auto save = document->export_score({.format = engrave::Format::MSCZ});
+    ASSERT_FALSE(save);
+    EXPECT_EQ(save.error().code, ErrorCode::POISONED);
     const auto surviving = engrave::resolve(master, *slur_id);
     ASSERT_TRUE(surviving);
     EXPECT_EQ(mu::engraving::to_spanner(surviving->object)->end_element(), nullptr);
@@ -380,6 +386,71 @@ TEST(Edit, MultinoteEntryAcrossBarlineLeavesNoPartialChord) {
     EXPECT_EQ(native_source(*document), before);
 }
 
+TEST(Edit, NoteEntryRejectsAStaffRemovedByThePrefix) {
+    auto made = g_engine->create_document({.template_id = "Treble_Clef"});
+    ASSERT_TRUE(made);
+    auto &document = **made;
+    auto &master = engrave::harness::master_of(document);
+    const auto part = engrave::from_engine(master.parts().front()->eid());
+    ASSERT_TRUE(document.edit({{engrave::AddStaff{part}}}));
+    const auto staff = engrave::from_engine(master.staff(1)->eid());
+    const engrave::SegmentAddress at{engrave::from_engine(master.first_measure()->eid()), 1, 0, {0, 1}, "ChordRest"};
+    const auto result = document.edit({{engrave::RemoveStaff{staff}, engrave::EnterNotes{at, {1, 4}, {{60}}}}});
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->rejection);
+    EXPECT_EQ(result->applied, 1u);
+    EXPECT_EQ(result->rejection->op_index, 1u);
+    EXPECT_EQ(result->rejection->error.code, ErrorCode::INVALID_ARGUMENT);
+    EXPECT_EQ(master.nstaves(), 1u);
+    EXPECT_FALSE(engrave::resolve(master, staff));
+    EXPECT_TRUE(master.first_measure()->is_full_measure_rest());
+    EXPECT_TRUE(document.edit({}));
+}
+
+TEST(Edit, SplitNotationRejectsBeforeReplacingTheMeasureRest) {
+    auto made = g_engine->create_document({.template_id = "Treble_Clef"});
+    ASSERT_TRUE(made);
+    auto &document = **made;
+    auto &master = engrave::harness::master_of(document);
+    const auto rest = engrave::from_engine(master.find_cr({0, 1}, 0)->eid());
+    const engrave::SegmentAddress at{engrave::from_engine(master.first_measure()->eid()), 0, 0, {0, 1}, "ChordRest"};
+    const auto result = document.edit({{SetProperty{rest, "color", Color{255, 0, 0}}, engrave::EnterNotes{at, {5, 16}, {{60}, {64}}}}});
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->rejection);
+    EXPECT_EQ(result->applied, 1u);
+    EXPECT_EQ(result->rejection->op_index, 1u);
+    EXPECT_EQ(result->rejection->error.code, ErrorCode::INVALID_ARGUMENT);
+    EXPECT_TRUE(master.first_measure()->is_full_measure_rest());
+    EXPECT_EQ(property(document, rest, "color"), (engrave::Value{Color{255, 0, 0}}));
+    EXPECT_TRUE(document.edit({}));
+}
+
+TEST(Edit, MultinoteEntryUsesTheTupletsActualDurationAtTheBarline) {
+    auto made = g_engine->create_document({.template_id = "Treble_Clef"});
+    ASSERT_TRUE(made);
+    auto &document = **made;
+    auto &master = engrave::harness::master_of(document);
+    const auto measure = engrave::from_engine(master.first_measure()->eid());
+    const engrave::SegmentAddress at{measure, 0, 0, {0, 1}, "ChordRest"};
+    ASSERT_TRUE(document.edit({{engrave::EnterNotes{at, {3, 4}, {{60}}}}}));
+    const auto rest = engrave::from_engine(master.find_cr({3, 4}, 0)->eid());
+    ASSERT_TRUE(document.edit({{engrave::AddTuplet{rest, rest, 3, 2}}}));
+    const engrave::SegmentAddress inside{measure, 0, 0, {5, 6}, "ChordRest"};
+    const auto result = document.edit({{engrave::EnterNotes{inside, {1, 4}, {{60}, {64}}}}});
+    ASSERT_TRUE(result) << result.error().message;
+    EXPECT_FALSE(result->rejection);
+    const auto *entered = master.find_cr({5, 6}, 0);
+    ASSERT_TRUE(entered && entered->is_chord());
+    EXPECT_EQ(entered->ticks(), (mu::engraving::Fraction{1, 4}));
+    EXPECT_EQ(entered->actual_ticks(), (mu::engraving::Fraction{1, 6}));
+    std::vector<int> pitches;
+    for (const auto *note : mu::engraving::to_chord(entered)->notes()) {
+        pitches.push_back(note->pitch());
+        EXPECT_EQ(note->tie_for(), nullptr);
+    }
+    EXPECT_EQ(pitches, (std::vector<int>{60, 64}));
+}
+
 TEST(Edit, RejectionCommitsOnlyTheCompletedPrefix) {
     auto document = open(fixture_name);
     ASSERT_TRUE(document);
@@ -399,7 +470,9 @@ TEST(Edit, RejectionCommitsOnlyTheCompletedPrefix) {
     ASSERT_EQ(result->ops.size(), 2u);
     ASSERT_FALSE(result->ops[0].created.empty());
     ASSERT_TRUE(result->ops[0].created[0]);
-    EXPECT_NE(std::ranges::find(result->created, *result->ops[0].created[0]), result->created.end());
+    const auto inserted = engrave::from_engine(engrave::harness::master_of(*document).last_measure()->eid());
+    EXPECT_EQ(*result->ops[0].created[0], inserted);
+    EXPECT_NE(std::ranges::find(result->created, inserted), result->created.end());
     const auto next = find_id(*document, "Note");
     ASSERT_TRUE(document->edit({{SetProperty{next, "color", Color{255, 0, 0}}}}));
     EXPECT_EQ(property(*document, next, "color"), (engrave::Value{Color{255, 0, 0}}));
