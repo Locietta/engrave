@@ -31,76 +31,25 @@
 #include "../dom/system.h"
 #include "../dom/systemlockindicator.h"
 #include "editpagelocks.h"
+#include "engraving/editing/cmd.h"
 #include "transaction/transaction.h"
-#include "transaction/undoablecommand.h"
 
 using namespace mu::engraving;
 
-//---------------------------------------------------------
-//   AddSystemLock
-//---------------------------------------------------------
+static void apply_add_system_lock(const RangeLock *lock) {
+    auto *score = lock->start_mb()->score();
+    note_change(lock->start_mb(), CommandType::UNKNOWN);
+    note_change(lock->end_mb(), CommandType::UNKNOWN);
+    score->add_system_lock(lock);
+}
 
-struct AddSystemLock : UndoableCommand {
-private:
-
-    const RangeLock *system_lock_;
-public:
-    AddSystemLock(const RangeLock *system_lock) : system_lock_(system_lock) {}
-
-    void undo() override {
-        Score *score = system_lock_->start_mb()->score();
-        score->remove_system_lock(system_lock_);
-    }
-
-    void redo() override {
-        Score *score = system_lock_->start_mb()->score();
-        score->add_system_lock(system_lock_);
-    }
-
-    void cleanup(bool was_done) override {
-        if (!was_done) {
-            delete system_lock_;
-            system_lock_ = nullptr;
-        }
-    }
-
-    UNDO_NAME("AddSystemLock")
-
-    std::vector<EngravingObject *> object_items() const override { return {system_lock_->start_mb(), system_lock_->end_mb()}; }
-};
-
-//---------------------------------------------------------
-//   RemoveSystemLock
-//---------------------------------------------------------
-
-struct RemoveSystemLock : UndoableCommand {
-private:
-
-    const RangeLock *system_lock_;
-public:
-    RemoveSystemLock(const RangeLock *system_lock) : system_lock_(system_lock) {}
-
-    void undo() override {
-        Score *score = system_lock_->start_mb()->score();
-        score->add_system_lock(system_lock_);
-    }
-
-    void redo() override {
-        Score *score = system_lock_->start_mb()->score();
-        score->remove_system_lock(system_lock_);
-    }
-
-    void cleanup(bool was_done) override {
-        if (was_done) {
-            delete system_lock_;
-            system_lock_ = nullptr;
-        }
-    }
-
-    UNDO_NAME("RemoveSystemLock")
-
-    std::vector<EngravingObject *> object_items() const override { return {system_lock_->start_mb(), system_lock_->end_mb()}; }
-};
+static void apply_remove_system_lock(const RangeLock *lock) {
+    auto *score = lock->start_mb()->score();
+    note_change(lock->start_mb(), CommandType::UNKNOWN);
+    note_change(lock->end_mb(), CommandType::UNKNOWN);
+    defer_root(*score, lock);
+    score->remove_system_lock(lock);
+}
 
 //---------------------------------------------------------
 //   EditSystemLocks
@@ -108,10 +57,10 @@ public:
 
 void EditSystemLocks::undo_add_system_lock(Transaction &tx, const RangeLock *lock) {
     update_layout_breaks_on_add_system_lock(tx, lock);
-    tx.push(new AddSystemLock(lock));
+    apply_add_system_lock(lock);
 }
 
-void EditSystemLocks::undo_remove_system_lock(Transaction &tx, const RangeLock *lock) { tx.push(new RemoveSystemLock(lock)); }
+void EditSystemLocks::undo_remove_system_lock(Transaction &tx, const RangeLock *lock) { apply_remove_system_lock(lock); }
 
 void EditSystemLocks::undo_remove_all_locks(Transaction &tx, Score *score) {
     std::vector<const RangeLock *> all_locks = score->system_locks()->all_locks(); // copy

@@ -23,62 +23,22 @@
 #pragma once
 
 #include "../dom/measure.h"
-#include "transaction/undoablecommand.h"
+#include "engraving/editing/cmd.h"
 
 namespace mu::engraving {
-// Source measure-chain operations; failure-only records live in MutationJournal.
+// Source measure-chain mutations preserve linked-score timing.
 void insert_measure_chain(MeasureBase *first, MeasureBase *last, bool move_staff_type_changes);
 void remove_measure_chain(MeasureBase *first, MeasureBase *last, bool move_staff_type_changes);
 void apply_measure_length(Measure *measure, Fraction length);
 void apply_measure_repeat_count(Measure *measure, int count, staff_idx_t staff);
 
-struct ChangeMMRest : UndoableCommand {
-private:
-
-    Measure *m;
-    Measure *mmrest;
-
-    void flip() override;
-
-public:
-    ChangeMMRest(Measure *input_m, Measure *mmr) : m(input_m), mmrest(mmr) {}
-
-    UNDO_TYPE(CommandType::CHANGE_MM_REST)
-    UNDO_NAME("ChangeMMRest")
-    UNDO_CHANGED_OBJECTS({m, mmrest})
-};
+void apply_change_mmrest(Measure *input_m, Measure *mmr);
 
 // ChangeMMRestNext & ChangeMMRestPrev SHOULD ONLY BE USED FOR MMRests
 // Setting next_ & prev_ involves the score's MeasureList for regular measures
 // Source measure links use the chain operations above.
-struct ChangeMMRestNext : UndoableCommand {
-private:
+void apply_change_mmrest_next(Measure *mmrest, MeasureBase *next);
 
-    Measure *mmrest_ = nullptr;
-    MeasureBase *next_ = nullptr;
-
-    void flip() override;
-
-public:
-    ChangeMMRestNext(Measure *mmrest, MeasureBase *next) : mmrest_(mmrest), next_(next) {}
-
-    UNDO_NAME("ChangeMMRestNext")
-    UNDO_CHANGED_OBJECTS({mmrest_})
-};
-
-struct ChangeMMRestPrev : UndoableCommand {
-private:
-
-    Measure *mmrest_ = nullptr;
-    MeasureBase *prev_ = nullptr;
-
-    void flip() override;
-
-public:
-    ChangeMMRestPrev(Measure *mmrest, MeasureBase *prev) : mmrest_(mmrest), prev_(prev) {}
-
-    UNDO_NAME("ChangeMMRestPrev")
-    UNDO_CHANGED_OBJECTS({mmrest_})
-};
+void apply_change_mmrest_prev(Measure *mmrest, MeasureBase *prev);
 
 } // namespace mu::engraving

@@ -83,7 +83,7 @@ void SplitJoinMeasure::split_measure(Transaction &tx, MasterScore *master_score,
         }
         if (start != s->start_element() || end != s->end_element()) {
             spanners.push_back(std::make_tuple(s, s->tick(), s->ticks()));
-            tx.push(new ChangeStartEndSpanner(s, start, end));
+            apply_change_start_end_spanner(s, start, end);
         }
         if (s->tick() < stick && s->tick2() > stick) {
             spanners.push_back(std::make_tuple(s, s->tick(), s->ticks()));

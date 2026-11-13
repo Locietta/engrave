@@ -159,7 +159,7 @@ EngravingItem *Trill::linked_clone() {
     Ornament *linked_ornament = to_ornament(ornament_->linked_clone());
     linked_trill->set_ornament(linked_ornament);
     linked_trill->set_autoplace(true);
-    score()->record_link(linked_trill, this);
+    score()->apply_link(linked_trill, this);
     return linked_trill;
 }
 

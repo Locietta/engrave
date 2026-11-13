@@ -25,6 +25,7 @@
 #include <cmath>
 
 #include "../editing/editfretboarddiagram.h"
+#include "editing/transaction/transaction.h"
 #include "factory.h"
 #include "fret.h"
 #include "harmony.h"
@@ -449,7 +450,9 @@ void FBox::init() {
     for (size_t i = 0; i < old_diagrams_names.size(); ++i) {
         String old_name = old_diagrams_names[i];
         if (!muse::contains(diagrams_names_in_score, old_name)) {
-            score()->undo(new RemoveFretDiagramFromFretBox(old_diagrams[i]));
+            note_change(old_diagrams[i], CommandType::REMOVE_FRET_DIAGRAM_FROM_FRET_BOX);
+            defer_root(*old_diagrams[i], master_score()->eid_register()->enroll(*old_diagrams[i]));
+            remove(old_diagrams[i]);
         }
     }
 
@@ -460,7 +463,8 @@ void FBox::init() {
             new_diagram->set_ownership_parent(this);
             String name_of_diagram_before_this = i > 0 ? diagrams_names_in_score[i - 1] : String();
             size_t idx = compute_insertion_idx(name_of_diagram_before_this);
-            score()->undo(new AddFretDiagramToFretBox(new_diagram, idx));
+            note_change(new_diagram, CommandType::ADD_FRET_DIAGRAM_TO_FRET_BOX);
+            add_at_idx(new_diagram, idx);
         }
     }
 }

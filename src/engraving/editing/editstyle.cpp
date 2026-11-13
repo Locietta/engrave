@@ -56,8 +56,7 @@ static void change_chord_style(Score *score) {
 //   Whole style replacement, reusing the existing domain callbacks
 //----------------------------------------------------------
 
-void mu::engraving::apply_style_replacement(Score &owner, const MStyle &style, bool overlap, const SpatiumSources *restore_spatium,
-                                            ChordList *restore_chords) {
+void mu::engraving::apply_style_replacement(Score &owner, const MStyle &style, bool overlap) {
     auto *score = &owner;
     const double before_spatium = score->style().spatium();
 
@@ -69,13 +68,8 @@ void mu::engraving::apply_style_replacement(Score &owner, const MStyle &style, b
     }
 
     score->set_style(style, overlap);
-    if (restore_chords)
-        *score->chord_list() = std::move(*restore_chords);
-    else
-        change_chord_style(score);
-    if (restore_spatium) {
-        restore_spatium_sources(*restore_spatium);
-    } else if (before_spatium != style.spatium()) {
+    change_chord_style(score);
+    if (before_spatium != style.spatium()) {
         score->spatium_changed(before_spatium, style.spatium());
     }
     score->style_changed();
@@ -119,29 +113,14 @@ static void change_style_value(Score *score, Sid idx, const PropertyValue &old_v
     }
 }
 
-void mu::engraving::apply_style_values(Score &score, std::span<const StyleValue> values, const SpatiumSources *restore_spatium,
-                                       ChordList *restore_chords) {
+void mu::engraving::apply_style_values(Score &score, std::span<const StyleValue> values) {
     bool changed = false;
     for (const auto &value : values) {
         const auto before = score.style().style_v(value.id);
-        if (value.id == Sid::SPATIUM && restore_spatium) {
-            // A forward callback may have stopped at any item. Restore owned
-            // source values exactly, without scaling an untouched item inversely.
-            score.style().set(value.id, value.value);
-            restore_spatium_sources(*restore_spatium);
-            changed = true;
-            continue;
-        }
         if (before == value.value) continue;
-        if (restore_chords && style_value_refreshes_chords(value.id)) {
-            score.style().set(value.id, value.value);
-            changed = true;
-            continue;
-        }
         change_style_value(&score, value.id, before, value.value);
         changed = true;
     }
-    if (restore_chords) *score.chord_list() = std::move(*restore_chords);
     if (changed) score.style_changed();
 }
 

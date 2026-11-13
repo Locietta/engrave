@@ -33,7 +33,6 @@
 #include "../dom/score.h"
 #include "../dom/select.h"
 #include "../dom/trill.h"
-#include "editproperty.h"
 #include "global/containers.h"
 #include "transaction/transaction.h"
 

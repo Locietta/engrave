@@ -31,34 +31,16 @@
 
 using namespace mu::engraving;
 
-//---------------------------------------------------------
-//   ChangeHarpPedalState
-//---------------------------------------------------------
+void mu::engraving::apply_change_harp_pedal_state(HarpPedalDiagram *diagram,
+                                                  std::array<PedalPosition, ::mu::engraving::harp_string_no> pedal_state_value) {
+    note_change(diagram, CommandType::UNKNOWN);
 
-void ChangeHarpPedalState::flip() {
     std::array<PedalPosition, ::mu::engraving::harp_string_no> f_state = diagram->get_pedal_state();
     if (f_state == pedal_state_value) {
         return;
     }
 
     diagram->set_pedal_state(pedal_state_value);
-    pedal_state_value = f_state;
 
     diagram->trigger_layout();
-}
-
-std::vector<EngravingObject *> ChangeHarpPedalState::object_items() const {
-    Part *part = diagram->origin_part();
-    std::vector<EngravingObject *> objs{diagram};
-    if (!part) {
-        return objs;
-    }
-
-    HarpPedalDiagram *next_diagram = part->next_harp_diagram(diagram->tick());
-    if (next_diagram) {
-        objs.push_back(next_diagram);
-    } else {
-        objs.push_back(Navigation::last_element(diagram->score()));
-    }
-    return objs;
 }

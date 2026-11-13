@@ -28,8 +28,8 @@
 #include "dom/score.h"
 #include "dom/sharedpart.h"
 #include "dom/staff.h"
+#include "engraving/editing/cmd.h"
 #include "transaction/transaction.h"
-#include "transaction/undoablecommand.h"
 
 using namespace mu::engraving;
 

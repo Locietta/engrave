@@ -36,7 +36,6 @@
 #include "../editing/edittimesig.h"
 #include "../editing/inserttime.h"
 #include "../editing/navigation.h"
-#include "../editing/transaction/mutationjournal.h"
 #include "../editing/transaction/transaction.h"
 #include "accidental.h"
 #include "anchors.h"
@@ -95,7 +94,6 @@ namespace mu::engraving {
 //---------------------------------------------------------
 
 MStaff::~MStaff() {
-    if (retaining_journal_) retaining_journal_->forget_mstaff(retained_index_);
     delete measure_number_;
     delete mm_range_text_;
     delete lines_;
@@ -1091,11 +1089,11 @@ void Measure::cmd_remove_staves(staff_idx_t s_staff, staff_idx_t e_staff) {
         }
     }
 
-    score()->record_staff_tracks(this, s_staff, e_staff, false);
+    score()->apply_staff_tracks(this, s_staff, e_staff, false);
 
     for (int i = static_cast<int>(e_staff) - 1; i >= static_cast<int>(s_staff); --i) {
         MStaff *ms = *(mstaves_.begin() + i);
-        score()->record_mstaff(this, ms, i, false);
+        score()->apply_mstaff(this, ms, i, false);
     }
     score()->undo_update_play_count_text(this);
 }
@@ -1105,7 +1103,7 @@ void Measure::cmd_remove_staves(staff_idx_t s_staff, staff_idx_t e_staff) {
 //---------------------------------------------------------
 
 void Measure::cmd_add_staves(staff_idx_t s_staff, staff_idx_t e_staff, bool create_rest) {
-    score()->record_staff_tracks(this, s_staff, e_staff, true);
+    score()->apply_staff_tracks(this, s_staff, e_staff, true);
 
     Segment *ts = find_segment(SegmentType::TIME_SIG, tick());
     Segment *bs = find_segment_r(SegmentType::END_BAR_LINE, ticks());
@@ -1116,7 +1114,7 @@ void Measure::cmd_add_staves(staff_idx_t s_staff, staff_idx_t e_staff, bool crea
         ms->set_lines(Factory::create_staff_lines(this));
         ms->lines()->set_track(i * ::mu::engraving::voices);
         ms->lines()->set_visible(!staff->is_lines_invisible(tick()));
-        score()->record_mstaff_add(this, std::move(ms), i);
+        score()->apply_mstaff_add(this, std::move(ms), i);
     }
 
     if (!create_rest && !ts) {
@@ -1274,9 +1272,9 @@ void Measure::adjust_to_len(Fraction nf, bool append_rests_if_necessary) {
     score()->undo_insert_time(start_tick, diff);
 
     for (Score *s : score()->score_list()) {
-        s->record_time_insertion(s, start_tick, diff);
+        s->apply_time_insertion(s, start_tick, diff);
         Measure *m = s->tick2measure(tick());
-        s->record_measure_length(m, nf);
+        s->apply_measure_length(m, nf);
         if (nl > ol) {
             // move EndBarLine, TimeSigAnnounce, KeySigAnnounce
             for (Segment *seg = m->first(); seg; seg = seg->next()) {

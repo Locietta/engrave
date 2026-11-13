@@ -79,7 +79,6 @@
 #include "editchord.h"
 #include "editnote.h"
 #include "editpagelocks.h"
-#include "editproperty.h"
 #include "editspanner.h"
 #include "editsystemlocks.h"
 #include "infrastructure/messagebox.h"
@@ -88,7 +87,6 @@
 #include "noteinput.h"
 #include "rw/xmlreader.h"
 #include "style/style.h"
-#include "transaction/mutationjournal.h"
 #include "transaction/transaction.h"
 #include "translation.h"
 #include "transpose.h"
@@ -102,6 +100,10 @@ namespace mu::engraving {
 //---------------------------------------------------------
 
 void CmdState::reset() {
+    changes.clear();
+    mutation_count = 0;
+    excerpts_changed = false;
+    instruments_changed = false;
     layout_flags = LayoutFlag::NO_FLAGS;
     update_mode_ = UpdateMode::DO_NOTHING;
     start_tick_ = Fraction(-1, 1);
@@ -186,6 +188,7 @@ void CmdState::set_element(const EngravingItem *e) {
 //---------------------------------------------------------
 
 void CmdState::unset_element(const EngravingItem *e) {
+    changes.changed_objects.erase(const_cast<EngravingItem *>(e));
     if (el_ == e) {
         el_ = nullptr;
     }
@@ -261,30 +264,12 @@ void Score::start_cmd(const TranslatableString &action_name) { master_score()->t
 ///   and (always) updating the redraw area.
 //---------------------------------------------------------
 
-void Score::end_cmd(bool rollback, bool keep_rolled_back_elements) {
-    master_score()->transaction_manager()->end_transaction(rollback, keep_rolled_back_elements);
-}
+void Score::end_cmd(bool failed) { master_score()->transaction_manager()->end_transaction(failed); }
 
 //---------------------------------------------------------
 //   undo
 //    Deprecated: use Transaction::push instead.
 //---------------------------------------------------------
-
-void Score::undo(UndoableCommand *cmd) const {
-    Transaction *tx = master_score()->transaction_manager()->current_transaction();
-    if (!tx) {
-        // this can happen for layout() outside of a transaction (load)
-        if (!ScoreLoad::loading()) {
-            LOGW() << "called outside of transaction";
-        }
-
-        cmd->redo();
-        delete cmd;
-        return;
-    }
-
-    tx->push(cmd);
-}
 
 #ifndef NDEBUG
 //---------------------------------------------------------
@@ -991,7 +976,7 @@ Segment *Score::set_note_rest(Segment *segment, track_idx_t track, NoteVal nval,
                 for (EngravingObject *ee : chord->link_list()) {
                     EngravingItem *e = static_cast<EngravingItem *>(ee);
                     if (e->score() == slur->score() && e->track() == slur->track2()) {
-                        slur->score()->undo(new ChangeSpannerElements(slur, slur->start_element(), e));
+                        apply_change_spanner_elements(slur, slur->start_element(), e);
                         break;
                     }
                 }
@@ -1751,7 +1736,7 @@ void Score::cmd_set_hide_staff_if_empty_override(staff_idx_t staff_idx, System *
         if (!mb->is_measure()) {
             continue;
         }
-        record_staff_hide(engraving::to_measure(mb), staff_idx, value);
+        apply_staff_hide(engraving::to_measure(mb), staff_idx, value);
     }
 }
 

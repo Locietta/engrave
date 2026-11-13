@@ -40,7 +40,6 @@ const char *backend_name(RenderFormat format) {
 
 Result<std::int32_t> Document::page_count(const ScoreSel &selection) {
     impl_->engine->check_thread();
-    if (impl_->poisoned) return fail(ErrorCode::POISONED, "an earlier edit left the document unusable");
     const Result<mu::engraving::Score *> selected = select_score(*impl_->project->master_score(), selection);
     if (!selected) return std::unexpected(selected.error());
     impl_->ensure_layout(**selected);
@@ -49,7 +48,6 @@ Result<std::int32_t> Document::page_count(const ScoreSel &selection) {
 
 Result<RenderOutput> Document::render(const RenderOptions &options) {
     impl_->engine->check_thread();
-    if (impl_->poisoned) return fail(ErrorCode::POISONED, "an earlier edit left the document unusable");
     const Result<mu::engraving::Score *> selected = select_score(*impl_->project->master_score(), options.score);
     if (!selected) return std::unexpected(selected.error());
     mu::engraving::Score &score = **selected;
@@ -105,7 +103,6 @@ Result<Positions> Document::positions(PositionKind kind, const ScoreSel &selecti
 
 Result<Positions> Document::positions(PositionKind kind, const ScoreSel &selection, const CaptureOptions &capture) {
     impl_->engine->check_thread();
-    if (impl_->poisoned) return fail(ErrorCode::POISONED, "an earlier edit left the document unusable");
     if (kind != PositionKind::MEASURE && kind != PositionKind::SEGMENT) return fail(ErrorCode::INVALID_ARGUMENT, "unknown position kind");
     if (capture.cancelled && capture.cancelled()) return fail(ErrorCode::CANCELLED, "position capture cancelled");
     const auto selected = select_score(*impl_->project->master_score(), selection);

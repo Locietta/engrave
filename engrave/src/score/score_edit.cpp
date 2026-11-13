@@ -32,7 +32,7 @@
 #include "engraving/dom/staff.h"
 #include "engraving/dom/tie.h"
 #include "engraving/editing/editnote.h"
-#include "engraving/editing/transaction/mutationjournal.h"
+#include "engraving/editing/transaction/transaction.h"
 #include "engraving/editing/transpose.h"
 #include "engraving/infrastructure/eid.h"
 #include "engraving/types/fraction.h"
@@ -168,12 +168,12 @@ struct ScoreCommandGuard {
     void begin() {
         MScore::set_error(MsError::MS_NO_ERROR);
         score_->start_cmd(TranslatableString::untranslatable("MCP pitch edit"));
-        active_ = score_->mutation_journal()->has_active_transaction();
+        active_ = score_->transaction_manager()->current_transaction() != nullptr;
         if (!active_) throw std::runtime_error("Failed to begin pitch edit");
     }
 
-    void finish(bool rollback) {
-        score_->end_cmd(rollback);
+    void finish(bool failed) {
+        score_->end_cmd(failed);
         active_ = false;
     }
 private:
@@ -197,10 +197,8 @@ PreparedPitchEdit prepare_score_pitch_edit(mu::engraving::MasterScore *score, co
     if (edit.changes.empty()) throw std::invalid_argument("Pitch edit must contain at least one change");
     if (edit.changes.size() > ::music::max_pitch_changes) throw std::invalid_argument("Pitch edit exceeds the 256-change bound");
     if (score->read_only()) throw std::runtime_error("Score is read-only");
-    MutationJournal *stack = score->mutation_journal();
-    if (!stack) throw std::runtime_error("Score has no undo stack");
-    if (stack->is_locked()) throw std::runtime_error("Score undo stack is locked");
-    if (stack->has_active_transaction()) throw std::runtime_error("Score already has an active undo command");
+    if (score->cmd_state().locked()) throw std::runtime_error("Score is locked");
+    if (score->transaction_manager()->current_transaction()) throw std::runtime_error("Score already has an active batch");
 
     const std::vector<Measure *> measures = standard_measures(score);
     std::unordered_map<const Measure *, size_t> measure_indices;
@@ -363,51 +361,32 @@ NativePitchResult inspect_score_pitch_edit(mu::engraving::MasterScore *score, co
     return prepare_score_pitch_edit(score, edit).result;
 }
 
-namespace {
-NativeEditTestFault test_fault = NativeEditTestFault::NONE;
-} // namespace
-
-void set_native_edit_test_fault(NativeEditTestFault fault) { test_fault = fault; }
-
 NativePitchResult apply_score_pitch_edit(mu::engraving::MasterScore *score, const NativePitchEdit &edit) {
     auto prepared = prepare_score_pitch_edit(score, edit);
     auto &changes = prepared.changes;
     auto &result = prepared.result;
     if (result.changed_notes == 0) return result;
-    auto *stack = score->mutation_journal();
     const auto before_revision = score->source_revision();
     ScoreCommandGuard command(score);
     try {
         command.begin();
-        size_t applied = 0;
         for (const auto &change : changes) {
             if (change.old_pitch == change.pitch) continue;
             EditNote::undo_change_pitch(score, change.note, change.pitch, change.tpc1, change.tpc2);
-            ++applied;
-            if (applied == 1 && test_fault != NativeEditTestFault::NONE) {
-                const auto fault = test_fault;
-                test_fault = NativeEditTestFault::NONE;
-                if (fault == NativeEditTestFault::EXCEPTION_AFTER_FIRST) throw std::runtime_error("Injected pitch transaction exception");
-                MScore::set_error(MsError::NO_NOTE_SELECTED);
-            }
         }
         const bool engine_failed = MScore::error != MsError::MS_NO_ERROR && !MScore::error_is_warning;
         const auto message = engine_failed ? engine_error_message() : std::string{};
         command.finish(engine_failed);
         if (engine_failed) {
-            bool restored = !stack->has_active_transaction() && score->source_revision() == before_revision;
-            for (const auto &change : changes) restored = restored && change.note->pitch() == change.old_pitch;
-            throw NativeEditFailure(message, !restored);
+            throw NativeEditFailure(message, true);
         }
-        bool committed = !stack->has_active_transaction() && score->source_revision() == before_revision + 1 &&
+        bool committed = !score->transaction_manager()->current_transaction() && score->source_revision() == before_revision + 1 &&
                          (MScore::error == MsError::MS_NO_ERROR || MScore::error_is_warning);
         for (const auto &change : changes) committed = committed && change.note->pitch() == change.pitch;
         if (!committed) throw NativeEditFailure("Engraving transaction did not commit consistently", true);
     } catch (const NativeEditFailure &) {
         throw;
     } catch (const std::exception &e) {
-        // The guard attempts to close/unwind the macro. A partial C++ layout
-        // failure is still poisoned: successful unwinding cannot prove safety.
         throw NativeEditFailure(e.what(), true);
     } catch (...) {
         throw NativeEditFailure("Unknown engraving transaction failure", true);

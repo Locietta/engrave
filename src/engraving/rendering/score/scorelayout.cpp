@@ -26,6 +26,7 @@
 #include "dom/score.h"
 #include "dom/system.h"
 #include "dumplayoutdata.h"
+#include "editing/transaction/transaction.h"
 #include "layoutcontext.h"
 #include "layoutdatastore.h"
 #include "log.h"
@@ -42,7 +43,10 @@ private:
 public:
     CmdStateLocker(Score *s) : score_(s) { score_->cmd_state().lock(); }
 
-    ~CmdStateLocker() { score_->cmd_state().unlock(); }
+    ~CmdStateLocker() {
+        score_->cmd_state().unlock();
+        score_->transaction_manager()->cleanup_detached();
+    }
 };
 
 void ScoreLayout::layout_range(Score *score, const Fraction &st, const Fraction &et) {

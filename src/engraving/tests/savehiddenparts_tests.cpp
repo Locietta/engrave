@@ -33,7 +33,7 @@
 #include "engraving/dom/segment.h"
 #include "engraving/dom/staff.h"
 #include "engraving/editing/editpart.h"
-#include "engraving/editing/transaction/mutationjournal.h"
+#include "engraving/editing/transaction/transaction.h"
 #include "engraving/infrastructure/localfileinfoprovider.h"
 #include "engraving/infrastructure/mscreader.h"
 #include "engraving/infrastructure/mscwriter.h"

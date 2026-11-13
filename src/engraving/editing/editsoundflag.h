@@ -23,21 +23,9 @@
 #pragma once
 
 #include "../dom/soundflag.h"
-#include "transaction/undoablecommand.h"
+#include "engraving/editing/cmd.h"
 
 namespace mu::engraving {
-struct ChangeSoundFlag : UndoableCommand {
-private:
-    SoundFlag *sound_flag_ = nullptr;
-    SoundFlag::PresetCodes presets_;
-    SoundFlag::PlayingTechniqueCode playing_technique_;
-
-public:
-    ChangeSoundFlag(SoundFlag *sound_flag, const SoundFlag::PresetCodes &presets, const SoundFlag::PlayingTechniqueCode &technique)
-        : sound_flag_(sound_flag), presets_(presets), playing_technique_(technique) {}
-
-    void flip() override;
-    UNDO_NAME("ChangeSoundFlag")
-    UNDO_CHANGED_OBJECTS({sound_flag_})
-};
+void apply_change_sound_flag(SoundFlag *sound_flag, const SoundFlag::PresetCodes &presets,
+                             const SoundFlag::PlayingTechniqueCode &technique);
 } // namespace mu::engraving

@@ -118,8 +118,6 @@ music::ScoreProject &DocumentAccess::project(Document &document) { return docume
 
 music::EngineContext &DocumentAccess::context(Document &document) { return *document.impl_->engine->context; }
 
-api::EditHooks &DocumentAccess::edit_hooks(Document &document) { return document.impl_->edit_hooks; }
-
 Document::~Document() {
     impl_->engine->check_thread();
     --impl_->engine->live_documents;
@@ -128,7 +126,9 @@ Document::~Document() {
 Result<void> Document::checkpoint(std::string_view name) {
     impl_->engine->check_thread();
     if (impl_->poisoned)
-        return std::unexpected(Error{ErrorCode::POISONED, "restore_checkpoint or reopen the document before taking a checkpoint"});
+        return std::unexpected(Error{.code = ErrorCode::POISONED,
+                                     .message = "restore_checkpoint or reopen the document before taking a checkpoint",
+                                     .poisoned = true});
     auto &master = *impl_->project->master_score();
     Impl::Checkpoint saved;
     saved.name = name;
@@ -178,7 +178,7 @@ Result<void> Document::restore_checkpoint(std::string_view name) {
     if (found == impl_->checkpoints.end()) return std::unexpected(Error{ErrorCode::NOT_FOUND, "checkpoint not found"});
     if (impl_->revision == std::numeric_limits<std::uint64_t>::max())
         return std::unexpected(Error{ErrorCode::RESOURCE_LIMIT, "document revision exhausted"});
-    auto project = music::load_native_score(*impl_->engine->context, found->bytes, "mscz");
+    auto project = music::load_native_score(*impl_->engine->context, found->bytes, "mscz", true);
     mu::engraving::ScoreLoad load;
     auto versions = found->versions.begin();
     for (auto *score : project->master_score()->score_list()) {
@@ -240,7 +240,11 @@ Result<std::vector<std::byte>> Document::export_score(const ExportOptions &optio
 
 Result<ExportOutput> Document::export_score_with_warnings(const ExportOptions &options) {
     impl_->engine->check_thread();
-    if (impl_->poisoned) return std::unexpected(Error{ErrorCode::POISONED, "an earlier edit left the document unusable"});
+    const bool native = options.format == Format::MSCZ || options.format == Format::MSCX;
+    if (native && impl_->poisoned)
+        return std::unexpected(
+            Error{.code = ErrorCode::POISONED, .message = "restore_checkpoint or reopen the document before saving", .poisoned = true});
+
     if (options.capture.cancelled && options.capture.cancelled())
         return std::unexpected(Error{ErrorCode::CANCELLED, "score capture cancelled"});
     const char *name = nullptr;
@@ -255,7 +259,6 @@ Result<ExportOutput> Document::export_score_with_warnings(const ExportOptions &o
         default:
             return std::unexpected(Error{ErrorCode::UNSUPPORTED, std::format("the engine does not write {}", to_string(options.format))});
     }
-    const bool native = options.format == Format::MSCZ || options.format == Format::MSCX;
     if (options.native_version != "5.00" && (!native || options.native_version != "4.70")) {
         Error error{ErrorCode::UNSUPPORTED,
                     std::format("native score version '{}' is not supported for {}", options.native_version, to_string(options.format))};

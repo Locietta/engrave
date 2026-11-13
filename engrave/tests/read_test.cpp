@@ -115,9 +115,7 @@
 #include "engraving/dom/tuplet.h"
 #include "engraving/editing/addremoveelement.h"
 #include "engraving/editing/editpart.h"
-#include "engraving/editing/editproperty.h"
 #include "engraving/editing/flip.h"
-#include "engraving/editing/transaction/mutationjournal.h"
 #include "engraving/editing/transaction/transaction.h"
 #include "engraving/infrastructure/eidregister.h"
 #include "engraving/normalization/normalize.h"
@@ -411,61 +409,6 @@ TEST(Read, WholeTextFormattingMatchesEagerSourceAndRenderWithoutItemLayout) {
     }
 }
 
-TEST(Read, RejectedTextFormattingRestoresSourceAndFlagsWithoutItemLayout) {
-    using namespace mu::engraving;
-    for (bool rendered : {false, true}) {
-        for (const char *property : {"fontStyle", "FONT_SIZE", "family"}) {
-            for (bool reset : {false, true}) {
-                SCOPED_TRACE(std::format("{} rendered={} reset={}", property, rendered, reset));
-                auto opened = g_engine->open(as_bytes(formatted_text_fixture()), {.format = engrave::Format::MSCX});
-                ASSERT_TRUE(opened);
-                auto &document = **opened;
-                auto &master = master_of(document);
-                auto *text = staff_text_of(master);
-                ASSERT_NE(text, nullptr);
-                std::vector<std::vector<std::byte>> baseline;
-                if (rendered) {
-                    auto result = document.render({.format = engrave::RenderFormat::SVG});
-                    ASSERT_TRUE(result);
-                    baseline = result->pages;
-                }
-                const auto id = engrave::from_engine(text->eid());
-                const auto markup = text->xml_text();
-                const auto format = *text->cursor()->format();
-                const auto pid = engrave::api::pid_of(property);
-                const auto flags = text->property_flags(pid);
-                const auto count = master.layout_state.whole_count + master.layout_state.range_count;
-                const auto revision = document.revision();
-                auto &hooks = engrave::DocumentAccess::edit_hooks(document);
-                hooks.policy = engrave::api::Policy::TRANSACTION;
-                hooks.before_step = [](std::size_t step) {
-                    if (step == 1) throw std::runtime_error("reject text formatting");
-                };
-                engrave::Value value = std::int64_t(0);
-                if (pid == Pid::FONT_SIZE) value = 14.0;
-                if (pid == Pid::FONT_FACE) value = std::string("Leland Text");
-                ItemLayoutSpy spy;
-                const engrave::Op op =
-                    reset ? engrave::Op(engrave::ResetProperty{id, property}) : engrave::Op(engrave::SetProperty{id, property, value});
-                EXPECT_FALSE(document.edit({{op}}));
-                hooks = {};
-                ASSERT_EQ(engrave::DocumentAccess::master_score(document), &master);
-                EXPECT_EQ(text->xml_text(), markup);
-                EXPECT_EQ(*text->cursor()->format(), format);
-                EXPECT_EQ(text->property_flags(pid), flags);
-                EXPECT_EQ(document.revision(), revision);
-                EXPECT_EQ(ItemLayoutSpy::count, 0u);
-                EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
-                if (rendered) {
-                    auto result = document.render({.format = engrave::RenderFormat::SVG});
-                    ASSERT_TRUE(result);
-                    EXPECT_EQ(result->pages, baseline);
-                }
-            }
-        }
-    }
-}
-
 TEST(Read, PlaybackNoteheadUsesSourceSchemeWithoutDisplayData) {
     using namespace mu::engraving;
     using namespace muse::mpe;
@@ -661,27 +604,6 @@ TEST(Read, SemanticDocumentBoundariesDeferAllLayoutUntilFirstRender) {
     EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 1u);
 }
 
-TEST(Read, FailedFinalPreparationRestoresSourceWithoutLayout) {
-    using namespace mu::engraving;
-    auto opened = g_engine->open(write470_fixture());
-    ASSERT_TRUE(opened);
-    auto &document = **opened;
-    auto &master = master_of(document);
-    auto *note = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0))->notes().front();
-    const int line = note->line();
-    const auto revision = document.revision();
-    const auto source_revision = master.source_revision();
-    engrave::DocumentAccess::edit_hooks(document).before_cleanup = [] { throw std::runtime_error("after result preparation"); };
-    EXPECT_FALSE(document.edit({{engrave::SetPitch{engrave::from_engine(note->eid()), note->pitch() + 12}}}));
-    EXPECT_EQ(document.revision(), revision);
-    EXPECT_EQ(master.source_revision(), source_revision);
-    EXPECT_EQ(note->line(), line);
-    EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
-    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
-    EXPECT_FALSE(master.normalize_state.dirty);
-    EXPECT_FALSE(note->has_layout_data());
-}
-
 TEST(Read, TabTieAndBendFrettingIsFinalBeforeFirstLayout) {
     auto opened = g_engine->open(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "tests/data/inputs/golden/tab_grace_prebend.mscx");
     ASSERT_TRUE(opened);
@@ -719,29 +641,6 @@ TEST(Read, HiddenStaffEditPublishesNormalizedLinesWithoutLayout) {
     EXPECT_FALSE(master.normalize_state.dirty);
     EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
     EXPECT_FALSE(note->has_layout_data());
-}
-
-TEST(Read, ProductionBatchBarrierPublishesLinesBeforeTheNextStep) {
-    using namespace mu::engraving;
-    auto opened = g_engine->open(write470_fixture());
-    ASSERT_TRUE(opened);
-    auto &document = **opened;
-    auto &master = master_of(document);
-    auto *note = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0))->notes().front();
-    const auto id = engrave::from_engine(note->eid());
-    const int initial = note->line();
-    bool checked = false;
-    auto &hooks = engrave::DocumentAccess::edit_hooks(document);
-    hooks.before_step = [&](std::size_t step) {
-        if (step != 2) return;
-        EXPECT_EQ(note->line(), initial - 7);
-        EXPECT_FALSE(master.normalize_state.dirty);
-        checked = true;
-    };
-    ASSERT_TRUE(document.edit({{engrave::SetPitch{id, note->pitch() + 12}, engrave::SetProperty{id, "visible", true}}}));
-    hooks = {};
-    EXPECT_TRUE(checked);
-    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
 }
 
 TEST(Read, DeferredEditSequenceMatchesEagerAndBatchedOutput) {
@@ -963,30 +862,6 @@ TEST(Read, NormalizeOnlyRepairsLinesWithoutLayoutAndPreservesGeometryDirtiness) 
     EXPECT_FALSE(note->has_layout_data());
 }
 
-TEST(Read, ReplayNormalizationDoesNotRecordInsideAnOpenTransaction) {
-    using namespace mu::engraving;
-    auto document = open_path(write470_fixture());
-    ASSERT_TRUE(document);
-    auto &master = master_of(*document);
-    auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
-    auto *ornament = Factory::create_ornament(chord);
-    ornament->set_sym_id(SymId::ORNAMENT_TRILL);
-    chord->add(ornament);
-    master.do_layout();
-    master.start_cmd(muse::TranslatableString::untranslatable("explicit replay scope"));
-    auto *recording = master.transaction_manager()->current_transaction();
-    master.set_layout_all();
-    const auto count = master.layout_state.whole_count + master.layout_state.range_count;
-    const auto mark = master.mutation_journal()->active_transaction()->entry_count();
-    normalize_document(master, {.mode = NormalizeMode::REPLAY});
-    EXPECT_EQ(master.transaction_manager()->current_transaction(), recording);
-    EXPECT_EQ(master.mutation_journal()->active_transaction()->entry_count(), mark);
-    EXPECT_FALSE(master.normalize_state.dirty);
-    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
-    master.end_cmd(true);
-    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
-}
-
 TEST(Read, NormalizePersistsMidiRequestsAcrossCommandStateReset) {
     using namespace mu::engraving;
     auto document = open_path(write470_fixture());
@@ -1003,87 +878,6 @@ TEST(Read, NormalizePersistsMidiRequestsAcrossCommandStateReset) {
     EXPECT_FALSE(master.midi_mapping().empty());
     EXPECT_FALSE(master.normalize_state.rebuild_midi_mapping);
     EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
-}
-
-TEST(Read, MutationBoundariesPublishNormalizedSourceAndAccidentalIds) {
-    using namespace mu::engraving;
-    auto native = open_path(write470_fixture());
-    ASSERT_TRUE(native);
-    auto created = g_engine->create_document({.template_id = "Treble_Clef", .title = "normalized create"});
-    ASSERT_TRUE(created);
-    auto mnx = open_path(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "src/importexport/mnx/tests/data/engine/two-notes.mnx");
-    ASSERT_TRUE(mnx);
-    for (auto *document : {native.get(), created->get(), mnx.get()}) {
-        auto &master = master_of(*document);
-        for (auto *score : master.score_list()) {
-            EXPECT_FALSE(score->normalize_state.dirty);
-            EXPECT_FALSE(score->normalize_state.running);
-        }
-        EXPECT_FALSE(master.repeat_list(false).empty());
-    }
-    auto &master = master_of(*native);
-    auto *note = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0))->notes().front();
-    static MasterScore *observed = nullptr;
-    static bool saw_normalization = false;
-    observed = &master;
-    saw_normalization = false;
-    Transaction::set_push_hook([](UndoableCommand *, bool appended) {
-        if (appended && observed->normalize_state.running) {
-            EXPECT_NE(observed->transaction_manager()->current_transaction(), nullptr);
-            saw_normalization = true;
-        }
-    });
-    auto result = native->edit({{engrave::SetPitch{engrave::from_engine(note->eid()), 61, 21}}});
-    Transaction::set_push_hook(nullptr);
-    ASSERT_TRUE(result);
-    EXPECT_TRUE(saw_normalization);
-    ASSERT_NE(note->accidental(), nullptr);
-    EXPECT_TRUE(note->accidental()->eid().is_valid());
-    const auto accidental = engrave::from_engine(note->accidental()->eid());
-    EXPECT_NE(std::ranges::find(result->created, accidental), result->created.end());
-    EXPECT_FALSE(master.normalize_state.dirty);
-    const auto outline = native->outline();
-    ASSERT_TRUE(outline);
-    auto excerpts = native->edit({{engrave::GenerateExcerpts{{outline->parts.front().id}}}});
-    ASSERT_TRUE(excerpts) << excerpts.error().message;
-    EXPECT_GT(master.score_list().size(), 1u);
-    for (auto *score : master.score_list()) EXPECT_FALSE(score->normalize_state.dirty);
-}
-
-TEST(Read, InactiveSemanticBarrierPlumbingRefreshesDependentTargetsWhenOptedIn) {
-    using namespace mu::engraving;
-    auto document = open_path(write470_fixture());
-    ASSERT_TRUE(document);
-    auto &master = master_of(*document);
-    auto *note = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0))->notes().front();
-    const auto id = engrave::from_engine(note->eid());
-    const int line = note->line();
-    const auto count = master.layout_state.whole_count + master.layout_state.range_count;
-    std::optional<engrave::api::Target> target;
-    auto &hooks = engrave::DocumentAccess::edit_hooks(*document);
-    EXPECT_FALSE(hooks.needs_normalized_state);
-    hooks.needs_normalized_state = [](std::size_t step) { return step == 1; };
-    std::vector<engrave::api::Step> steps;
-    steps.push_back([&](engrave::api::EditContext &context) -> engrave::Result<void> {
-        auto resolved = context.target(id);
-        if (!resolved) return std::unexpected(resolved.error());
-        target = *resolved;
-        note->undo_change_property(Pid::PITCH, note->pitch() + 12);
-        return {};
-    });
-    steps.push_back([&](engrave::api::EditContext &context) -> engrave::Result<void> {
-        auto fresh = context.target(id);
-        if (!fresh) return std::unexpected(fresh.error());
-        EXPECT_GT(fresh->epoch, target->epoch);
-        auto resolved = context.object(*target);
-        if (!resolved) return std::unexpected(resolved.error());
-        EXPECT_EQ(to_note(*resolved)->line(), line - 7);
-        EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
-        return {};
-    });
-    auto result = engrave::api::BatchGuard(*document).run(std::move(steps), engrave::api::Policy::TRANSACTION, {});
-    hooks = {};
-    ASSERT_TRUE(result);
 }
 
 TEST(Read, NormalizeResolvesInstrumentDependentGlissandoStyleWithoutLayout) {
@@ -1114,24 +908,6 @@ TEST(Read, NormalizeResolvesInstrumentDependentGlissandoStyleWithoutLayout) {
                   styled ? line->property_default(Pid::GLISS_STYLE).value<GlissandoStyle>() : GlissandoStyle::DIATONIC);
         EXPECT_EQ(line->is_styled(Pid::GLISS_STYLE), styled);
         EXPECT_FALSE(line->has_layout_data());
-        EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
-        // A rejected transaction restores style before its instrument command.
-        // Normalize only once all source inputs have been rolled back.
-        instrument->set_id(u"piano");
-        line->set_glissando_style(GlissandoStyle::PORTAMENTO);
-        line->set_property_flags(Pid::GLISS_STYLE, styled ? PropertyFlags::STYLED : PropertyFlags::UNSTYLED);
-        master.set_layout_all();
-        normalize_score(master, {.mode = NormalizeMode::REPLAY});
-        auto *harp = new Instrument(*instrument);
-        harp->set_id(u"harp");
-        master.start_cmd(muse::TranslatableString::untranslatable("change to harp"));
-        master.record_part_instrument(master.parts().front(), std::unique_ptr<Instrument>(harp));
-        normalize_score(master);
-        EXPECT_EQ(line->glissando_style(), GlissandoStyle::DIATONIC);
-        master.end_cmd(true);
-        EXPECT_EQ(line->glissando_style(),
-                  styled ? line->property_default(Pid::GLISS_STYLE).value<GlissandoStyle>() : GlissandoStyle::PORTAMENTO);
-        EXPECT_EQ(master.parts().front()->instrument()->id(), u"piano");
         EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
         const auto style = line->glissando_style();
         EXPECT_TRUE(document.page_count());
@@ -1318,43 +1094,6 @@ TEST(Read, NormalizeCleansInvalidMelismaBeforeRepairingLyricTicks) {
         EXPECT_FALSE(lyrics->need_remove_invalid_segments());
         EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
     }
-}
-
-TEST(Read, RejectedTransactionWithOrnamentRebuildsWithoutRecording) {
-    using namespace mu::engraving;
-    auto document = open_path(write470_fixture());
-    ASSERT_TRUE(document);
-    auto &master = master_of(*document);
-    master.start_cmd(muse::TranslatableString::untranslatable("append a measure"));
-    master.insert_measure();
-    master.end_cmd(false);
-    ASSERT_EQ(master.mutation_journal()->size(), 0u);
-    auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
-    auto *ornament = Factory::create_ornament(chord);
-    ornament->set_sym_id(SymId::ORNAMENT_TRILL);
-    chord->add(ornament);
-    master.do_layout();
-    ASSERT_NE(ornament->note_above(), nullptr);
-    auto *target = master.last_measure()->first(SegmentType::CHORD_REST)->element(0);
-    auto *manager = master.transaction_manager();
-    auto *stack = master.mutation_journal();
-    const auto revision = master.source_revision();
-    const int auxiliary_pitch = ornament->note_above()->pitch();
-    master.start_cmd(muse::TranslatableString::untranslatable("rejected visibility change"));
-    target->undo_change_property(Pid::VISIBLE, false);
-    static std::size_t replay_pushes = 0;
-    replay_pushes = 0;
-    Transaction::set_push_hook([](UndoableCommand *, bool appended) {
-        if (appended) ++replay_pushes;
-    });
-    master.end_cmd(true);
-    Transaction::set_push_hook(nullptr);
-    EXPECT_EQ(replay_pushes, 0u);
-    EXPECT_FALSE(stack->has_active_transaction());
-    EXPECT_EQ(master.source_revision(), revision);
-    EXPECT_EQ(manager->current_transaction(), nullptr);
-    EXPECT_TRUE(target->visible());
-    EXPECT_EQ(ornament->note_above()->pitch(), auxiliary_pitch);
 }
 
 std::string mmr_source(bool prefix_note = false) {
@@ -1693,65 +1432,6 @@ TEST(Read, LegacyMmrMarkersRestoreTheCorrectSourceEndpoint) {
             if (fine) EXPECT_EQ(copy.repeat_list(true).ticks(), 5 * whole_note_ticks);
         }
     }
-}
-
-TEST(Read, RemovingMmrOwnerDropsDisplayMappingsAndSurvivesFailedBatch) {
-    using namespace mu::engraving;
-    auto opened = g_engine->open(as_bytes(mmr_source()), {.format = engrave::Format::MSCX});
-    ASSERT_TRUE(opened);
-    auto &document = **opened;
-    auto &master = master_of(document);
-    auto *owner = master.first_measure();
-    auto *last = master.last_measure();
-    auto *segment = last->get_segment_r(SegmentType::BREATH, last->ticks());
-    auto *breath = Factory::create_breath(segment);
-    breath->set_track(0);
-    segment->add(breath);
-    master.style().set(Sid::MIN_EMPTY_MEASURES, 2);
-    master.set_layout_all();
-    normalize_document(master);
-    master.init_automation();
-    engrave::assign_missing_ids(master);
-    ASSERT_TRUE(document.page_count());
-    ASSERT_NE(master.layout_copy(*breath), nullptr);
-    const auto id = engrave::from_engine(breath->eid());
-    const auto ref = engrave::Ref{engrave::from_engine(owner->eid())};
-    const auto count = master.layout_state.whole_count + master.layout_state.range_count;
-    auto &hooks = engrave::DocumentAccess::edit_hooks(document);
-    hooks.policy = engrave::api::Policy::TRANSACTION;
-    bool detached = false;
-    hooks.before_step = [&](std::size_t step) {
-        if (step != 1) return;
-        detached = master.first_measure() == last;
-        EXPECT_EQ(master.layout_copy(*breath), nullptr);
-        throw std::runtime_error("reject removal of MMR owner");
-    };
-    const auto failed = document.edit({{engrave::RemoveMeasures{ref, ref}, engrave::SetProperty{id, "visible", true}}});
-    hooks = {};
-    EXPECT_FALSE(failed);
-    EXPECT_TRUE(detached);
-    ASSERT_EQ(engrave::DocumentAccess::master_score(document), &master);
-    EXPECT_EQ(master.first_measure(), owner);
-    EXPECT_EQ(master.layout_copy(*breath), nullptr);
-    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
-    ASSERT_TRUE(document.page_count());
-    ASSERT_NE(master.layout_copy(*breath), nullptr);
-    EXPECT_EQ(master.layout_copy(*breath)->find_measure(), owner->mm_rest());
-    ASSERT_TRUE(document.edit({{engrave::RemoveMeasures{ref, ref}}}));
-    EXPECT_EQ(master.layout_copy(*breath), nullptr);
-    auto check_geometry = [&] {
-        engrave::Query query;
-        query.types = {"Breath"};
-        query.layout_boxes = true;
-        const auto found = document.query(query);
-        ASSERT_TRUE(found);
-        ASSERT_EQ(found->elements.size(), 1u);
-        EXPECT_EQ(found->elements.front().id, id);
-        EXPECT_TRUE(found->elements.front().box.has_value());
-        EXPECT_EQ(master.layout_copy(*breath), nullptr);
-        EXPECT_TRUE(document.export_score({.format = engrave::Format::MUSIC_XML}));
-    };
-    check_geometry();
 }
 
 TEST(Read, NativeLoadRestoresLegacyMmrSourceOwnershipBeforePlayback) {
@@ -2197,7 +1877,7 @@ TEST(Read, GraceLayoutScopeClearsMovedSegmentAfterSourceDeletion) {
         ChordLayout::append_grace_notes(chord, context);
         ASSERT_EQ(context.grace_group(chord, true)->appended_segment(), clef_segment);
         ASSERT_EQ(clef_segment->pre_appended_item(0), context.grace_group(chord, true));
-        master.record_segment_parent_change(clef_segment, next, Fraction(0, 1));
+        master.apply_segment_parent_change(clef_segment, next, Fraction(0, 1));
         ASSERT_EQ(clef_segment->measure(), next);
         chord->remove(grace);
         delete grace;
@@ -3052,7 +2732,7 @@ constexpr std::string_view repeat_edit_xml = R"(<score-partwise version="4.0">
 <note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><type>whole</type></note></measure>
 </part></score-partwise>)";
 
-TEST(Read, RepeatRepairStaysInTheActiveTransaction) {
+TEST(Read, RepeatRepairPublishesExplicitChanges) {
     using namespace mu::engraving;
     auto opened = g_engine->open(as_bytes(repeat_edit_xml), {.format = engrave::Format::MUSIC_XML});
     ASSERT_TRUE(opened);
@@ -3074,12 +2754,12 @@ TEST(Read, RepeatRepairStaysInTheActiveTransaction) {
     manager->end_transaction();
     ASSERT_TRUE(slur->is_incoming());
     manager->begin_transaction(muse::TranslatableString::untranslatable("remove repeat"));
-    master.undo(new ChangeProperty(second_measure, Pid::REPEAT_END, false));
+    master.apply_property_change(second_measure, Pid::REPEAT_END, false);
     manager->prepare_commit();
     EXPECT_FALSE(slur->is_incoming());
-    manager->end_transaction(true);
-    EXPECT_TRUE(second_measure->repeat_end());
-    EXPECT_TRUE(slur->is_incoming());
+    manager->end_transaction();
+    EXPECT_FALSE(second_measure->repeat_end());
+    EXPECT_FALSE(slur->is_incoming());
 }
 
 TEST(Read, RepeatChangeAndTieInOneBatchMatchSeparateBatches) {
@@ -3165,7 +2845,6 @@ TEST(Read, PlaybackFinalizationPublishesStableReadsAndReplay) {
     auto &master = master_of(document);
     auto *manager = master.transaction_manager();
     const auto before = music::dump_json(music::semantic_dump(&master), 1);
-    const auto history = master.mutation_journal()->size();
     const auto automation = master.automation_data()->dump();
     const auto count = layout_count(master);
     const auto *first = master.repeat_list(true).front();
@@ -3181,16 +2860,14 @@ TEST(Read, PlaybackFinalizationPublishesStableReadsAndReplay) {
     }
     EXPECT_EQ(master.repeat_list(true).front(), first);
     EXPECT_EQ(master.automation_data()->dump(), automation);
-    EXPECT_EQ(master.mutation_journal()->size(), history);
     EXPECT_EQ(layout_count(master), count);
     EXPECT_EQ(music::dump_json(music::semantic_dump(&master), 1), before);
 
     manager->begin_transaction(muse::TranslatableString::untranslatable("repeat edit"));
-    master.undo(new ChangeProperty(master.first_measure(), Pid::REPEAT_COUNT, 3));
+    master.apply_property_change(master.first_measure(), Pid::REPEAT_COUNT, 3);
     manager->end_transaction();
     EXPECT_EQ(master.repeat_list(true).ticks(), 5760);
     EXPECT_EQ(master.repeat_list(false).ticks(), 1920);
-    EXPECT_EQ(master.mutation_journal()->size(), 0u);
 
     TempoText *mark = nullptr;
     master.scan_elements([&mark](EngravingItem *item) {
@@ -3200,7 +2877,7 @@ TEST(Read, PlaybackFinalizationPublishesStableReadsAndReplay) {
     const auto midi_before = document.export_score({.format = engrave::Format::MIDI});
     ASSERT_TRUE(midi_before);
     manager->begin_transaction(muse::TranslatableString::untranslatable("tempo edit"));
-    master.undo(new ChangeProperty(mark, Pid::TEMPO, BeatsPerSecond(1.0)));
+    master.apply_property_change(mark, Pid::TEMPO, BeatsPerSecond(1.0));
     manager->end_transaction();
     EXPECT_DOUBLE_EQ(master.tempo_timeline(true).utick2utime(1920), 4.0);
     EXPECT_DOUBLE_EQ(master.tempo_timeline(false).utick2utime(1920), 4.0);
@@ -3266,7 +2943,7 @@ TEST(Read, VoltaAndJumpReplayPublishesRepeatState) {
         const auto before = signature();
         auto *manager = master.transaction_manager();
         manager->begin_transaction(muse::TranslatableString::untranslatable("repeat navigation edit"));
-        master.undo(new ChangeProperty(target, property, replacement));
+        master.apply_property_change(target, property, replacement);
         manager->end_transaction();
         const auto after = signature();
         EXPECT_NE(after, before) << type;
@@ -3322,33 +2999,6 @@ TEST(Read, DirtyLayoutRangeSurvivesCommandReset) {
     EXPECT_EQ(layout_count(master), count + 1);
 }
 
-TEST(Read, FailedBatchRestoresPendingLayout) {
-    auto document = open_path(corpus_file({".mscx"}));
-    ASSERT_TRUE(document);
-    auto &master = master_of(*document);
-    master.invalidate_layout(mu::engraving::Fraction(1, 4), mu::engraving::Fraction(1, 2));
-    const auto saved = master.layout_state;
-    mu::engraving::invalidate_normalization(master);
-    const auto normalized = master.normalize_state;
-    auto &hooks = engrave::DocumentAccess::edit_hooks(*document);
-    hooks.before_step = [](std::size_t step) {
-        if (step == 1) throw std::runtime_error("injected failure");
-    };
-    const auto revision = document->revision();
-    EXPECT_FALSE(document->edit({{engrave::SetStyle{{}, "staffDistance", 9.0}}}));
-    hooks = {};
-    EXPECT_EQ(document->revision(), revision);
-    EXPECT_EQ(master.layout_state.dirty, saved.dirty);
-    EXPECT_EQ(master.layout_state.start, mu::engraving::Fraction(0, 1));
-    EXPECT_LT(master.layout_state.end, mu::engraving::Fraction(0, 1));
-    EXPECT_EQ(master.normalize_state.dirty, normalized.dirty);
-    const auto count = layout_count(master);
-    ASSERT_TRUE(document->page_count());
-    EXPECT_EQ(layout_count(master), count + 1);
-    ASSERT_TRUE(document->page_count());
-    EXPECT_EQ(layout_count(master), count + 1);
-}
-
 TEST(Read, LayoutRangeIncludesEveryOverlappingSpanner) {
     auto document = open_path(corpus_file({".mscx"}));
     ASSERT_TRUE(document);
@@ -3369,174 +3019,8 @@ TEST(Read, LayoutRangeIncludesEveryOverlappingSpanner) {
     EXPECT_GE(master.layout_state.last_end, Fraction(1, 1));
 }
 
-TEST(Read, FontRefreshWaitsForGeometryBoundary) {
-    const auto it = std::ranges::find_if(g_corpus, [](const auto &path) { return path.filename() == "linked_parts.mscx"; });
-    ASSERT_NE(it, g_corpus.end());
-    std::string xml = read_text(*it);
-    const auto frame = xml.find("<height>10</height>");
-    ASSERT_NE(frame, std::string::npos);
-    xml.insert(frame, "<Text><style>title</style><text><font face=\"Petaluma Script\"/>MMMWWWiii012345</text></Text>");
-    auto opened = g_engine->open(as_bytes(xml), {.format = engrave::Format::MSCX});
-    ASSERT_TRUE(opened);
-    auto &document = **opened;
-    ASSERT_TRUE(document.page_count());
-    auto *title = master_of(document).get_text(mu::engraving::TextStyleType::TITLE);
-    ASSERT_NE(title, nullptr);
-    const double before = title->ldata()->bbox().width();
-    ASSERT_GT(before, 0.0);
-    const auto revision = document.revision();
-    ASSERT_TRUE(g_engine->add_font(g_assets / "fonts/petaluma/PetalumaScript.otf"));
-    EXPECT_EQ(document.revision(), revision);
-    auto &master = master_of(document);
-    const auto count = master.layout_state.whole_count + master.layout_state.range_count;
-    ASSERT_TRUE(document.edit({}));
-    ASSERT_TRUE(engrave::api::BatchGuard(document).run({[](engrave::api::EditContext &) -> engrave::Result<void> { return {}; }},
-                                                       engrave::api::Policy::SNAPSHOT, {}));
-    ASSERT_TRUE(document.outline());
-    const auto notes = document.query({.types = {"Note"}, .limit = 1});
-    ASSERT_TRUE(notes);
-    ASSERT_FALSE(notes->elements.empty());
-    ASSERT_TRUE(document.get(notes->elements.front().id));
-    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
-    EXPECT_EQ(title->ldata()->bbox().width(), before);
-    ASSERT_TRUE(document.render({}));
-    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count + 1);
-    EXPECT_NE(title->ldata()->bbox().width(), before);
-    EXPECT_EQ(document.revision(), revision);
-}
-
 // Replacement keeps a full layout pending. Counter deltas are meaningful within
 // each Score lifetime, not across project replacement.
-TEST(Read, SnapshotReplacementPreservesRuntimeTempoSettings) {
-    using namespace mu::engraving;
-    for (const bool override_active : {false, true}) {
-        auto document = open_path(write470_fixture());
-        ASSERT_TRUE(document);
-        auto &master = master_of(*document);
-        ASSERT_TRUE(master.set_tempo_multiplier(BeatsPerSecond(2.0)));
-        if (override_active) {
-            TempoTimeline timeline;
-            timeline.rebuild(TempoValues{{0, 3.0}}, {});
-            timeline.set_tempo_multiplier(BeatsPerSecond(1.5));
-            master.set_tempo_timeline_override(timeline);
-        }
-        const double before = master.tempo_timeline().utick2utime(1920);
-        auto &hooks = engrave::DocumentAccess::edit_hooks(*document);
-        hooks.policy = engrave::api::Policy::SNAPSHOT;
-        hooks.before_step = [](std::size_t) { throw std::runtime_error("snapshot tempo"); };
-        ASSERT_FALSE(document->edit({{engrave::SetStyle{{}, "staffDistance", 9.0}}}));
-        hooks = {};
-        auto &restored = master_of(*document);
-        EXPECT_EQ(restored.layout_state.whole_count + restored.layout_state.range_count, 0u);
-        EXPECT_TRUE(restored.layout_state.dirty);
-        EXPECT_DOUBLE_EQ(restored.tempo_timeline().utick2utime(1920), before);
-        EXPECT_EQ(restored.runtime_tempo_state().override_timeline.has_value(), override_active);
-        restored.set_tempo_timeline_override(std::nullopt);
-        EXPECT_DOUBLE_EQ(restored.tempo_timeline().tempo_multiplier().val, 2.0);
-    }
-}
-
-TEST(Read, SnapshotReplacementDefersMasterPendingLayout) {
-    const auto it = std::ranges::find_if(g_corpus, [](const auto &path) { return path.filename() == "chordline_path.mscx"; });
-    ASSERT_NE(it, g_corpus.end());
-    for (const bool change_font : {false, true}) {
-        SCOPED_TRACE(change_font);
-        auto document = open_path(*it);
-        ASSERT_TRUE(document);
-        const auto outline = document->outline();
-        ASSERT_TRUE(outline);
-        ASSERT_GE(outline->parts.size(), 2u);
-        auto *before = &master_of(*document);
-        using mu::engraving::Fraction;
-        for (int i = 0; i < 5; ++i) {
-            before->invalidate_layout(Fraction(0, 1), Fraction(-1, 1));
-            ASSERT_TRUE(document->page_count());
-        }
-        const auto old_count = layout_count(*before);
-        before->invalidate_layout(Fraction(1, 4), Fraction(1, 2));
-        const auto revision = document->revision();
-        const auto generation = engrave::DocumentAccess::impl(*document).engine->font_generation;
-        auto &hooks = engrave::DocumentAccess::edit_hooks(*document);
-        hooks.before_step = [change_font](std::size_t step) {
-            if (step != 1) return;
-            if (change_font) ASSERT_TRUE(g_engine->add_font(g_assets / "fonts/petaluma/PetalumaScript.otf"));
-            throw std::runtime_error("recover after generated excerpt");
-        };
-        EXPECT_FALSE(document->edit({{engrave::GenerateExcerpts{{outline->parts[1].id}}}}));
-        hooks = {};
-        auto &after = master_of(*document);
-        EXPECT_NE(&after, before);
-        EXPECT_EQ(document->revision(), revision);
-        EXPECT_TRUE(after.layout_state.dirty);
-        EXPECT_FALSE(after.normalize_state.dirty);
-        EXPECT_FALSE(after.normalize_state.running);
-        EXPECT_EQ(after.layout_state.revision, revision);
-        EXPECT_EQ(after.layout_state.font_generation, generation + change_font);
-        EXPECT_EQ(after.layout_state.last_start, Fraction(0, 1));
-        EXPECT_EQ(after.layout_state.last_end, Fraction(-1, 1));
-        const auto count = layout_count(after);
-        EXPECT_EQ(count, 0u);
-        EXPECT_LT(count, old_count); // Replacement diagnostics start with reload work.
-        ASSERT_TRUE(document->page_count());
-        ASSERT_TRUE(document->render({}));
-        EXPECT_EQ(layout_count(after), count + 1);
-    }
-}
-
-TEST(Read, SnapshotReplacementDefersExcerptPendingLayout) {
-    for (const bool change_font : {false, true}) {
-        SCOPED_TRACE(change_font);
-        auto document = open_path(write470_fixture().parent_path() / "excerpts.mscx");
-        ASSERT_TRUE(document);
-        const auto outline = document->outline();
-        ASSERT_TRUE(outline);
-        ASSERT_FALSE(outline->excerpts.empty());
-        const engrave::ScoreSel selection{outline->excerpts.front().id};
-        auto &master = master_of(*document);
-        auto selected = engrave::select_score(master, selection);
-        ASSERT_TRUE(selected);
-        auto *before = *selected;
-        using mu::engraving::Fraction;
-        ASSERT_TRUE(document->page_count());
-        for (int i = 0; i < 5; ++i) {
-            before->invalidate_layout(Fraction(0, 1), Fraction(-1, 1));
-            ASSERT_TRUE(document->page_count(selection));
-        }
-        const auto old_count = layout_count(*before);
-        master.invalidate_layout(Fraction(1, 4), Fraction(1, 2));
-        before->invalidate_layout(Fraction(3, 4), Fraction(1, 1));
-        const auto generation = engrave::DocumentAccess::impl(*document).engine->font_generation;
-        auto &hooks = engrave::DocumentAccess::edit_hooks(*document);
-        hooks.policy = engrave::api::Policy::SNAPSHOT;
-        hooks.before_step = [change_font](std::size_t) {
-            if (change_font) ASSERT_TRUE(g_engine->add_font(g_assets / "fonts/petaluma/PetalumaScript.otf"));
-            throw std::runtime_error("replace master and excerpt");
-        };
-        EXPECT_FALSE(document->edit({{engrave::SetStyle{selection, "staffDistance", 9.0}}}));
-        hooks = {};
-        selected = engrave::select_score(master_of(*document), selection);
-        ASSERT_TRUE(selected);
-        auto &after = **selected;
-        EXPECT_NE(&after, before);
-        EXPECT_TRUE(after.layout_state.dirty);
-        EXPECT_FALSE(after.normalize_state.dirty);
-        EXPECT_FALSE(after.normalize_state.running);
-        EXPECT_TRUE(master_of(*document).layout_state.dirty);
-        EXPECT_EQ(after.layout_state.revision, document->revision());
-        EXPECT_EQ(after.layout_state.font_generation, generation + change_font);
-        EXPECT_EQ(after.layout_state.last_start, Fraction(0, 1));
-        EXPECT_EQ(after.layout_state.last_end, Fraction(-1, 1));
-        const auto count = layout_count(after);
-        EXPECT_EQ(count, 0u);
-        EXPECT_LT(count, old_count);
-        const auto master_count = layout_count(master_of(*document));
-        ASSERT_TRUE(document->page_count(selection));
-        ASSERT_TRUE(document->render({.score = selection}));
-        ASSERT_TRUE(document->page_count());
-        EXPECT_EQ(layout_count(after), count + 1);
-        EXPECT_EQ(layout_count(master_of(*document)), master_count + 1);
-    }
-}
 
 TEST(Read, PositionsExpandRepeatsInRawPageUnitsWithoutEditing) {
     constexpr std::string_view xml = R"(<score-partwise version="4.0">
@@ -3700,18 +3184,6 @@ TEST(Read, ExcerptPositionsMatchTheLegacyWriterAndSelectionErrors) {
     expect_code(document->outline(excerpt), ErrorCode::STALE_HANDLE, "stale outline");
     expect_code(document->positions(engrave::PositionKind::MEASURE, excerpt), ErrorCode::STALE_HANDLE, "stale score");
     master.add_excerpt(removed);
-}
-
-TEST(Read, PositionsRefuseAPoisonedDocument) {
-    auto document = open_path(corpus_file({".mscx"}));
-    ASSERT_TRUE(document);
-    auto &hooks = engrave::DocumentAccess::edit_hooks(*document);
-    hooks.policy = engrave::api::Policy::SNAPSHOT;
-    hooks.fail_restore = true;
-    hooks.before_step = [](std::size_t) { throw std::runtime_error("injected"); };
-    EXPECT_ANY_THROW(std::ignore = document->edit({{engrave::SetStyle{{}, "staffDistance", 9.0}}}));
-    hooks = {};
-    expect_code(document->positions(engrave::PositionKind::MEASURE), ErrorCode::POISONED, "poisoned document");
 }
 
 TEST(Read, ExcerptExportsReopenAsIndependentScores) {

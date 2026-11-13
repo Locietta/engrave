@@ -23,36 +23,10 @@
 #pragma once
 
 #include "../dom/score.h"
-#include "transaction/undoablecommand.h"
+#include "engraving/editing/cmd.h"
 
 namespace mu::engraving {
-struct ChangeScoreOrder : UndoableCommand {
-private:
+void apply_change_score_order(Score *sc, ScoreOrder so);
 
-    Score *score = nullptr;
-    ScoreOrder order;
-    void flip() override;
-
-public:
-    ChangeScoreOrder(Score *sc, ScoreOrder so) : score(sc), order(so) {}
-
-    UNDO_TYPE(CommandType::CHANGE_SCORE_ORDER)
-    UNDO_NAME("ChangeScoreOrder")
-    UNDO_CHANGED_OBJECTS({score})
-};
-
-struct ChangePageNumberOffset : UndoableCommand {
-private:
-
-    Score *score = nullptr;
-    int page_offset = 0;
-
-    void flip() override;
-
-public:
-    ChangePageNumberOffset(Score *s, int po) : score(s), page_offset(po) {}
-
-    UNDO_NAME("ChangePageNumberOffset")
-    UNDO_CHANGED_OBJECTS({score})
-};
+void apply_change_page_number_offset(Score *s, int po);
 } // namespace mu::engraving

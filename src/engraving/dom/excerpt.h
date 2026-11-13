@@ -30,7 +30,6 @@
 #include "types/string.h"
 
 namespace mu::engraving {
-struct JournalBatch;
 struct MasterScore;
 struct Measure;
 struct Part;
@@ -104,10 +103,7 @@ struct Excerpt {
 
 private:
     friend struct MasterScore;
-    friend struct JournalBatch;
     friend struct Transaction;
-    JournalBatch *retaining_journal_ = nullptr;
-    uint32_t retained_index_ = 0;
 
     static void promote_gap_rests_to_real_rests(const Measure *measure, staff_idx_t staff_idx);
 

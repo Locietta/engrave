@@ -67,7 +67,6 @@ struct Staff;
 struct System;
 struct TieMap;
 struct Transaction;
-struct JournalBatch;
 
 //---------------------------------------------------------
 //   MeasureNumberMode
@@ -139,10 +138,7 @@ struct MStaff {
     void set_measure_repeat_count(int n) { measure_repeat_count_ = n; }
 
 private:
-    friend struct JournalBatch;
     friend struct Transaction;
-    JournalBatch *retaining_journal_ = nullptr;
-    uint32_t retained_index_ = 0;
 
     MeasureNumber *measure_number_ = nullptr; // Measure number text object
     MMRestRange *mm_range_text_ = nullptr;    // Multi measure rest range text object

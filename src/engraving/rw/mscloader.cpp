@@ -166,6 +166,7 @@ Ret MscLoader::load_mscz(MasterScore *master_score, const MscReader &msc_reader,
 
             ReadInOutData part_read_in_data;
             part_read_in_data.links = in_out->links;
+            part_read_in_data.transaction_snapshot = in_out->transaction_snapshot;
 
             RetVal<ReaderPtr> reader = make_reader(master_score->msc_version(), ignore_version_error);
             if (!reader.ret) {

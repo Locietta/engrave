@@ -124,7 +124,8 @@ void copy_score_versions(engraving::MasterScore *source, engraving::MasterScore 
     apply_score_versions(target, source->mscore_version().to_std_string(), source->mscore_revision(), source->msc_version());
 }
 
-ScoreProject load_native_score(const EngineContext &context, const std::string &input, const std::string &format) {
+ScoreProject load_native_score(const EngineContext &context, const std::string &input, const std::string &format,
+                               bool transaction_snapshot) {
     if (input.empty() || input.size() > 8 * 1024 * 1024) throw std::invalid_argument("Input must contain 1..8388608 bytes");
     // Like NotationProject::doImport (project/internal/notationproject.cpp:304) and
     // importMusicXmlfromBuffer, the whole reading + setup phase is a load: layout
@@ -173,6 +174,7 @@ ScoreProject load_native_score(const EngineContext &context, const std::string &
         if (!reader.image_file_names().empty())
             throw std::invalid_argument("Embedded score images are not yet supported by the native backend");
         engraving::rw::ReadInOutData inout;
+        inout.transaction_snapshot = transaction_snapshot;
         const auto loaded = project->load_mscz(reader, &inout, false);
         if (loaded.code() == static_cast<int>(engraving::Err::FILE_TOO_OLD)) throw UnsupportedScoreVersion(loaded.to_string());
         check(loaded);

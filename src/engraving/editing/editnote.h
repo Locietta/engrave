@@ -24,7 +24,7 @@
 
 #include "../dom/chord.h"
 #include "../dom/note.h"
-#include "transaction/undoablecommand.h"
+#include "engraving/editing/cmd.h"
 
 namespace mu::engraving {
 enum class SymId;

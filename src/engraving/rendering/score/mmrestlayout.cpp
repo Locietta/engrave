@@ -130,7 +130,7 @@ void MMRestLayout::create_mm_rest(LayoutContext &ctx, Measure *first_measure, Me
             ++num_measures_in_mm_rest;
             m->set_mm_rest_count(0);
             if (Measure *old_mm_rest = m->mm_rest()) {
-                ctx.mut_dom().undo(new ChangeMMRest(m, nullptr));
+                apply_change_mmrest(m, nullptr);
                 clear_display_copies(old_mm_rest);
             }
             if (m == last_measure) {
@@ -147,7 +147,7 @@ void MMRestLayout::create_mm_rest(LayoutContext &ctx, Measure *first_measure, Me
         mmr_measure = Factory::create_measure(ctx.mut_dom().score());
         mmr_measure->set_ticks(len);
         mmr_measure->set_tick(first_measure->tick());
-        ctx.mut_dom().undo(new ChangeMMRest(first_measure, mmr_measure));
+        apply_change_mmrest(first_measure, mmr_measure);
     }
     mmr_measure->set_tick(first_measure->tick());
     mmr_measure->set_timesig(first_measure->timesig());
@@ -179,8 +179,8 @@ void MMRestLayout::create_mm_rest(LayoutContext &ctx, Measure *first_measure, Me
     populate_display_copies(first_measure, last_measure, mmr_measure, ctx);
 
     MeasureBase *nm = ctx.conf().is_show_v_box() ? last_measure->next() : last_measure->next_measure();
-    ctx.mut_dom().undo(new ChangeMMRestNext(mmr_measure, nm));
-    ctx.mut_dom().undo(new ChangeMMRestPrev(mmr_measure, first_measure->prev()));
+    apply_change_mmrest_next(mmr_measure, nm);
+    apply_change_mmrest_prev(mmr_measure, first_measure->prev());
 }
 
 void MMRestLayout::populate_display_copies(Measure *first_measure, Measure *last_measure, Measure *mmr_measure, LayoutContext &ctx) {
@@ -612,7 +612,7 @@ void MMRestLayout::create_multi_measure_rests_if_need(Measure *first_measure, La
         } else {
             if (first_measure->mm_rest()) {
                 remove_mm_rest_elements(first_measure->mm_rest(), ctx);
-                ctx.mut_dom().undo(new ChangeMMRest(first_measure, nullptr));
+                apply_change_mmrest(first_measure, nullptr);
             }
             ctx.mut_state().set_measure_number(mn);
         }

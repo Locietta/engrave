@@ -12,8 +12,8 @@
 namespace engrave {
 
 // Failures the immediate caller can act on are returned as Result<T>. Engine
-// exceptions during an edit can become EditRejected after successful recovery;
-// allocation, callbacks, output failures and failed recovery can throw.
+// exceptions during an edit become EditRejected and report whether source was
+// partially written; allocation, callbacks and output failures can throw.
 // Contract violations (a call from another thread, a second Engine) abort.
 enum struct ErrorCode {
     INVALID_ARGUMENT,   // an option the caller passed is invalid
@@ -25,8 +25,8 @@ enum struct ErrorCode {
     UNSUPPORTED,        // a valid request the engine does not implement
     IO,                 // a file I/O operation failed
     REVISION_CONFLICT,  // an edit expected another revision of the document
-    EDIT_REJECTED,      // the engine refused an operation; the batch was rolled back
-    POISONED,           // an earlier failure left the document unusable; close it
+    EDIT_REJECTED,      // the engine refused an operation
+    POISONED,           // restore_checkpoint or reopen before editing or saving
     CANCELLED,          // the caller interrupted an in-progress capture
 };
 
@@ -38,6 +38,9 @@ struct Error {
     std::optional<std::size_t> op_index; // the failing operation of an edit batch
     // Present when an export is refused to prevent unreported loss.
     std::vector<ExportWarning> export_warnings;
+    bool poisoned = false;
+    // Operations completed before an edit failed; op_index may have partially written.
+    std::vector<std::size_t> applied_ops;
 };
 
 template <typename T>

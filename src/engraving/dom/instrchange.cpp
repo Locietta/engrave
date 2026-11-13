@@ -127,7 +127,7 @@ void InstrumentChange::setup_instrument(const Instrument *instrument, bool updat
     for (EngravingObject *se : link_list()) {
         InstrumentChange *lic = static_cast<InstrumentChange *>(se);
         Instrument *new_instrument = new Instrument(*instrument);
-        tx.push(new ChangeInstrument(lic, new_instrument));
+        apply_change_instrument(lic, new_instrument);
     }
 
     // transpose for current score only

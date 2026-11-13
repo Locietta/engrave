@@ -69,19 +69,9 @@ static void update_note_lines(Segment *segment, track_idx_t track) {
     }
 }
 
-//---------------------------------------------------------
-//   ChangeClefType
-//---------------------------------------------------------
+void mu::engraving::apply_change_clef_type(Clef *clef, ClefType concert_clef, ClefType transposing_clef) {
 
-ChangeClefType::ChangeClefType(Clef *c, ClefType cl, ClefType tc) {
-    clef = c;
-    concert_clef = cl;
-    transposing_clef = tc;
-}
-
-void ChangeClefType::flip() {
-    ClefType ocl = clef->concert_clef();
-    ClefType otc = clef->transposing_clef();
+    note_change(clef, CommandType::CHANGE_CLEF_TYPE);
 
     clef->set_concert_clef(concert_clef);
     clef->set_transposing_clef(transposing_clef);
@@ -90,9 +80,6 @@ void ChangeClefType::flip() {
     Segment *segment = clef->segment();
     update_note_lines(segment, clef->track());
     clef->trigger_layout_all(); // TODO: reduce layout to clef range
-
-    concert_clef = ocl;
-    transposing_clef = otc;
 }
 
 //---------------------------------------------------------
@@ -220,10 +207,10 @@ void EditClef::undo_change_clef(Transaction &, Score *score, Staff *ostaff, Engr
                 }
             }
             clef->set_generated(false);
-            staff_score->undo(new ChangeClefType(clef, cp, tp));
+            apply_change_clef_type(clef, cp, tp);
             Clef *o_clef = clef->other_clef();
             if (o_clef && !(o_clef->generated())) {
-                staff_score->undo(new ChangeClefType(o_clef, cp, tp));
+                apply_change_clef_type(o_clef, cp, tp);
             }
             // change the clef in the mmRest if any
             if (measure->has_mm_rest()) {
@@ -232,7 +219,7 @@ void EditClef::undo_change_clef(Transaction &, Score *score, Staff *ostaff, Engr
                 if (mm_dest_seg) {
                     Clef *mm_clef = to_clef(mm_dest_seg->element(clef->track()));
                     if (mm_clef) {
-                        staff_score->undo(new ChangeClefType(mm_clef, cp, tp));
+                        apply_change_clef_type(mm_clef, cp, tp);
                     }
                 }
             }

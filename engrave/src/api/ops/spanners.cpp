@@ -1,8 +1,3 @@
-// AddSpanner, AddTie and AddTuplet: the engine's own undoable creation of a
-// spanner (Score::addSlur, EditSpanner::addSpanner), of a tie (what EditTie's
-// createAndAddTie makes of one) and of a tuplet (Score::addTuplet, which
-// EditTuplet::addTuplets calls too).
-
 #include <format>
 #include <memory>
 #include <optional>

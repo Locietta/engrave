@@ -839,7 +839,7 @@ void Segment::remove(EngravingItem *el) {
                     end = nullptr;
                 }
                 if (start != s->start_element() || end != s->end_element()) {
-                    score()->undo(new ChangeStartEndSpanner(s, start, end));
+                    apply_change_start_end_spanner(s, start, end);
                 }
             }
         } break;

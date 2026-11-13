@@ -28,7 +28,7 @@
 #include "engraving/dom/chord.h"
 #include "engraving/dom/measure.h"
 #include "engraving/dom/part.h"
-#include "engraving/editing/transaction/undoablecommand.h"
+#include "engraving/editing/cmd.h"
 #include "engraving/playback/playbackmodel.h"
 #include "mpe/internal/articulationprofilesrepository.h"
 #include "mpe/tests/utils/articulationutils.h"

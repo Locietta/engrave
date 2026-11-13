@@ -162,7 +162,6 @@ def main():
         ],
         "engrave_read_test": [asset, "--corpus=" + str(REPO_ROOT / "tests/data/inputs")],
         "engrave_ops_test": [asset, corpus],
-        "engrave_op_policy_test": [],
         "engrave_gp_import_test": [asset],
         "engrave_mnx_import_test": [asset, "--mnx-out=" + str(a.output / "mnx-export")],
         "engrave_mnx_model_test": [],

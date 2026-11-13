@@ -285,14 +285,6 @@ OpCase tuplet_case(std::string name, std::string fixture, std::size_t count, int
     };
 }
 
-// The linked-parts cases are not registered yet: they pass C1 and both unwind runs
-// (C3/C4), but C2 fails on the register count, because undo parks the element it
-// created on the undo stack and its id stays registered (see notes/a4/s7d/REPORT.md).
-// The snapshot runs fail on the excerpt's page style, an engine asymmetry that S1
-// already pins. With C2 counting the register, the verdict rule can only call them
-// Unexposed, and an Unexposed operation is refused; enable them once C2 is amended:
-//   spanner_case("AddSpanner slur in linked parts", "linked_parts.mscx", "Slur", false),
-//   tuplet_case("AddTuplet in linked parts", "linked_parts.mscx", 1, 3, 2),
 const bool registered = register_cases({
     spanner_case("AddSpanner slur", "lyrics.mscx", "Slur", false),
     spanner_case("AddSpanner hairpin with a property", "hairpins_and_repeats.mscx", "HairPin", true, {{"offset", Point{0.5, 1.5}}}),

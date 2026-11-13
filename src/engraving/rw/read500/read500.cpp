@@ -69,6 +69,7 @@ muse::Ret Read500::read_score_file(Score *score, XmlReader &e, rw::ReadInOutData
         }
 
         ctx.set_properties_to_skip(data->properties_to_skip);
+        ctx.transaction_snapshot = data->transaction_snapshot;
     }
 
     while (e.read_next_start_element()) {

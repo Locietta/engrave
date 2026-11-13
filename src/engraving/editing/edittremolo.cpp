@@ -29,11 +29,9 @@
 
 using namespace mu::engraving;
 
-//---------------------------------------------------------
-//   MoveTremolo
-//---------------------------------------------------------
+void mu::engraving::apply_move_tremolo(Score *score, Fraction chord1_tick, Fraction chord2_tick, TremoloTwoChord *trem, track_idx_t track) {
+    note_change(trem, CommandType::MOVE_TREMOLO);
 
-void MoveTremolo::redo() {
     // Find new tremolo chords
     Measure *m1 = score->tick2measure(chord1_tick);
     Measure *m2 = score->tick2measure(chord2_tick);
@@ -41,10 +39,6 @@ void MoveTremolo::redo() {
     Chord *c1 = m1->find_chord(chord1_tick, track);
     Chord *c2 = m2->find_chord(chord2_tick, track);
     IF_ASSERT_FAILED(c1 && c2) { return; }
-
-    // Remember the old tremolo chords
-    old_c1 = trem->chord1();
-    old_c2 = trem->chord2();
 
     // Move tremolo away from old chords
     trem->chord1()->set_tremolo_two_chord(nullptr);
@@ -68,10 +62,10 @@ void MoveTremolo::redo() {
         delete old_tremolo;
     }
 
-    // Move tremolo to new chords
+    // The chord setters follow both anchors, so update them before attaching.
+    trem->set_chords(c1, c2);
     c1->set_tremolo_two_chord(trem);
     c2->set_tremolo_two_chord(trem);
-    trem->set_chords(c1, c2);
     trem->set_ownership_parent(c1);
     source_child_added(*c1, trem);
 
@@ -84,15 +78,4 @@ void MoveTremolo::redo() {
     if (c1->ticks() != c2->ticks()) {
         score->undo_remove_element(trem);
     }
-}
-
-void MoveTremolo::undo() {
-    // Move tremolo to old position
-    trem->chord1()->set_tremolo_two_chord(nullptr);
-    trem->chord2()->set_tremolo_two_chord(nullptr);
-    old_c1->set_tremolo_two_chord(trem);
-    old_c2->set_tremolo_two_chord(trem);
-    trem->set_chords(old_c1, old_c2);
-    trem->set_ownership_parent(old_c1);
-    source_child_added(*old_c1, trem);
 }

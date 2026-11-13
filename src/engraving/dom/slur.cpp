@@ -208,7 +208,7 @@ void Slur::undo_change_start_end_elements(ChordRest *scr, ChordRest *ecr) {
     for (EngravingObject *lsp : link_list()) {
         Spanner *sp = to_spanner(lsp);
         if (sp == this) {
-            score()->undo(new ChangeSpannerElements(this, scr, ecr));
+            apply_change_spanner_elements(this, scr, ecr);
         } else {
             EngravingItem *se = 0;
             EngravingItem *ee = 0;
@@ -233,7 +233,7 @@ void Slur::undo_change_start_end_elements(ChordRest *scr, ChordRest *ecr) {
                 }
             }
             if (se && ee) {
-                score()->undo(new ChangeStartEndSpanner(sp, se, ee));
+                apply_change_start_end_spanner(sp, se, ee);
                 renderer()->layout_item(sp);
             }
         }

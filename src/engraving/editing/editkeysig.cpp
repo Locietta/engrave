@@ -37,21 +37,14 @@
 
 using namespace mu::engraving;
 
-//---------------------------------------------------------
-//   ChangeKeySig
-//---------------------------------------------------------
+void mu::engraving::apply_change_key_sig(KeySig *keysig, KeySigEvent ks, bool show_courtesy, bool evt_in_staff) {
+    note_change(keysig, CommandType::CHANGE_KEY_SIG);
 
-ChangeKeySig::ChangeKeySig(KeySig *k, KeySigEvent new_key_sig, bool sc, bool add_evt_to_staff)
-    : keysig(k), ks(new_key_sig), show_courtesy(sc), evt_in_staff(add_evt_to_staff) {}
-
-void ChangeKeySig::flip() {
     Segment *segment = keysig->segment();
     Fraction tick = segment->tick();
     Staff *staff = keysig->staff();
 
     const bool cur_evt_in_staff = (staff->current_key_tick(tick) == tick);
-    KeySigEvent cur_key = keysig->key_sig_event();
-    const bool cur_show_courtesy = keysig->show_courtesy();
 
     keysig->set_key_sig_event(ks);
     keysig->set_show_courtesy(show_courtesy);
@@ -68,9 +61,6 @@ void ChangeKeySig::flip() {
     segment->set_enabled(evt_in_staff);
     segment->set_header(!evt_in_staff && segment->rtick() == Fraction(0, 1));
 
-    show_courtesy = cur_show_courtesy;
-    ks = cur_key;
-    evt_in_staff = cur_evt_in_staff;
     keysig->trigger_layout();
     keysig->score()->set_layout(keysig->staff()->next_key_tick(tick), keysig->staff_idx());
 }
@@ -114,7 +104,7 @@ void EditKeySig::undo_change_key_sig(Transaction &tx, Score *score, Staff *ostaf
         staff_score->update_instrument_change_transpositions(key, staff, tick);
         if (ks) {
             ks->undo_change_property(Pid::GENERATED, false);
-            tx.push(new ChangeKeySig(ks, nkey, ks->show_courtesy()));
+            apply_change_key_sig(ks, nkey, ks->show_courtesy());
         } else {
             KeySig *nks = Factory::create_key_sig(s);
             nks->set_track(track);

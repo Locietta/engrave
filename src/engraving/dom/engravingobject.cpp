@@ -26,10 +26,9 @@
 #include <memory>
 
 #include "../editing/addremoveelement.h"
-#include "../editing/editproperty.h"
-#include "../editing/transaction/mutationjournal.h"
 #include "../editing/transaction/transaction.h"
 #include "bracketitem.h"
+#include "chordline.h"
 #include "dummyparent.h"
 #include "global/containers.h"
 #include "linkedobjects.h"
@@ -367,7 +366,7 @@ static void change_property(EngravingObject *e, Pid t, const PropertyValue &st, 
             BracketItem *bi = to_bracket_item(e);
             e->score()->transaction_manager()->current_or_dummy_transaction().change_bracket_property(*bi, t, st, ps);
         } else {
-            e->score()->record_property_change(e, t, st, ps, reset_path);
+            e->score()->apply_property_change(e, t, st, ps, reset_path);
         }
     }
 }
@@ -471,15 +470,8 @@ void EngravingObject::undo_change_property(Pid id, const PropertyValue &v, Prope
     }
 }
 
-//---------------------------------------------------------
-//   undoPushProperty
-//---------------------------------------------------------
-
-void EngravingObject::undo_push_property(Pid id) {
-    PropertyValue val = get_property(id);
-
-    Transaction &tx = master_score()->transaction_manager()->current_or_dummy_transaction();
-    tx.push_without_performing(new ChangeProperty(this, id, val));
+void EngravingObject::notify_property_change(Pid id) {
+    if (note_change(this, CommandType::CHANGE_PROPERTY)) master_score()->cmd_state().changes.changed_property_id_set.insert(id);
 }
 
 //---------------------------------------------------------
@@ -558,7 +550,7 @@ bool EngravingObject::is_linked(EngravingObject *se) const {
 
 void EngravingObject::undo_unlink() {
     if (links_) {
-        score()->record_unlink(this);
+        score()->apply_unlink(this);
     }
 }
 

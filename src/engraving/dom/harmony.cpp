@@ -22,7 +22,6 @@
 
 #include "harmony.h"
 
-#include "../editing/transaction/mutationjournal.h"
 #include "../editing/transaction/transaction.h"
 #include "../editing/transpose.h"
 #include "chordlist.h"

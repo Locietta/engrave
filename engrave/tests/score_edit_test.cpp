@@ -17,7 +17,7 @@
 #include "engraving/dom/measure.h"
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/part.h"
-#include "engraving/editing/transaction/mutationjournal.h"
+#include "engraving/editing/transaction/transaction.h"
 #include "engraving/engravingproject.h"
 
 namespace {
@@ -464,7 +464,7 @@ int main(int argc, char **argv) {
         }
         expect(rejected, "Empty pitch edit was accepted");
 
-        score->mutation_journal()->set_locked(true);
+        score->cmd_state().lock();
         rejected = false;
         try {
             music::NativePitchEdit locked;
@@ -473,8 +473,8 @@ int main(int argc, char **argv) {
         } catch (const std::runtime_error &) {
             rejected = true;
         }
-        score->mutation_journal()->set_locked(false);
-        expect(rejected, "Locked undo stack was accepted");
+        score->cmd_state().unlock();
+        expect(rejected, "Locked batch was accepted");
 
         score->set_read_only(true);
         rejected = false;
@@ -520,36 +520,6 @@ int main(int argc, char **argv) {
         const auto no_op_revision = score->source_revision();
         const auto no_op = music::apply_score_pitch_edit(score, {{{piano_target_id, 61}}});
         expect(no_op.changed_notes == 0 && score->source_revision() == no_op_revision, "No-op pitch request changed undo history");
-
-        // Failure while a redo branch exists must preserve both score and history.
-        const auto before_failure = music::export_native_score(context, project, "mscx", 0, "");
-        const auto failure_revision = score->source_revision();
-        music::set_native_edit_test_fault(music::NativeEditTestFault::ENGINE_ERROR_AFTER_FIRST);
-        bool engine_failure = false;
-        try {
-            music::apply_score_pitch_edit(score, {{{spare_id, 65}, {piano_target_id, 62}}});
-        } catch (const music::NativeEditFailure &e) {
-            engine_failure = !e.poisoned();
-        }
-        expect(engine_failure, "Injected engine failure was not cleanly rolled back");
-        expect(!score->mutation_journal()->has_active_transaction() && score->source_revision() == failure_revision,
-               "Engine rollback damaged the previous redo branch");
-        expect(music::export_native_score(context, project, "mscx", 0, "") == before_failure,
-               "Injected engine failure changed serialized score");
-        mu::engraving::MScore::set_error(mu::engraving::MsError::MS_NO_ERROR);
-
-        const auto poison_project = music::load_native_score(context, k_two_part_score, "musicxml");
-        auto *poison_score = poison_project->master_score();
-        const auto poison_view = music::query_score_region(poison_score, make_region(0, 0, 1));
-        music::set_native_edit_test_fault(music::NativeEditTestFault::EXCEPTION_AFTER_FIRST);
-        bool poisoned = false;
-        try {
-            music::apply_score_pitch_edit(poison_score, {{{poison_view.notes[0].id, 63}}});
-        } catch (const music::NativeEditFailure &e) {
-            poisoned = e.poisoned();
-        }
-        expect(poisoned, "Unexpected transaction exception was not marked poisoned");
-        // Do not issue another operation on this document: core must retire it.
 
         // An unopened headless excerpt must follow linked master edits and be
         // fully updated by endCmd. Exercise its exported written transposition,
@@ -653,7 +623,7 @@ int main(int argc, char **argv) {
                "Voice-1 projection lost a cross-voice slur");
 
         std::cout << "Native pitch query/edit tests passed: stable EIDs, transposing "
-                     "spelling, undo/redo, all-or-nothing validation and MusicXML round-trip\n";
+                     "spelling, preflight validation and MusicXML round-trip\n";
     } catch (const std::exception &e) {
         std::cerr << e.what() << '\n';
         return 1;

@@ -202,7 +202,7 @@ void Regroup::regroup_notes_and_rests(Transaction &tx, Score *score, const Fract
                             for (EngravingObject *ee : nchord->link_list()) {
                                 EngravingItem *e1 = static_cast<EngravingItem *>(ee);
                                 if (e1->score() == slur->score() && e1->track() == slur->track2()) {
-                                    tx.push(new ChangeSpannerElements(slur, slur->start_element(), e1));
+                                    apply_change_spanner_elements(slur, slur->start_element(), e1);
                                     break;
                                 }
                             }

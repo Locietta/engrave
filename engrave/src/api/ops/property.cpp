@@ -1,6 +1,3 @@
-// SetProperty, ResetProperty and SetStyle: the engine's own undoable property
-// and style changes.
-
 #include "engraving/dom/property.h"
 
 #include <format>
@@ -47,6 +44,10 @@ Result<Step> prepare(EditContext &context, const SetProperty &op) {
     if (!target) return std::unexpected(target.error());
     const auto pid = property_id(op.property);
     if (!pid) return std::unexpected(pid.error());
+    if (target->object) {
+        const auto object = settable_object(context, *target, *pid);
+        if (!object) return std::unexpected(object.error());
+    }
     auto value = from_value(mu::engraving::property_type(*pid), op.value);
     if (!value) return std::unexpected(value.error());
     return [target = *target, pid = *pid, value = *value](EditContext &context) -> Result<void> {
@@ -64,6 +65,10 @@ Result<Step> prepare(EditContext &context, const ResetProperty &op) {
     if (!target) return std::unexpected(target.error());
     const auto pid = property_id(op.property);
     if (!pid) return std::unexpected(pid.error());
+    if (target->object) {
+        const auto object = settable_object(context, *target, *pid);
+        if (!object) return std::unexpected(object.error());
+    }
     return [target = *target, pid = *pid](EditContext &context) -> Result<void> {
         const auto object = settable_object(context, target, pid);
         if (!object) return std::unexpected(object.error());

@@ -27,25 +27,15 @@
 
 using namespace mu::engraving;
 
-//---------------------------------------------------------
-//   ChangeScoreOrder
-//---------------------------------------------------------
+void mu::engraving::apply_change_score_order(Score *score, ScoreOrder order) {
+    note_change(score, CommandType::CHANGE_SCORE_ORDER);
 
-void ChangeScoreOrder::flip() {
-    ScoreOrder s = score->score_order();
     score->set_score_order(order);
-    order = s;
 }
 
-//---------------------------------------------------------
-//   ChangePageNumberOffset
-//---------------------------------------------------------
-
-void ChangePageNumberOffset::flip() {
-    int po = score->page_number_offset();
+void mu::engraving::apply_change_page_number_offset(Score *score, int page_offset) {
+    note_change(score, CommandType::UNKNOWN);
 
     score->set_page_number_offset(page_offset);
     score->set_layout_all();
-
-    page_offset = po;
 }

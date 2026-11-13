@@ -45,7 +45,6 @@
 #include "editing/editstaffbrackets.h"
 #include "editing/editstavesharing.h"
 #include "editing/splitjoinmeasure.h"
-#include "editing/transaction/mutationjournal.h"
 #include "editing/transaction/transaction.h"
 #include "editing/transpose.h"
 #include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
@@ -980,14 +979,7 @@ bool Score::check_has_measures() const {
 //---------------------------------------------------------
 
 void Score::spatium_changed(double old_value, double new_value) {
-    if (const auto hook = spatium_item_hook()) {
-        scan_elements([&](EngravingItem *e) {
-            e->spatium_changed(old_value, new_value);
-            hook(e);
-        });
-    } else {
-        scan_elements([&](EngravingItem *e) { e->spatium_changed(old_value, new_value); });
-    }
+    scan_elements([&](EngravingItem *e) { e->spatium_changed(old_value, new_value); });
     for (Staff *staff : staves_) {
         staff->spatium_changed(old_value, new_value);
     }
@@ -1166,7 +1158,7 @@ void Score::do_undo_add_element(EngravingItem *element) {
     if (element->generated()) {
         add_element(element);
     } else {
-        record_element_add(element);
+        apply_element_add(element);
     }
 }
 
@@ -1335,7 +1327,7 @@ void Score::do_undo_remove_element(EngravingItem *element) {
         //! HACK: don't delete as it may still be used in PropertiesPanel
         // element->deleteLater();
     } else {
-        record_element_remove(element);
+        apply_element_remove(element);
     }
 }
 
@@ -4881,8 +4873,6 @@ size_t Score::bracket_levels(staff_idx_t staff_idx) const {
 AutomationDataConstPtr Score::automation_data() const { return master_score_->automation_data(); }
 
 TransactionManager *Score::transaction_manager() const { return master_score_->transaction_manager(); }
-
-MutationJournal *Score::mutation_journal() const { return master_score_->mutation_journal(); }
 
 const RepeatList &Score::repeat_list() const { return master_score_->repeat_list(); }
 

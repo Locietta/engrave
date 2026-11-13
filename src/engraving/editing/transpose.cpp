@@ -145,7 +145,7 @@ bool Transpose::transpose(Transaction &tx, Score *score, TransposeMode mode, Tra
                     KeySigEvent ke = ks->key_sig_event();
                     ke.set_concert_key(c_key);
                     ke.set_key(key);
-                    tx.push(new ChangeKeySig(ks, ke, ks->show_courtesy()));
+                    apply_change_key_sig(ks, ke, ks->show_courtesy());
                 }
             }
         }
@@ -336,7 +336,7 @@ void Transpose::transpose_keys(Transaction &tx, Score *score, staff_idx_t staff_
                 }
 
                 ke.set_key(n_key);
-                tx.push(new ChangeKeySig(ks, ke, ks->show_courtesy()));
+                apply_change_key_sig(ks, ke, ks->show_courtesy());
             }
             if (s->tick().is_zero()) {
                 create_key = false;
@@ -573,7 +573,7 @@ void Transpose::transpose_fret_diagram(Transaction &tx, FretDiagram *diagram, Sc
             MScore::set_error(MsError::TRANSPOSE_NO_FRET_DIAGRAM, true);
             return;
         }
-        tx.push(new FretDataChange(diagram, harmony->plain_text()));
+        apply_fret_data_change(diagram, harmony->plain_text());
 
         score->rebuild_fret_box();
         return;
@@ -620,7 +620,7 @@ void Transpose::transpose_fret_diagram(Transaction &tx, FretDiagram *diagram, Sc
         MScore::set_error(MsError::TRANSPOSE_NO_FRET_DIAGRAM, true);
         return;
     }
-    tx.push(new FretDataChange(diagram, transposed));
+    apply_fret_data_change(diagram, transposed);
 
     score->rebuild_fret_box();
 }
@@ -725,33 +725,15 @@ int Transpose::transpose_tpc(int tpc, Interval interval, bool use_double_sharps_
 //---------------------------------------------------------
 
 namespace {
-struct TransposeHarmony : UndoableCommand {
+static void apply_transpose_harmony(Harmony *harmony_, Interval interval_, bool use_double_sharps_flats_) {
+    note_change(harmony_, CommandType::TRANSPOSE_HARMONY);
 
-public:
-    TransposeHarmony(Harmony *harmony, Interval interval, bool use_double_sharps_flats)
-        : harmony_(harmony), interval_(interval), use_double_sharps_flats_(use_double_sharps_flats) {}
-
-    UNDO_TYPE(CommandType::TRANSPOSE_HARMONY)
-    UNDO_NAME("TransposeHarmony")
-    UNDO_CHANGED_OBJECTS({harmony_})
-
-private:
-    void flip() override;
-
-    Harmony *harmony_ = nullptr;
-
-    Interval interval_ = Interval(0, 0);
-    bool use_double_sharps_flats_ = false;
-};
+    Transpose::do_undo_transpose_harmony(harmony_, interval_, use_double_sharps_flats_);
+}
 } // namespace
 
-void TransposeHarmony::flip() {
-    Transpose::do_undo_transpose_harmony(harmony_, interval_, use_double_sharps_flats_);
-    interval_.flip();
-}
-
 void Transpose::undo_transpose_harmony(Transaction &tx, Harmony *harmony, Interval interval, bool double_sharp_flat) {
-    tx.push(new TransposeHarmony(harmony, interval, double_sharp_flat));
+    apply_transpose_harmony(harmony, interval, double_sharp_flat);
 }
 
 void Transpose::do_undo_transpose_harmony(Harmony *harmony, Interval interval, bool use_double_sharps_flats) {
@@ -771,35 +753,16 @@ void Transpose::do_undo_transpose_harmony(Harmony *harmony, Interval interval, b
 //---------------------------------------------------------
 
 namespace {
-struct TransposeHarmonyDiatonic : UndoableCommand {
+static void apply_transpose_harmony_diatonic(Harmony *harmony_, int interval_, bool use_double_sharps_flats_, bool transpose_keys_) {
+    note_change(harmony_, CommandType::TRANSPOSE_HARMONY);
 
-public:
-    TransposeHarmonyDiatonic(Harmony *harmony, int interval, bool use_double_sharps_flats, bool transpose_keys)
-        : harmony_(harmony), interval_(interval), use_double_sharps_flats_(use_double_sharps_flats), transpose_keys_(transpose_keys) {}
-
-    UNDO_TYPE(CommandType::TRANSPOSE_HARMONY)
-    UNDO_NAME("TransposeHarmonyDiatonic")
-    UNDO_CHANGED_OBJECTS({harmony_})
-
-private:
-    void flip() override;
-
-    Harmony *harmony_ = nullptr;
-    int interval_ = 0;
-    bool use_double_sharps_flats_ = false;
-    bool transpose_keys_ = false;
-};
-} // namespace
-
-void TransposeHarmonyDiatonic::flip() {
     Transpose::do_undo_transpose_harmony_diatonic(harmony_, interval_, use_double_sharps_flats_, transpose_keys_);
-
-    interval_ *= -1;
 }
+} // namespace
 
 void Transpose::undo_transpose_harmony_diatonic(Transaction &tx, Harmony *harmony, int interval, bool double_sharp_flat,
                                                 bool transpose_keys) {
-    tx.push(new TransposeHarmonyDiatonic(harmony, interval, double_sharp_flat, transpose_keys));
+    apply_transpose_harmony_diatonic(harmony, interval, double_sharp_flat, transpose_keys);
 }
 
 void Transpose::do_undo_transpose_harmony_diatonic(Harmony *harmony, int interval, bool use_double_sharps_flats, bool transpose_keys) {

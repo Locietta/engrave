@@ -384,7 +384,7 @@ void ScoreOrder::set_brackets_and_barlines(Score *score) {
                 if (bi->bracket_type() == BracketType::GROUP) {
                     continue;
                 }
-                score->record_bracket_remove(staff, bi->column());
+                score->apply_bracket_remove(staff, bi->column());
             }
             staff->undo_change_property(Pid::STAFF_BARLINE_SPAN, false);
 

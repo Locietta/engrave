@@ -63,7 +63,6 @@ struct Segment;
 struct BracketItem;
 struct PaddingTable;
 
-struct UndoableCommand;
 struct EditData;
 
 struct Selection;
@@ -202,7 +201,6 @@ struct DomAccessor {
     void undo_add_element(EngravingItem *item, bool add_to_linked_staves = true, bool ctrl_modifier = false);
     void do_undo_remove_element(EngravingItem *item);
     void undo_remove_element(EngravingItem *item);
-    void undo(UndoableCommand *cmd) const;
     void add_element(EngravingItem *item);
     void remove_element(EngravingItem *item);
     void update_locks_on_create_mm_rest(Measure *first, Measure *last);

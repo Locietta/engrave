@@ -239,8 +239,6 @@ public:
 
     bool allow_time_anchor() const override { return ownership_parent() && parent()->is_segment(); }
 
-    friend struct FretUndoData;
-
     struct FingeringItem {
         String finger_number;
         PointF pos;

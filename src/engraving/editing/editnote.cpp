@@ -47,103 +47,27 @@
 
 using namespace mu::engraving;
 
-//---------------------------------------------------------
-//   ChangePitch
-//---------------------------------------------------------
+static void apply_change_pitch(Note *note, int pitch, int tpc1, int tpc2) {
+    if (note->pitch() == pitch && note->tpc1() == tpc1 && note->tpc2() == tpc2) return;
+    note_change(note, CommandType::CHANGE_PITCH);
+    note->set_pitch(pitch, tpc1, tpc2);
+    note->trigger_layout();
+}
 
-struct ChangePitch : UndoableCommand {
-private:
-
-    Note *note = nullptr;
-    int pitch = 0;
-    int tpc1 = 0;
-    int tpc2 = 0;
-
-    void flip() override {
-        int f_pitch = note->pitch();
-        int f_tpc1 = note->tpc1();
-        int f_tpc2 = note->tpc2();
-        // do not change unless necessary
-        if (f_pitch == pitch && f_tpc1 == tpc1 && f_tpc2 == tpc2) {
-            return;
-        }
-
-        note->set_pitch(pitch, tpc1, tpc2);
-        pitch = f_pitch;
-        tpc1 = f_tpc1;
-        tpc2 = f_tpc2;
-
-        note->trigger_layout();
-    }
-
-public:
-    ChangePitch(Note *input_note, int input_pitch, int input_tpc1, int input_tpc2) {
-        note = input_note;
-        pitch = input_pitch;
-        tpc1 = input_tpc1;
-        tpc2 = input_tpc2;
-    }
-
-    UNDO_TYPE(CommandType::CHANGE_PITCH)
-    UNDO_NAME("ChangePitch")
-    UNDO_CHANGED_OBJECTS({note})
-};
-
-//---------------------------------------------------------
-//   ChangeFretting
 //
 //    To use with tablatures to force a specific note fretting;
 //    Pitch, string and fret must be changed all together; otherwise,
 //    if they are not consistent among themselves, the refretting algorithm may re-assign
 //    fret and string numbers for (potentially) all the notes of all the chords of a segment.
-//---------------------------------------------------------
 
-struct ChangeFretting : UndoableCommand {
-private:
-
-    Note *note = nullptr;
-    int pitch = 0;
-    int string = 0;
-    int fret = 0;
-    int tpc1 = 0;
-    int tpc2 = 0;
-
-    void flip() override {
-        int f_pitch = note->pitch();
-        int f_string = note->string();
-        int f_fret = note->fret();
-        int f_tpc1 = note->tpc1();
-        int f_tpc2 = note->tpc2();
-        // do not change unless necessary
-        if (f_pitch == pitch && f_string == string && f_fret == fret && f_tpc1 == tpc1 && f_tpc2 == tpc2) {
-            return;
-        }
-
-        note->set_pitch(pitch, tpc1, tpc2);
-        note->set_string(string);
-        note->set_fret(fret);
-        pitch = f_pitch;
-        string = f_string;
-        fret = f_fret;
-        tpc1 = f_tpc1;
-        tpc2 = f_tpc2;
-        note->trigger_layout();
-    }
-
-public:
-    ChangeFretting(Note *input_note, int input_pitch, int input_string, int input_fret, int input_tpc1, int input_tpc2) {
-        note = input_note;
-        pitch = input_pitch;
-        string = input_string;
-        fret = input_fret;
-        tpc1 = input_tpc1;
-        tpc2 = input_tpc2;
-    }
-
-    UNDO_TYPE(CommandType::CHANGE_FRETTING)
-    UNDO_NAME("ChangeFretting")
-    UNDO_CHANGED_OBJECTS({note})
-};
+static void apply_change_fretting(Note *note, int pitch, int string, int fret, int tpc1, int tpc2) {
+    if (note->pitch() == pitch && note->string() == string && note->fret() == fret && note->tpc1() == tpc1 && note->tpc2() == tpc2) return;
+    note_change(note, CommandType::CHANGE_FRETTING);
+    note->set_pitch(pitch, tpc1, tpc2);
+    note->set_string(string);
+    note->set_fret(fret);
+    note->trigger_layout();
+}
 
 //---------------------------------------------------------
 //   toggleOrnament
@@ -303,7 +227,7 @@ void EditNote::change_accidental2(Note *n, int pitch, int tpc) {
             while (nn && nn->tie_for()) {
                 nn = nn->tie_for()->end_note();
                 if (nn) {
-                    score->undo(new ChangePitch(nn, pitch, tpc1, tpc2));
+                    apply_change_pitch(nn, pitch, tpc1, tpc2);
                 }
             }
         }
@@ -629,7 +553,7 @@ void EditNote::undo_change_pitch(Score *score, Note *note, int pitch, int tpc1, 
 
     for (EngravingObject *e : note->link_list()) {
         Note *n = to_note(e);
-        tx.push(new ChangePitch(n, pitch, tpc1, tpc2));
+        apply_change_pitch(n, pitch, tpc1, tpc2);
     }
 }
 
@@ -642,6 +566,6 @@ void EditNote::undo_change_fretting(Score *score, Note *note, int pitch, int str
 
     for (EngravingObject *e : note->link_list()) {
         Note *n = to_note(e);
-        tx.push(new ChangeFretting(n, pitch, string, fret, tpc1, tpc2));
+        apply_change_fretting(n, pitch, string, fret, tpc1, tpc2);
     }
 }

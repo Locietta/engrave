@@ -57,7 +57,7 @@ void TieJumpPoint::undo_set_active(bool v) {
     if (!score || active_ == v) {
         return;
     }
-    score->undo(new ChangeTieJumpPointActive(jump_point_list_, id_, v));
+    apply_change_tie_jump_point_active(jump_point_list_, id_, v);
 }
 
 TranslatableString TieJumpPoint::menu_title() const {
