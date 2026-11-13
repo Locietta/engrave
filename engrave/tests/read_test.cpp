@@ -73,6 +73,7 @@
 #include "engraving/dom/hairpin.h"
 #include "engraving/dom/harmony.h"
 #include "engraving/dom/hook.h"
+#include "engraving/dom/image.h"
 #include "engraving/dom/instrument.h"
 #include "engraving/dom/jump.h"
 #include "engraving/dom/ledgerline.h"
@@ -4897,6 +4898,43 @@ std::string legacy_override_write(const mu::engraving::EngravingItem *item, bool
         mu::engraving::write::TWrite::write_item(item, xml, ctx);
     }
     return {reinterpret_cast<const char *>(bytes.const_data()), bytes.size()};
+}
+
+TEST(Read, ColdSvgDimensionsAndLockedResizeUseIntrinsicAspect) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto *measure = master.first_measure();
+    std::unique_ptr<Image> image(Factory::create_image(measure));
+    const muse::ByteArray svg(R"(<svg xmlns="http://www.w3.org/2000/svg" width="24" height="12"><rect width="24" height="12"/></svg>)");
+    ASSERT_TRUE(image->load_from_data("s5b-intrinsic.svg", svg));
+    image->set_size_is_spatium(false);
+    EXPECT_DOUBLE_EQ(image->get_property(Pid::IMAGE_WIDTH).to_double(), 24.0 / dpmm);
+    EXPECT_DOUBLE_EQ(image->get_property(Pid::IMAGE_HEIGHT).to_double(), 12.0 / dpmm);
+    EXPECT_EQ(image->get_property(Pid::SIZE).value<muse::SizeF>(), muse::SizeF(24.0 / dpmm, 12.0 / dpmm));
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+    rendering::score::TLayout::layout_image(image.get(), image->mutldata());
+    EXPECT_NEAR(image->ldata()->bbox().width(), 24.0, 1e-9);
+    EXPECT_NEAR(image->ldata()->bbox().height(), 12.0, 1e-9);
+    ASSERT_TRUE(image->set_property(Pid::IMAGE_WIDTH, 36.0));
+    EXPECT_DOUBLE_EQ(image->image_height(), 18.0);
+    ASSERT_TRUE(image->set_property(Pid::IMAGE_HEIGHT, 7.0));
+    EXPECT_DOUBLE_EQ(image->image_width(), 14.0);
+}
+
+TEST(Read, SvgIntrinsicPhysicalUnitsAndViewBoxAreAvailableCold) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    Image image(master.first_measure());
+    ASSERT_TRUE(image.load_from_data("s5b-mm.svg", muse::ByteArray(R"(<svg width="25.4mm" height="12.7mm"/>)")));
+    EXPECT_NEAR(image.image_size().width(), 96.0, 1e-9);
+    EXPECT_NEAR(image.image_size().height(), 48.0, 1e-9);
+    ASSERT_TRUE(image.load_from_data("s5b-viewbox.svg", muse::ByteArray(R"(<svg viewBox="0,0,24,12"/>)")));
+    EXPECT_EQ(image.image_size(), muse::SizeF(24.0, 12.0));
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
 }
 
 TEST(Read, CapoAutoDisplayRefreshesWithoutChangingAuthoredText) {
