@@ -52,6 +52,8 @@
 #include "engraving/automation/automationdata.h"
 #include "engraving/automation/tempovalues.h"
 #include "engraving/dom/accidental.h"
+#include "engraving/dom/anchors.h"
+#include "engraving/dom/bagpembell.h"
 #include "engraving/dom/beam.h"
 #include "engraving/dom/breath.h"
 #include "engraving/dom/chord.h"
@@ -6301,6 +6303,67 @@ TEST(LayoutBounds, RestCollisionAndAlignmentRefreshChangedLedgerGlyphsImmediatel
         EXPECT_EQ(first->ldata()->sym.value(), ledger);
         EXPECT_EQ(first->ldata()->shape(LdAccess::PASS).bbox(), first->sym_bbox(ledger));
     }
+}
+
+TEST(LayoutDataStore, ClosedDispatchKeepsColdDefaultsSparseAndPreservesLegacyPayloadProvenance) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    std::unique_ptr<System> system(Factory::create_system(&master));
+    auto bagpipe = std::make_unique<BagpipeEmbellishment>(master.dummy());
+    std::unique_ptr<GuitarBend> bend(Factory::create_guitar_bend(master.dummy()));
+    std::unique_ptr<TimeTickAnchor> anchor(Factory::create_time_tick_anchor(master.dummy()));
+    std::unique_ptr<Parenthesis> paren(Factory::create_parenthesis(master.dummy()));
+    auto &store = master.renderer()->layout_data_store(master);
+    const auto before = store.size();
+    EXPECT_TRUE(system->ldata()->group_brackets_width().empty());
+    EXPECT_TRUE(system->ldata()->parts_with_group_name().empty());
+    EXPECT_TRUE(bagpipe->ldata()->notes_data.empty());
+    EXPECT_TRUE(bend->ldata()->dive_levels().empty());
+    EXPECT_FALSE(anchor->ldata()->darker());
+    EXPECT_TRUE(paren->ldata()->path.value().is_empty());
+    const std::array<const EngravingItem *, 5> items{system.get(), bagpipe.get(), bend.get(), anchor.get(), paren.get()};
+    for (const auto *item : items) EXPECT_FALSE(item->has_layout_data());
+    EXPECT_EQ(store.size(), before);
+    system->mutldata()->set_group_brackets_width_at_staff_idx(2, 3.25);
+    bagpipe->mutldata()->notes_data[2].head_xy = muse::PointF(1.25, 2.5);
+    bend->mutldata()->set_dive_levels(amc::FlatSet<int>{2, 1, 2});
+    anchor->mutldata()->set_darker(true);
+    paren->mutldata()->path = muse::draw::PainterPath();
+    EXPECT_EQ(system->ldata()->group_brackets_width_at_staff_idx(2), 3.25);
+    EXPECT_EQ(bagpipe->ldata()->notes_data.at(2).head_xy, muse::PointF(1.25, 2.5));
+    ASSERT_EQ(bend->ldata()->dive_levels().size(), 2u);
+    EXPECT_EQ(*bend->ldata()->dive_levels().begin(), 1);
+    EXPECT_TRUE(anchor->ldata()->darker());
+    EXPECT_EQ(store.size(), before + 5);
+
+    std::unique_ptr<MeasureRepeat> repeat(Factory::create_measure_repeat(master.dummy()));
+    std::unique_ptr<Rest> slice_before_hack(Factory::copy_rest(*repeat));
+    slice_before_hack->hack_to_rest_type();
+    slice_before_hack->mutldata()->sym = SymId::REST16TH;
+    EXPECT_EQ(slice_before_hack->ldata()->sym.value(), SymId::REST16TH);
+    repeat->hack_to_rest_type();
+    EXPECT_EQ(repeat->type(), ElementType::REST);
+    EXPECT_FALSE(repeat->has_layout_data());
+    EXPECT_TRUE(repeat->ldata()->number_sym.empty());
+    auto *payload = repeat->mutldata();
+    payload->set_number_sym(12); // Must remain a full MeasureRepeat payload after the type hack.
+    EXPECT_EQ(payload->number_sym.size(), 2u);
+    EXPECT_EQ(store.find(*repeat), payload);
+    std::unique_ptr<Rest> slice(Factory::copy_rest(*repeat));
+    EXPECT_FALSE(slice->has_layout_data());
+    EXPECT_EQ(slice->ldata()->sym.value(), SymId::REST_QUARTER);
+    slice->mutldata()->sym = SymId::REST8TH;
+    EXPECT_EQ(slice->ldata()->sym.value(), SymId::REST8TH);
+    std::unique_ptr<MMRest> mm_rest(Factory::create_mm_rest(master.dummy()));
+    mm_rest->mutldata()->rest_width = 4.5;
+    std::unique_ptr<Rest> mm_slice(Factory::copy_rest(*mm_rest));
+    mm_slice->hack_to_rest_type();
+    EXPECT_FALSE(mm_slice->has_layout_data());
+    mm_slice->mutldata()->sym = SymId::REST_WHOLE;
+    EXPECT_EQ(mm_slice->ldata()->sym.value(), SymId::REST_WHOLE);
+    EXPECT_EQ(mm_rest->ldata()->rest_width.value(), 4.5);
 }
 
 TEST(LayoutDataStore, StablePayloadsAndNonAllocatingTypedReads) {

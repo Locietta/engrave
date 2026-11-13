@@ -26,6 +26,7 @@
 #include <vector>
 
 #include "engravingitem.h"
+#include "global/flatmap.h"
 
 namespace mu::engraving {
 using BagpipeNoteList = std::vector<int>;
@@ -96,7 +97,7 @@ public:
         SymId headsym = SymId::NO_SYM; // grace note head symbol
         SymId flagsym = SymId::NO_SYM; // grace note flag symbol
         double stem_line_w = 0.0;      // line width for stem
-        std::map<size_t /*note index*/, NoteData> notes_data;
+        muse::FlatMap<size_t /*note index*/, NoteData> notes_data;
         BeamData beam_data;
     };
     DECLARE_LAYOUTDATA_METHODS(BagpipeEmbellishment)

@@ -28,6 +28,7 @@
 */
 
 #include "engravingitem.h"
+#include "global/flatmap.h"
 #include "instrumentname.h"
 
 namespace mu::engraving {
@@ -273,7 +274,7 @@ public:
 
         void set_total_names_width(double v) { total_names_width_ = v; }
 
-        const std::unordered_map<staff_idx_t, double> &group_brackets_width() const { return group_brackets_width_; }
+        const muse::FlatMap<staff_idx_t, double> &group_brackets_width() const { return group_brackets_width_; }
 
         void set_group_brackets_width_at_staff_idx(staff_idx_t i, double w) { group_brackets_width_[i] = w; }
 
@@ -283,7 +284,7 @@ public:
 
         void clear_group_brackets_width() { group_brackets_width_.clear(); }
 
-        const std::unordered_map<Part *, InstrumentName *> &parts_with_group_name() const { return parts_with_group_name_; }
+        const muse::FlatMap<Part *, InstrumentName *> &parts_with_group_name() const { return parts_with_group_name_; }
 
         void add_part_with_group_names(Part *p, InstrumentName *n) { parts_with_group_name_.emplace(p, n); }
 
@@ -297,9 +298,9 @@ public:
         double second_column_width_ = 0.0;
         double total_names_width_ = 0.0;
 
-        std::unordered_map<staff_idx_t, double> group_brackets_width_;
+        muse::FlatMap<staff_idx_t, double> group_brackets_width_;
 
-        std::unordered_map<Part *, InstrumentName *> parts_with_group_name_;
+        muse::FlatMap<Part *, InstrumentName *> parts_with_group_name_;
     };
     DECLARE_LAYOUTDATA_METHODS(System)
 

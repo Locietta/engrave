@@ -23,6 +23,7 @@ struct LayoutDataStore {
 
     size_t size() const;
     const EngravingItem::LayoutData *find(const EngravingItem &item) const;
+    EngravingItem::LayoutData *mut_data(EngravingItem &item);
     EngravingItem::LayoutData *adopt(EngravingItem &item, std::unique_ptr<EngravingItem::LayoutData> data);
     void erase(EngravingItem &item);
     void transfer(EngravingItem &item, LayoutDataStore &destination);

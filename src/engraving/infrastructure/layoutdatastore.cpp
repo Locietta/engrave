@@ -9,6 +9,7 @@
 
 #include "dom/masterscore.h"
 #include "dom/score.h"
+#include "rendering/score/layoutdatafactory.h"
 #include "rendering/score/scorerenderer.h"
 
 namespace mu::engraving::rendering::score {
@@ -30,6 +31,14 @@ size_t LayoutDataStore::size() const { return records_->items.size(); }
 const EngravingItem::LayoutData *LayoutDataStore::find(const EngravingItem &item) const {
     const auto it = records_->items.find(&item);
     return it == records_->items.end() ? nullptr : it->second.data.get();
+}
+
+EngravingItem::LayoutData *LayoutDataStore::mut_data(EngravingItem &item) {
+    if (item.layout_data_) {
+        if (item.layout_store_ != this) throw std::logic_error("layout payload belongs to a different store");
+        return item.layout_data_;
+    }
+    return adopt(item, make_layout_data(item.layout_type_));
 }
 
 EngravingItem::LayoutData *LayoutDataStore::adopt(EngravingItem &item, std::unique_ptr<EngravingItem::LayoutData> data) {
