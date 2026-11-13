@@ -441,6 +441,17 @@ void Transaction::change_excerpt_membership(Excerpt *excerpt, bool adding) {
 
 void Transaction::set_push_hook(PushHook hook) { s_push_hook = hook; }
 
+void Transaction::change_mm_rest_link(Measure &target, MeasureBase *value, MMRestLink link) {
+    validate_mm_rest_link(target, value, link);
+    if (is_dummy_ || undoable_transaction_->replaying()) {
+        apply_mm_rest_link(target, value, link);
+        return;
+    }
+    auto token = begin_compound_hook(s_push_hook);
+    undoable_transaction_->change_mm_rest_link(target, value, link);
+    finish_compound_hook(s_push_hook, token);
+}
+
 void Transaction::add_element(EngravingItem *item) {
     validate_element_add(*item);
     if (is_dummy_ || undoable_transaction_->replaying()) {

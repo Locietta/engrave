@@ -37,6 +37,7 @@
 #include "engraving/dom/factory.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
+#include "engraving/dom/mmrest.h"
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/note.h"
 #include "engraving/dom/notedot.h"
@@ -62,6 +63,7 @@
 #include "engraving/editing/editproperty.h"
 #include "engraving/editing/editstaffbrackets.h"
 #include "engraving/editing/editstyle.h"
+#include "engraving/editing/transaction/mmrestchange.h"
 #include "engraving/editing/transaction/mutationjournal.h"
 #include "engraving/editing/transaction/transaction.h"
 #include "engraving/style/style.h"
@@ -1804,6 +1806,121 @@ TEST(JournalStaffRows, TrackInsertionRollbackRestoresAuthoredElementOrderAndTrac
     for (const auto &saved : before) {
         EXPECT_EQ(std::vector<EngravingItem *>(saved.segment->elist().begin(), saved.segment->elist().end()), saved.elements);
         for (const auto &[item, track] : saved.tracks) EXPECT_EQ(item->track(), track);
+    }
+}
+
+std::unique_ptr<engrave::Document> open_mm_rest_document() {
+    const auto path = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "engrave/tests/data/mmr/legacy_source_ownership.mscx";
+    auto result = g_engine->open(path);
+    EXPECT_TRUE(result) << result.error().message;
+    if (!result) return {};
+    auto document = std::move(*result);
+    engrave::harness::master_of(*document).ensure_layout();
+    return document;
+}
+
+mu::engraving::Measure *source_with_mm_rest(mu::engraving::MasterScore &master) {
+    for (auto *measure = master.first_measure(); measure; measure = measure->next_measure())
+        if (measure->mm_rest()) return measure;
+    return nullptr;
+}
+
+TEST(JournalMMRestLinks, RejectionRestoresAssociationLinksAndAuthoredNumberState) {
+    using namespace mu::engraving;
+    auto document = open_mm_rest_document();
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    auto *source = source_with_mm_rest(master);
+    ASSERT_NE(source, nullptr);
+    auto *overlay = source->mm_rest();
+    auto *segment = overlay->first(SegmentType::CHORD_REST);
+    ASSERT_NE(segment, nullptr);
+    auto *rest = to_mm_rest(segment->element(0));
+    ASSERT_NE(rest, nullptr);
+    rest->set_property(Pid::MMREST_NUMBER_OFFSET, Spatium(2.5));
+    rest->set_property(Pid::MMREST_NUMBER_VISIBLE, false);
+    const auto offset = rest->get_property(Pid::MMREST_NUMBER_OFFSET);
+    const auto visible = rest->get_property(Pid::MMREST_NUMBER_VISIBLE);
+    const auto next = overlay->next();
+    const auto previous = overlay->prev();
+    const auto layout_count = master.layout_state.whole_count + master.layout_state.range_count;
+    const auto revision = document->revision();
+    const auto result = chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+        record_mm_rest_association(*source, nullptr);
+        record_mm_rest_next(*overlay, source);
+        record_mm_rest_previous(*overlay, source);
+        EXPECT_EQ(master.mutation_journal()->active_transaction()->mm_rest_entries(), 3u);
+        EXPECT_EQ(master.mutation_journal()->active_transaction()->legacy_entries(), 0u);
+        return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "reject changed display links"});
+    }});
+    ASSERT_FALSE(result);
+    EXPECT_EQ(source->mm_rest(), overlay);
+    EXPECT_EQ(overlay->next(), next);
+    EXPECT_EQ(overlay->prev(), previous);
+    EXPECT_EQ(rest->get_property(Pid::MMREST_NUMBER_OFFSET), offset);
+    EXPECT_EQ(rest->get_property(Pid::MMREST_NUMBER_VISIBLE), visible);
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, layout_count);
+    EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
+    master.ensure_layout();
+    EXPECT_EQ(source->mm_rest(), overlay);
+    EXPECT_EQ(rest->get_property(Pid::MMREST_NUMBER_OFFSET), offset);
+    EXPECT_EQ(rest->get_property(Pid::MMREST_NUMBER_VISIBLE), visible);
+}
+
+TEST(JournalMMRestLinks, RejectionRestoresAbsentAssociation) {
+    using namespace mu::engraving;
+    auto document = open_mm_rest_document();
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    auto *source = source_with_mm_rest(master);
+    ASSERT_NE(source, nullptr);
+    auto *other = source->next_measure();
+    while (other && other->mm_rest()) other = other->next_measure();
+    ASSERT_NE(other, nullptr);
+    auto *overlay = source->mm_rest();
+    const auto result = chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+        record_mm_rest_association(*source, nullptr);
+        record_mm_rest_association(*other, overlay);
+        EXPECT_EQ(master.mutation_journal()->active_transaction()->mm_rest_entries(), 2u);
+        return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "reject moved display association"});
+    }});
+    ASSERT_FALSE(result);
+    EXPECT_EQ(source->mm_rest(), overlay);
+    EXPECT_EQ(other->mm_rest(), nullptr);
+}
+
+TEST(JournalMMRestLinks, FailureBeforeAndAfterMutationKeepsOriginalAssociation) {
+    using namespace mu::engraving;
+    for (const bool after : {false, true}) {
+        SCOPED_TRACE(after);
+        auto document = open_mm_rest_document();
+        ASSERT_TRUE(document);
+        auto &master = engrave::harness::master_of(*document);
+        auto *source = source_with_mm_rest(master);
+        ASSERT_NE(source, nullptr);
+        auto *overlay = source->mm_rest();
+
+        struct HookReset {
+            ~HookReset() { Transaction::set_push_hook(nullptr); }
+        } reset;
+
+        const Transaction::PushHook before_hook = [](UndoableCommand *token, bool appended) {
+            if (appended) return;
+            delete token;
+            throw std::runtime_error("before MMR link recording");
+        };
+        const Transaction::PushHook after_hook = [](UndoableCommand *, bool appended) {
+            if (appended) throw std::runtime_error("after MMR link mutation");
+        };
+        Transaction::set_push_hook(after ? after_hook : before_hook);
+        const auto result = chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+            record_mm_rest_association(*source, nullptr);
+            return {};
+        }});
+        ASSERT_FALSE(result);
+        EXPECT_EQ(source->mm_rest(), overlay);
+        EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
     }
 }
 

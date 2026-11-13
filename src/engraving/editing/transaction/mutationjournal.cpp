@@ -597,6 +597,23 @@ void JournalBatch::change_excerpt_membership(Excerpt *excerpt, bool adding) {
         master.remove_excerpt(excerpt);
 }
 
+void JournalBatch::change_mm_rest_link(Measure &target, MeasureBase *value, MMRestLink link) {
+    validate_mm_rest_link(target, value, link);
+    auto *before = mm_rest_link(target, link);
+    if (before == value) return;
+    const auto reference = JournalTarget::capture(target);
+    const auto before_handle = before ? reference.document->eid_register()->enroll(*before) : SourceHandle{};
+    const auto index = entry_index(mm_rest_links_.size());
+    mm_rest_links_.push_back({reference, before_handle, link});
+    try {
+        entries_.push_back({JournalEntryKind::MMREST_LINK, index});
+    } catch (...) {
+        mm_rest_links_.pop_back();
+        throw;
+    }
+    apply_mm_rest_link(target, value, link);
+}
+
 void JournalBatch::unwind(bool clean_up) {
     struct ReplayGuard {
         bool &flag;
@@ -608,6 +625,7 @@ void JournalBatch::unwind(bool clean_up) {
 
     for (auto it = entries_.rbegin(); it != entries_.rend(); ++it) {
         switch (it->kind) {
+            case JournalEntryKind::MMREST_LINK: restore_mm_rest_link(mm_rest_links_[it->payload]); break;
             case JournalEntryKind::MSTAFF_MEMBERSHIP: {
                 const auto &r = mstaff_memberships_[it->payload];
                 apply_mstaff_membership(mstaffs_[r.reference], r, !r.adding);
@@ -728,6 +746,7 @@ void JournalBatch::unwind(bool clean_up) {
     measures_.clear();
     measure_lengths_.clear();
     measure_repeats_.clear();
+    mm_rest_links_.clear();
     mstaff_memberships_.clear();
     staff_tracks_.clear();
     staff_brackets_.clear();
@@ -748,6 +767,7 @@ bool JournalBatch::structural_since(size_t mark) const {
     for (size_t i = mark; i < entries_.size(); ++i) {
         const auto entry = entries_[i];
         switch (entry.kind) {
+            case JournalEntryKind::MMREST_LINK: return true;
             case JournalEntryKind::TEXT_FORMAT:
             case JournalEntryKind::ELEMENT_ADD:
             case JournalEntryKind::ELEMENT_REMOVE:
@@ -791,6 +811,14 @@ std::optional<ChangedRange> JournalBatch::changed_range(size_t index) const {
 JournalBatch::ChangesInfo JournalBatch::changes_info() const {
     ChangesInfo result;
     for (const auto entry : entries_) {
+        if (entry.kind == JournalEntryKind::MMREST_LINK) {
+            const auto &record = mm_rest_links_[entry.payload];
+            const auto type = record.link == MMRestLink::ASSOCIATION ? CommandType::CHANGE_MM_REST : CommandType::UNKNOWN;
+            collect_object(result, &record.target.object(), type);
+            if (record.link == MMRestLink::ASSOCIATION && record.before.is_valid())
+                collect_object(result, record.target.document->eid_register()->item_from_handle(record.before), type);
+            continue;
+        }
         if (entry.kind == JournalEntryKind::TIME_INSERTION) {
             const auto &record = times_[entry.payload];
             collect_object(result, &record.target.object(),
