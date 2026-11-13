@@ -1080,12 +1080,13 @@ PointF Chord::page_pos() const {
 //---------------------------------------------------------
 
 void Chord::scan_elements(std::function<void(EngravingItem *)> func) {
-    if (stem()) func(stem());
-    if (hook()) func(hook());
-    if (stem_slash()) func(stem_slash());
     for (Articulation *a : articulations_) {
         a->scan_elements(func);
     }
+    // BSP insertion order breaks ties in the paint sort; preserve the legacy scan order.
+    if (hook()) func(hook());
+    if (stem()) func(stem());
+    if (stem_slash()) func(stem_slash());
     if (arpeggio_) {
         func(arpeggio_);
     }
