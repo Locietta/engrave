@@ -5,12 +5,24 @@
    "fixture": "bend.gp",
    "kind": "different",
    "output": "score.mscx",
-   "reason": "Current MSCZ inner MSCX representation, preserved from the reviewed primary index",
+   "reason": "Current MSCZ inner MSCX representation, preserved from the reviewed primary index; native save omits layout-generated note parenthesis groups (core3 S5b #15)",
    "sha256": {
-    "linux": "e05235df929a26ab3ccf07c6802e77f11332472e8be60c4dc03c36c4d35a7b53",
-    "windows": "e05235df929a26ab3ccf07c6802e77f11332472e8be60c4dc03c36c4d35a7b53"
+    "linux": "9a0e824647b267ca8d9e796c52ab9a4efcde1a3c39b42fb53eee59f4db4efd4c",
+    "windows": "9a0e824647b267ca8d9e796c52ab9a4efcde1a3c39b42fb53eee59f4db4efd4c"
    },
    "step": "archive MSCX"
+  },
+  {
+   "context": "engine-gate-archive",
+   "fixture": "bend.gp",
+   "kind": "different",
+   "output": "mscz.json",
+   "reason": "native save omits layout-generated note parenthesis groups (core3 S5b #15)",
+   "sha256": {
+    "linux": "8a09f066f27c07030b6db125d681bcd9d090f22ce4c93e005c7003305470e1c4",
+    "windows": "8a09f066f27c07030b6db125d681bcd9d090f22ce4c93e005c7003305470e1c4"
+   },
+   "step": "archive MSCZ inner MSCX"
   },
   {
    "context": "engine-gate-archive",
