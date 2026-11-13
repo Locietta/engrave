@@ -22,6 +22,7 @@ struct SourceHandle {
 // Actual collection membership, distinct from constructor parentage.
 void source_child_added(EngravingObject &owner, EngravingObject *item);
 void source_child_removed(EngravingObject &owner, EngravingObject *item);
+void touch_source_subtree(EngravingObject &item);
 bool source_attached(EngravingObject &item);
 bool source_object(const EngravingObject &item);
 void source_collection_cleared(EngravingObject &owner, SourceCollection collection);

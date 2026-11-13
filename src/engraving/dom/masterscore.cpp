@@ -228,7 +228,10 @@ void MasterScore::add_excerpt(Excerpt *ex, size_t index) {
         init_parts(ex);
     }
 
-    excerpts().insert(excerpts().begin() + (index == muse::nidx ? excerpts().size() : index), ex);
+    const auto at = index == muse::nidx ? excerpts().size() : index;
+    for (size_t i = at; i < excerpts().size(); ++i)
+        if (auto *score = excerpts()[i]->excerpt_score()) touch_source_subtree(*score);
+    excerpts().insert(excerpts().begin() + at, ex);
     source_child_added(*this, ex->excerpt_score());
     set_excerpts_changed(true);
 }
@@ -238,13 +241,13 @@ void MasterScore::add_excerpt(Excerpt *ex, size_t index) {
 //---------------------------------------------------------
 
 void MasterScore::remove_excerpt(Excerpt *ex) {
-    if (muse::remove(excerpts(), ex)) {
-        source_child_removed(*this, ex->excerpt_score());
-        set_excerpts_changed(true);
-        // delete ex;
-    } else {
-        LOGD("removeExcerpt:: ex not found");
-    }
+    const auto found = std::ranges::find(excerpts(), ex);
+    if (found == excerpts().end()) return;
+    for (auto it = found; it != excerpts().end(); ++it)
+        if (auto *score = (*it)->excerpt_score()) touch_source_subtree(*score);
+    source_child_removed(*this, ex->excerpt_score());
+    excerpts().erase(found);
+    set_excerpts_changed(true);
 }
 
 //---------------------------------------------------------

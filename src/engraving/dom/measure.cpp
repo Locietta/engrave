@@ -283,6 +283,7 @@ void Measure::set_staff_visible(staff_idx_t staff_idx, bool visible) {
     MStaff *staff = mstaff(staff_idx);
 
     if (staff) {
+        if (staff->visible() != visible) touch_source_subtree(*this);
         staff->set_visible(visible);
     }
 }

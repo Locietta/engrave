@@ -1241,6 +1241,7 @@ void Spanner::set_tick(const Fraction &v) {
         return;
     }
 
+    touch_source_subtree(*this);
     tick_ = v;
 
     Score *score = this->score();

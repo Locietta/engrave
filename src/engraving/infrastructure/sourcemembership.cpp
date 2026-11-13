@@ -67,7 +67,7 @@ static EIDRegister *active_register(EngravingObject &owner) {
 
 // Copies and imports sometimes initialize owned fields directly. Adoption of a
 // newly inserted subtree enrolls those actual fields, never constructor children_.
-static void set_subtree_live(EIDRegister &registry, EngravingObject &item, bool live);
+static void set_subtree_live(EIDRegister &registry, EngravingObject &item, bool live, bool detaching_score = false);
 
 template <typename Function>
 static void for_each_source_child(EngravingObject &item, const Function &adopt, bool live) {
@@ -160,12 +160,16 @@ static void for_each_source_child(EngravingObject &item, const Function &adopt, 
     }
 }
 
-static void set_subtree_live(EIDRegister &registry, EngravingObject &item, bool live) {
+static void set_subtree_live(EIDRegister &registry, EngravingObject &item, bool live, bool detaching_score) {
+    detaching_score |= !live && item.is_score();
+    if (detaching_score && item.is_chord_rest()) {
+        if (auto *beam = to_chord_rest(&item)->beam()) registry.set_live(*beam, false);
+    }
     registry.set_live(item, live);
     for_each_source_child(
         item,
         [&](EngravingObject *child) {
-            if (child && source_object(*child)) set_subtree_live(registry, *child, live);
+            if (child && source_object(*child)) set_subtree_live(registry, *child, live, detaching_score);
         },
         live);
 }
@@ -182,6 +186,21 @@ void source_child_removed(EngravingObject &owner, EngravingObject *item) {
     if (!item) return;
     if (auto *registry = active_register(owner); registry && source_object(owner) && source_object(*item))
         set_subtree_live(*registry, *item, false);
+}
+
+void touch_source_subtree(EngravingObject &item) {
+    auto *registry = active_register(item);
+    if (!registry || !registry->tracking_ids()) return;
+    registry->touch(item);
+    if (item.is_chord_rest()) {
+        if (auto *beam = to_chord_rest(&item)->beam()) registry->touch(*beam);
+    }
+    for_each_source_child(
+        item,
+        [](EngravingObject *child) {
+            if (child && source_object(*child)) touch_source_subtree(*child);
+        },
+        false);
 }
 
 bool source_attached(EngravingObject &item) {

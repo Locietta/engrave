@@ -2382,6 +2382,7 @@ void Score::sort_system_objects(std::vector<staff_idx_t> &dst) {
 //---------------------------------------------------------
 
 void Score::sort_staves(std::vector<staff_idx_t> &dst) {
+    touch_source_subtree(*this);
     sort_system_objects(dst);
     muse::delete_all(systems());
     systems().clear(); //??

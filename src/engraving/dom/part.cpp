@@ -541,7 +541,10 @@ PropertyValue Part::get_property(Pid id) const {
 
 bool Part::set_property(Pid id, const PropertyValue &property) {
     switch (id) {
-        case Pid::VISIBLE: set_show(property.to_bool()); break;
+        case Pid::VISIBLE:
+            if (show() != property.to_bool()) touch_source_subtree(*score());
+            set_show(property.to_bool());
+            break;
         case Pid::HIDE_WHEN_EMPTY: set_hide_when_empty(property.value<AutoOnOff>()); break;
         case Pid::HIDE_STAVES_WHEN_INDIVIDUALLY_EMPTY: set_hide_staves_when_individually_empty(property.to_bool()); break;
         case Pid::USE_DRUMSET: instrument()->set_use_drumset(property.to_bool()); break;

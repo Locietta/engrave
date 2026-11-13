@@ -1805,6 +1805,15 @@ TEST(Handles, StaffSortingAndReparentingPreserveIds) {
     EXPECT_EQ(registry.handle_of(note), handle);
     EXPECT_EQ(note->chord(), destination);
     mu::engraving::apply_element_reparent(*note, *chord, chord->track());
+    auto *segment = chord->segment();
+    auto *measure = segment->measure();
+    const auto tick = segment->rtick();
+    const auto segment_handle = registry.handle_of(segment);
+    ASSERT_NE(measure->next_measure(), nullptr);
+    mu::engraving::apply_segment_reparent(*segment, *measure->next_measure(), mu::engraving::Fraction(1, 4));
+    EXPECT_EQ(registry.live_item(segment_handle), segment);
+    EXPECT_EQ(engrave::resolve(master, id)->object, note);
+    mu::engraving::apply_segment_reparent(*segment, *measure, tick);
     expect_inv(*document);
 }
 
@@ -1831,6 +1840,114 @@ TEST(Handles, BatchDiffRetainsDestroyedIdentityAcrossSlotReuse) {
     EXPECT_TRUE(std::ranges::contains(result->replaced, old_id));
     EXPECT_FALSE(engrave::resolve(master, old_id));
     EXPECT_TRUE(engrave::resolve(master, new_id));
+    expect_inv(*document);
+}
+
+TEST(Handles, InsertBeforeRemovalUsesTheOriginalReplacementPosition) {
+    auto document = open_path(g_source_root / "tests/data/inputs/golden/hairpins_and_repeats.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *note = first_note(master);
+    ASSERT_NE(note, nullptr);
+    auto *other = note->clone();
+    other->set_pitch(64);
+    note->chord()->add(other);
+    engrave::assign_missing_ids(master);
+    const auto id = engine_id(*note);
+    const auto measure = engine_id(*note->chord()->measure());
+    const auto result = document->edit({{engrave::InsertMeasures{measure, 1}, engrave::Remove{id}}});
+    ASSERT_TRUE(result);
+    EXPECT_TRUE(std::ranges::contains(result->replaced, id));
+    EXPECT_FALSE(std::ranges::contains(result->removed, id));
+    EXPECT_FALSE(engrave::resolve(master, id));
+    expect_inv(*document);
+}
+
+TEST(Handles, RemovedExcerptDetachesBeamsBeforeTheNextOperation) {
+    auto document = open_path(g_source_root / "tests/data/inputs/golden/hairpins_and_repeats.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    if (master.excerpts().empty()) music::generate_score_excerpts(&master);
+    ASSERT_FALSE(master.excerpts().empty());
+    auto *excerpt = master.excerpts().front();
+    auto *score = excerpt->excerpt_score();
+    Note *note = nullptr;
+    for (auto *object : engrave::document_objects(master))
+        if (object->score() == score && object->is_note()) {
+            note = mu::engraving::to_note(object);
+            break;
+        }
+    ASSERT_NE(note, nullptr);
+    auto *beam = mu::engraving::Factory::create_beam(score);
+    beam->set_generated(false);
+    beam->add(note->chord());
+    engrave::assign_missing_ids(master);
+    const auto id = engine_id(*beam);
+    ASSERT_TRUE(engrave::resolve(master, id));
+    auto result = engrave::api::BatchGuard(*document).run({[&](engrave::api::EditContext &) -> engrave::Result<void> {
+                                                               master.apply_excerpt(excerpt, false);
+                                                               return {};
+                                                           },
+                                                           [&](engrave::api::EditContext &) -> engrave::Result<void> {
+                                                               EXPECT_FALSE(engrave::resolve(master, id));
+                                                               return {};
+                                                           }});
+    ASSERT_TRUE(result);
+    EXPECT_TRUE(std::ranges::contains(result->removed, id));
+    EXPECT_FALSE(engrave::resolve(master, id));
+    expect_inv(*document);
+}
+
+TEST(Handles, RegeneratedExcerptReplacesIdsAtTheOriginalScoreIndex) {
+    auto document = open_path(g_source_root / "tests/data/inputs/golden/hairpins_and_repeats.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    if (master.excerpts().empty()) music::generate_score_excerpts(&master);
+    ASSERT_EQ(master.excerpts().size(), 1u);
+    engrave::assign_missing_ids(master);
+    auto *excerpt = master.excerpts().front();
+    ElementId old_id;
+    for (auto *object : engrave::document_objects(master))
+        if (object->score() == excerpt->excerpt_score() && object->is_note()) {
+            old_id = engine_id(*object);
+            break;
+        }
+    ASSERT_TRUE(engrave::resolve(master, old_id));
+    auto result = engrave::api::BatchGuard(*document).run({[&](engrave::api::EditContext &) -> engrave::Result<void> {
+                                                               master.apply_excerpt(excerpt, false);
+                                                               return {};
+                                                           },
+                                                           [&](engrave::api::EditContext &) -> engrave::Result<void> {
+                                                               music::generate_score_excerpts(&master);
+                                                               return {};
+                                                           }});
+    ASSERT_TRUE(result);
+    EXPECT_TRUE(std::ranges::contains(result->replaced, old_id));
+    EXPECT_FALSE(std::ranges::contains(result->removed, old_id));
+    expect_inv(*document);
+}
+
+TEST(Handles, HiddenStaffSpacersLeaveTheDiffWhileTheirHandlesStillResolve) {
+    auto xml = read_text(g_source_root / "tests/data/inputs/golden/chordline_path.mscx");
+    const auto at = xml.find("<Measure>");
+    ASSERT_NE(at, std::string::npos);
+    xml.insert(at + std::string_view("<Measure>").size(), "<vspacerUp>2.5</vspacerUp><vspacerDown>3.5</vspacerDown>");
+    auto document = open_text(xml);
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *measure = master.first_measure();
+    const std::array ids{engine_id(*measure->vspacer_up(0)), engine_id(*measure->vspacer_down(0))};
+    for (auto target : {engine_id(*master.staff(0)), engine_id(*master.staff(0)->part())}) {
+        const auto hidden = document->edit({{engrave::SetProperty{target, "visible", false}}});
+        ASSERT_TRUE(hidden);
+        for (auto id : ids) {
+            EXPECT_TRUE(std::ranges::contains(hidden->removed, id));
+            EXPECT_TRUE(engrave::resolve(master, id));
+        }
+        const auto shown = document->edit({{engrave::SetProperty{target, "visible", true}}});
+        ASSERT_TRUE(shown);
+        for (auto id : ids) EXPECT_TRUE(std::ranges::contains(shown->created, id));
+    }
     expect_inv(*document);
 }
 

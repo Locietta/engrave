@@ -28,8 +28,11 @@
 #include <stdexcept>
 
 #include "dom/engravingitem.h"
+#include "dom/excerpt.h"
 #include "dom/masterscore.h"
+#include "dom/measure.h"
 #include "dom/mscore.h"
+#include "dom/staff.h"
 
 using namespace mu::engraving;
 
@@ -147,9 +150,20 @@ TouchedSlot EIDRegister::id_state(uint32_t index) const {
     TouchedSlot state{index, slot.eid, {}, slot.item && slot.live && slot.published};
     if (!state.published) return state;
     const auto &object = *slot.item;
-    const auto scores = object.master_score()->score_list();
-    const auto found = std::ranges::find(scores, object.score());
-    if (found != scores.end()) state.placement.score = static_cast<int>(std::distance(scores.begin(), found));
+    const auto *master = object.master_score();
+    if (object.score() == master)
+        state.placement.score = 0;
+    else {
+        int index = 1;
+        for (const auto *excerpt : master->excerpts()) {
+            const auto *score = excerpt->excerpt_score();
+            if (score == object.score()) {
+                state.placement.score = index;
+                break;
+            }
+            if (score) ++index;
+        }
+    }
     if (object.is_engraving_item()) {
         const auto &item = *to_engraving_item(&object);
         if (static_cast<long long>(item.track()) >= 0) {
@@ -157,12 +171,20 @@ TouchedSlot EIDRegister::id_state(uint32_t index) const {
             state.placement.track = static_cast<int>(item.track());
         }
     }
+    // Spacer visibility affects enumeration, while its published handle remains usable.
+    if (object.is_spacer()) {
+        const auto &item = *to_engraving_item(&object);
+        const auto *measure = to_measure(item.ownership_parent());
+        const auto staff = item.staff_idx();
+        state.published = (measure->visible(staff) && item.score()->staff(staff)->show()) || measure->is_cutaway_clef(staff);
+    }
     return state;
 }
 
 void EIDRegister::touch(uint32_t index) {
-    if (!tracking_ || std::ranges::any_of(touched_, [index](const auto &entry) { return entry.index == index; })) return;
-    touched_.push_back(id_state(index));
+    if (!tracking_) return;
+    const auto found = std::ranges::lower_bound(touched_, index, {}, &TouchedSlot::index);
+    if (found == touched_.end() || found->index != index) touched_.insert(found, id_state(index));
 }
 
 void EIDRegister::touch(const EngravingObject &item) {
