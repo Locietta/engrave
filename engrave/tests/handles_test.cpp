@@ -59,6 +59,7 @@
 #include "engraving/dom/property.h"
 #include "engraving/dom/score.h"
 #include "engraving/dom/segment.h"
+#include "engraving/dom/spacer.h"
 #include "engraving/dom/staff.h"
 #include "engraving/dom/text.h"
 #include "engraving/dom/textbase.h"
@@ -1540,6 +1541,53 @@ TEST(Handles, RegistryIdentityUpdatesKeepTheRuntimeHandle) {
     EXPECT_EQ(registry.repairs().duplicate, repairs + 1);
     EXPECT_EQ(registry.item_from_handle(handle), note);
     EXPECT_EQ(note->eid(), replacement);
+    expect_inv(*document);
+}
+
+TEST(Handles, LoadedMeasureSpacersKeepMembershipThroughRowRollback) {
+    using namespace mu::engraving;
+    auto xml = read_text(g_source_root / "tests/data/inputs/golden/chordline_path.mscx");
+    constexpr std::string_view tag = "<Measure>";
+    const auto at = xml.find(tag);
+    ASSERT_NE(at, std::string::npos);
+    xml.insert(at + tag.size(), "<vspacerUp>2.5</vspacerUp><vspacerDown>3.5</vspacerDown>");
+    auto document = open_text(xml);
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto &registry = *master.eid_register();
+    auto *measure = master.first_measure();
+    ASSERT_NE(measure, nullptr);
+    const std::array spacers{measure->vspacer_up(0), measure->vspacer_down(0)};
+    std::array<SourceHandle, 2> handles;
+    std::array<ElementId, 2> ids;
+    std::array<Spatium, 2> gaps;
+    for (size_t i = 0; i < spacers.size(); ++i) {
+        ASSERT_NE(spacers[i], nullptr);
+        ASSERT_TRUE(spacers[i]->eid().is_valid());
+        handles[i] = registry.handle_of(spacers[i]);
+        ids[i] = engrave::from_engine(spacers[i]->eid());
+        gaps[i] = spacers[i]->gap();
+        ASSERT_EQ(registry.live_item(handles[i]), spacers[i]);
+        const auto resolved = engrave::resolve(master, ids[i]);
+        ASSERT_TRUE(resolved);
+        EXPECT_EQ(resolved->object, spacers[i]);
+    }
+    const auto revision = master.source_revision();
+    Command command(master);
+    for (auto *spacer : spacers) master.record_property_change(spacer, Pid::SPACE, Spatium(8.0));
+    master.transaction_manager()->current_transaction()->change_mstaff(measure, measure->mstaves().at(0), 0, false);
+    for (const auto handle : handles) EXPECT_EQ(registry.live_item(handle), nullptr);
+    command.rollback();
+    for (size_t i = 0; i < spacers.size(); ++i) {
+        EXPECT_EQ(registry.live_item(handles[i]), spacers[i]);
+        const auto resolved = engrave::resolve(master, ids[i]);
+        ASSERT_TRUE(resolved);
+        EXPECT_EQ(resolved->object, spacers[i]);
+        EXPECT_EQ(spacers[i]->gap(), gaps[i]);
+    }
+    EXPECT_EQ(master.source_revision(), revision);
+    EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
     expect_inv(*document);
 }
 

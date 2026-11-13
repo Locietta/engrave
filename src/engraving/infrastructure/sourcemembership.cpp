@@ -12,6 +12,7 @@
 #include "dom/part.h"
 #include "dom/score.h"
 #include "dom/segment.h"
+#include "dom/spacer.h"
 #include "dom/staff.h"
 #include "dom/text.h"
 #include "dom/tie.h"
@@ -86,7 +87,12 @@ static void adopt_children(EngravingObject &item) {
         auto &base = *to_measure_base(&item);
         for (auto *child : base.el()) adopt(child);
         if (item.is_measure()) {
-            for (auto *segment = to_measure(&item)->first(); segment; segment = segment->next()) adopt(segment);
+            auto &measure = *to_measure(&item);
+            for (auto *row : measure.mstaves()) {
+                adopt(row->vspacer_up());
+                adopt(row->vspacer_down());
+            }
+            for (auto *segment = measure.first(); segment; segment = segment->next()) adopt(segment);
         }
         if (item.is_t_box()) adopt(to_t_box(&item)->text());
         return;
