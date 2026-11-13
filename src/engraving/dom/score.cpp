@@ -258,6 +258,18 @@ Score::~Score() {
     delete dummy_;
     dummy_ = nullptr;
     if (layout_data_store_) renderer()->release_layout_data_store(*this);
+    // Detached score children are deleted later by the base destructor. Their
+    // normal hooks can no longer reach this registry after the master is cleared.
+    if (master_score_ && Score::is_alive(master_score_)) {
+        auto &registry = *master_score_->eid_register();
+        const auto retire_children = [&](auto &&self, EngravingObject &owner) -> void {
+            for (auto *child : owner.children()) {
+                self(self, *child);
+                registry.on_item_destroyed(child);
+            }
+        };
+        retire_children(retire_children, *this);
+    }
     master_score_ = nullptr;
 }
 

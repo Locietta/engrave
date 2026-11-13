@@ -52,6 +52,7 @@
 #include "engraving/dom/stafflines.h"
 #include "engraving/dom/stafftext.h"
 #include "engraving/dom/stem.h"
+#include "engraving/dom/system.h"
 #include "engraving/dom/tempotext.h"
 #include "engraving/dom/text.h"
 #include "engraving/dom/textline.h"
@@ -1922,6 +1923,236 @@ TEST(JournalMMRestLinks, FailureBeforeAndAfterMutationKeepsOriginalAssociation) 
         EXPECT_EQ(source->mm_rest(), overlay);
         EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
     }
+}
+
+std::unique_ptr<engrave::Document> open_mm_rest_creation_document() {
+    constexpr std::string_view source = R"(<museScore version="5.00"><Score>
+<Style><createMultiMeasureRests>1</createMultiMeasureRests></Style>
+<Part id="1"><Staff><StaffType group="pitched"/></Staff><Instrument id="piano">
+<trackName>Piano</trackName><instrumentId>keyboard.piano</instrumentId><Channel><program value="0"/></Channel>
+</Instrument></Part><Staff id="1"><Measure><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
+<Rest><durationType>measure</durationType><duration>4/4</duration></Rest></voice></Measure>
+<Measure><voice><Rest><durationType>measure</durationType><duration>4/4</duration></Rest></voice></Measure>
+</Staff></Score></museScore>)";
+    auto result = g_engine->open(std::as_bytes(std::span(source.data(), source.size())));
+    EXPECT_TRUE(result) << result.error().message;
+    return result ? std::move(*result) : nullptr;
+}
+
+void complete_test_mm_rest(mu::engraving::MasterScore &master, mu::engraving::MMRestCreation &creation) {
+    using namespace mu::engraving;
+    auto *overlay = creation.get();
+    overlay->set_mm_rest_count(1);
+    auto *segment = overlay->undo_get_segment_r(SegmentType::CHORD_REST, Fraction(0, 1));
+    auto *rest = Factory::create_mm_rest(segment);
+    rest->set_track(0);
+    master.record_element_add(rest);
+    creation.complete();
+}
+
+TEST(JournalMMRestCreation, FailureWithoutBatchRetiresIncompleteOverlayBeforeSnapshotSave) {
+    using namespace mu::engraving;
+    auto document = open_mm_rest_creation_document();
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    auto *source = master.first_measure();
+    ASSERT_EQ(source->mm_rest(), nullptr);
+    SourceHandle created;
+    EXPECT_THROW(
+        {
+            auto creation = begin_mm_rest_creation(*source, source->ticks());
+            created = master.eid_register()->handle_of(creation.get());
+            EXPECT_EQ(source->mm_rest(), creation.get());
+            EXPECT_EQ(creation.get()->first(), nullptr);
+            throw std::bad_alloc();
+        },
+        std::bad_alloc);
+    EXPECT_EQ(source->mm_rest(), nullptr);
+    EXPECT_EQ(master.eid_register()->item_from_handle(created), nullptr);
+    const auto id = engrave::from_engine(source->eid());
+    ASSERT_TRUE(document->edit({{engrave::SetLayoutBreak{id, "line", true}}}));
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+}
+
+TEST(JournalMMRestCreation, FailedBatchRetiresCompletedOverlayAndCachedSystemReference) {
+    using namespace mu::engraving;
+    auto document = open_mm_rest_creation_document();
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    auto *source = master.first_measure();
+    auto *system = Factory::create_system(&master);
+    master.systems().push_back(system);
+    SourceHandle created;
+    const auto revision = document->revision();
+    const auto result = chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+        auto creation = begin_mm_rest_creation(*source, source->ticks());
+        created = master.eid_register()->handle_of(creation.get());
+        complete_test_mm_rest(master, creation);
+        system->append_measure(creation.get());
+        return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "reject completed display topology"});
+    }});
+    ASSERT_FALSE(result);
+    EXPECT_EQ(source->mm_rest(), nullptr);
+    EXPECT_EQ(master.eid_register()->item_from_handle(created), nullptr);
+    EXPECT_TRUE(system->measures().empty());
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
+    const auto id = engrave::from_engine(source->eid());
+    ASSERT_TRUE(document->edit({{engrave::SetLayoutBreak{id, "line", true}}}));
+}
+
+TEST(JournalMMRestCreation, PostAttachmentFailureRestoresAbsenceBeforeStepCatchesIt) {
+    using namespace mu::engraving;
+    auto document = open_mm_rest_creation_document();
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    static Measure *hook_source = nullptr;
+    static SourceHandle created;
+    hook_source = master.first_measure();
+    created = {};
+
+    struct HookReset {
+        ~HookReset() { Transaction::set_push_hook(nullptr); }
+    } reset;
+
+    Transaction::set_push_hook([](UndoableCommand *, bool appended) {
+        if (!appended) return;
+        auto *overlay = hook_source->mm_rest();
+        EXPECT_NE(overlay, nullptr);
+        EXPECT_EQ(overlay->first(), nullptr);
+        created = hook_source->master_score()->eid_register()->handle_of(overlay);
+        throw std::runtime_error("after attachment before first segment");
+    });
+    const auto result = chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+        EXPECT_THROW(std::ignore = begin_mm_rest_creation(*hook_source, hook_source->ticks()), std::runtime_error);
+        EXPECT_EQ(hook_source->mm_rest(), nullptr);
+        Transaction::set_push_hook(nullptr);
+        return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "reject caught layout failure"});
+    }});
+    ASSERT_FALSE(result);
+    EXPECT_EQ(hook_source->mm_rest(), nullptr);
+    EXPECT_EQ(master.eid_register()->item_from_handle(created), nullptr);
+    const auto id = engrave::from_engine(hook_source->eid());
+    ASSERT_TRUE(document->edit({{engrave::SetLayoutBreak{id, "line", true}}}));
+    hook_source = nullptr;
+}
+
+TEST(JournalMMRestCreation, CompleteBatchTransfersOverlayToItsOwningScore) {
+    using namespace mu::engraving;
+    auto document = open_mm_rest_creation_document();
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    auto *source = master.first_measure();
+    SourceHandle created;
+    ASSERT_TRUE(chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+        auto creation = begin_mm_rest_creation(*source, source->ticks());
+        created = master.eid_register()->handle_of(creation.get());
+        complete_test_mm_rest(master, creation);
+        return {};
+    }}));
+    EXPECT_NE(source->mm_rest(), nullptr);
+    EXPECT_EQ(master.eid_register()->item_from_handle(created), source->mm_rest());
+    EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
+    const auto exported = document->export_score({.format = engrave::Format::MSCZ});
+    ASSERT_TRUE(exported) << exported.error().message;
+}
+
+TEST(JournalMMRestCreation, DetachedExcerptOwnsAttachedOverlayUntilItsScoreIsDisposed) {
+    using namespace mu::engraving;
+    for (bool reject : {false, true}) {
+        SCOPED_TRACE(reject);
+        auto document = open_mm_rest_creation_document();
+        ASSERT_TRUE(document);
+        ASSERT_TRUE(document->edit({{engrave::GenerateExcerpts{{find_id(*document, "Part")}}}}));
+        auto &master = engrave::harness::master_of(*document);
+        auto *excerpt = master.excerpts().front();
+        auto *source = excerpt->excerpt_score()->first_measure();
+        ASSERT_EQ(source->mm_rest(), nullptr);
+        SourceHandle created;
+        const auto source_handle = master.eid_register()->handle_of(source);
+        const auto result = chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+            auto creation = begin_mm_rest_creation(*source, source->ticks());
+            created = master.eid_register()->handle_of(creation.get());
+            complete_test_mm_rest(master, creation);
+            master.record_excerpt(excerpt, false);
+            if (reject) return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "reject detached excerpt overlay"});
+            return {};
+        }});
+        EXPECT_EQ(result.has_value(), !reject);
+        EXPECT_EQ(master.eid_register()->item_from_handle(created), nullptr);
+        if (reject) {
+            ASSERT_EQ(master.excerpts().size(), 1u);
+            EXPECT_EQ(master.excerpts().front(), excerpt);
+            EXPECT_EQ(master.eid_register()->item_from_handle(source_handle), source);
+            EXPECT_EQ(source->mm_rest(), nullptr);
+        } else {
+            EXPECT_TRUE(master.excerpts().empty());
+            EXPECT_EQ(master.eid_register()->item_from_handle(source_handle), nullptr);
+        }
+        EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
+    }
+}
+
+TEST(JournalMMRestCreation, SnapshotAbandonmentToleratesAlreadyDestroyedOverlayOwner) {
+    using namespace mu::engraving;
+    auto document = open_mm_rest_creation_document();
+    ASSERT_TRUE(document);
+    ASSERT_TRUE(document->edit({{engrave::GenerateExcerpts{{find_id(*document, "Part")}}}}));
+    const auto revision = document->revision();
+    const auto result = engrave::api::BatchGuard(*document).run(
+        {[](auto &context) -> engrave::Result<void> {
+            auto &master = context.master();
+            auto *excerpt = master.excerpts().front();
+            auto *source = excerpt->excerpt_score()->first_measure();
+            auto creation = begin_mm_rest_creation(*source, source->ticks());
+            const auto handle = master.eid_register()->handle_of(creation.get());
+            complete_test_mm_rest(master, creation);
+            master.record_excerpt(excerpt, false);
+            delete excerpt;
+            EXPECT_EQ(master.eid_register()->item_from_handle(handle), nullptr);
+            return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "reject destroyed overlay owner"});
+        }},
+        engrave::api::Policy::SNAPSHOT, std::nullopt);
+    EXPECT_FALSE(result);
+    EXPECT_EQ(document->revision(), revision);
+    auto &restored = engrave::harness::master_of(*document);
+    ASSERT_EQ(restored.excerpts().size(), 1u);
+    EXPECT_EQ(restored.excerpts().front()->excerpt_score()->first_measure()->mm_rest(), nullptr);
+    EXPECT_FALSE(restored.mutation_journal()->has_active_transaction());
+}
+
+TEST(JournalMMRestCreation, CanceledOverlayRetiresBeforeLateExcerptChildDestruction) {
+    using namespace mu::engraving;
+    auto document = open_mm_rest_creation_document();
+    ASSERT_TRUE(document);
+    ASSERT_TRUE(document->edit({{engrave::GenerateExcerpts{{find_id(*document, "Part")}}}}));
+    const auto revision = document->revision();
+    const auto result = engrave::api::BatchGuard(*document).run(
+        {[](auto &context) -> engrave::Result<void> {
+            auto &master = context.master();
+            auto *excerpt = master.excerpts().front();
+            auto *source = excerpt->excerpt_score()->first_measure();
+            SourceHandle handle;
+            {
+                auto creation = begin_mm_rest_creation(*source, source->ticks());
+                handle = master.eid_register()->handle_of(creation.get());
+                // Cancel before a first segment exists, retaining the lifetime
+                // in the arena so its earlier inverses can still be replayed.
+            }
+            EXPECT_EQ(source->mm_rest(), nullptr);
+            EXPECT_NE(master.eid_register()->item_from_handle(handle), nullptr);
+            master.record_excerpt(excerpt, false);
+            delete excerpt;
+            EXPECT_EQ(master.eid_register()->item_from_handle(handle), nullptr);
+            return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "reject canceled overlay owner"});
+        }},
+        engrave::api::Policy::SNAPSHOT, std::nullopt);
+    EXPECT_FALSE(result);
+    EXPECT_EQ(document->revision(), revision);
+    auto &restored = engrave::harness::master_of(*document);
+    ASSERT_EQ(restored.excerpts().size(), 1u);
+    EXPECT_EQ(restored.excerpts().front()->excerpt_score()->first_measure()->mm_rest(), nullptr);
+    EXPECT_FALSE(restored.mutation_journal()->has_active_transaction());
 }
 
 TEST(JournalAutomation, SourceSetupRejectsActiveBatchAndPreservesEarlierEditsOnFailure) {

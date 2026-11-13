@@ -49,6 +49,7 @@ struct UndoableCommand;
 struct JournalBatch;
 struct MutationJournal;
 enum class MMRestLink;
+struct MMRestCreation;
 
 // A recording view of the single active rollback journal.
 struct Transaction {
@@ -95,6 +96,7 @@ struct Transaction {
     void change_measure_length(Measure *measure, Fraction length);
     void change_measure_repeat_count(Measure *measure, int count, staff_idx_t staff);
     void change_mm_rest_link(Measure &target, MeasureBase *value, MMRestLink link);
+    MMRestCreation create_mm_rest(Measure &source, std::unique_ptr<Measure> overlay);
 
     /// Test hook for failure injection: when set, it is called for every command
     /// pushed to a real transaction, once before the command is appended
