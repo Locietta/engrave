@@ -69,7 +69,7 @@ private:
 public:
     AuthoredOverrideTable authored_overrides;
 
-    ~Rest() { muse::delete_all(dots_); }
+    ~Rest() = default;
 
     void hack_to_rest_type();
 
@@ -94,9 +94,7 @@ public:
     virtual void add(EngravingItem *) override;
     virtual void remove(EngravingItem *) override;
 
-    void check_dots();
-
-    NoteDot *dot(int n);
+    NoteDot *dot(int n) const;
     const std::vector<NoteDot *> &dot_list() const;
 
     int dot_line() const { return dotline_; }
@@ -135,6 +133,8 @@ public:
     RestVerticalClearance &vertical_clearance() { return vertical_clearance_; }
 
     struct LayoutData : public ChordRest::LayoutData {
+        ~LayoutData() override;
+        std::vector<NoteDot *> dots;
         std::vector<Rest *> merged_rests; // Rests from other voices that may be merged with this
         ld_field<SymId> sym = {"[Rest] sym", SymId::REST_QUARTER};
     };
@@ -166,7 +166,6 @@ private:
 
     int dotline_ = -1; // depends on rest symbol
     bool gap_ = false; // invisible and not selectable for user
-    std::vector<NoteDot *> dots_;
     DeadSlapped *dead_slapped_ = nullptr;
 
     RestVerticalClearance vertical_clearance_;

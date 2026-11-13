@@ -67,7 +67,6 @@ Tuplet::Tuplet(DummyParentOr<Measure> parent) : DurationElement(ElementType::TUP
     number_type_ = TupletNumberType::SHOW_NUMBER;
     bracket_type_ = TupletBracketType::AUTO_BRACKET;
     ratio_ = Fraction(1, 1);
-    number_ = 0;
     has_bracket_ = false;
     is_up_ = true;
     init_element_style(&::mu::engraving::tuplet_style);
@@ -91,9 +90,6 @@ Tuplet::Tuplet(const Tuplet &t) : DurationElement(t) {
     p2_ = t.p2_;
     user_p1_ = t.user_p1_;
     user_p2_ = t.user_p2_;
-
-    // recreated on layout
-    number_ = 0;
 }
 
 //---------------------------------------------------------
@@ -107,7 +103,6 @@ Tuplet::~Tuplet() {
         assert(de->tuplet() == this);
         de->set_tuplet(nullptr);
     }
-    delete number_;
 }
 
 void Tuplet::set_ownership_parent(DummyParentOr<Measure> parent) { EngravingItem::set_ownership_parent(parent); }
@@ -116,34 +111,19 @@ void Tuplet::set_ownership_parent(DummyParentOr<Measure> parent) { EngravingItem
 //   setSelected
 //---------------------------------------------------------
 
-void Tuplet::set_selected(bool f) {
-    EngravingItem::set_selected(f);
-    if (number_) {
-        number_->set_selected(f);
-    }
-}
+void Tuplet::set_selected(bool f) { EngravingItem::set_selected(f); }
 
 //---------------------------------------------------------
 //   setVisible
 //---------------------------------------------------------
 
-void Tuplet::set_visible(bool f) {
-    EngravingItem::set_visible(f);
-    if (number_) {
-        number_->set_visible(f);
-    }
-}
+void Tuplet::set_visible(bool f) { EngravingItem::set_visible(f); }
 
 //---------------------------------------------------------
 //   setColor
 //---------------------------------------------------------
 
-void Tuplet::set_color(const Color &col) {
-    EngravingItem::set_color(col);
-    if (number_) {
-        number_->set_color(col);
-    }
-}
+void Tuplet::set_color(const Color &col) { EngravingItem::set_color(col); }
 
 //---------------------------------------------------------
 //   rtick
@@ -158,11 +138,11 @@ Fraction Tuplet::rtick() const { return tick() - measure()->tick(); }
 //---------------------------------------------------------
 
 void Tuplet::apply_number_style() {
-    if (!number_) return;
-    AuthoredOverrideMirror mirror(*number_);
+    if (!number()) return;
+    AuthoredOverrideMirror mirror(*number());
     for (auto pid : {Pid::FONT_FACE, Pid::FONT_STYLE, Pid::FONT_SIZE, Pid::ALIGN, Pid::POSITION, Pid::SIZE_SPATIUM_DEPENDENT}) {
-        number_->set_property(pid, get_property(pid));
-        number_->set_property_flags(pid, property_flags(pid));
+        number()->set_property(pid, get_property(pid));
+        number()->set_property_flags(pid, property_flags(pid));
     }
 }
 
@@ -271,8 +251,8 @@ bool Tuplet::calc_has_bracket(const DurationElement *cr1, const DurationElement 
 //---------------------------------------------------------
 
 void Tuplet::scan_elements(std::function<void(EngravingItem *)> func) {
-    if (number_) {
-        number_->scan_elements(func);
+    if (number()) {
+        number()->scan_elements(func);
     }
 
     func(this);
@@ -394,9 +374,6 @@ void Tuplet::dump() const {
 void Tuplet::set_track(track_idx_t val) {
     if (tuplet()) {
         tuplet()->set_track(val);
-    }
-    if (number_) {
-        number_->set_track(val);
     }
     EngravingItem::set_track(val);
 }
@@ -530,18 +507,6 @@ bool Tuplet::set_property(Pid property_id, const PropertyValue &v) {
         case Pid::P2: user_p2_ = v.value<PointF>(); break;
         case Pid::TICK: set_tick(v.value<Fraction>()); break;
         default: return DurationElement::set_property(property_id, v);
-    }
-    if (number_) {
-        AuthoredOverrideMirror mirror(*number_);
-        switch (property_id) {
-            case Pid::FONT_FACE:
-            case Pid::FONT_STYLE:
-            case Pid::FONT_SIZE:
-            case Pid::ALIGN:
-            case Pid::POSITION:
-            case Pid::SIZE_SPATIUM_DEPENDENT: number_->set_property(property_id, v); break;
-            default: break;
-        }
     }
     if (!current_elements_.empty()) {
         current_elements_.front()->trigger_layout();
@@ -772,4 +737,8 @@ EngravingItem *Tuplet::prev_element() {
     EngravingItem *prev_item = first_element->segment()->prev_element(staff_id);
     return prev_item;
 }
+} // namespace mu::engraving
+
+namespace mu::engraving {
+Tuplet::LayoutData::~LayoutData() { delete number; }
 } // namespace mu::engraving

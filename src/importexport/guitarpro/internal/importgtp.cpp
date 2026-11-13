@@ -2445,13 +2445,7 @@ bool GuitarPro3::read(IODevice *io) {
                         if (vibrato) {
                             has_vibrato_left_hand = true;
                         }
-                        if (dotted) {
-                            NoteDot *dot = Factory::create_note_dot(note);
-                            // there is at most one dotted note in this guitar pro version - set 0 index
-                            dot->set_track(track); // needed to know the staff it belongs to (and detect tablature)
-                            dot->set_visible(true);
-                            note->add(dot);
-                        }
+
                         ReadNoteResult read_result = read_note(6 - i, note);
                         has_slur = read_result.slur || has_slur;
                         has_let_ring = read_result.let_ring || has_let_ring;

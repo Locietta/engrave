@@ -98,19 +98,33 @@ void EditVisibility::change_chord_child_visible(Chord *chord, AuthoredChildRole 
     chord->trigger_layout();
 }
 
+void EditVisibility::change_dots_visible(EngravingItem *owner, int count, bool visible) {
+    auto &table = *authored_override_table(owner);
+    for (uint32_t i = 0; i < uint32_t(count); ++i) {
+        const AuthoredChildKey key{AuthoredChildRole::DOT, i};
+        const auto *entry = table.find(key, Pid::VISIBLE);
+        if ((entry ? entry->value.to_bool() : owner->visible()) == visible) continue;
+        if (note_change(owner, CommandType::CHANGE_PROPERTY))
+            owner->master_score()->cmd_state().changes.changed_property_id_set.insert(Pid::VISIBLE);
+        for (uint32_t j = 0; j <= i; ++j) {
+            const AuthoredChildKey ordinal{AuthoredChildRole::DOT, j};
+            if (!table.carrier(ordinal)) table.set_carrier({ordinal, ElementType::NOTEDOT});
+        }
+        table.set({key, Pid::VISIBLE, visible});
+        owner->trigger_layout();
+    }
+}
+
 static void undo_change_ornament_visibility(Ornament *ornament, bool visible);
 
 static void undo_change_note_visibility(Note *note, bool visible) {
+    EditVisibility::change_dots_visible(note, note->chord()->dots(), visible);
     note->undo_change_property(Pid::VISIBLE, visible);
 
     if (note->bend_back() || note->bend_for()) {
         note->set_override_bend_visibility_rules(true);
     } else {
         note->set_override_bend_visibility_rules(false);
-    }
-
-    for (NoteDot *dot : note->dots()) {
-        dot->undo_change_property(Pid::VISIBLE, visible);
     }
 
     for (EngravingItem *e : note->el()) {
@@ -177,11 +191,8 @@ static void undo_change_note_visibility(Note *note, bool visible) {
 }
 
 static void undo_change_rest_visibility(Rest *rest, bool visible) {
+    EditVisibility::change_dots_visible(rest, rest->dots(), visible);
     rest->undo_change_property(Pid::VISIBLE, visible);
-
-    for (NoteDot *dot : rest->dot_list()) {
-        dot->undo_change_property(Pid::VISIBLE, visible);
-    }
 }
 
 static void undo_change_ornament_visibility(Ornament *ornament, bool visible) {

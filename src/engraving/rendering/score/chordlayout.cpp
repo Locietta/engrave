@@ -2566,13 +2566,15 @@ void ChordLayout::set_dot_relative_line(Note *note, int dot_move, LayoutContext 
     int n = cdots - ndots;
     for (int i = 0; i < n; ++i) {
         NoteDot *dot = Factory::create_note_dot(note);
+        AuthoredOverrideMirror mirror(*dot);
         dot->set_track(note->track()); // needed to know the staff it belongs to (and detect tablature)
         dot->set_visible(note->visible());
-        ctx.mut_dom().undo_add_element(dot);
+        note->mutldata()->dots.push_back(dot);
     }
     if (n < 0) {
         for (int i = 0; i < -n; ++i) {
-            ctx.mut_dom().undo_remove_element(note->dots().back());
+            delete note->mutldata()->dots.back();
+            note->mutldata()->dots.pop_back();
         }
     }
 

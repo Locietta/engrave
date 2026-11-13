@@ -996,13 +996,6 @@ bool GuitarPro4::read(IODevice *io) {
                         if (strings & (1 << i) && ((6 - i) < static_cast<int>(num_strings))) {
                             Note *note = Factory::create_note(to_chord(cr));
                             // apply dotted notes to the note
-                            if (dotted) {
-                                // there is at most one dotted note in this guitar pro version
-                                NoteDot *dot = Factory::create_note_dot(note);
-                                dot->set_track(track); // needed to know the staff it belongs to (and detect tablature)
-                                dot->set_visible(true);
-                                note->add(dot);
-                            }
                             to_chord(cr)->add(note);
 
                             ReadNoteResult read_result = read_note(6 - i, static_cast<int>(staff_idx), note);

@@ -508,10 +508,6 @@ void Selection::append_chord_rest(ChordRest *cr) {
 
     if (cr->is_rest_family()) {
         append_filtered(cr);
-        Rest *r = to_rest(cr);
-        for (int i = 0; i < r->dots(); ++i) {
-            append_filtered(r->dot(i));
-        }
         return;
     }
 
@@ -554,9 +550,6 @@ void Selection::append_chord_rest(ChordRest *cr) {
                 continue;
             }
             el_.push_back(el);
-        }
-        for (NoteDot *dot : note->dots()) {
-            el_.push_back(dot);
         }
     }
 

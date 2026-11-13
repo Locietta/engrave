@@ -378,11 +378,9 @@ public:
 
     int customize_velocity(int velo) const;
 
-    NoteDot *dot(int n) { return dots_.at(n); }
+    NoteDot *dot(int n) { return n >= 0 && size_t(n) < dots().size() ? dots()[n] : nullptr; }
 
-    const std::vector<NoteDot *> &dots() const { return dots_; }
-
-    std::vector<NoteDot *> &dots() { return dots_; }
+    const std::vector<NoteDot *> &dots() const;
 
     void update_accidental(AccidentalState *);
     void update_line();
@@ -513,6 +511,8 @@ public:
     bool is_exact_unison(Note *other);
 
     struct LayoutData : public EngravingItem::LayoutData {
+        ~LayoutData() override;
+        std::vector<NoteDot *> dots;
         ld_field<bool> use_tablature = {"[Note] useTablature", false};
         ld_field<SymId> cached_notehead_sym = {"[Note] cachedNoteheadSym",
                                                SymId::NO_SYM};                      // use in draw to avoid recomputing at every update
@@ -601,7 +601,6 @@ private:
     bool has_parens_ = false;
 
     ElementList el_; // fingering, other text, symbols or images
-    std::vector<NoteDot *> dots_;
     NoteEventList play_events_;
     std::vector<Spanner *> spanner_for_;
     std::vector<Spanner *> spanner_back_;

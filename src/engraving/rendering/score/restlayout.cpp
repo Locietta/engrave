@@ -25,6 +25,7 @@
 #include "beamlayout.h"
 #include "chordlayout.h"
 #include "dom/beam.h"
+#include "dom/factory.h"
 #include "dom/measure.h"
 #include "dom/staff.h"
 #include "dom/system.h"
@@ -134,7 +135,17 @@ void RestLayout::layout_rest(const Rest *item, Rest::LayoutData *ldata, const La
         fill_shape(item, ldata, ctx.conf());
     }
 
-    const_cast<Rest *>(item)->check_dots();
+    while (ldata->dots.size() < size_t(item->dots())) {
+        auto *dot = Factory::create_note_dot(const_cast<Rest *>(item));
+        AuthoredOverrideMirror mirror(*dot);
+        dot->set_track(item->track());
+        dot->set_visible(item->visible());
+        ldata->dots.push_back(dot);
+    }
+    while (ldata->dots.size() > size_t(item->dots())) {
+        delete ldata->dots.back();
+        ldata->dots.pop_back();
+    }
     double visible_x = item->sym_width_no_ledger_lines(ldata) + ctx.conf().style_absolute(Sid::DOT_NOTE_DISTANCE) * item->mag();
     double visible_dx = ctx.conf().style_absolute(Sid::DOT_DOT_DISTANCE) * item->mag();
     double invisible_x = item->sym_width_no_ledger_lines(ldata);

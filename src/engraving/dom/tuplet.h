@@ -43,6 +43,12 @@ struct Spanner;
 //------------------------------------------------------------------------
 
 struct Tuplet final : DurationElement {
+    struct LayoutData : public DurationElement::LayoutData {
+        ~LayoutData() override;
+        Text *number = nullptr;
+    };
+    DECLARE_LAYOUTDATA_METHODS(Tuplet)
+
 private:
     DECLARE_CLASSOF(ElementType::TUPLET)
 
@@ -62,9 +68,7 @@ public:
     void add(EngravingItem *) override;
     void remove(EngravingItem *) override;
 
-    Text *number() const { return number_; }
-
-    void set_number(Text *t) { number_ = t; }
+    Text *number() const { return has_layout_data() ? ldata()->number : nullptr; }
 
     void apply_number_style();
     void read_number_style(const Text &);
@@ -219,6 +223,5 @@ private:
     };
 
     NumberStyle number_style_;
-    Text *number_ = nullptr;
 };
 } // namespace mu::engraving

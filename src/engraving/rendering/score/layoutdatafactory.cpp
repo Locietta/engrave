@@ -45,6 +45,7 @@
 #include "dom/tie.h"
 #include "dom/timesig.h"
 #include "dom/tremolobar.h"
+#include "dom/tuplet.h"
 
 namespace mu::engraving::rendering::score {
 namespace {
@@ -129,6 +130,7 @@ decltype(auto) dispatch_layout_data(ElementType type, Action &&action) {
         case ElementType::PARTIAL_TIE_SEGMENT:
         case ElementType::TIE_SEGMENT: return action.template operator()<TieSegment::LayoutData>();
         case ElementType::REST: return action.template operator()<Rest::LayoutData>();
+        case ElementType::TUPLET: return action.template operator()<Tuplet::LayoutData>();
         case ElementType::SPACER: return action.template operator()<Spacer::LayoutData>();
         case ElementType::STAFF_STATE: return action.template operator()<StaffState::LayoutData>();
         case ElementType::STAFF_VISIBILITY_INDICATOR:
