@@ -14,6 +14,7 @@
 #include <span>
 #include <vector>
 
+#include "engraving/infrastructure/eidregister.h"
 #include <engrave/error.h>
 #include <engrave/handle.h>
 
@@ -56,12 +57,7 @@ void set_object_walk_hook(ObjectWalkHook hook);
 // Where an element sits: the score it belongs to, its tick and its track. An
 // operation that recreates an element leaves all three as they were, which is what
 // separates a replacement from a removal.
-struct Placement {
-    int score = -1;
-    int tick = -1;
-    int track = -1;
-    friend auto operator<=>(const Placement &, const Placement &) = default;
-};
+using Placement = mu::engraving::IdPlacement;
 
 struct LiveId {
     ElementId id;
@@ -90,6 +86,7 @@ struct IdDiff {
     std::vector<ElementId> replaced; // gone, and a new id sits at the same place
 };
 
+IdDiff batch_id_diff(mu::engraving::MasterScore &score);
 IdDiff diff_ids(std::span<const LiveId> before, std::span<const LiveId> after);
 
 // The object an id or an address names, and whether it may be edited. Pages,

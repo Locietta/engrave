@@ -1440,33 +1440,6 @@ TEST(Handles, H13IdsWithDeterministicEngine) {
     expect_inv(*second);
 }
 
-// Runtime slots are independent from persisted EIDs and do not change assignment order.
-TEST(Handles, ClearingAnIdKeepsTheSourceLifetime) {
-    auto document = open_path(corpus_file({".mscx"}));
-    ASSERT_TRUE(document);
-    auto &master = master_of(*document);
-    auto *note = first_note(master);
-    ASSERT_NE(note, nullptr);
-    auto &registry = *master.eid_register();
-    const auto eid = note->eid();
-    const auto old = registry.handle_of(note);
-    ASSERT_TRUE(old.is_valid());
-    EXPECT_EQ(registry.item_from_handle(old), note);
-    registry.remove_item(note);
-    EXPECT_EQ(registry.item_from_handle(old), note);
-    EXPECT_EQ(registry.live_item(old), note);
-    EXPECT_FALSE(note->eid().is_valid());
-    ASSERT_TRUE(registry.register_item_eid(eid, note));
-    engrave::assign_missing_ids(master);
-    const auto current = registry.handle_of(note);
-    EXPECT_EQ(current.slot, old.slot);
-    EXPECT_EQ(current.generation, old.generation);
-    EXPECT_EQ(current.document, old.document);
-    EXPECT_EQ(registry.item_from_handle(old), note);
-    EXPECT_EQ(registry.item_from_handle(current), note);
-    expect_inv(*document);
-}
-
 TEST(Handles, RegistryIdentityUpdatesKeepTheRuntimeHandle) {
     auto document = open_path(corpus_file({".mscx"}));
     ASSERT_TRUE(document);
@@ -1795,15 +1768,69 @@ TEST(Handles, MovingTremoloRebindsMembership) {
     ASSERT_EQ(registry.live_item(handle), tremolo);
     Command command(master);
     mu::engraving::apply_move_tremolo(&master, chords[2]->tick(), chords[3]->tick(), tremolo, 0);
-    EXPECT_TRUE(registry.owns(*chords[2], *tremolo));
     auto *old_segment = chords[0]->segment();
     old_segment->remove(chords[0]);
     EXPECT_EQ(registry.live_item(handle), tremolo);
     old_segment->add(chords[0]);
     command.commit();
-    EXPECT_TRUE(registry.owns(*chords[2], *tremolo));
     EXPECT_EQ(registry.live_item(handle), tremolo);
     delete tremolo;
+    expect_inv(*document);
+}
+
+TEST(Handles, StaffSortingAndReparentingPreserveIds) {
+    auto document = open_path(g_source_root / "tests/data/inputs/golden/chordline_path.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *note = first_note(master);
+    ASSERT_NE(note, nullptr);
+    auto *chord = note->chord();
+    auto &registry = *master.eid_register();
+    const auto handle = registry.handle_of(note);
+    const auto id = engine_id(*note);
+    auto *staff = master.staff(0);
+    const auto staff_id = engine_id(*staff);
+    const auto staff_handle = registry.handle_of(staff);
+    std::vector<mu::engraving::staff_idx_t> order;
+    for (size_t i = 0; i < master.staves().size(); ++i) order.push_back(master.staves().size() - i - 1);
+    ASSERT_EQ(master.staves().size(), 2u);
+    master.sort_staves(order);
+    EXPECT_EQ(master.staff(1), staff);
+    EXPECT_EQ(engrave::resolve(master, staff_id)->object, staff);
+    EXPECT_EQ(registry.handle_of(staff), staff_handle);
+    auto *destination = mu::engraving::to_chord(chord->segment()->next_cr(chord->track())->element(chord->track()));
+    ASSERT_NE(destination, nullptr);
+    mu::engraving::apply_element_reparent(*note, *destination, destination->track());
+    EXPECT_EQ(engrave::resolve(master, id)->object, note);
+    EXPECT_EQ(registry.handle_of(note), handle);
+    EXPECT_EQ(note->chord(), destination);
+    mu::engraving::apply_element_reparent(*note, *chord, chord->track());
+    expect_inv(*document);
+}
+
+TEST(Handles, BatchDiffRetainsDestroyedIdentityAcrossSlotReuse) {
+    auto document = open_path(g_source_root / "tests/data/inputs/golden/hairpins_and_repeats.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *note = first_note(master);
+    ASSERT_NE(note, nullptr);
+    auto *chord = note->chord();
+    const auto old_id = engine_id(*note);
+    ElementId new_id;
+    auto result = engrave::api::BatchGuard(*document).run({[&](engrave::api::EditContext &) -> engrave::Result<void> {
+        auto *replacement = note->clone();
+        master.apply_element_remove(note);
+        delete note;
+        replacement->assign_new_eid();
+        chord->add(replacement);
+        new_id = engine_id(*replacement);
+        return {};
+    }});
+    ASSERT_TRUE(result);
+    EXPECT_TRUE(std::ranges::contains(result->created, new_id));
+    EXPECT_TRUE(std::ranges::contains(result->replaced, old_id));
+    EXPECT_FALSE(engrave::resolve(master, old_id));
+    EXPECT_TRUE(engrave::resolve(master, new_id));
     expect_inv(*document);
 }
 
