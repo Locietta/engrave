@@ -404,7 +404,17 @@ TEST(NativeSave, ColdEqualsWarm) {
         }
         const auto warm = write();
         if (const auto expected = expected_differences.find(path.filename().string()); expected != expected_differences.end()) {
-            EXPECT_NE(cold, warm) << expected->second << "; remove the exception once fixed";
+            std::string expected_warm = cold;
+            for (const char *id :
+                 {"J3bObXdmJuD_gotChORMeSP", "vVu2uite2uB_ZUVUtybNh4C", "bp22nIu0vBH_YEsCip0M1LE", "czBTNr7GJ1_p+Yrdsz+uZ"}) {
+                const auto note = expected_warm.find(std::string("<eid>") + id + "</eid>");
+                ASSERT_NE(note, std::string::npos);
+                const auto visible = expected_warm.find("<visible>1</visible>", note);
+                ASSERT_LT(visible, expected_warm.find("</Note>", note));
+                const auto begin = expected_warm.rfind('\n', visible) + 1;
+                expected_warm.erase(begin, expected_warm.find('\n', visible) + 1 - begin);
+            }
+            EXPECT_EQ(expected_warm, warm) << expected->second;
         } else {
             EXPECT_EQ(cold, warm);
         }
