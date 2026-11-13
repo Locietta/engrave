@@ -581,29 +581,12 @@ void TWrite::write_system_locks(const Score *score, XmlWriter &xml) {
 }
 
 void TWrite::write_system_dividers(const Score *score, XmlWriter &xml, WriteContext &ctx) {
-    std::vector<const System *> systems_to_write;
-    for (const System *system : score->systems()) {
-        bool write_system = (system->system_divider_left() && !system->system_divider_left()->generated()) ||
-                            (system->system_divider_right() && !system->system_divider_right()->generated());
-        if (write_system) {
-            systems_to_write.push_back(system);
-        }
-    }
-
-    if (systems_to_write.empty()) {
-        return;
-    }
-
+    if (score->system_dividers().empty()) return;
     xml.start_element("SystemDividers");
-    for (const System *system : systems_to_write) {
-        xml.start_element("system", {{"idx", muse::index_of(score->systems(), system)}});
-        SystemDivider *divider_left = system->system_divider_left();
-        if (divider_left && !divider_left->generated()) {
-            write(divider_left, xml, ctx);
-        }
-        SystemDivider *divider_right = system->system_divider_right();
-        if (divider_right && !divider_right->generated()) {
-            write(divider_right, xml, ctx);
+    for (const auto &[index, dividers] : score->system_dividers()) {
+        xml.start_element("system", {{"idx", index}});
+        for (const auto &divider : dividers) {
+            if (divider) write(divider.get(), xml, ctx);
         }
         xml.end_element();
     }

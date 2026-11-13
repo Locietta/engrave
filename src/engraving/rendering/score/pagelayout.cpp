@@ -855,6 +855,7 @@ void PageLayout::update_system_divider(LayoutContext &ctx, System *system, Syste
     SystemDivider *divider = left ? system->system_divider_left() : system->system_divider_right();
     if (divider) {
         system->remove(divider);
+        delete divider;
     }
 
     if (!needs_divider) {
@@ -867,13 +868,15 @@ void PageLayout::update_system_divider(LayoutContext &ctx, System *system, Syste
     size_t system_idx = muse::index_of(score->systems(), system);
     IF_ASSERT_FAILED(system_idx != muse::nidx) { return; }
 
-    divider = score->system_divider(system_idx, type);
-    if (!divider) {
+    if (const auto *authored = score->system_divider(system_idx, type)) {
+        divider = authored->clone();
+        divider->set_ownership_parent(system);
+        divider->style_changed();
+    } else {
         divider = new SystemDivider(system);
         divider->set_divider_type(type);
-        divider->set_generated(true);
-        score->add_system_divider(system_idx, divider);
     }
+    divider->set_generated(true);
 
     system->add(divider);
 
