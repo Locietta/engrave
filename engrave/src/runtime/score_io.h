@@ -28,9 +28,8 @@ ScoreProject load_native_score(const EngineContext &context, const std::string &
 // Loads the .mscx of an MSCX directory (score_style.mss and META-INF/ beside
 // it, the layout of the score templates) with load_native_score's post-load steps.
 ScoreProject load_native_score_dir(const EngineContext &context, const std::string &mscx_path);
-// Writer::writeScore stamps the running program's version into the score it
-// writes. A serialize/reload of our own writer output therefore has to restore
-// the source values, or the reloaded score reports the export as an edit.
+// Native output names the running program in its header. Restore source version
+// metadata after reloading that output so a snapshot preserves its input history.
 void copy_score_versions(mu::engraving::MasterScore *source, mu::engraving::MasterScore *target);
 void apply_score_versions(mu::engraving::MasterScore *score, const std::string &version, int revision, int msc_version);
 std::string export_native_score(const EngineContext &context, const ScoreProject &project, const std::string &format, int page,

@@ -5,6 +5,7 @@
 #include <memory>
 #include <stdexcept>
 
+#include "engrave/src/api/handles.h"
 #include "engrave/src/render/score_render.h"
 #include "engrave/src/runtime/engine_context.h"
 #include "engrave/src/runtime/score_io.h"
@@ -34,6 +35,11 @@ void save(const std::filesystem::path &path, const std::string &bytes) {
     stream.write(bytes.data(), bytes.size());
     stream.close();
     expect(bool(stream), "Cannot write test output");
+}
+
+std::string finalized_native_export(const music::EngineContext &context, const music::ScoreProject &project) {
+    engrave::assign_missing_ids(*project->master_score());
+    return music::export_native_score(context, project, "mscz", 0, "");
 }
 
 std::string export_selection(const music::EngineContext &context, mu::engraving::Score *score, bool midi) {
@@ -120,7 +126,7 @@ void test_chordline_playback(const music::EngineContext &context, const std::fil
     expect(excerpt != master, "Expected a separate excerpt score");
     expect(check_chordline_playback(excerpt, enabled, "generated excerpt") != original, "Expected a cloned chordline in excerpt");
 
-    const auto archive = music::export_native_score(context, project, "mscz", 0, "");
+    const auto archive = finalized_native_export(context, project);
     save(out / (enabled ? "chordline-enabled.mscz" : "chordline-disabled.mscz"), archive);
     auto reopened = music::load_native_score(context, archive, "mscz");
     auto *reopened_master = reopened->master_score();
@@ -169,7 +175,7 @@ int main(int argc, char **argv) {
             }
             expect(rejected, "Invalid excerpt ID accepted");
         }
-        const auto archive = music::export_native_score(context, project, "mscz", 0, "");
+        const auto archive = finalized_native_export(context, project);
         save(out / "with-excerpts.mscz", archive);
         auto reopened = music::load_native_score(context, archive, "mscz");
         expect(music::list_score_excerpts(reopened->master_score()).size() == 2, "Saved excerpts lost on reopen");

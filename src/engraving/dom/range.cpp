@@ -125,18 +125,18 @@ static void clone_and_rebuild_spanners(TrackList::ClonedChordMap &c_chord_map) {
                         Note *end_cloned_note = cloned_note(to_note(sp->end_element()), c_chord_map);
                         if (end_cloned_note) {
                             csp->set_note_span(c_note, end_cloned_note);
+                            end_cloned_note->add_spanner_back(csp);
                         }
                         c_note->add_spanner_for(csp);
                     }
                 }
                 for (Spanner *sp : src_note->spanner_back()) {
                     if (sp->is_guitar_bend() || sp->is_glissando()) {
-                        Spanner *csp = to_spanner(sp->clone());
                         Note *start_cloned_note = cloned_note(to_note(sp->start_element()), c_chord_map);
+                        // The outgoing pass attached the same clone at both endpoints.
+                        if (start_cloned_note) continue;
+                        Spanner *csp = to_spanner(sp->clone());
 
-                        if (start_cloned_note) {
-                            csp->set_note_span(start_cloned_note, c_note);
-                        }
                         c_note->add_spanner_back(csp);
                     }
                 }

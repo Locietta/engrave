@@ -22,6 +22,7 @@
 #pragma once
 
 #include <map>
+#include <unordered_set>
 
 #include "containers.h"
 #include "engraving/dom/score.h"
@@ -42,6 +43,9 @@ struct WriteRange {
 struct WriteContext {
 
     WriteContext(const Score *s, bool clipboard_mode = false) : score_(s), clipboardmode_value(clipboard_mode) {}
+
+    std::unordered_set<const Segment *> written_segments;
+    const std::map<muse::String, muse::String> *metadata_override = nullptr;
 
     EngravingConfiguration *configuration() const;
 
@@ -91,7 +95,8 @@ struct WriteContext {
         return cur_tick_value == c.cur_tick_value && tick_diff_value == c.tick_diff_value && cur_track_value == c.cur_track_value &&
                track_diff_value == c.track_diff_value && clipboardmode_value == c.clipboardmode_value &&
                standalone_value == c.standalone_value && inline_style_value == c.inline_style_value &&
-               inline_excerpts_value == c.inline_excerpts_value && standalone_links == c.standalone_links && range_value == c.range_value;
+               inline_excerpts_value == c.inline_excerpts_value && standalone_links == c.standalone_links &&
+               written_segments == c.written_segments && metadata_override == c.metadata_override && range_value == c.range_value;
     }
 
     inline bool operator!=(const WriteContext &c) const { return !this->operator==(c); }

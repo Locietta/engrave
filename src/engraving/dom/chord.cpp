@@ -43,6 +43,7 @@
 #include "factory.h"
 #include "guitarbend.h"
 #include "hook.h"
+#include "infrastructure/eidregister.h"
 #include "key.h"
 #include "ledgerline.h"
 #include "log.h"
@@ -1163,7 +1164,8 @@ const NoteParenthesisInfo *Chord::find_note_parenthesis_info(const Note *note) c
 void Chord::add_note_parenthesis_info(NoteParenthesisInfo *note_paren_info) {
     for (auto role : {AuthoredChildRole::PAREN_LEFT, AuthoredChildRole::PAREN_RIGHT}) {
         const AuthoredChildKey key{role, static_cast<uint32_t>(note_parens_.size()), 0, 1};
-        if (!authored_overrides.carrier(key)) authored_overrides.set_carrier({key, ElementType::PARENTHESIS});
+        if (!authored_overrides.carrier(key))
+            authored_overrides.set_carrier({key, ElementType::PARENTHESIS, master_score()->eid_register()->new_eid(false)});
     }
     note_parens_.push_back(note_paren_info);
 }

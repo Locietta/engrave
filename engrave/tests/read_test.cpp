@@ -5658,6 +5658,8 @@ TEST(Read, ChordLineOffsetsDormantControlsWriteWithoutLayout) {
         // Serialize a clone with no layout path. Call the writer directly, so
         // an export helper cannot silently repair layout before this assertion.
         std::unique_ptr<mu::engraving::ChordLine> copy(line->clone());
+        // This detached probe bypasses the edit finalizer.
+        copy->assign_new_eid();
         copy->mutldata()->path = muse::draw::PainterPath();
         const auto written = offset_test_write(copy.get());
         EXPECT_EQ(written.find("<Path"), std::string::npos);

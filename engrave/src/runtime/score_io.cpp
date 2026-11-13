@@ -260,34 +260,6 @@ std::string export_native_score(const EngineContext &context, const ScoreProject
     else if (format == "mxl")
         success = iex::musicxml::save_mxl(score, &buffer, context.music_xml());
     else if (format == "mscz" || format == "mscx") {
-        // Writer::writeScore stamps the writing program's version into every score it
-        // writes; an export is read-only for the document, so restore the file's values
-        // (metadata mscoreVersion, $v on unedited scores, legacy layout by mscVersion).
-        struct VersionFields {
-            engraving::Score *score;
-            String version;
-            int revision;
-            int msc;
-        };
-
-        struct RestoreVersions {
-            std::vector<VersionFields> fields;
-
-            ~RestoreVersions() {
-                for (const auto &f : fields) {
-                    f.score->set_mscore_version(f.version);
-                    f.score->set_mscore_revision(f.revision);
-                    f.score->set_msc_version(f.msc);
-                }
-            }
-        } restore_versions;
-
-        auto *master = project->master_score();
-        restore_versions.fields.push_back({master, master->mscore_version(), master->mscore_revision(), master->msc_version()});
-        for (engraving::Excerpt *excerpt : master->excerpts()) {
-            if (auto *part = excerpt->excerpt_score())
-                restore_versions.fields.push_back({part, part->mscore_version(), part->mscore_revision(), part->msc_version()});
-        }
         if (format == "mscx" && options.standalone_score && options.excerpt_id == -1) {
             // An MSCX has no separate style file; embed the master's style in
             // the score itself, without changing the legacy archive writer.
@@ -299,20 +271,11 @@ std::string export_native_score(const EngineContext &context, const ScoreProject
             // The archive path serializes this same score XML, compresses it,
             // then inflates it again. Write that XML directly so its output
             // cap applies before the uncompressed result is allocated.
-            const auto original_tags = score->meta_tags();
-
-            struct RestoreTags {
-                engraving::Score *score;
-                std::map<String, String> tags;
-
-                ~RestoreTags() { score->set_meta_tags(tags); }
-            } restore{score, original_tags};
-
             auto effective_tags = project->master_score()->meta_tags();
-            for (const auto &[key, value] : original_tags) effective_tags.insert_or_assign(key, value);
-            score->set_meta_tags(effective_tags);
+            for (const auto &[key, value] : score->meta_tags()) effective_tags.insert_or_assign(key, value);
             engraving::rw::WriteInOutData inout(score);
             inout.ctx.set_standalone(true);
+            inout.ctx.metadata_override = &effective_tags;
             success = engraving::rw::RWRegister::writer()->write_score(score, &buffer, &inout);
         } else {
             engraving::MscWriter::Params params;
@@ -324,18 +287,8 @@ std::string export_native_score(const EngineContext &context, const ScoreProject
                 success = project->write_mscz(writer);
             } else {
                 // Same upstream writer/style logic as MscSaver::exportPart, without a Qt thumbnail.
-                const auto original_tags = score->meta_tags();
-
-                struct RestoreTags {
-                    engraving::Score *score;
-                    std::map<String, String> tags;
-
-                    ~RestoreTags() { score->set_meta_tags(tags); }
-                } restore{score, original_tags};
-
                 auto effective_tags = project->master_score()->meta_tags();
-                for (const auto &[key, value] : original_tags) effective_tags.insert_or_assign(key, value);
-                score->set_meta_tags(effective_tags);
+                for (const auto &[key, value] : score->meta_tags()) effective_tags.insert_or_assign(key, value);
                 ByteArray style_data, score_data;
                 io::Buffer style_buffer(&style_data), score_buffer(&score_data);
                 style_buffer.open(io::IODevice::WRITE_ONLY);
@@ -343,8 +296,8 @@ std::string export_native_score(const EngineContext &context, const ScoreProject
                 score->style().write(&style_buffer);
                 engraving::rw::WriteInOutData inout(score);
                 inout.ctx.set_standalone(options.standalone_score);
-                success =
-                    engraving::rw::RWRegister::writer()->write_score(score, &score_buffer, options.standalone_score ? &inout : nullptr);
+                inout.ctx.metadata_override = &effective_tags;
+                success = engraving::rw::RWRegister::writer()->write_score(score, &score_buffer, &inout);
                 writer.write_style_file(style_data);
                 writer.write_score_file(score_data);
             }

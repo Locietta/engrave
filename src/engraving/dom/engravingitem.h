@@ -108,7 +108,6 @@ enum class ElementFlag {
     // segment flags
     ENABLED = 0x02000000, // used for segments
     EMPTY = 0x04000000,
-    WRITTEN = 0x08000000,
     END_OF_MEASURE_CHANGE = 0x10000000,
     LAYOUT_COPY = 0x20000000,
 };
