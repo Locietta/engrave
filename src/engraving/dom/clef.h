@@ -115,6 +115,7 @@ public:
     Clef *other_clef();
 
     ClefType clef_type() const;
+    ClefType display_clef_type(bool *compatible = nullptr) const;
     void set_clef_type(ClefType i);
 
     bool is_courtesy() const { return is_courtesy_; }

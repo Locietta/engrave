@@ -216,6 +216,7 @@ public:
     bool visible() const { return !flag(ElementFlag::INVISIBLE); }
 
     virtual void set_visible(bool f);
+    bool display_visible() const;
 
     virtual bool is_interaction_available() const;
 

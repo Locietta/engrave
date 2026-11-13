@@ -1018,22 +1018,22 @@ void EngravingItem::remove(EngravingItem *e) {
     }
 }
 
-//---------------------------------------------------------
-//   elementLessThan
-//---------------------------------------------------------
+bool EngravingItem::display_visible() const { return is_note() ? to_note(this)->display_visible() : get_property(Pid::VISIBLE).to_bool(); }
 
 bool element_less_than(const EngravingItem *const e1, const EngravingItem *const e2) {
     if (e1->z() == e2->z()) {
+        const bool visible1 = e1->display_visible();
+        const bool visible2 = e2->display_visible();
         if (e1->selected() && !e2->selected()) {
             return false;
         }
         if (!e1->selected() && e2->selected()) {
             return true;
         }
-        if (e1->visible() && !e2->visible()) {
+        if (visible1 && !visible2) {
             return false;
         }
-        if (!e1->visible() && e2->visible()) {
+        if (!visible1 && visible2) {
             return true;
         }
 

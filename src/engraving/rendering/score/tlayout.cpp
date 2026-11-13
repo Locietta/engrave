@@ -1545,7 +1545,7 @@ void TLayout::layout_chord_line(const ChordLine *item, ChordLine::LayoutData *ld
     }
 }
 
-void TLayout::layout_clef(const Clef *item, Clef::LayoutData *ldata, const LayoutConfiguration &conf) {
+void TLayout::layout_clef(const Clef *item, Clef::LayoutData *ldata, const LayoutConfiguration &) {
     LAYOUT_CALL_ITEM(item);
     LD_INDEPENDENT;
 
@@ -1555,13 +1555,14 @@ void TLayout::layout_clef(const Clef *item, Clef::LayoutData *ldata, const Layou
     int step_offset = 0;
     Spatium staff_offset_y = 0_sp;
 
-    ClefType clef_type = item->clef_type();
+    bool compatible = true;
+    const ClefType clef_type = item->display_clef_type(&compatible);
     Segment *clef_seg = item->segment();
 
     // check clef visibility and type compatibility
     if (clef_seg && item->staff()) {
         StaffType *st_visibility = item->staff()->staff_type(item->tick());
-        bool show = st_visibility->gen_clef(); // check staff type allows clef display
+        const bool show = st_visibility->gen_clef() && compatible;
 
         const bool end_of_measure_clef = clef_seg->rtick() == clef_seg->measure()->ticks();
         const Fraction tick = end_of_measure_clef && !item->is_trailer() ? item->tick() : clef_seg->measure()->tick();
@@ -1569,27 +1570,6 @@ void TLayout::layout_clef(const Clef *item, Clef::LayoutData *ldata, const Layou
         const Fraction tick_prev = tick - Fraction::eps();
         const StaffType *st = item->staff()->staff_type(tick);
         const StaffType *st_prev = !tick_prev.negative() ? item->staff()->staff_type(tick_prev) : nullptr;
-        StaffGroup staff_group = st->group();
-        const bool hide_clef = st->is_tab_staff() ? conf.style_b(Sid::HIDE_TAB_CLEF_AFTER_FIRST) : !conf.style_b(Sid::GEN_CLEF);
-
-        // if not tab, use instrument->useDrumset to set staffGroup (to allow pitched to unpitched in same staff)
-        if (staff_group != StaffGroup::TAB) {
-            staff_group = item->origin_part()->instrument(item->tick())->use_drumset() ? StaffGroup::PERCUSSION : StaffGroup::STANDARD;
-        }
-
-        // check clef is compatible with staff type group:
-        if (ClefInfo::staff_group(clef_type) != staff_group) {
-            if (tick > Fraction(0, 1) && (!item->generated() || hide_clef)) { // if clef is not generated, hide it
-                show = false;
-            } else { // if generated, replace with initial clef type
-                // TODO : instead of initial staff clef (which is assumed to be compatible)
-                // use the last compatible clef previously found in staff
-                const ClefTypeList initial = item->staff()->clef_type(Fraction(0, 1));
-                clef_type = item->concert_pitch() ? initial.concert_clef : initial.transposing_clef;
-            }
-        }
-
-        // if clef not to show or not compatible with staff group
         if (!show) {
             ldata->set_bbox(RectF());
             ldata->sym_id = SymId::NO_SYM;

@@ -569,12 +569,13 @@ String ExportMusicXml::positioning_attributes(const EngravingItem *source, bool 
 //---------------------------------------------------------
 
 void Notations::tag(XmlWriter &xml, const EngravingItem *e, const AsciiStringView &container) {
-    if (notations_printed_ && prev_element_visible_ != e->visible()) {
+    const bool visible = e->display_visible();
+    if (notations_printed_ && prev_element_visible_ != visible) {
         etag(xml);
     }
 
     if (!notations_printed_) {
-        if (e->visible()) {
+        if (visible) {
             xml.start_element("notations");
         } else {
             xml.start_element("notations", {{"print-object", "no"}});
@@ -595,7 +596,7 @@ void Notations::tag(XmlWriter &xml, const EngravingItem *e, const AsciiStringVie
 
     current_container_ = container;
     notations_printed_ = true;
-    prev_element_visible_ = e->visible();
+    prev_element_visible_ = visible;
 }
 
 //---------------------------------------------------------
@@ -3521,7 +3522,7 @@ static void write_notehead(XmlWriter &xml, const Note *const note) {
     } else if ((note->head_type() == NoteHeadType::HEAD_HALF) || (note->head_type() == NoteHeadType::HEAD_WHOLE)) {
         notehead_tagname += u" filled=\"no\"";
     }
-    if (!note->visible() && (!note->staff_type() || !note->staff_type()->is_tab_staff())) {
+    if (!note->display_visible() && (!note->staff_type() || !note->staff_type()->is_tab_staff())) {
         // The notehead is invisible but other parts of the note might
         // still be visible so don't export <note print-object="no">.
         notehead_value = "none";
@@ -7291,7 +7292,7 @@ void ExportMusicXml::find_and_export_clef(const Measure *const m, const int stav
                     if (!cle->visible() || (cle->staff() && !cle->staff()->staff_type(cle->tick())->gen_clef())) {
                         clef_attr += u" print-object=\"no\"";
                     }
-                    clef(sstaff, cle->clef_type(), clef_attr);
+                    clef(sstaff, cle->display_clef_type(), clef_attr);
                 } else {
                     clefDebug("exportxml: clef not exported");
                 }
@@ -7551,9 +7552,9 @@ void ExportMusicXml::write_element(EngravingItem *el, const Measure *m, staff_id
         if (el->generated()) {
             clefDebug("exportxml: generated clef not exported");
         } else if (!el->generated() && tick_is_in_middle_of_measure(ti, m)) {
-            clef(sstaff, cle->clef_type(), color2xml(cle) + visible);
+            clef(sstaff, cle->display_clef_type(), color2xml(cle) + visible);
         } else if (!el->generated() && (ti == m->tick()) && (cle->segment()->segment_type() != SegmentType::HEADER_CLEF)) {
-            clef(sstaff, cle->clef_type(), color2xml(cle) + visible + String(u" after-barline=\"yes\""));
+            clef(sstaff, cle->display_clef_type(), color2xml(cle) + visible + String(u" after-barline=\"yes\""));
         } else {
             clefDebug("exportxml: clef not exported");
         }
@@ -8894,5 +8895,5 @@ void ExportMusicXml::harmony(Harmony const *const h, FretDiagram const *const fd
  should be included to the exported MusicXML file.
  */
 
-bool ExportMusicXml::can_write(const EngravingItem *e) { return e->visible() || configuration()->export_invisible_elements(); }
+bool ExportMusicXml::can_write(const EngravingItem *e) { return e->display_visible() || configuration()->export_invisible_elements(); }
 } // namespace mu::iex::musicxml
