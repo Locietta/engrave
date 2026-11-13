@@ -32,6 +32,7 @@
 #include "elementchange.h"
 #include "global/types/translatablestring.h"
 #include "measurestaffchange.h"
+#include "mmrestchange.h"
 #include "partchange.h"
 #include "sourcechange.h"
 #include "staffchange.h"
@@ -71,6 +72,7 @@ enum class JournalEntryKind : uint8_t {
     STAFF_ORDER,
     STAFF_HIDE,
     MSTAFF_MEMBERSHIP,
+    MMREST_LINK,
     STAFF_TRACKS,
     STAFF_BRACKETS
 };
@@ -105,6 +107,7 @@ struct JournalBatch {
     void change_measures(MeasureBase *first, MeasureBase *last, bool adding, bool move_staff_type_changes = true);
     void change_measure_length(Measure *measure, Fraction length);
     void change_measure_repeat_count(Measure *measure, int count, staff_idx_t staff);
+    void change_mm_rest_link(Measure &target, MeasureBase *value, MMRestLink link);
     void change_mstaff(Measure *measure, MStaff *row, staff_idx_t index, bool adding);
     void add_mstaff(Measure *measure, std::unique_ptr<MStaff> row, staff_idx_t index);
     void change_staff_tracks(Measure *measure, staff_idx_t first, staff_idx_t last, bool adding);
@@ -145,6 +148,8 @@ struct JournalBatch {
 
     size_t legacy_entries() const { return legacy_.size(); }
 
+    size_t mm_rest_entries() const { return mm_rest_links_.size(); }
+
     size_t derived_entries() const { return brackets_.size() + text_lines_.size(); }
 
     size_t text_format_entries() const { return text_formats_.size(); }
@@ -183,6 +188,7 @@ private:
     amc::vector<MeasureMembershipInverse> measures_;
     amc::vector<MeasureLengthInverse> measure_lengths_;
     amc::vector<MeasureRepeatCountInverse> measure_repeats_;
+    amc::vector<MMRestLinkInverse> mm_rest_links_;
     amc::vector<MStaffReference> mstaffs_;
     amc::vector<MStaffMembershipInverse> mstaff_memberships_;
     amc::vector<StaffTracksInverse> staff_tracks_;
