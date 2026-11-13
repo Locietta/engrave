@@ -93,9 +93,6 @@ bool Capo::set_property(Pid id, const PropertyValue &val) {
     } else if (id == Pid::CAPO_GENERATE_TEXT) {
         should_automatically_generate_text_ = val.to_bool();
 
-        if (!should_automatically_generate_text_) {
-            set_xml_text(custom_text_);
-        }
     } else if (id == Pid::CAPO_TRANSPOSE_MODE) {
         params_.transpose_mode = val.value<CapoParams::TransposeMode>();
     } else {
@@ -109,14 +106,6 @@ bool Capo::set_property(Pid id, const PropertyValue &val) {
     }
 
     return true;
-}
-
-void Capo::set_xml_text(const String &text) {
-    if (!should_automatically_generate_text_) {
-        custom_text_ = text;
-    }
-
-    StaffTextBase::set_xml_text(text);
 }
 
 const CapoParams &Capo::params() const { return params_; }
