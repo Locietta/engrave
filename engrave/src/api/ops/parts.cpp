@@ -190,11 +190,15 @@ Result<Step> prepare(EditContext &context, const GenerateExcerpts &op) {
     }
     return [targets](EditContext &context) -> Result<void> {
         MasterScore &master = context.master();
+        std::vector<Part *> parts;
         for (const Target &target : targets) {
             auto found = part_at(context, target);
             if (!found) return std::unexpected(found.error());
             Part *part = *found;
             if (part->score() != &master) return invalid("an excerpt is generated from a part of the master score");
+            parts.push_back(part);
+        }
+        for (Part *part : parts) {
             Excerpt *excerpt = Excerpt::create_excerpts_from_parts({part}, &master).front();
             master.init_and_add_excerpt(excerpt, false);
             context.created(excerpt->excerpt_score());

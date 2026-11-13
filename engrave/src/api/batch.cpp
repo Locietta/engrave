@@ -194,12 +194,24 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps) {
         for (std::size_t i = 0; i < steps.size(); ++i) {
             context_.op_ = i;
             context_.prepare_semantics();
-            if (auto applied = steps[i](context_); !applied) {
-                failure = std::move(applied.error());
-                failure->op_index = i;
+            const auto marking = master.cmd_state().mutation_count;
+            try {
+                if (auto applied = steps[i](context_); !applied) {
+                    failure = std::move(applied.error());
+                    failure->op_index = i;
+                }
+            } catch (const std::exception &error) {
+                failure = Error{ErrorCode::EDIT_REJECTED, std::format("the engine failed: {}", error.what()), i};
+            }
+            if (!failure) check_engine(i);
+            if (failure) {
+                if (master.cmd_state().mutation_count == marking) {
+                    result.rejection = BatchRejection{i, std::move(*failure)};
+                    failure.reset();
+                    MScore::set_error(MsError::MS_NO_ERROR);
+                }
                 break;
             }
-            if (!check_engine(i)) break;
             applied_ops.push_back(i);
             ++context_.epoch_;
         }
@@ -222,13 +234,12 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps) {
                 const bool changed = master.cmd_state().mutation_count != 0;
                 manager->commit_prepared(changes);
                 if (changed) ++document.revision;
+                result.applied = applied_ops.size();
+                result.ops.resize(result.applied);
                 result.revision = document.revision;
                 return result;
             }
         }
-    } catch (const std::bad_alloc &) {
-        close_failed_batch();
-        throw;
     } catch (const std::exception &error) {
         close_failed_batch();
         Error rejected{ErrorCode::EDIT_REJECTED, std::format("the engine failed: {}", error.what()),
