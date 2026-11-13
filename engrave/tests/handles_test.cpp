@@ -50,6 +50,7 @@
 #include "engraving/dom/measurebase.h"
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/note.h"
+#include "engraving/dom/page.h"
 #include "engraving/dom/part.h"
 #include "engraving/dom/playcounttext.h"
 #include "engraving/dom/property.h"
@@ -66,6 +67,7 @@
 #include "engraving/editing/edittremolo.h"
 #include "engraving/editing/transaction/transaction.h"
 #include "engraving/infrastructure/eidregister.h"
+#include "engraving/rendering/score/layoutdatastore.h"
 #include "engraving/rw/inoutdata.h"
 #include "engraving/rw/rwregister.h"
 #include "global/io/buffer.h"
@@ -407,6 +409,29 @@ TEST(NativeSave, ColdEqualsWarm) {
             EXPECT_EQ(cold, warm);
         }
     }
+}
+
+TEST(Handles, PageQueriesFollowRangeLayoutAndOutputDiscard) {
+    auto document = open_path(g_source_root / "tests/data/inputs/golden/linked_parts.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *note = first_note(master);
+    ASSERT_NE(note, nullptr);
+    ASSERT_EQ(note->pitch(), 71);
+    master.ensure_layout();
+    const muse::RectF area(0, 0, 10000, 10000);
+    ASSERT_FALSE(master.pages().empty());
+    EXPECT_TRUE(std::ranges::contains(master.pages().front()->items(area), note));
+    const auto ranges = master.layout_state.range_count;
+    master.do_layout_range(mu::engraving::Fraction(0, 1), mu::engraving::Fraction(1, 4));
+    EXPECT_EQ(master.layout_state.range_count, ranges + 1);
+    EXPECT_TRUE(std::ranges::contains(master.pages().front()->items(area), note));
+    master.layout_data_store()->clear();
+    const auto layouts = master.layout_state.whole_count + master.layout_state.range_count;
+    EXPECT_TRUE(master.pages().front()->items(area).empty());
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, layouts);
+    master.ensure_layout();
+    EXPECT_TRUE(std::ranges::contains(master.pages().front()->items(area), note));
 }
 
 // --- descriptors ----------------------------------------------------------

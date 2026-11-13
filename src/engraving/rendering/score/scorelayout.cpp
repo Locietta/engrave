@@ -66,6 +66,7 @@ void ScoreLayout::layout_range(Score *score, const Fraction &st, const Fraction 
         muse::delete_all(score->pages());
         score->pages().clear();
         PageLayout::get_next_page(ctx);
+        for (Page *page : score->pages()) page->rebuild_bsp_tree();
         return;
     }
 
@@ -85,5 +86,5 @@ void ScoreLayout::layout_range(Score *score, const Fraction &st, const Fraction 
     ctx.mut_layout_data().for_each_output(
         [&](EngravingItem &item, EngravingItem::LayoutData &data) { TLayout::complete_item_shape(item, data, ctx.conf()); });
 
-    //LOGDA() << DumpLayoutData::dump(score);
+    for (Page *page : score->pages()) page->rebuild_bsp_tree();
 }

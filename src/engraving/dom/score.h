@@ -589,10 +589,6 @@ public:
 
     void set_saved_capture(bool v) { saved_capture_ = v; }
 
-    bool printing() const { return printing_; }
-
-    void set_printing(bool val) { printing_ = val; }
-
     bool has_corrupted_measures() const { return corrupted_; }
 
     void set_has_corrupted_measures(bool val) { corrupted_ = val; }
@@ -1088,7 +1084,6 @@ private:
     bool show_sound_flags_ = true;
     bool mark_irregular_measures_ = true;
     bool show_instrument_names_ = true;
-    bool printing_ = false;      // True if we are drawing to a printer
     bool saved_capture_ = false; // True if we saved an image capture
     bool corrupted_ = false;
     bool need_update_ticks_and_time_sig_map_ = false;

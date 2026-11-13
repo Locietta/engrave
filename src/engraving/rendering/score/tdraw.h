@@ -21,6 +21,8 @@
  */
 #pragma once
 
+#include <optional>
+
 #include "dom/engravingitem.h"
 
 namespace mu::engraving {
@@ -315,7 +317,8 @@ private:
 
     static void draw(const WhammyBarSegment *item, muse::draw::Painter *painter, const PaintOptions &opt);
 
-    static void draw_text_base(const TextBase *item, muse::draw::Painter *painter, const PaintOptions &opt);
+    static void draw_text_base(const TextBase *item, muse::draw::Painter *painter, const PaintOptions &opt,
+                               std::optional<bool> visibility = std::nullopt);
     static void draw(const TextBlock &text_block, const TextBase *item, muse::draw::Painter *painter);
     static void draw(const TextFragment &text_fragment, const TextBase *item, muse::draw::Painter *painter);
     static void draw_text_line_base_segment(const TextLineBaseSegment *item, muse::draw::Painter *painter, const PaintOptions &opt);

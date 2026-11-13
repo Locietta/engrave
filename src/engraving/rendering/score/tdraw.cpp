@@ -1476,7 +1476,7 @@ void TDraw::draw(const GuitarBendHoldSegment *item, Painter *painter, const Pain
     painter->draw_line(PointF(), item->pos2());
 }
 
-void TDraw::draw_text_base(const TextBase *item, Painter *painter, const PaintOptions &opt) {
+void TDraw::draw_text_base(const TextBase *item, Painter *painter, const PaintOptions &opt, std::optional<bool> visibility) {
     TRACE_DRAW_ITEM;
 
     painter->save();
@@ -1486,7 +1486,7 @@ void TDraw::draw_text_base(const TextBase *item, Painter *painter, const PaintOp
     if (item->has_frame()) {
         double base_spatium = DefaultStyle::base_style().value(Sid::SPATIUM).to_real();
         if (!real_is_null(item->frame_width().val())) {
-            Color f_color = item->cur_color(item->visible(), item->frame_color(), opt);
+            Color f_color = item->cur_color(visibility.value_or(item->visible()), item->frame_color(), opt);
             double frame_width_val = item->frame_width().val() * (item->size_is_spatium_dependent() ? item->spatium() : base_spatium);
 
             Pen pen(f_color, frame_width_val, PenStyle::SOLID_LINE, PenCapStyle::SQUARE_CAP, PenJoinStyle::MITER_JOIN);
@@ -1504,7 +1504,7 @@ void TDraw::draw_text_base(const TextBase *item, Painter *painter, const PaintOp
         }
     }
     painter->set_brush(BrushStyle::NO_BRUSH);
-    painter->set_pen(item->text_color(opt));
+    painter->set_pen(visibility ? item->cur_color(*visibility, opt) : item->text_color(opt));
     for (const TextBlock &t : ldata->blocks) {
         draw(t, item, painter);
     }
@@ -1531,15 +1531,13 @@ void TDraw::draw_text_line_base_segment(const TextLineBaseSegment *item, Painter
 
     if (!item->text()->empty()) {
         painter->translate(item->text()->pos());
-        item->text()->set_visible(tl->visible());
-        draw(item->text(), painter, opt);
+        draw_text_base(item->text(), painter, opt, tl->visible());
         painter->translate(-item->text()->pos());
     }
 
     if (!item->end_text()->empty()) {
         painter->translate(item->end_text()->pos());
-        item->end_text()->set_visible(tl->visible());
-        draw(item->end_text(), painter, opt);
+        draw_text_base(item->end_text(), painter, opt, tl->visible());
         painter->translate(-item->end_text()->pos());
     }
 
@@ -2584,7 +2582,7 @@ void TDraw::draw(const IndicatorIcon *item, muse::draw::Painter *painter, const 
 void TDraw::draw(const SoundFlag *item, Painter *painter, const PaintOptions &opt) {
     TRACE_DRAW_ITEM;
 
-    if (item->should_hide()) {
+    if (item->should_hide(opt.is_printing)) {
         return;
     }
 

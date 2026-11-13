@@ -23,6 +23,7 @@
 #include "bsp.h"
 
 #include <cmath>
+#include <unordered_set>
 
 #include "engravingitem.h"
 
@@ -58,11 +59,11 @@ public:
 struct FindItemBspTreeVisitor : BspTreeVisitor {
 public:
     std::vector<EngravingItem *> found_items;
+    std::unordered_set<EngravingItem *> seen;
 
     void visit(std::vector<EngravingItem *> &items) override {
         for (auto item : items) {
-            if (!item->item_discovered) {
-                item->item_discovered = true;
+            if (seen.insert(item).second) {
                 found_items.push_back(item);
             }
         }
@@ -134,7 +135,6 @@ std::vector<EngravingItem *> BspTree::items(const RectF &rec) {
     climb_tree(&find_visitor, rec);
     std::vector<EngravingItem *> l;
     for (EngravingItem *e : find_visitor.found_items) {
-        e->item_discovered = false;
         if (e->page_bounding_rect().intersects(rec)) {
             l.push_back(e);
         }
@@ -152,7 +152,6 @@ std::vector<EngravingItem *> BspTree::items(const PointF &pos) {
 
     std::vector<EngravingItem *> l;
     for (EngravingItem *e : find_visitor.found_items) {
-        e->item_discovered = false;
         if (e->contains(pos)) {
             l.push_back(e);
         }

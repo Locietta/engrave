@@ -73,16 +73,12 @@ MeasureBase *Page::last_measure_base() const {
 //---------------------------------------------------------
 
 std::vector<EngravingItem *> Page::items(const RectF &rect) {
-    if (!bsp_tree_valid_) {
-        do_rebuild_bsp_tree();
-    }
+    if (!bsp_tree_valid_) return {};
     return bsp_tree.items(rect);
 }
 
 std::vector<EngravingItem *> Page::items(const PointF &point) {
-    if (!bsp_tree_valid_) {
-        do_rebuild_bsp_tree();
-    }
+    if (!bsp_tree_valid_) return {};
     return bsp_tree.items(point);
 }
 
@@ -125,7 +121,14 @@ void Page::scan_elements(std::function<void(EngravingItem *)> func) {
 //   doRebuildBspTree
 //---------------------------------------------------------
 
-void Page::do_rebuild_bsp_tree() {
+void Page::invalidate_bsp_tree() {
+    bsp_tree_valid_ = false;
+    bsp_tree.clear();
+    score()->invalidate_layout(Fraction(0, 1), Fraction(-1, 1));
+}
+
+void Page::rebuild_bsp_tree() {
+    if (bsp_tree_valid_) return;
     int n = 0;
     auto count_elements = [&](EngravingItem *item) {
         if (item->collect_for_drawing()) {

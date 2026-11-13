@@ -86,8 +86,6 @@ struct LayoutConfiguration {
 
     bool is_float_mode() const { return is_mode(LayoutMode::FLOAT); }
 
-    bool is_printing_mode() const;
-
     bool is_show_v_box() const { return options().is_show_v_box; }
 
     double note_head_width() const { return options().note_head_width; }

@@ -288,12 +288,14 @@ void ScorePageViewLayout::layout_headers_footers(LayoutContext &ctx) {
     LAYOUT_CALL();
 
     do_layout_headers_footers(ctx);
+    for (Page *page : ctx.dom().pages()) page->rebuild_bsp_tree();
 
     LAYOUT_CALL_PRINT();
 }
 
 void ScorePageViewLayout::do_layout_headers_footers(LayoutContext &ctx) {
     for (const auto &page : ctx.dom().pages()) {
+        page->invalidate_bsp_tree();
         HeaderFooterLayout::layout_header_footer(ctx, page);
     }
 }

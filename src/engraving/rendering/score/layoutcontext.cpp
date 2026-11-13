@@ -51,12 +51,6 @@ const Score *LayoutConfiguration::score() const {
 
 const LayoutOptions &LayoutConfiguration::options() const { return score()->layout_options(); }
 
-bool LayoutConfiguration::is_printing_mode() const {
-    IF_ASSERT_FAILED(score()) { return false; }
-
-    return score()->printing();
-}
-
 std::shared_ptr<const EngravingFont> LayoutConfiguration::engraving_font() const {
     IF_ASSERT_FAILED(score()) { return nullptr; }
     return score()->engraving_font();

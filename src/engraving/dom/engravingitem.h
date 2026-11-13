@@ -326,8 +326,6 @@ public:
     void undo_set_visible(bool v);
     void undo_add_element(EngravingItem *element, bool add_to_linked_staves = true);
 
-    mutable bool item_discovered = false; // helper flag for bsp
-
     void scan_elements(std::function<void(EngravingItem *)> func) override;
     virtual bool collect_for_drawing() const;
 
