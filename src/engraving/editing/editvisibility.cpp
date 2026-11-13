@@ -26,6 +26,7 @@
 #include "../dom/beam.h"
 #include "../dom/chord.h"
 #include "../dom/engravingitem.h"
+#include "../dom/masterscore.h"
 #include "../dom/note.h"
 #include "../dom/notedot.h"
 #include "../dom/ornament.h"
@@ -33,6 +34,7 @@
 #include "../dom/score.h"
 #include "../dom/select.h"
 #include "../dom/trill.h"
+#include "cmd.h"
 #include "global/containers.h"
 #include "transaction/transaction.h"
 
@@ -87,6 +89,15 @@ static bool beam_has_visible_note(const Beam *beam) {
     return false;
 }
 
+void EditVisibility::change_chord_child_visible(Chord *chord, AuthoredChildRole role, bool visible) {
+    const auto *entry = chord->authored_overrides.find({role}, Pid::VISIBLE);
+    if ((entry ? entry->value.to_bool() : true) == visible) return;
+    if (note_change(chord, CommandType::CHANGE_PROPERTY))
+        chord->master_score()->cmd_state().changes.changed_property_id_set.insert(Pid::VISIBLE);
+    chord->authored_overrides.set({{role}, Pid::VISIBLE, visible});
+    chord->trigger_layout();
+}
+
 static void undo_change_ornament_visibility(Ornament *ornament, bool visible);
 
 static void undo_change_note_visibility(Note *note, bool visible) {
@@ -131,15 +142,15 @@ static void undo_change_note_visibility(Note *note, bool visible) {
     };
 
     for (const Chord *chord : chords) {
-        for (const EngravingObject *obj : chord->link_list()) {
-            Chord *linked_chord = to_chord(const_cast<EngravingObject *>(obj));
+        for (EngravingObject *obj : chord->link_list()) {
+            Chord *linked_chord = to_chord(obj);
             const bool chord_has_visible_note_value = chord_has_visible_note(linked_chord);
             // note visibility can differ between scores, so check this score's own beam
             const Beam *linked_beam = linked_chord->beam();
             const bool beam_has_visible_note_value = chord_has_visible_note_value || (linked_beam && beam_has_visible_note(linked_beam));
             for (auto role : {AuthoredChildRole::STEM, AuthoredChildRole::HOOK, AuthoredChildRole::STEM_SLASH}) {
                 const bool value = beam && role == AuthoredChildRole::STEM ? beam_has_visible_note_value : chord_has_visible_note_value;
-                linked_chord->authored_overrides.set({{role}, Pid::VISIBLE, value});
+                EditVisibility::change_chord_child_visible(linked_chord, role, value);
             }
             for (EngravingObject *child : linked_chord->get_children()) {
                 if (child->is_stem() || child->is_hook() || child->is_stem_slash()) continue;
@@ -150,7 +161,7 @@ static void undo_change_note_visibility(Note *note, bool visible) {
                 }
 
                 if (beam) {
-                    if (type == ElementType::STEM || type == ElementType::BEAM) {
+                    if (type == ElementType::BEAM) {
                         child->undo_change_property(Pid::VISIBLE, beam_has_visible_note_value);
                         continue;
                     }

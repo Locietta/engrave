@@ -7245,8 +7245,10 @@ Note *MusicXmlParserPass2::note(const String &part_id, Measure *measure, const F
             note->set_head_scheme(head_scheme);
         }
         color_item(note, note_color);
-        const auto color = stem_color.is_valid() ? stem_color : note_color;
-        if (color.is_valid()) c->authored_overrides.set({{AuthoredChildRole::STEM}, Pid::COLOR, color, PropertyFlags::UNSTYLED});
+        if (c->notes().size() == 1) {
+            const auto color = stem_color.is_valid() ? stem_color : note_color;
+            if (color.is_valid()) c->authored_overrides.set({{AuthoredChildRole::STEM}, Pid::COLOR, color, PropertyFlags::UNSTYLED});
+        }
         set_note_head(note, notehead_filled);
         if (notehead_parentheses) {
             note->set_parentheses_mode(ParenthesesMode::BOTH);

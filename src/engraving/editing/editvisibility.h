@@ -22,7 +22,10 @@
 
 #pragma once
 
+#include "../dom/authoredoverride.h"
+
 namespace mu::engraving {
+struct Chord;
 struct EngravingItem;
 struct Score;
 struct Transaction;
@@ -32,6 +35,7 @@ struct EditVisibility {
     static void set_selected_elements_invisible(Transaction &tx, Score *score);
     static void toggle_visible(Transaction &tx, Score *score);
 
+    static void change_chord_child_visible(Chord *chord, AuthoredChildRole role, bool visible);
     static void undo_change_visible(Transaction &tx, EngravingItem *item, bool visible);
 };
 } // namespace mu::engraving

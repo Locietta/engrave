@@ -5209,6 +5209,74 @@ TEST(Read, VisibilityEditBeforeLayoutHidesTheGeneratedStem) {
     EXPECT_FALSE(chord->stem()->visible());
 }
 
+TEST(Read, ChordVisibilityIncludesLayoutChildren) {
+    using namespace mu::engraving;
+    auto xml = chordline_offset_fixture();
+    xml.replace(xml.find("<durationType>whole</durationType>"), 34, "<durationType>eighth</durationType><showStemSlash>1</showStemSlash>");
+    auto opened = g_engine->open(as_bytes(xml));
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto *chord = offset_test_lines(master).front()->chord();
+    ASSERT_TRUE((*opened)->page_count());
+    ASSERT_NE(chord->hook(), nullptr);
+    ASSERT_NE(chord->stem_slash(), nullptr);
+    {
+        Command command(master);
+        chord->undo_change_property(Pid::VISIBLE, false);
+        command.commit();
+    }
+    ASSERT_TRUE((*opened)->page_count());
+    EXPECT_FALSE(chord->notes().front()->visible());
+    EXPECT_FALSE(chord->stem()->visible());
+    EXPECT_FALSE(chord->hook()->visible());
+    EXPECT_FALSE(chord->stem_slash()->visible());
+}
+
+TEST(Read, ShowingAnAlreadyVisibleNoteRevealsItsAuthoredHiddenStem) {
+    using namespace mu::engraving;
+    auto xml = chordline_offset_fixture();
+    xml.replace(xml.find("<durationType>whole</durationType>"), 34,
+                "<durationType>quarter</durationType><Stem><visible>0</visible></Stem>");
+    auto opened = g_engine->open(as_bytes(xml));
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto *chord = offset_test_lines(master).front()->chord();
+    ASSERT_TRUE((*opened)->page_count());
+    ASSERT_FALSE(chord->stem()->visible());
+    const auto revision = master.source_revision();
+    {
+        Command command(master);
+        auto &tx = master.transaction_manager()->current_or_dummy_transaction();
+        EditVisibility::undo_change_visible(tx, chord->notes().front(), true);
+        EXPECT_TRUE(master.layout_state.dirty);
+        command.commit();
+    }
+    EXPECT_EQ(master.source_revision(), revision + 1);
+    ASSERT_TRUE((*opened)->page_count());
+    EXPECT_TRUE(chord->stem()->visible());
+}
+
+TEST(Read, MusicXmlChordKeepsTheFirstNotesStemColor) {
+    using namespace mu::engraving;
+    auto xml = dynamics_musicxml("", "");
+    xml.replace(xml.find("<duration>4</duration>"), 22, "<duration>1</duration>");
+    xml.replace(xml.find("<type>whole</type>"), 18, "<type>quarter</type><stem color=\"#ff0000\">up</stem>");
+    xml.insert(
+        xml.find("</measure>"),
+        R"(<note color="#0000ff"><chord/><pitch><step>E</step><octave>4</octave></pitch><duration>1</duration><type>quarter</type></note>)");
+    auto opened = g_engine->open(as_bytes(xml), {.format = engrave::Format::MUSIC_XML});
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    ASSERT_EQ(chord->notes().size(), 2u);
+    ASSERT_EQ(chord->stem(), nullptr);
+    const auto *color = chord->authored_overrides.find({AuthoredChildRole::STEM}, Pid::COLOR);
+    ASSERT_NE(color, nullptr);
+    EXPECT_EQ(color->value.value<muse::draw::Color>(), muse::draw::Color::from_string("#ff0000"));
+    ASSERT_TRUE((*opened)->page_count());
+    EXPECT_EQ(chord->stem()->color(), muse::draw::Color::from_string("#ff0000"));
+}
+
 TEST(Read, StemUserLengthSurvivesDisplayRecreation) {
     for (const std::string version : {"4.60", "5.00"}) {
         auto xml = chordline_offset_fixture();
