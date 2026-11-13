@@ -1282,9 +1282,7 @@ TEST_F(EngravingPlaybackModelTests, Playback_Setup_Data_MultiInstrument) {
 
 /**
  * @brief PlaybackModelTests_Score_Changes_Track_Range
- * @details A score-level change with a narrow range (e.g. inserting measures) must re-render all tracks,
- *          while an automation edit on one staff must only re-render the tracks of that staff
- *          See: https://github.com/musescore/MuseScore/issues/35246
+ * @details A score-level change with a narrow range (e.g. inserting measures) must re-render all tracks.
  */
 TEST_F(EngravingPlaybackModelTests, Score_Changes_Track_Range) {
     // [GIVEN] Score with multiple instruments
@@ -1321,29 +1319,6 @@ TEST_F(EngravingPlaybackModelTests, Score_Changes_Track_Range) {
     changes.staff_idx_to = 0;
     changes.changed_types = {ElementType::SCORE, ElementType::MEASURE};
     changes.changed_objects = {{score, {CommandType::INSERT_TIME}}};
-
-    score->master_score()->notify_changes(changes);
-    take_changed_tracks();
-
-    // [THEN] All tracks are re-rendered
-    EXPECT_TRUE(muse::contains(changed_tracks, first_track_id));
-    EXPECT_TRUE(muse::contains(changed_tracks, last_track_id));
-
-    // [WHEN] An automation edit on the 1st staff
-    changed_tracks.clear();
-    changes.changed_types = {ElementType::SCORE};
-    changes.changed_objects = {{score, {CommandType::EDIT_AUTOMATION_POINTS}}};
-
-    score->master_score()->notify_changes(changes);
-    take_changed_tracks();
-
-    // [THEN] Only the tracks of the 1st staff are re-rendered
-    EXPECT_TRUE(muse::contains(changed_tracks, first_track_id));
-    EXPECT_FALSE(muse::contains(changed_tracks, last_track_id));
-
-    // [WHEN] An automation edit together with another score-level change on the 1st staff
-    changed_tracks.clear();
-    changes.changed_objects = {{score, {CommandType::EDIT_AUTOMATION_POINTS, CommandType::INSERT_TIME}}};
 
     score->master_score()->notify_changes(changes);
     take_changed_tracks();

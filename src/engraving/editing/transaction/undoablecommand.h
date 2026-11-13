@@ -86,11 +86,9 @@ enum class CommandType : signed char {
     // Notes
     CHANGE_PITCH,
     CHANGE_FRETTING,
-    CHANGE_VELOCITY,
 
     // ChordRest
     CHANGE_CHORD_STAFF_MOVE,
-    SWAP_CR,
     ADD_NOTE_PARENTHESES_INFO,
     REMOVE_NOTE_PARENTHESES_INFO,
     REMOVE_SINGLE_NOTE_PARENTHESES,
@@ -144,14 +142,8 @@ enum class CommandType : signed char {
     SWAP_EXCERPT,
     CHANGE_EXCERPT_TITLE,
 
-    // Meta info
-    CHANGE_META_INFO,
-
     // Text
     TEXT_EDIT,
-
-    // Automation
-    EDIT_AUTOMATION_POINTS,
 
     // Other
     INSERT_TIME,

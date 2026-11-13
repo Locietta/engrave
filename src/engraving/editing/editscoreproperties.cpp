@@ -28,28 +28,6 @@
 using namespace mu::engraving;
 
 //---------------------------------------------------------
-//   ChangeMetaTags
-//---------------------------------------------------------
-
-void ChangeMetaTags::flip() {
-    std::map<String, String> t = score->meta_tags();
-    score->set_meta_tags(meta_tags);
-    score->set_layout_all();
-    meta_tags = t;
-}
-
-//---------------------------------------------------------
-//   ChangeMetaText
-//---------------------------------------------------------
-
-void ChangeMetaText::flip() {
-    String s = score->meta_tag(id);
-    score->set_meta_tag(id, text);
-    score->set_layout_all();
-    text = s;
-}
-
-//---------------------------------------------------------
 //   ChangeScoreOrder
 //---------------------------------------------------------
 

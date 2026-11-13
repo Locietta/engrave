@@ -366,31 +366,6 @@ void ChangeChordStaffMove::flip() {
 }
 
 //---------------------------------------------------------
-//   SwapCR
-//---------------------------------------------------------
-
-void SwapCR::flip() {
-    Segment *s1 = cr1->segment();
-    Segment *s2 = cr2->segment();
-    track_idx_t track = cr1->track();
-
-    if (cr1->is_chord() && cr2->is_chord() && to_chord(cr1)->tremolo_two_chord() &&
-        (to_chord(cr1)->tremolo_two_chord() == to_chord(cr2)->tremolo_two_chord())) {
-        TremoloTwoChord *t = to_chord(cr1)->tremolo_two_chord();
-        Chord *c1 = t->chord1();
-        Chord *c2 = t->chord2();
-        t->set_ownership_parent(to_chord(c2));
-        t->set_chords(to_chord(c2), to_chord(c1));
-    }
-
-    EngravingItem *cr = s1->element(track);
-    s1->set_element(track, s2->element(track));
-    s2->set_element(track, cr);
-    cr1->score()->set_layout(s1->tick(), cr1->staff_idx(), cr1);
-    cr1->score()->set_layout(s2->tick(), cr1->staff_idx(), cr1);
-}
-
-//---------------------------------------------------------
 //   ChangeSpanArpeggio
 //---------------------------------------------------------
 

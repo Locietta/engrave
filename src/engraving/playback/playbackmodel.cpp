@@ -135,28 +135,6 @@ struct LegacyStore {
 };
 } // namespace
 
-static bool is_scoped_automation_change(const ScoreChanges &changes) {
-    if (!changes.is_valid_boundary()) {
-        return false;
-    }
-
-    bool has_automation_change = false;
-
-    for (const auto &pair : changes.changed_objects) {
-        if (pair.first->type() != ElementType::SCORE) {
-            continue;
-        }
-
-        if (pair.second.size() != 1 || !muse::contains(pair.second, CommandType::EDIT_AUTOMATION_POINTS)) {
-            return false;
-        }
-
-        has_automation_change = true;
-    }
-
-    return has_automation_change;
-}
-
 PlaybackModel::~PlaybackModel() { detach_from_score(); }
 
 void PlaybackModel::detach_from_score() {
@@ -541,11 +519,6 @@ bool PlaybackModel::has_to_reload_score(const ScoreChanges &changes) const {
     };
 
     for (const ElementType type : changes.changed_types) {
-        // Automation edits on one staff shouldn't reload all tracks
-        if (type == ElementType::SCORE && is_scoped_automation_change(changes)) {
-            continue;
-        }
-
         if (muse::contains(required_types, type)) {
             return true;
         }
@@ -560,16 +533,6 @@ bool PlaybackModel::has_to_reload_score(const ScoreChanges &changes) const {
 
     for (const Pid pid : changes.changed_property_id_set) {
         if (muse::contains(required_properties, pid)) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-bool PlaybackModel::has_automation_change(const ScoreChanges &changes) const {
-    for (const auto &pair : changes.changed_objects) {
-        if (muse::contains(pair.second, CommandType::EDIT_AUTOMATION_POINTS)) {
             return true;
         }
     }
@@ -806,7 +769,7 @@ PlaybackModel::TickBoundaries PlaybackModel::tick_boundaries(const ScoreChanges 
     result.tick_from = changes.tick_from;
     result.tick_to = changes.tick_to;
 
-    if (has_to_reload_tracks(changes) || has_to_reload_score(changes) || has_automation_change(changes) || !changes.is_valid_boundary()) {
+    if (has_to_reload_tracks(changes) || has_to_reload_score(changes) || !changes.is_valid_boundary()) {
         const Measure *last_measure = score_->last_measure();
         result.tick_from = 0;
         result.tick_to = last_measure ? last_measure->end_tick().ticks() : 0;
