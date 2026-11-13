@@ -313,6 +313,13 @@ const CharFormat TextCursor::selected_fragments_format() const {
         return format_;
     }
 
+    if (!editing()) {
+        const String source = text_->xml_text();
+        // Without markup every character inherits the cursor format. Avoid the
+        // editor's per-character insertion scans when reading plain source text.
+        if (!source.is_empty() && !source.contains(u"<") && !source.contains(u"&")) return format_;
+    }
+
     // Formatting belongs to logical source runs, not measured/wrapped lines.
     TextBase::LayoutData source;
     const TextBase::LayoutData *ldata = text_->ldata();
