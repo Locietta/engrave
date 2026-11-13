@@ -43,6 +43,7 @@
 #include "engraving/dom/engravingitem.h"
 #include "engraving/dom/excerpt.h"
 #include "engraving/dom/factory.h"
+#include "engraving/dom/guitarbend.h"
 #include "engraving/dom/instrtemplate.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
@@ -378,6 +379,8 @@ void expect_inv(engrave::Document &document) {
         EXPECT_TRUE(registered.insert(text).second) << text << " is registered twice";
         if (engrave::id_class(*object) != IdClass::PERSISTED) continue; // an id that layout
         // or a read may drop is not handed out, so it is the engine's own entry.
+        // Detached items retain private EIDs until destruction.
+        if (!master.eid_register()->live_item(master.eid_register()->handle_of(object))) continue;
         EXPECT_TRUE(objects.contains(object) || engrave::in_score(master, object))
             << text << " (" << object->type_name() << ") left the document";
     }
@@ -1434,6 +1437,22 @@ TEST(Handles, H13IdsWithDeterministicEngine) {
     EXPECT_EQ(element_map(*second), element_map(*first)) << "two opens of one file disagree";
     expect_inv(*first);
     expect_inv(*second);
+    auto carrier_document = open_text(R"(<museScore version="5.00"><Score><eid>B_B</eid>
+      <Part><Staff id="1"/><Instrument><Channel/></Instrument></Part>
+      <Staff id="1"><Measure><voice><Chord><durationType>whole</durationType>
+      <Stem><userLen>1</userLen></Stem><Note><eid>C_C</eid><pitch>60</pitch><tpc>14</tpc></Note>
+      </Chord></voice></Measure></Staff></Score></museScore>)");
+    ASSERT_TRUE(carrier_document);
+    auto &carrier_master = master_of(*carrier_document);
+    auto *carrier_note = first_note(carrier_master);
+    ASSERT_NE(carrier_note, nullptr);
+    EXPECT_EQ(carrier_note->eid().to_std_string(), "C_C");
+    const auto *carrier = carrier_note->chord()->authored_overrides.carrier({mu::engraving::AuthoredChildRole::STEM});
+    ASSERT_NE(carrier, nullptr);
+    EXPECT_NE(carrier->legacy_eid.to_std_string(), "C_C");
+    auto restored = reopen(*carrier_document);
+    ASSERT_TRUE(restored);
+    EXPECT_EQ(master_of(*restored).eid_register()->repairs().duplicate, 0u);
 }
 
 TEST(Handles, RegistryIdentityUpdatesKeepTheRuntimeHandle) {
@@ -1724,6 +1743,69 @@ TEST(Handles, ImportedTieIsAddressableBeforeSaving) {
     ASSERT_TRUE(reopened->object->is_tie());
     ASSERT_NE(mu::engraving::to_tie(reopened->object)->end_note(), nullptr);
     EXPECT_EQ(mu::engraving::to_tie(reopened->object)->end_note()->tick(), mu::engraving::Fraction(1, 4));
+    expect_inv(*document);
+    expect_inv(*restored);
+}
+
+TEST(Handles, ExcludingTieEndFromPartDoesNotPublishAnOrphan) {
+    auto document = open_path(g_source_root / "tests/data/inputs/golden/linked_parts.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    const auto excerpts = master.excerpts();
+    for (auto *excerpt : excerpts) {
+        master.remove_excerpt(excerpt);
+        delete excerpt;
+    }
+    auto *note = first_note(master);
+    ASSERT_NE(note, nullptr);
+    ASSERT_NE(note->tie_for(), nullptr);
+    note->tie_for()->end_note()->chord()->set_exclude_from_other_parts(true);
+    ASSERT_TRUE(music::generate_score_excerpts(&master));
+    engrave::assign_missing_ids(master);
+    auto *part_note = mu::engraving::to_note(note->find_linked_in_staff(master.excerpts().front()->excerpt_score()->staff(0)));
+    ASSERT_NE(part_note, nullptr);
+    EXPECT_EQ(part_note->tie_for(), nullptr);
+    EXPECT_EQ(note->tie_for()->end_note()->pitch(), 71);
+    auto restored = reopen(*document);
+    ASSERT_TRUE(restored);
+    expect_inv(*document);
+    expect_inv(*restored);
+}
+
+TEST(Handles, RewrittenPartKeepsSlightBendIdentity) {
+    using namespace mu::engraving;
+    auto document = open_path(g_source_root / "tests/data/inputs/golden/linked_parts.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *note = first_note(master);
+    ASSERT_NE(note, nullptr);
+    auto *bend = Factory::create_guitar_bend(note);
+    bend->set_bend_type(GuitarBendType::SLIGHT_BEND);
+    bend->set_note_span(note, note);
+    bend->set_track(note->track());
+    bend->set_track2(note->track());
+    note->add_spanner_for(bend);
+    note->add_spanner_back(bend);
+    engrave::assign_missing_ids(master);
+    const auto original_id = engine_id(*bend);
+    const auto original_handle = master.eid_register()->handle_of(bend);
+    ASSERT_TRUE(document->edit({{engrave::SetTimeSig{engine_id(*master.first_measure()), {3, 4}}}}));
+    EXPECT_EQ(master.eid_register()->live_item(original_handle), nullptr);
+    EXPECT_FALSE(engrave::resolve(master, original_id));
+    GuitarBend *part_bend = nullptr;
+    for (auto *object : engrave::document_objects(master))
+        if (object->is_guitar_bend() && object->score() != &master) part_bend = to_guitar_bend(object);
+    ASSERT_NE(part_bend, nullptr);
+    EXPECT_EQ(part_bend->bend_type(), GuitarBendType::SLIGHT_BEND);
+    EXPECT_EQ(part_bend->start_note()->pitch(), 71);
+    const auto id = engine_id(*part_bend);
+    ASSERT_TRUE(engrave::resolve(master, id));
+    auto restored = reopen(*document);
+    ASSERT_TRUE(restored);
+    const auto found = engrave::resolve(master_of(*restored), id);
+    ASSERT_TRUE(found);
+    ASSERT_TRUE(found->object->is_guitar_bend());
+    EXPECT_EQ(to_guitar_bend(found->object)->bend_type(), GuitarBendType::SLIGHT_BEND);
     expect_inv(*document);
     expect_inv(*restored);
 }
