@@ -130,7 +130,8 @@ public:
 
     AutomationDataConstPtr automation_data() const override;
     void set_automation_data(AutomationDataPtr data);
-    void edit_automation_points(const AutomationCurveKey &key, AutomationPointEdits &edits, bool undoable = true) override;
+    // Source setup outside an edit batch; the host exposes no point-edit operation.
+    void apply_automation_points(const AutomationCurveKey &key, AutomationPointEdits &edits);
 
     /// Always call this before calling `repeatList()`
     /// No need to set it back after use, because everyone always calls it before using `repeatList()`

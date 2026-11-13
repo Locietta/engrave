@@ -998,7 +998,6 @@ public:
     void add_system_divider(size_t system_idx, SystemDivider *divider);
 
     virtual AutomationDataConstPtr automation_data() const;
-    virtual void edit_automation_points(const AutomationCurveKey &key, AutomationPointEdits &edits, bool undoable = true);
 
     friend struct Chord;
 

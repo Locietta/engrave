@@ -22,12 +22,12 @@
 #include "masterscore.h"
 
 #include <algorithm>
+#include <stdexcept>
 
 #include "automation/internal/scoreautomationcontroller.h"
 #include "barline.h"
 #include "clef.h"
 #include "compat/writescorehook.h"
-#include "editing/editautomationpoints.h"
 #include "editing/editkeysig.h"
 #include "editing/editmeasures.h"
 #include "editing/transaction/mutationjournal.h"
@@ -124,14 +124,10 @@ AutomationDataConstPtr MasterScore::automation_data() const { return automation_
 
 void MasterScore::set_automation_data(AutomationDataPtr data) { automation_controller_->set_automation_data(std::move(data)); }
 
-void MasterScore::edit_automation_points(const AutomationCurveKey &key, AutomationPointEdits &edits, bool undoable) {
+void MasterScore::apply_automation_points(const AutomationCurveKey &key, AutomationPointEdits &edits) {
+    if (mutation_journal_->has_active_transaction()) throw std::logic_error("automation source setup requires no active batch");
     IF_ASSERT_FAILED(key.is_valid() && !edits.empty()) { return; }
-
-    if (undoable) {
-        undo(new EditAutomationPoints(this, automation_controller_, key, edits));
-    } else {
-        automation_controller_->edit_points(key, edits);
-    }
+    automation_controller_->edit_points(key, edits);
 }
 
 void MasterScore::on_time_inserted(const Fraction &tick, const Fraction &len, const std::vector<RepeatSegmentInfo> &old_segments) {

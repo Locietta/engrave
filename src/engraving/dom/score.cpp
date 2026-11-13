@@ -4868,10 +4868,6 @@ size_t Score::bracket_levels(staff_idx_t staff_idx) const {
 
 AutomationDataConstPtr Score::automation_data() const { return master_score_->automation_data(); }
 
-void Score::edit_automation_points(const AutomationCurveKey &key, AutomationPointEdits &edits, bool undoable) {
-    master_score_->edit_automation_points(key, edits, undoable);
-}
-
 TransactionManager *Score::transaction_manager() const { return master_score_->transaction_manager(); }
 
 MutationJournal *Score::mutation_journal() const { return master_score_->mutation_journal(); }
