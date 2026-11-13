@@ -715,6 +715,7 @@ static void process_linked_clone(EngravingItem *ne, Score *score, track_idx_t st
 static void add_ties(Note *original_note, Note *new_note, TieMap &tie_map, Score *score) {
     if (original_note->tie_for() && original_note->tie_for()->type() == ElementType::TIE) {
         Tie *tie = to_tie(original_note->tie_for()->linked_clone());
+        tie->set_end_note(nullptr);
         tie->set_score(score);
         new_note->set_tie_for(tie);
         tie->set_start_note(new_note);
@@ -793,6 +794,11 @@ static void add_tremolo_two_chord(Chord *old_chord, Chord *new_chord, TremoloTwo
 static void collect_tie_end_points(TieMap &tie_map) {
     for (auto &tie : tie_map) {
         Tie *new_tie = to_tie(tie.second);
+        if (new_tie->type() == ElementType::TIE && !new_tie->end_note()) {
+            new_tie->start_note()->set_tie_for(nullptr);
+            delete new_tie;
+            continue;
+        }
         if (new_tie->type() == ElementType::TIE ||
             (new_tie->type() == ElementType::PARTIAL_TIE && to_partial_tie(new_tie)->is_outgoing())) {
             new_tie->update_possible_jump_points();
@@ -1598,6 +1604,7 @@ void Excerpt::clone_staff2(Staff *src_staff, Staff *dst_staff, const Fraction &s
                         new_bend->set_start_element(nn);
                         new_bend->set_end_element(nn);
                         nn->add_spanner_for(new_bend);
+                        nn->add_spanner_back(new_bend);
                     }
                 }
                 add_grace_note_ties_and_back_spanners(och->grace_notes_after(), nch, tie_map, score);

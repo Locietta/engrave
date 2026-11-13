@@ -64,7 +64,7 @@ struct TouchedSlot {
 struct EIDRegister {
     EIDRegister();
 
-    EID new_eid();
+    EID new_eid(bool sequential = true);
     EID new_eid_for_item(const EngravingObject *item);
     // False, and neither identity touched, when the EID already belongs to another
     // element; the caller gives the element a fresh EID instead.

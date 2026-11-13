@@ -258,12 +258,13 @@ void prepare_carrier(EngravingItem &item, AuthoredOverrideTable &table) {
             const AuthoredChildKey key{AuthoredChildRole::DOT, i};
             if (table.carrier(key)) continue;
             auto id = dots[i]->eid();
-            if (!id.is_valid()) id = item.master_score()->eid_register()->new_eid();
+            if (!id.is_valid()) id = item.master_score()->eid_register()->new_eid(false);
             table.set_carrier({key, ElementType::NOTEDOT, id});
         }
     }
+    // A later input ID is still unknown here; preserve random carrier identities in test mode.
     auto eid = item.eid();
-    if (!eid.is_valid()) eid = item.master_score()->eid_register()->new_eid();
+    if (!eid.is_valid()) eid = item.master_score()->eid_register()->new_eid(false);
     table.set_carrier({item.authored_child, item.type(), eid, muse::nidx});
     if (item.authored_child.role == AuthoredChildRole::SPANNER_SEGMENT) {
         const auto subtype = static_cast<const SpannerSegment &>(item).spanner_segment_type();
@@ -470,7 +471,7 @@ void finish_authored_read(EngravingItem &item) {
     }
     const auto *old = table->carrier(child_key(item));
     auto eid = item.eid();
-    if (!eid.is_valid()) eid = old ? old->legacy_eid : item.master_score()->eid_register()->new_eid();
+    if (!eid.is_valid()) eid = old ? old->legacy_eid : item.master_score()->eid_register()->new_eid(false);
     table->set_carrier({item.authored_child, item.type(), eid, old ? old->track : muse::nidx});
 }
 
@@ -492,7 +493,7 @@ void clone_authored_overrides(AuthoredOverrideTable &destination, const Authored
     for (auto &carrier : destination.carriers) {
         const bool group = carrier.child.subordinal == 1 &&
                            (carrier.child.role == AuthoredChildRole::PAREN_LEFT || carrier.child.role == AuthoredChildRole::PAREN_RIGHT);
-        carrier.legacy_eid = group ? EID::invalid() : registry.new_eid();
+        carrier.legacy_eid = group ? EID::invalid() : registry.new_eid(false);
     }
 }
 
