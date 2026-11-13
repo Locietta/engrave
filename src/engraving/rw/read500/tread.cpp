@@ -350,9 +350,10 @@ void TRead::read_property(EngravingItem *item, XmlReader &xml, ReadContext &ctx,
     PropertyValue v = read_property_value(pid, xml, ctx);
     switch (property_type(pid)) {
         case PType::ABSOLUTE: //! NOTE type mm, but stored in xml as spatium
-            v = v.value<Spatium>().to_absolute(spatium);
+            v = ctx.transaction_snapshot ? v.value<Spatium>().val() : v.value<Spatium>().to_absolute(spatium);
             break;
         case PType::POINT:
+            if (ctx.transaction_snapshot) break;
             if (item->offset_is_spatium_dependent()) {
                 v = v.value<PointF>() * spatium;
             } else {
@@ -2537,7 +2538,7 @@ void TRead::read(ChordLine *l, XmlReader &e, ReadContext &ctx) {
         e.raise_error(String::from_utf8("ChordLine cannot mix legacy Path and o1-o4 offsets"));
         return;
     }
-    const double point_unit = l->offset_is_spatium_dependent() ? ctx.spatium() : ::mu::engraving::dpmm;
+    const double point_unit = ctx.transaction_snapshot ? 1.0 : (l->offset_is_spatium_dependent() ? ctx.spatium() : ::mu::engraving::dpmm);
     if (has_position && !ctx.should_skip_property(Pid::OFFSET)) {
         const PointF physical = position * point_unit;
         if (!std::isfinite(physical.x()) || !std::isfinite(physical.y()) || std::abs(physical.x()) > 1000000.0 ||
@@ -2749,7 +2750,7 @@ void TRead::read(GuitarBendHold *h, XmlReader &xml, ReadContext &ctx) {
 
 bool TRead::read_properties(GuitarBendSegment *g, const AsciiStringView &tag, XmlReader &xml, ReadContext &ctx) {
     if (tag == "bendVertexOffset") {
-        g->set_property(Pid::BEND_VERTEX_OFF, xml.read_point() * g->style().spatium());
+        g->set_property(Pid::BEND_VERTEX_OFF, xml.read_point() * (ctx.transaction_snapshot ? 1.0 : g->style().spatium()));
     } else if (tag == "GuitarBendText") {
         GuitarBendText *bend_text = new GuitarBendText(g);
         bind_authored_child(*bend_text, {AuthoredChildRole::SEGMENT_TEXT, g->authored_child.ordinal});
@@ -3017,7 +3018,7 @@ bool TRead::read_properties(LineSegment *l, XmlReader &e, ReadContext &ctx) {
         l->set_spanner_segment_type(SpannerSegmentType(subtype));
         remember_authored_property(*l, Pid::SUBTYPE, subtype, PropertyFlags::NOSTYLE);
     } else if (tag == "off2") {
-        l->set_property(Pid::OFFSET2, e.read_point() * l->style().spatium());
+        l->set_property(Pid::OFFSET2, e.read_point() * (ctx.transaction_snapshot ? 1.0 : l->style().spatium()));
     } else if (l->is_guitar_bend_segment() && read_properties(static_cast<GuitarBendSegment *>(l), tag, e, ctx)) {
     } else if (!read_item_properties(l, e, ctx)) {
         return false;
@@ -3632,7 +3633,7 @@ bool TRead::read_properties(SlurTie *s, XmlReader &e, ReadContext &ctx) {
 }
 
 void TRead::read(SlurTieSegment *s, XmlReader &e, ReadContext &ctx) {
-    double spatium_value = s->style().spatium();
+    double spatium_value = ctx.transaction_snapshot ? 1.0 : s->style().spatium();
     while (e.read_next_start_element()) {
         const AsciiStringView tag(e.name());
         if (tag == "o1") {

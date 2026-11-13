@@ -126,7 +126,8 @@ void copy_score_versions(engraving::MasterScore *source, engraving::MasterScore 
 
 ScoreProject load_native_score(const EngineContext &context, const std::string &input, const std::string &format,
                                bool transaction_snapshot) {
-    if (input.empty() || input.size() > 8 * 1024 * 1024) throw std::invalid_argument("Input must contain 1..8388608 bytes");
+    if (input.empty() || (!transaction_snapshot && input.size() > 8 * 1024 * 1024))
+        throw std::invalid_argument("Input must contain 1..8388608 bytes");
     // Like NotationProject::doImport (project/internal/notationproject.cpp:304) and
     // importMusicXmlfromBuffer, the whole reading + setup phase is a load: layout
     // inside it runs outside a transaction and must not push undo commands or warn.
@@ -138,7 +139,7 @@ ScoreProject load_native_score(const EngineContext &context, const std::string &
         io::Buffer buffer(&data);
         buffer.open(io::IODevice::READ_ONLY);
         ZipReader zip(&buffer);
-        check_zip(zip);
+        if (!transaction_snapshot) check_zip(zip);
         if (format == "mxl") {
             XmlStreamReader xml(zip.file_data("META-INF/container.xml"));
             std::string root;

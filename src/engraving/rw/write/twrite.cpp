@@ -148,6 +148,7 @@
 #include "editing/transpose.h"
 #include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
 #include "engraving/internal/engravingfont.h"
+#include "global/serialization/textstream.h"
 #include "log.h"
 #include "types/types.h"
 #include "writecontext.h"
@@ -300,23 +301,28 @@ void write_property_value(XmlWriter &xml, Pid pid, PropertyValue p, PropertyValu
     PType type = property_type(pid);
     if (PType::ABSOLUTE == type) {
         double f1 = p.to_real();
-        if (d.is_valid() && std::abs(f1 - d.to_real()) < 0.0001) { // fuzzy compare
+        if (d.is_valid() && (muse::TextStream::round_trip_doubles ? f1 == d.to_real() : std::abs(f1 - d.to_real()) < 0.0001)) {
             return;
         }
-        p = PropertyValue(Spatium::from_absolute(f1, spatium));
+        p = PropertyValue(muse::TextStream::round_trip_doubles ? Spatium(f1) : Spatium::from_absolute(f1, spatium));
         d = PropertyValue();
     } else if (PType::POINT == type) {
         PointF p1 = p.value<PointF>();
         if (d.is_valid()) {
             PointF p2 = d.value<PointF>();
-            if ((std::abs(p1.x() - p2.x()) < 0.0001) && (std::abs(p1.y() - p2.y()) < 0.0001)) {
+            if (muse::TextStream::round_trip_doubles ? (p1.x() == p2.x() && p1.y() == p2.y()) :
+                                                       (std::abs(p1.x() - p2.x()) < 0.0001 && std::abs(p1.y() - p2.y()) < 0.0001)) {
                 return;
             }
         }
-        double q = point_unit;
+        // Snapshot coordinates stay in native units to avoid a lossy divide/multiply round trip.
+        double q = muse::TextStream::round_trip_doubles ? 1.0 : point_unit;
         p = PropertyValue(p1 / q);
         d = PropertyValue();
     }
+    if (muse::TextStream::round_trip_doubles && d.is_valid() && (type == PType::REAL || type == PType::SPATIUM || type == PType::TEMPO) &&
+        p.to_double() != d.to_double())
+        d = PropertyValue();
     xml.tag_property(pid, p, d);
 }
 
@@ -506,6 +512,7 @@ bool write_authored_segments(const Spanner *owner, bool slur, XmlWriter &xml, Wr
                 const auto *entry = table.find(key, pid);
                 PointF point = entry ? entry->value.value<PointF>() : PointF();
                 if (entry && entry->unit == AuthoredOverrideUnit::MILLIMETRE) point *= ::mu::engraving::dpmm / owner->style().spatium();
+                if (muse::TextStream::round_trip_doubles) point *= owner->style().spatium();
                 xml.tag_point(pid == Pid::OFFSET ? "offset" : "off2", point);
             }
             write_authored_property(owner, key, xml, Pid::MIN_DISTANCE);

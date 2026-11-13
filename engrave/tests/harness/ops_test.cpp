@@ -174,6 +174,89 @@ TEST(Checkpoint, RestoresRuntimeTempoForPlayback) {
     EXPECT_DOUBLE_EQ(engrave::harness::master_of(*document).tempo_timeline().utick2utime(1920), 8.0 / 9.0);
 }
 
+TEST(Checkpoint, PreservesSubToleranceAuthoredOffset) {
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    const auto note = find_id(*document, "Note");
+    ASSERT_TRUE(document->edit({{SetProperty{note, "offset", engrave::Point{0.00005, -0.00003}}}}));
+    const auto before = native_source(*document);
+    ASSERT_TRUE(document->checkpoint("small offset"));
+    ASSERT_TRUE(document->edit({{SetProperty{note, "offset", engrave::Point{2.0, 3.0}}}}));
+    ASSERT_TRUE(document->restore_checkpoint("small offset"));
+    EXPECT_EQ(std::get<engrave::Point>(property(*document, note, "offset")), (engrave::Point{0.00005, -0.00003}));
+    EXPECT_EQ(native_source(*document), before);
+}
+
+TEST(Checkpoint, RestoresSnapshotAbovePublicImportLimit) {
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    std::string payload(16 * 1024 * 1024, ' ');
+    constexpr std::string_view alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    std::uint32_t random = 0x9e3779b9;
+    for (char &value : payload) {
+        random ^= random << 13;
+        random ^= random >> 17;
+        random ^= random << 5;
+        value = alphabet[random & 63];
+    }
+    auto &master = engrave::harness::master_of(*document);
+    master.meta_tags()[u"large metadata"] = muse::String::from_std_string(payload);
+    ASSERT_TRUE(document->checkpoint("large"));
+    ASSERT_GT(engrave::DocumentAccess::impl(*document).checkpoints.front().bytes.size(), 8u * 1024 * 1024);
+    master.meta_tags()[u"large metadata"] = u"changed";
+    ASSERT_TRUE(document->restore_checkpoint("large"));
+    EXPECT_TRUE(engrave::harness::master_of(*document).meta_tags().at(u"large metadata").to_std_string() == payload);
+}
+
+TEST(Edit, RepeatedKeySignatureKeepsRevisionAndSource) {
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    const auto outline = document->outline();
+    ASSERT_TRUE(outline);
+    const auto first = outline->measures.front().id;
+    ASSERT_TRUE(document->edit({{engrave::SetKeySig{first, 2, {}}}}));
+    const auto before = native_source(*document);
+    const auto revision = document->revision();
+    ASSERT_TRUE(document->edit({{engrave::SetKeySig{first, 2, {}}}}));
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_EQ(native_source(*document), before);
+}
+
+TEST(Edit, FailedMeasureRewriteLeavesCrossingSlurSafeForReads) {
+    auto document = open("hairpins_and_repeats.mscx");
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    auto *measure = master.first_measure()->next_measure();
+    ASSERT_NE(measure, nullptr);
+    const auto tick = measure->tick();
+    auto *chord = master.find_cr(tick, 0);
+    ASSERT_NE(chord, nullptr);
+    const auto chord_id = engrave::from_engine(chord->eid());
+    ASSERT_TRUE(document->edit({{engrave::AddTuplet{chord_id, chord_id, 3, 2}}}));
+    chord = master.find_cr(tick, 0);
+    auto *start = master.find_cr(master.first_measure()->tick(), 0);
+    ASSERT_NE(start, nullptr);
+    ASSERT_NE(chord, nullptr);
+    const auto added =
+        document->edit({{engrave::AddSpanner{"Slur", engrave::from_engine(start->eid()), engrave::from_engine(chord->eid()), {}}}});
+    ASSERT_TRUE(added) << added.error().message;
+    const auto slur_id = added->ops.front().created.front();
+    ASSERT_TRUE(slur_id);
+    const auto before = native_source(*document);
+    ASSERT_TRUE(document->checkpoint("rewrite"));
+    // A quarter-note triplet cannot split at a three-sixteenth bar boundary.
+    const auto failed = document->edit({{engrave::SetTimeSig{engrave::from_engine(measure->eid()), {3, 16}}}});
+    ASSERT_FALSE(failed);
+    EXPECT_TRUE(failed.error().poisoned);
+    const auto surviving = engrave::resolve(master, *slur_id);
+    ASSERT_TRUE(surviving);
+    EXPECT_EQ(mu::engraving::to_spanner(surviving->object)->end_element(), nullptr);
+    EXPECT_TRUE(document->query({.types = {"Slur"}}));
+    EXPECT_TRUE(document->page_count());
+    ASSERT_TRUE(document->restore_checkpoint("rewrite"));
+    EXPECT_EQ(native_source(*document), before);
+}
+
 TEST(Edit, StaticMeasureErrorsAreRejectedBeforeEarlierWrites) {
     auto document = open(fixture_name);
     ASSERT_TRUE(document);
