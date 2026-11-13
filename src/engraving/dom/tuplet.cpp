@@ -29,6 +29,7 @@
 #include "engravingitem.h"
 #include "factory.h"
 #include "log.h"
+#include "masterscore.h"
 #include "measure.h"
 #include "note.h"
 #include "rest.h"
@@ -73,7 +74,7 @@ Tuplet::Tuplet(DummyParentOr<Measure> parent) : DurationElement(ElementType::TUP
 }
 
 Tuplet::Tuplet(const Tuplet &t) : DurationElement(t) {
-    clone_authored_overrides(authored_overrides, t.authored_overrides);
+    clone_authored_overrides(authored_overrides, t.authored_overrides, *master_score()->eid_register());
     number_style_ = t.number_style_;
     tick_ = t.tick_;
     has_bracket_ = t.has_bracket_;

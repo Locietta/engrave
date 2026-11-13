@@ -2432,12 +2432,17 @@ TEST(Export470, MissingTieIdNamesTheStartNote) {
     source.erase(source.find("<eid>H_H</eid>"), std::string("<eid>H_H</eid>").size());
     auto document = g_engine->open(as_bytes(source), {.format = engrave::Format::MSCX});
     ASSERT_TRUE(document);
+    auto &master = master_of(**document);
+    const auto start = engrave::resolve(master, *engrave::element_id_from_string("G_G"));
+    ASSERT_TRUE(start);
+    auto *tie = mu::engraving::to_note(start->object)->tie_for();
+    ASSERT_NE(tie, nullptr);
+    master.eid_register()->remove_item(tie);
     auto result = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
     ASSERT_FALSE(result);
     ASSERT_EQ(result.error().export_warnings.size(), 1u);
     EXPECT_EQ(result.error().export_warnings[0].object, (engrave::ExportWarningObject{"note", "G_G"}));
     // Exercise the explicit non-EID locator when no owner is addressable.
-    auto &master = master_of(**document);
     for (auto *object : engrave::document_objects(master))
         if (object->eid().is_valid()) master.eid_register()->remove_item(object);
     auto first = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});

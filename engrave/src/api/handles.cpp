@@ -13,6 +13,7 @@
 #include "engraving/dom/engravingitem.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
+#include "engraving/dom/note.h"
 #include "engraving/dom/page.h"
 #include "engraving/dom/part.h"
 #include "engraving/dom/score.h"
@@ -21,6 +22,7 @@
 #include "engraving/dom/staff.h"
 #include "engraving/dom/system.h"
 #include "engraving/dom/textbase.h"
+#include "engraving/dom/tie.h"
 #include "engraving/editing/transaction/transaction.h"
 #include "engraving/infrastructure/eidregister.h"
 
@@ -91,6 +93,13 @@ void for_each_object(MasterScore &master, const Function &func) {
         // segments are walked as well, and a chord is reached through its parts.
         const auto visit_item = [&visit](EngravingItem *item) {
             visit(item);
+            if (item->is_note() && mu::engraving::source_object(*item)) {
+                const auto &note = *mu::engraving::to_note(item);
+                visit(note.tie_for());
+                if (auto *tie = note.tie_back(); tie && tie->is_partial_tie() && !tie->start_element()) visit(tie);
+                for (auto *spanner : note.spanner_for())
+                    if (spanner->anchor() == Spanner::Anchor::NOTE) visit(spanner);
+            }
             EngravingObject *parent = item->parent();
             if (parent && parent->is_chord_rest()) visit(parent);
             // A beam is referred to by the chords it joins, not held by a measure.
@@ -224,12 +233,10 @@ IdClass id_class(const EngravingObject &object) {
     }
     // A tuplet draws its own number, and layout creates that text.
     if (object.is_text() && object.ownership_parent() && object.ownership_parent()->is_tuplet()) return IdClass::LAYOUT;
-    // A spanner is kept in its score's spanner map when it is anchored to a segment. One
-    // anchored to a note hangs off the note instead, and a read can drop it (a tie whose
-    // other end is missing), so the ones the map holds are what the walk hands out.
     if (object.is_spanner()) {
         const Score *score = object.score();
         if (!score) return IdClass::SESSION;
+        if (mu::engraving::to_spanner(&object)->anchor() == Spanner::Anchor::NOTE) return IdClass::PERSISTED;
         const auto spanners = score->spanner_list();
         const auto found = std::ranges::find(spanners, mu::engraving::to_spanner(&object));
         return found == spanners.end() ? IdClass::SESSION : IdClass::PERSISTED;
@@ -247,7 +254,8 @@ bool takes_id(const EngravingObject &object) {
     if (id_class(object) != IdClass::PERSISTED) return false;
     if (!object.is_engraving_item()) return true;
     const auto &item = static_cast<const EngravingItem &>(object);
-    if (item.generated()) return false;
+    // Measure rewrites generate ties that the native writer persists.
+    if (item.generated() && !item.is_tie() && !item.is_partial_tie() && !item.is_laissez_vib()) return false;
     // The writer stores no id for an empty text (a template's empty title, subtitle or
     // poet placeholder), so one of those has none until it has text.
     return !item.is_text() || !static_cast<const mu::engraving::TextBase &>(item).empty();

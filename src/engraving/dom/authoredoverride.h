@@ -13,6 +13,7 @@
 namespace mu::engraving {
 struct EngravingItem;
 struct EngravingObject;
+class EIDRegister;
 
 enum class AuthoredChildRole : uint8_t {
     NONE,
@@ -93,7 +94,7 @@ void remember_authored_property(EngravingItem &item, Pid pid, const PropertyValu
 void finish_authored_read(EngravingItem &item);
 bool has_authored_override(const EngravingItem &item, Pid pid);
 void reset_authored_override(EngravingItem &item, Pid pid);
-void clone_authored_overrides(AuthoredOverrideTable &destination, const AuthoredOverrideTable &source);
+void clone_authored_overrides(AuthoredOverrideTable &destination, const AuthoredOverrideTable &source, EIDRegister &registry);
 
 // A per-display-object scope, not a document/global layout mode.
 struct AuthoredOverrideMirror {

@@ -28,6 +28,7 @@
 #include "location.h"
 #include "log.h"
 #include "lyrics.h"
+#include "masterscore.h"
 #include "measure.h"
 #include "note.h"
 #include "part.h"
@@ -362,7 +363,7 @@ TranslatableString SpannerSegment::subtype_user_name() const { return spanner()-
 Spanner::Spanner(const ElementType &type, EngravingObject *parent, ElementFlags f) : EngravingItem(type, parent, f) {}
 
 Spanner::Spanner(const Spanner &s) : EngravingItem(s) {
-    clone_authored_overrides(authored_overrides, s.authored_overrides);
+    clone_authored_overrides(authored_overrides, s.authored_overrides, *master_score()->eid_register());
     play_spanner_ = s.play_spanner_;
     start_element_ = s.start_element_;
     end_element_ = s.end_element_;

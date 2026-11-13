@@ -172,7 +172,8 @@ TouchedSlot EIDRegister::id_state(uint32_t index) const {
     }
     if (object.is_engraving_item()) {
         const auto &item = *to_engraving_item(&object);
-        state.published = !item.generated() && (!item.is_text() || !to_text_base(&item)->empty());
+        state.published = (!item.generated() || item.is_tie() || item.is_partial_tie() || item.is_laissez_vib()) &&
+                          (!item.is_text() || !to_text_base(&item)->empty());
         if (static_cast<long long>(item.track()) >= 0) {
             state.placement.tick = item.tick().ticks();
             state.placement.track = static_cast<int>(item.track());

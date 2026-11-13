@@ -29,6 +29,7 @@
 #include "containers.h"
 #include "groups.h"
 #include "log.h"
+#include "masterscore.h"
 #include "measure.h"
 #include "realfn.h"
 #include "rootitem.h"
@@ -72,7 +73,7 @@ EngravingItem *Beam::layout_parent() const { return system(); }
 //---------------------------------------------------------
 
 Beam::Beam(const Beam &b) : BeamBase(b) {
-    clone_authored_overrides(authored_overrides, b.authored_overrides);
+    clone_authored_overrides(authored_overrides, b.authored_overrides, *master_score()->eid_register());
     elements_ = b.elements_;
     grow_left_ = b.grow_left_;
     grow_right_ = b.grow_right_;
