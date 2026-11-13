@@ -99,19 +99,25 @@ void EditVisibility::change_chord_child_visible(Chord *chord, AuthoredChildRole 
 }
 
 void EditVisibility::change_dots_visible(EngravingItem *owner, int count, bool visible) {
-    auto &table = *authored_override_table(owner);
-    for (uint32_t i = 0; i < uint32_t(count); ++i) {
-        const AuthoredChildKey key{AuthoredChildRole::DOT, i};
-        const auto *entry = table.find(key, Pid::VISIBLE);
-        if ((entry ? entry->value.to_bool() : owner->visible()) == visible) continue;
-        if (note_change(owner, CommandType::CHANGE_PROPERTY))
-            owner->master_score()->cmd_state().changes.changed_property_id_set.insert(Pid::VISIBLE);
-        for (uint32_t j = 0; j <= i; ++j) {
-            const AuthoredChildKey ordinal{AuthoredChildRole::DOT, j};
-            if (!table.carrier(ordinal)) table.set_carrier({ordinal, ElementType::NOTEDOT});
+    for (auto *object : owner->link_list_for_property_propagation()) {
+        auto *linked = to_engraving_item(object);
+        if (linked != owner && owner->property_propagation(linked, Pid::VISIBLE) != PropertyPropagation::PROPAGATE) continue;
+        auto &table = *authored_override_table(linked);
+        for (uint32_t i = 0; i < uint32_t(count); ++i) {
+            const AuthoredChildKey key{AuthoredChildRole::DOT, i};
+            const auto *appearance = table.find(key, Pid::APPEARANCE_LINKED_TO_MASTER);
+            if (linked != owner && appearance && !appearance->value.to_bool()) continue;
+            const auto *entry = table.find(key, Pid::VISIBLE);
+            if ((entry ? entry->value.to_bool() : linked->visible()) == visible) continue;
+            if (note_change(linked, CommandType::CHANGE_PROPERTY))
+                linked->master_score()->cmd_state().changes.changed_property_id_set.insert(Pid::VISIBLE);
+            for (uint32_t j = 0; j <= i; ++j) {
+                const AuthoredChildKey ordinal{AuthoredChildRole::DOT, j};
+                if (!table.carrier(ordinal)) table.set_carrier({ordinal, ElementType::NOTEDOT});
+            }
+            table.set({key, Pid::VISIBLE, visible});
+            linked->trigger_layout();
         }
-        table.set({key, Pid::VISIBLE, visible});
-        owner->trigger_layout();
     }
 }
 

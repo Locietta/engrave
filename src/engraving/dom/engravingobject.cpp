@@ -132,7 +132,8 @@ void EngravingObject::do_set_parent(EngravingObject *p) {
 
     parent_ = p;
 
-    if (parent_) {
+    // These children borrow parent context; LayoutData controls their lifetime.
+    if (parent_ && type_ != ElementType::NOTEDOT && !(type_ == ElementType::TEXT && parent_->is_tuplet())) {
         parent_->add_child(this);
     }
 }

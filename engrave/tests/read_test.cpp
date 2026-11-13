@@ -131,6 +131,7 @@
 #include "engraving/rendering/score/scorerenderer.h"
 #include "engraving/rendering/score/systemlayout.h"
 #include "engraving/rendering/score/tlayout.h"
+#include "engraving/rendering/score/tupletlayout.h"
 #include "engraving/rw/write/twrite.h"
 #include "engraving/rw/write/writecontext.h"
 #include "engraving/rw/xmlwriter.h"
@@ -4837,7 +4838,7 @@ TEST(Read, TupletNumberTextSurvivesDisplayDisposalAndLayout) {
 <Part><Staff><StaffType group="pitched"/></Staff><Instrument id="piano"><Channel><program value="0"/></Channel></Instrument></Part>
 <Staff id="1"><Measure><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
 <Tuplet><normalNotes>2</normalNotes><actualNotes>3</actualNotes><baseNote>quarter</baseNote>
-<Number><text>three</text><offset x="0.25" y="-0.5"/></Number></Tuplet>
+<Number><eid>G_G</eid><text>three</text><offset x="0.25" y="-0.5"/></Number></Tuplet>
 <Chord><durationType>quarter</durationType><Note><pitch>60</pitch><tpc>14</tpc></Note></Chord>
 <Chord><durationType>quarter</durationType><Note><pitch>62</pitch><tpc>16</tpc></Note></Chord>
 <Chord><durationType>quarter</durationType><Note><pitch>64</pitch><tpc>18</tpc></Note></Chord>
@@ -4857,6 +4858,16 @@ TEST(Read, TupletNumberTextSurvivesDisplayDisposalAndLayout) {
             EXPECT_EQ(tuplet->number(), nullptr);
             EXPECT_EQ(tuplet->authored_overrides.find(key, Pid::TEXT)->value, PropertyValue(String(u"three")));
             ASSERT_TRUE((*document)->page_count());
+            EXPECT_EQ(tuplet->number()->xml_text(), String(u"three"));
+            EXPECT_TRUE(tuplet->children().empty());
+            tuplet->set_color(muse::draw::Color(10, 20, 30));
+            tuplet->set_visible(false);
+            {
+                rendering::score::LayoutContext ctx(tuplet->score());
+                rendering::score::TupletLayout::layout(tuplet, ctx);
+            }
+            EXPECT_EQ(tuplet->number()->color(), muse::draw::Color(10, 20, 30));
+            EXPECT_FALSE(tuplet->number()->visible());
             ASSERT_NE(tuplet->authored_overrides.find(key, Pid::OFFSET), nullptr);
             const auto unit = millimetres ? AuthoredOverrideUnit::MILLIMETRE : AuthoredOverrideUnit::SPATIUM;
             EXPECT_EQ(tuplet->authored_overrides.find(key, Pid::OFFSET)->unit, unit);
@@ -4869,7 +4880,7 @@ TEST(Read, TupletNumberTextSurvivesDisplayDisposalAndLayout) {
             EXPECT_EQ(legacy_override_write(tuplet), before);
             ASSERT_TRUE((*document)->page_count());
             ASSERT_NE(tuplet->number(), nullptr);
-            EXPECT_EQ(tuplet->number()->get_property(Pid::TEXT), PropertyValue(String(u"chosen")));
+            EXPECT_EQ(tuplet->number()->xml_text(), String(u"chosen"));
             EXPECT_EQ(legacy_override_write(tuplet), before);
             ASSERT_EQ(tuplet->authored_overrides.entries.size(), entries.size());
             for (size_t i = 0; i < entries.size(); ++i) {
@@ -4881,6 +4892,8 @@ TEST(Read, TupletNumberTextSurvivesDisplayDisposalAndLayout) {
             auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
             ASSERT_TRUE(reopened) << reopened.error().message;
             auto *restored = to_chord(master_of(**reopened).first_measure()->first(SegmentType::CHORD_REST)->element(0))->tuplet();
+            ASSERT_NE(restored->authored_overrides.carrier(key), nullptr);
+            EXPECT_EQ(restored->authored_overrides.carrier(key)->legacy_eid.to_std_string(), "G_G");
             EXPECT_EQ(restored->authored_overrides.find(key, Pid::TEXT)->value, PropertyValue(String(u"chosen")));
             ASSERT_NE(restored->authored_overrides.find(key, Pid::OFFSET), nullptr);
             EXPECT_EQ(restored->authored_overrides.find(key, Pid::OFFSET)->unit, unit);
@@ -4995,7 +5008,7 @@ TEST(Read, ImportedDotColorAndColdVisibilitySurviveCloneAndLayout) {
     for (const std::string version : {"4.60", "5.00"}) {
         auto input = legacy_segment_fixture("");
         input.replace(input.find("5.00"), 4, version);
-        input.replace(input.find("<durationType>half</durationType>"), 33, "<durationType>quarter</durationType><dots>1</dots>");
+        input.replace(input.find("<durationType>half</durationType>"), 33, "<dots>1</dots><durationType>quarter</durationType>");
         input.insert(input.find("</Note>"), "<NoteDot><color r=\"10\" g=\"20\" b=\"30\" a=\"255\"/></NoteDot>");
         auto opened = g_engine->open(as_bytes(input));
         ASSERT_TRUE(opened) << opened.error().message;
@@ -5029,7 +5042,7 @@ TEST(Read, RestDotsStayColdUntilLayoutAndRespectSourceVisibility) {
         input.replace(input.find("5.00"), 4, version);
         const auto start = input.find("<Chord>");
         input.replace(start, input.find("</Chord>", start) + 8 - start,
-                      "<Rest><durationType>quarter</durationType><dots>1</dots>"
+                      "<Rest><dots>1</dots><durationType>quarter</durationType>"
                       "<NoteDot><color r=\"30\" g=\"20\" b=\"10\" a=\"255\"/></NoteDot></Rest>");
         auto opened = g_engine->open(as_bytes(input));
         ASSERT_TRUE(opened) << opened.error().message;
@@ -5044,6 +5057,100 @@ TEST(Read, RestDotsStayColdUntilLayoutAndRespectSourceVisibility) {
         EXPECT_EQ(rest->dot(0)->color(), muse::draw::Color(30, 20, 10));
         EXPECT_FALSE(rest->dot(0)->visible());
     }
+}
+
+TEST(Read, RetainedDotsFollowStaffRemoval) {
+    using namespace mu::engraving;
+    auto input = legacy_segment_fixture("");
+    input.replace(input.find("<durationType>half</durationType>"), 33, "<dots>1</dots><durationType>quarter</durationType>");
+    const auto second = input.find("<Chord>", input.find("</Chord>"));
+    input.replace(second, input.find("</Chord>", second) + 8 - second, "<Rest><dots>1</dots><durationType>quarter</durationType></Rest>");
+    input.insert(input.find("<Instrument"), "<Staff><StaffType group=\"pitched\"/></Staff>");
+    const auto start = input.find("<Staff id=\"1\">");
+    auto staff = input.substr(start, input.find("</Staff>", start) + 8 - start);
+    staff.replace(staff.find("id=\"1\""), 6, "id=\"2\"");
+    input.insert(input.find("<SpannerMap>"), staff);
+    auto opened = g_engine->open(as_bytes(input));
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto *segment = master.first_measure()->first(SegmentType::CHORD_REST);
+    auto *note = to_chord(segment->element(4))->notes().front();
+    auto *rest = to_rest(segment->next(SegmentType::CHORD_REST)->element(4));
+    ASSERT_TRUE((*opened)->page_count());
+    EXPECT_TRUE(std::ranges::none_of(note->children(), [](auto *item) { return item->is_note_dot(); }));
+    EXPECT_TRUE(std::ranges::none_of(rest->children(), [](auto *item) { return item->is_note_dot(); }));
+    const auto outline = (*opened)->outline();
+    ASSERT_TRUE(outline);
+    ASSERT_TRUE((*opened)->edit({{engrave::RemoveStaff{outline->parts.front().staves.front().id}}}));
+    ASSERT_TRUE((*opened)->render({.format = engrave::RenderFormat::SVG}));
+    ASSERT_NE(note->dot(0), nullptr);
+    ASSERT_NE(rest->dot(0), nullptr);
+    EXPECT_EQ(note->dot(0)->track(), 0u);
+    EXPECT_EQ(rest->dot(0)->track(), 0u);
+    EXPECT_NE(note->dot(0)->staff(), nullptr);
+    EXPECT_NE(rest->dot(0)->staff(), nullptr);
+}
+
+TEST(Read, SlashToggleRestoresDotsHiddenBeforeFirstLayout) {
+    using namespace mu::engraving;
+    auto input = legacy_segment_fixture("");
+    input.replace(input.find("<durationType>half</durationType>"), 33, "<dots>1</dots><durationType>quarter</durationType>");
+    input.insert(input.find("</Chord>"), "<Note><pitch>64</pitch><tpc>18</tpc></Note>");
+    auto opened = g_engine->open(as_bytes(input));
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    chord->set_slash(true, true);
+    ASSERT_TRUE((*opened)->page_count());
+    EXPECT_FALSE(chord->notes().back()->dot(0)->visible());
+    chord->set_slash(false, false);
+    ASSERT_TRUE((*opened)->page_count());
+    for (auto *note : chord->notes()) EXPECT_TRUE(note->dot(0)->visible());
+}
+
+TEST(Read, DotVisibilityFollowsAppearanceLinkedOwners) {
+    using namespace mu::engraving;
+    auto input = legacy_segment_fixture("");
+    input.replace(input.find("<durationType>half</durationType>"), 33, "<dots>1</dots><durationType>quarter</durationType>");
+    input.insert(input.find("</Note>"), "<NoteDot><visible>1</visible></NoteDot>");
+    auto opened = g_engine->open(as_bytes(input));
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    const auto outline = (*opened)->outline();
+    ASSERT_TRUE(outline);
+    ASSERT_TRUE((*opened)->edit({{engrave::GenerateExcerpts{{outline->parts.front().id}}}}));
+    auto *note = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0))->notes().front();
+    auto *part = master.excerpts().front()->excerpt_score();
+    auto *linked = to_chord(part->first_measure()->first(SegmentType::CHORD_REST)->element(0))->notes().front();
+    Transaction tx;
+    EditVisibility::undo_change_visible(tx, note, false);
+    EXPECT_FALSE(linked->authored_overrides.find({AuthoredChildRole::DOT}, Pid::VISIBLE)->value.to_bool());
+    linked->set_property(Pid::APPEARANCE_LINKED_TO_MASTER, false);
+    EditVisibility::undo_change_visible(tx, note, true);
+    EXPECT_FALSE(linked->authored_overrides.find({AuthoredChildRole::DOT}, Pid::VISIBLE)->value.to_bool());
+}
+
+TEST(Read, CrossMeasureDisplayDotsDoNotChangeMusicXmlDurations) {
+    using namespace mu::engraving;
+    auto input = legacy_segment_fixture("");
+    input.replace(input.find("<durationType>half</durationType>"), 33, "<durationType>quarter</durationType>");
+    input.replace(input.find("<durationType>half</durationType>"), 33, "<dots>1</dots><durationType>eighth</durationType>");
+    auto opened = g_engine->open(as_bytes(input));
+    ASSERT_TRUE(opened);
+    ASSERT_TRUE((*opened)->page_count());
+    auto *segment = master_of(**opened).first_measure()->first(SegmentType::CHORD_REST);
+    auto *first = to_chord(segment->element(0));
+    auto *second = to_chord(segment->next(SegmentType::CHORD_REST)->element(0));
+    first->set_cross_measure(CrossMeasure::FIRST);
+    first->set_cross_measure_duration_type(TDuration(Fraction(7, 16)));
+    second->set_cross_measure(CrossMeasure::SECOND);
+    const auto saved = (*opened)->export_score({.format = engrave::Format::MUSIC_XML});
+    ASSERT_TRUE(saved);
+    auto restored = g_engine->open(*saved, {.format = engrave::Format::MUSIC_XML});
+    ASSERT_TRUE(restored);
+    auto *actual = master_of(**restored).first_measure()->first(SegmentType::CHORD_REST);
+    EXPECT_EQ(to_chord(actual->element(0))->actual_dots(), 0);
+    EXPECT_EQ(to_chord(actual->next(SegmentType::CHORD_REST)->element(0))->actual_dots(), 1);
 }
 
 TEST(Read, ThirdDotEditKeepsPrecedingLegacyOrdinalCarriers) {

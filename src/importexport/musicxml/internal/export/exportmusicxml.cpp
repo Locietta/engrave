@@ -3795,7 +3795,7 @@ static Fraction time_modification(const Tuplet *const tuplet, const int tremolo 
 //   writeType
 //---------------------------------------------------------
 
-static void write_type(XmlWriter &xml, const Note *const note) {
+static int write_type(XmlWriter &xml, const Note *const note) {
     int dots = 0;
     const Fraction ratio = time_modification(note->chord()->tuplet());
 
@@ -3814,6 +3814,7 @@ static void write_type(XmlWriter &xml, const Note *const note) {
     } else {
         xml.tag("type", s);
     }
+    return dots;
 }
 
 //---------------------------------------------------------
@@ -3998,8 +3999,8 @@ void ExportMusicXml::chord(Chord *chord, staff_idx_t staff, const std::vector<Ly
 
         xml_.tag("voice", static_cast<int>(voice));
 
-        write_type(xml_, note);
-        for (uint32_t ordinal = 0; ordinal < uint32_t(chord->dots()); ++ordinal) {
+        const int dots = write_type(xml_, note);
+        for (uint32_t ordinal = 0; ordinal < uint32_t(dots); ++ordinal) {
             const AuthoredChildKey key{AuthoredChildRole::DOT, ordinal};
             String dot_tag = u"dot";
             if (const auto *visibility = note->authored_overrides.find(key, Pid::VISIBLE); visibility && !visibility->value.to_bool())

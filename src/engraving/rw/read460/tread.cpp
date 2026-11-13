@@ -1391,7 +1391,10 @@ void TRead::read(Tuplet *t, XmlReader &e, ReadContext &ctx) {
             number = Factory::create_text(t, TextStyleType::TUPLET);
             number->set_composition(true);
             Tuplet::reset_number_property(number);
-            bind_authored_child(*number, {AuthoredChildRole::TUPLET_NUMBER});
+            const AuthoredChildKey key{AuthoredChildRole::TUPLET_NUMBER};
+            // Anonymous numbers must stay anonymous across checkpoint reloads.
+            if (!t->authored_overrides.carrier(key)) t->authored_overrides.set_carrier({key, ElementType::TEXT});
+            bind_authored_child(*number, key);
             TRead::read(number, e, ctx);
             finish_authored_read(*number);
             t->read_number_style(*number);
