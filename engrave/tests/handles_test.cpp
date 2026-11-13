@@ -66,6 +66,7 @@
 #include "engraving/dom/tie.h"
 #include "engraving/dom/tremolotwochord.h"
 #include "engraving/editing/addremoveelement.h"
+#include "engraving/editing/editpagelocks.h"
 #include "engraving/editing/edittremolo.h"
 #include "engraving/editing/transaction/transaction.h"
 #include "engraving/infrastructure/eidregister.h"
@@ -446,7 +447,7 @@ TEST(NativeSave, AuthoredDividerSurvivesDiscardAndColdSave) {
         const std::string source = std::string("<museScore version=\"") + version + R"("><Score><Division>480</Division>
 <Style><dividerLeft>1</dividerLeft></Style>
 <Part><Staff id="1"/><Instrument><trackName>Piano</trackName></Instrument></Part>
-<SystemDividers><system idx="0"><SystemDivider type="left"><symbolsSize>1.75</symbolsSize>
+<SystemDividers><system idx="0"><SystemDivider type="left"><name>systemDividerLong</name><symbolsSize>1.75</symbolsSize>
 <symbolAngle>12</symbolAngle><offset x="2" y="-3"/></SystemDivider></system></SystemDividers>
 <Staff id="1"><Measure><LayoutBreak><subtype>line</subtype></LayoutBreak><voice>
 <TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig><Rest><durationType>whole</durationType></Rest></voice></Measure>
@@ -458,11 +459,20 @@ TEST(NativeSave, AuthoredDividerSurvivesDiscardAndColdSave) {
             muse::io::Buffer buffer;
             buffer.open(muse::io::IODevice::WRITE_ONLY);
             rw::WriteInOutData inout(&master);
+            inout.ctx.set_inline_style(true);
             EXPECT_TRUE(rw::RWRegister::writer()->write_score(&master, &buffer, &inout));
             return std::string(reinterpret_cast<const char *>(buffer.data().const_data()), buffer.data().size());
         };
         const auto cold = write();
         EXPECT_NE(cold.find("<symbolsSize>1.75</symbolsSize>"), std::string::npos);
+        EXPECT_NE(cold.find("<name>systemDividerLong</name>"), std::string::npos);
+        EXPECT_EQ(master.system_divider(0, SystemDividerType::LEFT)->system(), nullptr);
+        auto reopened = g_engine->open(as_bytes(cold), {.format = engrave::Format::MSCX});
+        ASSERT_TRUE(reopened);
+        auto &reloaded = master_of(**reopened);
+        reloaded.ensure_layout();
+        ASSERT_NE(reloaded.systems().front()->system_divider_left(), nullptr);
+        EXPECT_EQ(reloaded.systems().front()->system_divider_left()->sym(), SymId::SYSTEM_DIVIDER_LONG);
         EXPECT_NE(cold.find("<symbolAngle>12</symbolAngle>"), std::string::npos);
         EXPECT_TRUE(master.pages().empty());
         EXPECT_EQ(master.layout_state.whole_count, 0u);
@@ -471,6 +481,7 @@ TEST(NativeSave, AuthoredDividerSurvivesDiscardAndColdSave) {
             ASSERT_GE(master.systems().size(), 2u);
             const auto *divider = master.systems().front()->system_divider_left();
             ASSERT_NE(divider, nullptr);
+            EXPECT_EQ(divider->sym(), SymId::SYSTEM_DIVIDER_LONG);
             EXPECT_DOUBLE_EQ(divider->symbols_size(), 1.75);
             EXPECT_DOUBLE_EQ(divider->sym_angle(), 12.0);
             EXPECT_DOUBLE_EQ(divider->offset().x() / master.style().spatium(), 2.0);
@@ -480,6 +491,25 @@ TEST(NativeSave, AuthoredDividerSurvivesDiscardAndColdSave) {
             EXPECT_EQ(write(), cold);
         }
     }
+}
+
+TEST(Handles, PageLockEditsRequireAvailableOutput) {
+    using namespace mu::engraving;
+    auto document = open_path(g_source_root / "tests/data/inputs/golden/linked_parts.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    master.ensure_layout();
+    master.layout_data_store()->clear();
+    const auto layouts = master.layout_state.whole_count + master.layout_state.range_count;
+    master.cmd_select_all();
+    Transaction tx;
+    EXPECT_THROW(EditPageLocks::toggle_score_lock(tx, &master), std::logic_error);
+    EXPECT_THROW(EditPageLocks::add_remove_page_locks(tx, &master, 0, true), std::logic_error);
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, layouts);
+    master.ensure_layout();
+    EditPageLocks::toggle_score_lock(tx, &master);
+    ASSERT_NE(master.page_locks()->lock_starting_at(master.first()), nullptr);
+    EXPECT_EQ(master.page_locks()->lock_starting_at(master.first())->end_mb(), master.last());
 }
 
 TEST(Handles, PageQueriesFollowRangeLayoutAndOutputDiscard) {

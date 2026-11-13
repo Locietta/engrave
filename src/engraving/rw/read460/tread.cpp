@@ -2083,6 +2083,7 @@ void TRead::read(Symbol *sym, XmlReader &e, ReadContext &ctx) {
                 }
             }
             sym->set_sym(sym_id);
+            if (sym->is_system_divider()) to_system_divider(sym)->set_authored_sym(sym_id);
             remember_authored_property(*sym, Pid::SYMBOL, PropertyValue::from_value(sym_id), PropertyFlags::NOSTYLE);
         } else if (tag == "font") {
             read_property(sym, e, ctx, Pid::SCORE_FONT);
