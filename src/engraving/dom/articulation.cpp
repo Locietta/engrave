@@ -125,30 +125,24 @@ void Articulation::set_up(bool val) {
     Articulation::LayoutData *ldata = mutldata();
     ldata->up = val;
 
-    //! NOTE member of Articulation symId_ - this is `given` data
-    //! member of LayoutData symId_ - this is layout data
-    //! I would not like to change the `given` data here, but they are changing for backward compatibility
-    //! Even better, I wouldn’t want symId to be `given` data,
-    //! it would be better if there was some type,
-    //! and from it we would already figure out how (with what symbol) to display it
-
+    SymId placed_sym = sym_id_;
     bool dup = direction_ == DirectionV::AUTO ? val : direction_ == DirectionV::UP;
     String s = String::from_ascii(SymNames::name_for_sym_id(sym_id_).ascii());
     if (s.ends_with(!dup ? u"Above" : u"Below")) {
         String s2 = s.left(s.size() - 5) + (dup ? u"Above" : u"Below");
-        sym_id_ = SymNames::sym_id_by_name(s2);
+        placed_sym = SymNames::sym_id_by_name(s2);
     } else if (s.ends_with(u"Turned")) {
         String s2 = dup ? s.left(s.size() - 6) : s;
-        sym_id_ = SymNames::sym_id_by_name(s2);
+        placed_sym = SymNames::sym_id_by_name(s2);
     } else if (!dup) {
         String s2 = s + u"Turned";
         SymId sym = SymNames::sym_id_by_name(s2);
         if (sym != SymId::NO_SYM) {
-            sym_id_ = sym;
+            placed_sym = sym;
         }
     }
 
-    ldata->sym_id = sym_id_;
+    ldata->sym_id = placed_sym;
 }
 
 //---------------------------------------------------------

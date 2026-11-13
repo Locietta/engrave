@@ -61,6 +61,16 @@ public:
     Dynamic(DummyParentOr<Segment> parent);
     Dynamic(const Dynamic &);
 
+    struct LayoutData : TextBase::LayoutData {
+        std::optional<PlacementV> voice_placement;
+    };
+    DECLARE_LAYOUTDATA_METHODS(Dynamic)
+
+    PlacementV placement() const override {
+        const auto *ld = ldata();
+        return ld && ld->voice_placement ? *ld->voice_placement : EngravingItem::placement();
+    }
+
     Dynamic *clone() const override { return new Dynamic(*this); }
 
     Segment *segment() const { return (Segment *) ownership_parent(); }

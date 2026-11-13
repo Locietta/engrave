@@ -496,6 +496,8 @@ public:
     struct LayoutData : public EngravingItem::LayoutData {
         std::vector<TextBlock> blocks;
         bool layout_invalid = true;
+        std::optional<AlignH> position;
+        std::optional<AlignV> vertical_align;
 
         RectF frame;
 

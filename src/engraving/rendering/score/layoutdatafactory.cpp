@@ -15,9 +15,13 @@
 #include "dom/chordline.h"
 #include "dom/clef.h"
 #include "dom/deadslapped.h"
+#include "dom/dynamic.h"
+#include "dom/expression.h"
+#include "dom/fermata.h"
 #include "dom/figuredbass.h"
 #include "dom/fret.h"
 #include "dom/guitarbend.h"
+#include "dom/hairpin.h"
 #include "dom/harmony.h"
 #include "dom/indicatoricon.h"
 #include "dom/instrumentname.h"
@@ -64,9 +68,9 @@ decltype(auto) dispatch_layout_data(ElementType type, Action &&action) {
         case ElementType::TREMOLO_TWOCHORD: return action.template operator()<BeamBase::LayoutData>();
         case ElementType::BEND: return action.template operator()<Bend::LayoutData>();
         case ElementType::BRACKET: return action.template operator()<Bracket::LayoutData>();
+        case ElementType::DYNAMIC: return action.template operator()<Dynamic::LayoutData>();
+        case ElementType::EXPRESSION: return action.template operator()<Expression::LayoutData>();
         case ElementType::CAPO:
-        case ElementType::DYNAMIC:
-        case ElementType::EXPRESSION:
         case ElementType::FINGERING:
         case ElementType::GUITAR_BEND_TEXT:
         case ElementType::HAMMER_ON_PULL_OFF_TEXT:
@@ -95,6 +99,8 @@ decltype(auto) dispatch_layout_data(ElementType type, Action &&action) {
         case ElementType::DEAD_SLAPPED: return action.template operator()<DeadSlapped::LayoutData>();
         case ElementType::FIGURED_BASS_ITEM: return action.template operator()<FiguredBassItem::LayoutData>();
         case ElementType::FIGURED_BASS: return action.template operator()<FiguredBass::LayoutData>();
+        case ElementType::FERMATA: return action.template operator()<Fermata::LayoutData>();
+        case ElementType::HAIRPIN: return action.template operator()<Hairpin::LayoutData>();
         case ElementType::FRET_DIAGRAM: return action.template operator()<FretDiagram::LayoutData>();
         case ElementType::GRADUAL_TEMPO_CHANGE_SEGMENT:
         case ElementType::HAIRPIN_SEGMENT:

@@ -36,6 +36,16 @@ public:
     Expression(DummyParentOr<Segment> parent);
     Expression(const Expression &expression);
 
+    struct LayoutData : TextBase::LayoutData {
+        std::optional<PlacementV> voice_placement;
+    };
+    DECLARE_LAYOUTDATA_METHODS(Expression)
+
+    PlacementV placement() const override {
+        const auto *ld = ldata();
+        return ld && ld->voice_placement ? *ld->voice_placement : EngravingItem::placement();
+    }
+
     Expression *clone() const override { return new Expression(*this); }
 
     Segment *segment() const { return to_segment(ownership_parent()); }

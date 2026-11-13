@@ -228,7 +228,7 @@ public:
     virtual PointF default_pos() const;
     virtual Sid default_pos_sid() const;
 
-    PlacementV placement() const;
+    virtual PlacementV placement() const;
 
     void set_placement(PlacementV val) { set_flag(ElementFlag::PLACE_ABOVE, !bool(val)); }
 
@@ -661,6 +661,7 @@ public:
     void check_voice_assignment_compatible_with_track();
     virtual bool element_applies_to_track(const track_idx_t ref_track) const;
     void set_placement_based_on_voice_assignment(DirectionV styled_direction);
+    PlacementV placement_based_on_voice_assignment(DirectionV styled_direction) const;
     //! ---------------------
 
 protected:

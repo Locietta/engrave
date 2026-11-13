@@ -91,6 +91,16 @@ private:
 public:
     Hairpin(DummyParentOr<EngravingItem> parent);
 
+    struct LayoutData : TextLineBase::LayoutData {
+        std::optional<PlacementV> voice_placement;
+    };
+    DECLARE_LAYOUTDATA_METHODS(Hairpin)
+
+    PlacementV placement() const override {
+        const auto *ld = ldata();
+        return ld && ld->voice_placement ? *ld->voice_placement : EngravingItem::placement();
+    }
+
     Hairpin *clone() const override { return new Hairpin(*this); }
 
     Anchor anchor() const override { return Anchor::SEGMENT; }
