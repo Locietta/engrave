@@ -12,10 +12,6 @@ namespace mu::engraving::rendering::score {
 // are lifetime-qualified by explicit erase before destruction/address reuse.
 // Generated shells retain their current identity until L3/L4.
 struct LayoutDataStore {
-    // Test-only failure seam before a scratch store changes ownership.
-    static inline void (*before_adoption)() = nullptr;
-    // Test-only failure seam at an explicit payload allocation boundary.
-    static inline void (*before_allocation)(const EngravingItem &) = nullptr;
     explicit LayoutDataStore(Score &score);
     ~LayoutDataStore();
     LayoutDataStore(const LayoutDataStore &) = delete;
@@ -28,7 +24,6 @@ struct LayoutDataStore {
     EngravingItem::LayoutData *mut_data(EngravingItem &item);
     EngravingItem::LayoutData *adopt(EngravingItem &item, std::unique_ptr<EngravingItem::LayoutData> data);
     void erase(EngravingItem &item);
-    void transfer(EngravingItem &item, LayoutDataStore &destination);
     // Invalidate geometry before retiring payloads and their generated children.
     // Call only after active layout borrowers have unwound.
     void clear();

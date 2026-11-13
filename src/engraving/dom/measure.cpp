@@ -1745,7 +1745,12 @@ bool Measure::has_voices(staff_idx_t staff_idx, Fraction stick, Fraction len, bo
                     Chord *c = to_chord(cr);
 
                     // consider a chord visible if stem, hook(s) or beam(s) are visible
-                    if ((c->stem() && c->stem()->visible()) || (c->hook() && c->hook()->visible()) || (c->beam() && c->beam()->visible())) {
+                    const auto visible = [&](AuthoredChildRole role) {
+                        const auto *entry = c->authored_overrides.find({role}, Pid::VISIBLE);
+                        return !entry || entry->value.to_bool();
+                    };
+                    if ((c->should_have_stem() && visible(AuthoredChildRole::STEM)) ||
+                        (c->should_have_hook() && visible(AuthoredChildRole::HOOK)) || (c->beam() && c->beam()->visible())) {
                         v = true;
                     } else {
                         // or any of its notes

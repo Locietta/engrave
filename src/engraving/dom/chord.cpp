@@ -259,14 +259,11 @@ std::vector<int> Chord::note_distances() const {
 //---------------------------------------------------------
 
 Chord::Chord(DummyParentOr<Segment> parent) : ChordRest(ElementType::CHORD, parent) {
-    stem_ = 0;
-    hook_ = 0;
     stem_direction_ = DirectionV::AUTO;
     arpeggio_ = 0;
     span_arpeggio_ = 0;
     ends_note_anchored_line_ = false;
     note_type_ = NoteType::NORMAL;
-    stem_slash_ = 0;
     no_stem_ = false;
     show_stem_slash_ = note_type_ == NoteType::ACCIACCATURA;
     play_event_type_ = PlayEventType::AUTO;
@@ -300,11 +297,8 @@ Chord::Chord(const Chord &c, bool link) : ChordRest(c, link) {
         na->set_track(track());
         articulations_.push_back(na);
     }
-    stem_ = 0;
-    hook_ = 0;
     ends_note_anchored_line_ = false;
     arpeggio_ = 0;
-    stem_slash_ = 0;
 
     span_arpeggio_ = c.span_arpeggio_;
     grace_index_ = c.grace_index_;
@@ -317,15 +311,6 @@ Chord::Chord(const Chord &c, bool link) : ChordRest(c, link) {
     cross_measure_ = CrossMeasure::UNKNOWN;
     combine_voice_ = c.combine_voice_;
 
-    if (c.stem_) {
-        add(Factory::copy_stem(*(c.stem_)));
-    }
-    if (c.hook_) {
-        add(new Hook(*(c.hook_)));
-    }
-    if (c.stem_slash_) {
-        add(Factory::copy_stem_slash(*(c.stem_slash_)));
-    }
     if (c.arpeggio_) {
         Arpeggio *a = c.arpeggio_->is_chord_bracket() ? new ChordBracket(*to_chord_bracket(c.arpeggio_)) : new Arpeggio(*(c.arpeggio_));
         add(a);
@@ -445,9 +430,6 @@ Chord::~Chord() {
     }
 
     delete arpeggio_;
-    delete stem_slash_;
-    delete stem_;
-    delete hook_;
     muse::delete_all(grace_notes_);
     muse::delete_all(notes_);
     muse::delete_all(note_parens_);
@@ -626,16 +608,7 @@ void Chord::add(EngravingItem *e) {
         case ElementType::TREMOLO_TWOCHORD: set_tremolo_two_chord(item_cast<TremoloTwoChord *>(e)); break;
         case ElementType::TREMOLO_SINGLECHORD: set_tremolo_single_chord(item_cast<TremoloSingleChord *>(e)); break;
         case ElementType::GLISSANDO: ends_note_anchored_line_ = true; break;
-        case ElementType::STEM:
-            assert(!stem_);
-            stem_ = to_stem(e);
-            break;
-        case ElementType::HOOK: hook_ = to_hook(e); break;
         case ElementType::CHORDLINE: add_el(e); break;
-        case ElementType::STEM_SLASH:
-            assert(!stem_slash_);
-            stem_slash_ = to_stem_slash(e);
-            break;
         case ElementType::CHORD: {
             Chord *gc = to_chord(e);
             assert(gc->note_type() != NoteType::NORMAL);
@@ -712,15 +685,6 @@ void Chord::remove(EngravingItem *e) {
         case ElementType::TREMOLO_TWOCHORD: set_tremolo_two_chord(nullptr); break;
         case ElementType::TREMOLO_SINGLECHORD: set_tremolo_single_chord(nullptr); break;
         case ElementType::GLISSANDO: ends_note_anchored_line_ = false; break;
-        case ElementType::STEM: stem_ = 0; break;
-        case ElementType::HOOK: hook_ = 0; break;
-        case ElementType::STEM_SLASH:
-            assert(stem_slash_);
-            if (stem_slash_->selected() && score()) {
-                score()->deselect(stem_slash_);
-            }
-            stem_slash_ = 0;
-            break;
         case ElementType::CHORDLINE: remove_el(e); break;
         case ElementType::CHORD: {
             auto i = std::find(grace_notes_.begin(), grace_notes_.end(), to_chord(e));
@@ -840,14 +804,10 @@ bool Chord::all_elements_invisible() const {
 //---------------------------------------------------------
 
 void Chord::process_siblings(std::function<void(EngravingItem *)> func, bool include_temporary_siblings) const {
-    if (hook_) {
-        func(hook_);
-    }
-    if (stem_) {
-        func(stem_);
-    }
-    if (stem_slash_) {
-        func(stem_slash_);
+    if (include_temporary_siblings) {
+        if (stem()) func(stem());
+        if (hook()) func(hook());
+        if (stem_slash()) func(stem_slash());
     }
     if (arpeggio_) {
         func(arpeggio_);
@@ -929,7 +889,12 @@ Chord *Chord::next() const {
     return nullptr;
 }
 
-Chord::LayoutData::~LayoutData() { muse::delete_all(ledger_lines); }
+Chord::LayoutData::~LayoutData() {
+    delete stem;
+    delete hook;
+    delete stem_slash;
+    muse::delete_all(ledger_lines);
+}
 
 void Chord::resize_ledger_lines_to(size_t new_size) {
     auto &lines = mutldata()->ledger_lines;
@@ -949,10 +914,10 @@ void Chord::resize_ledger_lines_to(size_t new_size) {
 }
 
 void Chord::set_beam_extension(double extension) {
-    if (stem_) {
-        double base_length = stem_->absolute_from_spatium(stem_->base_length());
-        stem_->set_base_length(std::max(Spatium::from_absolute(base_length + extension, spatium()), 0.0_sp));
-        default_stem_length_ = std::max(default_stem_length_ + extension, stem_->absolute_from_spatium(stem_->base_length()));
+    if (stem()) {
+        double base_length = stem()->absolute_from_spatium(stem()->base_length());
+        stem()->set_base_length(std::max(Spatium::from_absolute(base_length + extension, spatium()), 0.0_sp));
+        default_stem_length_ = std::max(default_stem_length_ + extension, stem()->absolute_from_spatium(stem()->base_length()));
     }
 }
 
@@ -967,31 +932,6 @@ bool Chord::should_have_stem() const {
 }
 
 bool Chord::should_have_hook() const { return should_have_stem() && duration_type().hooks() > 0 && !beam() && !tremolo_two_chord(); }
-
-void Chord::create_stem() {
-    Stem *stem = Factory::create_stem(this);
-    stem->set_generated(true);
-    //! score()->undoAddElement calls add(), which assigns this created stem to _stem
-    score()->do_undo_add_element(stem);
-}
-
-void Chord::remove_stem() {
-    if (stem_) {
-        score()->undo_remove_element(stem_);
-    }
-    if (hook_) {
-        score()->undo_remove_element(hook_);
-    }
-    if (stem_slash_) {
-        score()->undo_remove_element(stem_slash_);
-    }
-}
-
-void Chord::create_hook() {
-    Hook *hook = new Hook(this);
-    hook->set_generated(true);
-    score()->do_undo_add_element(hook);
-}
 
 //---------------------------------------------------------
 //    underBeam: true, if grace note is placed under a beam.
@@ -1140,17 +1080,11 @@ PointF Chord::page_pos() const {
 //---------------------------------------------------------
 
 void Chord::scan_elements(std::function<void(EngravingItem *)> func) {
+    if (stem()) func(stem());
+    if (hook()) func(hook());
+    if (stem_slash()) func(stem_slash());
     for (Articulation *a : articulations_) {
         a->scan_elements(func);
-    }
-    if (hook_) {
-        func(hook_);
-    }
-    if (stem_) {
-        func(stem_);
-    }
-    if (stem_slash_) {
-        func(stem_slash_);
     }
     if (arpeggio_) {
         func(arpeggio_);
@@ -1359,15 +1293,6 @@ void Chord::local_spatium_changed(double old_value, double new_value) {
     ChordRest::local_spatium_changed(old_value, new_value);
     for (EngravingItem *e : grace_notes()) {
         e->local_spatium_changed(old_value, new_value);
-    }
-    if (hook_) {
-        hook_->local_spatium_changed(old_value, new_value);
-    }
-    if (stem_) {
-        stem_->local_spatium_changed(old_value, new_value);
-    }
-    if (stem_slash_) {
-        stem_slash_->local_spatium_changed(old_value, new_value);
     }
     if (arpeggio_) {
         arpeggio_->local_spatium_changed(old_value, new_value);

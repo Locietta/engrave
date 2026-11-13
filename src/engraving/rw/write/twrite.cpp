@@ -437,11 +437,6 @@ void write_authored_child(const EngravingItem *owner, AuthoredChildKey child, co
         if (const auto *entry = table.find(child, Pid::SYMBOL)) xml.tag("name", SymNames::name_for_sym_id(entry->value.value<SymId>()));
         if (const auto *entry = table.find(child, Pid::SCORE_FONT)) xml.tag("font", entry->value.value<String>());
     }
-    if (child.role == AuthoredChildRole::HOOK) {
-        if (const auto *hook = static_cast<const Chord *>(owner)->hook()) {
-            for (const auto *leaf : hook->leafs()) TWrite::write_item(leaf, xml, ctx);
-        }
-    }
     write_authored_common(owner, child, xml, ctx);
     if (child.role == AuthoredChildRole::STEM) {
         const auto length = static_cast<const Chord *>(owner)->stem_user_length();
@@ -1162,21 +1157,15 @@ void TWrite::write(const Chord *item, XmlWriter &xml, WriteContext &ctx) {
         xml.tag("noStem", item->no_stem());
     } else if (overrides.has_entries({AuthoredChildRole::STEM}) || !item->stem_user_length().is_zero()) {
         write_authored_child(item, {AuthoredChildRole::STEM}, "Stem", xml, ctx);
-    } else if (item->stem() && item->stem()->is_user_modified()) {
-        write(item->stem(), xml, ctx);
     }
     if (overrides.has_entries({AuthoredChildRole::HOOK})) {
         write_authored_child(item, {AuthoredChildRole::HOOK}, "Hook", xml, ctx);
-    } else if (item->hook() && item->hook()->is_user_modified()) {
-        write(item->hook(), xml, ctx);
     }
     if (item->show_stem_slash() != item->property_default(Pid::SHOW_STEM_SLASH).to_bool()) {
         xml.tag("showStemSlash", item->show_stem_slash());
     }
     if (overrides.has_entries({AuthoredChildRole::STEM_SLASH})) {
         write_authored_child(item, {AuthoredChildRole::STEM_SLASH}, "StemSlash", xml, ctx);
-    } else if (item->stem_slash() && item->stem_slash()->is_user_modified()) {
-        write(item->stem_slash(), xml, ctx);
     }
     write_property(item, xml, Pid::STEM_DIRECTION);
 

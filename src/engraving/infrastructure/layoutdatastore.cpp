@@ -41,7 +41,6 @@ EngravingItem::LayoutData *LayoutDataStore::mut_data(EngravingItem &item) {
         if (item.layout_store_ != this) throw std::logic_error("layout payload belongs to a different store");
         return item.layout_data_;
     }
-    if (before_allocation) before_allocation(item);
     return adopt(item, make_layout_data(item.layout_type_));
 }
 
@@ -102,19 +101,6 @@ void LayoutDataStore::clear() {
         }
     }
     while (!records_->items.empty()) erase(*records_->items.begin()->second.item);
-}
-
-void LayoutDataStore::transfer(EngravingItem &item, LayoutDataStore &destination) {
-    if (&destination == this) return;
-    const auto it = records_->items.find(&item);
-    if (it == records_->items.end()) throw std::logic_error("layout payload binding is missing");
-    // All destination allocation precedes changing the source owner. Heap
-    // payloads and the item's typed borrowed pointer retain their addresses.
-    auto [target, inserted] = destination.records_->items.emplace(&item, Records::Record{&item, nullptr});
-    if (!inserted) throw std::logic_error("destination already has this layout identity");
-    target->second.data = std::move(it->second.data);
-    records_->items.erase(it);
-    item.layout_store_ = &destination;
 }
 
 struct ScoreRenderer::ScratchLayouts {

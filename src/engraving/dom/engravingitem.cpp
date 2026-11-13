@@ -2212,12 +2212,7 @@ EngravingItem::LayoutData *EngravingItem::mutldata() {
 
 void EngravingItem::transfer_layout_data(Score *destination) {
     if (!layout_store_ || layout_store_->score() == destination) return;
-    if (!destination) {
-        layout_store_->erase(*this);
-        return;
-    }
-    auto &target = destination->renderer()->layout_data_store(*destination);
-    layout_store_->transfer(*this, target);
+    layout_store_->erase(*this);
 }
 
 bool EngravingItem::element_applies_to_track(const track_idx_t element_track, const track_idx_t ref_track,

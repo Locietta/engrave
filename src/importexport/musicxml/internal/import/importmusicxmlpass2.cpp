@@ -7245,22 +7245,18 @@ Note *MusicXmlParserPass2::note(const String &part_id, Measure *measure, const F
             note->set_head_scheme(head_scheme);
         }
         color_item(note, note_color);
-        Stem *stem = c->stem();
-        if (!stem) {
-            stem = Factory::create_stem(c);
-            color_item(stem, stem_color);
-            if (!stem_color.is_valid()) {
-                color_item(stem, note_color);
-            }
-            c->add(stem);
-        }
+        const auto color = stem_color.is_valid() ? stem_color : note_color;
+        if (color.is_valid()) c->authored_overrides.set({{AuthoredChildRole::STEM}, Pid::COLOR, color, PropertyFlags::UNSTYLED});
         set_note_head(note, notehead_filled);
         if (notehead_parentheses) {
             note->set_parentheses_mode(ParenthesesMode::BOTH);
         }
         color_item(note, notehead_color);
         note->set_visible(has_head && print_object);
-        stem->set_visible(print_object);
+        if (!print_object)
+            c->authored_overrides.set({{AuthoredChildRole::STEM}, Pid::VISIBLE, false});
+        else
+            c->authored_overrides.erase({AuthoredChildRole::STEM}, Pid::VISIBLE);
 
         if (!grace) {
             // regular note

@@ -640,12 +640,7 @@ void CompatUtils::reset_stem_lengths_for_two_note_trems(MasterScore *master_scor
                     }
                     Chord *chord = to_chord(item);
                     TremoloTwoChord *trem = chord->tremolo_two_chord();
-                    Stem *stem = chord->stem();
-                    if (stem && trem) {
-                        if (!stem->user_length().is_zero()) {
-                            stem->set_user_length(0_sp);
-                        }
-                    }
+                    if (trem) chord->set_stem_user_length(0_sp);
                 }
             }
         }
