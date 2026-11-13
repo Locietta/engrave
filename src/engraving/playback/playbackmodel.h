@@ -135,7 +135,6 @@ private:
 
     bool has_to_reload_tracks(const ScoreChanges &changes) const;
     bool has_to_reload_score(const ScoreChanges &changes) const;
-    bool has_automation_change(const ScoreChanges &changes) const;
 
     void clear_expired_tracks();
     void clear_expired_events(const int tick_from, const int tick_to, const track_idx_t track_from, const track_idx_t track_to,

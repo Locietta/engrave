@@ -67,22 +67,6 @@ public:
     UNDO_CHANGED_OBJECTS({chord_rest})
 };
 
-struct SwapCR : UndoableCommand {
-private:
-
-    ChordRest *cr1 = nullptr;
-    ChordRest *cr2 = nullptr;
-
-    void flip() override;
-
-public:
-    SwapCR(ChordRest *a, ChordRest *b) : cr1(a), cr2(b) {}
-
-    UNDO_TYPE(CommandType::SWAP_CR)
-    UNDO_NAME("SwapCR")
-    UNDO_CHANGED_OBJECTS({cr1, cr2})
-};
-
 struct ChangeSpanArpeggio : UndoableCommand {
 private:
 

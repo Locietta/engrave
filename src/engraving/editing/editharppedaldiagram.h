@@ -42,21 +42,4 @@ public:
     std::vector<EngravingObject *> object_items() const override;
 };
 
-struct ChangeSingleHarpPedal : UndoableCommand {
-private:
-
-    HarpPedalDiagram *diagram;
-    HarpStringType type;
-    PedalPosition pos;
-
-    void flip() override;
-
-public:
-    ChangeSingleHarpPedal(HarpPedalDiagram *input_diagram, HarpStringType input_type, PedalPosition input_pos)
-        : diagram(input_diagram), type(input_type), pos(input_pos) {}
-
-    UNDO_NAME("ChangeSingleHarpPedal")
-    //    UNDO_CHANGED_OBJECTS({ diagram });
-    std::vector<EngravingObject *> object_items() const override;
-};
 } // namespace mu::engraving

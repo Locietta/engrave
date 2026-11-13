@@ -62,37 +62,3 @@ std::vector<EngravingObject *> ChangeHarpPedalState::object_items() const {
     }
     return objs;
 }
-
-//---------------------------------------------------------
-//   ChangeSingleHarpPedal
-//---------------------------------------------------------
-
-void ChangeSingleHarpPedal::flip() {
-    HarpStringType f_type = type;
-    PedalPosition f_pos = diagram->get_pedal_state()[type];
-    if (f_pos == pos) {
-        return;
-    }
-
-    diagram->set_pedal(type, pos);
-    type = f_type;
-    pos = f_pos;
-
-    diagram->trigger_layout();
-}
-
-std::vector<EngravingObject *> ChangeSingleHarpPedal::object_items() const {
-    Part *part = diagram->origin_part();
-    std::vector<EngravingObject *> objs{diagram};
-    if (!part) {
-        return objs;
-    }
-
-    HarpPedalDiagram *next_diagram = part->next_harp_diagram(diagram->tick());
-    if (next_diagram) {
-        objs.push_back(next_diagram);
-    } else {
-        objs.push_back(Navigation::last_element(diagram->score()));
-    }
-    return objs;
-}

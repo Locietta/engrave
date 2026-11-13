@@ -26,39 +26,6 @@
 #include "transaction/undoablecommand.h"
 
 namespace mu::engraving {
-struct ChangeMetaTags : UndoableCommand {
-private:
-
-    Score *score = nullptr;
-    std::map<String, String> meta_tags;
-
-    void flip() override;
-
-public:
-    ChangeMetaTags(Score *s, const std::map<String, String> &m) : score(s), meta_tags(m) {}
-
-    UNDO_TYPE(CommandType::CHANGE_META_INFO)
-    UNDO_NAME("ChangeMetaTags")
-    UNDO_CHANGED_OBJECTS({score})
-};
-
-struct ChangeMetaText : UndoableCommand {
-private:
-
-    Score *score = nullptr;
-    String id;
-    String text;
-
-    void flip() override;
-
-public:
-    ChangeMetaText(Score *s, const String &i, const String &t) : score(s), id(i), text(t) {}
-
-    UNDO_TYPE(CommandType::CHANGE_META_INFO)
-    UNDO_NAME("ChangeMetaText")
-    UNDO_CHANGED_OBJECTS({score})
-};
-
 struct ChangeScoreOrder : UndoableCommand {
 private:
 
