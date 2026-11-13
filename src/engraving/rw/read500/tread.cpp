@@ -2245,12 +2245,11 @@ bool TRead::read_properties(Chord *ch, XmlReader &e, ReadContext &ctx) {
     } else if (tag == "Stem") {
         Stem *s = Factory::create_stem(ch);
         TRead::read(s, e, ctx);
-        ch->add(s);
+        delete s;
     } else if (tag == "Hook") {
         Hook *hook = new Hook(ch);
         TRead::read(hook, e, ctx);
-        ch->set_hook(hook);
-        ch->add(hook);
+        delete hook;
     } else if (tag == "appoggiatura") {
         ch->set_note_type(NoteType::APPOGGIATURA);
         e.read_next();
@@ -2278,7 +2277,7 @@ bool TRead::read_properties(Chord *ch, XmlReader &e, ReadContext &ctx) {
     } else if (tag == "StemSlash") {
         StemSlash *ss = Factory::create_stem_slash(ch);
         TRead::read(ss, e, ctx);
-        ch->add(ss);
+        delete ss;
     } else if (TRead::read_property(ch, tag, e, ctx, Pid::STEM_DIRECTION)) {
     } else if (tag == "noStem") {
         ch->set_no_stem(e.read_int());

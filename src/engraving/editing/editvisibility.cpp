@@ -132,12 +132,17 @@ static void undo_change_note_visibility(Note *note, bool visible) {
 
     for (const Chord *chord : chords) {
         for (const EngravingObject *obj : chord->link_list()) {
-            const Chord *linked_chord = to_chord(obj);
+            Chord *linked_chord = to_chord(const_cast<EngravingObject *>(obj));
             const bool chord_has_visible_note_value = chord_has_visible_note(linked_chord);
             // note visibility can differ between scores, so check this score's own beam
             const Beam *linked_beam = linked_chord->beam();
             const bool beam_has_visible_note_value = chord_has_visible_note_value || (linked_beam && beam_has_visible_note(linked_beam));
+            for (auto role : {AuthoredChildRole::STEM, AuthoredChildRole::HOOK, AuthoredChildRole::STEM_SLASH}) {
+                const bool value = beam && role == AuthoredChildRole::STEM ? beam_has_visible_note_value : chord_has_visible_note_value;
+                linked_chord->authored_overrides.set({{role}, Pid::VISIBLE, value});
+            }
             for (EngravingObject *child : linked_chord->get_children()) {
+                if (child->is_stem() || child->is_hook() || child->is_stem_slash()) continue;
                 const ElementType type = child->type();
 
                 if (muse::contains(ignored_types, type)) {

@@ -567,15 +567,6 @@ void Selection::append_chord_rest(ChordRest *cr) {
     if (chord->beam() && !muse::contains(el_, static_cast<EngravingItem *>(chord->beam()))) {
         el_.push_back(chord->beam());
     }
-    if (chord->stem()) {
-        el_.push_back(chord->stem());
-    }
-    if (chord->hook()) {
-        el_.push_back(chord->hook());
-    }
-    if (chord->stem_slash()) {
-        el_.push_back(chord->stem_slash());
-    }
 }
 
 void Selection::append_tuplet_hierarchy(Tuplet *innermost_tuplet) {

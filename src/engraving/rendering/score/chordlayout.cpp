@@ -282,7 +282,8 @@ void ChordLayout::layout_pitched(Chord *item, LayoutContext &ctx) {
 
     if (item->hook()) {
         if (item->beam()) {
-            ctx.mut_dom().undo_remove_element(item->hook());
+            delete item->hook();
+            item->mutldata()->hook = nullptr;
         } else {
             apply_authored_overrides(*item->hook());
             TLayout::layout_hook(item->hook(), item->hook()->mutldata());
@@ -480,13 +481,16 @@ void ChordLayout::layout_tablature(Chord *item, LayoutContext &ctx) {
         // set stem position (stem length is set in Chord:layoutStem() )
         if (!item->stem()) {
             Stem *stem = Factory::create_stem(item);
+            stem->set_track(item->track());
             stem->set_generated(true);
-            ctx.mut_dom().add_element(stem);
+            item->mutldata()->stem = stem;
+            apply_authored_overrides(*stem);
         }
         item->stem()->set_pos(StemLayout::tab_stem_pos(item, tab) * spatium_value);
         if (item->hook()) {
             if (item->beam()) {
-                ctx.mut_dom().undo_remove_element(item->hook());
+                delete item->hook();
+                item->mutldata()->hook = nullptr;
             } else {
                 if (rrr < stem_x + item->hook()->width()) {
                     rrr = stem_x + item->hook()->width();
@@ -497,12 +501,12 @@ void ChordLayout::layout_tablature(Chord *item, LayoutContext &ctx) {
         }
     } else {
         if (item->stem()) {
-            ctx.mut_dom().do_undo_remove_element(item->stem());
-            item->remove(item->stem());
+            delete item->stem();
+            item->mutldata()->stem = nullptr;
         }
         if (item->hook()) {
-            ctx.mut_dom().do_undo_remove_element(item->hook());
-            item->remove(item->hook());
+            delete item->hook();
+            item->mutldata()->hook = nullptr;
         }
         if (item->beam()) {
             ctx.mut_dom().do_undo_remove_element(item->beam());
@@ -590,7 +594,8 @@ void ChordLayout::layout_tablature(Chord *item, LayoutContext &ctx) {
 
     if (item->hook()) {
         if (item->beam()) {
-            ctx.mut_dom().undo_remove_element(item->hook());
+            delete item->hook();
+            item->mutldata()->hook = nullptr;
         } else if (tab == 0) {
             apply_authored_overrides(*item->hook());
             TLayout::layout_hook(item->hook(), item->hook()->mutldata());
@@ -1249,12 +1254,15 @@ void ChordLayout::layout_stem(Chord *item, const LayoutContext &ctx) {
     // Add Stem slash
     if ((item->show_stem_slash()) && !(item->beam() && item->beam()->elements().front() != item)) {
         if (!item->stem_slash()) {
-            item->add(Factory::create_stem_slash(item));
+            item->mutldata()->stem_slash = Factory::create_stem_slash(item);
+            item->stem_slash()->set_track(item->track());
+            bind_authored_child(*item->stem_slash(), {AuthoredChildRole::STEM_SLASH});
         }
         apply_authored_overrides(*item->stem_slash());
         TLayout::layout_stem_slash(item->stem_slash(), item->stem_slash()->mutldata(), ctx.conf());
     } else if (item->stem_slash()) {
-        item->remove(item->stem_slash());
+        delete item->stem_slash();
+        item->mutldata()->stem_slash = nullptr;
     }
 }
 

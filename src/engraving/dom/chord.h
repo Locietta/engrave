@@ -264,7 +264,7 @@ public:
 
     Note *find_note(int pitch, int skip = 0) const;
 
-    Stem *stem() const { return stem_; }
+    Stem *stem() const { return has_layout_data() ? ldata()->stem : nullptr; }
 
     Spatium stem_user_length() const { return stem_override_.user_length; }
 
@@ -295,7 +295,7 @@ public:
 
     void update_ends_note_anchored_line();
 
-    StemSlash *stem_slash() const { return stem_slash_; }
+    StemSlash *stem_slash() const { return has_layout_data() ? ldata()->stem_slash : nullptr; }
 
     bool show_stem_slash() const { return show_stem_slash_; }
 
@@ -333,9 +333,7 @@ public:
 
     bool under_beam() const;
 
-    Hook *hook() const { return hook_; }
-
-    void set_hook(Hook *h) { hook_ = h; }
+    Hook *hook() const { return has_layout_data() ? ldata()->hook : nullptr; }
 
     void add(EngravingItem *) override;
     void remove(EngravingItem *) override;
@@ -459,9 +457,6 @@ public:
 
     bool should_have_stem() const;
     bool should_have_hook() const;
-    void create_stem();
-    void remove_stem();
-    void create_hook();
 
     double up_pos() const override;
     double down_pos() const override;
@@ -486,6 +481,9 @@ public:
     bool all_elements_invisible() const;
 
     struct LayoutData : ChordRest::LayoutData {
+        Stem *stem = nullptr;
+        Hook *hook = nullptr;
+        StemSlash *stem_slash = nullptr;
         ~LayoutData();
         std::vector<LedgerLine *> ledger_lines;
     };
@@ -509,9 +507,6 @@ private:
     };
 
     StemOverride stem_override_;
-    Stem *stem_ = nullptr;
-    Hook *hook_ = nullptr;
-    StemSlash *stem_slash_ = nullptr; // for grace notes
     bool show_stem_slash_ = false;
 
     Arpeggio *arpeggio_ = nullptr;      // arpeggio which starts on the chord

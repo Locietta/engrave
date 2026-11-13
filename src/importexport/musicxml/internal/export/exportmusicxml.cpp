@@ -4024,11 +4024,14 @@ void ExportMusicXml::chord(Chord *chord, staff_idx_t staff, const std::vector<Ly
         write_time_modification(xml_, note->chord()->tuplet(), tremolo_correction(note));
 
         // no stem for whole notes and beyond
-        if (chord->no_stem() || chord->measure()->stemless(chord->staff_idx()) || (chord->stem() && !chord->stem()->visible())) {
+        const auto *stem_visible = chord->authored_overrides.find({AuthoredChildRole::STEM}, Pid::VISIBLE);
+        if (chord->no_stem() || chord->measure()->stemless(chord->staff_idx()) || (stem_visible && !stem_visible->value.to_bool())) {
             xml_.tag("stem", "none");
-        } else if (const Stem *stem = note->chord()->stem()) {
+        } else if (chord->should_have_stem()) {
             String stem_tag = u"stem";
-            stem_tag += color2xml(stem);
+            if (const auto *color = chord->authored_overrides.find({AuthoredChildRole::STEM}, Pid::COLOR))
+                if (color->value.value<Color>() != chord->configuration()->default_color())
+                    stem_tag += String(u" color=\"%1\"").arg(String::from_std_string(color->value.value<Color>().to_string()));
             xml_.tag_raw(stem_tag, note->chord()->up() ? "up" : "down");
         }
 

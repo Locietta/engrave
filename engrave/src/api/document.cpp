@@ -27,7 +27,6 @@ mu::engraving::rendering::score::LayoutDataStore &Document::Impl::adopt_layout_o
     std::erase_if(layout_outputs, [](const auto &output) { return output->score() == nullptr; });
     // reserve can fail; ownership and all live borrowers must be unchanged then.
     layout_outputs.reserve(layout_outputs.size() + 1);
-    if (LayoutDataStore::before_adoption) LayoutDataStore::before_adoption();
     if (auto output = score.renderer()->take_layout_data_store(score)) {
         layout_outputs.push_back(std::move(output));
         return *existing;

@@ -22,6 +22,7 @@
 #include "modifydom.h"
 
 #include "dom/chord.h"
+#include "dom/factory.h"
 #include "dom/hook.h"
 #include "dom/keysig.h"
 #include "dom/measure.h"
@@ -31,6 +32,8 @@
 #include "dom/score.h"
 #include "dom/spannermap.h"
 #include "dom/staff.h"
+#include "dom/stem.h"
+#include "dom/stemslash.h"
 #include "dom/timesig.h"
 #include "dom/trill.h"
 #include "dom/utils.h"
@@ -63,12 +66,21 @@ void ModifyDom::create_stems(const Measure *measure, LayoutContext &ctx) {
 
                 auto create_stems = [](Chord *chord) {
                     if (!chord->should_have_stem()) {
-                        chord->remove_stem();
+                        delete chord->stem();
+                        delete chord->hook();
+                        delete chord->stem_slash();
+                        chord->mutldata()->stem = nullptr;
+                        chord->mutldata()->hook = nullptr;
+                        chord->mutldata()->stem_slash = nullptr;
                         return;
                     }
 
                     if (!chord->stem()) {
-                        chord->create_stem();
+                        auto *stem = Factory::create_stem(chord);
+                        stem->set_track(chord->track());
+                        stem->set_generated(true);
+                        chord->mutldata()->stem = stem;
+                        apply_authored_overrides(*stem);
                     }
                 };
 
