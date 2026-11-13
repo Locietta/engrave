@@ -291,6 +291,8 @@ EngravingItem::EngravingItem(const EngravingItem &e, bool link) : EngravingObjec
 }
 
 EngravingItem::~EngravingItem() {
+    if (score() && Score::is_alive(score()) && master_score() && Score::is_alive(master_score()))
+        master_score()->eid_register()->touch(*this);
     // Snapping links are reciprocal non-owning display pointers. Detach while
     // both objects are still alive, including deletion between layout runs.
     if (layout_data_) layout_data_->disconnect_snapped_items();

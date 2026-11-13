@@ -67,8 +67,10 @@ static EIDRegister *active_register(EngravingObject &owner) {
 
 // Copies and imports sometimes initialize owned fields directly. Adoption of a
 // newly inserted subtree enrolls those actual fields, never constructor children_.
-static void adopt_children(EngravingObject &item) {
-    const auto adopt = [&](EngravingObject *child) { source_child_added(item, child); };
+static void set_subtree_live(EIDRegister &registry, EngravingObject &item, bool live);
+
+template <typename Function>
+static void for_each_source_child(EngravingObject &item, const Function &adopt, bool live) {
     if (item.is_score()) {
         auto &score = *to_score(&item);
         for (auto *part : score.parts()) adopt(part);
@@ -92,7 +94,13 @@ static void adopt_children(EngravingObject &item) {
                 adopt(row->vspacer_up());
                 adopt(row->vspacer_down());
             }
-            for (auto *segment = measure.first(); segment; segment = segment->next()) adopt(segment);
+            for (auto *segment = measure.first(); segment; segment = segment->next()) {
+                adopt(segment);
+                for (auto *element : segment->elist()) {
+                    if (!element || !element->is_chord_rest()) continue;
+                    for (auto *tuplet = to_chord_rest(element)->tuplet(); tuplet; tuplet = tuplet->tuplet()) adopt(tuplet);
+                }
+            }
         }
         if (item.is_t_box()) adopt(to_t_box(&item)->text());
         return;
@@ -108,10 +116,10 @@ static void adopt_children(EngravingObject &item) {
         auto &rest = *to_chord_rest(&item);
         for (auto *lyric : rest.lyrics()) adopt(lyric);
         for (auto *child : rest.el()) adopt(child);
-        if (auto *measure = rest.measure()) {
+        if (auto *measure = rest.measure(); live && measure) {
             for (auto *tuplet = rest.tuplet(); tuplet; tuplet = tuplet->tuplet()) source_child_added(*measure, tuplet);
         }
-        if (rest.beam()) source_child_added(*rest.score(), rest.beam());
+        if (live && rest.beam()) source_child_added(*rest.score(), rest.beam());
         if (item.is_chord()) {
             auto &chord = *to_chord(&item);
             for (auto *note : chord.notes()) adopt(note);
@@ -144,7 +152,7 @@ static void adopt_children(EngravingObject &item) {
             if (!owner) return;
             for (auto *ancestor = owner; ancestor; ancestor = ancestor->ownership_parent()) {
                 if (ancestor == &item) {
-                    source_child_added(*owner, child);
+                    adopt(child);
                     break;
                 }
             }
@@ -152,26 +160,50 @@ static void adopt_children(EngravingObject &item) {
     }
 }
 
+static void set_subtree_live(EIDRegister &registry, EngravingObject &item, bool live) {
+    registry.set_live(item, live);
+    for_each_source_child(
+        item,
+        [&](EngravingObject *child) {
+            if (child && source_object(*child)) set_subtree_live(registry, *child, live);
+        },
+        live);
+}
+
 void source_child_added(EngravingObject &owner, EngravingObject *item) {
-    if (!item) return;
+    if (!item || item == &owner) return;
     if (item->score() && owner.score() && item->score()->master_score() != owner.score()->master_score()) return;
     auto *registry = active_register(owner);
-    if (registry && source_object(owner) && source_object(*item)) {
-        const bool newly_owned = !registry->owns(owner, *item);
-        registry->attach_source(*item, owner);
-        if (newly_owned) adopt_children(*item);
-    }
+    if (registry && source_object(owner) && source_object(*item))
+        set_subtree_live(*registry, *item, registry->live_item(registry->handle_of(&owner)) != nullptr);
 }
 
 void source_child_removed(EngravingObject &owner, EngravingObject *item) {
     if (!item) return;
-    if (auto *registry = active_register(owner); registry && registry->owns(owner, *item)) registry->detach_source(*item);
+    if (auto *registry = active_register(owner); registry && source_object(owner) && source_object(*item))
+        set_subtree_live(*registry, *item, false);
+}
+
+bool source_attached(EngravingObject &item) {
+    auto *registry = active_register(item);
+    if (registry && registry->live_item(registry->handle_of(&item))) return true;
+    auto *owner = item.ownership_parent();
+    if (!owner || !source_object(*owner)) return false;
+    bool found = false;
+    for_each_source_child(*owner, [&](EngravingObject *child) { found |= child == &item; }, false);
+    return found;
 }
 
 void source_collection_cleared(EngravingObject &owner, SourceCollection collection) {
-    // Some callers clear raw lists after deleting their objects. Use only the
-    // surviving registered membership, never dereference those raw list entries.
-    if (auto *registry = active_register(owner)) registry->detach_collection(owner, collection);
+    if (!active_register(owner)) return;
+    if (collection == SourceCollection::STAVES) {
+        for (auto *staff : to_part(&owner)->staves())
+            if (staff->part() == &owner) source_child_removed(owner, staff);
+    } else if (collection == SourceCollection::SEGMENTS) {
+        for (auto *segment = to_measure(&owner)->first(); segment; segment = segment->next()) source_child_removed(owner, segment);
+    } else {
+        for (auto *base = to_score(&owner)->first(); base; base = base->next()) source_child_removed(owner, base);
+    }
 }
 
 } // namespace mu::engraving

@@ -3,11 +3,9 @@
 #include <algorithm>
 #include <format>
 #include <limits>
-#include <map>
 #include <numeric>
 #include <optional>
 #include <string_view>
-#include <unordered_set>
 #include <variant>
 
 #include "engraving/dom/beam.h"
@@ -79,7 +77,7 @@ std::optional<Fraction> address_tick(const mu::engraving::Fraction &value) {
 template <typename Function>
 void for_each_object(MasterScore &master, const Function &func) {
     if (object_walk_hook) object_walk_hook();
-    std::unordered_set<const EngravingObject *> seen;
+    ankerl::unordered_dense::set<const EngravingObject *> seen;
     const auto visit = [&func, &seen](EngravingObject *object) {
         if (object && seen.insert(object).second) func(*object);
     };
@@ -117,27 +115,6 @@ void for_each_object(MasterScore &master, const Function &func) {
         }
         score->scan_elements(visit_item);
     }
-}
-
-int score_index(MasterScore &master, const Score *score) {
-    int index = 0;
-    for (const Score *candidate : master.score_list()) {
-        if (candidate == score) return index;
-        ++index;
-    }
-    return no_position;
-}
-
-Placement placement_of(MasterScore &master, const EngravingObject &object) {
-    Placement placement;
-    placement.score = score_index(master, object.score());
-    if (!object.is_engraving_item()) return placement;
-    const auto &item = static_cast<const EngravingItem &>(object);
-    const auto track = static_cast<long long>(item.track());
-    if (track < 0) return placement;
-    placement.tick = item.tick().ticks();
-    placement.track = static_cast<int>(track);
-    return placement;
 }
 
 } // namespace
@@ -285,7 +262,7 @@ ElementId from_engine(const mu::engraving::EID &id) { return {id.first(), id.sec
 static void initialize_membership(MasterScore &master) {
     auto &registry = *master.eid_register();
     registry.begin_membership();
-    registry.attach_root(master);
+    registry.set_live(master, true);
     for (Score *score : master.score_list()) {
         if (score != &master) mu::engraving::source_child_added(master, score);
         for (Part *part : score->parts()) mu::engraving::source_child_added(*score, part);
@@ -297,14 +274,14 @@ static void initialize_membership(MasterScore &master) {
 }
 
 void assign_missing_ids(MasterScore &master) {
-    std::unordered_set<const EngravingObject *> document;
+    ankerl::unordered_dense::set<const EngravingObject *> document;
     const bool initial = !master.eid_register()->membership_ready();
     for_each_object(master, [&document, &master](EngravingObject &object) {
         document.insert(&object);
         if (takes_id(object)) {
             if (!object.eid().is_valid()) object.assign_new_eid();
-            master.eid_register()->publish(object);
         }
+        master.eid_register()->publish(object, takes_id(object));
     });
     // An id whose element is no longer part of the document must go as well: a read can
     // replace what it built (an excerpt score's first pass, a tie whose other end is
@@ -331,33 +308,32 @@ std::vector<LiveId> live_ids(MasterScore &master) {
     for_each_object(master, [&master, &ids](EngravingObject &object) {
         if (!takes_id(object)) return;
         const mu::engraving::EID eid = object.eid();
-        if (eid.is_valid()) ids.push_back({from_engine(eid), &object, placement_of(master, object)});
+        if (eid.is_valid())
+            ids.push_back(
+                {from_engine(eid), &object, master.eid_register()->id_state(master.eid_register()->handle_of(&object).slot).placement});
     });
     std::ranges::sort(ids, {}, &LiveId::id);
     return ids;
 }
 
 IdDiff diff_ids(std::span<const LiveId> before, std::span<const LiveId> after) {
-    std::map<ElementId, const LiveId *> old;
-    for (const LiveId &entry : before) old.emplace(entry.id, &entry);
-    std::map<ElementId, const LiveId *> current;
-    for (const LiveId &entry : after) current.emplace(entry.id, &entry);
-    std::map<Placement, int> appeared;
-    for (const LiveId &entry : after) {
-        if (!old.contains(entry.id)) ++appeared[entry.placement];
-    }
+    const auto contains = [](std::span<const LiveId> ids, ElementId id) { return std::ranges::binary_search(ids, id, {}, &LiveId::id); };
+    std::vector<Placement> appeared;
+    for (const auto &entry : after)
+        if (!contains(before, entry.id)) appeared.push_back(entry.placement);
+    std::ranges::sort(appeared);
 
     IdDiff diff;
     for (const LiveId &entry : after) {
-        if (!old.contains(entry.id)) diff.created.push_back(entry.id);
+        if (!contains(before, entry.id)) diff.created.push_back(entry.id);
     }
     for (const LiveId &entry : before) {
-        if (current.contains(entry.id)) continue;
-        auto count = appeared.find(entry.placement);
-        if (entry.placement.track == no_position || count == appeared.end() || count->second == 0) {
+        if (contains(after, entry.id)) continue;
+        auto count = std::ranges::lower_bound(appeared, entry.placement);
+        if (entry.placement.track == no_position || count == appeared.end() || *count != entry.placement) {
             diff.removed.push_back(entry.id);
         } else {
-            --count->second;
+            appeared.erase(count);
             diff.replaced.push_back(entry.id);
         }
     }
@@ -365,6 +341,19 @@ IdDiff diff_ids(std::span<const LiveId> before, std::span<const LiveId> after) {
     std::ranges::sort(diff.removed);
     std::ranges::sort(diff.replaced);
     return diff;
+}
+
+IdDiff batch_id_diff(MasterScore &master) {
+    auto &registry = *master.eid_register();
+    std::vector<LiveId> before, after;
+    for (const auto &initial : registry.touched_slots()) {
+        if (initial.published && initial.eid.is_valid()) before.push_back({from_engine(initial.eid), nullptr, initial.placement});
+        const auto current = registry.id_state(initial.index);
+        if (current.published && current.eid.is_valid()) after.push_back({from_engine(current.eid), nullptr, current.placement});
+    }
+    std::ranges::sort(before, {}, &LiveId::id);
+    std::ranges::sort(after, {}, &LiveId::id);
+    return diff_ids(before, after);
 }
 
 Result<Resolved> resolve(MasterScore &master, const ElementId &id) {

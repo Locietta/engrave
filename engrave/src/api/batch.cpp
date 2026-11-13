@@ -158,7 +158,15 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps) {
         return fail(ErrorCode::RESOURCE_LIMIT, "document revision exhausted");
     auto &master = context_.master();
     auto *manager = master.transaction_manager();
-    const auto before = live_ids(master);
+    auto &registry = *master.eid_register();
+    registry.begin_id_diff();
+
+    struct DiffScope {
+        mu::engraving::EIDRegister &registry;
+
+        ~DiffScope() { registry.end_id_diff(); }
+    } diff_scope{registry};
+
     std::vector<std::size_t> applied_ops;
     applied_ops.reserve(steps.size());
     result.ops.resize(steps.size());
@@ -200,7 +208,7 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps) {
             auto changes = manager->prepare_commit();
             if (check_engine({})) {
                 assign_missing_ids(master);
-                auto diff = diff_ids(before, live_ids(master));
+                auto diff = batch_id_diff(master);
                 result.created = std::move(diff.created);
                 result.removed = std::move(diff.removed);
                 result.replaced = std::move(diff.replaced);

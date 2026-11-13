@@ -23,6 +23,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <utility>
 #include <vector>
 
@@ -44,6 +45,20 @@ struct EIDRepairCount {
     size_t duplicate = 0;
 
     bool any() const { return malformed > 0 || duplicate > 0; }
+};
+
+struct IdPlacement {
+    int score = -1;
+    int tick = -1;
+    int track = -1;
+    friend auto operator<=>(const IdPlacement &, const IdPlacement &) = default;
+};
+
+struct TouchedSlot {
+    uint32_t index;
+    EID eid;
+    IdPlacement placement;
+    bool published;
 };
 
 struct EIDRegister {
@@ -68,18 +83,24 @@ struct EIDRegister {
     EngravingObject *live_item(SourceHandle handle) const;
     bool published(SourceHandle handle) const;
 
-    bool attached(SourceHandle handle) const {
-        const auto *slot = find_slot(handle);
-        return slot && slot->owner != 0;
+    SourceHandle enroll(EngravingObject &item);
+    void set_live(EngravingObject &item, bool live);
+    void publish(EngravingObject &item, bool published = true);
+    void touch(const EngravingObject &item);
+
+    void begin_id_diff() {
+        touched_.clear();
+        tracking_ = true;
     }
 
-    SourceHandle enroll(EngravingObject &item);
-    void attach_root(EngravingObject &item);
-    void attach_source(EngravingObject &item, EngravingObject &owner);
-    void detach_source(EngravingObject &item);
-    void detach_collection(EngravingObject &owner, SourceCollection collection);
-    void publish(EngravingObject &item);
-    bool owns(const EngravingObject &owner, const EngravingObject &item) const;
+    void end_id_diff() {
+        tracking_ = false;
+        touched_.clear();
+    }
+
+    std::span<const TouchedSlot> touched_slots() const { return touched_; }
+
+    TouchedSlot id_state(uint32_t index) const;
 
     bool membership_ready() const { return membership_ready_; }
 
@@ -98,10 +119,6 @@ private:
         EID eid = EID::invalid();
         uint64_t generation = 1;
         uint32_t next_free = 0;
-        uint32_t owner = 0;
-        uint32_t first_child = 0;
-        uint32_t previous = 0;
-        uint32_t next = 0;
         bool live = false;
         bool published = false;
     };
@@ -109,14 +126,15 @@ private:
     SourceHandle allocate_slot(EngravingObject *item, EID eid);
     void retire_slot(SourceHandle handle);
     const Slot *find_slot(SourceHandle handle) const;
-    void unlink(uint32_t index);
-    void set_live(uint32_t index, bool live);
+    void touch(uint32_t index);
 
     uint64_t document_ = 0;
     amc::vector<Slot> slots_;
     uint32_t free_slot_ = 0;
     ankerl::unordered_dense::map<EID, SourceHandle> eid_to_handle_;
     bool membership_ready_ = false;
+    bool tracking_ = false;
+    std::vector<TouchedSlot> touched_;
 
     EIDRepairCount repairs_;
 

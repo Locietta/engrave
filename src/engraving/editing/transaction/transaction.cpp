@@ -475,6 +475,7 @@ bool note_change(EngravingObject *object, CommandType type) {
     auto *master = object->master_score();
     if (!master || !master->transaction_manager()->current_transaction() || master->cmd_state().locked()) return false;
     auto &state = master->cmd_state();
+    master->eid_register()->touch(*object);
     ++state.mutation_count;
     for (auto *changed : compound_objects(object)) {
         state.changes.changed_types.insert(changed->type());
@@ -513,7 +514,7 @@ void TransactionManager::cleanup_detached() {
     for (auto &root : roots) {
         if (auto *handle = std::get_if<SourceHandle>(&root.object)) {
             auto *object = registry.item_from_handle(*handle);
-            if (object && !registry.attached(*handle)) delete object;
+            if (object && !source_attached(*object)) delete object;
         }
     }
     for (auto &root : roots)
