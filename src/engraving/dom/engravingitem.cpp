@@ -2201,6 +2201,10 @@ void EngravingItem::unlink_property_from_master(Pid id) {
     }
 }
 
+bool EngravingItem::is_layout_data_current() const {
+    return has_layout_data() && score() && (!score()->layout_state.dirty || score()->cmd_state().locked());
+}
+
 const EngravingItem::LayoutData *EngravingItem::ldata() const {
     return layout_data_ ? layout_data_ : &rendering::score::empty_layout_data(layout_type_);
 }

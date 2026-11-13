@@ -127,7 +127,7 @@ public:
 
     bool is_up() const {
         const auto *ld = ldata();
-        return ld ? ld->up.value_or(direction_ != DirectionV::DOWN) : direction_ != DirectionV::DOWN;
+        return is_layout_data_current() ? ld->up.value_or(direction_ != DirectionV::DOWN) : direction_ != DirectionV::DOWN;
     }
 
     void set_is_up(bool val) { mutldata()->up = val; }

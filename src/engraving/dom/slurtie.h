@@ -151,7 +151,7 @@ public:
 
     bool up() const {
         const auto *ld = ldata();
-        return ld ? ld->up.value_or(slur_direction_ != DirectionV::DOWN) : slur_direction_ != DirectionV::DOWN;
+        return is_layout_data_current() ? ld->up.value_or(slur_direction_ != DirectionV::DOWN) : slur_direction_ != DirectionV::DOWN;
     }
 
     void set_up(bool val) { mutldata()->up = val; }

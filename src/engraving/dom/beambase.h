@@ -81,7 +81,7 @@ public:
 
     bool up() const {
         const auto *ld = ldata();
-        return ld ? ld->computed_up.value_or(direction() != DirectionV::DOWN) : direction() != DirectionV::DOWN;
+        return is_layout_data_current() ? ld->computed_up.value_or(direction() != DirectionV::DOWN) : direction() != DirectionV::DOWN;
     }
 
     void set_up(bool v) { mutldata()->computed_up = v; }

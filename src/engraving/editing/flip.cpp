@@ -73,9 +73,9 @@ void Flip::flip(Transaction &, Score *score) {
 
     for (EngravingItem *e : el) {
         if (e->has_voice_assignment_properties()) {
-            flip_once(e, [e, use_layout]() {
-                PlacementV cur_placement = use_layout ? e->placement() : e->get_property(Pid::PLACEMENT).value<PlacementV>();
-                e->undo_change_property(Pid::DIRECTION, cur_placement == PlacementV::ABOVE ? DirectionV::DOWN : DirectionV::UP);
+            flip_once(e, [e, direction]() {
+                e->undo_change_property(Pid::DIRECTION, direction(e->get_property(Pid::DIRECTION).value<DirectionV>(), e->place_above(),
+                                                                  e->is_layout_data_current()));
             });
         } else if (e->is_note() || e->is_stem() || e->is_hook()) {
             Chord *chord = nullptr;
@@ -113,7 +113,7 @@ void Flip::flip(Transaction &, Score *score) {
         if (e->is_beam()) {
             Beam *beam = to_beam(e);
             flip_once(beam, [beam, direction, use_layout]() {
-                if (beam->cross()) {
+                if (beam->is_layout_data_current() && beam->cross()) {
                     int new_cross_staff_move = (use_layout ? beam->ldata()->effective_cross_staff_move.value_or(beam->cross_staff_move()) :
                                                              beam->cross_staff_move()) +
                                                1;
@@ -144,12 +144,16 @@ void Flip::flip(Transaction &, Score *score) {
             });
         } else if (e->is_articulation_family()) {
             auto artic = to_articulation(e);
-            flip_once(artic, [artic]() {
+            flip_once(artic, [artic, direction]() {
                 ArticulationAnchor artic_anchor = artic->anchor();
                 switch (artic_anchor) {
                     case ArticulationAnchor::TOP: artic_anchor = ArticulationAnchor::BOTTOM; break;
                     case ArticulationAnchor::BOTTOM: artic_anchor = ArticulationAnchor::TOP; break;
-                    case ArticulationAnchor::AUTO: artic_anchor = artic->up() ? ArticulationAnchor::BOTTOM : ArticulationAnchor::TOP; break;
+                    case ArticulationAnchor::AUTO:
+                        artic_anchor = direction(artic->direction(), artic->up(), artic->is_layout_data_current()) == DirectionV::DOWN ?
+                                           ArticulationAnchor::BOTTOM :
+                                           ArticulationAnchor::TOP;
+                        break;
                 }
                 PropertyFlags pf = artic->property_flags(Pid::ARTICULATION_ANCHOR);
                 if (pf == PropertyFlags::STYLED) {
@@ -176,23 +180,27 @@ void Flip::flip(Transaction &, Score *score) {
             });
         } else if (e->is_guitar_bend_segment()) {
             GuitarBend *bend = to_guitar_bend_segment(e)->guitar_bend();
-            flip_once(bend, [bend] {
-                DirectionV direction = bend->ldata()->up() ? DirectionV::DOWN : DirectionV::UP;
-                bend->undo_change_property(Pid::DIRECTION, PropertyValue::from_value<DirectionV>(direction));
+            flip_once(bend, [bend, direction] {
+                const auto next = direction(bend->direction(), bend->is_layout_data_current() ? bend->ldata()->up() : true,
+                                            bend->is_layout_data_current());
+                bend->undo_change_property(Pid::DIRECTION, PropertyValue::from_value<DirectionV>(next));
             });
         } else if (e->is_trill_segment()) {
             TrillSegment *trill_segment = to_trill_segment(e);
             Trill *trill = trill_segment->trill();
             Ornament *ornament = trill->ornament();
 
-            flip_once(ornament, [ornament]() {
+            flip_once(ornament, [ornament, direction]() {
                 ArticulationAnchor artic_anchor = ArticulationAnchor(ornament->get_property(Pid::ARTICULATION_ANCHOR).to_int());
 
                 switch (artic_anchor) {
                     case ArticulationAnchor::TOP: artic_anchor = ArticulationAnchor::BOTTOM; break;
                     case ArticulationAnchor::BOTTOM: artic_anchor = ArticulationAnchor::TOP; break;
                     case ArticulationAnchor::AUTO:
-                        artic_anchor = ornament->up() ? ArticulationAnchor::BOTTOM : ArticulationAnchor::TOP;
+                        artic_anchor =
+                            direction(ornament->direction(), ornament->up(), ornament->is_layout_data_current()) == DirectionV::DOWN ?
+                                ArticulationAnchor::BOTTOM :
+                                ArticulationAnchor::TOP;
                         break;
                 }
                 PropertyFlags pf = ornament->property_flags(Pid::ARTICULATION_ANCHOR);
@@ -220,7 +228,7 @@ void Flip::flip(Transaction &, Score *score) {
 
             flip_once(ee, [ee, use_layout]() {
                 // getProperty() delegates call from spannerSegment to Spanner
-                PlacementV p = ee->is_fingering() && ee->is_styled(Pid::PLACEMENT) && !use_layout ?
+                PlacementV p = ee->is_fingering() && ee->is_styled(Pid::PLACEMENT) && (!use_layout || !ee->is_layout_data_current()) ?
                                    PlacementV::ABOVE :
                                    ee->get_property(Pid::PLACEMENT).value<PlacementV>();
                 p = (p == PlacementV::ABOVE) ? PlacementV::BELOW : PlacementV::ABOVE;

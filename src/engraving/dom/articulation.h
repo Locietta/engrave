@@ -203,10 +203,7 @@ public:
 
     void set_up(bool val);
 
-    //! --- DEPRECATED ---
-    bool up() const { return ldata()->up; }
-
-    //! ------------------
+    bool up() const { return is_layout_data_current() && ldata()->up.has_value() ? ldata()->up.value() : direction_ != DirectionV::DOWN; }
 
 protected:
     friend struct mu::engraving::Factory;

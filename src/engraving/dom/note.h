@@ -288,12 +288,12 @@ public:
 
     bool display_ghost() const {
         const auto *ld = ldata();
-        return ld ? ld->ghost.value_or(ghost_) : ghost_;
+        return is_layout_data_current() ? ld->ghost.value_or(ghost_) : ghost_;
     }
 
     bool display_visible() const {
         const auto *ld = ldata();
-        return ld ? ld->visible.value_or(visible()) : visible();
+        return is_layout_data_current() ? ld->visible.value_or(visible()) : visible();
     }
 
     bool collect_for_drawing() const override;

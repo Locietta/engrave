@@ -86,7 +86,8 @@ PropertyValue BeamBase::property_default(Pid property_id) const {
 
 int BeamBase::cross_staff_idx() const {
     const auto *ld = ldata();
-    return default_cross_staff_idx() + (ld ? ld->effective_cross_staff_move.value_or(cross_staff_move_value) : cross_staff_move_value);
+    return default_cross_staff_idx() +
+           (is_layout_data_current() ? ld->effective_cross_staff_move.value_or(cross_staff_move_value) : cross_staff_move_value);
 }
 
 int BeamBase::default_cross_staff_idx() const {

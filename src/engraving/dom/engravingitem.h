@@ -589,6 +589,8 @@ public:
     // Storage belongs only to elements explicitly touched by layout/mutators.
     bool has_layout_data() const { return layout_data_ != nullptr; }
 
+    bool is_layout_data_current() const;
+
     void scan_connected_items_in_snapping_chain(const System *system, const std::function<void(EngravingItem *)> &func) const;
 
     Shape shape(LdAccess mode = LdAccess::CHECK) const { return ldata()->shape(mode); }
