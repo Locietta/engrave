@@ -38,13 +38,16 @@
 using namespace mu::engraving;
 
 void mu::engraving::apply_change_key_sig(KeySig *keysig, KeySigEvent ks, bool show_courtesy, bool evt_in_staff) {
-    note_change(keysig, CommandType::CHANGE_KEY_SIG);
-
     Segment *segment = keysig->segment();
     Fraction tick = segment->tick();
     Staff *staff = keysig->staff();
 
     const bool cur_evt_in_staff = (staff->current_key_tick(tick) == tick);
+    const bool header = !evt_in_staff && segment->rtick() == Fraction(0, 1);
+    if (keysig->key_sig_event() == ks && keysig->show_courtesy() == show_courtesy && cur_evt_in_staff == evt_in_staff &&
+        (!evt_in_staff || staff->key_sig_event(tick) == ks) && segment->enabled() == evt_in_staff && segment->header() == header)
+        return;
+    note_change(keysig, CommandType::CHANGE_KEY_SIG);
 
     keysig->set_key_sig_event(ks);
     keysig->set_show_courtesy(show_courtesy);

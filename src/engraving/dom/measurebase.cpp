@@ -426,12 +426,14 @@ void MeasureBase::undo_set_break(bool v, LayoutBreakType type) {
             if (line_break() == v) {
                 return;
             }
+            note_change(this, CommandType::UNKNOWN);
             set_line_break(v);
             break;
         case LayoutBreakType::PAGE:
             if (page_break() == v) {
                 return;
             }
+            note_change(this, CommandType::UNKNOWN);
             if (v && line_break()) {
                 set_line_break(false);
             }
@@ -441,6 +443,7 @@ void MeasureBase::undo_set_break(bool v, LayoutBreakType type) {
             if (section_break() == v) {
                 return;
             }
+            note_change(this, CommandType::UNKNOWN);
             if (v && line_break()) {
                 set_line_break(false);
             }
@@ -450,6 +453,7 @@ void MeasureBase::undo_set_break(bool v, LayoutBreakType type) {
             if (no_break() == v) {
                 return;
             }
+            note_change(this, CommandType::UNKNOWN);
             if (v) {
                 set_line_break(false);
                 set_page_break(false);

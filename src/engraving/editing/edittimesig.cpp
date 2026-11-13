@@ -195,6 +195,9 @@ bool EditTimeSig::rewrite_measures(Transaction &tx, Score *score, Measure *start
         for (auto i : spanners) {
             if (i.value->tick() >= tick1 && i.value->tick() < tick2) {
                 score->do_undo_remove_element(i.value);
+            } else if (i.value->tick2() >= tick1 && i.value->tick2() < tick2) {
+                // A failed rewrite still frees the old measures; discard the borrowed endpoint first.
+                apply_change_start_end_spanner(i.value, i.value->start_element(), nullptr);
             }
         }
         s->undo_remove_measures(m1, m2, true);
@@ -240,11 +243,6 @@ bool EditTimeSig::rewrite_measures(Transaction &tx, Score *score, Measure *start
     for (auto spanner : score->spanner_map().find_overlapping(start_measure->tick().ticks(), end_measure->tick().ticks())) {
         Slur *slur = (spanner.value->is_slur() ? to_slur(spanner.value) : nullptr);
         if (slur) {
-            EngravingItem *start_el = slur->start_element();
-            EngravingItem *end_el = slur->end_element();
-            if (!start_el || !end_el) {
-                continue;
-            }
             apply_change_start_end_spanner(spanner.value, slur->find_start_cr(), slur->find_end_cr());
         }
     }
