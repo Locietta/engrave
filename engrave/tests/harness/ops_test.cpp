@@ -37,6 +37,7 @@
 #include "engraving/dom/factory.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
+#include "engraving/dom/mscore.h"
 #include "engraving/dom/note.h"
 #include "engraving/dom/notedot.h"
 #include "engraving/dom/parenthesis.h"
@@ -53,6 +54,7 @@
 #include "engraving/dom/tempotext.h"
 #include "engraving/dom/text.h"
 #include "engraving/dom/textline.h"
+#include "engraving/dom/timesig.h"
 #include "engraving/dom/tremolosinglechord.h"
 #include "engraving/dom/tremolotwochord.h"
 #include "engraving/dom/tuplet.h"
@@ -197,7 +199,7 @@ TEST(JournalPolicy, GenericTimingAndBreakRemovalsUseSnapshotRecovery) {
         engrave::DocumentAccess::edit_hooks(*document).before_step = [&](std::size_t step) {
             if (step == 1) {
                 removed = true;
-                throw std::runtime_error("reject after generic source removal");
+                mu::engraving::MScore::set_error(mu::engraving::MsError::NO_NOTE_SELECTED);
             }
         };
         const auto result = document->edit({{engrave::Remove{target}}});
@@ -242,6 +244,53 @@ TEST(JournalPolicy, OrdinaryNoteRemovalKeepsJournalOnlyRecovery) {
     EXPECT_EQ(document->revision(), revision);
     EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
     EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+}
+
+TEST(JournalPolicy, RejectedTimeSignatureRewriteRejectsTheWholeBatch) {
+    using namespace mu::engraving;
+    auto document = open("layout_elements.mscx");
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    ASSERT_GT(master.nstaves(), 1u);
+    auto *local = master.staff(1)->time_sig(Fraction(0, 1));
+    ASSERT_NE(local, nullptr);
+    local->set_stretch(Fraction(3, 4));
+    auto *measure = master.first_measure()->next_measure();
+    ASSERT_NE(measure, nullptr);
+    auto *segment = measure->undo_get_segment(SegmentType::TIME_SIG, measure->tick());
+    auto *signature = Factory::create_time_sig(segment);
+    signature->set_track(0);
+    signature->set_sig(Fraction(4, 4), TimeSigType::NORMAL);
+    master.record_element_add(signature);
+    engrave::assign_missing_ids(master);
+    const auto segment_handle = master.eid_register()->handle_of(segment);
+    // Before replacing a failed batch's project, the domain unwind must return
+    // detached source ownership to the old score so teardown can destroy it.
+    master.start_cmd(muse::TranslatableString::untranslatable("refused time signature removal"));
+    EXPECT_THROW(master.delete_item(signature), std::runtime_error);
+    EXPECT_EQ(master.eid_register()->live_item(segment_handle), segment);
+    EXPECT_EQ(measure->find_segment(SegmentType::TIME_SIG, measure->tick()), segment);
+    master.end_cmd(true);
+    const auto signature_id = engrave::from_engine(signature->eid());
+    const auto local_id = engrave::from_engine(local->eid());
+    const auto note = find_id(*document, "Note");
+    const auto color = property(*document, note, "color");
+    const auto revision = document->revision();
+    const auto *project = engrave::DocumentAccess::project(*document).get();
+    const auto result = document->edit({{SetProperty{note, "color", Color{17, 29, 43}}, engrave::Remove{signature_id}}});
+    ASSERT_FALSE(result) << "a refused rewrite must not report a successful batch";
+    EXPECT_EQ(result.error().code, ErrorCode::EDIT_REJECTED);
+    EXPECT_EQ(result.error().op_index, 1u);
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_EQ(property(*document, note, "color"), color);
+    EXPECT_NE(engrave::DocumentAccess::project(*document).get(), project);
+    auto &restored = engrave::harness::master_of(*document);
+    EXPECT_TRUE(engrave::resolve(restored, signature_id));
+    const auto restored_local = engrave::resolve(restored, local_id);
+    ASSERT_TRUE(restored_local);
+    EXPECT_EQ(to_time_sig(restored_local->object)->stretch(), Fraction(3, 4));
+    EXPECT_FALSE(restored.mutation_journal()->has_active_transaction());
+    EXPECT_EQ(restored.layout_state.whole_count + restored.layout_state.range_count, 0u);
 }
 
 TEST(Edit, APoisonedDocumentRefusesWork) {

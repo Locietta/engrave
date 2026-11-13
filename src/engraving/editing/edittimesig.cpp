@@ -23,6 +23,7 @@
 #include "edittimesig.h"
 
 #include <map>
+#include <stdexcept>
 #include <tuple>
 #include <vector>
 
@@ -669,7 +670,10 @@ void EditTimeSig::remove_time_sig(Transaction &tx, Score *score, TimeSig *ts) {
     Fraction ns(pm ? pm->timesig() : Fraction(4, 4));
 
     if (!rewrite_measures(tx, r_score, rm, ns, muse::nidx)) {
+        // Reattach detached segments before snapshot replacement disposes the
+        // old score, then report the refusal so the whole batch is rejected.
         score->mutation_journal()->active_transaction()->unwind();
+        throw std::runtime_error("the engine could not rewrite measures while removing the time signature");
     } else {
         m = score->tick2measure(tick); // old m may have been replaced
         // hack: fix measure rest durations for staves with local time signatures
