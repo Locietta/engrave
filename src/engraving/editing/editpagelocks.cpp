@@ -22,6 +22,8 @@
 
 #include "editpagelocks.h"
 
+#include <stdexcept>
+
 #include "../dom/measure.h"
 #include "../dom/measurebase.h"
 #include "../dom/page.h"
@@ -91,6 +93,7 @@ void EditPageLocks::toggle_page_lock(Transaction &tx, Score *score, const std::v
 }
 
 void EditPageLocks::toggle_score_lock(Transaction &tx, Score *score) {
+    if (score->first_measure() && score->pages().empty()) throw std::logic_error("page locks require layout output");
     bool unlock_all = true;
     for (const Page *page : score->pages()) {
         if (!page->is_locked()) {
@@ -125,6 +128,7 @@ void EditPageLocks::add_remove_page_locks(Transaction &tx, Score *score, int int
     }
 
     if (lock) {
+        if (score->pages().empty()) throw std::logic_error("page locks require layout output");
         for (const Page *page : score->pages()) {
             if (page->last_measure_base()->is_before(start_measure)) {
                 continue;

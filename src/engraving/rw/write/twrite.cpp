@@ -2987,17 +2987,17 @@ void TWrite::write(const FSymbol *item, XmlWriter &xml, WriteContext &ctx) {
 
 void TWrite::write(const System *item, XmlWriter &xml, WriteContext &ctx) {
     xml.start_element(item);
-    if (item->system_divider_left() && item->system_divider_left()->is_user_modified()) {
-        write(item->system_divider_left(), xml, ctx);
-    }
-    if (item->system_divider_right() && item->system_divider_right()->is_user_modified()) {
-        write(item->system_divider_right(), xml, ctx);
+    const auto *score = item->score();
+    const auto index = muse::index_of(score->systems(), item);
+    for (auto side : {SystemDividerType::LEFT, SystemDividerType::RIGHT}) {
+        if (const auto *authored = score->system_divider(index, side)) write(authored, xml, ctx);
     }
     xml.end_element();
 }
 
 void TWrite::write(const SystemDivider *item, XmlWriter &xml, WriteContext &ctx) {
     xml.start_element(item, {{"type", (item->divider_type() == SystemDividerType::LEFT ? "left" : "right")}});
+    if (item->authored_sym()) xml.tag("name", item->sym_name());
 
     write_property(item, xml, Pid::SCORE_FONT);
     write_property(item, xml, Pid::SYMBOLS_SIZE);

@@ -59,8 +59,9 @@ void LayoutDataStore::erase(EngravingItem &item) {
     const auto it = records_->items.find(&item);
     if (it == records_->items.end()) return;
     if (item.is_measure_base()) {
-        auto &measure = *to_measure_base(&item);
-        if (auto *system = measure.system()) system->remove_measure(&measure);
+        const auto *data = static_cast<const MeasureBase::LayoutData *>(it->second.data.get());
+        // The base destructor has already unlinked placement before erasing here.
+        if (auto *system = data->system) system->remove_measure(to_measure_base(&item));
     }
     // Extract before running destructors: Chord payloads still own generated
     // ledger shells, whose destruction recursively retires other records (L3).
@@ -95,8 +96,8 @@ void LayoutDataStore::discard_score_output() {
     if (score_) {
         // These legacy L5 caches can retain pointers to output-owned ledger and
         // Harmony parenthesis shells. Retire their views before deleting shells.
-        for (auto *page : score_->pages()) page->invalidate_bsp_tree();
-        for (auto *system : score_->systems()) {
+        for (auto *page : output_.pages) page->invalidate_bsp_tree();
+        for (auto *system : output_.systems) {
             for (auto *staff : system->staves()) staff->skyline().clear();
         }
         // Ownership traversal includes hidden and MMR display measures, unlike

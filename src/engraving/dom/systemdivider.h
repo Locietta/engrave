@@ -23,6 +23,8 @@
 #ifndef MU_ENGRAVING_SYSTEMDIVIDER_H
 #define MU_ENGRAVING_SYSTEMDIVIDER_H
 
+#include <optional>
+
 #include "symbol.h"
 
 namespace mu::engraving {
@@ -48,7 +50,17 @@ public:
 
     Segment *segment() const override { return nullptr; }
 
-    System *system() const { return (System *) ownership_parent(); }
+    System *system() const {
+        auto *parent = ownership_parent();
+        return parent && parent->is_system() ? to_system(parent) : nullptr;
+    }
+
+    std::optional<SymId> authored_sym() const { return authored_sym_; }
+
+    void set_authored_sym(SymId sym) {
+        authored_sym_ = sym;
+        set_sym(sym);
+    }
 
     PropertyValue property_default(Pid id) const override;
 
@@ -59,6 +71,7 @@ public:
 
 private:
     SystemDividerType divider_type_ = SystemDividerType::LEFT;
+    std::optional<SymId> authored_sym_;
 };
 } // namespace mu::engraving
 

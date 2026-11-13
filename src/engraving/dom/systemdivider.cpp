@@ -48,7 +48,7 @@ SystemDivider::SystemDivider(DummyParentOr<System> parent)
 //   SystemDivider
 //---------------------------------------------------------
 
-SystemDivider::SystemDivider(const SystemDivider &sd) : Symbol(sd) { divider_type_ = sd.divider_type_; }
+SystemDivider::SystemDivider(const SystemDivider &sd) : Symbol(sd), divider_type_(sd.divider_type_), authored_sym_(sd.authored_sym_) {}
 
 SystemDivider::~SystemDivider() {
     // BSymbol's ordinary teardown parks nested symbols on the dummy. Divider
@@ -81,7 +81,9 @@ void SystemDivider::set_divider_type(SystemDividerType v) {
 }
 
 void SystemDivider::style_changed() {
-    if (divider_type_ == SystemDividerType::LEFT) {
+    if (authored_sym_) {
+        set_sym(*authored_sym_);
+    } else if (divider_type_ == SystemDividerType::LEFT) {
         set_sym(SymNames::sym_id_by_name(style().style_st(Sid::DIVIDER_LEFT_SYM)));
     } else {
         set_sym(SymNames::sym_id_by_name(style().style_st(Sid::DIVIDER_RIGHT_SYM)));
