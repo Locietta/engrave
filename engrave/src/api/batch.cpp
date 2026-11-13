@@ -62,6 +62,26 @@ bool engine_failed() { return MScore::error != MsError::MS_NO_ERROR && !MScore::
 
 bool engine_warned() { return MScore::error != MsError::MS_NO_ERROR && MScore::error_is_warning; }
 
+Policy recovery_policy(MasterScore &master, const Op &op) {
+    const Policy policy = policy_of(op);
+    const auto *remove = std::get_if<Remove>(&op);
+    if (!remove) return policy;
+    const auto *id = std::get_if<ElementId>(&remove->target);
+    // Addresses cannot name these source objects. The only current OpRef
+    // producer in these families is InsertMeasures, already a snapshot step.
+    if (!id) return policy;
+    const auto found = resolve(master, *id);
+    if (!found) return policy; // prepare() reports invalid references.
+    switch (found->object->type()) {
+        // Generic deletion enters the same timing/rewrite/break routines as
+        // their dedicated snapshot operations. Other removals stay journal-only.
+        case mu::engraving::ElementType::MEASURE:
+        case mu::engraving::ElementType::TIMESIG:
+        case mu::engraving::ElementType::LAYOUT_BREAK: return Policy::SNAPSHOT;
+        default: return policy;
+    }
+}
+
 } // namespace
 
 std::string_view to_string(Policy policy) noexcept {
@@ -198,7 +218,7 @@ Result<EditResult> BatchGuard::edit(const Batch &batch, std::optional<std::uint6
     for (std::size_t i = 0; i < batch.ops.size(); ++i) {
         const Op &op = batch.ops[i];
         context_.op_ = i;
-        const Policy own = policy_of(op);
+        const Policy own = recovery_policy(context_.master(), op);
         if (own == Policy::UNEXPOSED) return fail(ErrorCode::UNSUPPORTED, std::format("{} is not available", op_name(op)), i);
         if (own == Policy::SNAPSHOT) policy = Policy::SNAPSHOT;
         snapshot_step.push_back(own == Policy::SNAPSHOT);

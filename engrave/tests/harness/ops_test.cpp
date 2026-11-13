@@ -178,6 +178,72 @@ TEST(Edit, AFailingOperationRollsTheBatchBack) {
     }
 }
 
+TEST(JournalPolicy, GenericTimingAndBreakRemovalsUseSnapshotRecovery) {
+    for (const std::string_view type : {"Measure", "TimeSig", "LayoutBreak"}) {
+        SCOPED_TRACE(type);
+        auto document = open(fixture_name);
+        ASSERT_TRUE(document);
+        if (type == "LayoutBreak") {
+            const auto outline = document->outline();
+            ASSERT_TRUE(outline);
+            ASSERT_TRUE(document->edit({{engrave::SetLayoutBreak{outline->measures.front().id, "line", true}}}));
+        }
+        const auto target = find_id(*document, type);
+        const auto revision = document->revision();
+        const auto *project = engrave::DocumentAccess::project(*document).get();
+        std::vector<ElementId> ids;
+        for (const auto &entry : engrave::live_ids(engrave::harness::master_of(*document))) ids.push_back(entry.id);
+        bool removed = false;
+        engrave::DocumentAccess::edit_hooks(*document).before_step = [&](std::size_t step) {
+            if (step == 1) {
+                removed = true;
+                throw std::runtime_error("reject after generic source removal");
+            }
+        };
+        const auto result = document->edit({{engrave::Remove{target}}});
+        ASSERT_FALSE(result);
+        EXPECT_EQ(result.error().code, ErrorCode::EDIT_REJECTED);
+        EXPECT_TRUE(removed);
+        EXPECT_NE(engrave::DocumentAccess::project(*document).get(), project);
+        auto &restored = engrave::harness::master_of(*document);
+        std::vector<ElementId> restored_ids;
+        for (const auto &entry : engrave::live_ids(restored)) restored_ids.push_back(entry.id);
+        EXPECT_EQ(restored_ids, ids);
+        EXPECT_TRUE(engrave::resolve(restored, target));
+        EXPECT_EQ(document->revision(), revision);
+        EXPECT_FALSE(restored.mutation_journal()->has_active_transaction());
+        EXPECT_EQ(restored.layout_state.whole_count + restored.layout_state.range_count, 0u);
+    }
+}
+
+TEST(JournalPolicy, OrdinaryNoteRemovalKeepsJournalOnlyRecovery) {
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    const auto target = find_id(*document, "Note");
+    const auto revision = document->revision();
+    auto &master = engrave::harness::master_of(*document);
+    const auto before = engrave::resolve(master, target);
+    ASSERT_TRUE(before);
+    const auto handle = master.eid_register()->handle_of(before->object);
+    const auto *project = engrave::DocumentAccess::project(*document).get();
+    auto &hooks = engrave::DocumentAccess::edit_hooks(*document);
+    hooks.fail_restore = true;
+    hooks.before_step = [](std::size_t step) {
+        if (step == 1) throw std::runtime_error("reject after note removal");
+    };
+    const auto result = document->edit({{engrave::Remove{target}}});
+    ASSERT_FALSE(result);
+    EXPECT_EQ(result.error().code, ErrorCode::EDIT_REJECTED);
+    EXPECT_EQ(engrave::DocumentAccess::project(*document).get(), project);
+    const auto restored = engrave::resolve(master, target);
+    ASSERT_TRUE(restored);
+    EXPECT_EQ(restored->object, before->object);
+    EXPECT_EQ(master.eid_register()->live_item(handle), before->object);
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+}
+
 TEST(Edit, APoisonedDocumentRefusesWork) {
     auto document = open(fixture_name);
     ASSERT_TRUE(document);
