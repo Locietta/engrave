@@ -213,11 +213,12 @@ void EditChord::undo_remove_parentheses_from_note(Chord *chord, Note *note, cons
         apply_remove_single_note_parentheses(chord, note, group);
         return;
     }
+    const auto original = *group;
     for (EngravingObject *object : chord->link_list()) {
         auto *linked_chord = to_chord(object);
         auto *linked_note = object == chord ? note : to_note(note->find_linked_in_staff(linked_chord->staff()));
         if (!linked_note) continue;
-        const auto *linked_group = linked_chord->find_note_parenthesis_info(linked_note);
+        const auto *linked_group = linked_chord == chord ? group : linked_chord->matching_parenthesis_group(original);
         if (linked_group) apply_remove_single_note_parentheses(linked_chord, linked_note, linked_group);
     }
 }
@@ -228,11 +229,12 @@ void EditChord::undo_clear_parenthesis_group(Chord *chord, std::vector<Note *> n
         apply_remove_note_parenthesis_info(chord, const_cast<NoteParenthesisInfo *>(group));
         return;
     }
+    const auto original = *group;
     for (EngravingObject *object : chord->link_list()) {
         auto *linked_chord = to_chord(object);
         auto *note = object == chord ? notes.front() : to_note(notes.front()->find_linked_in_staff(linked_chord->staff()));
         if (!note) continue;
-        const auto *linked_group = linked_chord->find_note_parenthesis_info(note);
+        const auto *linked_group = linked_chord == chord ? group : linked_chord->matching_parenthesis_group(original);
         if (linked_group) apply_remove_note_parenthesis_info(linked_chord, const_cast<NoteParenthesisInfo *>(linked_group));
     }
 }

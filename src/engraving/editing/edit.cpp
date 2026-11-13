@@ -2090,7 +2090,10 @@ void Score::delete_range_at_track(std::vector<ChordRest *> &crs_to_select, const
             for (EngravingItem *grace_elem : anchored_to_grace) {
                 if (filter.can_select(grace_elem)) {
                     // Delete elements anchored to grace note...
-                    undo_remove_element(grace_elem);
+                    if (grace_elem->is_parenthesis())
+                        delete_item(grace_elem);
+                    else
+                        undo_remove_element(grace_elem);
                 }
             }
             if (filter.can_select(elem)) {
@@ -2120,12 +2123,23 @@ void Score::delete_range_at_track(std::vector<ChordRest *> &crs_to_select, const
                 //! NOTE: Don't need to remove anchored elements - they won't survive the deletion of their parent note...
                 continue;
             }
+            if (const auto *group = note->parenthesis_info()) {
+                const auto members = group->notes();
+                for (auto *member : members) {
+                    member->undo_change_property(Pid::HIDE_GENERATED_PARENTHESES, true);
+                    member->undo_change_property(Pid::HAS_PARENTHESES, ParenthesesMode::NONE);
+                }
+                EditChord::remove_chord_parentheses(chord, members);
+            }
             for (EngravingItem *elem : collect_elements_anchored_to_note(note, true, false)) {
                 if (!filter.can_select(elem)) {
                     continue;
                 }
                 if (!elem->is_spanner() || elem->is_partial_tie() || elem->is_laissez_vib()) {
-                    undo_remove_element(elem);
+                    if (elem->is_parenthesis())
+                        delete_item(elem);
+                    else
+                        undo_remove_element(elem);
                     continue;
                 }
                 if (note_anchored_spanner_is_in_range(to_spanner(elem), cr1->tick(), end_tick)) {

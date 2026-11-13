@@ -28,6 +28,7 @@
 #include "../editing/addremoveelement.h"
 #include "../editing/transaction/transaction.h"
 #include "bracketitem.h"
+#include "chord.h"
 #include "chordline.h"
 #include "dummyparent.h"
 #include "global/containers.h"
@@ -379,6 +380,43 @@ static void change_property(EngravingObject *e, Pid t, const PropertyValue &st, 
 
 static void change_properties(EngravingObject *object, Pid property_id, const PropertyValue &property_value, PropertyFlags property_flag,
                               bool reset_path) {
+    if (object->is_parenthesis() && authored_override_handles(*object, property_id)) {
+        auto *item = to_engraving_item(object);
+        auto *owner = authored_override_owner(*item);
+        const auto key = item->authored_child;
+        if (owner && owner->is_chord() && key.subordinal == 1 && key.ordinal < to_chord(owner)->note_parentheses().size()) {
+            auto *chord = to_chord(owner);
+            const auto group = *chord->note_parentheses()[key.ordinal];
+            change_property(object, property_id, property_value, property_flag, reset_path);
+            owner->notify_property_change(property_id);
+            for (auto *peer : owner->link_list_for_property_propagation()) {
+                if (peer == owner || !peer->is_chord()) continue;
+                auto *linked = to_chord(peer);
+                const auto *match = linked->matching_parenthesis_group(group);
+                if (!match) continue;
+                const auto propagation = owner->property_propagation(linked, property_id);
+                const auto flag = property_group(property_id) == PropertyGroup::POSITION ? Pid::POSITION_LINKED_TO_MASTER :
+                                                                                           Pid::APPEARANCE_LINKED_TO_MASTER;
+                if (propagation == PropertyPropagation::UNLINK) {
+                    change_property(object, flag, false, PropertyFlags::NOSTYLE);
+                    continue;
+                }
+                const AuthoredChildKey target{key.role, static_cast<uint32_t>(linked->parenthesis_group_index(match)), 0, 1};
+                const auto *linked_flag = linked->authored_overrides.find(target, flag);
+                if (propagation != PropertyPropagation::PROPAGATE || (linked_flag && !linked_flag->value.to_bool())) continue;
+                if (const auto *entry = chord->authored_overrides.find(key, property_id)) {
+                    auto copied = *entry;
+                    copied.child = target;
+                    linked->authored_overrides.set(std::move(copied));
+                } else {
+                    linked->authored_overrides.erase(target, property_id);
+                }
+                linked->notify_property_change(property_id);
+                linked->trigger_layout();
+            }
+            return;
+        }
+    }
     const std::list<EngravingObject *> link_list = object->link_list_for_property_propagation();
     for (EngravingObject *linked_object : link_list) {
         if (linked_object == object) {

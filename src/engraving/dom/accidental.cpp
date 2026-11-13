@@ -259,7 +259,9 @@ SymId Accidental::sym_id() const { return ::mu::engraving::acc_list[int(accident
 
 bool Accidental::parent_note_has_parentheses() const {
     const EngravingObject *owner = ownership_parent();
-    return owner && owner->is_note() && to_note(owner)->parenthesis_info();
+    if (!owner || !owner->is_note()) return false;
+    const auto *note = to_note(owner);
+    return note->parenthesis_info() || (note->ldata()->has_generated_parens() && !note->hide_generated_parens());
 }
 
 //---------------------------------------------------------

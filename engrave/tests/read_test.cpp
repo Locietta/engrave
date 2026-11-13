@@ -6524,20 +6524,25 @@ TEST(Read, SpannerRootStylesDoNotBecomeSegmentOverrides) {
     EXPECT_TRUE(bend->authored_overrides.carriers.empty());
 }
 
-TEST(Read, ParenthesisAndStemLinksFollowTheirChord) {
-    using namespace mu::engraving;
+static std::string parenthesis_link_fixture() {
     auto xml = chordline_offset_fixture();
     const auto begin = xml.find("<ChordLine>");
     xml.erase(begin, xml.find("</ChordLine>", begin) + 12 - begin);
     xml.insert(xml.find("<Note>") + 6, "<eid>C_C</eid><parentheses>both</parentheses>");
-    xml.insert(xml.find("</Note>") + 7,
-               "<Stem><eid>F_F</eid><userLen>0.5</userLen></Stem><NoteParenGroup><Parenthesis><eid>D_D</eid></Parenthesis>"
-               "<Parenthesis><horizontalDirection>right</horizontalDirection><eid>E_E</eid></Parenthesis>"
-               "<Notes><NoteEID>C_C</NoteEID></Notes></NoteParenGroup>"
-               "<Note><eid>J_J</eid><pitch>64</pitch><tpc>18</tpc></Note>"
-               "<NoteParenGroup><Parenthesis><eid>G_G</eid></Parenthesis>"
-               "<Parenthesis><horizontalDirection>right</horizontalDirection><eid>H_H</eid></Parenthesis>"
-               "<Notes><NoteEID>J_J</NoteEID></Notes></NoteParenGroup>");
+    xml.insert(xml.find("</Note>") + 7, "<Stem><eid>F_F</eid><userLen>0.5</userLen></Stem><NoteParenGroup><Parenthesis><eid>D_D</"
+                                        "eid><offset x=\"1\" y=\"2\"/></Parenthesis>"
+                                        "<Parenthesis><horizontalDirection>right</horizontalDirection><eid>E_E</eid></Parenthesis>"
+                                        "<Notes><NoteEID>C_C</NoteEID></Notes></NoteParenGroup>"
+                                        "<Note><eid>J_J</eid><pitch>64</pitch><tpc>18</tpc></Note>"
+                                        "<NoteParenGroup><Parenthesis><eid>G_G</eid></Parenthesis>"
+                                        "<Parenthesis><horizontalDirection>right</horizontalDirection><eid>H_H</eid></Parenthesis>"
+                                        "<Notes><NoteEID>J_J</NoteEID></Notes></NoteParenGroup>");
+    return xml;
+}
+
+TEST(Read, ParenthesisAndStemLinksFollowTheirChord) {
+    using namespace mu::engraving;
+    auto xml = parenthesis_link_fixture();
     auto opened = g_engine->open(as_bytes(xml));
     ASSERT_TRUE(opened);
     auto &master = master_of(**opened);
@@ -6574,6 +6579,76 @@ TEST(Read, ParenthesisAndStemLinksFollowTheirChord) {
     delete removed;
     const auto unmatched = legacy_override_write(clone);
     EXPECT_EQ(unmatched.substr(unmatched.find("<NoteParenGroup>")).find("<linkedTo>"), std::string::npos);
+}
+
+TEST(Read, RemovingParenthesisGroupRebuildsShapeAndClearsItsOffset) {
+    using namespace mu::engraving;
+    auto xml = parenthesis_link_fixture();
+    xml.insert(xml.find("<eid>D_D</eid>") + 14, "<visible>0</visible>");
+    auto opened = g_engine->open(as_bytes(xml));
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    Transaction tx;
+    EditVisibility::undo_change_visible(tx, chord->find_note(60), true);
+    ASSERT_TRUE((*opened)->page_count());
+    EXPECT_TRUE(chord->layout_parentheses().front().left->visible());
+    chord->find_note(60)->set_parentheses_mode(ParenthesesMode::NONE, false);
+    ASSERT_TRUE((*opened)->page_count());
+    ASSERT_EQ(chord->layout_parentheses().size(), 1u);
+    EXPECT_EQ(chord->layout_parentheses().front().left->offset(), muse::PointF());
+    EXPECT_EQ(chord->layout_parentheses().front().info.notes().front()->pitch(), 64);
+}
+
+TEST(Read, ParenthesisPropertyEditsReachColdPartsAndRespectChildAppearance) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(as_bytes(parenthesis_link_fixture()));
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    const auto outline = (*opened)->outline();
+    ASSERT_TRUE(outline);
+    ASSERT_TRUE((*opened)->edit({{engrave::GenerateExcerpts{{outline->parts.front().id}}}}));
+    auto *source = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    auto *part = master.excerpts().front()->excerpt_score();
+    auto *clone = to_chord(part->first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    ASSERT_TRUE((*opened)->page_count());
+    const AuthoredChildKey key{AuthoredChildRole::PAREN_LEFT, 0, 0, 1};
+    source->layout_parentheses().front().left->undo_change_property(Pid::COLOR, muse::draw::Color(24, 80, 120));
+    ASSERT_NE(clone->authored_overrides.find(key, Pid::COLOR), nullptr);
+    EXPECT_EQ(clone->authored_overrides.find(key, Pid::COLOR)->value.value<muse::draw::Color>(), muse::draw::Color(24, 80, 120));
+    clone->authored_overrides.set({key, Pid::APPEARANCE_LINKED_TO_MASTER, false});
+    source->layout_parentheses().front().left->undo_change_property(Pid::COLOR, muse::draw::Color(120, 80, 24));
+    EXPECT_EQ(clone->authored_overrides.find(key, Pid::COLOR)->value.value<muse::draw::Color>(), muse::draw::Color(24, 80, 120));
+    source->set_stem_user_length(Spatium(0));
+    std::erase_if(source->authored_overrides.entries, [](const auto &entry) { return entry.child.role == AuthoredChildRole::STEM; });
+    EXPECT_EQ(legacy_override_write(clone).find("<linkedTo>F_F</linkedTo>"), std::string::npos);
+    const_cast<NoteParenthesisInfo *>(clone->note_parentheses().front())->insert_note(clone->find_note(64));
+    source->find_note(60)->set_parentheses_mode(ParenthesesMode::NONE);
+    ASSERT_EQ(clone->note_parentheses().front()->notes().size(), 2u);
+    EXPECT_EQ(clone->note_parentheses().front()->notes().front()->pitch(), 60);
+    EXPECT_EQ(clone->note_parentheses().front()->notes().back()->pitch(), 64);
+}
+
+TEST(Read, CheckpointAfterRemovingRenderedGhostDoesNotReadCachedMembership) {
+    using namespace mu::engraving;
+    auto xml = legacy_segment_fixture("");
+    xml.insert(xml.find("<Note>") + 6, "<ghost>1</ghost>");
+    xml.insert(xml.find("</Note>") + 7, "<Note><pitch>64</pitch><tpc>18</tpc></Note>");
+    auto opened = g_engine->open(as_bytes(xml));
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    ASSERT_TRUE((*opened)->page_count());
+    auto *ghost = chord->find_note(60);
+    ASSERT_NE(ghost, nullptr);
+    const auto id = engrave::from_engine(ghost->eid());
+    ASSERT_TRUE((*opened)->edit({{engrave::Remove{engrave::Ref{id}}}}));
+    ASSERT_TRUE((*opened)->checkpoint("removed ghost"));
+    ASSERT_TRUE((*opened)->restore_checkpoint("removed ghost"));
+    auto *restored = to_chord(master_of(**opened).first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    ASSERT_EQ(restored->notes().size(), 1u);
+    EXPECT_EQ(restored->notes().front()->pitch(), 64);
+    EXPECT_TRUE(restored->note_parentheses().empty());
 }
 
 } // namespace

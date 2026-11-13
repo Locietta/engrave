@@ -46,6 +46,7 @@
 #include "measurerepeat.h"
 #include "note.h"
 #include "page.h"
+#include "parenthesis.h"
 #include "part.h"
 #include "partialtie.h"
 #include "pitchspelling.h"
@@ -1247,6 +1248,10 @@ std::unordered_set<EngravingItem *> collect_elements_anchored_to_note(const Note
             }
             elems.emplace(sp);
         }
+    }
+    if (const auto *group = note->chord() ? note->chord()->layout_parenthesis_group(note) : nullptr) {
+        elems.emplace(group->left);
+        elems.emplace(group->right);
     }
     return elems;
 }
