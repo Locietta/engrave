@@ -13,6 +13,7 @@
 #include "engrave/src/audio/score_audio.h"
 #include "engrave/src/runtime/engine_context.h"
 #include "engrave/src/runtime/score_io.h"
+#include "engraving/dom/tempotimeline.h"
 #include <engrave/document.h>
 #include <engrave/engine.h>
 
@@ -53,6 +54,24 @@ struct Engine::Impl {
 };
 
 struct Document::Impl {
+    struct Checkpoint {
+        struct Versions {
+            muse::String version;
+            int revision = 0;
+            int msc_version = 0;
+        };
+
+        std::string name;
+        std::string bytes;
+        std::vector<Versions> versions;
+        mu::engraving::RuntimeTempoState runtime_tempo;
+        std::uint64_t source_revision = 0;
+        std::uint64_t saved_revision = 0;
+        std::size_t byte_count = 0;
+    };
+
+    std::vector<Checkpoint> checkpoints;
+    std::size_t checkpoint_byte_limit = 64 * 1024 * 1024;
     ~Impl();
     EngineState *engine = nullptr;
     // Declared before project: payloads remain available throughout DOM teardown.

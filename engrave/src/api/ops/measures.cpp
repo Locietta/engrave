@@ -95,6 +95,8 @@ Result<Step> prepare(EditContext &context, const InsertMeasures &op) {
     if (op.before) {
         auto target = context.target(*op.before);
         if (!target) return std::unexpected(target.error());
+        if (target->object && !target->object->is_measure_base())
+            return invalid(std::format("a {} is not a measure or a frame", target->object->type_name()));
         before = *target;
     }
     if (op.count < 1) return invalid("inserting needs at least one measure");
@@ -134,6 +136,14 @@ Result<Step> prepare(EditContext &context, const RemoveMeasures &op) {
     if (!first) return std::unexpected(first.error());
     auto last = context.target(op.last);
     if (!last) return std::unexpected(last.error());
+    if (first->object && !first->object->is_measure()) return invalid(std::format("a {} is not a measure", first->object->type_name()));
+    if (last->object && !last->object->is_measure()) return invalid(std::format("a {} is not a measure", last->object->type_name()));
+    if (first->object && last->object) {
+        auto *start = mu::engraving::to_measure(first->object);
+        auto *end = mu::engraving::to_measure(last->object);
+        if (start->score() != end->score()) return invalid("the range starts and ends in different scores");
+        if (end->tick() < start->tick()) return invalid("the range ends before it starts");
+    }
     return [first = *first, last = *last](EditContext &context) -> Result<void> {
         auto start = measure_of(context, first);
         if (!start) return std::unexpected(start.error());

@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <string_view>
 #include <vector>
 
 #include <engrave/audio.h>
@@ -142,6 +143,14 @@ struct Document {
     // a Snapshot-policy operation or threw therefore does not promise bit-exact
     // layout. Failed recovery throws and poisons the document.
     Result<EditResult> edit(const Batch &batch, std::optional<std::uint64_t> expected_revision = {});
+
+    // Named in-memory native snapshots share a 64 MiB budget. Replacing a name
+    // never evicts another checkpoint; ResourceLimit leaves existing snapshots intact.
+    // Capture and restore do not lay out. Restore preserves public element ids,
+    // advances the revision, dirties geometry and clears a failed edit's poison.
+    Result<void> checkpoint(std::string_view name);
+    Result<void> restore_checkpoint(std::string_view name);
+    Result<void> drop_checkpoint(std::string_view name);
 
 private:
     friend struct Engine;
