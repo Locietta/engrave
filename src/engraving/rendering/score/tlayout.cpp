@@ -838,7 +838,7 @@ void TLayout::layout_articulation(Articulation *item, Articulation::LayoutData *
 void TLayout::fill_articulation_shape(const Articulation *item, Articulation::LayoutData *ldata) {
     LAYOUT_CALL_ITEM(item);
 
-    SymId sym = item->sym_id();
+    SymId sym = ldata->sym_id.value();
     if (sym == SymId::ARTIC_ACCENT_ABOVE || sym == SymId::ARTIC_ACCENT_BELOW) {
         RectF sym_bbox = item->sym_bbox(sym);
         double width = sym_bbox.width();

@@ -737,6 +737,54 @@ TEST(Read, DeadNoteHeadReadKeepsTheAuthoredGroup) {
     }
 }
 
+TEST(Read, BendRemovalPreservesAuthoredNoteAppearance) {
+    using namespace mu::engraving;
+    auto source = read_text(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "tests/data/inputs/golden/tab_grace_prebend.mscx");
+    size_t at = 0;
+    while ((at = source.find("<Note>", at)) != std::string::npos) {
+        const auto end = source.find("</Note>", at);
+        auto note = source.substr(at, end - at);
+        const auto visible = note.find("<visible>1</visible>");
+        if (visible != std::string::npos)
+            note.replace(visible, 20, "<visible>0</visible>");
+        else
+            note.insert(6, "<visible>0</visible>");
+        note.insert(6, "<ghost>1</ghost>");
+        source.replace(at, end - at, note);
+        at += note.size();
+    }
+    auto opened = g_engine->open(as_bytes(source), {.format = engrave::Format::MSCX});
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    GuitarBend *bend = nullptr;
+    for (auto *object : engrave::document_objects(master))
+        if (object->is_guitar_bend()) {
+            bend = to_guitar_bend(object);
+            break;
+        }
+    ASSERT_NE(bend, nullptr);
+    auto *end_note = bend->end_note();
+    ASSERT_NE(end_note, nullptr);
+    ASSERT_TRUE((*opened)->edit({{engrave::Remove{engrave::from_engine(bend->eid())}}}));
+    EXPECT_TRUE(end_note->ghost());
+    EXPECT_FALSE(end_note->visible());
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+}
+
+TEST(Read, PlacedArticulationUsesTheBelowGlyphBounds) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    std::unique_ptr<Articulation> artic(Factory::create_articulation(chord));
+    artic->set_sym_id(SymId::ARTIC_MARCATO_ABOVE);
+    artic->set_up(false);
+    rendering::score::TLayout::fill_articulation_shape(artic.get(), artic->mutldata());
+    EXPECT_EQ(artic->sym_id(), SymId::ARTIC_MARCATO_ABOVE);
+    EXPECT_EQ(artic->ldata()->bbox(), artic->sym_bbox(SymId::ARTIC_MARCATO_BELOW));
+}
+
 TEST(Read, ColdAutoFlipUsesDefaultWithoutLayout) {
     using namespace mu::engraving;
     auto opened = g_engine->open(write470_fixture());
