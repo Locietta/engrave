@@ -98,7 +98,7 @@ public:
 
     PlacementV placement() const override {
         const auto *ld = ldata();
-        return ld && ld->voice_placement ? *ld->voice_placement : EngravingItem::placement();
+        return is_layout_data_current() && ld->voice_placement ? *ld->voice_placement : EngravingItem::placement();
     }
 
     Hairpin *clone() const override { return new Hairpin(*this); }

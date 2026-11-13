@@ -188,7 +188,7 @@ public:
 
     double display_mag() const {
         const auto *ld = ldata();
-        return ld ? ld->diagram_scale.value_or(user_mag_) : user_mag_;
+        return is_layout_data_current() ? ld->diagram_scale.value_or(user_mag_) : user_mag_;
     }
 
     int num_pos() const;

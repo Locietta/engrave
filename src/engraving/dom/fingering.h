@@ -55,7 +55,7 @@ public:
 
     PlacementV placement() const override {
         const auto *ld = ldata();
-        return is_styled(Pid::PLACEMENT) && ld && ld->placed ? *ld->placed : EngravingItem::placement();
+        return is_styled(Pid::PLACEMENT) && is_layout_data_current() && ld->placed ? *ld->placed : EngravingItem::placement();
     }
 
     PropertyValue get_property(Pid id) const override {
