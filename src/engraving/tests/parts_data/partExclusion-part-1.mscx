@@ -53,11 +53,11 @@
             <sigD>4</sigD>
             </TimeSig>
           <Chord>
-            <eid>aJyg2EwJ8KP_aJyg2EwJ8KP</eid>
+            <eid>ZJyg2EwJ8KP_ZJyg2EwJ8KP</eid>
             <linkedTo>xfGJ+PqydeM_UotAar02YCI</linkedTo>
             <durationType>quarter</durationType>
             <Note>
-              <eid>bJyg2EwJ8KP_bJyg2EwJ8KP</eid>
+              <eid>aJyg2EwJ8KP_aJyg2EwJ8KP</eid>
               <linkedTo>4InmrWz03qJ_+6Awe2EUOMO</linkedTo>
               <pitch>60</pitch>
               <tpc>14</tpc>
@@ -75,11 +75,11 @@
               </Note>
             </Chord>
           <Chord>
-            <eid>fJyg2EwJ8KP_fJyg2EwJ8KP</eid>
+            <eid>eJyg2EwJ8KP_eJyg2EwJ8KP</eid>
             <linkedTo>lZQAFIbu4IK_WNLJsPQW6OL</linkedTo>
             <durationType>quarter</durationType>
             <Note>
-              <eid>gJyg2EwJ8KP_gJyg2EwJ8KP</eid>
+              <eid>fJyg2EwJ8KP_fJyg2EwJ8KP</eid>
               <linkedTo>+CQFfOTwniM_4qcnhGEqMjJ</linkedTo>
               <pitch>60</pitch>
               <tpc>14</tpc>

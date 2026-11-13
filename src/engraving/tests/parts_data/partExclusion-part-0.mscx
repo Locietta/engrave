@@ -40,11 +40,11 @@
     <Staff id="1">
       <VBox>
         <height>10</height>
-        <eid>UJyg2EwJ8KP_UJyg2EwJ8KP</eid>
+        <eid>VJyg2EwJ8KP_VJyg2EwJ8KP</eid>
         <linkedTo>QJyg2EwJ8KP_QJyg2EwJ8KP</linkedTo>
         <Text>
           <style>instrument_excerpt</style>
-          <eid>VJyg2EwJ8KP_VJyg2EwJ8KP</eid>
+          <eid>3Jyg2EwJ8KP_3Jyg2EwJ8KP</eid>
           <text>Flute</text>
           </Text>
         </VBox>
@@ -63,16 +63,16 @@
             <sigD>4</sigD>
             </TimeSig>
           <StaffText>
-            <eid>ZJyg2EwJ8KP_ZJyg2EwJ8KP</eid>
+            <eid>bJyg2EwJ8KP_bJyg2EwJ8KP</eid>
             <linkedTo>YFYXK33dPWE_uWwzsCL2sYB</linkedTo>
             <text>Staff text</text>
             </StaffText>
           <Chord>
-            <eid>aJyg2EwJ8KP_aJyg2EwJ8KP</eid>
+            <eid>ZJyg2EwJ8KP_ZJyg2EwJ8KP</eid>
             <linkedTo>xfGJ+PqydeM_UotAar02YCI</linkedTo>
             <durationType>quarter</durationType>
             <Note>
-              <eid>bJyg2EwJ8KP_bJyg2EwJ8KP</eid>
+              <eid>aJyg2EwJ8KP_aJyg2EwJ8KP</eid>
               <linkedTo>4InmrWz03qJ_+6Awe2EUOMO</linkedTo>
               <pitch>60</pitch>
               <tpc>14</tpc>
@@ -90,16 +90,16 @@
               </Note>
             </Chord>
           <SystemText>
-            <eid>eJyg2EwJ8KP_eJyg2EwJ8KP</eid>
+            <eid>gJyg2EwJ8KP_gJyg2EwJ8KP</eid>
             <linkedTo>xgIMfB/K+wN_qK+aUCl4ZoH</linkedTo>
             <text>System text</text>
             </SystemText>
           <Chord>
-            <eid>fJyg2EwJ8KP_fJyg2EwJ8KP</eid>
+            <eid>eJyg2EwJ8KP_eJyg2EwJ8KP</eid>
             <linkedTo>lZQAFIbu4IK_WNLJsPQW6OL</linkedTo>
             <durationType>quarter</durationType>
             <Note>
-              <eid>gJyg2EwJ8KP_gJyg2EwJ8KP</eid>
+              <eid>fJyg2EwJ8KP_fJyg2EwJ8KP</eid>
               <linkedTo>+CQFfOTwniM_4qcnhGEqMjJ</linkedTo>
               <pitch>60</pitch>
               <tpc>14</tpc>
@@ -234,7 +234,7 @@
         <track2>0</track2>
         <startTick>2/1</startTick>
         <ticks>1/1</ticks>
-        <eid>3Jyg2EwJ8KP_3Jyg2EwJ8KP</eid>
+        <eid>UJyg2EwJ8KP_UJyg2EwJ8KP</eid>
         <linkedTo>1Jme6AzR/WH_OjkZ4g/k+hC</linkedTo>
         <track>0</track>
         </Ottava>
