@@ -2566,9 +2566,6 @@ void ChordLayout::set_dot_relative_line(Note *note, int dot_move, LayoutContext 
     int n = cdots - ndots;
     for (int i = 0; i < n; ++i) {
         NoteDot *dot = Factory::create_note_dot(note);
-        AuthoredOverrideMirror mirror(*dot);
-        dot->set_track(note->track()); // needed to know the staff it belongs to (and detect tablature)
-        dot->set_visible(note->visible());
         note->mutldata()->dots.push_back(dot);
     }
     if (n < 0) {
@@ -2579,6 +2576,9 @@ void ChordLayout::set_dot_relative_line(Note *note, int dot_move, LayoutContext 
     }
 
     for (NoteDot *dot : note->dots()) {
+        AuthoredOverrideMirror mirror(*dot);
+        dot->set_track(note->track());
+        dot->set_visible(note->visible());
         apply_authored_overrides(*dot);
         TLayout::layout_note_dot(dot, dot->mutldata());
         dot->mutldata()->set_pos_y(y);

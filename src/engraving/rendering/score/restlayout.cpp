@@ -137,9 +137,6 @@ void RestLayout::layout_rest(const Rest *item, Rest::LayoutData *ldata, const La
 
     while (ldata->dots.size() < size_t(item->dots())) {
         auto *dot = Factory::create_note_dot(const_cast<Rest *>(item));
-        AuthoredOverrideMirror mirror(*dot);
-        dot->set_track(item->track());
-        dot->set_visible(item->visible());
         ldata->dots.push_back(dot);
     }
     while (ldata->dots.size() > size_t(item->dots())) {
@@ -151,6 +148,9 @@ void RestLayout::layout_rest(const Rest *item, Rest::LayoutData *ldata, const La
     double invisible_x = item->sym_width_no_ledger_lines(ldata);
     double y = item->dot_line() * item->spatium() * .5;
     for (NoteDot *dot : item->dot_list()) {
+        AuthoredOverrideMirror mirror(*dot);
+        dot->set_track(item->track());
+        dot->set_visible(item->visible());
         NoteDot::LayoutData *dotldata = dot->mutldata();
         apply_authored_overrides(*dot);
         TLayout::layout_note_dot(dot, dotldata);

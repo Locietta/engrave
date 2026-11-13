@@ -3244,7 +3244,7 @@ void TWrite::write(const Tuplet *item, XmlWriter &xml, WriteContext &ctx) {
         } else {
             xml.tag_property(Pid::TEXT_STYLE, PropertyValue::from_value(TextStyleType::TUPLET), PropertyValue());
         }
-        write_authored_unit(item, number_key, xml);
+        write_authored_common(item, number_key, xml, ctx);
         if (overrides.find(number_key, Pid::TEXT)) {
             write_authored_property(item, number_key, xml, Pid::TEXT);
         } else {
@@ -3263,7 +3263,7 @@ void TWrite::write(const Tuplet *item, XmlWriter &xml, WriteContext &ctx) {
             xml.tag_property(Pid::TEXT, text, PropertyValue());
         }
         for (const auto &entry : overrides.entries) {
-            if (entry.child == number_key && entry.pid != Pid::TEXT && entry.pid != Pid::TEXT_STYLE)
+            if (entry.child == number_key && entry.pid != Pid::TEXT && entry.pid != Pid::TEXT_STYLE && !common_authored_property(entry.pid))
                 write_authored_property(item, number_key, xml, entry.pid);
         }
         xml.end_element();

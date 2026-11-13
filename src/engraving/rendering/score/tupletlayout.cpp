@@ -162,15 +162,15 @@ void TupletLayout::create_number(Tuplet *item, LayoutContext &ctx) {
         Text *number = Factory::create_text(item, TextStyleType::TUPLET);
         AuthoredOverrideMirror mirror(*number);
         number->set_composition(true);
-        number->set_track(item->track());
-        number->set_selected(item->selected());
-        number->set_visible(item->visible());
-        number->set_color(item->color());
         item->mutldata()->number = number;
     }
 
     bind_authored_child(*item->number(), {AuthoredChildRole::TUPLET_NUMBER});
     AuthoredOverrideMirror mirror(*item->number());
+    item->number()->set_track(item->track());
+    item->number()->set_selected(item->selected());
+    item->number()->set_visible(item->visible());
+    item->number()->set_color(item->color());
     item->apply_number_style();
 
     item->number()->set_property_flags(Pid::FONT_FACE, item->property_flags(Pid::FONT_FACE));
