@@ -859,6 +859,28 @@ TEST(Read, DirtyBeamDirectionReadFallsBackToAutoDefault) {
     EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 1u);
 }
 
+TEST(Read, DerivedClefAndTimeSigFlagsRejectPropertyEdits) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    for (const auto [type, pid] : {std::pair{"Clef", Pid::SMALL}, std::pair{"TimeSig", Pid::SYSTEM_FLAG}}) {
+        const auto found = (*opened)->query({.types = {type}, .limit = 1});
+        ASSERT_TRUE(found);
+        ASSERT_FALSE(found->elements.empty());
+        const auto id = found->elements.front().id;
+        const auto resolved = engrave::resolve(master, id);
+        ASSERT_TRUE(resolved);
+        auto *item = to_engraving_item(resolved->object);
+        EXPECT_EQ(engrave::api::settable(type, pid), false);
+        EXPECT_FALSE(item->set_property(pid, true));
+        auto edit = (*opened)->edit({{engrave::SetProperty{id, std::string(engrave::api::name_of(pid)), true}}});
+        ASSERT_FALSE(edit);
+        EXPECT_EQ(edit.error().code, engrave::ErrorCode::INVALID_ARGUMENT);
+    }
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+}
+
 TEST(Read, ColdAutoFlipUsesDefaultWithoutLayout) {
     using namespace mu::engraving;
     auto opened = g_engine->open(write470_fixture());
