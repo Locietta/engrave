@@ -257,12 +257,24 @@
    "fixture": "tab_grace_prebend.mscx",
    "kind": "different",
    "output": "score.mscx",
-   "reason": "Current MSCZ inner MSCX representation, preserved from the reviewed primary index",
+   "reason": "Current MSCZ inner MSCX representation, preserved from the reviewed primary index; native save writes authored note visibility; layout no longer overwrites it (core3 S5b)",
    "sha256": {
-    "linux": "1ccd9b963ad3c785e0aa0578214cb85eab378bf6ea1a2e4e48f22965550bf573",
-    "windows": "1ccd9b963ad3c785e0aa0578214cb85eab378bf6ea1a2e4e48f22965550bf573"
+    "linux": "0bbb232011f54678a74292ba69845224fd20fa69c648231f9481357e4f73d0e4",
+    "windows": "0bbb232011f54678a74292ba69845224fd20fa69c648231f9481357e4f73d0e4"
    },
    "step": "archive MSCX"
+  },
+  {
+   "context": "engine-gate-archive",
+   "fixture": "tab_grace_prebend.mscx",
+   "kind": "different",
+   "output": "mscz.json",
+   "reason": "native save writes authored note visibility; layout no longer overwrites it (core3 S5b)",
+   "sha256": {
+    "linux": "1b74b5477042327fbfc5888ce817f98037b32974fb92774804f9fe87ba341cd1",
+    "windows": "1b74b5477042327fbfc5888ce817f98037b32974fb92774804f9fe87ba341cd1"
+   },
+   "step": "archive MSCZ inner MSCX"
   },
   {
    "context": "engine-gate-archive",
