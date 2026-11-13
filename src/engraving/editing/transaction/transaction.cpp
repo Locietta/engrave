@@ -452,6 +452,17 @@ void Transaction::change_mm_rest_link(Measure &target, MeasureBase *value, MMRes
     finish_compound_hook(s_push_hook, token);
 }
 
+MMRestCreation Transaction::create_mm_rest(Measure &source, std::unique_ptr<Measure> overlay) {
+    if (!overlay || source.mm_rest()) throw std::logic_error("invalid MMR creation ownership");
+    const auto target = JournalTarget::capture(source);
+    const auto object = target.document->eid_register()->enroll(*overlay);
+    if (is_dummy_ || undoable_transaction_->replaying()) return MMRestCreation({target, object, std::move(overlay)});
+    auto token = begin_compound_hook(s_push_hook);
+    auto guard = undoable_transaction_->create_mm_rest(source, std::move(overlay));
+    finish_compound_hook(s_push_hook, token);
+    return guard;
+}
+
 void Transaction::add_element(EngravingItem *item) {
     validate_element_add(*item);
     if (is_dummy_ || undoable_transaction_->replaying()) {

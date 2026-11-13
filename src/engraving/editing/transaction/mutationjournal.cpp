@@ -74,6 +74,7 @@ void MutationJournal::abandon() noexcept {
 
 JournalBatch::~JournalBatch() {
     for (auto *command : legacy_) delete command;
+    dispose_created_mm_rests(false);
     dispose_mstaffs();
     dispose_excerpts();
 }
@@ -154,6 +155,7 @@ void JournalBatch::replace_style(Score &score, const MStyle &style, bool overlap
 
 void JournalBatch::cleanup(bool applied) {
     for (const auto entry : entries_) dispose_entry(entry, applied);
+    dispose_created_mm_rests(applied);
 }
 
 void JournalBatch::dispose_entry(JournalEntry entry, bool committed) {
@@ -601,6 +603,11 @@ void JournalBatch::change_mm_rest_link(Measure &target, MeasureBase *value, MMRe
     validate_mm_rest_link(target, value, link);
     auto *before = mm_rest_link(target, link);
     if (before == value) return;
+    if (link == MMRestLink::ASSOCIATION && value) {
+        for (const auto &reference : created_mm_rests_)
+            if (reference.owned.get() == value && reference.source.handle != reference.source.document->eid_register()->handle_of(&target))
+                throw std::logic_error("a newly owned MMR cannot change its source anchor");
+    }
     const auto reference = JournalTarget::capture(target);
     const auto before_handle = before ? reference.document->eid_register()->enroll(*before) : SourceHandle{};
     const auto index = entry_index(mm_rest_links_.size());
@@ -612,6 +619,19 @@ void JournalBatch::change_mm_rest_link(Measure &target, MeasureBase *value, MMRe
         throw;
     }
     apply_mm_rest_link(target, value, link);
+}
+
+MMRestCreation JournalBatch::create_mm_rest(Measure &source, std::unique_ptr<Measure> overlay) {
+    const auto target = JournalTarget::capture(source);
+    const auto object = target.document->eid_register()->enroll(*overlay);
+    created_mm_rests_.push_back({target, object, std::move(overlay)});
+    MMRestCreation guard(target, object);
+    change_mm_rest_link(source, guard.get(), MMRestLink::ASSOCIATION);
+    return guard;
+}
+
+void JournalBatch::dispose_created_mm_rests(bool committed) {
+    for (auto &reference : created_mm_rests_) dispose_created_mm_rest(reference, committed);
 }
 
 void JournalBatch::unwind(bool clean_up) {

@@ -108,6 +108,7 @@ struct JournalBatch {
     void change_measure_length(Measure *measure, Fraction length);
     void change_measure_repeat_count(Measure *measure, int count, staff_idx_t staff);
     void change_mm_rest_link(Measure &target, MeasureBase *value, MMRestLink link);
+    MMRestCreation create_mm_rest(Measure &source, std::unique_ptr<Measure> overlay);
     void change_mstaff(Measure *measure, MStaff *row, staff_idx_t index, bool adding);
     void add_mstaff(Measure *measure, std::unique_ptr<MStaff> row, staff_idx_t index);
     void change_staff_tracks(Measure *measure, staff_idx_t first, staff_idx_t last, bool adding);
@@ -189,6 +190,8 @@ private:
     amc::vector<MeasureLengthInverse> measure_lengths_;
     amc::vector<MeasureRepeatCountInverse> measure_repeats_;
     amc::vector<MMRestLinkInverse> mm_rest_links_;
+    amc::vector<CreatedMMRest> created_mm_rests_;
+    void dispose_created_mm_rests(bool committed);
     amc::vector<MStaffReference> mstaffs_;
     amc::vector<MStaffMembershipInverse> mstaff_memberships_;
     amc::vector<StaffTracksInverse> staff_tracks_;
