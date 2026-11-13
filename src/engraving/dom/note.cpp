@@ -53,6 +53,7 @@
 #include "laissezvib.h"
 #include "linkedobjects.h"
 #include "log.h"
+#include "masterscore.h"
 #include "measure.h"
 #include "notedot.h"
 #include "noteline.h"
@@ -638,7 +639,7 @@ std::vector<Note *> Note::compound_notes() const {
 }
 
 Note::Note(const Note &n, bool link) : EngravingItem(n, link) {
-    clone_authored_overrides(authored_overrides, n.authored_overrides);
+    clone_authored_overrides(authored_overrides, n.authored_overrides, *master_score()->eid_register());
     if (link) {
         score()->apply_link(this, const_cast<Note *>(&n));
     }

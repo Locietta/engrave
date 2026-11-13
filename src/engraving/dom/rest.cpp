@@ -38,6 +38,7 @@
 #include "engraving/internal/engravingconfiguration.h"
 #include "factory.h"
 #include "log.h"
+#include "masterscore.h"
 #include "measure.h"
 #include "measurerepeat.h"
 #include "note.h"
@@ -70,7 +71,7 @@ Rest::Rest(const ElementType &type, DummyParentOr<Segment> parent, const TDurati
 }
 
 Rest::Rest(const Rest &r, bool link) : ChordRest(r, link) {
-    clone_authored_overrides(authored_overrides, r.authored_overrides);
+    clone_authored_overrides(authored_overrides, r.authored_overrides, *master_score()->eid_register());
     if (link) {
         score()->apply_link(this, const_cast<Rest *>(&r));
         set_autoplace(true);

@@ -581,14 +581,10 @@ TEST(Handles, H1Inventory) {
         inventory_evidence(*document, "created", evidence);
     }
     for (const char *type :
-         {"Articulation", "Chord", "Clef",  "Dynamic", "Fermata", "HairPin",   "LayoutBreak", "Lyrics", "Measure", "Note",
-          "Part",         "Rest",  "Score", "Slur",    "Staff",   "StaffText", "SystemText",  "Tempo",  "Tuplet",  "VBox"}) {
+         {"Articulation", "Chord", "Clef", "Dynamic", "Fermata",   "HairPin",    "LayoutBreak", "Lyrics", "Measure", "Note", "Part",
+          "Rest",         "Score", "Slur", "Staff",   "StaffText", "SystemText", "Tempo",       "Tie",    "Tuplet",  "VBox"}) {
         EXPECT_TRUE(created.contains(type)) << "the edit API did not create a " << type << "; does it still create one?";
     }
-    // AddTie is exercised above but a Tie is note-anchored and not part of the walk (it
-    // takes no id the document hands out), so it has no row to classify.
-    EXPECT_TRUE(evidence.find("Tie") == evidence.end()) << "a Tie reached the handle walk; classify it in the inventory";
-
     ASSERT_FALSE(evidence.empty()) << "no corpus score opens";
 
     std::map<std::string, std::string> observed;
@@ -1695,6 +1691,41 @@ TEST(Handles, ExcerptTeardownRetiresDummyOwnedSpanners) {
     EXPECT_EQ(registry.item_from_eid(eid), nullptr);
     EXPECT_FALSE(engrave::resolve(master, engrave::from_engine(eid)));
     expect_inv(*document);
+}
+
+TEST(Handles, ImportedTieIsAddressableBeforeSaving) {
+    auto xml = read_text(g_source_root / "tests/data/inputs/golden/linked_parts.mscx");
+    const auto at = xml.find("<eid>J_J</eid>");
+    ASSERT_NE(at, std::string::npos);
+    xml.erase(at, std::string_view("<eid>J_J</eid>").size());
+    auto document = open_text(xml);
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *note = first_note(master);
+    ASSERT_NE(note, nullptr);
+    auto *tie = note->tie_for();
+    ASSERT_NE(tie, nullptr);
+    ASSERT_NE(tie->end_note(), nullptr);
+    EXPECT_EQ(tie->tick(), mu::engraving::Fraction(0, 1));
+    EXPECT_EQ(tie->end_note()->tick(), mu::engraving::Fraction(1, 4));
+    EXPECT_EQ(engrave::id_class(*tie), IdClass::PERSISTED);
+    ASSERT_TRUE(tie->eid().is_valid());
+    const auto id = engine_id(*tie);
+    const auto resolved = engrave::resolve(master, id);
+    ASSERT_TRUE(resolved);
+    EXPECT_EQ(resolved->object, tie);
+    EXPECT_TRUE(master.eid_register()->published(master.eid_register()->handle_of(tie)));
+    const auto ids = engrave::live_ids(master);
+    EXPECT_TRUE(std::ranges::any_of(ids, [id](const auto &entry) { return entry.id == id; }));
+    auto restored = reopen(*document);
+    ASSERT_TRUE(restored);
+    const auto reopened = engrave::resolve(master_of(*restored), id);
+    ASSERT_TRUE(reopened);
+    ASSERT_TRUE(reopened->object->is_tie());
+    ASSERT_NE(mu::engraving::to_tie(reopened->object)->end_note(), nullptr);
+    EXPECT_EQ(mu::engraving::to_tie(reopened->object)->end_note()->tick(), mu::engraving::Fraction(1, 4));
+    expect_inv(*document);
+    expect_inv(*restored);
 }
 
 TEST(Handles, ConnectingUnmatchedTieRetiresItsHandle) {

@@ -25,6 +25,7 @@
 #include "chord.h"
 #include "draw/types/transform.h"
 #include "log.h"
+#include "masterscore.h"
 #include "rendering/score/beamtremololayout.h"
 #include "stafftype.h"
 #include "stem.h"
@@ -56,7 +57,7 @@ TremoloTwoChord::TremoloTwoChord(const TremoloTwoChord &t) : BeamBase(t) {
     chord1_ = t.chord1();
     chord2_ = t.chord2();
     duration_type_ = t.duration_type_;
-    clone_authored_overrides(authored_overrides, t.authored_overrides);
+    clone_authored_overrides(authored_overrides, t.authored_overrides, *master_score()->eid_register());
 }
 
 TremoloTwoChord::~TremoloTwoChord() {

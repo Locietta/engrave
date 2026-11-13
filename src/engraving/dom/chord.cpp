@@ -46,6 +46,7 @@
 #include "key.h"
 #include "ledgerline.h"
 #include "log.h"
+#include "masterscore.h"
 #include "measure.h"
 #include "mscore.h"
 #include "note.h"
@@ -270,7 +271,7 @@ Chord::Chord(DummyParentOr<Segment> parent) : ChordRest(ElementType::CHORD, pare
 }
 
 Chord::Chord(const Chord &c, bool link) : ChordRest(c, link) {
-    clone_authored_overrides(authored_overrides, c.authored_overrides);
+    clone_authored_overrides(authored_overrides, c.authored_overrides, *master_score()->eid_register());
     // The legacy pair retained its source track when an excerpt remapped the chord.
     for (auto &carrier : authored_overrides.carriers)
         if (carrier.child.subordinal == 1 && carrier.track == muse::nidx &&

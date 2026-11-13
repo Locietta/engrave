@@ -7,6 +7,7 @@
 #include "guitarbend.h"
 #include "hammeronpulloff.h"
 #include "hook.h"
+#include "masterscore.h"
 #include "note.h"
 #include "parenthesis.h"
 #include "rest.h"
@@ -257,12 +258,12 @@ void prepare_carrier(EngravingItem &item, AuthoredOverrideTable &table) {
             const AuthoredChildKey key{AuthoredChildRole::DOT, i};
             if (table.carrier(key)) continue;
             auto id = dots[i]->eid();
-            if (!id.is_valid()) id = EID::new_unique();
+            if (!id.is_valid()) id = item.master_score()->eid_register()->new_eid();
             table.set_carrier({key, ElementType::NOTEDOT, id});
         }
     }
     auto eid = item.eid();
-    if (!eid.is_valid()) eid = EID::new_unique();
+    if (!eid.is_valid()) eid = item.master_score()->eid_register()->new_eid();
     table.set_carrier({item.authored_child, item.type(), eid, muse::nidx});
     if (item.authored_child.role == AuthoredChildRole::SPANNER_SEGMENT) {
         const auto subtype = static_cast<const SpannerSegment &>(item).spanner_segment_type();
@@ -469,7 +470,7 @@ void finish_authored_read(EngravingItem &item) {
     }
     const auto *old = table->carrier(child_key(item));
     auto eid = item.eid();
-    if (!eid.is_valid()) eid = old ? old->legacy_eid : EID::new_unique();
+    if (!eid.is_valid()) eid = old ? old->legacy_eid : item.master_score()->eid_register()->new_eid();
     table->set_carrier({item.authored_child, item.type(), eid, old ? old->track : muse::nidx});
 }
 
@@ -486,12 +487,12 @@ void reset_authored_override(EngravingItem &item, Pid pid) {
     item.trigger_layout();
 }
 
-void clone_authored_overrides(AuthoredOverrideTable &destination, const AuthoredOverrideTable &source) {
+void clone_authored_overrides(AuthoredOverrideTable &destination, const AuthoredOverrideTable &source, EIDRegister &registry) {
     destination = source;
     for (auto &carrier : destination.carriers) {
         const bool group = carrier.child.subordinal == 1 &&
                            (carrier.child.role == AuthoredChildRole::PAREN_LEFT || carrier.child.role == AuthoredChildRole::PAREN_RIGHT);
-        carrier.legacy_eid = group ? EID::invalid() : EID::new_unique();
+        carrier.legacy_eid = group ? EID::invalid() : registry.new_eid();
     }
 }
 
