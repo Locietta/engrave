@@ -31,10 +31,7 @@
 namespace mu::engraving {
 struct Spanner;
 
-//---------------------------------------------------------
-//   @@ SpannerSegment
 //!    parent: the Spanner it belongs to; placed on a System during layout
-//---------------------------------------------------------
 
 struct SpannerSegment : EngravingItem {
 
@@ -138,7 +135,6 @@ public:
     bool collect_for_drawing() const override;
 
     EngravingItem *next_segment_element() override;
-    EngravingItem *prev_segment_element() override;
 
     void trigger_layout() const override;
 
@@ -166,8 +162,6 @@ private:
     SpannerSegmentType spanner_segment_type_ = SpannerSegmentType::SINGLE;
 };
 
-//----------------------------------------------------------------------------------
-//   @@ Spanner
 ///   Virtual base class for slurs, ties, lines etc.
 //
 //    @P anchor         enum (Spanner.CHORD, Spanner.MEASURE, Spanner.NOTE, Spanner.SEGMENT)
@@ -175,7 +169,6 @@ private:
 //    @P startElement   EngravingItem           the element the spanner start is anchored to (read-only)
 //    @P tick           int               tick start position
 //    @P tick2          int               tick end position
-//----------------------------------------------------------------------------------
 
 struct Spanner : EngravingItem {
 public:
@@ -303,7 +296,6 @@ public:
     Spanner *next_spanner(EngravingItem *e, staff_idx_t active_staff);
     Spanner *prev_spanner(EngravingItem *e, staff_idx_t active_staff);
     virtual EngravingItem *next_segment_element() override;
-    virtual EngravingItem *prev_segment_element() override;
 
     using EngravingObject::undo_change_property;
 

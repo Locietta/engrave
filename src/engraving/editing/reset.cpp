@@ -31,7 +31,6 @@
 #include "../dom/measure.h"
 #include "../dom/score.h"
 #include "../dom/segment.h"
-#include "../dom/select.h"
 #include "../dom/spacer.h"
 #include "../dom/spanner.h"
 #include "../rendering/score/layoutdatastore.h"
@@ -44,11 +43,9 @@ using namespace mu;
 using namespace muse;
 using namespace mu::engraving;
 
-//---------------------------------------------------------
 //    For use with Score::scanElements.
 //    Reset positions and autoplacement for the given
 //    element.
-//---------------------------------------------------------
 
 static void reset_element_position(EngravingItem *e) {
     if (e->generated() || !source_object(*e)) {
@@ -62,11 +59,6 @@ static void reset_element_position(EngravingItem *e) {
         e->undo_reset_property(Pid::OFFSET2);
     }
 }
-
-//---------------------------------------------------------
-//   resetMeasuresLayout
-//   Removes system/page breaks and spacers
-//---------------------------------------------------------
 
 static void reset_spanner_positions(Score &score) {
     std::set<EngravingItem *> owners;

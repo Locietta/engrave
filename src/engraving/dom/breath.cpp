@@ -41,18 +41,10 @@ const std::vector<BreathType> Breath::breath_list{
     {SymId::CAESURA_SINGLE_STROKE, true, 2.0},
 };
 
-//---------------------------------------------------------
-//   Breath
-//---------------------------------------------------------
-
 Breath::Breath(DummyParentOr<Segment> parent) : EngravingItem(ElementType::BREATH, parent, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
     sym_id_ = SymId::BREATH_MARK_COMMA;
     pause_ = 0.0;
 }
-
-//---------------------------------------------------------
-//   isCaesura
-//---------------------------------------------------------
 
 bool Breath::is_caesura() const {
     for (const BreathType &bt : ::mu::engraving::Breath::breath_list) {
@@ -63,15 +55,7 @@ bool Breath::is_caesura() const {
     return false;
 }
 
-//---------------------------------------------------------
-//   mag
-//---------------------------------------------------------
-
 double Breath::mag() const { return staff() ? staff()->staff_mag(tick()) : 1.0; }
-
-//---------------------------------------------------------
-//   getProperty
-//---------------------------------------------------------
 
 PropertyValue Breath::get_property(Pid property_id) const {
     switch (property_id) {
@@ -80,10 +64,6 @@ PropertyValue Breath::get_property(Pid property_id) const {
         default: return EngravingItem::get_property(property_id);
     }
 }
-
-//---------------------------------------------------------
-//   setProperty
-//---------------------------------------------------------
 
 bool Breath::set_property(Pid property_id, const PropertyValue &v) {
     switch (property_id) {
@@ -100,10 +80,6 @@ bool Breath::set_property(Pid property_id, const PropertyValue &v) {
     return true;
 }
 
-//---------------------------------------------------------
-//   propertyDefault
-//---------------------------------------------------------
-
 PropertyValue Breath::property_default(Pid id) const {
     switch (id) {
         case Pid::PAUSE: return 0.0;
@@ -112,25 +88,7 @@ PropertyValue Breath::property_default(Pid id) const {
     }
 }
 
-//---------------------------------------------------------
-//   nextSegmentElement
-//---------------------------------------------------------
-
 EngravingItem *Breath::next_segment_element() { return segment()->first_in_next_segments(staff_idx()); }
-
-//---------------------------------------------------------
-//   prevSegmentElement
-//---------------------------------------------------------
-
-EngravingItem *Breath::prev_segment_element() { return segment()->last_in_prev_segments(staff_idx()); }
-
-//---------------------------------------------------------
-//   accessibleInfo
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   subtypeUserName
-//---------------------------------------------------------
 
 muse::TranslatableString Breath::subtype_user_name() const { return SymNames::user_name_for_sym_id(sym_id()); }
 } // namespace mu::engraving

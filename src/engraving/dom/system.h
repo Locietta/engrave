@@ -41,10 +41,7 @@ struct SpannerSegment;
 struct StaffVisibilityIndicator;
 struct RangeLock;
 
-//---------------------------------------------------------
-//   SysStaff
 ///  One staff in a System.
-//---------------------------------------------------------
 
 struct SysStaff {
     SysStaff() {}
@@ -101,11 +98,8 @@ private:
                                     // staff is hidden
 };
 
-//---------------------------------------------------------
-//   System
 ///    One row of measures for all instruments;
 ///    a complete piece of the timeline.
-//---------------------------------------------------------
 
 struct System final : EngravingItem {
 private:
@@ -198,7 +192,6 @@ public:
     SystemDivider *system_divider_right() const { return system_divider_right_; }
 
     EngravingItem *next_segment_element() override;
-    EngravingItem *prev_segment_element() override;
 
     double min_top() const;
     double min_bottom() const;

@@ -57,10 +57,7 @@ private:
     bool locked_ = false;
 };
 
-//---------------------------------------------------------
-//    @@ Rest
 ///     This class implements a rest.
-//---------------------------------------------------------
 
 struct Rest : ChordRest {
 private:
@@ -122,10 +119,8 @@ public:
     void reset_property(Pid id) override;
     bool set_property(Pid property_id, const PropertyValue &v) override;
     PropertyValue get_property(Pid property_id) const override;
-    void undo_change_dots_visible(bool v);
 
     EngravingItem *next_element() override;
-    EngravingItem *prev_element() override;
 
     bool should_not_be_drawn() const;
     bool debug_draw_gap() const;

@@ -29,10 +29,6 @@
 namespace mu::engraving {
 struct Factory;
 
-//---------------------------------------------------------
-//   @@ Ambitus
-//---------------------------------------------------------
-
 struct Ambitus final : EngravingItem {
 private:
     DECLARE_CLASSOF(ElementType::AMBITUS)
@@ -113,7 +109,6 @@ public:
     PropertyValue property_default(Pid id) const override;
 
     EngravingItem *next_segment_element() override;
-    EngravingItem *prev_segment_element() override;
 
     static AccidentalType accidental_type(int tpc, Key key);
     static int staff_line(int tpc, int pitch, ClefType clf);

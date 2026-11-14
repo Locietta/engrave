@@ -33,18 +33,10 @@ using namespace mu;
 using namespace mu::engraving;
 
 namespace mu::engraving {
-//---------------------------------------------------------
-//   markerStyle
-//---------------------------------------------------------
-
 static const ElementStyle marker_style{
     {Sid::REPEAT_LEFT_PLACEMENT, Pid::PLACEMENT},
     {Sid::REPEAT_MIN_DISTANCE, Pid::MIN_DISTANCE},
 };
-
-//---------------------------------------------------------
-//   MarkerTypeTable
-//---------------------------------------------------------
 
 const std::vector<MarkerTypeTableItem> marker_type_table{
     {MarkerType::SEGNO, "<sym>segno</sym>", "segno", false},
@@ -59,10 +51,6 @@ const std::vector<MarkerTypeTableItem> marker_type_table{
     {MarkerType::DA_DBLCODA, "Da Doppia Coda", "coda", true},
 };
 
-//---------------------------------------------------------
-//   Marker
-//---------------------------------------------------------
-
 Marker::Marker(DummyParentOr<EngravingItem> parent) : Marker(parent, TextStyleType::REPEAT_LEFT) { reset_property(Pid::MUSIC_SYMBOL_SIZE); }
 
 Marker::Marker(DummyParentOr<EngravingItem> parent, TextStyleType tid)
@@ -71,10 +59,6 @@ Marker::Marker(DummyParentOr<EngravingItem> parent, TextStyleType tid)
     reset_property(Pid::MUSIC_SYMBOL_SIZE);
     marker_type_ = MarkerType::FINE;
 }
-
-//---------------------------------------------------------
-//   setMarkerType
-//---------------------------------------------------------
 
 void Marker::set_marker_type(MarkerType t) {
     bool change_label = get_property(Pid::LABEL) == property_default(Pid::LABEL);
@@ -97,15 +81,7 @@ void Marker::set_marker_type(MarkerType t) {
     }
 }
 
-//---------------------------------------------------------
-//   markerTypeUserName
-//---------------------------------------------------------
-
 String Marker::marker_type_user_name() const { return TConv::translated_user_name(marker_type_); }
-
-//---------------------------------------------------------
-//   getProperty
-//---------------------------------------------------------
 
 PropertyValue Marker::get_property(Pid property_id) const {
     switch (property_id) {
@@ -116,10 +92,6 @@ PropertyValue Marker::get_property(Pid property_id) const {
     }
     return TextBase::get_property(property_id);
 }
-
-//---------------------------------------------------------
-//   setProperty
-//---------------------------------------------------------
 
 bool Marker::set_property(Pid property_id, const PropertyValue &v) {
     switch (property_id) {
@@ -135,10 +107,6 @@ bool Marker::set_property(Pid property_id, const PropertyValue &v) {
     trigger_layout();
     return true;
 }
-
-//---------------------------------------------------------
-//   propertyDefault
-//---------------------------------------------------------
 
 PropertyValue Marker::property_default(Pid property_id) const {
     switch (property_id) {
@@ -158,10 +126,6 @@ PropertyValue Marker::property_default(Pid property_id) const {
     return TextBase::property_default(property_id);
 }
 
-//---------------------------------------------------------
-//   nextSegmentElement
-//---------------------------------------------------------
-
 EngravingItem *Marker::next_segment_element() {
     Segment *seg;
     if (marker_type() == MarkerType::FINE) {
@@ -175,19 +139,6 @@ EngravingItem *Marker::next_segment_element() {
     }
     return EngravingItem::next_segment_element();
 }
-
-//---------------------------------------------------------
-//   prevSegmentElement
-//---------------------------------------------------------
-
-EngravingItem *Marker::prev_segment_element() {
-    //it's the same barline
-    return next_segment_element();
-}
-
-//---------------------------------------------------------
-//   accessibleInfo
-//---------------------------------------------------------
 
 String Marker::symbol_string() const {
     // Returns the coda/segno symbol if present
@@ -205,10 +156,6 @@ String Marker::symbol_string() const {
 
     return String();
 }
-
-//---------------------------------------------------------
-//   subtypeUserName
-//---------------------------------------------------------
 
 muse::TranslatableString Marker::subtype_user_name() const { return TConv::user_name(marker_type_); }
 } // namespace mu::engraving

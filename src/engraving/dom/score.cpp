@@ -139,10 +139,6 @@ static void mark_instruments_as_primary(std::vector<Part *> &parts) {
     }
 }
 
-//---------------------------------------------------------
-//   Score
-//---------------------------------------------------------
-
 Score::Score(const EngravingServices &services) : EngravingObject(ElementType::SCORE, nullptr), services_(services), selection_(this) {
     Score::valid_scores.insert(this);
     master_score_ = nullptr;
@@ -225,9 +221,7 @@ Score::Score(MasterScore *parent, const MStyle &s) : Score{parent} {
     update_padding_tables();
 }
 
-//---------------------------------------------------------
 //   ~Score
-//---------------------------------------------------------
 
 Score::~Score() {
     // The register lives on the master score, which outlives an excerpt unless the
@@ -285,11 +279,9 @@ Score::~Score() {
     master_score_ = nullptr;
 }
 
-//---------------------------------------------------------
 //   Score::clone
 //         To create excerpt clone to show when changing PageSettings
 //         Use MasterScore::clone() instead
-//---------------------------------------------------------
 
 Score *Score::clone() {
     // TODO: see comments regarding setting version in corresponding code in 3.x branch
@@ -333,11 +325,9 @@ static void on_bracket_item_destruction(Score *score, const BracketItem *item) {
     }
 }
 
-//---------------------------------------------------------
 //   Score::onElementDestruction
 //    Ensure correct state of the score after destruction
 //    of the element (e.g. remove invalid pointers etc.).
-//---------------------------------------------------------
 
 void Score::register_layout_copy(const EngravingItem &source, EngravingItem &display) {
     renderer()->layout_data_store(*this).register_layout_copy(source, display);
@@ -383,21 +373,14 @@ void Score::on_element_destruction(EngravingItem *e) {
     score->cmd_state().unset_element(e);
 }
 
-//---------------------------------------------------------
-//   addMeasure
-//---------------------------------------------------------
-
 void Score::add_measure(MeasureBase *m, MeasureBase *pos) {
     m->set_next(pos);
     measures_.add(m);
 }
 
-//---------------------------------------------------------
-//    updateTicksAndTimeSigMap
 //    update:
 //      - measure ticks
 //      - time signature map
-//---------------------------------------------------------
 
 /**
  This is needed after
@@ -450,10 +433,7 @@ void Score::update_ticks_and_time_sig_map(bool sync_mm_rests) {
     need_update_ticks_and_time_sig_map_ = false;
 }
 
-//---------------------------------------------------------
-//    rebuildTimeSigMap
 ///    updates the time signature map for a measure
-//---------------------------------------------------------
 
 void Score::rebuild_time_sig_map(Measure *measure) {
     for (Segment &segment : measure->segments()) {
@@ -488,108 +468,6 @@ void Score::rebuild_time_sig_map(Measure *measure) {
     }
 }
 
-//---------------------------------------------------------
-//   pos2measureBase
-//     Return measure base for canvas relative position \a p.
-//---------------------------------------------------------
-
-MeasureBase *Score::pos2measure_base(const PointF &p, bool scan_measures_only, staff_idx_t *staff_idx, int *pitch, Segment **seg,
-                                     PointF *offset) const {
-    MeasureBase *mb = search_measure_base(p, scan_measures_only);
-    if (!mb) {
-        return nullptr;
-    }
-    if (!mb->is_measure()) {
-        //! NOTE: staffIdx, pitch, and seg are only relevant for Measure types...
-        if (staff_idx) {
-            *staff_idx = muse::nidx;
-        }
-        if (pitch) {
-            *pitch = -1;
-        }
-        if (seg) {
-            *seg = nullptr;
-        }
-        if (offset) {
-            // TODO: Relevant?
-        }
-        return mb;
-    }
-
-    Measure *m = to_measure(mb);
-    if (!m) {
-        return nullptr;
-    }
-
-    const System *system = m->system();
-    const double y = p.y() - system->canvas_pos().y();
-
-    const staff_idx_t staff_idx_result = system->search_staff(y);
-
-    // search for segment + offset
-    const PointF offset_result = p - m->canvas_pos();
-    const staff_idx_t strack = staff_idx_result * ::mu::engraving::voices;
-    if (!staff(staff_idx_result)) {
-        return nullptr;
-    }
-
-    // int etrack = staff(i)->part()->nstaves() * VOICES + strack;
-    track_idx_t etrack = ::mu::engraving::voices + strack;
-
-    constexpr SegmentType st = SegmentType::CHORD_REST;
-    Segment *segment = m->search_segment(offset_result.x(), st, strack, etrack);
-    if (!segment) {
-        return nullptr;
-    }
-
-    const SysStaff *sys_staff = m->system()->staff(staff_idx_result);
-    if (staff_idx) {
-        *staff_idx = staff_idx_result;
-    }
-    if (pitch) {
-        const Staff *s1 = staves_[staff_idx_result];
-        const Fraction tick = segment->tick();
-        const ClefType clef = s1->clef(tick);
-        *pitch = y2pitch(offset_result.y() - sys_staff->bbox().y(), clef, s1->spatium(tick));
-    }
-    if (offset) {
-        *offset = offset_result - PointF(segment->x(), sys_staff->bbox().y());
-    }
-    if (seg) {
-        *seg = segment;
-    }
-
-    return m;
-}
-
-Measure *Score::pos2measure(const PointF &p, staff_idx_t *staff_idx, int *pitch, Segment **seg, PointF *offset) const {
-    MeasureBase *mb = pos2measure_base(p, /*scanMeasuresOnly*/ true, staff_idx, pitch, seg, offset);
-    return mb && mb->is_measure() ? to_measure(mb) : nullptr;
-}
-
-//---------------------------------------------------------
-//   dragPosition
-///   \param p   drag position in canvas coordinates
-///   \param rst \b input: current staff index \n
-///              \b output: new staff index for drag position
-///   \param seg \b input: current segment \n
-///              \b output: new segment for drag position
-//---------------------------------------------------------
-
-void Score::drag_position(const PointF &pos, staff_idx_t *rst, Segment **seg, double spacing_factor, bool allow_time_anchor) const {
-    Measure *m = nullptr;
-
-    if (!drag_position_to_measure(pos, this, &m, rst, spacing_factor)) {
-        return;
-    }
-
-    drag_position_to_segment(pos, m, *rst, seg, spacing_factor, allow_time_anchor);
-}
-
-//---------------------------------------------------------
-//   setShowInvisible
-//---------------------------------------------------------
-
 void Score::set_show_invisible(bool v) {
     show_invisible_ = v;
     // BSP tree does not include elements which are not
@@ -598,21 +476,9 @@ void Score::set_show_invisible(bool v) {
     rebuild_bsp_tree();
 }
 
-//---------------------------------------------------------
-//   setShowUnprintable
-//---------------------------------------------------------
-
 void Score::set_show_unprintable(bool v) { show_unprintable_ = v; }
 
-//---------------------------------------------------------
-//   setShowFrames
-//---------------------------------------------------------
-
 void Score::set_show_frames(bool v) { show_frames_ = v; }
-
-//---------------------------------------------------------
-//   setShowPageborders
-//---------------------------------------------------------
 
 void Score::set_show_pageborders(bool v) { show_pageborders_ = v; }
 
@@ -625,23 +491,11 @@ void Score::set_show_sound_flags(bool v) {
     set_layout_all();
 }
 
-//---------------------------------------------------------
-//   setMarkIrregularMeasures
-//---------------------------------------------------------
-
 void Score::set_mark_irregular_measures(bool v) { mark_irregular_measures_ = v; }
 
 void Score::set_show_anchors(const ShowAnchors &show_anchors) { show_anchors_ = show_anchors; }
 
-//---------------------------------------------------------
-//   readOnly
-//---------------------------------------------------------
-
 bool Score::read_only() const { return master_score_->read_only(); }
-
-//---------------------------------------------------------
-//   dirty
-//---------------------------------------------------------
 
 bool Score::dirty() const { return master_score()->source_revision() != master_score()->saved_revision(); }
 
@@ -650,318 +504,6 @@ void Score::invalidate_repeat_list() { master_score()->invalidate_repeat_list();
 bool Score::is_open() const { return is_open_; }
 
 void Score::set_is_open(bool open) { is_open_ = open; }
-
-//---------------------------------------------------------
-//   searchPage
-//    p is in canvas coordinates
-//---------------------------------------------------------
-
-Page *Score::search_page(const PointF &p) const {
-
-    for (Page *page : pages()) {
-        RectF r = page->ldata()->bbox().translated(page->pos());
-        if (r.contains(p)) {
-            return page;
-        }
-    }
-
-    return nullptr;
-}
-
-//---------------------------------------------------------
-//   searchSystem
-///   Returns list of systems as there may be more than
-///   one system in a row
-///   \param pos Position in canvas coordinates
-///   \param preferredSystem If not nullptr, will give more
-///   space to the given system when searching it by its
-///   coordinate.
-///   \returns List of found systems.
-//---------------------------------------------------------
-
-std::vector<System *> Score::search_system(const PointF &pos, bool include_measureless_systems, const System *preferred_system,
-                                           double spacing_factor, double preferred_spacing_factor) const {
-    std::vector<System *> systems;
-    Page *page = search_page(pos);
-    if (!page) {
-        return systems;
-    }
-    double y = pos.y() - page->pos().y(); // transform to page relative
-    const std::vector<System *> &sl = page->systems();
-    double y2;
-    size_t n = sl.size();
-    for (size_t i = 0; i < n; ++i) {
-        System *s = sl.at(i);
-        if (!s->first() || (!include_measureless_systems && !s->first_measure())) {
-            continue;
-        }
-        System *ns = 0; // next system row
-        size_t ii = i + 1;
-        for (; ii < n; ++ii) {
-            ns = sl.at(ii);
-            if (ns->y() != s->y()) {
-                break;
-            }
-        }
-        if ((ii == n) || (ns == 0)) {
-            y2 = page->height();
-        } else {
-            double current_spacing_factor;
-            double sy2 = s->y() + s->ldata()->bbox().height();
-            if (s == preferred_system) {
-                current_spacing_factor = preferred_spacing_factor; //y2 = ns->y();
-            } else if (ns == preferred_system) {
-                current_spacing_factor = 1.0 - preferred_spacing_factor; //y2 = sy2;
-            } else {
-                current_spacing_factor = spacing_factor;
-            }
-            y2 = sy2 + (ns->y() - sy2) * current_spacing_factor;
-        }
-        if (y < y2) {
-            systems.push_back(s);
-            for (size_t iii = i + 1; iii < n; ++iii) {
-                if (sl.at(iii)->y() != s->y()) {
-                    break;
-                }
-                systems.push_back(sl.at(iii));
-            }
-            return systems;
-        }
-    }
-    return systems;
-}
-
-//---------------------------------------------------------
-//   searchMeasure
-///   \param p Position in canvas coordinates
-///   \param preferredSystem If not nullptr, will give more
-///   space to measures in this system when searching.
-//---------------------------------------------------------
-
-MeasureBase *Score::search_measure_base(const PointF &p, bool scan_measures_only, const System *preferred_system, double spacing_factor,
-                                        double preferred_spacing_factor) const {
-    std::vector<System *> systems =
-        search_system(p, /*includeMeasurelessSystems*/ !scan_measures_only, preferred_system, spacing_factor, preferred_spacing_factor);
-    MeasureBase *last_mb = nullptr;
-    for (System *system : systems) {
-        const double x = p.x() - system->canvas_pos().x();
-        for (MeasureBase *mb : system->measures()) {
-            if (scan_measures_only && !mb->is_measure()) {
-                continue;
-            }
-            if (x < (mb->x() + mb->ldata()->bbox().width())) {
-                return mb;
-            }
-            last_mb = mb;
-        }
-    }
-    return last_mb;
-}
-
-//---------------------------------------------------------
-//    getNextValidInputSegment
-//    - segment is of type SegmentType::ChordRest
-//---------------------------------------------------------
-
-static Segment *get_next_valid_input_segment(Segment *segment, track_idx_t track, voice_idx_t voice) {
-    if (!segment) {
-        return nullptr;
-    }
-
-    assert(segment->segment_type() == SegmentType::CHORD_REST);
-
-    Fraction next_tick = segment->measure()->tick();
-    for (Segment *s1 = segment; s1; s1 = s1->prev(SegmentType::CHORD_REST)) {
-        if (EngravingItem *element = s1->element(track + voice)) {
-            next_tick = to_chord_rest(element)->end_tick();
-            break;
-        }
-    }
-
-    for (; segment; segment = segment->next(SegmentType::CHORD_REST)) {
-        if (segment->element(track + voice) || (voice && segment->tick() == next_tick)) {
-            break;
-        }
-    }
-
-    return segment;
-}
-
-//---------------------------------------------------------
-//   getPosition
-//    return true if valid position found
-//---------------------------------------------------------
-
-bool Score::get_position(Position *pos, const PointF &p, voice_idx_t voice) const {
-    System *preferred_system = nullptr;
-    staff_idx_t preferred_staff_idx = muse::nidx;
-    const double spacing_factor = 0.5;
-    const double preferred_spacing_factor = 0.75;
-    if (note_entry_mode() && input_state().staff_group() != StaffGroup::TAB) {
-        // for non-tab staves, prefer the current system & staff
-        // this makes it easier to add notes far above or below the staff
-        // not helpful for tab since notes are not entered above or below
-        Segment *seg = input_state().segment();
-        if (seg) {
-            preferred_system = seg->system();
-        }
-        track_idx_t track = input_state().track();
-        if (track != muse::nidx) {
-            preferred_staff_idx = track >> 2;
-        }
-    }
-
-    //! NOTE: For Positions we only care about Measure types, we're not interested in all MeasureBases...
-    MeasureBase *mb = search_measure_base(p, /*scanMeasuresOnly*/ true, preferred_system, spacing_factor, preferred_spacing_factor);
-    Measure *measure = mb && mb->is_measure() ? to_measure(mb) : nullptr;
-    if (!measure) {
-        return false;
-    }
-
-    pos->fret = ::mu::engraving::invalid_fret_index;
-    //
-    //    search staff
-    //
-    pos->staff_idx = 0;
-    SysStaff *sstaff = 0;
-    System *system = measure->system();
-    double y = p.y() - system->page_pos().y();
-    for (; pos->staff_idx < nstaves(); ++pos->staff_idx) {
-        Staff *st = staff(pos->staff_idx);
-        if (!st->part()->show()) {
-            continue;
-        }
-        double sy2;
-        SysStaff *ss = system->staff(pos->staff_idx);
-        if (!ss->show()) {
-            continue;
-        }
-        staff_idx_t idx = muse::nidx;
-        SysStaff *nstaff = 0;
-
-        // find next visible staff
-        for (staff_idx_t i = pos->staff_idx + 1; i < nstaves(); ++i) {
-            Staff *sti = staff(i);
-            if (!sti->part()->show()) {
-                continue;
-            }
-            nstaff = system->staff(i);
-            if (!nstaff->show()) {
-                nstaff = 0;
-                continue;
-            }
-            if (i == preferred_staff_idx) {
-                idx = i;
-            }
-            break;
-        }
-
-        if (nstaff) {
-            double current_spacing_factor;
-            if (pos->staff_idx == preferred_staff_idx) {
-                current_spacing_factor = preferred_spacing_factor;
-            } else if (idx == preferred_staff_idx) {
-                current_spacing_factor = 1.0 - preferred_spacing_factor;
-            } else {
-                current_spacing_factor = spacing_factor;
-            }
-            double s1y2 = ss->bbox().bottom();
-            sy2 = system->page()->canvas_pos().y() + s1y2 + (nstaff->bbox().y() - s1y2) * current_spacing_factor;
-        } else {
-            sy2 = system->page()->canvas_pos().y() + system->page()->height() - system->page_pos().y(); // system->height();
-        }
-        if (y < sy2) {
-            sstaff = ss;
-            break;
-        }
-    }
-    if (sstaff == 0) {
-        return false;
-    }
-
-    //
-    //    search segment
-    //
-    PointF pppp(p - measure->canvas_pos());
-    double x = pppp.x();
-    Segment *segment = 0;
-    pos->segment = 0;
-    pos->beyond_score = false;
-
-    // int track = pos->staffIdx * VOICES + voice;
-    track_idx_t track = pos->staff_idx * ::mu::engraving::voices;
-
-    for (segment = measure->first(SegmentType::CHORD_REST); segment;) {
-        segment = get_next_valid_input_segment(segment, track, voice);
-        if (segment == 0) {
-            break;
-        }
-        Segment *ns = get_next_valid_input_segment(segment->next(SegmentType::CHORD_REST), track, voice);
-
-        double x1 = segment->x();
-        if (!ns) {
-            if (measure == score()->last_measure() && x > measure->ldata()->bbox().width()) {
-                x = measure->ldata()->bbox().width() + score()->style().spatium();
-                pos->beyond_score = true;
-            } else {
-                x = x1;
-            }
-            pos->segment = segment;
-            break;
-        }
-
-        double x2 = ns->x();
-        double d = x2 - x1;
-        if (x < (x1 + d * .5)) {
-            x = x1;
-            pos->segment = segment;
-            break;
-        }
-        segment = ns;
-    }
-    if (segment == 0) {
-        return false;
-    }
-    //
-    // TODO: restrict to reasonable values (pitch 0-127)
-    //
-    const Staff *s = staff(pos->staff_idx);
-    const Fraction tick = segment->tick();
-    const double mag = s->staff_mag(tick);
-    // in TABs, step from one string to another; in other staves, step on and between lines
-    double line_dist = s->staff_type(tick)->line_distance().val() * (s->is_tab_staff(measure->tick()) ? 1 : .5) * mag * style().spatium();
-
-    const double y_off = sstaff->y_offset(); // Get system staff vertical offset (usually for 1-line staves)
-    pos->line = lrint((pppp.y() - sstaff->bbox().y() - y_off) / line_dist);
-    if (s->is_tab_staff(measure->tick())) {
-        if (pos->line < -1 || pos->line > s->lines(tick) + 1) {
-            return false;
-        }
-        if (pos->line < 0) {
-            pos->line = 0;
-        } else if (pos->line >= s->lines(tick)) {
-            pos->line = s->lines(tick) - 1;
-        }
-    } else {
-        int min_line = abs_step(::mu::engraving::min_pitch);
-        ClefType clef = s->clef(segment->tick());
-        min_line = rel_step(min_line, clef);
-        int max_line = abs_step(::mu::engraving::max_pitch);
-        max_line = rel_step(max_line, clef);
-
-        if (pos->line > min_line || pos->line < max_line) {
-            return false;
-        }
-    }
-
-    y = sstaff->y() + pos->line * line_dist;
-    pos->pos = PointF(x, y) + measure->canvas_pos();
-    return true;
-}
-
-//---------------------------------------------------------
-//   checkHasMeasures
-//---------------------------------------------------------
 
 bool Score::check_has_measures() const {
     Page *page = pages().empty() ? 0 : pages().front();
@@ -973,10 +515,6 @@ bool Score::check_has_measures() const {
     return true;
 }
 
-//---------------------------------------------------------
-//   spatiumChanged
-//---------------------------------------------------------
-
 void Score::spatium_changed(double old_value, double new_value) {
     scan_elements([&](EngravingItem *e) { e->spatium_changed(old_value, new_value); });
     for (Staff *staff : staves_) {
@@ -986,20 +524,13 @@ void Score::spatium_changed(double old_value, double new_value) {
     update_padding_tables();
 }
 
-//---------------------------------------------------------
-//   updateStyle
-//---------------------------------------------------------
-
 static void update_style(EngravingItem *e) {
     bool v = e->generated();
     e->style_changed();
     e->set_generated(v);
 }
 
-//---------------------------------------------------------
-//   styleChanged
 //    must be called after every style change
-//---------------------------------------------------------
 
 void Score::style_changed() {
     scan_elements(update_style);
@@ -1015,10 +546,6 @@ void Score::style_changed() {
     update_padding_tables();
     set_layout_all();
 }
-
-//---------------------------------------------------------
-//   addElement
-//---------------------------------------------------------
 
 /**
  Add \a element to its parent.
@@ -1161,12 +688,9 @@ void Score::do_undo_add_element(EngravingItem *element) {
     }
 }
 
-//---------------------------------------------------------
-//   removeElement
 ///   Remove \a element from its parent.
 ///   Several elements (clef, keysig, timesig) need special handling, as they may cause
 ///   changes throughout the score.
-//---------------------------------------------------------
 
 void Score::remove_element(EngravingItem *element) {
     EngravingItem *parent = element->ownership_parent_item();
@@ -1327,10 +851,6 @@ bool Score::can_reselect_item(const EngravingItem *item) const {
     return true;
 }
 
-//---------------------------------------------------------
-//   firstMeasure
-//---------------------------------------------------------
-
 Measure *Score::first_measure() const {
     MeasureBase *mb = measures_.first();
     while (mb && !mb->is_measure()) {
@@ -1340,10 +860,6 @@ Measure *Score::first_measure() const {
     return to_measure(mb);
 }
 
-//---------------------------------------------------------
-//   firstMeasureMM
-//---------------------------------------------------------
-
 Measure *Score::first_measure_mm() const {
     Measure *m = first_measure();
     if (m && style().style_b(Sid::CREATE_MULTI_MEASURE_RESTS) && m->has_mm_rest()) {
@@ -1352,10 +868,6 @@ Measure *Score::first_measure_mm() const {
     return m;
 }
 
-//---------------------------------------------------------
-//   firstMM
-//---------------------------------------------------------
-
 MeasureBase *Score::first_mm() const {
     MeasureBase *m = measures_.first();
     if (m && m->is_measure() && style().style_b(Sid::CREATE_MULTI_MEASURE_RESTS) && to_measure(m)->has_mm_rest()) {
@@ -1363,10 +875,6 @@ MeasureBase *Score::first_mm() const {
     }
     return m;
 }
-
-//---------------------------------------------------------
-//   measure
-//---------------------------------------------------------
 
 MeasureBase *Score::measure(int idx) const {
     MeasureBase *mb = measures_.first();
@@ -1379,11 +887,8 @@ MeasureBase *Score::measure(int idx) const {
     return mb;
 }
 
-//---------------------------------------------------------
-//   crMeasure
 //    Returns a measure containing chords and/or rests
 //    by its index, skipping other MeasureBase descendants
-//---------------------------------------------------------
 
 Measure *Score::cr_measure(int idx) const {
     int i = -1;
@@ -1398,10 +903,6 @@ Measure *Score::cr_measure(int idx) const {
     return nullptr;
 }
 
-//---------------------------------------------------------
-//   lastMeasure
-//---------------------------------------------------------
-
 Measure *Score::last_measure() const {
     MeasureBase *mb = measures_.last();
 
@@ -1415,27 +916,15 @@ Measure *Score::last_measure() const {
     return to_measure(mb);
 }
 
-//---------------------------------------------------------
-//   lastMeasureMM
-//---------------------------------------------------------
-
 Measure *Score::last_measure_mm() const {
     Measure *m = last_measure();
     return m ? const_cast<Measure *>(m->covering_mm_rest_or_this()) : nullptr;
 }
 
-//---------------------------------------------------------
-//   endTick
-//---------------------------------------------------------
-
 Fraction Score::end_tick() const {
     Measure *m = last_measure();
     return m ? m->end_tick() : Fraction(0, 1);
 }
-
-//---------------------------------------------------------
-//   firstSegment
-//---------------------------------------------------------
 
 Segment *Score::first_segment(SegmentType seg_type) const {
     Segment *seg;
@@ -1451,27 +940,15 @@ Segment *Score::first_segment(SegmentType seg_type) const {
     return seg;
 }
 
-//---------------------------------------------------------
-//   firstSegmentMM
-//---------------------------------------------------------
-
 Segment *Score::first_segment_mm(SegmentType seg_type) const {
     Measure *m = first_measure_mm();
     return m ? m->first(seg_type) : 0;
 }
 
-//---------------------------------------------------------
-//   lastSegment
-//---------------------------------------------------------
-
 Segment *Score::last_segment() const {
     Measure *m = last_measure();
     return m ? m->last() : 0;
 }
-
-//---------------------------------------------------------
-//   lastSegmentMM
-//---------------------------------------------------------
 
 Segment *Score::last_segment_mm() const {
     Measure *m = last_measure_mm();
@@ -1489,10 +966,6 @@ const TempoTimeline &Score::tempo_timeline(bool expand_repeats) const { return m
 void Score::set_tempo_timeline_override(std::optional<TempoTimeline> timeline) {
     master_score()->set_tempo_timeline_override(std::move(timeline));
 }
-
-//---------------------------------------------------------
-//   scanElementsInRange
-//---------------------------------------------------------
 
 void Score::scan_elements_in_range(std::function<void(EngravingItem *)> func) {
     const Fraction selection_start_tick = selection_.start_segment() ? selection_.start_segment()->tick() : Fraction(0, 1);
@@ -1525,10 +998,6 @@ void Score::scan_elements_in_range(std::function<void(EngravingItem *)> func) {
     }
 }
 
-//---------------------------------------------------------
-//   setSelection
-//---------------------------------------------------------
-
 void Score::set_selection(const Selection &s) {
     deselect_all();
     selection_ = s;
@@ -1537,10 +1006,6 @@ void Score::set_selection(const Selection &s) {
         e->set_selected(true);
     }
 }
-
-//---------------------------------------------------------
-//   getText
-//---------------------------------------------------------
 
 Text *Score::get_text(TextStyleType tid) const {
     MeasureBase *m = first();
@@ -1554,10 +1019,6 @@ Text *Score::get_text(TextStyleType tid) const {
     return nullptr;
 }
 
-//---------------------------------------------------------
-//   metaTag
-//---------------------------------------------------------
-
 String Score::meta_tag(const String &s) const {
     if (muse::contains(meta_tags_, s)) {
         return meta_tags_.at(s);
@@ -1566,33 +1027,12 @@ String Score::meta_tag(const String &s) const {
     return muse::value(master_score_->meta_tags_, s);
 }
 
-//---------------------------------------------------------
-//   setMetaTag
-//---------------------------------------------------------
-
 void Score::set_meta_tag(const String &tag, const String &val) { meta_tags_.insert_or_assign(tag, val); }
-
-//---------------------------------------------------------
-//   setSynthesizerState
-//---------------------------------------------------------
 
 void Score::set_synthesizer_state(const SynthesizerState &s) {
     // TODO: make undoable
     synthesizer_state_ = s;
 }
-
-//---------------------------------------------------------
-//   appendScore
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   appendMeasuresFromScore
-//     clone measures from another score to the end of this
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   splitStaff
-//---------------------------------------------------------
 
 void Score::split_staff(staff_idx_t staff_idx, int split_point) {
     //      LOGD("split staff %d point %d", staffIdx, splitPoint);
@@ -1756,10 +1196,6 @@ void Score::split_staff(staff_idx_t staff_idx, int split_point) {
     }
 }
 
-//---------------------------------------------------------
-//   cmdRemovePart
-//---------------------------------------------------------
-
 void Score::cmd_remove_part(Part *part) {
     if (!part) {
         return;
@@ -1781,10 +1217,6 @@ void Score::cmd_remove_part(Part *part) {
         undo_change_style_val(Sid::ENABLE_STAVE_SHARING, false);
     }
 }
-
-//---------------------------------------------------------
-//   insertPart
-//---------------------------------------------------------
 
 void Score::insert_part(Part *part, size_t target_part_idx) {
     if (!part) {
@@ -1818,10 +1250,6 @@ void Score::append_part(Part *part) {
     mark_instruments_as_primary(parts_);
 }
 
-//---------------------------------------------------------
-//   removePart
-//---------------------------------------------------------
-
 void Score::remove_part(Part *part) {
     part_idx_t index = muse::index_of(parts_, part);
 
@@ -1853,10 +1281,6 @@ void Score::remove_part(Part *part) {
     master_score()->rebuild_midi_mapping();
     set_instruments_changed(true);
 }
-
-//---------------------------------------------------------
-//   insertStaff
-//---------------------------------------------------------
 
 void Score::insert_staff(Staff *staff, staff_idx_t ridx) {
     if (!staff || !staff->part()) {
@@ -1954,10 +1378,6 @@ ID Score::new_part_id() const {
     return max_id + 1;
 }
 
-//---------------------------------------------------------
-//   removeStaff
-//---------------------------------------------------------
-
 void Score::remove_staff(Staff *staff) {
     staff_idx_t idx = staff->idx();
     for (auto i = staff->score()->spanner().cbegin(); i != staff->score()->spanner().cend(); ++i) {
@@ -1993,10 +1413,6 @@ void Score::remove_staff(Staff *staff) {
     update_staves_number_for_systems();
 }
 
-//---------------------------------------------------------
-//   adjustKeySigs
-//---------------------------------------------------------
-
 void Score::adjust_key_sigs(track_idx_t sidx, track_idx_t eidx, KeyList km) {
     for (track_idx_t staff_idx = sidx; staff_idx < eidx; ++staff_idx) {
         Staff *staff = staves_[staff_idx];
@@ -2026,10 +1442,7 @@ void Score::adjust_key_sigs(track_idx_t sidx, track_idx_t eidx, KeyList km) {
     }
 }
 
-//---------------------------------------------------------
-//   getKeyList
 //      This is taken from MuseScore::editInstrList()
-//---------------------------------------------------------
 
 KeyList Score::key_list() const {
     // find the keylist of the first pitched staff
@@ -2102,10 +1515,6 @@ KeyList Score::key_list() const {
 
     return nkl;
 }
-
-//---------------------------------------------------------
-//   cmdRemoveStaff
-//---------------------------------------------------------
 
 void Score::cmd_remove_staff(staff_idx_t staff_idx) {
     Staff *s = staff(staff_idx);
@@ -2184,10 +1593,6 @@ void Score::sort_system_objects(std::vector<staff_idx_t> &dst) {
     }
 }
 
-//---------------------------------------------------------
-//   sortStaves
-//---------------------------------------------------------
-
 void Score::sort_staves(std::vector<staff_idx_t> &dst) {
     touch_source_subtree(*this);
     sort_system_objects(dst);
@@ -2233,10 +1638,6 @@ void Score::sort_staves(std::vector<staff_idx_t> &dst) {
     set_layout_all();
     mark_instruments_as_primary(parts_);
 }
-
-//---------------------------------------------------------
-//   cmdConcertPitchChanged
-//---------------------------------------------------------
 
 void Score::cmd_concert_pitch_changed(bool flag) {
     if (flag == style().style_b(Sid::CONCERT_PITCH)) {
@@ -2293,10 +1694,6 @@ void Score::cmd_concert_pitch_changed(bool flag) {
 
 static void on_focused_item_changed([[maybe_unused]] EngravingItem *item) {}
 
-//---------------------------------------------------------
-//   deselect
-//---------------------------------------------------------
-
 void Score::deselect(EngravingItem *el) {
     add_refresh(el->page_bounding_rect());
     selection_.remove(el);
@@ -2304,10 +1701,7 @@ void Score::deselect(EngravingItem *el) {
     selection_.update();
 }
 
-//---------------------------------------------------------
-//   select
 //    staffIdx is valid, if element is of type MEASURE
-//---------------------------------------------------------
 
 void Score::select(EngravingItem *item, SelectType type, staff_idx_t staff_idx) {
     select(std::vector<EngravingItem *>{item}, type, staff_idx);
@@ -2338,10 +1732,7 @@ void Score::do_select(EngravingItem *e, SelectType type, staff_idx_t staff_idx) 
     set_selection_changed(true);
 }
 
-//---------------------------------------------------------
-//   selectSingle
 //    staffIdx is valid, if element is of type MEASURE
-//---------------------------------------------------------
 
 // A source-only measure need not have the generated end barline yet. Selection
 // ends at the musical boundary, never at its final chord/rest onset.
@@ -2381,20 +1772,12 @@ void Score::select_single(EngravingItem *e, staff_idx_t staff_idx) {
     selection_.set_state(sel_state);
 }
 
-//---------------------------------------------------------
-//   switchToPageMode
-//---------------------------------------------------------
-
 void Score::switch_to_page_mode() {
     if (layout_mode() != LayoutMode::PAGE) {
         set_layout_mode(LayoutMode::PAGE);
         do_layout();
     }
 }
-
-//---------------------------------------------------------
-//   selectAdd
-//---------------------------------------------------------
 
 void Score::select_add(EngravingItem *e) {
     SelState sel_state = selection_.state();
@@ -2422,10 +1805,7 @@ void Score::select_add(EngravingItem *e) {
     selection_.set_state(sel_state);
 }
 
-//---------------------------------------------------------
-//   selectRange
 //    staffIdx is valid, if element is of type MEASURE
-//---------------------------------------------------------
 
 static Segment *find_element_start_segment(Score *score, EngravingItem *e) {
     if (Segment *ancestor = to_segment(e->find_ancestor(ElementType::SEGMENT))) {
@@ -2801,10 +2181,6 @@ bool Score::try_extend_range_selection_to_elem(EngravingItem *e) {
     return true;
 }
 
-//---------------------------------------------------------
-//   collectMatch
-//---------------------------------------------------------
-
 void Score::collect_match(ElementPattern *p, EngravingItem *e) {
     if (p->type != int(ElementType::INVALID) && p->type != int(e->type())) {
         return;
@@ -2873,10 +2249,6 @@ void Score::collect_match(ElementPattern *p, EngravingItem *e) {
     p->el.push_back(e);
 }
 
-//---------------------------------------------------------
-//   collectNoteMatch
-//---------------------------------------------------------
-
 void Score::collect_note_match(NotePattern *p, EngravingItem *e) {
     if (!e->is_note()) {
         return;
@@ -2921,10 +2293,6 @@ void Score::collect_note_match(NotePattern *p, EngravingItem *e) {
     p->el.push_back(n);
 }
 
-//---------------------------------------------------------
-//   selectSimilar
-//---------------------------------------------------------
-
 void Score::select_similar(EngravingItem *e, bool same_staff) {
     Score *score = e->score();
 
@@ -2951,10 +2319,6 @@ void Score::select_similar(EngravingItem *e, bool same_staff) {
     score->select(0, SelectType::SINGLE, 0);
     score->select(pattern.el, SelectType::ADD, 0);
 }
-
-//---------------------------------------------------------
-//   selectSimilarInRange
-//---------------------------------------------------------
 
 void Score::select_similar_in_range(EngravingItem *e) {
     Score *score = e->score();
@@ -2984,25 +2348,13 @@ void Score::select_similar_in_range(EngravingItem *e) {
     score->select(pattern.el, SelectType::ADD, 0);
 }
 
-//---------------------------------------------------------
-//   scoreOrder
-//---------------------------------------------------------
-
 ScoreOrder Score::score_order() const {
     ScoreOrder order = score_order_;
     order.customized = !order.is_score_order(this);
     return order;
 }
 
-//---------------------------------------------------------
-//   setScoreOrder
-//---------------------------------------------------------
-
 void Score::set_score_order(ScoreOrder order) { score_order_ = order; }
-
-//---------------------------------------------------------
-//   updateBracesAndBarlines
-//---------------------------------------------------------
 
 void Score::update_braces_and_barlines(Part *part, size_t new_index) {
     bool no_braces_found = true;
@@ -3045,18 +2397,11 @@ void Score::update_braces_and_barlines(Part *part, size_t new_index) {
     }
 }
 
-//---------------------------------------------------------
-//   setBracketsAndBarlines
-//---------------------------------------------------------
-
 void Score::set_brackets_and_barlines() { score_order().set_brackets_and_barlines(this); }
 
-//---------------------------------------------------------
-//   remapBracketsAndBarlines
 ///  Reconstructs brackets and barlines based on how they
 ///  are in the masterScore. Must be called after creating
 ///  an excerpt or adding new parts to it.
-//---------------------------------------------------------
 
 void Score::remap_brackets_and_barlines() {
     if (is_master()) {
@@ -3134,10 +2479,6 @@ void Score::remap_brackets_and_barlines() {
     }
 }
 
-//---------------------------------------------------------
-//   addLyrics
-//---------------------------------------------------------
-
 void Score::add_lyrics(const Fraction &tick, staff_idx_t staff_idx, const String &txt) {
     if (txt.trimmed().is_empty()) {
         return;
@@ -3180,67 +2521,8 @@ BeatsPerSecond Score::multiplied_tempo_at_utick(int utick) const {
     return timeline.tempo(utick) * timeline.tempo_multiplier();
 }
 
-//---------------------------------------------------------
-//   cmdSelectAll
-//---------------------------------------------------------
-
-void Score::cmd_select_all() {
-
-    if (measures_.size() == 0) {
-        return;
-    }
-    deselect_all();
-    select_range(first_mm(), 0);
-    select_range(!last()->is_measure() ? last() : last_measure_mm(), nstaves() - 1);
-    set_update_all();
-    update();
-}
-
-//---------------------------------------------------------
-//   cmdSelectSection
-//---------------------------------------------------------
-
-void Score::cmd_select_section() {
-
-    Segment *s = selection_.start_segment();
-    if (s == 0) {
-        return;
-    }
-    MeasureBase *sm = s->measure();
-    MeasureBase *em = sm;
-    while (sm->prev()) {
-        if (sm->prev()->section_break()) {
-            break;
-        }
-        sm = sm->prev();
-    }
-    while (em->next()) {
-        if (em->section_break()) {
-            break;
-        }
-        em = em->next();
-    }
-    while (sm && !sm->is_measure()) {
-        sm = sm->next();
-    }
-    while (em && !em->is_measure()) {
-        em = em->next();
-    }
-    if (sm == 0 || em == 0) {
-        return;
-    }
-
-    selection_.set_range(to_measure(sm)->first(), to_measure(em)->last(), 0, nstaves());
-
-    set_update_all();
-    update();
-}
-
-//---------------------------------------------------------
-//   scoreList
 //    return a list of scores containing the root score
 //    and all part scores (if there are any)
-//---------------------------------------------------------
 
 std::list<Score *> Score::score_list() {
     std::list<Score *> scores;
@@ -3253,10 +2535,6 @@ std::list<Score *> Score::score_list() {
     }
     return scores;
 }
-
-//---------------------------------------------------------
-//   appendPart
-//---------------------------------------------------------
 
 void Score::append_part(const InstrumentTemplate *t) {
     Part *part = new Part(this);
@@ -3271,10 +2549,6 @@ void Score::append_part(const InstrumentTemplate *t) {
     master_score()->rebuild_midi_mapping();
 }
 
-//---------------------------------------------------------
-//   appendMeasures
-//---------------------------------------------------------
-
 void Score::append_measures(int n) {
     InsertMeasureOptions options;
     options.create_measure_rests = false;
@@ -3283,10 +2557,6 @@ void Score::append_measures(int n) {
         insert_measure(ElementType::MEASURE, nullptr, options);
     }
 }
-
-//---------------------------------------------------------
-//   addSpanner
-//---------------------------------------------------------
 
 void Score::add_spanner(Spanner *s, bool compute_start_end) {
     spanner_.add_spanner(s);
@@ -3298,10 +2568,6 @@ void Score::add_spanner(Spanner *s, bool compute_start_end) {
     }
 }
 
-//---------------------------------------------------------
-//   spannerList
-//---------------------------------------------------------
-
 std::vector<Spanner *> Score::spanner_list() const {
     std::vector<Spanner *> result;
     const std::multimap<int, Spanner *> &spanner_map = spanner_.map();
@@ -3311,10 +2577,6 @@ std::vector<Spanner *> Score::spanner_list() const {
     }
     return result;
 }
-
-//---------------------------------------------------------
-//   removeSpanner
-//---------------------------------------------------------
 
 void Score::remove_spanner(Spanner *s) {
     source_child_removed(*this, s);
@@ -3334,11 +2596,8 @@ void Score::remove_spanner(Spanner *s) {
     }
 }
 
-//---------------------------------------------------------
-//   isSpannerStartEnd
 //    does is spanner start or end at tick position tick
 //    for track ?
-//---------------------------------------------------------
 
 bool Score::is_spanner_start_end(const Fraction &tick, track_idx_t track) const {
     for (auto i : spanner_.map()) {
@@ -3365,21 +2624,9 @@ void Score::insert_time(const Fraction &tick, const Fraction &len, const std::ve
 
 void Score::on_time_inserted(const Fraction &, const Fraction &, const std::vector<RepeatSegmentInfo> &) {}
 
-//---------------------------------------------------------
-//   addUnmanagedSpanner
-//---------------------------------------------------------
-
 void Score::add_unmanaged_spanner(Spanner *s) { unmanaged_spanner_.insert(s); }
 
-//---------------------------------------------------------
-//   removeSpanner
-//---------------------------------------------------------
-
 void Score::remove_unmanaged_spanner(Spanner *s) { unmanaged_spanner_.erase(s); }
-
-//---------------------------------------------------------
-//   uniqueStaves
-//---------------------------------------------------------
 
 std::vector<staff_idx_t> Score::unique_staves() const {
     std::vector<staff_idx_t> sl;
@@ -3403,10 +2650,7 @@ std::vector<staff_idx_t> Score::unique_staves() const {
     return sl;
 }
 
-//---------------------------------------------------------
-//   findCR
 //    find chord/rest <= tick in track
-//---------------------------------------------------------
 
 ChordRest *Score::find_cr(Fraction tick, track_idx_t track) const {
     Measure *m = tick2measure_mm(tick);
@@ -3442,29 +2686,20 @@ ChordRest *Score::find_cr(Fraction tick, track_idx_t track) const {
     return to_chord_rest(el);
 }
 
-//---------------------------------------------------------
-//   findChordRestEndingBeforeTickInStaff
 //    find last chord/rest on staff that ends before tick
-//---------------------------------------------------------
 
 ChordRest *Score::find_chord_rest_ending_before_tick_in_staff(const Fraction &tick, staff_idx_t staff_idx) const {
     return find_chord_rest_ending_before_tick_in_staff_and_voice(tick, staff_idx, false, 0);
 }
 
-//-----------------------------------------------------------------
-//   findChordRestEndingBeforeTickInStaffAndVoice
 //    find last chord/rest on staff and voice that ends before tick
-//-----------------------------------------------------------------
 ChordRest *Score::find_chord_rest_ending_before_tick_in_staff_and_voice(const Fraction &tick, staff_idx_t staff_idx,
                                                                         voice_idx_t voice) const {
     return find_chord_rest_ending_before_tick_in_staff_and_voice(tick, staff_idx, true, voice);
 }
 
-//-----------------------------------------------------------------
-//   findChordRestEndingBeforeTickInStaffAndVoice
 //    find last chord/rest on staff and voice that ends before tick
 //    allow no specific voice
-//-----------------------------------------------------------------
 ChordRest *Score::find_chord_rest_ending_before_tick_in_staff_and_voice(const Fraction &tick, staff_idx_t staff_idx, bool force_voice,
                                                                         voice_idx_t voice) const {
     Fraction ptick = tick - Fraction::eps();
@@ -3525,147 +2760,9 @@ ChordRest *Score::find_chord_rest_ending_before_tick_in_track(const Fraction &ti
     return nullptr;
 }
 
-//---------------------------------------------------------
-//   cmdNextPrevSystem
-//---------------------------------------------------------
-
-ChordRest *Score::cmd_next_prev_system(ChordRest *cr, bool next) {
-    IF_ASSERT_FAILED(cr) { return nullptr; }
-
-    auto new_cr = cr;
-    auto current_measure = cr->measure();
-    auto current_system = current_measure->system() ? current_measure->system() : current_measure->covering_mm_rest_or_this()->system();
-    if (!current_system) {
-        return cr;
-    }
-    auto destination_measure = current_system->first_measure();
-    if (!destination_measure) {
-        return cr;
-    }
-
-    auto first_segment = destination_measure->first(SegmentType::CHORD_REST);
-
-    // Case: Go to next system
-    if (next) {
-        if ((destination_measure = current_system->last_measure()->next_measure())) {
-            // There is a next system present: get it and accommodate for MMRest
-            current_system =
-                destination_measure->system() ? destination_measure->system() : destination_measure->covering_mm_rest_or_this()->system();
-            if (!current_system) {
-                return cr;
-            }
-            if ((destination_measure = current_system->first_measure())) {
-                if ((new_cr = destination_measure->first()->next_chord_rest(track_zero_voice(cr->track()), false))) {
-                    cr = new_cr;
-                }
-            }
-        } else if (current_measure != last_measure()) {
-            // There is no next system present: go to last measure of current system
-            if ((destination_measure = last_measure())) {
-                if ((new_cr = destination_measure->first()->next_chord_rest(track_zero_voice(cr->track()), false))) {
-                    if (!destination_measure->is_mm_rest()) {
-                        cr = new_cr;
-                    }
-                    // Last visual measure is a MMRest: go to very last measure within that MMRest
-                    else if ((destination_measure = last_measure_mm()) &&
-                             (new_cr = destination_measure->first()->next_chord_rest(track_zero_voice(cr->track()), false))) {
-                        cr = new_cr;
-                    }
-                }
-            }
-        }
-    }
-    // Case: Go to previous system
-    else {
-        auto current_segment = cr->segment();
-        // Only go to previous system's beginning if user is already at the absolute beginning of current system
-        // and not in first measure of entire score
-        if ((destination_measure != first_measure() && destination_measure != first_measure_mm()) &&
-            (current_segment == first_segment || (current_measure->mm_rest() && current_measure->mm_rest()->is_first_in_system()))) {
-            if (!(destination_measure = destination_measure->prev_measure_mm())) {
-                return cr;
-            }
-            if (!(current_system = destination_measure->system() ? destination_measure->system() :
-                                                                   destination_measure->covering_mm_rest_or_this()->system())) {
-                return cr;
-            }
-            destination_measure = current_system->first_measure();
-        }
-        if (destination_measure) {
-            if ((new_cr = destination_measure->first()->next_chord_rest(track_zero_voice(cr->track()), false))) {
-                cr = new_cr;
-            }
-        }
-    }
-    return cr;
-}
-
-//---------------------------------------------------------
-//   cmdNextPrevFrame
-//   Return next/previous [Vertical/Horizontal/Text] frame
-//   to be used as a navigation command
-//---------------------------------------------------------
-
-Box *Score::cmd_next_prev_frame(MeasureBase *current_measure_base, bool next) const {
-    Box *selected_box{nullptr};
-    while (!selected_box && (current_measure_base = (next ? current_measure_base->next() : current_measure_base->prev()))) {
-        if (current_measure_base->is_box()) {
-            selected_box = to_box(current_measure_base);
-        }
-    }
-    return selected_box;
-}
-
-//---------------------------------------------------------
-//   cmdNextPrevSection
-//    Return [Box* or ChordRest*] of next/previous section
-//---------------------------------------------------------
-
-EngravingItem *Score::cmd_next_prev_section(EngravingItem *el, bool dir) const {
-    auto current_measure_base = el->find_measure_base();
-    auto destination = current_measure_base;
-    if (current_measure_base) {
-        // -----------------------
-        // Next Section of Score
-        // -----------------------
-        if (dir) {
-            if ((destination = get_next_prev_section_break(current_measure_base, true))) {
-                el = get_score_element_of_measure_base(destination->next());
-            }
-        }
-        // -------------------------
-        // Previous Section of Score
-        // -------------------------
-        else {
-            auto current_segment = el->is_chord_rest() ? to_chord_rest(el)->segment() : nullptr;
-            if ((destination = get_next_prev_section_break(current_measure_base, false))) {
-                if (current_segment) {
-                    if ((el = get_score_element_of_measure_base((score()->first() == destination) ? destination : destination->next()))) {
-                        if (el->is_chord_rest() && (to_chord_rest(el)->segment() == current_segment)) {
-                            if ((destination = get_next_prev_section_break(destination, false))) {
-                                el = !(destination->section_break()) ? destination : get_score_element_of_measure_base(destination->next());
-                            }
-                        }
-                    }
-                } else if ((score()->first() != current_measure_base) && (el = get_score_element_of_measure_base(destination->next()))) {
-                    if (el->find_measure_base() == current_measure_base) {
-                        if ((destination = get_next_prev_section_break(destination, false))) {
-                            el = !(destination->section_break()) ? el : get_score_element_of_measure_base(destination->next());
-                        }
-                    }
-                }
-            }
-        }
-    }
-    return el;
-}
-
-//---------------------------------------------------------
-//   getNextPrevSectionBreak
 //    Condition: MeasureBase* must be valid before call
 //    If no previous section break exists selects first
 //    MeasureBase within score
-//---------------------------------------------------------
 
 MeasureBase *Score::get_next_prev_section_break(MeasureBase *mb, bool dir) const {
     auto destination = mb;
@@ -3701,13 +2798,8 @@ MeasureBase *Score::get_next_prev_section_break(MeasureBase *mb, bool dir) const
     return destination;
 }
 
-//---------------------------------------------------------
-//   getScoreElementOfMeasureBase
 //    Helper function
 //    Get an EngravingItem* as Box or ChordRest depending on
-//    MeasureBase
-//---------------------------------------------------------
-
 EngravingItem *Score::get_score_element_of_measure_base(MeasureBase *mb) const {
     EngravingItem *el{nullptr};
     ChordRest *cr{nullptr};
@@ -3728,10 +2820,6 @@ EngravingItem *Score::get_score_element_of_measure_base(MeasureBase *mb) const {
     return el;
 }
 
-//---------------------------------------------------------
-//   nmeasure
-//---------------------------------------------------------
-
 size_t Score::nmeasures() const {
     size_t n = 0;
     for (const Measure *m = first_measure(); m; m = m->next_measure()) {
@@ -3739,10 +2827,6 @@ size_t Score::nmeasures() const {
     }
     return n;
 }
-
-//---------------------------------------------------------
-//   firstTrailingMeasure
-//---------------------------------------------------------
 
 Measure *Score::first_trailing_measure(ChordRest **cr) {
     Measure *first_measure = nullptr;
@@ -3767,10 +2851,6 @@ Measure *Score::first_trailing_measure(ChordRest **cr) {
     return first_measure;
 }
 
-//---------------------------------------------------------
-//   hasLyrics
-//---------------------------------------------------------
-
 bool Score::has_lyrics() const {
     if (!first_measure()) {
         return false;
@@ -3788,10 +2868,6 @@ bool Score::has_lyrics() const {
     return false;
 }
 
-//---------------------------------------------------------
-//   hasHarmonies
-//---------------------------------------------------------
-
 bool Score::has_harmonies() const {
     if (!first_measure()) {
         return false;
@@ -3807,10 +2883,6 @@ bool Score::has_harmonies() const {
     }
     return false;
 }
-
-//---------------------------------------------------------
-//   lyricCount
-//---------------------------------------------------------
 
 int Score::lyric_count() const { return int(lyrics().size()); }
 
@@ -3882,10 +2954,6 @@ std::vector<Lyrics *> Score::lyrics() const {
     return result;
 }
 
-//---------------------------------------------------------
-//   extractLyrics
-//---------------------------------------------------------
-
 String Score::extract_lyrics() const {
     String result;
     std::vector<Lyrics *> list = lyrics();
@@ -3901,10 +2969,6 @@ String Score::extract_lyrics() const {
     return result.trimmed();
 }
 
-//---------------------------------------------------------
-//   harmonyCount
-//---------------------------------------------------------
-
 int Score::harmony_count() const {
     int count = 0;
     SegmentType st = SegmentType::CHORD_REST;
@@ -3917,10 +2981,6 @@ int Score::harmony_count() const {
     }
     return count;
 }
-
-//---------------------------------------------------------
-//   keysig
-//---------------------------------------------------------
 
 int Score::keysig() const {
     Key result = Key::C;
@@ -3939,10 +2999,6 @@ int Score::keysig() const {
     return int(result);
 }
 
-//---------------------------------------------------------
-//   duration
-//---------------------------------------------------------
-
 int Score::duration() const {
     const RepeatList &rl = master_score()->repeat_list(true);
     if (rl.empty()) {
@@ -3951,10 +3007,6 @@ int Score::duration() const {
     const RepeatSegment *rs = rl.back();
     return lrint(utick2utime(rs->utick + rs->len()));
 }
-
-//---------------------------------------------------------
-//   durationWithoutRepeats
-//---------------------------------------------------------
 
 int Score::duration_without_repeats() const {
     const RepeatList &rl = master_score()->repeat_list(false);
@@ -3996,18 +3048,10 @@ std::set<staff_idx_t> Score::staff_idx_set_from_range(const track_idx_t track_fr
     return result;
 }
 
-//---------------------------------------------------------
-//   getProperty
-//---------------------------------------------------------
-
 PropertyValue Score::get_property(Pid /*id*/) const {
     LOGD("Score::getProperty: unhandled id");
     return PropertyValue();
 }
-
-//---------------------------------------------------------
-//   setProperty
-//---------------------------------------------------------
 
 bool Score::set_property(Pid /*id*/, const PropertyValue & /*v*/) {
     LOGD("Score::setProperty: unhandled id");
@@ -4015,20 +3059,12 @@ bool Score::set_property(Pid /*id*/, const PropertyValue & /*v*/) {
     return true;
 }
 
-//---------------------------------------------------------
-//   propertyDefault
-//---------------------------------------------------------
-
 PropertyValue Score::property_default(Pid /*id*/) const { return PropertyValue(); }
 
 void Score::reset_style_value(Sid style_to_reset) {
     const MStyle &def_style = DefaultStyle::default_style();
     undo_change_style_val(style_to_reset, def_style.value(style_to_reset));
 }
-
-//---------------------------------------------------------
-//   setStyle
-//---------------------------------------------------------
 
 void Score::set_style(const MStyle &s, const bool overlap) {
     if (!overlap) {
@@ -4047,10 +3083,6 @@ void Score::set_style(const MStyle &s, const bool overlap) {
     }
 }
 
-//---------------------------------------------------------
-//   getTextStyleUserName
-//---------------------------------------------------------
-
 TranslatableString Score::get_text_style_user_name(TextStyleType tid) const {
     if (int(tid) >= int(TextStyleType::USER1) && int(tid) <= int(TextStyleType::USER12)) {
         int idx = int(tid) - int(TextStyleType::USER1);
@@ -4066,20 +3098,13 @@ TranslatableString Score::get_text_style_user_name(TextStyleType tid) const {
 
 String Score::name() const { return excerpt_ ? excerpt_->name() : String(); }
 
-//---------------------------------------------------------
-//   addRefresh
-//---------------------------------------------------------
-
 void Score::add_refresh(const RectF &r) {
     update_state_.refresh.unite(r);
     cmd_state().set_update_mode(UpdateMode::UPDATE);
 }
 
-//---------------------------------------------------------
-//   staffIdx
 //
 //  Return index for the staff in the score.
-//---------------------------------------------------------
 
 staff_idx_t Score::staff_idx(const Staff *staff) const {
     staff_idx_t idx = 0;
@@ -4092,11 +3117,8 @@ staff_idx_t Score::staff_idx(const Staff *staff) const {
     return idx;
 }
 
-//---------------------------------------------------------
-//   staffIdx
 //
 ///  Return index for the first staff of \a part.
-//---------------------------------------------------------
 
 staff_idx_t Score::staff_idx(const Part *part) const {
     staff_idx_t idx = 0;
@@ -4221,10 +3243,7 @@ void Score::rebuild_bsp_tree() {
     }
 }
 
-//---------------------------------------------------------
-//   scanElements
 //    scan all elements
-//---------------------------------------------------------
 
 void Score::scan_elements(std::function<void(EngravingItem *)> func) {
     for (MeasureBase *mb = first(); mb; mb = mb->next()) {
@@ -4245,10 +3264,7 @@ void Score::scan_elements(std::function<void(EngravingItem *)> func) {
     }
 }
 
-//---------------------------------------------------------
-//   connectTies
 ///   Rebuild tie connections.
-//---------------------------------------------------------
 
 void Score::connect_ties(bool silent) {
     size_t tracks = nstaves() * ::mu::engraving::voices;
@@ -4339,10 +3355,7 @@ void Score::connect_ties(bool silent) {
 
 bool Score::auto_layout_enabled() const { return is_open(); }
 
-//---------------------------------------------------------
-//   doLayout
 //    do a complete (re-) layout
-//---------------------------------------------------------
 
 void Score::invalidate_layout(const Fraction &start, const Fraction &end) {
     // Layout locks CmdState while it builds generated elements. Those writes
@@ -4452,10 +3465,6 @@ void Score::remove_page_lock(const RangeLock *lock) {
     lock->end_mb()->trigger_layout();
 }
 
-//---------------------------------------------------------
-//   updateSwing
-//---------------------------------------------------------
-
 void Score::update_swing() {
     for (Staff *s : staves_) {
         s->clear_swing_map();
@@ -4491,10 +3500,6 @@ void Score::update_swing() {
     }
 }
 
-//---------------------------------------------------------
-//   updateCapo
-//---------------------------------------------------------
-
 void Score::update_capo(bool ignore_notation_update /* = false */) {
     Measure *fm = first_measure();
     if (!fm) {
@@ -4524,10 +3529,6 @@ void Score::update_capo(bool ignore_notation_update /* = false */) {
         }
     }
 }
-
-//---------------------------------------------------------
-//   updateChannel
-//---------------------------------------------------------
 
 void Score::update_channel() {
     for (Staff *s : staves()) {
@@ -4652,10 +3653,6 @@ std::vector<BracketItem *> &Score::brackets(staff_idx_t staff_idx) {
     return brackets_[staff_idx];
 }
 
-//---------------------------------------------------------
-//   bracketLevels
-//---------------------------------------------------------
-
 size_t Score::bracket_levels(staff_idx_t staff_idx) const {
     const std::vector<BracketItem *> &staff_brackets = brackets(staff_idx);
     size_t columns = 0;
@@ -4704,14 +3701,12 @@ Fraction Score::loop_boundary_tick(LoopBoundaryType type) const { return master_
 
 void Score::set_loop_boundary_tick(LoopBoundaryType type, Fraction tick) { master_score_->set_loop_boundary_tick(type, tick); }
 
-//---------------------------------------------------------
 //   ScoreLoad::_loading
 //    If the _loading > 0 then pushes and pops to
 //    the undo stack do not emit a warning.
 //    Usually pushes and pops to the undo stack are only
 //    valid inside a startCmd() - endCmd(). Exceptions
 //    occurred during score loading.
-//---------------------------------------------------------
 
 int ScoreLoad::loading_ = 0;
 } // namespace mu::engraving

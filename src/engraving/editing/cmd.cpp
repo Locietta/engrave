@@ -95,10 +95,6 @@ using namespace muse::io;
 using namespace mu::engraving;
 
 namespace mu::engraving {
-//---------------------------------------------------------
-//   reset
-//---------------------------------------------------------
-
 void CmdState::reset() {
     changes.clear();
     mutation_count = 0;
@@ -118,10 +114,6 @@ void CmdState::reset() {
     locked_ = false;
 }
 
-//---------------------------------------------------------
-//   setTick
-//---------------------------------------------------------
-
 void CmdState::set_tick(const Fraction &t) {
     if (locked_) {
         return;
@@ -136,10 +128,6 @@ void CmdState::set_tick(const Fraction &t) {
     set_update_mode(UpdateMode::LAYOUT);
 }
 
-//---------------------------------------------------------
-//   setStaff
-//---------------------------------------------------------
-
 void CmdState::set_staff(staff_idx_t st) {
     if (locked_ || st == muse::nidx) {
         return;
@@ -153,10 +141,6 @@ void CmdState::set_staff(staff_idx_t st) {
     }
 }
 
-//---------------------------------------------------------
-//   setMeasureBase
-//---------------------------------------------------------
-
 void CmdState::set_measure_base(const MeasureBase *mb) {
     if (!mb || mb_ == mb || locked_) {
         return;
@@ -165,10 +149,6 @@ void CmdState::set_measure_base(const MeasureBase *mb) {
     one_measure_base_ = !mb_;
     mb_ = mb;
 }
-
-//---------------------------------------------------------
-//   setElement
-//---------------------------------------------------------
 
 void CmdState::set_element(const EngravingItem *e) {
     if (!e || el_ == e || locked_) {
@@ -183,10 +163,6 @@ void CmdState::set_element(const EngravingItem *e) {
     }
 }
 
-//---------------------------------------------------------
-//   unsetElement
-//---------------------------------------------------------
-
 void CmdState::unset_element(const EngravingItem *e) {
     changes.changed_objects.erase(const_cast<EngravingItem *>(e));
     if (el_ == e) {
@@ -197,14 +173,6 @@ void CmdState::unset_element(const EngravingItem *e) {
     }
 }
 
-//---------------------------------------------------------
-//   element
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   setUpdateMode
-//---------------------------------------------------------
-
 void CmdState::assign_update_mode(UpdateMode m) { update_mode_ = m; }
 
 void CmdState::set_update_mode(UpdateMode m) {
@@ -212,10 +180,6 @@ void CmdState::set_update_mode(UpdateMode m) {
         assign_update_mode(m);
     }
 }
-
-//---------------------------------------------------------
-//   deleteLater
-//---------------------------------------------------------
 
 void CmdState::delete_later(EngravingObject *e) { postponed_deletions_.push_back(e); }
 
@@ -240,38 +204,23 @@ static void delete_postponed(CmdState &cmd_state) {
     }
 }
 
-//---------------------------------------------------------
-//   startCmd
 ///   Start a GUI command by clearing the redraw area
 ///   and starting a user-visible undo.
-//---------------------------------------------------------
 
 void Score::start_cmd(const TranslatableString &action_name) { master_score()->transaction_manager()->begin_transaction(action_name); }
 
-//---------------------------------------------------------
-//   endCmd
 ///   End a GUI command by (if \a undo) ending a user-visible undo
 ///   and (always) updating the redraw area.
-//---------------------------------------------------------
 
 void Score::end_cmd(bool failed) { master_score()->transaction_manager()->end_transaction(failed); }
 
-//---------------------------------------------------------
-//   undo
 //    Deprecated: use Transaction::push instead.
-//---------------------------------------------------------
 
 #ifndef NDEBUG
-//---------------------------------------------------------
-//   CmdState::dump
-//---------------------------------------------------------
 
 #endif
 
-//---------------------------------------------------------
-//   update
 //    layout & update
-//---------------------------------------------------------
 
 void Score::update() { master_score()->update(); }
 
@@ -305,11 +254,8 @@ void MasterScore::update(bool reset_cmd_state, NormalizeMode mode) {
     }
 }
 
-//---------------------------------------------------------
-//   expandVoice
 //    fills gaps in voice with rests,
 //    from previous cr (or beginning of measure) to next cr (or end of measure)
-//---------------------------------------------------------
 
 void Score::expand_voice(Segment *s, track_idx_t track) {
     if (!s || track == muse::nidx) {
@@ -376,18 +322,11 @@ void Score::expand_voice(Segment *s, track_idx_t track) {
     }
 }
 
-//---------------------------------------------------------
-//   addInterval
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   setGraceNote
 ///   Create a grace note in front of a normal note.
 ///   \arg ch is the chord of the normal note
 ///   \arg pitch is the pitch of the grace note
 ///   \arg is the grace note type
 ///   \len is the visual duration of the grace note (1/16 or 1/32)
-//---------------------------------------------------------
 
 Note *Score::set_grace_note(Chord *ch, int pitch, NoteType type, int len) {
     Chord *chord = Factory::create_chord(this->dummy());
@@ -569,23 +508,9 @@ GuitarBend *Score::add_guitar_bend(GuitarBendType type, Note *note, Note *end_no
     return bend;
 }
 
-//---------------------------------------------------------
-//   createCRSequence
-//    Create a rest or chord of len f.
-//    If f is not a basic len, create several rests or
-//    tied chords.
-//
-//    f     total len of ChordRest
-//    cr    prototype CR
-//    tick  start position in measure
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   setNoteRest
 //    pitch == -1  -> set rest
 //    "sd" is in local (stretched) time
 //    return segment of last created note/rest
-//---------------------------------------------------------
 
 Segment *Score::set_note_rest_at(Segment *segment, track_idx_t track, NoteVal nval, Fraction sd, DirectionV stem_direction,
                                  bool force_accidental, const std::set<SymId> &articulation_ids, bool rhythmic,
@@ -802,8 +727,6 @@ Segment *Score::set_note_rest(Segment *segment, track_idx_t track, NoteVal nval,
     return segment;
 }
 
-//---------------------------------------------------------
-//   makeGap
 //    make time gap at tick by removing/shortening
 //    chord/rest
 //
@@ -814,7 +737,6 @@ Segment *Score::set_note_rest(Segment *segment, track_idx_t track, NoteVal nval,
 //    gap does not exceed measure or scope of tuplet
 //
 //    return size of actual gap in local time
-//---------------------------------------------------------
 
 Fraction Score::make_gap(Segment *segment, track_idx_t track, const Fraction &input_sd, Tuplet *tuplet, bool keep_chord,
                          bool delete_annotations) {
@@ -993,11 +915,8 @@ Fraction Score::make_gap(Segment *segment, track_idx_t track, const Fraction &in
     return accumulated;
 }
 
-//---------------------------------------------------------
-//   splitGapToMeasureBoundaries
 //    cr  - start of gap
 //    gap - gap len in local (stretched) time
-//---------------------------------------------------------
 
 std::vector<Fraction> Score::split_gap_to_measure_boundaries(ChordRest *cr, Fraction gap) {
     std::vector<Fraction> flist;
@@ -1038,10 +957,7 @@ std::vector<Fraction> Score::split_gap_to_measure_boundaries(ChordRest *cr, Frac
     return flist;
 }
 
-//---------------------------------------------------------
-//   changeCRlen
 //    - dstF is in local (stretched) time
-//---------------------------------------------------------
 
 void Score::change_c_rlen(ChordRest *cr, const TDuration &d) {
     Fraction dst_f;
@@ -1215,38 +1131,5 @@ void Score::change_c_rlen(ChordRest *cr, const Fraction &dst_f, bool fill_with_r
     }
     connect_ties();
 }
-
-//---------------------------------------------------------
-//   cmdMoveRest
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   cmdMoveLyrics
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   cmdAddGrace
-///   adds grace note of specified type to selected notes
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   cmdRemoveEmptyTrailingMeasures
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   cmdToggleLayoutBreak
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   cmdToggleMmrest
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   cmdToggleHideEmpty
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   cmdToggleAutoplace
-//---------------------------------------------------------
 
 } // namespace mu::engraving

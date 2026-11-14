@@ -33,10 +33,6 @@
 
 using namespace mu::engraving;
 
-//-------------------------------------------------------------------
-// EditStaveSharing
-//-------------------------------------------------------------------
-
 void EditStaveSharing::disconnect_shared_part(Transaction &tx, SharedPart *shared_part, Part *origin_part) {
     Score *score = origin_part->score();
     tx.change_shared_origin(shared_part, origin_part, false);

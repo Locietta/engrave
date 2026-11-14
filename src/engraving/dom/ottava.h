@@ -28,25 +28,13 @@
 #include "types/translatablestring.h"
 
 namespace mu::engraving {
-//---------------------------------------------------------
-//   OttavaE
-//---------------------------------------------------------
-
 struct OttavaE {
     int offset = 0;
     unsigned start = 0;
     unsigned end = 0;
 };
 
-//---------------------------------------------------------
-//   OttavaType
-//---------------------------------------------------------
-
 enum class OttavaType : unsigned char { OTTAVA_8VA, OTTAVA_8VB, OTTAVA_15MA, OTTAVA_15MB, OTTAVA_22MA, OTTAVA_22MB };
-
-//---------------------------------------------------------
-//   OttavaDefault
-//---------------------------------------------------------
 
 struct OttavaDefault {
     OttavaType type = OttavaType::OTTAVA_8VA;
@@ -66,10 +54,6 @@ static const OttavaDefault ottava_default[] = {
 
 struct Ottava;
 
-//---------------------------------------------------------
-//   @@ OttavaSegment
-//---------------------------------------------------------
-
 struct OttavaSegment final : TextLineBaseSegment {
 private:
     DECLARE_CLASSOF(ElementType::OTTAVA_SEGMENT)
@@ -86,15 +70,9 @@ public:
     EngravingObject *property_delegate(Pid) const override;
 
     bool can_be_excluded_from_other_parts() const override { return true; }
-
-private:
-    void rebase_offsets_on_anchor_changed(Grip grip, const PointF &old_pos, System *sys) override;
 };
 
-//---------------------------------------------------------
-//   @@ Ottava
 //   @P ottavaType  enum (Ottava.OTTAVA_8VA, .OTTAVA_8VB, .OTTAVA_15MA, .OTTAVA_15MB, .OTTAVA_22MA, .OTTAVA_22MB)
-//---------------------------------------------------------
 
 struct Ottava final : TextLineBase {
 private:

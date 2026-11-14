@@ -50,12 +50,10 @@ struct NoteParenthesisInfo;
 
 static constexpr int max_dots = 4;
 
-//--------------------------------------------------------------------------------
 // LINE ATTACHMENT POINT
 // Represents the attachment point of any line (tie, slur, glissando...)
 // with respect to the note. Each note can hold a vector of line attach points, which
 // it may use to make spacing decision with the surrounding items.
-//--------------------------------------------------------------------------------
 struct LineAttachPoint {
     LineAttachPoint(EngravingItem *l, double x, double y, bool start) : line_(l), pos_(PointF(x, y)), start_(start) {}
 
@@ -70,10 +68,6 @@ private:
     PointF pos_ = PointF(0.0, 0.0);
     bool start_ = true;
 };
-
-//---------------------------------------------------------
-//   @@ NoteHead
-//---------------------------------------------------------
 
 struct NoteHead final : Symbol {
 private:
@@ -91,8 +85,6 @@ public:
 
 static const int invalid_line = -10000;
 
-//---------------------------------------------------------------------------------------
-//   @@ Note
 ///    Graphic representation of a note.
 //
 //   @P accidental       Accidental       note accidental (null if none)
@@ -124,7 +116,6 @@ static const int invalid_line = -10000;
 //   @P userMirror       enum (DirectionH.AUTO, DirectionH.LEFT, DirectionH.RIGHT)
 //   @P veloOffset       int
 //   @P veloType         enum (Note.OFFSET_VAL, Note.USER_VAL)
-//---------------------------------------------------------------------------------------
 
 struct Note final : EngravingItem {
 private:
@@ -213,7 +204,7 @@ public:
     void set_tuning(double v) { tuning_ = v; }
 
     double playing_tuning() const;
-    void undo_set_tpc(int v);
+
     int transposition() const;
 
     bool fixed() const { return fixed_; }
@@ -444,10 +435,9 @@ public:
     EngravingItem *next_in_el(EngravingItem *e);
     EngravingItem *prev_in_el(EngravingItem *e);
     EngravingItem *next_element() override;
-    EngravingItem *prev_element() override;
+
     EngravingItem *last_element_before_segment();
     EngravingItem *next_segment_element() override;
-    EngravingItem *prev_segment_element() override;
 
     std::vector<Note *> tied_notes() const;
 

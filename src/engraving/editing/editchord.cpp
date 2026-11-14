@@ -44,11 +44,6 @@ void EditChord::add_chord_parentheses(Chord *chord, std::vector<Note *> notes, b
     undo_add_parentheses_to_notes(chord, notes, add_to_linked, generated);
 }
 
-//---------------------------------------------------------
-//   toggleArticulation
-///   Toggle attribute \a attr for all selected notes/rests.
-//---------------------------------------------------------
-
 bool EditChord::toggle_articulation(Score *score, EngravingItem *el, Articulation *a) {
     Chord *c;
     if (el->is_note()) {

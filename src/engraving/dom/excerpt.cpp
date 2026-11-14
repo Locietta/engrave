@@ -1735,10 +1735,6 @@ std::vector<Excerpt *> Excerpt::create_excerpts_from_parts(const std::vector<Par
     return result;
 }
 
-//---------------------------------------------------------
-//   createLinkedTabs
-//---------------------------------------------------------
-
 void Excerpt::create_linked_tabs(MasterScore *score) {
     // store map of all initial spanners
     std::unordered_map<staff_idx_t, std::vector<Spanner *>> spanners;

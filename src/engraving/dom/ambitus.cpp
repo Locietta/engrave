@@ -38,10 +38,6 @@
 using namespace mu;
 using namespace mu::engraving;
 
-//---------------------------------------------------------
-//   Ambitus
-//---------------------------------------------------------
-
 Ambitus::Ambitus(DummyParentOr<Segment> parent) : EngravingItem(ElementType::AMBITUS, parent, ElementFlag::ON_STAFF) {
     note_head_group_ = ::mu::engraving::Ambitus::noteheadgroup_default;
     note_head_type_ = ::mu::engraving::Ambitus::noteheadtype_default;
@@ -81,15 +77,7 @@ Ambitus::~Ambitus() {
     delete bottom_accidental_;
 }
 
-//---------------------------------------------------------
-//   mag
-//---------------------------------------------------------
-
 double Ambitus::mag() const { return staff() ? staff()->staff_mag(tick()) : 1.0; }
-
-//---------------------------------------------------------
-//   initFrom
-//---------------------------------------------------------
 
 void Ambitus::init_from(Ambitus *a) {
     note_head_group_ = a->note_head_group_;
@@ -103,12 +91,9 @@ void Ambitus::init_from(Ambitus *a) {
     bottom_tpc_ = a->bottom_tpc_;
 }
 
-//---------------------------------------------------------
-//   setTrack
 //
 //    when the Ambitus element is assigned a track,
 //    initialize top and bottom 'notes' to top and bottom staff lines
-//---------------------------------------------------------
 
 void Ambitus::set_track(track_idx_t t) {
     EngravingItem::set_track(t);
@@ -130,11 +115,9 @@ void Ambitus::set_track(track_idx_t t) {
     }
 }
 
-//---------------------------------------------------------
 //   setTop/BottomPitch
 //
 //    setting either pitch requires to adjust the corresponding tpc
-//---------------------------------------------------------
 
 void Ambitus::set_top_pitch(int val, bool apply_logic) {
     if (!apply_logic) {
@@ -168,12 +151,10 @@ void Ambitus::set_bottom_pitch(int val, bool apply_logic) {
     normalize();
 }
 
-//---------------------------------------------------------
 //   setTop/BottomTpc
 //
 //    setting either tpc requires to adjust the corresponding pitch
 //    (but remaining in the same octave)
-//---------------------------------------------------------
 
 void Ambitus::set_top_tpc(int val, bool apply_logic) {
     top_tpc_ = val;
@@ -201,10 +182,6 @@ void Ambitus::set_bottom_tpc(int val, bool apply_logic) {
     normalize();
 }
 
-//---------------------------------------------------------
-//   scanElements
-//---------------------------------------------------------
-
 void Ambitus::scan_elements(std::function<void(EngravingItem *)> func) {
     func(this);
     if (top_accidental_->accidental_type() != AccidentalType::NONE) {
@@ -215,10 +192,6 @@ void Ambitus::scan_elements(std::function<void(EngravingItem *)> func) {
         func(bottom_accidental_);
     }
 }
-
-//---------------------------------------------------------
-//   noteHead
-//---------------------------------------------------------
 
 SymId Ambitus::note_head() const {
     int hg = 1;
@@ -236,19 +209,13 @@ SymId Ambitus::note_head() const {
     return t;
 }
 
-//---------------------------------------------------------
-//   headWidth
 //
 //    returns the width of the notehead symbol
-//---------------------------------------------------------
 
 double Ambitus::head_width() const { return sym_width(note_head()); }
 
-//---------------------------------------------------------
-//   normalize
 //
 //    makes sure topPitch is not < bottomPitch
-//---------------------------------------------------------
 
 void Ambitus::normalize() {
     if (top_pitch_ < bottom_pitch_) {
@@ -257,11 +224,8 @@ void Ambitus::normalize() {
     }
 }
 
-//---------------------------------------------------------
-//   updateRange
 //
 //    scans the staff contents up to next section break to update the range pitches/tpc's
-//---------------------------------------------------------
 
 Ambitus::Ranges Ambitus::estimate_ranges() const {
     Ambitus::Ranges result;
@@ -303,10 +267,6 @@ void Ambitus::remove(EngravingItem *e) {
     EngravingItem::remove(e);
 }
 
-//---------------------------------------------------------
-//   getProperty
-//---------------------------------------------------------
-
 PropertyValue Ambitus::get_property(Pid property_id) const {
     switch (property_id) {
         case Pid::HEAD_GROUP: return note_head_group();
@@ -328,10 +288,6 @@ PropertyValue Ambitus::get_property(Pid property_id) const {
         default: return EngravingItem::get_property(property_id);
     }
 }
-
-//---------------------------------------------------------
-//   setProperty
-//---------------------------------------------------------
 
 bool Ambitus::set_property(Pid property_id, const PropertyValue &v) {
     switch (property_id) {
@@ -368,10 +324,6 @@ bool Ambitus::set_property(Pid property_id, const PropertyValue &v) {
     return true;
 }
 
-//---------------------------------------------------------
-//   propertyDefault
-//---------------------------------------------------------
-
 PropertyValue Ambitus::property_default(Pid id) const {
     switch (id) {
         case Pid::HEAD_GROUP: return ::mu::engraving::Ambitus::noteheadgroup_default;
@@ -390,21 +342,7 @@ PropertyValue Ambitus::property_default(Pid id) const {
     //return QVariant();
 }
 
-//---------------------------------------------------------
-//   nextSegmentElement
-//---------------------------------------------------------
-
 EngravingItem *Ambitus::next_segment_element() { return segment()->first_in_next_segments(staff_idx()); }
-
-//---------------------------------------------------------
-//   prevSegmentElement
-//---------------------------------------------------------
-
-EngravingItem *Ambitus::prev_segment_element() { return segment()->last_in_prev_segments(staff_idx()); }
-
-//---------------------------------------------------------
-//   accessibleInfo
-//---------------------------------------------------------
 
 AccidentalType Ambitus::accidental_type(int tpc, Key key) {
     AccidentalType accid_type = AccidentalType::NONE;

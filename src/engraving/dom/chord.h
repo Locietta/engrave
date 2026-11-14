@@ -156,8 +156,6 @@ private:
     Segment *appended_segment_value = nullptr; // the graceNoteGroup is appended to this segment
 };
 
-//---------------------------------------------------------
-//   @@ Chord
 ///    Graphic representation of a chord.
 ///    Single notes are handled as degenerated chords.
 //
@@ -169,7 +167,6 @@ private:
 //   @P stem          Stem          the stem of the chord, if any (read only)
 //   @P stemSlash     StemSlash     the stem slash of the chord (acciaccatura), if any (read only)
 //   @P stemDirection Direction     the stem direction of the chord: AUTO, UP, DOWN (read only)
-//---------------------------------------------------------
 
 struct NoteParenthesisInfo {
     explicit NoteParenthesisInfo(std::vector<Note *> n_list = {}, bool generated = false);
@@ -420,10 +417,9 @@ public:
     Fraction end_tick_including_tied() const;
 
     EngravingItem *next_element() override;
-    EngravingItem *prev_element() override;
+
     EngravingItem *next_segment_element() override;
     EngravingItem *last_element_before_segment();
-    EngravingItem *prev_segment_element() override;
 
     Note *first_grace_or_note();
 

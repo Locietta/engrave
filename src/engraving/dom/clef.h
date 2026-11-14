@@ -37,10 +37,6 @@ struct Segment;
 
 static const int no_clef = -1000;
 
-//---------------------------------------------------------
-//   ClefTypeList
-//---------------------------------------------------------
-
 struct ClefTypeList {
     ClefType concert_clef = ClefType::G;
     ClefType transposing_clef = ClefType::G;
@@ -55,10 +51,7 @@ struct ClefTypeList {
     bool operator!=(const ClefTypeList &t) const;
 };
 
-//---------------------------------------------------------
-//   ClefInfo
 ///   Info about a clef.
-//---------------------------------------------------------
 
 struct ClefInfo {
     static const ClefInfo clef_table[];
@@ -81,13 +74,10 @@ struct ClefInfo {
     static StaffGroup staff_group(ClefType t) { return ::mu::engraving::ClefInfo::clef_table[int(t)].staff_group_; }
 };
 
-//---------------------------------------------------------
-//   @@ Clef
 ///    Graphic representation of a clef.
 //
 //   @P showCourtesy  bool    show/hide courtesy clef when applicable
 //   @P isSmall       bool    small, mid-staff clef
-//---------------------------------------------------------
 
 struct Clef final : EngravingItem {
 private:
@@ -111,7 +101,6 @@ public:
 
     void set_show_courtesy(bool v) { show_courtesy_ = v; }
 
-    void undo_set_show_courtesy(bool v);
     Clef *other_clef();
 
     ClefType clef_type() const;
@@ -148,7 +137,6 @@ public:
     PropertyValue property_default(Pid id) const override;
 
     EngravingItem *next_segment_element() override;
-    EngravingItem *prev_segment_element() override;
 
     void clear();
 

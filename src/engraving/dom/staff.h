@@ -48,10 +48,7 @@ struct TimeSig;
 
 enum class Key : signed char;
 
-//---------------------------------------------------------
-//    Staff
 ///    Global staff data not directly related to drawing.
-//---------------------------------------------------------
 
 struct Staff final : EngravingItem {
 
@@ -275,7 +272,6 @@ public:
     track_idx_t get_linked_track_in_staff(const Staff *linked_staff, const track_idx_t strack) const;
     bool track_has_links_in_voice_zero(track_idx_t track);
 
-    void undo_set_show_measure_numbers(bool show);
     bool should_show_measure_numbers() const;
 
     bool is_last_of_score() const;

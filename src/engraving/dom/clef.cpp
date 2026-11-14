@@ -91,17 +91,9 @@ const ClefInfo ClefInfo::clef_table[] = {
     {ClefType::G8_VB_C, 2, 38, {0, 3, -1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7}, SymId::G_CLEF8VB_C_CLEF, StaffGroup::STANDARD},
 };
 
-//---------------------------------------------------------
-//   Clef
-//---------------------------------------------------------
-
 Clef::Clef(DummyParentOr<Segment> parent) : EngravingItem(ElementType::CLEF, parent, ElementFlag::ON_STAFF) {
     clef_to_barline_position_ = ClefToBarlinePosition::AUTO;
 }
-
-//---------------------------------------------------------
-//   mag
-//---------------------------------------------------------
 
 double Clef::mag() const {
     double mag = staff() ? staff()->staff_mag(this) : 1.0;
@@ -111,19 +103,11 @@ double Clef::mag() const {
     return mag;
 }
 
-//---------------------------------------------------------
-//   setSmall
-//---------------------------------------------------------
-
 bool Clef::is_small() const {
     return is_small_ || (ownership_parent() && ownership_parent()->is_segment() && segment()->is_just_type(SegmentType::CLEF));
 }
 
 void Clef::set_small(bool val) { is_small_ = val; }
-
-//---------------------------------------------------------
-//   setClefType
-//---------------------------------------------------------
 
 void Clef::set_clef_type(ClefType i) {
     if (concert_pitch()) {
@@ -139,21 +123,9 @@ void Clef::set_clef_type(ClefType i) {
     }
 }
 
-//---------------------------------------------------------
-//   setConcertClef
-//---------------------------------------------------------
-
 void Clef::set_concert_clef(ClefType val) { clef_types_.concert_clef = val; }
 
-//---------------------------------------------------------
-//   setTransposingClef
-//---------------------------------------------------------
-
 void Clef::set_transposing_clef(ClefType val) { clef_types_.transposing_clef = val; }
-
-//---------------------------------------------------------
-//   clefType
-//---------------------------------------------------------
 
 ClefType Clef::clef_type() const {
     if (concert_pitch()) {
@@ -189,22 +161,9 @@ ClefType Clef::display_clef_type(bool *compatible) const {
     return type;
 }
 
-//---------------------------------------------------------
-//   spatiumChanged
-//---------------------------------------------------------
-
 void Clef::spatium_changed(double old_value, double new_value) { EngravingItem::spatium_changed(old_value, new_value); }
 
-//---------------------------------------------------------
-//   undoSetShowCourtesy
-//---------------------------------------------------------
-
-void Clef::undo_set_show_courtesy(bool v) { undo_change_property(Pid::SHOW_COURTESY, v); }
-
-//---------------------------------------------------------
-//   otherClef
 //    try to locate the 'other clef' of a courtesy / main pair
-//---------------------------------------------------------
 
 Clef *Clef::other_clef() {
     // if not in a clef-segment-measure hierarchy, do nothing
@@ -238,10 +197,6 @@ Clef *Clef::other_clef() {
     return to_clef(other_segm->element(track()));
 }
 
-//---------------------------------------------------------
-//   getProperty
-//---------------------------------------------------------
-
 PropertyValue Clef::get_property(Pid property_id) const {
     switch (property_id) {
         case Pid::CLEF_TYPE_CONCERT: return clef_types_.concert_clef;
@@ -253,10 +208,6 @@ PropertyValue Clef::get_property(Pid property_id) const {
         default: return EngravingItem::get_property(property_id);
     }
 }
-
-//---------------------------------------------------------
-//   setProperty
-//---------------------------------------------------------
 
 bool Clef::set_property(Pid property_id, const PropertyValue &v) {
     switch (property_id) {
@@ -344,10 +295,6 @@ void Clef::manage_exclusion_from_parts(bool exclude) {
     }
 }
 
-//---------------------------------------------------------
-//   propertyDefault
-//---------------------------------------------------------
-
 PropertyValue Clef::property_default(Pid id) const {
     switch (id) {
         case Pid::CLEF_TYPE_CONCERT: return ClefType::INVALID;
@@ -360,31 +307,9 @@ PropertyValue Clef::property_default(Pid id) const {
     }
 }
 
-//---------------------------------------------------------
-//   nextSegmentElement
-//---------------------------------------------------------
-
 EngravingItem *Clef::next_segment_element() { return segment()->first_in_next_segments(staff_idx()); }
 
-//---------------------------------------------------------
-//   prevSegmentElement
-//---------------------------------------------------------
-
-EngravingItem *Clef::prev_segment_element() { return segment()->last_in_prev_segments(staff_idx()); }
-
-//---------------------------------------------------------
-//   accessibleInfo
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   subtypeUserName
-//---------------------------------------------------------
-
 TranslatableString Clef::subtype_user_name() const { return TConv::user_name(clef_type()); }
-
-//---------------------------------------------------------
-//   clear
-//---------------------------------------------------------
 
 void Clef::clear() {
     LayoutData *ldata = mutldata();

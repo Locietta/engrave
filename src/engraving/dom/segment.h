@@ -32,11 +32,8 @@ struct ChordRest;
 struct Spanner;
 struct System;
 
-//-------------------------------------------------------------------
-//   SegmentType
 //
 //    Type values determine the order of segments for a given tick
-//-------------------------------------------------------------------
 
 enum class SegmentType {
     ///.\{
@@ -87,8 +84,6 @@ constexpr bool operator&(const SegmentType t1, const SegmentType t2) { return st
 
 constexpr SegmentType operator~(const SegmentType &t) { return static_cast<SegmentType>(~static_cast<int>(t)); }
 
-//------------------------------------------------------------------------
-//   @@ Segment
 //    A segment holds all vertical aligned staff elements.
 //    Segments are typed and contain only Elements of the same type.
 //
@@ -107,7 +102,6 @@ constexpr SegmentType operator~(const SegmentType &t) { return static_cast<Segme
 //   @P prevInMeasure   Segment           the previous segment in measure; null at first measure segment (read-only)
 //   @P segmentType     enum (Segment.All, .Ambitus, .BarLine, .Breath, .ChordRest, .Clef, .EndBarLine, .Invalid, .KeySig, .KeySigAnnounce, .StartRepeatBarLine, .TimeSig, .TimeSigAnnounce)
 //   @P tick            int               midi tick position (read only)
-//------------------------------------------------------------------------
 
 struct Segment final : EngravingItem {
 private:
@@ -322,12 +316,12 @@ public:
     bool operator>(const Segment &) const;
 
     EngravingItem *first_in_next_segments(staff_idx_t active_staff) const; //<
-    EngravingItem *last_in_prev_segments(staff_idx_t active_staff) const;  //<
+                                                                           //<
     EngravingItem *first_element_for_navigation(staff_idx_t staff) const;  //<  These methods are used for navigation
     EngravingItem *last_element_for_navigation(staff_idx_t staff) const;   //<  for next-element and prev-element
     EngravingItem *first_element_of_segment(staff_idx_t active_staff) const;
     EngravingItem *next_element_of_segment(EngravingItem *e, staff_idx_t active_staff) const;
-    EngravingItem *prev_element_of_segment(EngravingItem *e, staff_idx_t active_staff) const;
+
     EngravingItem *last_element_of_segment(staff_idx_t active_staff) const;
     EngravingItem *next_annotation(EngravingItem *e) const;
     EngravingItem *prev_annotation(EngravingItem *e) const;
@@ -338,8 +332,6 @@ public:
     bool not_chord_rest_type() const;
     using EngravingItem::next_element;
     EngravingItem *next_element(staff_idx_t active_staff);
-    using EngravingItem::prev_element;
-    EngravingItem *prev_element(staff_idx_t active_staff);
 
     EngravingItem *first_element(staff_idx_t staff_idx) const;
 

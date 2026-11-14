@@ -52,10 +52,6 @@ static void apply_remove_page_lock(const RangeLock *lock) {
     score->remove_page_lock(lock);
 }
 
-//---------------------------------------------------------
-//   EditPageLocks
-//---------------------------------------------------------
-
 void EditPageLocks::undo_add_page_lock(Transaction &tx, const RangeLock *lock) {
     remove_layout_breaks_on_add_page_lock(tx, lock);
     apply_add_page_lock(lock);

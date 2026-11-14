@@ -56,18 +56,11 @@ static const String fret_box_diagrams_separator = u",";
 
 Box::Box(const ElementType &type, Score *parent) : MeasureBase(type, parent) {}
 
-//---------------------------------------------------------
-//   computeMinWidth
-//---------------------------------------------------------
-
 void HBox::compute_min_width() {
     set_width(absolute_from_spatium(box_width() + top_gap() + bottom_gap())); // top/bottom is really left/right
 }
 
-//---------------------------------------------------------
-//   add
 ///   Add new EngravingItem \a el to Box
-//---------------------------------------------------------
 
 void Box::add(EngravingItem *e) {
     if (e->is_text()) {
@@ -91,10 +84,6 @@ RectF Box::content_rect() const {
     return result;
 }
 
-//---------------------------------------------------------
-//   getProperty
-//---------------------------------------------------------
-
 PropertyValue Box::get_property(Pid property_id) const {
     switch (property_id) {
         case Pid::BOX_HEIGHT: return box_height_;
@@ -109,10 +98,6 @@ PropertyValue Box::get_property(Pid property_id) const {
         default: return MeasureBase::get_property(property_id);
     }
 }
-
-//---------------------------------------------------------
-//   setProperty
-//---------------------------------------------------------
 
 bool Box::set_property(Pid property_id, const PropertyValue &v) {
     switch (property_id) {
@@ -130,10 +115,6 @@ bool Box::set_property(Pid property_id, const PropertyValue &v) {
     trigger_layout();
     return true;
 }
-
-//---------------------------------------------------------
-//   propertyDefault
-//---------------------------------------------------------
 
 PropertyValue Box::property_default(Pid id) const {
     switch (id) {
@@ -155,10 +136,6 @@ PropertyValue Box::property_default(Pid id) const {
 
 bool Box::is_title_frame() const { return this == score()->first() && is_v_box(); }
 
-//---------------------------------------------------------
-//   copyValues
-//---------------------------------------------------------
-
 void Box::copy_values(Box *origin) {
     box_height_ = origin->box_height();
     box_width_ = origin->box_width();
@@ -174,18 +151,10 @@ void Box::copy_values(Box *origin) {
     set_size_is_spatium_dependent(origin->size_is_spatium_dependent());
 }
 
-//---------------------------------------------------------
-//   HBox
-//---------------------------------------------------------
-
 HBox::HBox(Score *parent) : Box(ElementType::HBOX, parent) {
     init_element_style(&::mu::engraving::h_box_style);
     reset_property(Pid::BOX_WIDTH);
 }
-
-//---------------------------------------------------------
-//   drop
-//---------------------------------------------------------
 
 void Box::manage_exclusion_from_parts(bool exclude) {
     // manage Layout Breaks - remove old ones first
@@ -272,15 +241,7 @@ void Box::manage_exclusion_from_parts(bool exclude) {
     }
 }
 
-//---------------------------------------------------------
-//   isMovable
-//---------------------------------------------------------
-
 bool HBox::is_movable() const { return ownership_parent() && (ownership_parent()->is_h_box() || ownership_parent()->is_v_box()); }
-
-//---------------------------------------------------------
-//   getProperty
-//---------------------------------------------------------
 
 PropertyValue HBox::get_property(Pid property_id) const {
     switch (property_id) {
@@ -288,10 +249,6 @@ PropertyValue HBox::get_property(Pid property_id) const {
         default: return Box::get_property(property_id);
     }
 }
-
-//---------------------------------------------------------
-//   setProperty
-//---------------------------------------------------------
 
 bool HBox::set_property(Pid property_id, const PropertyValue &v) {
     switch (property_id) {
@@ -304,10 +261,6 @@ bool HBox::set_property(Pid property_id, const PropertyValue &v) {
     return true;
 }
 
-//---------------------------------------------------------
-//   propertyDefault
-//---------------------------------------------------------
-
 PropertyValue HBox::property_default(Pid id) const {
     switch (id) {
         case Pid::CREATE_SYSTEM_HEADER: return true;
@@ -315,10 +268,6 @@ PropertyValue HBox::property_default(Pid id) const {
         default: return Box::property_default(id);
     }
 }
-
-//---------------------------------------------------------
-//   VBox
-//---------------------------------------------------------
 
 VBox::VBox(const ElementType &type, Score *parent) : Box(type, parent) {
     init_element_style(&::mu::engraving::box_style);
@@ -356,10 +305,6 @@ PropertyValue VBox::get_property(Pid property_id) const {
     }
 }
 
-//---------------------------------------------------------
-//   propertyDefault
-//---------------------------------------------------------
-
 PropertyValue VBox::property_default(Pid id) const {
     switch (id) {
         case Pid::BOX_HEIGHT: return 10.0_sp;
@@ -378,14 +323,7 @@ bool VBox::set_property(Pid property_id, const PropertyValue &v) {
     return true;
 }
 
-//---------------------------------------------------------
-//   startDragGrip
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   add
 ///   Add new EngravingItem \a e to fret diagram box
-//---------------------------------------------------------
 
 FBox::FBox(Score *parent) : VBox(ElementType::FBOX, parent) {
     reset_property(Pid::FRET_FRAME_TEXT_SCALE);
@@ -566,11 +504,6 @@ PropertyValue FBox::property_default(Pid property_id) const {
     }
 }
 
-void FBox::undo_reorder_elements(const StringList &new_order) {
-    undo_change_property(Pid::FRET_FRAME_DIAGRAMS_ORDER, new_order.join(::mu::engraving::fret_box_diagrams_separator));
-    trigger_layout();
-}
-
 void FBox::reorder_elements(const StringList &new_order) {
     std::sort(el_.begin(), el_.end(), [&](EngravingItem *a, EngravingItem *b) {
         String name_a = to_fret_diagram(a)->harmony_display_text();
@@ -589,10 +522,6 @@ StringList FBox::diagrams_order() const {
 
     return result;
 }
-
-//---------------------------------------------------------
-//   TBox
-//---------------------------------------------------------
 
 TBox::TBox(Score *parent) : VBox(ElementType::TBOX, parent) {
     reset_property(Pid::BOX_HEIGHT);
@@ -613,10 +542,7 @@ void TBox::scan_elements(std::function<void(EngravingItem *)> func) {
     Box::scan_elements(func);
 }
 
-//---------------------------------------------------------
-//   add
 ///   Add new EngravingItem \a el to TBox
-//---------------------------------------------------------
 
 void TBox::add(EngravingItem *e) {
     if (e->is_text()) {
@@ -632,10 +558,6 @@ void TBox::add(EngravingItem *e) {
         VBox::add(e);
     }
 }
-
-//---------------------------------------------------------
-//   remove
-//---------------------------------------------------------
 
 void TBox::remove(EngravingItem *el) {
     if (el == text_) {
@@ -654,19 +576,11 @@ void TBox::remove(EngravingItem *el) {
     }
 }
 
-//---------------------------------------------------------
-//   propertyDefault
-//---------------------------------------------------------
-
 PropertyValue TBox::property_default(Pid id) const {
     switch (id) {
         case Pid::BOX_HEIGHT: return 1_sp;
         default: return VBox::property_default(id);
     }
 }
-
-//---------------------------------------------------------
-//   accessibleExtraInfo
-//---------------------------------------------------------
 
 } // namespace mu::engraving

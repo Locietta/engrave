@@ -76,7 +76,6 @@ using namespace mu;
 using namespace mu::engraving;
 
 // ====================================================
-// Selection
 // ====================================================
 
 Selection::Selection(Score *s) {
@@ -125,45 +124,7 @@ Fraction Selection::tick_end() const {
     }
 }
 
-bool Selection::is_end_active() const { return active_segment() && active_segment()->tick() == tick_end(); }
-
 EngravingItem *Selection::element() const { return ((state() != SelState::RANGE) && (el_.size() == 1)) ? el_[0] : 0; }
-
-ChordRest *Selection::cr() const {
-    EngravingItem *e = element();
-    if (!e) {
-        return 0;
-    }
-    if (e->is_note()) {
-        e = to_note(e)->chord();
-    }
-    if (e->is_chord_rest()) {
-        return to_chord_rest(e);
-    }
-    return 0;
-}
-
-ChordRest *Selection::current_cr() const {
-    // no selection yet - start at very beginning, not first cr
-    if (current_tick_ == Fraction(-1, 1)) {
-        return nullptr;
-    }
-    Segment *s = score()->tick2right_segment(current_tick_, true);
-    if (!s) {
-        return nullptr;
-    }
-    track_idx_t track = current_track_;
-    // staff may have been removed - start at top
-    if (track >= score()->ntracks()) {
-        track = 0;
-    }
-    EngravingItem *e = s->element(track);
-    if (e && e->is_chord_rest()) {
-        return to_chord_rest(e);
-    } else {
-        return nullptr;
-    }
-}
 
 ChordRest *Selection::active_cr() const {
     if (state_ != SelState::RANGE || !active_segment_) {
@@ -320,15 +281,6 @@ ChordRest *Selection::last_chord_rest(track_idx_t track) const {
     return cr;
 }
 
-Measure *Selection::find_measure() const {
-    Measure *m = 0;
-    if (el_.size() > 0) {
-        EngravingItem *el = el_[0];
-        m = to_measure(el->find_measure());
-    }
-    return m;
-}
-
 MeasureBase *Selection::start_measure_base() const {
     EngravingItem *selection_element = element();
     if (selection_element) {
@@ -350,33 +302,6 @@ MeasureBase *Selection::start_measure_base() const {
     }
 
     MeasureBase *mb = score_->tick2measure_base(tick_start());
-    if (mb && mb->is_measure()) {
-        mb = to_measure(mb)->covering_mm_rest_or_this();
-    }
-    return mb;
-}
-
-MeasureBase *Selection::end_measure_base() const {
-    EngravingItem *selection_element = element();
-    if (selection_element) {
-        if (selection_element->is_box()) {
-            return to_measure_base(selection_element);
-        }
-        MeasureBase *mb = selection_element->find_measure_base();
-        if (mb) {
-            return mb;
-        }
-    }
-
-    if (end_box_) {
-        return end_box_;
-    }
-
-    if (tick_end().negative()) { // Tick is not set
-        return nullptr;
-    }
-
-    MeasureBase *mb = score_->tick2measure_base(tick_end() - Fraction::eps());
     if (mb && mb->is_measure()) {
         mb = to_measure(mb)->covering_mm_rest_or_this();
     }
@@ -837,38 +762,7 @@ void Selection::set_range(Segment *start_segment, Segment *end_segment, staff_id
     }
 }
 
-//---------------------------------------------------------
-//   setRangeTicks
-//    sets the range to be selected on next
-//    updateSelectedElements() call. Can be used if some
-//    segment structure changes are expected (e.g. if
-//    creating MM rests is pending).
-//---------------------------------------------------------
-
-void Selection::set_range_ticks(const Fraction &tick1, const Fraction &tick2, staff_idx_t staff_start, staff_idx_t staff_end,
-                                Box *start_box, Box *end_box) {
-    assert(staff_end > staff_start && staff_end <= score_->nstaves());
-
-    planned_tick1_ = tick1;
-    planned_tick2_ = tick2;
-    start_segment_ = end_segment_ = active_segment_ = nullptr;
-    start_box_ = start_box;
-    end_box_ = end_box;
-    staff_start_ = staff_start;
-    staff_end_ = staff_end;
-    active_track_ = staff2track(staff_start);
-
-    if (state_ == SelState::RANGE) {
-        score_->set_selection_changed(true);
-    } else {
-        set_state(SelState::RANGE);
-    }
-}
-
-//---------------------------------------------------------
-//   update
 ///   Set select flag for all Elements in select list.
-//---------------------------------------------------------
 
 void Selection::update() {
     for (EngravingItem *e : el_) {
@@ -911,18 +805,6 @@ void Selection::update() {
     update_state();
 }
 
-void Selection::dump() {
-    LOGD("Selection dump: ");
-    switch (state_) {
-        case SelState::NONE: LOGD("NONE"); return;
-        case SelState::RANGE: LOGD("RANGE"); break;
-        case SelState::LIST: LOGD("LIST"); break;
-    }
-    for (const EngravingItem *e : el_) {
-        LOGD("  %p %s", e, e->type_name());
-    }
-}
-
 bool Selection::range_is_valid() const {
     if (!is_range()) {
         return false;
@@ -952,10 +834,7 @@ bool Selection::range_is_valid() const {
     return staff_start_ < staff_end_;
 }
 
-//---------------------------------------------------------
-//   updateState
 ///   update selection state and current position
-//---------------------------------------------------------
 
 void Selection::update_state() {
     //! NOTE: Range can be valid even if no elements are selectable in that range...
@@ -1002,169 +881,11 @@ std::vector<EngravingItem *> Selection::elements(ElementType type) const {
     return result;
 }
 
-std::vector<Note *> Selection::note_list(track_idx_t sel_track) const {
-    std::vector<Note *> nl;
-
-    if (state_ == SelState::LIST) {
-        for (EngravingItem *e : el_) {
-            if (e->is_note()) {
-                nl.push_back(to_note(e));
-            }
-        }
-    } else if (state_ == SelState::RANGE) {
-        for (staff_idx_t staff_idx = staff_start(); staff_idx < staff_end(); ++staff_idx) {
-            track_idx_t start_track = staff_idx * ::mu::engraving::voices;
-            track_idx_t end_track = start_track + ::mu::engraving::voices;
-            for (Segment *seg = start_segment_; seg && seg != end_segment_; seg = seg->next1()) {
-                if (!(seg->segment_type() & (SegmentType::CHORD_REST))) {
-                    continue;
-                }
-                for (track_idx_t track = start_track; track < end_track; ++track) {
-                    if (!can_select_voice(track)) {
-                        continue;
-                    }
-                    EngravingItem *e = seg->element(track);
-                    if (e == 0 || !e->is_chord() || (sel_track != muse::nidx && sel_track != track)) {
-                        continue;
-                    }
-                    Chord *c = to_chord(e);
-                    const std::vector<Note *> notes = c->notes();
-                    for (size_t note_idx = 0; note_idx < notes.size(); ++note_idx) {
-                        Note *note = notes.at(note_idx);
-                        if (selection_filter().can_select_note_idx(note_idx, notes.size(), range_contains_multi_note_chords())) {
-                            nl.push_back(note);
-                        }
-                    }
-                    for (Chord *g : c->grace_notes()) {
-                        nl.insert(nl.end(), g->notes().begin(), g->notes().end());
-                    }
-                }
-            }
-        }
-    }
-    return nl;
-}
-
-//---------------------------------------------------------
-//   measureBaseRange
-//    return false if no measure range selected
-//---------------------------------------------------------
-
-bool Selection::measure_base_range(MeasureBase **mb1, MeasureBase **mb2) const {
-    if (!is_range()) {
-        return false;
-    }
-
-    if (start_box_) {
-        *mb1 = start_box_;
-    } else {
-        *mb1 = start_segment()->measure();
-    }
-
-    Segment *s2 = end_segment();
-    if (end_box_) {
-        *mb2 = end_box_;
-    } else {
-        *mb2 = s2 ? s2->measure() : score_->last_measure();
-    }
-
-    if (*mb1 == *mb2) {
-        return true;
-    }
-
-    // if selection extends to last segment of a measure,
-    // then endSegment() will point to next measure
-    // this won't normally happen because end barlines are excluded from range selection
-    // but just in case, detect this and back up one measure
-    if (*mb2 && s2) {
-        if ((*mb2)->is_measure() && (*mb2)->tick() == s2->tick()) {
-            *mb2 = (*mb2)->prev_measure();
-        }
-    }
-    return true;
-}
-
-//---------------------------------------------------------
-//   uniqueElements
-//    Return list of selected elements.
-//    If some elements are linked, only one of the linked
-//    elements show up in the list.
-//---------------------------------------------------------
-
-const std::list<EngravingItem *> Selection::unique_elements() const {
-    std::list<EngravingItem *> l;
-
-    for (EngravingItem *e : elements()) {
-        bool already_there = false;
-        for (EngravingItem *ee : l) {
-            if ((ee->links() && ee->links()->contains(e)) || e == ee) {
-                already_there = true;
-                break;
-            }
-        }
-        if (!already_there) {
-            l.push_back(e);
-        }
-    }
-    return l;
-}
-
-//---------------------------------------------------------
-//   uniqueNotes
-//    Return list of selected notes.
-//    If some notes are linked, only one of the linked
-//    elements show up in the list.
-//---------------------------------------------------------
-
-std::vector<Note *> Selection::unique_notes(track_idx_t track, bool tied) const {
-    std::vector<Note *> l;
-
-    auto add_note = [&l](Note *note) {
-        bool already_there = false;
-        for (Note *n : l) {
-            if ((n->links() && n->links()->contains(note)) || n == note) {
-                already_there = true;
-                break;
-            }
-        }
-        if (!already_there) {
-            l.push_back(note);
-        }
-    };
-
-    for (Note *nn : note_list(track)) {
-        if (!tied) {
-            add_note(nn);
-            continue;
-        }
-
-        for (Note *note : nn->tied_notes()) {
-            add_note(note);
-        }
-    }
-    return l;
-}
-
-//---------------------------------------------------------
-//   extendRangeSelection
-//    Extends the range selection to contain the given
-//    chord rest.
-//---------------------------------------------------------
-
-void Selection::extend_range_selection(ChordRest *cr) {
-    extend_range_selection(cr->segment(),
-                           cr->next_segment_after_cr(SegmentType::CHORD_REST | SegmentType::END_BAR_LINE | SegmentType::CLEF),
-                           cr->staff_idx(), cr->tick(), cr->tick());
-}
-
-//---------------------------------------------------------
-//   extendRangeSelection
 //    Extends the range selection to contain the given
 //    segment. SegAfter should represent the segment
 //    that is after seg. Tick and etick represent
 //    the start and end tick of an element. Useful when
 //    extending by a chord rest.
-//---------------------------------------------------------
 
 void Selection::extend_range_selection(Segment *seg, Segment *seg_after, staff_idx_t staff_idx, const Fraction &tick, const Fraction &etick,
                                        Box *box) {

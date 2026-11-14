@@ -35,10 +35,6 @@ using namespace muse::draw;
 using namespace mu::engraving;
 
 namespace mu::engraving {
-//---------------------------------------------------------
-//   SlurTieSegment
-//---------------------------------------------------------
-
 SlurTieSegment::SlurTieSegment(const ElementType &type, SlurTie *sp) : SpannerSegment(type, sp) { set_flag(ElementFlag::ON_STAFF, true); }
 
 SlurTieSegment::SlurTieSegment(const SlurTieSegment &b) : SpannerSegment(b) {
@@ -48,20 +44,12 @@ SlurTieSegment::SlurTieSegment(const SlurTieSegment &b) : SpannerSegment(b) {
     }
 }
 
-//---------------------------------------------------------
-//   move
-//---------------------------------------------------------
-
 void SlurTieSegment::move(const PointF &s) {
     EngravingItem::move(s);
     for (int k = 0; k < int(Grip::GRIPS); ++k) {
         ups_[k].p += s;
     }
 }
-
-//---------------------------------------------------------
-//   spatiumChanged
-//---------------------------------------------------------
 
 void SlurTieSegment::spatium_changed(double old_value, double new_value) {
     EngravingItem::spatium_changed(old_value, new_value);
@@ -71,20 +59,12 @@ void SlurTieSegment::spatium_changed(double old_value, double new_value) {
     }
 }
 
-//---------------------------------------------------------
-//   gripsPositions
-//---------------------------------------------------------
-
 bool SlurTieSegment::is_user_modified() const {
     return SpannerSegment::is_user_modified() ||
            !(visible() && autoplace() && color() == configuration()->default_color() && offset().is_null() &&
              ups(Grip::START).off.is_null() && ups(Grip::BEZIER1).off.is_null() && ups(Grip::BEZIER2).off.is_null() &&
              ups(Grip::END).off.is_null());
 }
-
-//---------------------------------------------------------
-//   propertyDelegate
-//---------------------------------------------------------
 
 EngravingObject *SlurTieSegment::property_delegate(Pid pid) const {
     switch (pid) {
@@ -94,10 +74,6 @@ EngravingObject *SlurTieSegment::property_delegate(Pid pid) const {
         default: return SpannerSegment::property_delegate(pid);
     }
 }
-
-//---------------------------------------------------------
-//   getProperty
-//---------------------------------------------------------
 
 PropertyValue SlurTieSegment::get_property(Pid property_id) const {
     if (auto value = authored_override_value(*this, property_id)) return *value;
@@ -113,10 +89,6 @@ PropertyValue SlurTieSegment::get_property(Pid property_id) const {
         default: return SpannerSegment::get_property(property_id);
     }
 }
-
-//---------------------------------------------------------
-//   setProperty
-//---------------------------------------------------------
 
 bool SlurTieSegment::set_property(Pid property_id, const PropertyValue &v) {
     if (set_authored_override(*this, property_id, v)) return true;
@@ -135,10 +107,6 @@ bool SlurTieSegment::set_property(Pid property_id, const PropertyValue &v) {
     return true;
 }
 
-//---------------------------------------------------------
-//   propertyDefault
-//---------------------------------------------------------
-
 PropertyValue SlurTieSegment::property_default(Pid id) const {
     if (EngravingObject *e = const_cast<SlurTieSegment *>(this)->property_delegate(id)) {
         return e->property_default(id);
@@ -153,10 +121,6 @@ PropertyValue SlurTieSegment::property_default(Pid id) const {
     }
 }
 
-//---------------------------------------------------------
-//   reset
-//---------------------------------------------------------
-
 void SlurTieSegment::reset() {
     EngravingItem::reset();
     undo_reset_property(Pid::SLUR_UOFF1);
@@ -165,10 +129,6 @@ void SlurTieSegment::reset() {
     undo_reset_property(Pid::SLUR_UOFF4);
     slur_tie()->reset();
 }
-
-//---------------------------------------------------------
-//   undoChangeProperty
-//---------------------------------------------------------
 
 void SlurTieSegment::undo_change_property(Pid pid, const PropertyValue &val, PropertyFlags ps) {
     if (pid == Pid::AUTOPLACE && (val.to_bool() == true && !autoplace())) {
@@ -183,10 +143,6 @@ void SlurTieSegment::undo_change_property(Pid pid, const PropertyValue &val, Pro
     SpannerSegment::undo_change_property(pid, val, ps);
 }
 
-//---------------------------------------------------------
-//   SlurTie
-//---------------------------------------------------------
-
 SlurTie::SlurTie(const ElementType &type, EngravingObject *parent) : Spanner(type, parent) {
     slur_direction_ = DirectionV::AUTO;
     style_type_ = SlurStyleType::SOLID;
@@ -199,21 +155,7 @@ SlurTie::SlurTie(const SlurTie &t) : Spanner(t) {
     mask_slur_tie_ = t.mask_slur_tie_;
 }
 
-//---------------------------------------------------------
-//   SlurTie
-//---------------------------------------------------------
-
 SlurTie::~SlurTie() {}
-
-//---------------------------------------------------------
-//   undoSetSlurDirection
-//---------------------------------------------------------
-
-void SlurTie::undo_set_slur_direction(DirectionV d) { undo_change_property(Pid::SLUR_DIRECTION, PropertyValue::from_value<DirectionV>(d)); }
-
-//---------------------------------------------------------
-//   getProperty
-//---------------------------------------------------------
 
 PropertyValue SlurTie::get_property(Pid property_id) const {
     switch (property_id) {
@@ -223,10 +165,6 @@ PropertyValue SlurTie::get_property(Pid property_id) const {
         default: return Spanner::get_property(property_id);
     }
 }
-
-//---------------------------------------------------------
-//   setProperty
-//---------------------------------------------------------
 
 bool SlurTie::set_property(Pid property_id, const PropertyValue &v) {
     if (set_authored_override(*this, property_id, v)) return true;
@@ -240,10 +178,6 @@ bool SlurTie::set_property(Pid property_id, const PropertyValue &v) {
     return true;
 }
 
-//---------------------------------------------------------
-//   propertyDefault
-//---------------------------------------------------------
-
 PropertyValue SlurTie::property_default(Pid id) const {
     switch (id) {
         case Pid::SLUR_STYLE_TYPE: return SlurStyleType::SOLID;
@@ -253,17 +187,9 @@ PropertyValue SlurTie::property_default(Pid id) const {
     }
 }
 
-//---------------------------------------------------------
-//   fixupSegments
-//---------------------------------------------------------
-
 void SlurTie::fixup_segments(unsigned nsegs) {
     Spanner::fixup_segments(nsegs, [this]() { return new_slur_tie_segment(); });
 }
-
-//---------------------------------------------------------
-//   reset
-//---------------------------------------------------------
 
 void SlurTie::reset() {
     EngravingItem::reset();

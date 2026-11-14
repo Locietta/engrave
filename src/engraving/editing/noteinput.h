@@ -42,29 +42,17 @@ struct TDuration;
 struct Transaction;
 
 struct NoteVal;
-struct Position;
 
 enum class AccidentalType : unsigned char;
 enum class SymId;
 
-struct NoteInputParams {
-    int step = 0;
-    int drum_pitch = -1;
-};
-
 struct NoteInput {
-    //! NOTE: Methods related to entering notes/rests into the score.
 
     static Note *add_note_to_chord(Score *score, Chord *chord, const NoteVal &note_val, bool force_accidental = false,
                                    const std::set<SymId> &articulation_ids = {});
     static Note *add_note(Transaction &tx, Score *score, Chord *chord, const NoteVal &note_val, bool force_accidental = false,
                           const std::set<SymId> &articulation_ids = {}, InputState *external_input_state = nullptr);
-    static Note *add_note_to_tied_chord(Transaction &tx, Score *score, Chord *chord, const NoteVal &note_val, bool force_accidental = false,
-                                        const std::set<SymId> &articulation_ids = {});
-
-    // Command entry points
 
 private:
-    //! NOTE: Shared prologue/epilogue for the setDuration/toggleRest/toggleDots commands above.
 };
 } // namespace mu::engraving

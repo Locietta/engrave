@@ -136,14 +136,6 @@ static ChordRest *chord_or_rest(EngravingItem *el) {
     return nullptr;
 }
 
-//---------------------------------------------------------
-//   getSelectedNote
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   getSelectedChordRest
-//---------------------------------------------------------
-
 ChordRest *Score::get_selected_chord_rest() const {
     ChordRest *cr = chord_or_rest(selection().element());
     if (!cr) {
@@ -152,18 +144,6 @@ ChordRest *Score::get_selected_chord_rest() const {
 
     return cr;
 }
-
-//---------------------------------------------------------
-//   getSelectedChordRest2
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   getSelectedChordRests
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   pos
-//---------------------------------------------------------
 
 Fraction Score::pos() {
     EngravingItem *el = selection().element();
@@ -215,11 +195,8 @@ Tuplet *Score::add_tuplet(ChordRest *destination_chord_rest, Fraction ratio, Tup
     return add_tuplet(destination_chord_rest, ratio_value, TDuration(fr), number_type, bracket_type);
 }
 
-//---------------------------------------------------------
-//   canAddTuplet
 //    Whether addTuplet() can create a tuplet with this ratio
 //    and base length at chordRest
-//---------------------------------------------------------
 
 bool Score::can_add_tuplet(const ChordRest *chord_rest, const Fraction &ratio, const TDuration &base_len) const {
     if (!chord_rest || !base_len.is_valid() || base_len.is_measure() || ratio.numerator() <= 0 || ratio.denominator() <= 0) {
@@ -246,14 +223,11 @@ bool Score::can_add_tuplet(const ChordRest *chord_rest, const Fraction &ratio, c
     return end <= limit;
 }
 
-//---------------------------------------------------------
-//   addTuplet
 //    Create a tuplet of ratio.denominator() * baseLen, starting
 //    at destinationChordRest and replacing everything in that
 //    time in its track. The tuplet can be longer or shorter than
 //    destinationChordRest, but must not cross a barline or the end
 //    of a parent tuplet.
-//---------------------------------------------------------
 
 Tuplet *Score::add_tuplet(ChordRest *destination_chord_rest, const Fraction &ratio, const TDuration &base_len, TupletNumberType number_type,
                           TupletBracketType bracket_type) {
@@ -313,17 +287,11 @@ Tuplet *Score::add_tuplet(ChordRest *destination_chord_rest, const Fraction &rat
     return tuplet;
 }
 
-//---------------------------------------------------------
-//   selectNewTuplet
 //    Select where input continues in a new tuplet, and use
 //    its base length as the input duration
-//---------------------------------------------------------
 
-//---------------------------------------------------------
-//   addRest
 //    create one Rest at tick with duration d
 //    create segment if necessary
-//---------------------------------------------------------
 
 Rest *Score::add_rest(const Fraction &tick, track_idx_t track, TDuration d, Tuplet *tuplet) {
     Measure *measure = tick2measure(tick);
@@ -339,10 +307,6 @@ Rest *Score::add_rest(const Fraction &tick, track_idx_t track, TDuration d, Tupl
     return rest;
 }
 
-//---------------------------------------------------------
-//   addRest
-//---------------------------------------------------------
-
 Rest *Score::add_rest(Segment *s, track_idx_t track, TDuration d, Tuplet *tuplet) {
     Rest *rest = Factory::create_rest(s, d);
     if (d.type() == DurationType::V_MEASURE) {
@@ -356,13 +320,10 @@ Rest *Score::add_rest(Segment *s, track_idx_t track, TDuration d, Tuplet *tuplet
     return rest;
 }
 
-//---------------------------------------------------------
-//   addChord
 //    Create one Chord at tick with duration d
 //    - create segment if necessary.
 //    - Use chord "oc" as prototype;
 //    - if "genTie" then tie to chord "oc"
-//---------------------------------------------------------
 
 Chord *Score::add_chord(const Fraction &tick, TDuration d, Chord *oc, bool gen_tie, Tuplet *tuplet) {
     Measure *measure = tick2measure(tick);
@@ -409,10 +370,6 @@ Chord *Score::add_chord(const Fraction &tick, TDuration d, Chord *oc, bool gen_t
     return chord;
 }
 
-//---------------------------------------------------------
-//   addClone
-//---------------------------------------------------------
-
 ChordRest *Score::add_clone(ChordRest *cr, const Fraction &tick, const TDuration &d) {
     ChordRest *newcr;
     // change a MeasureRepeat into an Rest
@@ -436,11 +393,8 @@ ChordRest *Score::add_clone(ChordRest *cr, const Fraction &tick, const TDuration
     return newcr;
 }
 
-//---------------------------------------------------------
-//   setRest
 //    sets rests and returns the first one
 //    "l" is in local (stretched) time
-//---------------------------------------------------------
 
 Rest *Score::set_rest(const Fraction &input_tick, track_idx_t track, const Fraction &input_l, bool use_dots, Tuplet *tuplet,
                       bool use_full_measure_rest) {
@@ -448,11 +402,8 @@ Rest *Score::set_rest(const Fraction &input_tick, track_idx_t track, const Fract
     return rests.empty() ? nullptr : rests.front();
 }
 
-//---------------------------------------------------------
-//   setRests
 //    create one or more rests to fill "l"
 //    "l" is in local (stretched) time
-//---------------------------------------------------------
 
 std::vector<Rest *> Score::set_rests(const Fraction &input_tick, track_idx_t track, const Fraction &input_l, bool use_dots, Tuplet *tuplet,
                                      bool use_full_measure_rest) {
@@ -896,24 +847,6 @@ TextBase *Score::add_text(TextStyleType type, EngravingItem *destination_element
 
     return text_box;
 }
-
-//---------------------------------------------------------
-//   searchNote
-//    search for note or rest before or at tick position tick
-//    in staff
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   cmdAddOttava
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   cmdAddNoteLine
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   deleteItem
-//---------------------------------------------------------
 
 void Score::delete_item(EngravingItem *el) {
     if (!el) {
@@ -1404,10 +1337,6 @@ void Score::delete_item(EngravingItem *el) {
     }
 }
 
-//---------------------------------------------------------
-//   deleteMeasures
-//---------------------------------------------------------
-
 void Score::delete_measures(MeasureBase *mb_start, MeasureBase *mb_end, bool preserve_ties) {
     select(0, SelectType::SINGLE, 0);
 
@@ -1685,12 +1614,6 @@ void Score::reconnect_slurs(MeasureBase *mb_start, MeasureBase *mb_end) {
     }
 }
 
-//---------------------------------------------------------
-//   deleteSpannersFromRange
-///   Deletes spanners in the given range that match the
-///   given selection filter.
-//---------------------------------------------------------
-
 void Score::delete_slurs_from_range(const Fraction &t1, const Fraction &t2, track_idx_t track_start, track_idx_t track_end,
                                     const SelectionFilter &filter) {
     auto spanners = spanner_.find_overlapping(t1.ticks(), t2.ticks() - 1);
@@ -1713,33 +1636,7 @@ void Score::delete_slurs_from_range(const Fraction &t1, const Fraction &t2, trac
     }
 }
 
-//---------------------------------------------------------
-//   deleteAnnotationsFromRange
-///   Deletes annotations in the given range that match the
-///   given selection filter.
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   deleteRange
-///   Deletes elements in the given range that match the
-///   given selection filter.
-///   \return A chord/rest inside the selected range
-///   that can be used to establish a selection after this
-///   deletion operation.
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   cmdDeleteSelection
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   cmdFullMeasureRest
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   cmdCreateTuplet
 //    replace cr with tuplet
-//---------------------------------------------------------
 
 void Score::cmd_create_tuplet(ChordRest *ocr, Tuplet *tuplet) {
     track_idx_t track = ocr->track();
@@ -1798,21 +1695,10 @@ void Score::cmd_create_tuplet(ChordRest *ocr, Tuplet *tuplet) {
     }
 }
 
-//---------------------------------------------------------
-//   cmdEnterRest
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   enterRest
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   removeChordRest
 //    remove chord or rest
 //    remove associated segment if empty
 //    remove beam
 //    remove slurs
-//---------------------------------------------------------
 
 void Score::remove_chord_rest(ChordRest *cr, bool clear_segment) {
     std::set<Segment *> segments;
@@ -1849,10 +1735,7 @@ void Score::remove_chord_rest(ChordRest *cr, bool clear_segment) {
     }
 }
 
-//---------------------------------------------------------
-//   cmdDeleteTuplet
 //    remove tuplet and replace with rest
-//---------------------------------------------------------
 
 void Score::cmd_delete_tuplet(Tuplet *tuplet, bool replace_with_rest) {
     std::vector<DurationElement *> elements = tuplet->elements();
@@ -1869,12 +1752,9 @@ void Score::cmd_delete_tuplet(Tuplet *tuplet, bool replace_with_rest) {
     }
 }
 
-//---------------------------------------------------------
-//   insertMeasure
 //    if inserting Measure, act on master score
 //    (and add to all linked scores)
 //    if inserting Box, add to local score only
-//---------------------------------------------------------
 
 MeasureBase *Score::insert_measure(ElementType type, MeasureBase *before_measure, const InsertMeasureOptions &options) {
     MeasureBase *local_insert_measure_base = nullptr;
@@ -1892,10 +1772,6 @@ MeasureBase *Score::insert_measure(ElementType type, MeasureBase *before_measure
 
     return local_insert_measure_base;
 }
-
-//---------------------------------------------------------
-//   insertBox
-//---------------------------------------------------------
 
 MeasureBase *Score::insert_box(ElementType type, MeasureBase *before_measure, const InsertMeasureOptions &options) {
     const bool is_frame = type == ElementType::FBOX || type == ElementType::HBOX || type == ElementType::TBOX || type == ElementType::VBOX;
@@ -2012,13 +1888,10 @@ void Score::restore_initial_key_sig_and_time_sig() {
     first_meas->set_ticks(Fraction(4, 4));
 }
 
-//---------------------------------------------------------
-//   checkSpanner
 //    check if spanners are still valid as anchors may
 //    have changed or be removed.
 //    Spanners need to have a start anchor. Slurs need a
 //    start and end anchor.
-//---------------------------------------------------------
 
 void Score::check_spanner(const Fraction &start_tick, const Fraction &end_tick, bool remove_orphans) {
     std::vector<Spanner *> spanners_to_remove;
@@ -2068,20 +1941,6 @@ void Score::check_spanner(const Fraction &start_tick, const Fraction &end_tick, 
         s->compute_end_element();
     }
 }
-
-//---------------------------------------------------------
-//   checkTimeDelete
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   cmdTimeDelete
-///    delete time by decreasing measure length if partial measures are selected
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   undoPropertyChanged
-//    return true if an property was actually changed
-//---------------------------------------------------------
 
 void Score::apply_property_change(EngravingObject *object, Pid id, const PropertyValue &value, PropertyFlags flags, bool reset_path) {
     master_score()->transaction_manager()->current_or_dummy_transaction().change_property(object, id, value, flags, reset_path);
@@ -2437,10 +2296,6 @@ void Score::undo_change_bar_line_type(BarLine *bl, BarLineType bar_type, bool al
     undo_update_play_count_text(m);
 }
 
-//---------------------------------------------------------
-//   undoChangeElement
-//---------------------------------------------------------
-
 void Score::undo_change_element(EngravingItem *old_element, EngravingItem *new_element) {
     if (!old_element) {
         undo_add_element(new_element);
@@ -2500,10 +2355,6 @@ void Score::update_instrument_change_transpositions(KeySigEvent &key, Staff *sta
     }
 }
 
-//---------------------------------------------------------
-//   findLinkedChord
-//---------------------------------------------------------
-
 static Chord *find_linked_chord(Chord *c, Staff *nstaff) {
     Excerpt *se = c->score()->excerpt();
     Excerpt *de = nstaff->score()->excerpt();
@@ -2558,31 +2409,16 @@ static Chord *find_linked_chord(Chord *c, Staff *nstaff) {
     return nc;
 }
 
-//---------------------------------------------------------
-//   undoChangeChordRestLen
-//---------------------------------------------------------
-
 void Score::undo_change_chord_rest_len(ChordRest *cr, const TDuration &d) {
     cr->undo_change_property(Pid::DURATION_TYPE_WITH_DOTS, d.type_with_dots());
     cr->undo_change_property(Pid::DURATION, d.fraction());
 }
 
-//---------------------------------------------------------
-//   undoRemovePart
-//---------------------------------------------------------
-
 void Score::undo_remove_part(Part *part, size_t part_idx) { apply_part_membership(part, part_idx, false); }
-
-//---------------------------------------------------------
-//   undoInsertPart
-//---------------------------------------------------------
 
 void Score::undo_insert_part(Part *part, size_t target_part_index) { apply_part_membership(part, target_part_index, true); }
 
-//---------------------------------------------------------
-//   undoRemoveStaff
 //    idx - index of staff in part
-//---------------------------------------------------------
 
 void Score::undo_remove_staff(Staff *staff) {
     const staff_idx_t staff_index = staff->idx();
@@ -2624,10 +2460,7 @@ void Score::undo_remove_staff(Staff *staff) {
     apply_staff_membership(staff, muse::nidx, false);
 }
 
-//---------------------------------------------------------
-//   undoInsertStaff
 //    idx - index of staff in part
-//---------------------------------------------------------
 
 void Score::undo_insert_staff(Staff *staff, staff_idx_t ridx, bool create_rests) {
     apply_staff_membership(staff, ridx, true);
@@ -2645,10 +2478,6 @@ void Score::undo_insert_staff(Staff *staff, staff_idx_t ridx, bool create_rests)
     // TODO: adjust brackets only when appropriate
     //adjustBracketsIns(idx, idx+1);
 }
-
-//---------------------------------------------------------
-//   undoAddElement
-//---------------------------------------------------------
 
 void Score::undo_add_element(EngravingItem *element, bool add_to_linked_staves, bool ctrl_modifier, EngravingItem *element_to_relink) {
     Transaction &tx = transaction_manager()->current_or_dummy_transaction();
@@ -3291,10 +3120,6 @@ void Score::rebuild_fret_box() {
     fret_box->trigger_layout();
 }
 
-//---------------------------------------------------------
-//   undoAddCR
-//---------------------------------------------------------
-
 void Score::undo_add_cr(ChordRest *cr, Measure *measure, const Fraction &tick) {
     assert(!cr->is_chord() || !(to_chord(cr)->notes()).empty());
     if (!cr->lyrics().empty()) {
@@ -3380,10 +3205,6 @@ void Score::undo_add_cr(ChordRest *cr, Measure *measure, const Fraction &tick) {
         do_undo_add_element(newcr);
     }
 }
-
-//---------------------------------------------------------
-//   undoRemoveElement
-//---------------------------------------------------------
 
 void Score::undo_remove_element(EngravingItem *element, bool remove_linked) {
     if (!element) {
@@ -3483,10 +3304,6 @@ void Score::undo_remove_hopo_text(HammerOnPullOffText *hopo_text) {
     }
 }
 
-//---------------------------------------------------------
-//   undoChangeSpannerElements
-//---------------------------------------------------------
-
 void Score::undo_change_spanner_elements(Spanner *spanner, EngravingItem *start_element, EngravingItem *end_element) {
     EngravingItem *old_start_element = spanner->start_element();
     EngravingItem *old_end_element = spanner->end_element();
@@ -3539,10 +3356,7 @@ void Score::undo_change_spanner_elements(Spanner *spanner, EngravingItem *start_
     }
 }
 
-//---------------------------------------------------------
-//   undoInsertTime
 //   acts on the linked scores as well
-//---------------------------------------------------------
 
 void Score::undo_insert_time(const Fraction &tick, const Fraction &len) {
     if (len.is_zero()) {
@@ -3682,10 +3496,6 @@ void Score::undo_insert_time(const Fraction &tick, const Fraction &len) {
     apply_time_insertion(this, tick, len, true);
 }
 
-//---------------------------------------------------------
-//   undoRemoveMeasures
-//---------------------------------------------------------
-
 void Score::undo_remove_measures(Measure *m1, Measure *m2, bool preserve_ties, bool move_staff_type_changes) {
     assert(m1 && m2);
 
@@ -3777,10 +3587,6 @@ void Score::undo_remove_measures(Measure *m1, Measure *m2, bool preserve_ties, b
 
     apply_measures(m1, m2, false, move_staff_type_changes);
 }
-
-//---------------------------------------------------------
-//   undoChangeMeasureRepeatCount
-//---------------------------------------------------------
 
 void Score::undo_change_measure_repeat_count(Measure *m, int new_count, staff_idx_t staff_idx) {
     for (Staff *st : staff(staff_idx)->staff_list()) {

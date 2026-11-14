@@ -51,10 +51,7 @@
 using namespace muse;
 using namespace mu::engraving;
 
-//---------------------------------------------------------
-//   getCourtesyClefs
 //    remember clefs at the end of previous measure
-//---------------------------------------------------------
 
 static std::vector<Clef *> get_courtesy_clefs(Measure *m) {
     Score *score = m->score();
@@ -73,10 +70,6 @@ static std::vector<Clef *> get_courtesy_clefs(Measure *m) {
     }
     return start_clefs;
 }
-
-//---------------------------------------------------------
-//   insertMeasures
-//---------------------------------------------------------
 
 void mu::engraving::insert_measure_chain(MeasureBase *fm, MeasureBase *lm, bool move_stc_value) {
     Score *score = fm->score();
@@ -210,10 +203,6 @@ void mu::engraving::insert_measure_chain(MeasureBase *fm, MeasureBase *lm, bool 
     }
 }
 
-//---------------------------------------------------------
-//   removeMeasures
-//---------------------------------------------------------
-
 void mu::engraving::remove_measure_chain(MeasureBase *fm, MeasureBase *lm, bool move_stc_value) {
     Score *score = fm->score();
 
@@ -346,33 +335,7 @@ void mu::engraving::remove_measure_chain(MeasureBase *fm, MeasureBase *lm, bool 
     score->set_layout_all();
 }
 
-//---------------------------------------------------------
-//   ChangeMeasureLen
-//---------------------------------------------------------
-
-void mu::engraving::apply_measure_length(Measure *measure, Fraction len) {
-    //
-    // move EndBarLine and TimeSigAnnounce
-    // to end of measure:
-    //
-
-    for (Segment *s = measure->first(); s; s = s->next()) {
-        if (!s->is_end_bar_line_type() && !s->is_time_sig_announce_type()) {
-            continue;
-        }
-        s->set_rtick(len);
-        measure->remove(s);
-    }
-    measure->set_ticks(len);
-    measure->score()->update_ticks_and_time_sig_map();
-    measure->score()->invalidate_repeat_list();
-}
-
 void mu::engraving::apply_change_mmrest(Measure *m, Measure *mmrest) { m->set_mm_rest(mmrest); }
-
-//---------------------------------------------------------
-//   ChangeMeasureRepeatCount
-//---------------------------------------------------------
 
 void mu::engraving::apply_measure_repeat_count(Measure *measure, int count, staff_idx_t staff) {
     measure->set_measure_repeat_count(count, staff);

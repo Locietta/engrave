@@ -61,8 +61,8 @@ std::string externals(MasterScore &master) {
     for (const Score *score : master.score_list()) {
         for (const auto &[key, value] : score->meta_tags()) text += std::format("tag {}={}\n", key.to_std_string(), value.to_std_string());
     }
-    text += std::format("selection none={} input track={} note entry={}\n", master.selection().is_none(),
-                        static_cast<long long>(master.input_state().track()), master.input_state().note_entry_mode());
+    text += std::format("selection none={} input track={}\n", master.selection().is_none(),
+                        static_cast<long long>(master.input_state().track()));
     return text;
 }
 

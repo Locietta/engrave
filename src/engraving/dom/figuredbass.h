@@ -69,8 +69,6 @@ and it is edited (via the normalized text); so it is derived from Text.
 
 constexpr int fbi_digit_none = -1;
 
-//---------------------------------------------------------
-//   @@ FiguredBassItem
 ///   One line of a figured bass indication
 //
 //   @P continuationLine   enum (FiguredBassItem.NONE, .SIMPLE, .EXTENDED)  whether item has continuation line or not, and of which type
@@ -84,7 +82,6 @@ constexpr int fbi_digit_none = -1;
 //   @P parenthesis5       enum (FiguredBassItem.NONE, .ROUNDOPEN, .ROUNDCLOSED, .SQUAREDOPEN, .SQUAREDCLOSED)  parenthesis after the cont. line
 //   @P prefix             enum (FiguredBassItem.NONE, .DOUBLEFLAT, .FLAT, .NATURAL, .SHARP, .DOUBLESHARP, .PLUS, .BACKSLASH, .SLASH)  accidental before the digit
 //   @P suffix             enum (FiguredBassItem.NONE, .DOUBLEFLAT, .FLAT, .NATURAL, .SHARP, .DOUBLESHARP, .PLUS, .BACKSLASH, .SLASH)  accidental/diacritic after the digit
-//---------------------------------------------------------
 
 struct FiguredBass;
 
@@ -125,25 +122,17 @@ public:
 
     void set_prefix(const Modifier &v) { prefix_ = v; }
 
-    void undo_set_prefix(Modifier pref);
-
     int digit() const { return digit_; }
 
     void set_digit(int val) { digit_ = val; }
-
-    void undo_set_digit(int digit);
 
     Modifier suffix() const { return suffix_; }
 
     void set_suffix(const Modifier &v) { suffix_ = v; }
 
-    void undo_set_suffix(Modifier suff);
-
     ContLine cont_line() const { return cont_line_; }
 
     void set_cont_line(const ContLine &v) { cont_line_ = v; }
-
-    void undo_set_cont_line(ContLine val);
 
     Parenthesis parenth1() const { return parenth_[0]; }
 
@@ -165,11 +154,6 @@ public:
 
     void set_parenth5(Parenthesis v) { parenth_[4] = v; }
 
-    void undo_set_parenth1(Parenthesis par);
-    void undo_set_parenth2(Parenthesis par);
-    void undo_set_parenth3(Parenthesis par);
-    void undo_set_parenth4(Parenthesis par);
-    void undo_set_parenth5(Parenthesis par);
     String normalized_text() const;
 
     PropertyValue get_property(Pid property_id) const override;
@@ -207,10 +191,6 @@ private:
     Parenthesis parenth_[5];              // each of the parenthesis: before, between and after parts
 };
 
-//---------------------------------------------------------
-//   FiguredBassFont
-//---------------------------------------------------------
-
 struct FiguredBassFont {
     String family;
     String display_name;
@@ -223,13 +203,10 @@ struct FiguredBassFont {
     bool read(XmlReader &);
 };
 
-//---------------------------------------------------------
-//   @@ FiguredBass
 ///    A complete figured bass indication
 //
 //   @P onNote  bool  whether it is placed on a note beginning or between notes (read only)
 //   @P ticks   int   duration in ticks
-//---------------------------------------------------------
 
 struct FiguredBass final : TextBase {
 private:

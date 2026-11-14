@@ -38,17 +38,9 @@ using namespace muse::draw;
 using namespace mu::engraving;
 
 namespace mu::engraving {
-//---------------------------------------------------------
-//   propertyList
-//---------------------------------------------------------
-
 static bool default_auto_scale = false;
 static bool default_lock_aspect_ratio = true;
 static bool default_size_is_spatium = true;
-
-//---------------------------------------------------------
-//   Image
-//---------------------------------------------------------
 
 Image::Image(DummyParentOr<EngravingItem> parent) : BSymbol(ElementType::IMAGE, parent, ElementFlag::MOVABLE) {
     image_type_ = ImageType::NONE;
@@ -80,10 +72,6 @@ Image::Image(const Image &img) : BSymbol(img) {
     set_z(img.z());
 }
 
-//---------------------------------------------------------
-//   Image
-//---------------------------------------------------------
-
 Image::~Image() {
     if (store_item_) {
         store_item_->dereference(this);
@@ -92,10 +80,6 @@ Image::~Image() {
         delete svg_doc_;
     }
 }
-
-//---------------------------------------------------------
-//   setImageType
-//---------------------------------------------------------
 
 void Image::set_image_type(ImageType t) {
     image_type_ = t;
@@ -108,10 +92,6 @@ void Image::set_image_type(ImageType t) {
         LOGD("illegal image type");
     }
 }
-
-//---------------------------------------------------------
-//   imageSize
-//---------------------------------------------------------
 
 muse::SizeF Image::image_size() const {
     if (!is_valid()) {
@@ -126,10 +106,6 @@ muse::SizeF Image::image_size() const {
     return svg_doc_->default_size();
 }
 
-//---------------------------------------------------------
-//   isImageFramed
-//---------------------------------------------------------
-
 bool Image::is_image_framed() const {
     if (!ownership_parent()) {
         return false;
@@ -138,18 +114,10 @@ bool Image::is_image_framed() const {
     return ownership_parent()->is_box();
 }
 
-//---------------------------------------------------------
-//   imageAspectRatio
-//---------------------------------------------------------
-
 double Image::image_aspect_ratio() const {
     const SizeF effective = size();
     return effective.width() / effective.height();
 }
-
-//---------------------------------------------------------
-//   setImageHeight
-//---------------------------------------------------------
 
 void Image::update_image_height(const double &height) {
     double aspect_ratio = image_aspect_ratio();
@@ -161,10 +129,6 @@ void Image::update_image_height(const double &height) {
     }
 }
 
-//---------------------------------------------------------
-//   setImageWidth
-//---------------------------------------------------------
-
 void Image::update_image_width(const double &width) {
     double aspect_ratio = image_aspect_ratio();
 
@@ -175,15 +139,7 @@ void Image::update_image_width(const double &width) {
     }
 }
 
-//---------------------------------------------------------
-//   imageHeight
-//---------------------------------------------------------
-
 double Image::image_height() const { return size().height(); }
-
-//---------------------------------------------------------
-//   imageWidth
-//---------------------------------------------------------
 
 double Image::image_width() const { return size().width(); }
 
@@ -209,11 +165,8 @@ bool Image::load_from_store(const std::string &store_path) {
     return true;
 }
 
-//---------------------------------------------------------
-//   loadFromFile
 //    load image from file and put into ImageStore
 //    return true on success
-//---------------------------------------------------------
 
 bool Image::load_from_file(muse::io::PathT path) {
     if (path.empty()) {
@@ -243,11 +196,8 @@ bool Image::load_from_file(muse::io::PathT path) {
     return true;
 }
 
-//---------------------------------------------------------
-//   loadFromData
 //    load image from data and put into ImageStore
 //    return true on success
-//---------------------------------------------------------
 
 bool Image::load_from_data(const std::string &name, const muse::ByteArray &ba) {
     store_item_ = image_store.add(name, ba);
@@ -262,19 +212,11 @@ bool Image::load_from_data(const std::string &name, const muse::ByteArray &ba) {
     return true;
 }
 
-//---------------------------------------------------------
-//   pixel2Size
-//---------------------------------------------------------
-
 SizeF Image::source_size(double spatium) const {
     return size_.is_null() ? image_size() / (size_is_spatium_ ? spatium : ::mu::engraving::dpmm) : size_;
 }
 
 SizeF Image::pixel2size(const SizeF &s) const { return s / (size_is_spatium_ ? spatium() : ::mu::engraving::dpmm); }
-
-//---------------------------------------------------------
-//   size2pixel
-//---------------------------------------------------------
 
 SizeF Image::size2pixel(const SizeF &s) const { return s * (size_is_spatium_ ? spatium() : ::mu::engraving::dpmm); }
 
@@ -285,10 +227,6 @@ void Image::init() {
         }
     }
 }
-
-//---------------------------------------------------------
-//   getProperty
-//---------------------------------------------------------
 
 PropertyValue Image::get_property(Pid property_id) const {
     switch (property_id) {
@@ -302,10 +240,6 @@ PropertyValue Image::get_property(Pid property_id) const {
         default: return EngravingItem::get_property(property_id);
     }
 }
-
-//---------------------------------------------------------
-//   setProperty
-//---------------------------------------------------------
 
 bool Image::set_property(Pid property_id, const PropertyValue &v) {
     bool rv = true;
@@ -329,10 +263,6 @@ bool Image::set_property(Pid property_id, const PropertyValue &v) {
     trigger_layout();
     return rv;
 }
-
-//---------------------------------------------------------
-//   propertyDefault
-//---------------------------------------------------------
 
 PropertyValue Image::property_default(Pid id) const {
     switch (id) {

@@ -95,10 +95,6 @@ void EngravingPartsTests::create_linked_staff(MasterScore *master_score) {
     ASSERT_TRUE(master_score->staff(1));
 }
 
-//---------------------------------------------------------
-//   voicesExcerpt
-//---------------------------------------------------------
-
 TEST_F(EngravingPartsTests, voicesExcerpt) {
     MasterScore *master_score = ScoreRW::read_score(::parts_data_dir + u"voices.mscx");
     ASSERT_TRUE(master_score);
@@ -174,10 +170,6 @@ TEST_F(EngravingPartsTests, voicesExcerpt) {
     delete master_score;
 }
 
-//---------------------------------------------------------
-//   testPartCreation
-//---------------------------------------------------------
-
 void EngravingPartsTests::test_part_creation(const String &test) {
     MasterScore *score = ScoreRW::read_score(::parts_data_dir + test + u".mscx");
     ASSERT_TRUE(score);
@@ -199,10 +191,6 @@ void EngravingPartsTests::test_part_creation(const String &test) {
     delete score;
 }
 
-//---------------------------------------------------------
-//   testAppendMeasure
-//---------------------------------------------------------
-
 TEST_F(EngravingPartsTests, append_measure) {
     MasterScore *score = ScoreRW::read_score(::parts_data_dir + u"part-all.mscx");
     ASSERT_TRUE(score);
@@ -217,10 +205,6 @@ TEST_F(EngravingPartsTests, append_measure) {
 
     delete score;
 }
-
-//---------------------------------------------------------
-//   testInsertMeasure
-//---------------------------------------------------------
 
 TEST_F(EngravingPartsTests, insert_measure) {
     MasterScore *score = ScoreRW::read_score(::parts_data_dir + u"part-all.mscx");
@@ -238,10 +222,6 @@ TEST_F(EngravingPartsTests, insert_measure) {
     delete score;
 }
 
-//---------------------------------------------------------
-//   styleScore
-//---------------------------------------------------------
-
 TEST_F(EngravingPartsTests, styleScore) {
     MasterScore *score = ScoreRW::read_score(::parts_data_dir + u"partStyle.mscx");
     ASSERT_TRUE(score);
@@ -252,10 +232,6 @@ TEST_F(EngravingPartsTests, styleScore) {
     delete score;
 }
 
-//---------------------------------------------------------
-//   styleScoreReload
-//---------------------------------------------------------
-
 TEST_F(EngravingPartsTests, styleScoreReload) {
     MasterScore *part_score = ScoreRW::read_score(::parts_data_dir + u"partStyle-score-reload.mscx");
     ASSERT_TRUE(part_score);
@@ -265,9 +241,7 @@ TEST_F(EngravingPartsTests, styleScoreReload) {
     delete part_score;
 }
 
-//---------------------------------------------------------
 //   test part creation
-//---------------------------------------------------------
 
 TEST_F(EngravingPartsTests, createPart1) { test_part_creation(u"part-empty"); }
 
@@ -301,15 +275,7 @@ TEST_F(EngravingPartsTests, createPart3) {
     test_part_creation(u"part-54346");
 }
 
-//---------------------------------------------------------
-//    Breath
-//---------------------------------------------------------
-
 TEST_F(EngravingPartsTests, createPartBreath) { test_part_creation(u"part-breath"); }
-
-//---------------------------------------------------------
-//    doAddBreath
-//---------------------------------------------------------
 
 MasterScore *EngravingPartsTests::do_add_breath() {
     MasterScore *score = ScoreRW::read_score(::parts_data_dir + u"part-empty-parts.mscx");
@@ -336,28 +302,12 @@ MasterScore *EngravingPartsTests::do_add_breath() {
     return score;
 }
 
-//---------------------------------------------------------
-//   addBreath
-//---------------------------------------------------------
-
 TEST_F(EngravingPartsTests, add_breath) {
     MasterScore *score = do_add_breath();
     ASSERT_TRUE(score);
     EXPECT_TRUE(ScoreComp::save_compare_score(score, u"part-breath-add.mscx", ::parts_data_dir + u"part-breath-add.mscx"));
     delete score;
 }
-
-//---------------------------------------------------------
-//   undoAddBreath
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   undoRedoAddBreath
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   doRemoveBreath
-//---------------------------------------------------------
 
 MasterScore *EngravingPartsTests::do_remove_breath() {
     MasterScore *score = ScoreRW::read_score(::parts_data_dir + u"part-breath-add.mscx");
@@ -378,10 +328,6 @@ MasterScore *EngravingPartsTests::do_remove_breath() {
     return score;
 }
 
-//---------------------------------------------------------
-//   removeBreath
-//---------------------------------------------------------
-
 TEST_F(EngravingPartsTests, removeBreath) {
     MasterScore *score = do_remove_breath();
     ASSERT_TRUE(score);
@@ -389,23 +335,7 @@ TEST_F(EngravingPartsTests, removeBreath) {
     delete score;
 }
 
-//---------------------------------------------------------
-//   undoRemoveBreath
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   undoRedoRemoveBreath
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   Fingering
-//---------------------------------------------------------
-
 TEST_F(EngravingPartsTests, createPartFingering) { test_part_creation(u"part-fingering"); }
-
-//---------------------------------------------------------
-//   doAddFingering
-//---------------------------------------------------------
 
 MasterScore *EngravingPartsTests::do_add_fingering() {
     MasterScore *score = ScoreRW::read_score(::parts_data_dir + u"part-empty-parts.mscx");
@@ -429,28 +359,12 @@ MasterScore *EngravingPartsTests::do_add_fingering() {
     return score;
 }
 
-//---------------------------------------------------------
-//   addFingering
-//---------------------------------------------------------
-
 TEST_F(EngravingPartsTests, add_fingering) {
     MasterScore *score = do_add_fingering();
     ASSERT_TRUE(score);
     EXPECT_TRUE(ScoreComp::save_compare_score(score, u"part-fingering-add.mscx", ::parts_data_dir + u"part-fingering-add.mscx"));
     delete score;
 }
-
-//---------------------------------------------------------
-//   undoAddFingering
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   undoRedoAddFingering
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   doRemoveFingering
-//---------------------------------------------------------
 
 MasterScore *EngravingPartsTests::do_remove_fingering() {
     MasterScore *score = ScoreRW::read_score(::parts_data_dir + u"part-fingering-parts.mscx");
@@ -479,10 +393,6 @@ MasterScore *EngravingPartsTests::do_remove_fingering() {
     return score;
 }
 
-//---------------------------------------------------------
-//   removeFingering
-//---------------------------------------------------------
-
 TEST_F(EngravingPartsTests, removeFingering) {
     MasterScore *score = do_remove_fingering();
     ASSERT_TRUE(score);
@@ -490,23 +400,7 @@ TEST_F(EngravingPartsTests, removeFingering) {
     delete score;
 }
 
-//---------------------------------------------------------
-//   undoRemoveFingering
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   undoRedoRemoveFingering
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   Symbol
-//---------------------------------------------------------
-
 TEST_F(EngravingPartsTests, createPartSymbol) { test_part_creation(u"part-symbol"); }
-
-//---------------------------------------------------------
-//   doAddSymbol
-//---------------------------------------------------------
 
 MasterScore *EngravingPartsTests::do_add_symbol() {
     MasterScore *score = ScoreRW::read_score(::parts_data_dir + u"part-empty-parts.mscx");
@@ -530,28 +424,12 @@ MasterScore *EngravingPartsTests::do_add_symbol() {
     return score;
 }
 
-//---------------------------------------------------------
-//   addSymbol
-//---------------------------------------------------------
-
 TEST_F(EngravingPartsTests, addSymbol) {
     MasterScore *score = do_add_symbol();
     ASSERT_TRUE(score);
     EXPECT_TRUE(ScoreComp::save_compare_score(score, u"part-symbol-add.mscx", ::parts_data_dir + u"part-symbol-add.mscx"));
     delete score;
 }
-
-//---------------------------------------------------------
-//   undoAddSymbol
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   undoRedoAddSymbol
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   doRemoveSymbol
-//---------------------------------------------------------
 
 MasterScore *EngravingPartsTests::do_remove_symbol() {
     MasterScore *score = ScoreRW::read_score(::parts_data_dir + u"part-symbol-parts.mscx");
@@ -580,10 +458,6 @@ MasterScore *EngravingPartsTests::do_remove_symbol() {
     return score;
 }
 
-//---------------------------------------------------------
-//   removeSymbol
-//---------------------------------------------------------
-
 TEST_F(EngravingPartsTests, removeSymbol) {
     MasterScore *score = do_remove_symbol();
     ASSERT_TRUE(score);
@@ -591,23 +465,7 @@ TEST_F(EngravingPartsTests, removeSymbol) {
     delete score;
 }
 
-//---------------------------------------------------------
-//   undoRemoveSymbol
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   undoRedoRemoveSymbol
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   Chordline
-//---------------------------------------------------------
-
 TEST_F(EngravingPartsTests, createPartChordline) { test_part_creation(u"part-chordline"); }
-
-//---------------------------------------------------------
-//   doAddChordline
-//---------------------------------------------------------
 
 MasterScore *EngravingPartsTests::do_add_chordline() {
     MasterScore *score = ScoreRW::read_score(::parts_data_dir + u"part-empty-parts.mscx");
@@ -632,28 +490,12 @@ MasterScore *EngravingPartsTests::do_add_chordline() {
     return score;
 }
 
-//---------------------------------------------------------
-//   addChordline
-//---------------------------------------------------------
-
 TEST_F(EngravingPartsTests, addChordline) {
     MasterScore *score = do_add_chordline();
     ASSERT_TRUE(score);
     EXPECT_TRUE(ScoreComp::save_compare_score(score, u"part-chordline-add.mscx", ::parts_data_dir + u"part-chordline-add.mscx"));
     delete score;
 }
-
-//---------------------------------------------------------
-//   undoAddChordline
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   undoRedoAddChordline
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   doRemoveChordline
-//---------------------------------------------------------
 
 MasterScore *EngravingPartsTests::do_remove_chordline() {
     MasterScore *score = ScoreRW::read_score(::parts_data_dir + u"part-chordline-parts.mscx");
@@ -682,10 +524,6 @@ MasterScore *EngravingPartsTests::do_remove_chordline() {
     return score;
 }
 
-//---------------------------------------------------------
-//   removeChordline
-//---------------------------------------------------------
-
 TEST_F(EngravingPartsTests, removeChordline) {
     MasterScore *score = do_remove_chordline();
     ASSERT_TRUE(score);
@@ -693,39 +531,7 @@ TEST_F(EngravingPartsTests, removeChordline) {
     delete score;
 }
 
-//---------------------------------------------------------
-//   undoRemoveChordline
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   undoRedoRemoveChordline
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   MeasureRepeat
-//---------------------------------------------------------
-
 TEST_F(EngravingPartsTests, createPartMeasureRepeat) { test_part_creation(u"part-measure-repeat"); }
-
-//---------------------------------------------------------
-//   doAddMeasureRepeat
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   addMeasureRepeat
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   undoAddMeasureRepeat
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   undoRedoAddMeasureRepeat
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   doRemoveMeasureRepeat
-//---------------------------------------------------------
 
 MasterScore *EngravingPartsTests::do_remove_measure_repeat() {
     MasterScore *score = ScoreRW::read_score(::parts_data_dir + u"part-measure-repeat-parts.mscx");
@@ -745,28 +551,12 @@ MasterScore *EngravingPartsTests::do_remove_measure_repeat() {
     return score;
 }
 
-//---------------------------------------------------------
-//   removeMeasureRepeat
-//---------------------------------------------------------
-
 TEST_F(EngravingPartsTests, removeMeasureRepeat) {
     MasterScore *score = do_remove_measure_repeat();
     ASSERT_TRUE(score);
     EXPECT_TRUE(ScoreComp::save_compare_score(score, u"part-measure-repeat-del.mscx", ::parts_data_dir + u"part-measure-repeat-del.mscx"));
     delete score;
 }
-
-//---------------------------------------------------------
-//   undoRemoveMeasureRepeat
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   undoRedoRemoveMeasureRepeat
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   Stemless
-//---------------------------------------------------------
 
 TEST_F(EngravingPartsTests, createPartStemless) { test_part_creation(u"part-stemless"); }
 
@@ -948,15 +738,6 @@ TEST_F(EngravingPartsTests, inputFromParts) {
     chord = to_chord(score_segment->element(staff2track(bassoon_staff) + voice));
     ASSERT_TRUE(chord);
 }
-
-//---------------------------------------------------------
-//   noteVisibilityBeams
-//   stems and beams follow each score's own note visibility (#31928)
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   staffStyles
-//---------------------------------------------------------
 
 TEST_F(EngravingPartsTests, crossMeasureUpwardGlissExcerpt) {
     MasterScore *master = ScoreRW::read_score(::parts_data_dir + u"cross-measure-gliss.mscx");

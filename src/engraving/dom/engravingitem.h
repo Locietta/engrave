@@ -70,10 +70,6 @@ struct XmlReader;
 enum class Pid : short;
 struct StaffType;
 
-//---------------------------------------------------------
-//   ElementFlag
-//---------------------------------------------------------
-
 enum class ElementFlag {
     NOTHING = 0x00000000,
     DROP_TARGET = 0x00000001,
@@ -129,13 +125,10 @@ enum class KerningType : unsigned char {
 // ea2b00ee48 (times 100) and must not move when enumerators are added or deleted.
 int default_z(ElementType type);
 
-//-------------------------------------------------------------------
-//    @@ EngravingItem
 ///     \brief Base class of score layout elements
 ///
 ///     The EngravingItem class is the virtual base class of all
 ///     score layout elements.
-//-------------------------------------------------------------------
 
 struct EngravingItem : EngravingObject {
 private:
@@ -323,7 +316,6 @@ public:
     Color cur_color(bool is_visible, const rendering::PaintOptions &opt) const;
     Color cur_color(bool is_visible, Color normal_color, const rendering::PaintOptions &opt) const;
 
-    void undo_set_visible(bool v);
     void undo_add_element(EngravingItem *element, bool add_to_linked_staves = true);
 
     void scan_elements(std::function<void(EngravingItem *)> func) override;
@@ -406,9 +398,9 @@ public:
 
     bool concert_pitch() const;
     virtual EngravingItem *next_element();         // selects the next score element, (notes, rests etc. as well as articulation etc.)
-    virtual EngravingItem *prev_element();         // selects the next score element, (notes, rests etc. as well as articulation etc.)
+                                                   // selects the next score element, (notes, rests etc. as well as articulation etc.)
     virtual EngravingItem *next_segment_element(); //< Used for navigation
-    virtual EngravingItem *prev_segment_element(); //< next-element and prev-element command
+                                                   //< next-element and prev-element command
 
     virtual String format_bars_and_beats() const;
 
@@ -713,10 +705,6 @@ private:
 };
 
 using ElementPtr = std::shared_ptr<EngravingItem>;
-
-//---------------------------------------------------------
-//   ElementList
-//---------------------------------------------------------
 
 struct ElementList : std::vector<EngravingItem *> {
 public:

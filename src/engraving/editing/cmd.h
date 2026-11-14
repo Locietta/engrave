@@ -176,10 +176,6 @@ struct ScoreChanges {
 bool note_change(EngravingObject *object, CommandType type);
 std::vector<EngravingObject *> compound_objects(EngravingObject *object);
 
-//---------------------------------------------------------
-//   UpdateState
-//---------------------------------------------------------
-
 struct UpdateState {
     RectF refresh;           ///< area to update, canvas coordinates
     bool play_note = false;  ///< play selected note after command
@@ -187,13 +183,10 @@ struct UpdateState {
     bool selection_changed = false;
 };
 
-//---------------------------------------------------------
-//   CmdState
 //
 //    the following variables are reset on startCmd()
 //    modified during cmd processing and used in endCmd() to
 //    determine what to layout and what to repaint:
-//---------------------------------------------------------
 
 struct CmdState {
     ScoreChanges changes;
@@ -205,16 +198,10 @@ struct CmdState {
 
     void reset();
 
-    UpdateMode update_mode() const { return update_mode_; }
-
     void set_update_mode(UpdateMode m);
     void assign_update_mode(UpdateMode m);
 
     bool layout_range() const { return update_mode_ == UpdateMode::LAYOUT; }
-
-    bool update_all() const { return int(update_mode_) >= int(UpdateMode::UPDATE_ALL); }
-
-    bool update_range() const { return update_mode_ == UpdateMode::UPDATE; }
 
     void set_tick(const Fraction &t);
     void set_staff(staff_idx_t staff);
@@ -229,8 +216,6 @@ struct CmdState {
 
     staff_idx_t end_staff() const { return end_staff_; }
 
-    const EngravingItem *element() const;
-
     void delete_later(EngravingObject *e);
     std::vector<EngravingObject *> take_postponed_deletions();
 
@@ -239,9 +224,6 @@ struct CmdState {
     void lock() { locked_ = true; }
 
     void unlock() { locked_ = false; }
-#ifndef NDEBUG
-    void dump();
-#endif
 
 private:
     void set_measure_base(const MeasureBase *mb);

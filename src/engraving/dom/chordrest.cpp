@@ -66,10 +66,6 @@ using namespace mu;
 using namespace mu::engraving;
 
 namespace mu::engraving {
-//---------------------------------------------------------
-//   ChordRest
-//---------------------------------------------------------
-
 ChordRest::ChordRest(const ElementType &type, DummyParentOr<Segment> parent) : DurationElement(type, parent) {
     staff_move_ = 0;
     beam_ = 0;
@@ -103,20 +99,12 @@ ChordRest::ChordRest(const ChordRest &cr, bool link) : DurationElement(cr, link)
     }
 }
 
-//---------------------------------------------------------
-//   undoUnlink
-//---------------------------------------------------------
-
 void ChordRest::undo_unlink() {
     DurationElement::undo_unlink();
     for (Lyrics *l : lyrics_) {
         l->undo_unlink();
     }
 }
-
-//---------------------------------------------------------
-//   ChordRest
-//---------------------------------------------------------
 
 ChordRest::~ChordRest() {
     if (has_layout_data()) {
@@ -132,28 +120,16 @@ ChordRest::~ChordRest() {
     }
 }
 
-//---------------------------------------------------------
-//   beam
-//---------------------------------------------------------
-
 Beam *ChordRest::beam() const {
     if (measure() && measure()->stemless(staff_idx())) return nullptr;
     return is_layout_data_current() ? ldata()->rendered_beam.value_or(beam_) : beam_;
 }
-
-//---------------------------------------------------------
-//   setBeam
-//---------------------------------------------------------
 
 void ChordRest::set_beam(Beam *b) { beam_ = b; }
 
 void ChordRest::set_beamlet(BeamSegment *b) {
     if (b || has_layout_data()) mutldata()->beamlet = b;
 }
-
-//---------------------------------------------------------
-//   setDurationType
-//---------------------------------------------------------
 
 void ChordRest::set_duration_type(DurationType t) {
     duration_type_.set_type(t);
@@ -169,10 +145,6 @@ void ChordRest::set_duration_type(TDuration v) {
     duration_type_ = v;
     cross_measure_ = CrossMeasure::UNKNOWN;
 }
-
-//---------------------------------------------------------
-//   durationUserName
-//---------------------------------------------------------
 
 String ChordRest::duration_user_name() const {
     String tuplet_type;
@@ -208,10 +180,6 @@ String ChordRest::duration_user_name() const {
     return String(u"%1%2").arg(tuplet_type, dot_string);
 }
 
-//---------------------------------------------------------
-//   add
-//---------------------------------------------------------
-
 void ChordRest::add(EngravingItem *e) {
     e->set_ownership_parent(this);
     e->set_track(track());
@@ -227,10 +195,6 @@ void ChordRest::add(EngravingItem *e) {
         default: EngravingItem::add(e); break;
     }
 }
-
-//---------------------------------------------------------
-//   remove
-//---------------------------------------------------------
 
 void ChordRest::remove(EngravingItem *e) {
     switch (e->type()) {
@@ -249,12 +213,9 @@ void ChordRest::remove(EngravingItem *e) {
     }
 }
 
-//---------------------------------------------------------
-//   removeDeleteBeam
 ///   Remove ChordRest from beam, delete beam if empty.
 ///   \param beamed - if the chordrest is beamed (will get
 ///                   a (new) beam)
-//---------------------------------------------------------
 
 void ChordRest::remove_delete_beam(bool /*beamed*/) {
     set_beamlet(nullptr);
@@ -269,10 +230,6 @@ void ChordRest::remove_delete_beam(bool /*beamed*/) {
 }
 
 void ChordRest::compute_up() { UNREACHABLE; }
-
-//---------------------------------------------------------
-//   replaceBeam
-//---------------------------------------------------------
 
 void ChordRest::replace_beam(Beam *new_beam) {
     if (beam_ == new_beam) {
@@ -324,10 +281,6 @@ void ChordRest::undo_change_property(Pid id, const PropertyValue &new_value, Pro
     EngravingItem::undo_change_property(id, new_value, ps);
 }
 
-//---------------------------------------------------------
-//   localSpatiumChanged
-//---------------------------------------------------------
-
 void ChordRest::local_spatium_changed(double old_value, double new_value) {
     DurationElement::local_spatium_changed(old_value, new_value);
     for (EngravingItem *e : lyrics()) {
@@ -338,10 +291,6 @@ void ChordRest::local_spatium_changed(double old_value, double new_value) {
     }
 }
 
-//---------------------------------------------------------
-//   getProperty
-//---------------------------------------------------------
-
 PropertyValue ChordRest::get_property(Pid property_id) const {
     switch (property_id) {
         case Pid::SMALL: return PropertyValue::from_value(is_small());
@@ -351,10 +300,6 @@ PropertyValue ChordRest::get_property(Pid property_id) const {
         default: return DurationElement::get_property(property_id);
     }
 }
-
-//---------------------------------------------------------
-//   setProperty
-//---------------------------------------------------------
 
 bool ChordRest::set_property(Pid property_id, const PropertyValue &v) {
     switch (property_id) {
@@ -372,10 +317,6 @@ bool ChordRest::set_property(Pid property_id, const PropertyValue &v) {
     return true;
 }
 
-//---------------------------------------------------------
-//   propertyDefault
-//---------------------------------------------------------
-
 PropertyValue ChordRest::property_default(Pid property_id) const {
     switch (property_id) {
         case Pid::SMALL: return false;
@@ -387,42 +328,25 @@ PropertyValue ChordRest::property_default(Pid property_id) const {
     // triggerLayout();
 }
 
-//---------------------------------------------------------
-//   isGrace
-//---------------------------------------------------------
-
 bool ChordRest::is_grace() const { return is_chord() && to_chord(this)->is_grace(); }
-
-//---------------------------------------------------------
-//   isGraceBefore
-//---------------------------------------------------------
 
 bool ChordRest::is_grace_before() const {
     return is_chord() && (to_chord(this)->note_type() &
                           (NoteType::ACCIACCATURA | NoteType::APPOGGIATURA | NoteType::GRACE4 | NoteType::GRACE16 | NoteType::GRACE32));
 }
 
-//---------------------------------------------------------
-//   isGraceAfter
-//---------------------------------------------------------
-
 bool ChordRest::is_grace_after() const {
     return is_chord() && (to_chord(this)->note_type() & (NoteType::GRACE8_AFTER | NoteType::GRACE16_AFTER | NoteType::GRACE32_AFTER));
 }
 
-//---------------------------------------------------------
 //   hasBreathMark - determine if chordrest has breath-mark
-//---------------------------------------------------------
 Breath *ChordRest::has_breath_mark() const {
     Segment *s = measure()->find_segment(SegmentType::BREATH, end_tick());
     return s ? to_breath(s->element(track())) : nullptr;
 }
 
-//---------------------------------------------------------
-//   nextSegmentAfterCR
 //    returns first segment at tick CR->tick + CR->actualTicks
 //    of given types
-//---------------------------------------------------------
 
 Segment *ChordRest::next_segment_after_cr(SegmentType types) const {
     Fraction end = tick() + actual_ticks();
@@ -434,27 +358,15 @@ Segment *ChordRest::next_segment_after_cr(SegmentType types) const {
     return nullptr;
 }
 
-//---------------------------------------------------------
-//   setTrack
-//---------------------------------------------------------
-
 void ChordRest::set_track(track_idx_t val) {
     EngravingItem::set_track(val);
     process_siblings([val](EngravingItem *e) { e->set_track(val); });
 }
 
-//---------------------------------------------------------
-//   setScore
-//---------------------------------------------------------
-
 void ChordRest::set_score(Score *s) {
     EngravingItem::set_score(s);
     process_siblings([s](EngravingItem *e) { e->set_score(s); });
 }
-
-//---------------------------------------------------------
-//   processSiblings
-//---------------------------------------------------------
 
 void ChordRest::process_siblings(std::function<void(EngravingItem *)> func) {
     if (beam_) {
@@ -473,10 +385,6 @@ void ChordRest::process_siblings(std::function<void(EngravingItem *)> func) {
         func(e);
     }
 }
-
-//---------------------------------------------------------
-//   nextArticulationOrLyric
-//---------------------------------------------------------
 
 EngravingItem *ChordRest::next_articulation_or_lyric(EngravingItem *e) {
     if (e->is_lyrics()) {
@@ -518,10 +426,6 @@ EngravingItem *ChordRest::next_articulation_or_lyric(EngravingItem *e) {
     return nullptr;
 }
 
-//---------------------------------------------------------
-//   prevArticulationOrLyric
-//---------------------------------------------------------
-
 EngravingItem *ChordRest::prev_articulation_or_lyric(EngravingItem *e) {
     const std::vector<Articulation *> artics = is_chord() ? to_chord(this)->articulations() : std::vector<Articulation *>();
 
@@ -556,10 +460,6 @@ EngravingItem *ChordRest::prev_articulation_or_lyric(EngravingItem *e) {
     return lyrics;
 }
 
-//---------------------------------------------------------
-//   nextElement
-//---------------------------------------------------------
-
 EngravingItem *ChordRest::next_element() {
     EngravingItem *e = score()->selection().element();
     if (!e && !score()->selection().elements().empty()) {
@@ -592,56 +492,6 @@ EngravingItem *ChordRest::next_element() {
     return segment()->next_element(staff_id);
 }
 
-//---------------------------------------------------------
-//   prevElement
-//---------------------------------------------------------
-
-EngravingItem *ChordRest::prev_element() {
-    EngravingItem *e = score()->selection().element();
-    if (!e && !score()->selection().elements().empty()) {
-        e = score()->selection().elements().back();
-    }
-    switch (e->type()) {
-        case ElementType::ARTICULATION:
-        case ElementType::ORNAMENT:
-        case ElementType::TAPPING:
-        case ElementType::LYRICS:
-        case ElementType::LYRICSLINE: {
-            EngravingItem *prev = prev_articulation_or_lyric(e);
-            if (prev) {
-                return prev;
-            } else {
-                if (is_chord()) {
-                    return to_chord(this)->last_element_before_segment();
-                }
-            }
-            // fall through
-        }
-        default: {
-            break;
-        }
-    }
-
-    Tuplet *tuplet = this->tuplet();
-    if (tuplet && this == tuplet->elements().front()) {
-        return tuplet;
-    }
-
-    staff_idx_t staff_id = e->staff_idx();
-    EngravingItem *prev_item = segment()->prev_element(staff_id);
-    if (prev_item && prev_item->is_note()) {
-        const Chord *prev_chord = to_note(prev_item)->chord();
-        if (prev_chord && !prev_chord->articulations().empty()) {
-            return prev_chord->articulations().back();
-        }
-    }
-    return prev_item;
-}
-
-//---------------------------------------------------------
-//   lastElementBeforeSegment
-//---------------------------------------------------------
-
 EngravingItem *ChordRest::last_element_before_segment() {
     if (lyrics_.empty()) {
         return nullptr;
@@ -654,15 +504,7 @@ EngravingItem *ChordRest::last_element_before_segment() {
     return lyrics;
 }
 
-//---------------------------------------------------------
-//   nextSegmentElement
-//---------------------------------------------------------
-
 EngravingItem *ChordRest::next_segment_element() { return segment()->first_in_next_segments(staff_idx()); }
-
-//---------------------------------------------------------
-//   scanElements
-//---------------------------------------------------------
 
 void ChordRest::scan_elements(std::function<void(EngravingItem *)> func) {
     auto *b = beam();
@@ -683,22 +525,9 @@ void ChordRest::scan_elements(std::function<void(EngravingItem *)> func) {
     }
 }
 
-//---------------------------------------------------------
-//   prevSegmentElement
-//---------------------------------------------------------
-
-EngravingItem *ChordRest::prev_segment_element() { return segment()->last_in_prev_segments(staff_idx()); }
-
-//---------------------------------------------------------
-//   isMelismaEnd
 //    returns true if chordrest represents the end of a melisma
-//---------------------------------------------------------
 
 bool ChordRest::is_melisma_end() const { return melisma_end_; }
-
-//---------------------------------------------------------
-//   setMelismaEnd
-//---------------------------------------------------------
 
 void ChordRest::set_melisma_end(bool v) {
     melisma_end_ = v;
@@ -707,10 +536,6 @@ void ChordRest::set_melisma_end(bool v) {
     // in which case we can leave this set to true
     // for now, rely on the fact that we'll generate the value correctly on layout
 }
-
-//---------------------------------------------------------
-//   lyrics
-//---------------------------------------------------------
 
 Lyrics *ChordRest::lyrics(int verse) const {
     for (Lyrics *l : lyrics_) {
@@ -730,11 +555,8 @@ Lyrics *ChordRest::lyrics(int verse, PlacementV p) const {
     return 0;
 }
 
-//---------------------------------------------------------
-//   lastVerse
 //    return last verse number (starting from 0)
 //    return -1 if there are no lyrics;
-//---------------------------------------------------------
 
 int ChordRest::last_verse(PlacementV p) const {
     int last_verse = -1;
@@ -748,13 +570,10 @@ int ChordRest::last_verse(PlacementV p) const {
     return last_verse;
 }
 
-//---------------------------------------------------------
-//   removeMarkings
 //    - this is normally called after cloning a chord to tie a note over the barline
 //    - there is no special undo handling; the assumption is that undo will simply remove the cloned chord
 //    - two note tremolos are converted into simple notes
 //    - single note tremolos are optionally retained
-//---------------------------------------------------------
 
 void ChordRest::remove_markings(bool /* keepTremolo */) {
     muse::delete_all(el());
@@ -762,10 +581,6 @@ void ChordRest::remove_markings(bool /* keepTremolo */) {
     muse::delete_all(lyrics());
     lyrics().clear();
 }
-
-//---------------------------------------------------------
-//   isBefore
-//---------------------------------------------------------
 
 bool ChordRest::is_before(const EngravingItem *o) const {
     if (!o || this == o) {

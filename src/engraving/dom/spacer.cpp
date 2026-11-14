@@ -31,10 +31,6 @@ using namespace muse::draw;
 using namespace mu::engraving;
 
 namespace mu::engraving {
-//---------------------------------------------------------
-//   LayoutBreak
-//---------------------------------------------------------
-
 Spacer::Spacer(DummyParentOr<Measure> parent) : EngravingItem(ElementType::SPACER, parent) {
     spacer_type_ = SpacerType::UP;
     gap_ = 0.0_sp;
@@ -46,15 +42,7 @@ Spacer::Spacer(const Spacer &s) : EngravingItem(s) {
     spacer_type_ = s.spacer_type_;
 }
 
-//---------------------------------------------------------
-//   setGap
-//---------------------------------------------------------
-
 void Spacer::set_gap(Spatium sp) { gap_ = sp; }
-
-//---------------------------------------------------------
-//   getProperty
-//---------------------------------------------------------
 
 PropertyValue Spacer::get_property(Pid property_id) const {
     switch (property_id) {
@@ -62,10 +50,6 @@ PropertyValue Spacer::get_property(Pid property_id) const {
         default: return EngravingItem::get_property(property_id);
     }
 }
-
-//---------------------------------------------------------
-//   setProperty
-//---------------------------------------------------------
 
 bool Spacer::set_property(Pid property_id, const PropertyValue &v) {
     switch (property_id) {
@@ -81,20 +65,12 @@ bool Spacer::set_property(Pid property_id, const PropertyValue &v) {
     return true;
 }
 
-//---------------------------------------------------------
-//   propertyDefault
-//---------------------------------------------------------
-
 PropertyValue Spacer::property_default(Pid id) const {
     switch (id) {
         case Pid::SPACE: return 0.0_sp;
         default: return EngravingItem::property_default(id);
     }
 }
-
-//---------------------------------------------------------
-//   triggerLayout
-//---------------------------------------------------------
 
 void Spacer::trigger_layout() const {
     if (!ownership_parent()) {
@@ -146,10 +122,6 @@ void Spacer::trigger_layout() const {
 
     s->set_layout(start_tick, end_tick, 0, s->nstaves() - 1, this);
 }
-
-//---------------------------------------------------------
-//   subtypeUserName
-//---------------------------------------------------------
 
 muse::TranslatableString Spacer::subtype_user_name() const {
     switch (spacer_type_) {

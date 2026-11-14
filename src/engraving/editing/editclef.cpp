@@ -82,21 +82,8 @@ void mu::engraving::apply_change_clef_type(Clef *clef, ClefType concert_clef, Cl
     clef->trigger_layout_all(); // TODO: reduce layout to clef range
 }
 
-//---------------------------------------------------------
-//   EditClef
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   insertClef
-//    insert clef before cr
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   undoChangeClef
 //    change clef if e is a clef
-//    else
 //    create a clef before element e
-//---------------------------------------------------------
 
 void EditClef::undo_change_clef(Transaction &, Score *score, Staff *ostaff, EngravingItem *e, ClefType ct, bool for_instrument_change,
                                 Clef *clef_to_relink) {

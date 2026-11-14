@@ -49,10 +49,6 @@ namespace mu::engraving {
 //    parent() is Segment or Box
 //
 
-//---------------------------------------------------------
-//   fretStyle
-//---------------------------------------------------------
-
 static const ElementStyle fret_style{
     {Sid::FRET_NUM_POS, Pid::FRET_NUM_POS},
     {Sid::FRET_MAG, Pid::MAG},
@@ -64,10 +60,6 @@ static const ElementStyle fret_style{
     {Sid::FRET_ORIENTATION, Pid::ORIENTATION},
     {Sid::FRET_SHOW_FINGERINGS, Pid::FRET_SHOW_FINGERINGS},
 };
-
-//---------------------------------------------------------
-//   FretDiagram
-//---------------------------------------------------------
 
 struct HarmonyMapKey {
     HarmonyMapKey() {}
@@ -200,10 +192,6 @@ FretDiagram::~FretDiagram() {
     }
 }
 
-//---------------------------------------------------------
-//   linkedClone
-//---------------------------------------------------------
-
 EngravingItem *FretDiagram::linked_clone() {
     FretDiagram *e = clone();
     e->set_autoplace(true);
@@ -256,10 +244,6 @@ double FretDiagram::main_width() const {
     }
     return main_width;
 }
-
-//---------------------------------------------------------
-//   setStrings
-//---------------------------------------------------------
 
 void FretDiagram::set_strings(int n) {
     int difference = n - strings_;
@@ -314,10 +298,6 @@ void FretDiagram::set_strings(int n) {
     strings_ = n;
 }
 
-//---------------------------------------------------------
-//   init
-//---------------------------------------------------------
-
 void FretDiagram::init(StringData *string_data, Chord *chord) {
     if (!string_data) {
         set_strings(6);
@@ -341,11 +321,8 @@ void FretDiagram::init(StringData *string_data, Chord *chord) {
     }
 }
 
-//---------------------------------------------------------
-//   setDot
 //    take a fret value of 0 to mean remove the dot, except with add
 //    where we actually need to pass a fret val.
-//---------------------------------------------------------
 
 void FretDiagram::set_dot(int string, int fret, bool add /*= false*/, FretDotType dtype /*= FretDotType::NORMAL*/) {
     if (fret == 0) {
@@ -377,11 +354,8 @@ void FretDiagram::add_dot_for_dot_style_barre(int string, int fret) {
 
 void FretDiagram::remove_dot_for_dot_style_barre(int string, int fret) { remove_dot(string, fret); }
 
-//---------------------------------------------------------
-//   setMarker
 //    Removal of dots and barres if "Multiple dots" is inactive
 //    is handled in FretCanvas::mousePressEvent()
-//---------------------------------------------------------
 
 void FretDiagram::set_marker(int string, FretMarkerType mtype) {
     if (string >= 0 && string < strings_) {
@@ -393,12 +367,9 @@ void FretDiagram::set_marker(int string, FretMarkerType mtype) {
     }
 }
 
-//---------------------------------------------------------
-//   setBarre
 //    We'll accept a value of -1 for the end string, to denote
 //    that the barre goes as far right as possible.
 //    Take a start string value of -1 to mean 'remove this barre'
-//---------------------------------------------------------
 
 void FretDiagram::set_barre(int start_string, int end_string, int fret) {
     if (start_string == -1) {
@@ -408,13 +379,11 @@ void FretDiagram::set_barre(int start_string, int end_string, int fret) {
     }
 }
 
-//---------------------------------------------------------
 //    This version is for clicks on a dot with shift.
 //    If there is no barre at fret, then add one with the string as the start.
 //    If there is a barre with a -1 end string, set the end string to string.
 //    If there is a barre with a set start and end, remove it.
 //    Add may be used in the future if we decide to add dots as default with barres.
-//---------------------------------------------------------
 
 void FretDiagram::set_barre(int string, int fret, [[maybe_unused]] bool add /*= false*/) {
 
@@ -432,31 +401,12 @@ void FretDiagram::set_barre(int string, int fret, [[maybe_unused]] bool add /*= 
     }
 }
 
-//---------------------------------------------------------
-//   undoSetFretDot
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   undoSetFretMarker
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   undoSetFretBarre
-//    add refers to using multiple dots per string when adding dots automatically
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   removeBarre
 //    Remove a barre on a given fret.
-//---------------------------------------------------------
 
 void FretDiagram::remove_barre(int f) { barres_.erase(f); }
 
-//---------------------------------------------------------
-//   removeBarres
 //    Remove barres crossing a certain point. Fret of 0 means any point along
 //    the string.
-//---------------------------------------------------------
 
 void FretDiagram::remove_barres(int string, int fret /*= 0*/) {
     auto iter = barres_.begin();
@@ -476,19 +426,12 @@ void FretDiagram::remove_barres(int string, int fret /*= 0*/) {
     }
 }
 
-//---------------------------------------------------------
-//   removeMarker
-//---------------------------------------------------------
-
 void FretDiagram::remove_marker(int s) {
     auto it = markers_.find(s);
     markers_.erase(it);
 }
 
-//---------------------------------------------------------
-//   removeDot
 //    take a fret value of 0 to mean remove all dots
-//---------------------------------------------------------
 
 void FretDiagram::remove_dot(int s, int f /*= 0*/) {
     if (f > 0) {
@@ -510,11 +453,8 @@ void FretDiagram::remove_dot(int s, int f /*= 0*/) {
     }
 }
 
-//---------------------------------------------------------
-//   removeDotsMarkers
 //    removes all markers between [ss, es] and dots between [ss, es],
 //    where the dots have a fret of fret.
-//---------------------------------------------------------
 
 void FretDiagram::remove_dots_markers(int ss, int es, int fret) {
     if (ss == -1) {
@@ -527,129 +467,6 @@ void FretDiagram::remove_dots_markers(int ss, int es, int fret) {
 
         if (marker(string).exists()) {
             remove_marker(string);
-        }
-    }
-}
-
-//---------------------------------------------------------
-//   Fill diagram from string like "XO-[1-O][1-X,2-O,3-S][3-T];B1[0-5];B..."
-//   - Each character or bracketed block represents a string, from lowest to highest.
-//   - 'X' = muted string (cross marker)
-//   - 'O' = open string (circle marker)
-//   - '-' = empty or unused string
-//   - [fret-type,...] = one or more fretted dots on that string:
-//       • fret is absolute (already includes offset)
-//       • type is:
-//           - O = circle
-//           - X = cross
-//           - S = square
-//           - T = triangle
-//   - Example: [1-X,2-O,3-S] means three dots on frets 1, 2, and 3 with different types
-//   - Barre chords follow after ';', in the format: B{fret}[{start}-{end}]
-//     e.g. B1[0-5] = barre on fret 1 from string 0 to 5
-//---------------------------------------------------------
-
-void FretDiagram::apply_diagram_pattern(FretDiagram *diagram, const String &pattern) {
-    diagram->clear();
-
-    const std::vector<String> parts = pattern.split(';');
-    if (parts.empty()) {
-        return;
-    }
-
-    const String &main_part = parts[0];
-    std::vector<String> string_tokens;
-
-    for (size_t i = 0; i < main_part.size();) {
-        if (main_part[i] == u'[') {
-            size_t rb = main_part.index_of(u']', i);
-            if (rb != muse::nidx) {
-                string_tokens.push_back(main_part.mid(i, rb - i + 1));
-                i = rb + 1;
-                continue;
-            }
-        }
-        string_tokens.push_back(main_part.mid(i, 1));
-        ++i;
-    }
-
-    const int string_count = static_cast<int>(string_tokens.size());
-    diagram->set_strings(string_count);
-    diagram->set_frets(4);
-    diagram->set_property_flags(Pid::FRET_STRINGS, PropertyFlags::UNSTYLED);
-    diagram->set_property_flags(Pid::FRET_FRETS, PropertyFlags::UNSTYLED);
-
-    int offset = 0;
-
-    for (int i = 0; i < string_count; ++i) {
-        const String &token = string_tokens[i];
-
-        if (token == u"-") {
-            continue;
-        }
-
-        if (token.starts_with(u"[") && token.ends_with(u"]")) {
-            // Example: [1-O,2-X,3-S]
-            String inner = token.mid(1, token.size() - 2);
-            std::vector<String> pairs = inner.split(u',');
-
-            for (const String &p : pairs) {
-                size_t dash = p.index_of(u'-');
-                if (dash > 0) {
-                    int fret = p.left(dash).to_int();
-                    Char type_char = p.mid(dash + 1, 1).at(0);
-                    FretDotType dt;
-
-                    switch (type_char.unicode()) {
-                        case 'X': dt = FretDotType::CROSS; break;
-                        case 'O': dt = FretDotType::NORMAL; break;
-                        case 'S': dt = FretDotType::SQUARE; break;
-                        case 'T': dt = FretDotType::TRIANGLE; break;
-                        default: dt = FretDotType::NORMAL; break;
-                    }
-
-                    diagram->set_dot(i, fret - offset, true, dt);
-                    if (fret - 3 > 0 && offset < fret - 3) {
-                        offset = fret - 3;
-                    }
-                }
-            }
-        } else if (token == u"X") {
-            diagram->set_marker(i, FretMarkerType::CROSS);
-        } else if (token == u"O") {
-            diagram->set_marker(i, FretMarkerType::CIRCLE);
-        }
-    }
-
-    if (offset > 0) {
-        diagram->set_fret_offset(offset);
-    }
-
-    for (size_t i = 1; i < parts.size(); ++i) {
-        const String &barre_part = parts[i];
-        if (!barre_part.starts_with(u'B')) {
-            continue;
-        }
-
-        size_t lb = barre_part.index_of(u'[');
-        size_t rb = barre_part.index_of(u']');
-        if (lb < 2 || rb < lb) {
-            continue;
-        }
-
-        int fret = barre_part.mid(1, lb - 1).to_int();
-        if (fret <= 0) {
-            continue;
-        }
-
-        String range = barre_part.mid(lb + 1, rb - lb - 1);
-        size_t dash = range.index_of('-');
-        if (dash > 0) {
-            int start = range.left(dash).to_int();
-            int end = range.mid(dash + 1).to_int();
-            if (start >= 0 && end >= start && end < string_count) {
-                diagram->set_barre(start, end, fret - offset);
-            }
         }
     }
 }
@@ -759,10 +576,6 @@ std::vector<DiagramInfo> FretDiagram::patterns_from_harmony(const String &harmon
     return muse::value(s_harmony_to_diagram_map, key);
 }
 
-//---------------------------------------------------------
-//   clear
-//---------------------------------------------------------
-
 void FretDiagram::clear() {
     barres_.clear();
     dots_.clear();
@@ -772,16 +585,9 @@ void FretDiagram::clear() {
 
 bool FretDiagram::is_clear() const { return barres_.empty() && dots_.empty() && markers_.empty(); }
 
-//---------------------------------------------------------
-//   undoFretClear
-//---------------------------------------------------------
-
 int FretDiagram::num_pos() const { return style().style_i(Sid::FRET_NUM_POS); }
 
-//---------------------------------------------------------
-//   dot
 //    take fret value of zero to mean all dots
-//---------------------------------------------------------
 
 std::vector<FretItem::Dot> FretDiagram::dot(int s, int f /*= 0*/) const {
     if (dots_.find(s) != dots_.end()) {
@@ -798,20 +604,12 @@ std::vector<FretItem::Dot> FretDiagram::dot(int s, int f /*= 0*/) const {
     return std::vector<FretItem::Dot>{FretItem::Dot(0)};
 }
 
-//---------------------------------------------------------
-//   marker
-//---------------------------------------------------------
-
 FretItem::Marker FretDiagram::marker(int s) const {
     if (markers_.find(s) != markers_.end()) {
         return markers_.at(s);
     }
     return FretItem::Marker(FretMarkerType::NONE);
 }
-
-//---------------------------------------------------------
-//   barre
-//---------------------------------------------------------
 
 FretItem::Barre FretDiagram::barre(int f) const {
     if (barres_.find(f) != barres_.end()) {
@@ -848,10 +646,7 @@ String FretDiagram::harmony_plain_text() const { return harmony_ ? harmony_->pla
 
 String FretDiagram::harmony_display_text() const { return harmony_ ? harmony_->display_text() : String(); }
 
-//---------------------------------------------------------
-//   setHarmony
 ///   if this is being done by the user, use undoSetHarmony instead
-//---------------------------------------------------------
 
 void FretDiagram::set_harmony(String harmony_text) {
     if (!harmony_) {
@@ -863,10 +658,6 @@ void FretDiagram::set_harmony(String harmony_text) {
     harmony_->set_xml_text(harmony_->harmony_name());
     trigger_layout();
 }
-
-//---------------------------------------------------------
-//   add
-//---------------------------------------------------------
 
 void FretDiagram::add(EngravingItem *e) {
     e->set_ownership_parent(this);
@@ -897,10 +688,6 @@ void FretDiagram::add(EngravingItem *e) {
     }
 }
 
-//---------------------------------------------------------
-//   remove
-//---------------------------------------------------------
-
 void FretDiagram::remove(EngravingItem *e) {
     if (e == harmony_) {
         harmony_ = nullptr;
@@ -911,10 +698,6 @@ void FretDiagram::remove(EngravingItem *e) {
     }
 }
 
-//---------------------------------------------------------
-//   scanElements
-//---------------------------------------------------------
-
 void FretDiagram::scan_elements(std::function<void(EngravingItem *)> func) {
     func(this);
 
@@ -923,10 +706,6 @@ void FretDiagram::scan_elements(std::function<void(EngravingItem *)> func) {
         func(harmony_);
     }
 }
-
-//---------------------------------------------------------
-//   getProperty
-//---------------------------------------------------------
 
 void FretDiagram::undo_change_property(Pid id, const PropertyValue &v, PropertyFlags ps) {
     if (id == Pid::EXCLUDE_VERTICAL_ALIGN) {
@@ -971,10 +750,6 @@ PropertyValue FretDiagram::get_property(Pid property_id) const {
     }
 }
 
-//---------------------------------------------------------
-//   setProperty
-//---------------------------------------------------------
-
 bool FretDiagram::set_property(Pid property_id, const PropertyValue &v) {
     switch (property_id) {
         case Pid::MAG: set_user_mag(v.to_double()); break;
@@ -994,10 +769,6 @@ bool FretDiagram::set_property(Pid property_id, const PropertyValue &v) {
     trigger_layout();
     return true;
 }
-
-//---------------------------------------------------------
-//   propertyDefault
-//---------------------------------------------------------
 
 PropertyValue FretDiagram::property_default(Pid pid) const {
     // We shouldn't style the fret offset
@@ -1025,10 +796,6 @@ void FretDiagram::set_track(track_idx_t val) {
         harmony_->set_track(val);
     }
 }
-
-//---------------------------------------------------------
-//   screenReaderInfo
-//---------------------------------------------------------
 
 void FretDiagram::set_fingering(std::vector<int> v) { fingering_ = std::move(v); }
 
@@ -1148,10 +915,6 @@ void FretDiagram::read_harmony_to_diagram_file(const muse::io::PathT &file_path)
     }
 }
 
-//---------------------------------------------------------
-//   markerToChar
-//---------------------------------------------------------
-
 Char FretItem::marker_to_char(FretMarkerType t) {
     switch (t) {
         case FretMarkerType::CIRCLE: return Char(u'O');
@@ -1160,10 +923,6 @@ Char FretItem::marker_to_char(FretMarkerType t) {
         default: return Char();
     }
 }
-
-//---------------------------------------------------------
-//   markerTypeToName
-//---------------------------------------------------------
 
 const std::vector<FretItem::MarkerTypeNameItem> FretItem::marker_type_name_map = {
     {FretMarkerType::CIRCLE, "circle"}, {FretMarkerType::CROSS, "cross"}, {FretMarkerType::NONE, "none"}};
@@ -1179,10 +938,6 @@ String FretItem::marker_type_to_name(FretMarkerType t) {
     return String(); // prevent compiler warnings
 }
 
-//---------------------------------------------------------
-//   nameToMarkerType
-//---------------------------------------------------------
-
 FretMarkerType FretItem::name_to_marker_type(String n) {
     for (auto i : FretItem::marker_type_name_map) {
         if (String::from_ascii(i.name) == n) {
@@ -1192,10 +947,6 @@ FretMarkerType FretItem::name_to_marker_type(String n) {
     LOGW("Unrecognised marker name!");
     return FretMarkerType::NONE; // default
 }
-
-//---------------------------------------------------------
-//   dotTypeToName
-//---------------------------------------------------------
 
 const std::vector<FretItem::DotTypeNameItem> FretItem::dot_type_name_map = {
     {FretDotType::NORMAL, "normal"},
@@ -1214,10 +965,6 @@ String FretItem::dot_type_to_name(FretDotType t) {
     ASSERT_X("Unrecognised FretDotType!");
     return String(); // prevent compiler warnings
 }
-
-//---------------------------------------------------------
-//   nameToDotType
-//---------------------------------------------------------
 
 FretDotType FretItem::name_to_dot_type(String n) {
     for (auto i : FretItem::dot_type_name_map) {

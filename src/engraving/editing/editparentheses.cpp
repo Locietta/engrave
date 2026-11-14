@@ -31,7 +31,6 @@
 #include "../dom/engravingitem.h"
 #include "../dom/note.h"
 #include "../dom/score.h"
-#include "../dom/select.h"
 #include "../dom/timesig.h"
 #include "../dom/utils.h"
 #include "editchord.h"

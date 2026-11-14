@@ -43,7 +43,6 @@
 #include "editing/transaction/transaction.h"
 #include "engraving/normalization/normalize.h"
 #include "log.h"
-#include "noteinput.h"
 
 using namespace mu::engraving;
 
@@ -53,34 +52,6 @@ static void apply_change_pitch(Note *note, int pitch, int tpc1, int tpc2) {
     note->set_pitch(pitch, tpc1, tpc2);
     note->trigger_layout();
 }
-
-//
-//    To use with tablatures to force a specific note fretting;
-//    Pitch, string and fret must be changed all together; otherwise,
-//    if they are not consistent among themselves, the refretting algorithm may re-assign
-//    fret and string numbers for (potentially) all the notes of all the chords of a segment.
-
-//---------------------------------------------------------
-//   toggleOrnament
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   toggleAccidental
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   applyAccidentalToInputNotes
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   changeAccidental
-///   Change accidental to subtype \a idx for all selected
-///   notes.
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   changeAccidental2
-//---------------------------------------------------------
 
 void EditNote::change_accidental2(Note *n, int pitch, int tpc) {
     Score *score = n->score();
@@ -134,11 +105,8 @@ void EditNote::change_accidental2(Note *n, int pitch, int tpc) {
     undo_change_pitch(score, n, pitch, tpc1, tpc2);
 }
 
-//---------------------------------------------------------
-//   changeAccidental
 ///   Change accidental to subtype \accidental for
 ///   note \a note.
-//---------------------------------------------------------
 
 void EditNote::change_accidental(Score *score, Note *note, AccidentalType accidental) {
     prepare_semantic_edit(*score);
@@ -228,18 +196,6 @@ void EditNote::change_accidental(Score *score, Note *note, AccidentalType accide
     score->set_selection_changed(true);
 }
 
-//---------------------------------------------------------
-//   upDownChromatic
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   upDown
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   undoChangePitch
-//---------------------------------------------------------
-
 void EditNote::undo_change_pitch(Score *score, Note *note, int pitch, int tpc1, int tpc2) {
     Transaction &tx = score->transaction_manager()->current_or_dummy_transaction();
 
@@ -248,7 +204,3 @@ void EditNote::undo_change_pitch(Score *score, Note *note, int pitch, int tpc1, 
         apply_change_pitch(n, pitch, tpc1, tpc2);
     }
 }
-
-//---------------------------------------------------------
-//   undoChangeFretting
-//---------------------------------------------------------

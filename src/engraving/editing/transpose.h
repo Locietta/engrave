@@ -43,7 +43,5 @@ struct Transpose {
 
     static void undo_transpose_harmony(Transaction &tx, Harmony *harmony, Interval interval, bool double_sharp_flat = true);
     static void do_undo_transpose_harmony(Harmony *harmony, Interval interval, bool double_sharp_flat = true);
-
-private:
 };
 } // namespace mu::engraving

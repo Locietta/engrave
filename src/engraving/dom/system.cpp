@@ -55,9 +55,7 @@ using namespace mu;
 using namespace mu::engraving;
 
 namespace mu::engraving {
-//---------------------------------------------------------
 //   ~SysStaff
-//---------------------------------------------------------
 
 SysStaff::~SysStaff() {
     for (auto &pair : instrument_names_) {
@@ -67,24 +65,12 @@ SysStaff::~SysStaff() {
     }
 }
 
-//---------------------------------------------------------
-//   yBottom
-//---------------------------------------------------------
-
 double SysStaff::y_bottom() const { return skyline().south().valid() ? skyline().south().max() : height_; }
-
-//---------------------------------------------------------
-//   saveLayout
-//---------------------------------------------------------
 
 void SysStaff::save_layout() {
     height_ = bbox().height();
     y_pos_ = bbox().y();
 }
-
-//---------------------------------------------------------
-//   saveLayout
-//---------------------------------------------------------
 
 void SysStaff::restore_layout() {
     bbox().set_top(y_pos_);
@@ -116,19 +102,13 @@ void SysStaff::remove_instrument_name(InstrumentNameRole role) {
     instrument_names_[role] = nullptr;
 }
 
-//---------------------------------------------------------
-//   System
-//---------------------------------------------------------
-
 System::System(Score *parent) : EngravingItem(ElementType::SYSTEM, parent) {}
 
 void System::set_ownership_parent(Score *score) { EngravingItem::set_ownership_parent(score); }
 
 EngravingItem *System::layout_parent() const { return page_; }
 
-//---------------------------------------------------------
 //   ~System
-//---------------------------------------------------------
 
 System::~System() {
     if (page_) {
@@ -157,10 +137,8 @@ System::~System() {
     }
 }
 
-//---------------------------------------------------------
 ///   clear
 ///   Clear layout of System
-//---------------------------------------------------------
 
 void System::clear() {
     for (MeasureBase *mb : measures()) {
@@ -178,19 +156,11 @@ void System::clear() {
     // _systemDividers are reused
 }
 
-//---------------------------------------------------------
-//   appendMeasure
-//---------------------------------------------------------
-
 void System::append_measure(MeasureBase *mb) {
     assert(!mb->is_measure() || !(style().style_b(Sid::CREATE_MULTI_MEASURE_RESTS) && to_measure(mb)->has_mm_rest()));
     mb->set_system(this);
     ml_.push_back(mb);
 }
-
-//---------------------------------------------------------
-//   removeMeasure
-//---------------------------------------------------------
 
 void System::remove_measure(MeasureBase *mb) {
     ml_.erase(std::remove(ml_.begin(), ml_.end(), mb), ml_.end());
@@ -198,10 +168,6 @@ void System::remove_measure(MeasureBase *mb) {
         mb->set_system(nullptr);
     }
 }
-
-//---------------------------------------------------------
-//   removeLastMeasure
-//---------------------------------------------------------
 
 void System::remove_last_measure() {
     if (ml_.empty()) {
@@ -214,10 +180,7 @@ void System::remove_last_measure() {
     }
 }
 
-//---------------------------------------------------------
-//   vbox
 //    a system can only contain one vertical frame
-//---------------------------------------------------------
 
 Box *System::vbox() const {
     if (!ml_.empty() && ml_.front()->is_v_box_base()) {
@@ -225,10 +188,6 @@ Box *System::vbox() const {
     }
     return nullptr;
 }
-
-//---------------------------------------------------------
-//   insertStaff
-//---------------------------------------------------------
 
 SysStaff *System::insert_staff(int idx) {
     SysStaff *staff = new SysStaff;
@@ -240,15 +199,7 @@ SysStaff *System::insert_staff(int idx) {
     return staff;
 }
 
-//---------------------------------------------------------
-//   removeStaff
-//---------------------------------------------------------
-
 void System::remove_staff(int idx) { staves_.erase(staves_.begin() + idx); }
-
-//---------------------------------------------------------
-//   adjustStavesNumber
-//---------------------------------------------------------
 
 void System::adjust_staves_number(size_t nstaves) {
     for (size_t i = staves_.size(); i < nstaves; ++i) {
@@ -299,10 +250,6 @@ void System::delete_page_lock_indicator() {
     delete page_lock_indicator_;
     page_lock_indicator_ = nullptr;
 }
-
-//---------------------------------------------------------
-//   nextVisibleStaff
-//---------------------------------------------------------
 
 staff_idx_t System::first_visible_staff_from(staff_idx_t start_staff_idx) const {
     for (staff_idx_t i = start_staff_idx; i < staves_.size(); ++i) {
@@ -361,14 +308,8 @@ staff_idx_t System::last_visible_staff() const {
     return muse::nidx;
 }
 
-//---------------------------------------------------------
-//   firstVisibleStaff
-//---------------------------------------------------------
-
 staff_idx_t System::first_visible_staff() const { return first_visible_staff_from(0); }
 
-//---------------------------------------------------------
-//   searchStaff
 ///   Finds a staff which y position is most close to the
 ///   given \p y.
 ///   \param y The y coordinate in system coordinates.
@@ -376,7 +317,6 @@ staff_idx_t System::first_visible_staff() const { return first_visible_staff_fro
 ///   to a staff with the given number when searching it by
 ///   coordinate.
 ///   \returns Number of the found staff.
-//---------------------------------------------------------
 
 staff_idx_t System::search_staff(double y, staff_idx_t preferred_staff /* = invalid */, double spacing_factor) const {
     staff_idx_t i = 0;
@@ -417,10 +357,6 @@ staff_idx_t System::search_staff(double y, staff_idx_t preferred_staff /* = inva
     }
     return i;
 }
-
-//---------------------------------------------------------
-//   add
-//---------------------------------------------------------
 
 void System::add(EngravingItem *el) {
     if (!el) {
@@ -506,10 +442,6 @@ void System::add(EngravingItem *el) {
     el->added();
 }
 
-//---------------------------------------------------------
-//   remove
-//---------------------------------------------------------
-
 void System::remove(EngravingItem *el) {
     switch (el->type()) {
         case ElementType::INSTRUMENT_NAME: {
@@ -573,18 +505,10 @@ void System::remove(EngravingItem *el) {
     el->removed();
 }
 
-//---------------------------------------------------------
-//   change
-//---------------------------------------------------------
-
 void System::change(EngravingItem *o, EngravingItem *n) {
     remove(o);
     add(n);
 }
-
-//---------------------------------------------------------
-//   snap
-//---------------------------------------------------------
 
 Fraction System::snap(const Fraction &tick, const PointF p) const {
     for (const MeasureBase *m : ml_) {
@@ -595,10 +519,6 @@ Fraction System::snap(const Fraction &tick, const PointF p) const {
     return to_measure(ml_.back())->snap(tick, p - pos()); //TODO: MeasureBase
 }
 
-//---------------------------------------------------------
-//   snap
-//---------------------------------------------------------
-
 Fraction System::snap_note(const Fraction &tick, const PointF p, int staff) const {
     for (const MeasureBase *m : ml_) {
         if (p.x() < m->x() + m->width()) {
@@ -608,27 +528,15 @@ Fraction System::snap_note(const Fraction &tick, const PointF p, int staff) cons
     return to_measure(ml_.back())->snap(tick, p - pos()); // TODO: MeasureBase
 }
 
-//---------------------------------------------------------
-//   firstMeasure
-//---------------------------------------------------------
-
 Measure *System::first_measure() const {
     auto i = std::find_if(ml_.begin(), ml_.end(), [](MeasureBase *mb) { return mb->is_measure(); });
     return i != ml_.end() ? to_measure(*i) : 0;
 }
 
-//---------------------------------------------------------
-//   lastMeasure
-//---------------------------------------------------------
-
 Measure *System::last_measure() const {
     auto i = std::find_if(ml_.rbegin(), ml_.rend(), [](MeasureBase *mb) { return mb->is_measure(); });
     return i != ml_.rend() ? to_measure(*i) : 0;
 }
-
-//---------------------------------------------------------
-//   nextMeasure
-//---------------------------------------------------------
 
 MeasureBase *System::next_measure(const MeasureBase *m) const {
     if (m == ml_.back()) {
@@ -640,10 +548,6 @@ MeasureBase *System::next_measure(const MeasureBase *m) const {
     }
     return nm;
 }
-
-//---------------------------------------------------------
-//   scanElements
-//---------------------------------------------------------
 
 void System::scan_elements(std::function<void(EngravingItem *)> func) {
     if (page_lock_indicator_) {
@@ -720,10 +624,7 @@ void System::scan_elements(std::function<void(EngravingItem *)> func) {
     }
 }
 
-//---------------------------------------------------------
-//   staffYpage
 //    return page coordinates
-//---------------------------------------------------------
 
 double System::staff_ypage(staff_idx_t staff_idx) const {
     if (staff_idx >= staves_.size()) {
@@ -733,10 +634,7 @@ double System::staff_ypage(staff_idx_t staff_idx) const {
     return staves_[staff_idx]->y() + y();
 }
 
-//---------------------------------------------------------
-//   staffCanvasYpage
 //    return canvas coordinates
-//---------------------------------------------------------
 
 double System::staff_canvas_ypage(staff_idx_t staff_idx) const { return staves_[staff_idx]->y() + y() + page()->canvas_pos().y(); }
 
@@ -747,10 +645,6 @@ SysStaff *System::staff(size_t staff_idx) const {
 
     return nullptr;
 }
-
-//---------------------------------------------------------
-//   nextSegmentElement
-//---------------------------------------------------------
 
 EngravingItem *System::next_segment_element() {
     Measure *m = first_measure();
@@ -763,34 +657,6 @@ EngravingItem *System::next_segment_element() {
     return Navigation::last_element(score());
 }
 
-//---------------------------------------------------------
-//   prevSegmentElement
-//---------------------------------------------------------
-
-EngravingItem *System::prev_segment_element() {
-    EngravingItem *re = 0;
-    Measure *m = first_measure();
-    if (m) {
-        Segment *seg = m->first();
-        while (!re) {
-            seg = seg->prev1_mm();
-            if (!seg) {
-                return Navigation::first_element(score());
-            }
-
-            if (seg->segment_type() == SegmentType::END_BAR_LINE) {
-                score()->input_state().set_track((score()->staves().size() - 1) * ::mu::engraving::voices); //correction
-            }
-            re = seg->last_element_for_navigation(score()->staves().size() - 1);
-        }
-    }
-    return re;
-}
-
-//---------------------------------------------------------
-//   firstVisibleSysStaff
-//---------------------------------------------------------
-
 staff_idx_t System::first_visible_sys_staff() const {
     size_t nstaves = staves_.size();
     for (staff_idx_t i = 0; i < nstaves; ++i) {
@@ -800,10 +666,6 @@ staff_idx_t System::first_visible_sys_staff() const {
     }
     return muse::nidx;
 }
-
-//---------------------------------------------------------
-//   lastVisibleSysStaff
-//---------------------------------------------------------
 
 staff_idx_t System::last_visible_sys_staff() const {
     int nstaves = static_cast<int>(staves_.size());
@@ -815,10 +677,7 @@ staff_idx_t System::last_visible_sys_staff() const {
     return muse::nidx;
 }
 
-//---------------------------------------------------------
-//   minTop
 //    Return the minimum top margin.
-//---------------------------------------------------------
 
 double System::min_top() const {
     staff_idx_t si = first_visible_sys_staff();
@@ -829,10 +688,7 @@ double System::min_top() const {
     return 0.0;
 }
 
-//---------------------------------------------------------
-//   minBottom
 //    Return the minimum bottom margin.
-//---------------------------------------------------------
 
 double System::min_bottom() const {
     if (const Box *vb = vbox()) {
@@ -846,10 +702,7 @@ double System::min_bottom() const {
     return 0.0;
 }
 
-//---------------------------------------------------------
-//   spacerDistance
 //    Return the distance needed due to spacers
-//---------------------------------------------------------
 
 double System::spacer_distance(bool up) const {
     staff_idx_t staff = up ? first_visible_sys_staff() : last_visible_sys_staff();
@@ -874,11 +727,8 @@ double System::spacer_distance(bool up) const {
     return dist;
 }
 
-//---------------------------------------------------------
-//   upSpacer
 //    Return largest upSpacer for this system. This can
 //    be a downSpacer of the previous system.
-//---------------------------------------------------------
 
 Spacer *System::up_spacer(staff_idx_t staff_idx, Spacer *prev_down_spacer) const {
     if (staff_idx == muse::nidx) {
@@ -905,10 +755,7 @@ Spacer *System::up_spacer(staff_idx_t staff_idx, Spacer *prev_down_spacer) const
     return spacer;
 }
 
-//---------------------------------------------------------
-//   downSpacer
 //    Return the largest downSpacer for this system.
-//---------------------------------------------------------
 
 Spacer *System::down_spacer(staff_idx_t staff_idx) const {
     if (staff_idx == muse::nidx) {
@@ -934,12 +781,9 @@ Spacer *System::down_spacer(staff_idx_t staff_idx) const {
     return spacer;
 }
 
-//---------------------------------------------------------
-//   firstNoteRestSegmentX
 //    in System() coordinates
 //    returns the position of the first note or rest,
 //    or the position just after the last non-chordrest segment
-//---------------------------------------------------------
 
 double System::first_note_rest_segment_x(bool leading) const {
     double margin = style().style_absolute(Sid::HEADER_TO_LINE_START_DISTANCE);
@@ -954,11 +798,8 @@ double System::first_note_rest_segment_x(bool leading) const {
     return margin;
 }
 
-//---------------------------------------------------------
-//   endingXForOpenEndedLines
 //    in System() coordinates returns the end point for
 //    open ended (i.e. cross-system) lines
-//---------------------------------------------------------
 
 double System::ending_x_for_open_ended_lines() const {
     double margin = style().style_absolute(Sid::LINE_END_TO_BARLINE_DISTANCE);
@@ -972,10 +813,7 @@ double System::ending_x_for_open_ended_lines() const {
     return last_meas->ending_x_for_open_ended_lines();
 }
 
-//---------------------------------------------------------
-//   lastChordRest
 //    returns the last chordrest of a system for a particular track
-//---------------------------------------------------------
 
 ChordRest *System::last_chord_rest(track_idx_t track) const {
     for (auto measure_base_iter = measures().rbegin(); measure_base_iter != measures().rend(); measure_base_iter++) {
@@ -987,10 +825,7 @@ ChordRest *System::last_chord_rest(track_idx_t track) const {
     return nullptr;
 }
 
-//---------------------------------------------------------
-//   firstChordRest
 //    returns the last chordrest of a system for a particular track
-//---------------------------------------------------------
 
 ChordRest *System::first_chord_rest(track_idx_t track) const {
     for (const MeasureBase *mb : measures()) {
@@ -1003,21 +838,9 @@ ChordRest *System::first_chord_rest(track_idx_t track) const {
     return nullptr;
 }
 
-//---------------------------------------------------------
-//   pageBreak
-//---------------------------------------------------------
-
 bool System::page_break() const { return ml_.empty() ? false : ml_.back()->page_break(); }
 
-//---------------------------------------------------------
-//   endTick
-//---------------------------------------------------------
-
 Fraction System::end_tick() const { return measures().back()->end_tick(); }
-
-//---------------------------------------------------------
-//   firstSysStaffOfPart
-//---------------------------------------------------------
 
 staff_idx_t System::first_sys_staff_of_part(const Part *part) const {
     staff_idx_t staff_idx = 0;
@@ -1029,10 +852,6 @@ staff_idx_t System::first_sys_staff_of_part(const Part *part) const {
     }
     return muse::nidx; // Part not found.
 }
-
-//---------------------------------------------------------
-//   firstVisibleSysStaffOfPart
-//---------------------------------------------------------
 
 staff_idx_t System::first_visible_sys_staff_of_part(const Part *part) const {
     staff_idx_t first_idx = first_sys_staff_of_part(part);
@@ -1065,10 +884,6 @@ staff_idx_t System::first_visible_sys_staff_with_instrument(const String &instru
     return muse::nidx;
 }
 
-//---------------------------------------------------------
-//   lastSysStaffOfPart
-//---------------------------------------------------------
-
 staff_idx_t System::last_sys_staff_of_part(const Part *part) const {
     staff_idx_t first_idx = first_sys_staff_of_part(part);
     if (first_idx == muse::nidx) {
@@ -1076,10 +891,6 @@ staff_idx_t System::last_sys_staff_of_part(const Part *part) const {
     }
     return first_idx + part->nstaves() - 1;
 }
-
-//---------------------------------------------------------
-//   lastVisibleSysStaffOfPart
-//---------------------------------------------------------
 
 staff_idx_t System::last_visible_sys_staff_of_part(const Part *part) const {
     staff_idx_t first_staff_idx = first_sys_staff_of_part(part);

@@ -45,10 +45,6 @@ using namespace muse::draw;
 using namespace mu::engraving;
 using namespace mu::engraving::read400;
 
-//---------------------------------------------------------
-//   BarLineTable
-//---------------------------------------------------------
-
 const std::vector<BarLineTableItem> BarLine::bar_line_table{
     {BarLineType::NORMAL, SymNames::user_name_for_sym_id(SymId::BARLINE_SINGLE)},
     {BarLineType::DOUBLE, SymNames::user_name_for_sym_id(SymId::BARLINE_DOUBLE)},
@@ -63,10 +59,6 @@ const std::vector<BarLineTableItem> BarLine::bar_line_table{
     {BarLineType::DOUBLE_HEAVY, SymNames::user_name_for_sym_id(SymId::BARLINE_HEAVY_HEAVY)},
 };
 
-//---------------------------------------------------------
-//   translatedUserTypeName
-//---------------------------------------------------------
-
 String BarLine::translated_user_type_name(BarLineType t) {
     for (const auto &i : ::mu::engraving::BarLine::bar_line_table) {
         if (i.type == t) {
@@ -75,10 +67,6 @@ String BarLine::translated_user_type_name(BarLineType t) {
     }
     return String();
 }
-
-//---------------------------------------------------------
-//   BarLine
-//---------------------------------------------------------
 
 BarLine::BarLine(DummyParentOr<Segment> parent) : EngravingItem(ElementType::BAR_LINE, parent) {
     set_height(4 * spatium()); // for use in palettes
@@ -100,10 +88,6 @@ BarLine::~BarLine() { muse::delete_all(el_); }
 
 void BarLine::set_ownership_parent(DummyParentOr<Segment> parent) { EngravingItem::set_ownership_parent(parent); }
 
-//---------------------------------------------------------
-//   canvasPos
-//---------------------------------------------------------
-
 PointF BarLine::canvas_pos() const {
     PointF pos = EngravingItem::canvas_pos();
     if (ownership_parent()) {
@@ -113,10 +97,6 @@ PointF BarLine::canvas_pos() const {
     }
     return pos;
 }
-
-//---------------------------------------------------------
-//   pagePos
-//---------------------------------------------------------
 
 PointF BarLine::page_pos() const {
     if (segment() == 0) {
@@ -147,10 +127,6 @@ PointF BarLine::page_pos() const {
     return PointF(page_x(), yp);
 }
 
-//---------------------------------------------------------
-//   prevVisiblespannedStaff
-//---------------------------------------------------------
-
 static staff_idx_t prev_visible_spanned_staff(const BarLine *bl) {
     Score *score = bl->score();
     int staff_idx = static_cast<int>(bl->staff_idx());
@@ -167,10 +143,6 @@ static staff_idx_t prev_visible_spanned_staff(const BarLine *bl) {
     }
     return staff_idx;
 }
-
-//---------------------------------------------------------
-//   nextVisiblespannedStaff
-//---------------------------------------------------------
 
 static size_t next_visible_spanned_staff(const BarLine *bl) {
     Score *score = bl->score();
@@ -204,10 +176,6 @@ static size_t next_visible_spanned_staff(const BarLine *bl) {
     }
     return staff_idx;
 }
-
-//---------------------------------------------------------
-//   calcY
-//---------------------------------------------------------
 
 void BarLine::calc_y() {
     BarLine::LayoutData *data = mutldata();
@@ -315,10 +283,6 @@ void BarLine::calc_y() {
     data->y2 = y2;
 }
 
-//---------------------------------------------------------
-//   isTop
-//---------------------------------------------------------
-
 bool BarLine::is_top() const {
     staff_idx_t idx = staff_idx();
     if (idx == 0) {
@@ -327,10 +291,6 @@ bool BarLine::is_top() const {
         return prev_visible_spanned_staff(this) == idx;
     }
 }
-
-//---------------------------------------------------------
-//   isBottom
-//---------------------------------------------------------
 
 bool BarLine::is_bottom() const {
     if (!span_staff_) {
@@ -344,10 +304,6 @@ bool BarLine::is_bottom() const {
     }
 }
 
-//---------------------------------------------------------
-//   setShowTips
-//---------------------------------------------------------
-
 void BarLine::set_show_tips(bool val) {
     if (!score()) {
         return;
@@ -355,10 +311,6 @@ void BarLine::set_show_tips(bool val) {
 
     score()->undo_change_style_val(Sid::REPEAT_BAR_TIPS, val);
 }
-
-//---------------------------------------------------------
-//   showTips
-//---------------------------------------------------------
 
 bool BarLine::show_tips() const {
     if (!score()) {
@@ -379,20 +331,12 @@ void BarLine::set_selected(bool f) {
     EngravingItem::set_selected(f);
 }
 
-//---------------------------------------------------------
-//   gripsPositions
-//---------------------------------------------------------
-
 void BarLine::style_changed() {
     if (ownership_parent() && display_bar_line_type() == BarLineType::END_REPEAT) {
         score()->undo_update_play_count_text(measure());
     }
     EngravingItem::style_changed();
 }
-
-//---------------------------------------------------------
-//   scanElements
-//---------------------------------------------------------
 
 void BarLine::scan_elements(std::function<void(EngravingItem *)> func) {
     func(this);
@@ -401,20 +345,12 @@ void BarLine::scan_elements(std::function<void(EngravingItem *)> func) {
     }
 }
 
-//---------------------------------------------------------
-//   setTrack
-//---------------------------------------------------------
-
 void BarLine::set_track(track_idx_t t) {
     EngravingItem::set_track(t);
     for (EngravingItem *e : el_) {
         e->set_track(t);
     }
 }
-
-//---------------------------------------------------------
-//   add
-//---------------------------------------------------------
 
 void BarLine::add(EngravingItem *e) {
     e->set_ownership_parent(this);
@@ -430,10 +366,6 @@ void BarLine::add(EngravingItem *e) {
         default: LOGD("BarLine::add() not impl. %s", e->type_name()); break;
     }
 }
-
-//---------------------------------------------------------
-//   remove
-//---------------------------------------------------------
 
 void BarLine::remove(EngravingItem *e) {
     switch (e->type()) {
@@ -451,10 +383,6 @@ void BarLine::remove(EngravingItem *e) {
     }
 }
 
-//---------------------------------------------------------
-//   getProperty
-//---------------------------------------------------------
-
 PropertyValue BarLine::get_property(Pid id) const {
     if (EngravingObject *e = const_cast<BarLine *>(this)->property_delegate(id)) {
         return e->get_property(id);
@@ -470,10 +398,6 @@ PropertyValue BarLine::get_property(Pid id) const {
     }
     return EngravingItem::get_property(id);
 }
-
-//---------------------------------------------------------
-//   setProperty
-//---------------------------------------------------------
 
 bool BarLine::set_property(Pid id, const PropertyValue &v) {
     if (EngravingObject *e = property_delegate(id)) {
@@ -492,10 +416,6 @@ bool BarLine::set_property(Pid id, const PropertyValue &v) {
     trigger_layout();
     return true;
 }
-
-//---------------------------------------------------------
-//   undoChangeProperty
-//---------------------------------------------------------
 
 void BarLine::undo_change_property(Pid id, const PropertyValue &v, PropertyFlags ps) {
     if (EngravingObject *e = property_delegate(id)) {
@@ -530,10 +450,6 @@ PlayCountText *BarLine::play_count_text() const {
     return play_count_text;
 }
 
-//---------------------------------------------------------
-//   propertyDefault
-//---------------------------------------------------------
-
 PropertyValue BarLine::property_default(Pid property_id) const {
     if (EngravingObject *e = const_cast<BarLine *>(this)->property_delegate(property_id)) {
         return e->property_default(property_id);
@@ -560,25 +476,9 @@ PropertyValue BarLine::property_default(Pid property_id) const {
     return EngravingItem::property_default(property_id);
 }
 
-//---------------------------------------------------------
-//   nextSegmentElement
-//---------------------------------------------------------
-
 EngravingItem *BarLine::next_segment_element() {
     return segment()->first_in_next_segments(staff_idx()); //score()->inputState().prevTrack() / VOICES);
 }
-
-//---------------------------------------------------------
-//   prevSegmentElement
-//---------------------------------------------------------
-
-EngravingItem *BarLine::prev_segment_element() {
-    return segment()->last_in_prev_segments(staff_idx()); //score()->inputState().prevTrack() / VOICES);
-}
-
-//---------------------------------------------------------
-//   subtypeUserName
-//---------------------------------------------------------
 
 muse::TranslatableString BarLine::subtype_user_name() const {
     for (const auto &i : ::mu::engraving::BarLine::bar_line_table) {

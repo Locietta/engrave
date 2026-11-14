@@ -33,10 +33,6 @@
 
 using namespace mu::engraving;
 
-//---------------------------------------------------------
-//   ottavaStyle
-//---------------------------------------------------------
-
 static const ElementStyle ottava_style{
     {Sid::OTTAVA_NUMBERS_ONLY, Pid::NUMBERS_ONLY},
     {Sid::OTTAVA8_VA_PLACEMENT, Pid::PLACEMENT},
@@ -85,20 +81,12 @@ OttavaSegment::OttavaSegment(Ottava *sp)
     end_text_->set_text_style_type(property_default(Pid::TEXT_STYLE).value<TextStyleType>());
 }
 
-//---------------------------------------------------------
-//   propertyDelegate
-//---------------------------------------------------------
-
 EngravingObject *OttavaSegment::property_delegate(Pid pid) const {
     if (pid == Pid::OTTAVA_TYPE || pid == Pid::NUMBERS_ONLY) {
         return spanner();
     }
     return TextLineBaseSegment::property_delegate(pid);
 }
-
-//---------------------------------------------------------
-//   setOttavaType
-//---------------------------------------------------------
 
 void Ottava::set_ottava_type(OttavaType val) {
     if (ottava_type_ == val) {
@@ -108,21 +96,9 @@ void Ottava::set_ottava_type(OttavaType val) {
     style_changed();
 }
 
-//---------------------------------------------------------
-//   setNumbersOnly
-//---------------------------------------------------------
-
 void Ottava::set_numbers_only(bool val) { numbers_only_ = val; }
 
-//---------------------------------------------------------
-//   setPlacement
-//---------------------------------------------------------
-
 void Ottava::set_placement(PlacementV p) { TextLineBase::set_placement(p); }
-
-//---------------------------------------------------------
-//   undoChangeProperty
-//---------------------------------------------------------
 
 void OttavaSegment::undo_change_property(Pid id, const PropertyValue &v, PropertyFlags ps) {
     if (id == Pid::OTTAVA_TYPE || id == Pid::NUMBERS_ONLY) {
@@ -178,10 +154,6 @@ Sid Ottava::get_property_style(Pid pid) const {
     }
 }
 
-//---------------------------------------------------------
-//   Ottava
-//---------------------------------------------------------
-
 Ottava::Ottava(DummyParentOr<EngravingItem> parent)
     : TextLineBase(ElementType::OTTAVA, parent, ElementFlag::ON_STAFF | ElementFlag::MOVABLE) {
     ottava_type_ = OttavaType::OTTAVA_8VA;
@@ -201,15 +173,7 @@ Ottava::Ottava(const Ottava &o) : TextLineBase(o) {
     numbers_only_ = o.numbers_only_;
 }
 
-//---------------------------------------------------------
-//   pitchShift
-//---------------------------------------------------------
-
 int Ottava::pitch_shift() const { return ::mu::engraving::ottava_default[int(ottava_type_)].shift; }
-
-//---------------------------------------------------------
-//   createLineSegment
-//---------------------------------------------------------
 
 static const ElementStyle ottava_segment_style{
     {Sid::OTTAVA_MIN_DISTANCE, Pid::MIN_DISTANCE},
@@ -221,10 +185,6 @@ LineSegment *Ottava::create_line_segment() {
     os->init_element_style(&::ottava_segment_style);
     return os;
 }
-
-//---------------------------------------------------------
-//   getProperty
-//---------------------------------------------------------
 
 PropertyValue Ottava::get_property(Pid property_id) const {
     switch (property_id) {
@@ -239,10 +199,6 @@ PropertyValue Ottava::get_property(Pid property_id) const {
     }
     return TextLineBase::get_property(property_id);
 }
-
-//---------------------------------------------------------
-//   setProperty
-//---------------------------------------------------------
 
 bool Ottava::set_property(Pid property_id, const PropertyValue &val) {
     switch (property_id) {
@@ -275,10 +231,6 @@ bool Ottava::set_property(Pid property_id, const PropertyValue &val) {
     return true;
 }
 
-//---------------------------------------------------------
-//   propertyDefault
-//---------------------------------------------------------
-
 PropertyValue Ottava::property_default(Pid pid) const {
     switch (pid) {
         case Pid::OTTAVA_TYPE: return PropertyValue();
@@ -300,26 +252,7 @@ PropertyValue Ottava::property_default(Pid pid) const {
     }
 }
 
-//---------------------------------------------------------
-//   accessibleInfo
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   subtypeUserName
-//---------------------------------------------------------
-
 muse::TranslatableString Ottava::subtype_user_name() const { return ::mu::engraving::ottava_default[int(ottava_type())].user_name; }
-
-void OttavaSegment::rebase_offsets_on_anchor_changed(Grip grip, const PointF &old_pos, System *sys) {
-    if (grip == Grip::MIDDLE || grip == Grip::END) {
-        ottava()->compute_end_element();
-    }
-    LineSegment::rebase_offsets_on_anchor_changed(grip, old_pos, sys);
-}
-
-//---------------------------------------------------------
-//   ottavaTypeName
-//---------------------------------------------------------
 
 const char *Ottava::ottava_type_name(OttavaType type) { return ::mu::engraving::ottava_default[int(type)].name; }
 

@@ -40,10 +40,7 @@
 
 using namespace mu::engraving;
 
-//---------------------------------------------------------
-//   transposeKeys
 //    key -   -7(Cb) - +7(C#)
-//---------------------------------------------------------
 
 void Transpose::transpose_keys(Transaction &tx, Score *score, staff_idx_t staff_start, staff_idx_t staff_end, const Fraction &ts,
                                const Fraction &tick_end, bool flip) {
@@ -85,17 +82,6 @@ void Transpose::transpose_keys(Transaction &tx, Score *score, staff_idx_t staff_
     }
 }
 
-//---------------------------------------------------------
-//   transposeSemitone
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   transposeDiatonicAlterations
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   transpositionChanged
-//---------------------------------------------------------
 void Transpose::transposition_changed(Transaction &tx, Score *score, Part *part, Interval old_v, Fraction tick_start, Fraction tick_end) {
     if (tick_start == Fraction(-1, 1)) {
         tick_start = Fraction(0, 1);
@@ -168,27 +154,6 @@ void Transpose::transposition_changed(Transaction &tx, Score *score, Part *part,
     }
 }
 
-//---------------------------------------------------------
-//   transposeChord
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   keydiff2Interval
-//    keysig -   -7(Cb) - +7(C#)
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   transposeTpcDiatonicByKey
-//
-// returns the tpc diatonically transposed by steps, using degrees of given key
-// option to keep any alteration tpc had with respect to unaltered corresponding degree of key
-// option to enharmonically reduce tpc using double alterations
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   transposeKey
-//---------------------------------------------------------
-
 Key Transpose::transpose_key(Key key, const Interval &interval, PreferSharpFlat prefer) {
     int key_as_tpc = key2_tpc(key);
     Key new_key = tpc2_key(transpose_tpc(key_as_tpc, interval, false));
@@ -201,12 +166,9 @@ Key Transpose::transpose_key(Key key, const Interval &interval, PreferSharpFlat 
     return clamp_key(new_key, prefer);
 }
 
-//---------------------------------------------------------
-//   transposeTpc
 //
 // transposes a pitch spelling by a given interval.
 // option to enharmonically reduce tpc using double alterations
-//---------------------------------------------------------
 
 int Transpose::transpose_tpc(int tpc, Interval interval, bool use_double_sharps_flats) {
     int delta_tpc =
@@ -216,10 +178,6 @@ int Transpose::transpose_tpc(int tpc, Interval interval, bool use_double_sharps_
     }
     return clamp_enharmonic(tpc + delta_tpc, use_double_sharps_flats);
 }
-
-//---------------------------------------------------------
-//   undoTransposeHarmony
-//---------------------------------------------------------
 
 namespace {
 static void apply_transpose_harmony(Harmony *harmony_, Interval interval_, bool use_double_sharps_flats_) {
@@ -244,10 +202,6 @@ void Transpose::do_undo_transpose_harmony(Harmony *harmony, Interval interval, b
     harmony->set_xml_text(harmony->harmony_name());
     harmony->trigger_layout();
 }
-
-//---------------------------------------------------------
-//   undoTransposeHarmonyDiatonic
-//---------------------------------------------------------
 
 namespace {
 

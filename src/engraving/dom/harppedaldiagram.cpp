@@ -48,7 +48,6 @@ static const String harp_string_type_to_string(HarpStringType type) {
     return String();
 }
 
-// STYLE
 static const ElementStyle harp_pedal_diagram_style{
     {Sid::HARP_PEDAL_DIAGRAM_PLACEMENT, Pid::PLACEMENT},
     {Sid::HARP_PEDAL_DIAGRAM_MIN_DISTANCE, Pid::MIN_DISTANCE},
@@ -59,7 +58,6 @@ static const ElementStyle harp_pedal_text_diagram_style{
     {Sid::HARP_PEDAL_TEXT_DIAGRAM_MIN_DISTANCE, Pid::MIN_DISTANCE},
 };
 
-// HarpPedalDiagram
 void HarpPedalDiagram::set_playable_tpcs() {
     std::set<int> playable_tpcs;
     static const std::map<HarpStringType, int> string2step = {{HarpStringType::C, 0}, {HarpStringType::D, 1}, {HarpStringType::E, 2},
