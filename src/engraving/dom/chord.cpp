@@ -1864,8 +1864,12 @@ void Chord::request_show_stem_slash(bool show) {
     if (note_type_ == NoteType::NORMAL) {
         return;
     }
-    if (beam()) {
-        for (ChordRest *chord_rest : beam()->rendered_elements()) {
+    // A prior operation in the batch can invalidate the retained rendered group.
+    auto *group = beam();
+    if (!group && has_layout_data()) group = ldata()->rendered_beam.value_or(nullptr);
+    if (group) {
+        const auto members = static_cast<const Beam *>(group)->rendered_elements();
+        for (ChordRest *chord_rest : members) {
             if (chord_rest->is_chord()) {
                 Chord *chord = to_chord(chord_rest);
                 chord->set_show_stem_slash(show);

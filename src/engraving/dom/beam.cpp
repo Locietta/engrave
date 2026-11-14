@@ -111,7 +111,11 @@ std::vector<ChordRest *> &Beam::rendered_elements() {
 
 void Beam::add_rendered(ChordRest *cr) {
     auto &members = rendered_elements();
-    if (!muse::contains(members, cr)) members.push_back(cr);
+    if (!muse::contains(members, cr)) {
+        const auto at = std::upper_bound(members.begin(), members.end(), cr,
+                                         [](const auto *left, const auto *right) { return left->tick() < right->tick(); });
+        members.insert(at, cr);
+    }
     cr->mutldata()->rendered_beam = this;
 }
 
@@ -304,7 +308,8 @@ void Beam::set_direction(DirectionV d) {
 
     do_set_direction(d);
 
-    for (ChordRest *e : elements()) {
+    const auto members = static_cast<const Beam &>(*this).rendered_elements();
+    for (ChordRest *e : members) {
         if (e->is_chord()) {
             to_chord(e)->undo_change_property(Pid::STEM_DIRECTION, d);
         }

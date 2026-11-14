@@ -508,9 +508,9 @@ void ChordLayout::layout_tablature(Chord *item, LayoutContext &ctx) {
             delete item->hook();
             item->mutldata()->hook = nullptr;
         }
-        if (item->beam()) {
-            ctx.mut_dom().do_undo_remove_element(item->beam());
-            item->remove(item->beam());
+        if (auto *beam = item->beam()) {
+            const auto members = beam->rendered_elements();
+            for (auto *member : members) BeamLayout::detach_beam_for_layout(member, false);
         }
     }
 

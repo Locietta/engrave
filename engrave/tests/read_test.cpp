@@ -5949,7 +5949,9 @@ TEST(Read, PublicStemSlashEditReachesTheRenderedGraceBeam) {
     auto *first = main->grace_notes().front();
     ASSERT_NE(first->beam(), nullptr);
     EXPECT_EQ(first->authored_beam(), nullptr);
-    const auto edited = document.edit({{engrave::SetProperty{engrave::from_engine(first->eid()), "showStemSlash", false}}});
+    const auto edited =
+        document.edit({{engrave::SetProperty{engrave::from_engine(main->eid()), "color", engrave::Color{20, 40, 60}},
+                        engrave::SetProperty{engrave::from_engine(main->grace_notes().back()->eid()), "showStemSlash", false}}});
     ASSERT_TRUE(edited) << edited.error().message;
     for (auto *grace : main->grace_notes()) EXPECT_FALSE(grace->show_stem_slash());
     const auto saved = document.export_score({.format = engrave::Format::MSCX});
@@ -5958,6 +5960,90 @@ TEST(Read, PublicStemSlashEditReachesTheRenderedGraceBeam) {
     ASSERT_TRUE(reopened);
     auto *restored = to_chord(master_of(**reopened).first_measure()->first(SegmentType::CHORD_REST)->element(0));
     for (auto *grace : restored->grace_notes()) EXPECT_FALSE(grace->show_stem_slash());
+}
+
+TEST(Read, AuthoredBeamPositionSurvivesRegroupingAndFullLayout) {
+    using namespace mu::engraving;
+    auto xml = legacy_segment_fixture("");
+    for (size_t at; (at = xml.find("<durationType>half</durationType>")) != std::string::npos;)
+        xml.replace(at, 33, "<durationType>eighth</durationType>");
+    xml.insert(xml.find("<Chord>"), "<Beam><eid>F_F</eid><Fragment><y1>1.25</y1><y2>2.5</y2></Fragment></Beam>");
+    auto opened = g_engine->open(as_bytes(xml));
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    auto *first = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    auto *second = to_chord(first->segment()->next(SegmentType::CHORD_REST)->element(0));
+    auto *authored = first->authored_beam();
+    ASSERT_NE(authored, nullptr);
+    ASSERT_TRUE(document.page_count());
+    ASSERT_TRUE(document.edit({{engrave::SetProperty{engrave::from_engine(second->eid()), "BeamMode", engrave::Enum{"no"}}}}));
+    ASSERT_TRUE(document.page_count());
+    EXPECT_EQ(first->beam(), nullptr);
+    ASSERT_TRUE(document.edit({{engrave::SetProperty{engrave::from_engine(second->eid()), "BeamMode", engrave::Enum{"auto"}}}}));
+    const auto range = document.render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(range);
+    EXPECT_EQ(first->beam(), authored);
+    ASSERT_FALSE(authored->beam_fragments().empty());
+    EXPECT_DOUBLE_EQ(authored->beam_fragments().front()->py1[0] / authored->spatium(), 1.25);
+    EXPECT_DOUBLE_EQ(authored->beam_fragments().front()->py2[0] / authored->spatium(), 2.5);
+    master.do_layout();
+    const auto full = document.render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(full);
+    EXPECT_EQ(range->pages, full->pages);
+    EXPECT_EQ(first->beam(), authored);
+    EXPECT_TRUE(engrave::resolve(master, engrave::from_engine(authored->eid())));
+    ASSERT_TRUE(document.edit({{engrave::SetProperty{engrave::from_engine(authored->eid()), "BEAM_POS", engrave::Point{5.25, 6.75}},
+                                engrave::SetProperty{engrave::from_engine(authored->eid()), "noSlope", true}}}));
+    ASSERT_TRUE(document.page_count());
+    EXPECT_DOUBLE_EQ(authored->beam_fragments().front()->py1[0] / authored->spatium(), 6.0);
+    EXPECT_DOUBLE_EQ(authored->beam_fragments().front()->py2[0] / authored->spatium(), 6.0);
+    ASSERT_TRUE(document.edit({{engrave::SetProperty{engrave::from_engine(first->eid()), "color", engrave::Color{20, 40, 60}},
+                                engrave::SetProperty{engrave::from_engine(authored->eid()), "StemDirection", engrave::Enum{"down"}}}}));
+    EXPECT_EQ(second->stem_direction(), DirectionV::DOWN);
+    ASSERT_TRUE(document.edit({{engrave::SetProperty{engrave::from_engine(second->eid()), "BeamMode", engrave::Enum{"no"}}}}));
+    ASSERT_TRUE(document.page_count());
+    EXPECT_EQ(second->stem_direction(), DirectionV::DOWN);
+    const auto saved = document.export_score({.format = engrave::Format::MSCX});
+    ASSERT_TRUE(saved);
+    auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
+    ASSERT_TRUE(reopened);
+    const auto restored = engrave::resolve(master_of(**reopened), engrave::from_engine(second->eid()));
+    ASSERT_TRUE(restored);
+    EXPECT_EQ(to_chord(restored->object)->stem_direction(), DirectionV::DOWN);
+}
+
+TEST(Read, IndividualTabStemSuppressionOnlyDetachesRenderedBeams) {
+    using namespace mu::engraving;
+    for (bool authored : {false, true}) {
+        auto xml = legacy_segment_fixture("");
+        xml.replace(xml.find("<StaffType group=\"pitched\"/>"), 28,
+                    "<StaffType group=\"tablature\"><lines>6</lines><stemless>0</stemless><stemsThrough>1</stemsThrough></StaffType>");
+        xml.insert(xml.find("<Channel>"), "<StringData><frets>24</frets><string>40</string><string>45</string>"
+                                          "<string>50</string><string>55</string><string>59</string><string>64</string></StringData>");
+        for (size_t at; (at = xml.find("<durationType>half</durationType>")) != std::string::npos;)
+            xml.replace(at, 33, "<durationType>eighth</durationType>");
+        if (authored) xml.insert(xml.find("<Chord>"), "<Beam><eid>F_F</eid><Fragment><y1>1.25</y1><y2>2.5</y2></Fragment></Beam>");
+        xml.insert(xml.find("<durationType>"), "<noStem>1</noStem>");
+        auto opened = g_engine->open(as_bytes(xml));
+        ASSERT_TRUE(opened);
+        auto &document = **opened;
+        auto &master = master_of(document);
+        auto *first = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+        const auto cold = document.export_score({.format = engrave::Format::MSCX});
+        ASSERT_TRUE(cold);
+        ASSERT_TRUE(document.page_count());
+        EXPECT_EQ(first->beam(), nullptr);
+        const auto warm = document.export_score({.format = engrave::Format::MSCX});
+        ASSERT_TRUE(warm);
+        EXPECT_EQ(*cold, *warm);
+        if (authored) EXPECT_TRUE(engrave::resolve(master, engrave::from_engine(first->authored_beam()->eid())));
+        ASSERT_TRUE(document.edit({{engrave::SetProperty{engrave::from_engine(first->eid()), "color", engrave::Color{20, 40, 60}}}}));
+        ASSERT_TRUE(document.page_count());
+        master.layout_data_store()->clear();
+        ASSERT_TRUE(document.page_count());
+        EXPECT_EQ(first->beam(), nullptr);
+    }
 }
 
 TEST(Read, AutomaticBeamsStayOutsideSourceAndHandlesAcrossRegrouping) {

@@ -58,7 +58,7 @@ using namespace mu::engraving::rendering::score;
 
 // Rendering counterpart of the geometry-free edit helper. Preserve hook/stem
 // preparation and the remaining beam's geometry only during a layout run.
-static void detach_beam_for_layout(ChordRest *cr, bool beamed) {
+void BeamLayout::detach_beam_for_layout(ChordRest *cr, bool beamed) {
     Beam *beam = cr->beam();
     const bool remaining = beam && beam->rendered_elements().size() > 1;
     cr->mutldata()->rendered_beam = nullptr;
@@ -89,7 +89,7 @@ static void replace_beam_for_layout(ChordRest *cr, Beam *beam) {
         beam->add_rendered(cr);
         return;
     }
-    detach_beam_for_layout(cr, true);
+    BeamLayout::detach_beam_for_layout(cr, true);
     beam->add_rendered(cr);
 }
 
@@ -431,7 +431,7 @@ void BeamLayout::layout2(Beam *item, const LayoutContext &ctx, const std::vector
 
 bool BeamLayout::is_start_of_non_cross_beam(ChordRest *cr) {
     Beam *b = cr->beam();
-    if (b && b->rendered_elements().front() == cr) {
+    if (b && !b->rendered_elements().empty() && b->rendered_elements().front() == cr) {
         if (b->cross()) {
             return false;
         }
@@ -444,7 +444,7 @@ bool BeamLayout::is_start_of_non_cross_beam(ChordRest *cr) {
 
 bool BeamLayout::is_start_of_cross_beam(ChordRest *cr) {
     Beam *b = cr->beam();
-    if (b && b->rendered_elements().front() == cr) {
+    if (b && !b->rendered_elements().empty() && b->rendered_elements().front() == cr) {
         if (b->cross()) {
             return true;
         }
@@ -626,7 +626,7 @@ void BeamLayout::beam_grace_notes(LayoutContext &ctx, Chord *main_note, bool aft
                 a1 = cr;
             } else {
                 beam = a1->beam();
-                if (beam == 0 || beam->rendered_elements().front() != a1) {
+                if (beam == 0 || beam->rendered_elements().empty() || beam->rendered_elements().front() != a1) {
                     beam = ctx.mut_dom().score()->renderer()->layout_data_store(*ctx.mut_dom().score()).create_beam();
                     beam->set_generated(true);
                     beam->set_track(main_note->track());
@@ -646,6 +646,21 @@ void BeamLayout::beam_grace_notes(LayoutContext &ctx, Chord *main_note, bool aft
 }
 
 void BeamLayout::create_beams(LayoutContext &ctx, Measure *measure) {
+
+    const auto prepare = [](ChordRest *cr) {
+        if (auto *previous = cr->ldata()->rendered_beam.value_or(cr->authored_beam())) previous->remove_rendered(cr);
+        cr->mutldata()->rendered_beam = cr->authored_beam();
+        if (auto *authored = cr->authored_beam()) authored->add_rendered(cr);
+    };
+    for (auto *segment = measure->first(SegmentType::CHORD_REST); segment; segment = segment->next(SegmentType::CHORD_REST)) {
+        for (auto *item : segment->effective_elements()) {
+            if (!item || !item->is_chord_rest()) continue;
+            auto *cr = to_chord_rest(item);
+            prepare(cr);
+            if (cr->is_chord())
+                for (auto *grace : to_chord(cr)->grace_notes()) prepare(grace);
+        }
+    }
 
     for (track_idx_t track = 0; track < ctx.dom().ntracks(); ++track) {
         const Staff *stf = ctx.dom().staff(track2staff(track));
@@ -793,7 +808,7 @@ void BeamLayout::create_beams(LayoutContext &ctx, Measure *measure) {
                     a1 = cr;
                 } else {
                     beam = a1->beam();
-                    if (beam == 0 || beam->rendered_elements().front() != a1) {
+                    if (beam == 0 || beam->rendered_elements().empty() || beam->rendered_elements().front() != a1) {
                         beam = ctx.mut_dom().score()->renderer()->layout_data_store(*ctx.mut_dom().score()).create_beam();
                         beam->set_generated(true);
                         beam->set_track(track);
