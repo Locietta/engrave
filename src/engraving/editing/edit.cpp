@@ -3232,8 +3232,7 @@ bool Score::undo_property_changed(EngravingItem *item, Pid prop_id, const Proper
         changed = true;
     }
 
-    AuthoredPropertyLinks peers(*item);
-    const auto &linked_items = peers.objects;
+    const auto linked_items = item->link_list_for_property_propagation();
 
     for (EngravingObject *linked_item : linked_items) {
         if (linked_item == item) {

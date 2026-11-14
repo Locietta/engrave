@@ -389,6 +389,7 @@ bool common_authored_property(Pid pid) {
 
 void write_authored_unit(const EngravingItem *owner, AuthoredChildKey child, XmlWriter &xml) {
     const auto &table = *authored_override_table(owner);
+    if (child.role == AuthoredChildRole::SEGMENT_TEXT && !table.find(child, Pid::SIZE_SPATIUM_DEPENDENT)) return;
     for (const auto &entry : table.entries) {
         if (entry.child == child && property_type(entry.pid) == PType::POINT && entry.unit == AuthoredOverrideUnit::MILLIMETRE) {
             xml.tag_property(Pid::SIZE_SPATIUM_DEPENDENT, PropertyValue(false), PropertyValue());
@@ -519,10 +520,11 @@ void write_authored_segments(const EngravingItem *owner, bool slur, XmlWriter &x
         next = key.ordinal + 1;
         if (!slur) {
             const auto *subtype = table.find(key, Pid::SUBTYPE);
-            xml.tag("subtype", subtype ? subtype->value.to_int() : 0);
+            if (subtype) xml.tag("subtype", subtype->value.to_int());
             for (auto pid : {Pid::OFFSET, Pid::OFFSET2}) {
                 const auto *entry = table.find(key, pid);
-                PointF point = entry ? entry->value.value<PointF>() : PointF();
+                if (!entry) continue;
+                PointF point = entry->value.value<PointF>();
                 if (entry && entry->unit == AuthoredOverrideUnit::MILLIMETRE) point *= ::mu::engraving::dpmm / owner->style().spatium();
                 if (muse::TextStream::round_trip_doubles) point *= owner->style().spatium();
                 xml.tag_point(pid == Pid::OFFSET ? "offset" : "off2", point);

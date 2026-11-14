@@ -285,10 +285,6 @@ void prepare_carrier(EngravingItem &item, AuthoredOverrideTable &table) {
     auto eid = item.eid();
     if (!eid.is_valid()) eid = item.master_score()->eid_register()->new_eid(false);
     table.set_carrier({item.authored_child, item.type(), eid, muse::nidx});
-    if (item.is_spanner_segment()) {
-        const auto subtype = static_cast<const SpannerSegment &>(item).spanner_segment_type();
-        table.set({item.authored_child, Pid::SUBTYPE, int(subtype), PropertyFlags::NOSTYLE});
-    }
 }
 } // namespace
 
@@ -461,26 +457,6 @@ bool set_authored_override_flags(EngravingObject &object, Pid pid, PropertyFlags
     mirror_flags(item, pid, flags);
     return true;
 }
-
-AuthoredPropertyLinks::AuthoredPropertyLinks(EngravingObject &object) {
-    if (!object.is_spanner_segment()) {
-        objects = object.link_list_for_property_propagation();
-        return;
-    }
-    objects.push_back(&object);
-    auto &segment = *to_spanner_segment(&object);
-    auto *owner = segment.spanner();
-    const auto key = child_key(segment);
-    if (key.ordinal != 0) return;
-    for (auto *peer : owner->link_list()) {
-        if (peer == owner || to_spanner(peer)->EngravingItem::placement() != owner->EngravingItem::placement()) continue;
-        auto carrier = to_spanner(peer)->authored_segment(key.ordinal);
-        objects.push_back(carrier.get());
-        carriers.push_back(std::move(carrier));
-    }
-}
-
-AuthoredPropertyLinks::~AuthoredPropertyLinks() = default;
 
 void bind_authored_child(EngravingItem &item, AuthoredChildKey key) {
     if (item.is_spanner_segment()) {

@@ -325,6 +325,7 @@ protected:
 
 private:
     bool can_be_cross_staff() const;
+    void reset_segment_overrides(PropertyGroup group);
 
     friend struct SpannerSegment;
 

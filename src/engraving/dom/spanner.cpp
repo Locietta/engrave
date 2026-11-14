@@ -40,6 +40,7 @@
 #include "segment.h"
 #include "slurtie.h"
 #include "staff.h"
+#include "style/textstyle.h"
 #include "system.h"
 #include "translation.h"
 #include "types/typesconv.h"
@@ -574,14 +575,14 @@ bool Spanner::set_property(Pid property_id, const PropertyValue &v) {
         case Pid::POSITION_LINKED_TO_MASTER:
             set_position_linked_to_master(v.to_bool());
             if (is_position_linked_to_master()) {
-                for_each_authored_segment([](SpannerSegment &seg) { seg.relink_properties_to_master(PropertyGroup::POSITION); });
+                reset_segment_overrides(PropertyGroup::POSITION);
                 relink_properties_to_master(PropertyGroup::POSITION);
             }
             break;
         case Pid::APPEARANCE_LINKED_TO_MASTER:
             set_appearance_linked_to_master(v.to_bool());
             if (is_appearance_linked_to_master()) {
-                for_each_authored_segment([](SpannerSegment &seg) { seg.relink_properties_to_master(PropertyGroup::APPEARANCE); });
+                reset_segment_overrides(PropertyGroup::APPEARANCE);
                 relink_properties_to_master(PropertyGroup::APPEARANCE);
             }
             break;
@@ -1345,17 +1346,40 @@ std::unique_ptr<SpannerSegment> Spanner::authored_segment(uint32_t ordinal) {
 
 void Spanner::for_each_authored_segment(const std::function<void(SpannerSegment &)> &edit) {
     std::set<uint32_t> ordinals;
-    for (auto *object : link_list()) {
-        auto *spanner = to_spanner(object);
-        const auto role =
-            nested_spanner_role(spanner->authored_child.role) ? spanner->authored_child.role : AuthoredChildRole::SPANNER_SEGMENT;
-        const auto *table = authored_override_table(nested_spanner_role(role) ? authored_override_owner(*spanner) : spanner);
-        if (!table) continue;
-        for (const auto &entry : table->entries)
-            if (entry.child.role == role && (!nested_spanner_role(role) || entry.child.subordinal == 1))
-                ordinals.insert(entry.child.ordinal);
-    }
+    const auto role = nested_spanner_role(authored_child.role) ? authored_child.role : AuthoredChildRole::SPANNER_SEGMENT;
+    const auto *table = authored_override_table(nested_spanner_role(role) ? authored_override_owner(*this) : this);
+    if (!table) return;
+    for (const auto &entry : table->entries)
+        if (entry.child.role == role && (!nested_spanner_role(role) || entry.child.subordinal == 1)) ordinals.insert(entry.child.ordinal);
     for (auto ordinal : ordinals) edit(*authored_segment(ordinal));
+}
+
+void Spanner::reset_segment_overrides(PropertyGroup group) {
+    if (score()->is_master()) return;
+    if (group == PropertyGroup::APPEARANCE) {
+        // Resetting text size policy must preserve the retained physical position.
+        for (auto &entry : authored_overrides.entries) {
+            if (entry.child.role != AuthoredChildRole::SEGMENT_TEXT || property_type(entry.pid) != PType::POINT) continue;
+            const auto *carrier = authored_overrides.carrier(entry.child);
+            if (!carrier || carrier->type != ElementType::GUITAR_BEND_TEXT) continue;
+            const auto *text_style_entry = authored_overrides.find(entry.child, Pid::TEXT_STYLE);
+            const auto text_type = text_style_entry ? text_style_entry->value.value<TextStyleType>() : TextStyleType::BEND;
+            for (const auto &property : *text_style(text_type)) {
+                if (property.pid != Pid::SIZE_SPATIUM_DEPENDENT) continue;
+                const double old_scale = entry.unit == AuthoredOverrideUnit::MILLIMETRE ? ::mu::engraving::dpmm : style().spatium();
+                const bool dependent = style().style_b(property.sid);
+                entry.value = entry.value.value<PointF>() * old_scale / (dependent ? style().spatium() : ::mu::engraving::dpmm);
+                entry.unit = dependent ? AuthoredOverrideUnit::SPATIUM : AuthoredOverrideUnit::MILLIMETRE;
+            }
+        }
+    }
+    const auto erased = std::erase_if(authored_overrides.entries, [group](const auto &entry) {
+        const auto key = entry.child;
+        return (key.role == AuthoredChildRole::SPANNER_SEGMENT || key.role == AuthoredChildRole::SEGMENT_TEXT ||
+                (nested_spanner_role(key.role) && key.subordinal == 1)) &&
+               property_group(entry.pid) == group;
+    });
+    if (erased && has_layout_data()) score()->layout_data_store()->erase(*this);
 }
 
 void Spanner::fixup_segments(unsigned int target_number, std::function<SpannerSegment *()> create_segment) {
