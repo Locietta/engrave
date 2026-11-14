@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
-#include "harmony.h"
+#include "harmonydisplay.h"
+
 #include "staff.h"
 
 using namespace mu::engraving;
@@ -10,6 +11,7 @@ using Kind = Action::Kind;
 
 struct DisplayBuilder {
     const Harmony &harmony;
+    Key source_key;
     std::vector<Action> actions;
     int tpc = Tpc::TPC_INVALID;
     NoteSpellingType spelling = NoteSpellingType::STANDARD;
@@ -38,8 +40,7 @@ struct DisplayBuilder {
                     tpc2name(tpc, spelling, note_case, note, accidental);
                 } else if (harmony.harmony_type() == HarmonyType::NASHVILLE) {
                     String acc;
-                    const Staff *staff = harmony.staff();
-                    tpc2_function(tpc, staff ? staff->key(harmony.tick()) : Key::INVALID, acc, note);
+                    tpc2_function(tpc, source_key, acc, note);
                 }
                 if (note.empty()) break;
                 ChordSymbol symbol = list->symbol(u"note" + note);
@@ -53,8 +54,7 @@ struct DisplayBuilder {
                 if (harmony.harmony_type() == HarmonyType::STANDARD) {
                     tpc2name(tpc, spelling, note_case, note, acc);
                 } else if (harmony.harmony_type() == HarmonyType::NASHVILLE) {
-                    const Staff *staff = harmony.staff();
-                    tpc2_function(tpc, staff ? staff->key(harmony.tick()) : Key::INVALID, acc, note);
+                    tpc2_function(tpc, source_key, acc, note);
                 }
                 if (acc.empty()) break;
                 const ChordToken token = list->token(acc, ChordTokenClass::ACCIDENTAL);
@@ -144,12 +144,20 @@ struct DisplayBuilder {
 } // namespace
 
 String Harmony::display_name(std::vector<std::vector<DisplayAction>> *output) const {
+    const Staff *source_staff = staff();
+    return harmony_display_name(*this, source_staff ? source_staff->key(tick()) : Key::INVALID, output);
+}
+
+String mu::engraving::harmony_display_name(const Harmony &harmony, Key source_key,
+                                           std::vector<std::vector<Harmony::DisplayAction>> *output) {
+    using DisplayAction = Harmony::DisplayAction;
+    const auto chords = harmony.chords();
     std::vector<std::vector<DisplayAction>> groups;
-    if (harmony_type() == HarmonyType::ROMAN) {
-        if (!chords_.empty()) groups.push_back({{DisplayAction::Kind::TEXT, {}, chords_.front()->text_name(), 0, 1.0, true}});
+    if (harmony.harmony_type() == HarmonyType::ROMAN) {
+        if (!chords.empty()) groups.push_back({{DisplayAction::Kind::TEXT, {}, chords.front()->text_name(), 0, 1.0, true}});
     } else {
-        for (auto i = chords_.rbegin(); i != chords_.rend(); ++i) {
-            DisplayBuilder builder{*this};
+        for (auto i = chords.rbegin(); i != chords.rend(); ++i) {
+            DisplayBuilder builder{harmony, source_key};
             builder.chord(*i);
             groups.push_back(std::move(builder.actions));
         }

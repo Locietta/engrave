@@ -25,6 +25,7 @@
 #include "dom/factory.h"
 #include "dom/fret.h"
 #include "dom/harmony.h"
+#include "dom/harmonydisplay.h"
 #include "dom/staff.h"
 #include "draw/fontmetrics.h"
 #include "log.h"
@@ -350,7 +351,8 @@ void HarmonyLayout::layout_modifier_parentheses(const Harmony *item, const Layou
 void HarmonyLayout::render(Harmony *item, Harmony::LayoutData *ldata, const LayoutContext &ctx) {
     ldata->render_item_list.clear();
     std::vector<std::vector<Harmony::DisplayAction>> display_chords;
-    item->display_name(&display_chords);
+    const Staff *display_staff = item->staff();
+    harmony_display_name(*item, display_staff ? display_staff->rendered_key(item->tick()) : Key::INVALID, &display_chords);
     if (item->harmony_type() == HarmonyType::ROMAN) {
         HarmonyRenderCtx harmony_ctx;
         if (!display_chords.empty()) render_display_action(item, ldata, display_chords.front().front(), harmony_ctx, ctx);
