@@ -646,20 +646,28 @@ bool Measure::owns_output_segment(const Segment *segment) const {
 void Measure::rebuild_rendered_segments() {
     auto &rendered = mutldata()->rendered;
     rendered.clear();
-    for (auto *s = first(); s; s = s->next()) rendered.push_back(s);
-    for (auto *s : ldata()->segments) {
-        if (find_segment_r(s->segment_type(), s->rtick())) continue;
+    const auto insert = [&](Segment *s) {
         auto position = rendered.begin();
         while (position != rendered.end() && (*position)->rtick() < s->rtick()) ++position;
-        while (position != rendered.end() && (*position)->rtick() == s->rtick() && !s->goes_before(*position)) ++position;
+        while (position != rendered.end() && (*position)->rtick() == s->rtick() && !s->goes_before(*position, true)) ++position;
         rendered.insert(position, s);
+    };
+    for (auto *s = first(); s; s = s->next()) insert(s);
+    for (auto *s : ldata()->segments) {
+        if (!find_segment_r(s->segment_type(), s->rtick())) insert(s);
     }
 }
 
 void Measure::reconcile_output_segments() {
+    const bool resized = ldata()->segment_output_invalid || (ldata()->output_ticks >= Fraction(0, 1) && ldata()->output_ticks != ticks());
     for (auto *source = first(); source; source = source->next()) {
+        if (resized) {
+            source->set_enabled(true);
+            source->set_header(source->is_header_clef_type());
+            source->set_trailer(source->is_time_sig_announce_type() || source->is_key_sig_announce_type());
+        }
         auto &generated = source->mutldata()->generated;
-        if (!generated.empty() && generated.size() != score()->ntracks()) {
+        if (!generated.empty() && (resized || generated.size() != score()->ntracks())) {
             muse::delete_all(generated);
             generated.clear();
         }
@@ -667,12 +675,14 @@ void Measure::reconcile_output_segments() {
     auto &owned = mutldata()->segments;
     for (auto it = owned.begin(); it != owned.end();) {
         auto *segment = *it;
-        if (find_segment_r(segment->segment_type(), segment->rtick()) || segment->elist().size() != score()->ntracks()) {
+        if (resized || find_segment_r(segment->segment_type(), segment->rtick()) || segment->elist().size() != score()->ntracks()) {
             it = owned.erase(it);
             delete segment;
         } else
             ++it;
     }
+    mutldata()->output_ticks = ticks();
+    mutldata()->segment_output_invalid = false;
     rebuild_rendered_segments();
 }
 

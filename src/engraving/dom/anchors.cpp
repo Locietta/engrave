@@ -131,17 +131,13 @@ TimeTickAnchor *EditTimeTickAnchors::create_time_tick_anchor(Measure *measure, F
         Segment *segment = layout_output ? linked_measure->get_rendered_segment_r(SegmentType::TIME_TICK, rel_tick) :
                                            linked_measure->get_segment_r(SegmentType::TIME_TICK, rel_tick);
         track_idx_t track = staff2track(linked_staff->idx());
-        EngravingItem *element = layout_output ? segment->effective_element(track) : segment->element(track);
+        EngravingItem *element = segment->effective_element(track);
         TimeTickAnchor *anchor = element ? to_time_tick_anchor(element) : nullptr;
         if (!anchor) {
             anchor = Factory::create_time_tick_anchor(segment);
             anchor->set_track(track);
-            if (layout_output) {
-                anchor->set_generated(true);
-                segment->add_generated(anchor);
-            } else {
-                segment->add(anchor);
-            }
+            anchor->set_generated(true);
+            segment->add_generated(anchor);
         }
         if (linked_measure == measure) {
             return_anchor = anchor;

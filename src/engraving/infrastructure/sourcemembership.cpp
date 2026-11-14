@@ -199,6 +199,7 @@ void touch_source_subtree(EngravingObject &item) {
     if (item.is_segment() && source_object(item)) {
         auto *measure = to_segment(&item)->measure();
         measure->mutldata()->rendered.clear();
+        measure->mutldata()->segment_output_invalid = true;
         measure->mutldata()->set_need_layout(true);
         measure->score()->invalidate_layout(measure->tick(), measure->end_tick());
     }

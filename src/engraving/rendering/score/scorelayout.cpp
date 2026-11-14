@@ -82,7 +82,8 @@ void ScoreLayout::layout_range(Score *score, const Fraction &st, const Fraction 
     // A source insertion can supersede output still borrowed by a reused
     // system. Retire those views before deleting nodes, and rebuild that system.
     const auto retire_collisions = [&](Measure *measure) {
-        bool collision = false;
+        bool collision = measure->ldata()->segment_output_invalid ||
+                         (measure->ldata()->output_ticks >= Fraction(0, 1) && measure->ldata()->output_ticks != measure->ticks());
         for (auto *output : measure->ldata()->segments) {
             collision |=
                 measure->find_segment_r(output->segment_type(), output->rtick()) != nullptr || output->elist().size() != score->ntracks();
