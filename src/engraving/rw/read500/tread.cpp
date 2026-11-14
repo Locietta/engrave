@@ -374,7 +374,13 @@ void TRead::read_property(EngravingItem *item, XmlReader &xml, ReadContext &ctx,
     }
 
     if (!ctx.should_skip_property(pid)) {
-        item->set_property(pid, v);
+        // A stored link flag records state; only an edit requests relinking.
+        if (item->is_spanner() && pid == Pid::POSITION_LINKED_TO_MASTER)
+            item->set_position_linked_to_master(v.to_bool());
+        else if (item->is_spanner() && pid == Pid::APPEARANCE_LINKED_TO_MASTER)
+            item->set_appearance_linked_to_master(v.to_bool());
+        else
+            item->set_property(pid, v);
         if (item->is_styled(pid)) {
             item->set_property_flags(pid, PropertyFlags::UNSTYLED);
         }
