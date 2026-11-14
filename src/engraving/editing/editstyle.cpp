@@ -52,10 +52,6 @@ static void change_chord_style(Score *score) {
     score->chord_list()->set_custom_chord_list(style.style_v(Sid::CHORD_STYLE).value<ChordStylePreset>() == ChordStylePreset::CUSTOM);
 }
 
-//---------------------------------------------------------
-//   Whole style replacement, reusing the existing domain callbacks
-//----------------------------------------------------------
-
 void mu::engraving::apply_style_replacement(Score &owner, const MStyle &style, bool overlap) {
     auto *score = &owner;
     const double before_spatium = score->style().spatium();

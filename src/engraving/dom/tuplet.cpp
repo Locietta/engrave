@@ -103,9 +103,6 @@ void Tuplet::set_color(const Color &col) { EngravingItem::set_color(col); }
 
 Fraction Tuplet::rtick() const { return tick() - measure()->tick(); }
 
-//   reset number properties to default values
-//   Set FONT_ITALIC to true, because for tuplets number should be italic
-
 void Tuplet::apply_number_style() const {
     if (!number()) return;
 

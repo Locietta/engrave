@@ -397,9 +397,7 @@ public:
 
     bool concert_pitch() const;
     virtual EngravingItem *next_element();         // selects the next score element, (notes, rests etc. as well as articulation etc.)
-                                                   // selects the next score element, (notes, rests etc. as well as articulation etc.)
     virtual EngravingItem *next_segment_element(); //< Used for navigation
-                                                   //< next-element and prev-element command
 
     virtual String format_bars_and_beats() const;
 

@@ -30,9 +30,5 @@ struct Transaction;
 
 struct Reset {
     static void reset_all_positions(Transaction &tx, Score *score);
-
-    //! Not undoable
-
-    // Removes system/page breaks and spacers
 };
 } // namespace mu::engraving

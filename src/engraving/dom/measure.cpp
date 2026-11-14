@@ -2642,7 +2642,6 @@ void Measure::compute_rendered_ticks() {
 const BarLine *Measure::rendered_end_bar_line() const { return rendered_end_bar_line(0, true); }
 
 const BarLine *Measure::rendered_end_bar_line(staff_idx_t staff_idx, bool first) const {
-    // search barline segment:
     Segment *s = rendered_last();
     while (s && !s->is_end_bar_line_type()) {
         s = s->rendered_prev();
@@ -2650,7 +2649,6 @@ const BarLine *Measure::rendered_end_bar_line(staff_idx_t staff_idx, bool first)
 
     if (s) {
         for (const EngravingItem *e : s->effective_elements()) {
-            // Return first barline or barline with matching staffIdx
             if (e && (e->staff_idx() == staff_idx || first)) {
                 return to_bar_line(e);
             }
@@ -2672,12 +2670,10 @@ bool Measure::rendered_end_bar_line_visible() const {
 const BarLine *Measure::rendered_start_bar_line() const { return rendered_start_bar_line(0, true); }
 
 const BarLine *Measure::rendered_start_bar_line(staff_idx_t staff_idx, bool first_staff) const {
-    // search barline segment:
     Segment *s = rendered_first();
     while (s && !(s->is_start_repeat_bar_line_type() || s->is_begin_bar_line_type())) {
         s = s->rendered_next();
     }
-    // search first element
     if (s) {
         for (const EngravingItem *e : s->effective_elements()) {
             if (e && (e->staff_idx() == staff_idx || first_staff)) {
