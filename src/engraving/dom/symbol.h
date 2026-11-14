@@ -55,6 +55,12 @@ public:
 
     void set_sym(SymId s, const std::shared_ptr<EngravingFont> &sf = nullptr);
 
+    void set_score_font(const std::shared_ptr<EngravingFont> &font) { score_font_ = font; }
+
+    void set_symbols_size(double size) { symbols_size_ = size; }
+
+    void set_sym_angle(double angle) { sym_angle_ = angle; }
+
     SymId sym() const { return sym_; }
 
     const std::shared_ptr<EngravingFont> &score_font() const { return score_font_; }

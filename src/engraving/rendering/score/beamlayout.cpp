@@ -73,7 +73,7 @@ void BeamLayout::detach_beam_for_layout(ChordRest *cr, bool beamed) {
                 hook->set_track(chord->track());
                 hook->set_generated(true);
                 chord->mutldata()->hook = hook;
-                bind_authored_child(*hook, {AuthoredChildRole::HOOK});
+                set_layout_child_key(*hook, {AuthoredChildRole::HOOK});
                 apply_authored_overrides(*hook);
             }
         } else if (chord->hook()) {

@@ -54,10 +54,7 @@ std::vector<EngravingObject *> compound_objects(EngravingObject *object) {
 }
 
 void apply_property(EngravingObject &object, Pid id, const PropertyValue &value, PropertyFlags flags, bool reset_path) {
-    if (reset_path && authored_override_handles(object, id)) {
-        reset_authored_override(*to_engraving_item(&object), id);
-        return;
-    }
+
     if (reset_path && id == Pid::PATH &&
         (object.is_chord_line() && (std::ranges::find(ChordLine::appearance_properties, id) != ChordLine::appearance_properties.end() ||
                                     id == Pid::APPEARANCE_LINKED_TO_MASTER)))

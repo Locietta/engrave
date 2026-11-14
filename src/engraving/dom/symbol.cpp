@@ -80,7 +80,6 @@ muse::TranslatableString Symbol::subtype_user_name() const { return SymNames::us
 //   Symbol::getProperty
 //---------------------------------------------------------
 PropertyValue Symbol::get_property(Pid property_id) const {
-    if (auto value = authored_override_value(*this, property_id)) return *value;
     switch (property_id) {
         case Pid::SYMBOL: return PropertyValue::from_value(sym_);
         case Pid::SCORE_FONT:
@@ -101,7 +100,6 @@ PropertyValue Symbol::get_property(Pid property_id) const {
 //---------------------------------------------------------
 
 bool Symbol::set_property(Pid property_id, const PropertyValue &v) {
-    if (set_authored_override(*this, property_id, v)) return true;
     switch (property_id) {
         case Pid::SYMBOL: sym_ = v.value<SymId>(); break;
         case Pid::SCORE_FONT: score_font_ = score()->engraving_fonts()->font_by_name(v.value<String>().to_std_string()); break;

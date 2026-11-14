@@ -5093,7 +5093,7 @@ TEST(Read, SparseChildOverridesSurviveLayoutAndMirrorChanges) {
         EXPECT_EQ(chord->stem(), nullptr);
         ASSERT_TRUE((*document)->page_count());
         ASSERT_NE(chord->stem(), nullptr);
-        chord->stem()->set_offset(PointF(99, 99)); // corrupt only the disposable mirror
+        chord->stem()->set_offset(PointF(99, 99)); // Disposable output cannot change a cold save.
         chord->stem()->set_line_width(Spatium(9));
         EXPECT_EQ(legacy_override_write(chord), before);
         ASSERT_TRUE((*document)->page_count());
@@ -5135,61 +5135,64 @@ TEST(Read, TupletNumberTextSurvivesDisplayDisposalAndLayout) {
 <Chord><durationType>quarter</durationType><Note><pitch>64</pitch><tpc>18</tpc></Note></Chord>
 <endTuplet/><Rest><durationType>half</durationType></Rest></voice></Measure></Staff></Score></museScore>)";
     for (const std::string version : {"4.60", "5.00"})
-        for (bool millimetres : {false, true}) {
-            auto input = fixture;
-            if (millimetres) input.insert(input.find("<Number>") + 8, "<sizeIsSpatiumDependent>0</sizeIsSpatiumDependent>");
-            input.replace(input.find("5.00"), 4, version);
-            auto document = g_engine->open(as_bytes(input));
-            ASSERT_TRUE(document) << document.error().message;
-            auto *chord = to_chord(master_of(**document).first_measure()->first(SegmentType::CHORD_REST)->element(0));
-            auto *tuplet = chord->tuplet();
-            ASSERT_NE(tuplet, nullptr);
-            const AuthoredChildKey key{AuthoredChildRole::TUPLET_NUMBER};
-            ASSERT_NE(tuplet->authored_overrides.find(key, Pid::TEXT), nullptr);
-            EXPECT_EQ(tuplet->number(), nullptr);
-            EXPECT_EQ(tuplet->authored_overrides.find(key, Pid::TEXT)->value, PropertyValue(String(u"three")));
-            ASSERT_TRUE((*document)->page_count());
-            EXPECT_EQ(tuplet->number()->xml_text(), String(u"three"));
-            EXPECT_TRUE(tuplet->children().empty());
-            tuplet->set_color(muse::draw::Color(10, 20, 30));
-            tuplet->set_visible(false);
-            {
-                rendering::score::LayoutContext ctx(tuplet->score());
-                rendering::score::TupletLayout::layout(tuplet, ctx);
+        for (bool millimetres : {false, true})
+            for (bool unit_last : {false, true}) {
+                auto input = fixture;
+                if (millimetres)
+                    input.insert(unit_last ? input.find("</Number>") : input.find("<Number>") + 8,
+                                 "<sizeIsSpatiumDependent>0</sizeIsSpatiumDependent>");
+                input.replace(input.find("5.00"), 4, version);
+                auto document = g_engine->open(as_bytes(input));
+                ASSERT_TRUE(document) << document.error().message;
+                auto *chord = to_chord(master_of(**document).first_measure()->first(SegmentType::CHORD_REST)->element(0));
+                auto *tuplet = chord->tuplet();
+                ASSERT_NE(tuplet, nullptr);
+                const AuthoredChildKey key{AuthoredChildRole::TUPLET_NUMBER};
+                ASSERT_NE(tuplet->authored_overrides.find(key, Pid::TEXT), nullptr);
+                EXPECT_EQ(tuplet->number(), nullptr);
+                EXPECT_EQ(tuplet->authored_overrides.find(key, Pid::TEXT)->value, PropertyValue(String(u"three")));
+                ASSERT_TRUE((*document)->page_count());
+                EXPECT_EQ(tuplet->number()->xml_text(), String(u"three"));
+                EXPECT_TRUE(tuplet->children().empty());
+                tuplet->set_color(muse::draw::Color(10, 20, 30));
+                tuplet->set_visible(false);
+                {
+                    rendering::score::LayoutContext ctx(tuplet->score());
+                    rendering::score::TupletLayout::layout(tuplet, ctx);
+                }
+                EXPECT_EQ(tuplet->number()->color(), muse::draw::Color(10, 20, 30));
+                EXPECT_FALSE(tuplet->number()->visible());
+                ASSERT_NE(tuplet->authored_overrides.find(key, Pid::OFFSET), nullptr);
+                const auto unit = millimetres ? AuthoredOverrideUnit::MILLIMETRE : AuthoredOverrideUnit::SPATIUM;
+                EXPECT_EQ(tuplet->authored_overrides.find(key, Pid::OFFSET)->unit, unit);
+                EXPECT_EQ(tuplet->authored_overrides.find(key, Pid::OFFSET)->value, PropertyValue(PointF(0.25, -0.5)));
+                ASSERT_TRUE(set_child_override(*tuplet, key, Pid::TEXT, String(u"chosen"), PropertyFlags::NOSTYLE));
+                const auto before = legacy_override_write(tuplet);
+                const auto entries = tuplet->authored_overrides.entries;
+                delete tuplet->number();
+                tuplet->mutldata()->number = nullptr;
+                EXPECT_EQ(legacy_override_write(tuplet), before);
+                ASSERT_TRUE((*document)->page_count());
+                ASSERT_NE(tuplet->number(), nullptr);
+                EXPECT_EQ(tuplet->number()->xml_text(), String(u"chosen"));
+                EXPECT_EQ(legacy_override_write(tuplet), before);
+                ASSERT_EQ(tuplet->authored_overrides.entries.size(), entries.size());
+                for (size_t i = 0; i < entries.size(); ++i) {
+                    EXPECT_EQ(tuplet->authored_overrides.entries[i].value, entries[i].value);
+                    EXPECT_EQ(tuplet->authored_overrides.entries[i].flags, entries[i].flags);
+                }
+                auto saved = (*document)->export_score({.format = engrave::Format::MSCX, .native_version = "5.00"});
+                ASSERT_TRUE(saved) << saved.error().message;
+                auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
+                ASSERT_TRUE(reopened) << reopened.error().message;
+                auto *restored = to_chord(master_of(**reopened).first_measure()->first(SegmentType::CHORD_REST)->element(0))->tuplet();
+                ASSERT_NE(restored->authored_overrides.carrier(key), nullptr);
+                EXPECT_EQ(restored->authored_overrides.carrier(key)->legacy_eid.to_std_string(), "G_G");
+                EXPECT_EQ(restored->authored_overrides.find(key, Pid::TEXT)->value, PropertyValue(String(u"chosen")));
+                ASSERT_NE(restored->authored_overrides.find(key, Pid::OFFSET), nullptr);
+                EXPECT_EQ(restored->authored_overrides.find(key, Pid::OFFSET)->unit, unit);
+                EXPECT_EQ(restored->authored_overrides.find(key, Pid::OFFSET)->value, PropertyValue(PointF(0.25, -0.5)));
             }
-            EXPECT_EQ(tuplet->number()->color(), muse::draw::Color(10, 20, 30));
-            EXPECT_FALSE(tuplet->number()->visible());
-            ASSERT_NE(tuplet->authored_overrides.find(key, Pid::OFFSET), nullptr);
-            const auto unit = millimetres ? AuthoredOverrideUnit::MILLIMETRE : AuthoredOverrideUnit::SPATIUM;
-            EXPECT_EQ(tuplet->authored_overrides.find(key, Pid::OFFSET)->unit, unit);
-            EXPECT_EQ(tuplet->authored_overrides.find(key, Pid::OFFSET)->value, PropertyValue(PointF(0.25, -0.5)));
-            tuplet->number()->set_property(Pid::TEXT, String(u"chosen"));
-            const auto before = legacy_override_write(tuplet);
-            const auto entries = tuplet->authored_overrides.entries;
-            delete tuplet->number();
-            tuplet->mutldata()->number = nullptr;
-            EXPECT_EQ(legacy_override_write(tuplet), before);
-            ASSERT_TRUE((*document)->page_count());
-            ASSERT_NE(tuplet->number(), nullptr);
-            EXPECT_EQ(tuplet->number()->xml_text(), String(u"chosen"));
-            EXPECT_EQ(legacy_override_write(tuplet), before);
-            ASSERT_EQ(tuplet->authored_overrides.entries.size(), entries.size());
-            for (size_t i = 0; i < entries.size(); ++i) {
-                EXPECT_EQ(tuplet->authored_overrides.entries[i].value, entries[i].value);
-                EXPECT_EQ(tuplet->authored_overrides.entries[i].flags, entries[i].flags);
-            }
-            auto saved = (*document)->export_score({.format = engrave::Format::MSCX, .native_version = "5.00"});
-            ASSERT_TRUE(saved) << saved.error().message;
-            auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
-            ASSERT_TRUE(reopened) << reopened.error().message;
-            auto *restored = to_chord(master_of(**reopened).first_measure()->first(SegmentType::CHORD_REST)->element(0))->tuplet();
-            ASSERT_NE(restored->authored_overrides.carrier(key), nullptr);
-            EXPECT_EQ(restored->authored_overrides.carrier(key)->legacy_eid.to_std_string(), "G_G");
-            EXPECT_EQ(restored->authored_overrides.find(key, Pid::TEXT)->value, PropertyValue(String(u"chosen")));
-            ASSERT_NE(restored->authored_overrides.find(key, Pid::OFFSET), nullptr);
-            EXPECT_EQ(restored->authored_overrides.find(key, Pid::OFFSET)->unit, unit);
-            EXPECT_EQ(restored->authored_overrides.find(key, Pid::OFFSET)->value, PropertyValue(PointF(0.25, -0.5)));
-        }
 }
 
 TEST(Read, LegacyLineSegmentOrdinalAndExplicitZeroBaselineBeforeLayout) {
@@ -5261,9 +5264,7 @@ TEST(Read, AuthoredSpannerOffsetsRenderAndColdEditSurvivesReopen) {
         EXPECT_EQ(line->front_segment()->offset() / master.style().spatium(), PointF(0.25, 0.5));
         master.layout_data_store()->clear();
         EXPECT_TRUE(line->segments_empty());
-        auto carrier = line->authored_segment(0);
-        carrier->undo_change_property(Pid::OFFSET2, PointF(1.5, -0.75) * master.style().spatium());
-        carrier.reset();
+        ASSERT_TRUE(set_child_override(*line, key, Pid::OFFSET2, PointF(1.5, -0.75) * master.style().spatium(), PropertyFlags::NOSTYLE));
         EXPECT_TRUE(line->segments_empty());
         auto saved = document.export_score({.format = engrave::Format::MSCX, .native_version = "5.00"});
         ASSERT_TRUE(saved) << saved.error().message;
@@ -5278,7 +5279,7 @@ TEST(Read, AuthoredSpannerOffsetsRenderAndColdEditSurvivesReopen) {
         ASSERT_TRUE((*reopened)->render({.format = engrave::RenderFormat::SVG}));
         ASSERT_NE(restored->front_segment(), nullptr);
         EXPECT_EQ(restored->front_segment()->user_off2() / copy.style().spatium(), PointF(1.5, 0));
-        restored->authored_segment(0)->reset_property(Pid::OFFSET2);
+        ASSERT_TRUE(reset_child_override(*restored, key, Pid::OFFSET2));
         ASSERT_TRUE((*reopened)->render({.format = engrave::RenderFormat::SVG}));
         ASSERT_NE(restored->front_segment(), nullptr);
         EXPECT_EQ(restored->front_segment()->user_off2(), PointF());
@@ -5512,6 +5513,15 @@ TEST(Read, PartSpannerRelinkClearsLocalPiecesWithoutCopyingMasterOverrides) {
                 from = end;
             }
         }
+        if (!bend) {
+            const std::string marker = "</voice></Measure></Staff>";
+            const std::string measure = "<Measure><voice><Rest><durationType>whole</durationType></Rest></voice></Measure>";
+            for (size_t from = 0, at; (at = xml.find(marker, from)) != std::string::npos; from = at + measure.size() + marker.size())
+                xml.insert(at + 18, measure);
+            for (size_t from = 0, at; (at = xml.find("<ticks>1/1</ticks>", from)) != std::string::npos; from = at + 18)
+                xml.replace(at, 18, "<ticks>2/1</ticks>");
+            xml.insert(xml.find("</voice></Measure>") + 8, "<LayoutBreak><subtype>line</subtype></LayoutBreak>");
+        }
         return xml;
     };
     const auto find_spanner = [](MasterScore &master, std::string_view eid) {
@@ -5573,7 +5583,12 @@ TEST(Read, PartSpannerRelinkClearsLocalPiecesWithoutCopyingMasterOverrides) {
                         EXPECT_TRUE(part->pages().empty());
                         EXPECT_TRUE(restored.pages().empty());
                     }
+                    if (!bend) {
+                        master_of(**opened).ensure_layout();
+                        EXPECT_EQ(find_spanner(master_of(**opened), "F_F")->nsegments(), 2u);
+                    }
                     part->ensure_layout();
+                    if (!bend) EXPECT_EQ(piece_owner->nsegments(), 1u);
                     ASSERT_NE(piece_owner->front_segment(), nullptr);
                     if (bend) {
                         const auto offset = to_guitar_bend_segment(piece_owner->front_segment())->bend_text()->offset();
@@ -5887,8 +5902,7 @@ TEST(Read, ThirdDotEditKeepsPrecedingLegacyOrdinalCarriers) {
     auto *chord = to_chord(master_of(**document).first_measure()->first(SegmentType::CHORD_REST)->element(0));
     auto *note = chord->notes().front();
     ASSERT_EQ(note->dots().size(), 3u);
-    note->dots()[2]->set_property(Pid::COLOR, muse::draw::Color(10, 20, 30));
-    ASSERT_EQ(note->authored_overrides.carriers.size(), 3u);
+    ASSERT_TRUE(set_child_override(*note, {AuthoredChildRole::DOT, 2}, Pid::COLOR, muse::draw::Color(10, 20, 30), PropertyFlags::NOSTYLE));
     EXPECT_EQ(note->authored_overrides.find({AuthoredChildRole::DOT, 0}, Pid::COLOR), nullptr);
     ASSERT_NE(note->authored_overrides.find({AuthoredChildRole::DOT, 2}, Pid::COLOR), nullptr);
     auto saved = (*document)->export_score({.format = engrave::Format::MSCX, .native_version = "5.00"});
@@ -6132,6 +6146,9 @@ TEST(Read, BeamManualLegacyOrdinalsAndDirectionsSurviveLayout) {
         EXPECT_DOUBLE_EQ(beam->beam_pos().first, 6.0);
         EXPECT_DOUBLE_EQ(beam->beam_pos().second, 6.0);
         EXPECT_DOUBLE_EQ(beam->grow_left(), 0.5);
+        const auto same = (*document)->edit({{engrave::SetProperty{beam_id, "BEAM_POS", engrave::Point{6.0, 6.0}}}});
+        ASSERT_TRUE(same);
+        EXPECT_EQ(same->revision, edited->revision);
         const auto authored = beam->elements();
         master_of(**document).layout_data_store()->clear();
         EXPECT_TRUE(beam->beam_fragments().empty());
@@ -6358,7 +6375,8 @@ TEST(Read, StemUserLengthSurvivesDisplayRecreation) {
         ASSERT_TRUE((*document)->page_count());
         ASSERT_NE(chord->stem(), nullptr);
         EXPECT_DOUBLE_EQ(chord->stem()->user_length().val(), 2.5);
-        chord->stem()->set_property(mu::engraving::Pid::USER_LEN, mu::engraving::Spatium(1.25));
+        ASSERT_TRUE(mu::engraving::set_child_override(*chord, {mu::engraving::AuthoredChildRole::STEM}, mu::engraving::Pid::USER_LEN,
+                                                      mu::engraving::Spatium(1.25), mu::engraving::PropertyFlags::NOSTYLE));
         EXPECT_DOUBLE_EQ(copy->stem_user_length().val(), 2.5);
         const auto saved = (*document)->export_score({.format = engrave::Format::MSCX, .native_version = "5.00"});
         ASSERT_TRUE(saved) << saved.error().message;
@@ -7061,8 +7079,8 @@ TEST(LayoutDataStore, DiscardRebuildPreservesRichTextHarmonyAndExcerptOutput) {
     using namespace mu::engraving;
     auto &master = master_of(document);
     auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
-    std::unique_ptr<Stem> stem(Factory::create_stem(chord));
-    ASSERT_TRUE(stem->set_property(Pid::OFFSET, PropertyValue(muse::PointF(0.25, -0.5))));
+    ASSERT_TRUE(set_child_override(*chord, {AuthoredChildRole::STEM}, Pid::OFFSET, PropertyValue(muse::PointF(0.25, -0.5)),
+                                   PropertyFlags::NOSTYLE));
     ASSERT_FALSE(chord->authored_overrides.entries.empty());
     ASSERT_TRUE(document.page_count());
     Harmony *harmony = nullptr;
@@ -7343,17 +7361,15 @@ TEST(Read, SpannerRootStylesDoNotBecomeSegmentOverrides) {
     ASSERT_TRUE(opened);
     auto &master = master_of(**opened);
     std::unique_ptr<TextLine> line(Factory::create_text_line(master.dummy()));
-    std::unique_ptr<LineSegment> segment(line->create_line_segment());
-    bind_authored_child(*segment, {AuthoredChildRole::SPANNER_SEGMENT});
     const Align alignment{AlignH::RIGHT, AlignV::BASELINE};
-    ASSERT_TRUE(segment->set_property(Pid::BEGIN_TEXT_ALIGN, PropertyValue::from_value(alignment)));
+    ASSERT_TRUE(set_child_override(*line, {AuthoredChildRole::SPANNER_SEGMENT}, Pid::BEGIN_TEXT_ALIGN, PropertyValue::from_value(alignment),
+                                   PropertyFlags::NOSTYLE));
     EXPECT_EQ(line->get_property(Pid::BEGIN_TEXT_ALIGN).value<Align>(), alignment);
     EXPECT_TRUE(line->authored_overrides.entries.empty());
     EXPECT_TRUE(line->authored_overrides.carriers.empty());
     std::unique_ptr<GuitarBend> bend(Factory::create_guitar_bend(master.dummy()));
-    std::unique_ptr<LineSegment> bend_segment(bend->create_line_segment());
-    bind_authored_child(*bend_segment, {AuthoredChildRole::SPANNER_SEGMENT});
-    EXPECT_FALSE(bend_segment->set_property(Pid::BEGIN_TEXT_ALIGN, PropertyValue::from_value(alignment)));
+    EXPECT_FALSE(set_child_override(*bend, {AuthoredChildRole::SPANNER_SEGMENT}, Pid::BEGIN_TEXT_ALIGN,
+                                    PropertyValue::from_value(alignment), PropertyFlags::NOSTYLE));
     EXPECT_TRUE(bend->authored_overrides.entries.empty());
     EXPECT_TRUE(bend->authored_overrides.carriers.empty());
 }
@@ -7434,7 +7450,7 @@ TEST(Read, RemovingParenthesisGroupRebuildsShapeAndClearsItsOffset) {
     EXPECT_EQ(chord->layout_parentheses().front().info.notes().front()->pitch(), 64);
 }
 
-TEST(Read, ParenthesisPropertyEditsReachColdPartsAndRespectChildAppearance) {
+TEST(Read, ParenthesisMembershipKeepsColdPartGroupsIndependent) {
     using namespace mu::engraving;
     auto opened = g_engine->open(as_bytes(parenthesis_link_fixture()));
     ASSERT_TRUE(opened);
@@ -7447,12 +7463,6 @@ TEST(Read, ParenthesisPropertyEditsReachColdPartsAndRespectChildAppearance) {
     auto *clone = to_chord(part->first_measure()->first(SegmentType::CHORD_REST)->element(0));
     ASSERT_TRUE((*opened)->page_count());
     const AuthoredChildKey key{AuthoredChildRole::PAREN_LEFT, 0, 0, 1};
-    source->layout_parentheses().front().left->undo_change_property(Pid::COLOR, muse::draw::Color(24, 80, 120));
-    ASSERT_NE(clone->authored_overrides.find(key, Pid::COLOR), nullptr);
-    EXPECT_EQ(clone->authored_overrides.find(key, Pid::COLOR)->value.value<muse::draw::Color>(), muse::draw::Color(24, 80, 120));
-    clone->authored_overrides.set({key, Pid::APPEARANCE_LINKED_TO_MASTER, false});
-    source->layout_parentheses().front().left->undo_change_property(Pid::COLOR, muse::draw::Color(120, 80, 24));
-    EXPECT_EQ(clone->authored_overrides.find(key, Pid::COLOR)->value.value<muse::draw::Color>(), muse::draw::Color(24, 80, 120));
     source->set_stem_user_length(Spatium(0));
     std::erase_if(source->authored_overrides.entries, [](const auto &entry) { return entry.child.role == AuthoredChildRole::STEM; });
     EXPECT_EQ(legacy_override_write(clone).find("<linkedTo>F_F</linkedTo>"), std::string::npos);
@@ -7520,4 +7530,138 @@ int main(int argc, char **argv) {
     const int result = RUN_ALL_TESTS();
     g_engine.reset();
     return result;
+}
+
+std::string s11_triplet_fixture(bool stem_offset = false) {
+    std::string xml = R"(<museScore version="5.00"><Score><Division>480</Division>
+<Style><spatium>1.75</spatium><stemWidth>0.125</stemWidth></Style>
+<Part><Staff><StaffType group="pitched"/></Staff><Instrument id="piano"><Channel><program value="0"/></Channel></Instrument></Part>
+<Staff id="1"><Measure><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
+<Tuplet><eid>T_T</eid><normalNotes>2</normalNotes><actualNotes>3</actualNotes><baseNote>quarter</baseNote></Tuplet>
+<Chord><eid>C_C</eid><durationType>quarter</durationType><Note><pitch>60</pitch><tpc>14</tpc></Note></Chord>
+<Chord><durationType>quarter</durationType><Note><pitch>62</pitch><tpc>16</tpc></Note></Chord>
+<Chord><durationType>quarter</durationType><Note><pitch>64</pitch><tpc>18</tpc></Note></Chord>
+<endTuplet/><Rest><durationType>half</durationType></Rest></voice></Measure></Staff></Score></museScore>)";
+    if (stem_offset) xml.insert(xml.find("<Note>"), R"(<Stem><offset x="0.75" y="-0.5"/></Stem>)");
+    return xml;
+}
+
+TEST(Read, PublicTupletNumberStyleSavesAndReopensCold) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(as_bytes(s11_triplet_fixture()));
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    auto *tuplet = chord->tuplet();
+    ASSERT_NE(tuplet, nullptr);
+    ASSERT_TRUE(document.edit({{engrave::SetProperty{engrave::from_engine(tuplet->eid()), "FONT_SIZE", 17.0}}}));
+    EXPECT_EQ(tuplet->number(), nullptr);
+    auto saved = document.export_score({.format = engrave::Format::MSCX});
+    ASSERT_TRUE(saved);
+    EXPECT_EQ(tuplet->number(), nullptr);
+    auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
+    ASSERT_TRUE(reopened);
+    auto &copy = master_of(**reopened);
+    auto *number_owner = to_chord(copy.first_measure()->first(SegmentType::CHORD_REST)->element(0))->tuplet();
+    ASSERT_NE(number_owner, nullptr);
+    EXPECT_EQ(number_owner->number(), nullptr);
+    EXPECT_DOUBLE_EQ(number_owner->get_property(Pid::FONT_SIZE).to_double(), 17.0);
+    EXPECT_EQ(number_owner->authored_overrides.find({AuthoredChildRole::TUPLET_NUMBER}, Pid::FONT_SIZE), nullptr);
+    ASSERT_TRUE((*reopened)->render({.format = engrave::RenderFormat::SVG}));
+    ASSERT_NE(number_owner->number(), nullptr);
+    EXPECT_DOUBLE_EQ(number_owner->number()->size(), 17.0);
+}
+
+TEST(Read, StyleChangesDoNotAuthorOutputOverrides) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(as_bytes(s11_triplet_fixture()));
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+    ASSERT_TRUE(document.edit({{engrave::SetStyle{{}, "stemWidth", 0.1875}}}));
+    ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+    master.scan_elements([](EngravingItem *item) {
+        if (const auto *table = authored_override_table(item)) EXPECT_TRUE(table->entries.empty());
+    });
+    auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    ASSERT_NE(chord->stem(), nullptr);
+    EXPECT_DOUBLE_EQ(chord->stem()->line_width().val(), 0.1875);
+    ASSERT_NE(chord->tuplet(), nullptr);
+    EXPECT_TRUE(chord->tuplet()->authored_overrides.entries.empty());
+}
+
+TEST(Read, ColdChildPositionResetAndRecreationRestorePinnedDefaults) {
+    using namespace mu::engraving;
+    for (const bool warm : {false, true}) {
+        auto opened = g_engine->open(as_bytes(s11_triplet_fixture(true)));
+        ASSERT_TRUE(opened);
+        auto &document = **opened;
+        auto &master = master_of(document);
+        auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+        const AuthoredChildKey key{AuthoredChildRole::STEM};
+        ASSERT_NE(chord->authored_overrides.find(key, Pid::OFFSET), nullptr);
+        EXPECT_EQ(chord->authored_overrides.find(key, Pid::OFFSET)->value, PropertyValue(PointF(0.75, -0.5)));
+        if (warm) {
+            ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+            EXPECT_EQ(chord->stem()->offset() / master.style().spatium(), PointF(0.75, -0.5));
+        }
+        Reset::reset_all_positions(master.transaction_manager()->current_or_dummy_transaction(), &master);
+        auto saved = document.export_score({.format = engrave::Format::MSCX});
+        ASSERT_TRUE(saved);
+        auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
+        ASSERT_TRUE(reopened);
+        auto &copy = master_of(**reopened);
+        auto *restored = to_chord(copy.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+        EXPECT_EQ(restored->stem(), nullptr);
+        EXPECT_EQ(restored->authored_overrides.find(key, Pid::OFFSET), nullptr);
+        for (int pass = 0; pass != 2; ++pass) {
+            ASSERT_TRUE((*reopened)->render({.format = engrave::RenderFormat::SVG}));
+            ASSERT_NE(restored->stem(), nullptr);
+            EXPECT_EQ(restored->stem()->offset(), PointF());
+            EXPECT_DOUBLE_EQ(restored->stem()->line_width().val(), 0.125);
+            engrave::DocumentAccess::impl(**reopened).discard_layout_output(copy);
+        }
+    }
+}
+
+TEST(Read, GenericRestParenthesesKeepAuthoredColorWithoutTableCarriers) {
+    using namespace mu::engraving;
+    const std::string fixture = R"(<museScore version="5.00"><Score><Division>480</Division>
+<Part><Staff><StaffType group="pitched"/></Staff><Instrument id="piano"><Channel><program value="0"/></Channel></Instrument></Part>
+<Staff id="1"><Measure><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
+<Rest><eid>R_R</eid><durationType>whole</durationType><Parenthesis><horizontalDirection>left</horizontalDirection>
+<color r="24" g="80" b="120" a="255"/><offset x="0.5" y="-0.25"/></Parenthesis></Rest>
+</voice></Measure></Staff></Score></museScore>)";
+    for (const std::string version : {"4.60", "5.00"}) {
+        auto xml = fixture;
+        xml.replace(xml.find("5.00"), 4, version);
+        auto opened = g_engine->open(as_bytes(xml));
+        ASSERT_TRUE(opened);
+        auto &document = **opened;
+        auto &master = master_of(document);
+        auto *rest = to_rest(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+        ASSERT_TRUE(document.edit({{engrave::SetProperty{engrave::from_engine(rest->eid()), "parentheses", engrave::Enum{"both"}}}}));
+        EXPECT_EQ(rest->parentheses_mode(), ParenthesesMode::BOTH);
+        auto saved = document.export_score({.format = engrave::Format::MSCX});
+        ASSERT_TRUE(saved);
+        auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
+        ASSERT_TRUE(reopened);
+        auto &copy = master_of(**reopened);
+        auto *restored = to_rest(copy.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+        for (const bool render : {false, true}) {
+            if (render) ASSERT_TRUE((*reopened)->render({.format = engrave::RenderFormat::SVG}));
+            EXPECT_EQ(restored->parentheses_mode(), ParenthesesMode::BOTH);
+            ASSERT_NE(restored->left_paren(), nullptr);
+            ASSERT_NE(restored->right_paren(), nullptr);
+            EXPECT_EQ(restored->left_paren()->color(), muse::draw::Color(24, 80, 120));
+            EXPECT_EQ(restored->left_paren()->offset() / copy.style().spatium(), PointF(0.5, -0.25));
+            EXPECT_EQ(restored->left_paren()->authored_child.role, AuthoredChildRole::NONE);
+            for (auto role : {AuthoredChildRole::PAREN_LEFT, AuthoredChildRole::PAREN_RIGHT}) {
+                EXPECT_EQ(restored->authored_overrides.carrier({role}), nullptr);
+                EXPECT_FALSE(restored->authored_overrides.has_entries({role}));
+            }
+        }
+    }
 }

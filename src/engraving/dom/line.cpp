@@ -179,7 +179,6 @@ PropertyValue SLine::get_property(Pid id) const {
 }
 
 bool SLine::set_property(Pid id, const PropertyValue &v) {
-    if (set_authored_override(*this, id, v)) return true;
     switch (id) {
         case Pid::DIAGONAL: diagonal_ = v.to_bool(); break;
         case Pid::COLOR: set_line_color(v.value<Color>()); break;

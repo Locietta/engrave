@@ -6,8 +6,10 @@
 #include "engrave/src/api/batch.h"
 #include "engrave/src/api/pid_support.h"
 #include "engrave/src/api/value_codec.h"
+#include "engraving/dom/beam.h"
 #include "engraving/dom/engravingobject.h"
 #include "engraving/dom/score.h"
+#include "engraving/dom/tremolotwochord.h"
 #include "engraving/style/style.h"
 #include "engraving/style/styledef.h"
 
@@ -72,7 +74,21 @@ Result<Step> prepare(EditContext &context, const ResetProperty &op) {
     return [target = *target, pid = *pid](EditContext &context) -> Result<void> {
         const auto object = settable_object(context, target, pid);
         if (!object) return std::unexpected(object.error());
-        (*object)->undo_reset_property(pid);
+        if (pid == Pid::BEAM_POS && ((*object)->is_beam() || (*object)->type() == mu::engraving::ElementType::TREMOLO_TWOCHORD)) {
+            auto *owner = mu::engraving::to_engraving_item(*object);
+            const auto direction = owner->is_beam() ? mu::engraving::to_beam(owner)->direction_idx() :
+                                                      static_cast<mu::engraving::TremoloTwoChord *>(owner)->direction_idx();
+            uint32_t ordinal = 0;
+            for (const auto &entry : mu::engraving::authored_override_table(owner)->entries)
+                if (entry.child.role == mu::engraving::AuthoredChildRole::BEAM_FRAGMENT && entry.child.direction == direction &&
+                    entry.pid == pid)
+                    ordinal = std::max(ordinal, entry.child.ordinal);
+            mu::engraving::reset_child_override(*owner, {mu::engraving::AuthoredChildRole::BEAM_FRAGMENT, ordinal, uint8_t(direction)},
+                                                pid);
+            owner->notify_property_change(pid);
+        } else {
+            (*object)->undo_reset_property(pid);
+        }
         return {};
     };
 }

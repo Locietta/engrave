@@ -138,7 +138,6 @@ private:
 
 public:
     AuthoredChildKey authored_child;
-    bool authored_mirror = false;
 
     virtual ~EngravingItem();
 

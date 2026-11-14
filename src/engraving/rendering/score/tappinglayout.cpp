@@ -115,8 +115,8 @@ void TappingLayout::update_half_slurs(Tapping *item, const MStyle &style, bool t
             half_slur_above->set_selected(item->selected());
         }
 
-        bind_authored_child(*half_slur_above, {AuthoredChildRole::TAPPING_SLUR_ABOVE});
-        AuthoredOverrideMirror mirror(*half_slur_above);
+        set_layout_child_key(*half_slur_above, {AuthoredChildRole::TAPPING_SLUR_ABOVE});
+
         half_slur_above->set_ownership_parent(item);
         half_slur_above->set_is_half_slur_above(true);
         half_slur_above->set_track(item->track());
@@ -144,8 +144,8 @@ void TappingLayout::update_half_slurs(Tapping *item, const MStyle &style, bool t
             item->set_half_slur_below(half_slur_below);
         }
 
-        bind_authored_child(*half_slur_below, {AuthoredChildRole::TAPPING_SLUR_BELOW});
-        AuthoredOverrideMirror mirror(*half_slur_below);
+        set_layout_child_key(*half_slur_below, {AuthoredChildRole::TAPPING_SLUR_BELOW});
+
         half_slur_below->set_ownership_parent(item);
         half_slur_below->set_is_half_slur_above(false);
         half_slur_below->set_track(item->track());

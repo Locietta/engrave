@@ -116,13 +116,7 @@ void SpannerSegment::spatium_changed(double ov, double nv) {
 EngravingObject *SpannerSegment::property_delegate(Pid pid) const {
     switch (pid) {
         case Pid::PLAY:
-        case Pid::COLOR:
-        case Pid::Z:
-        case Pid::VISIBLE:
-        case Pid::PLACEMENT:
         case Pid::EXCLUDE_FROM_OTHER_PARTS:
-        case Pid::POSITION_LINKED_TO_MASTER:
-        case Pid::APPEARANCE_LINKED_TO_MASTER:
         case Pid::SPANNER_TICK:
         case Pid::SPANNER_TICKS:
         case Pid::SPANNER_TRACK2: return spanner();
@@ -133,7 +127,6 @@ EngravingObject *SpannerSegment::property_delegate(Pid pid) const {
 }
 
 engraving::PropertyValue SpannerSegment::get_property(Pid pid) const {
-    if (auto value = authored_override_value(*this, pid)) return *value;
     if (EngravingObject *e = const_cast<SpannerSegment *>(this)->property_delegate(pid)) {
         return e->get_property(pid);
     }
@@ -144,7 +137,6 @@ engraving::PropertyValue SpannerSegment::get_property(Pid pid) const {
 }
 
 bool SpannerSegment::set_property(Pid pid, const PropertyValue &v) {
-    if (set_authored_override(*this, pid, v)) return true;
     if (EngravingObject *e = property_delegate(pid)) {
         return e->set_property(pid, v);
     }
@@ -423,7 +415,6 @@ PropertyValue Spanner::get_property(Pid property_id) const {
 }
 
 bool Spanner::set_property(Pid property_id, const PropertyValue &v) {
-    if (set_authored_override(*this, property_id, v)) return true;
     switch (property_id) {
         case Pid::PLAY: set_play_spanner(v.to_bool()); break;
         case Pid::SPANNER_TICK:
@@ -1077,7 +1068,7 @@ std::unique_ptr<SpannerSegment> Spanner::authored_segment(uint32_t ordinal) {
         std::unique_ptr<SpannerSegment>(is_slur_tie() ? static_cast<SpannerSegment *>(to_slur_tie(this)->new_slur_tie_segment()) :
                                                         static_cast<SpannerSegment *>(to_s_line(this)->create_line_segment()));
     segment->set_track(track());
-    bind_authored_child(*segment, {AuthoredChildRole::SPANNER_SEGMENT, ordinal});
+    set_layout_child_key(*segment, {AuthoredChildRole::SPANNER_SEGMENT, ordinal});
     return segment;
 }
 
@@ -1115,7 +1106,7 @@ void Spanner::fixup_segments(unsigned int target_number, std::function<SpannerSe
     }
     while (segments.size() < target_number) add(create_segment());
     for (size_t i = 0; i < segments.size(); ++i)
-        bind_authored_child(*segments[i], {AuthoredChildRole::SPANNER_SEGMENT, static_cast<uint32_t>(i)});
+        set_layout_child_key(*segments[i], {AuthoredChildRole::SPANNER_SEGMENT, static_cast<uint32_t>(i)});
 }
 
 bool Spanner::is_user_modified() const {

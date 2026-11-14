@@ -587,8 +587,7 @@ void TWrite::write_property(const EngravingItem *item, XmlWriter &xml, Pid pid, 
         p = PropertyValue::from_value(image->source_size(spatium));
         if (!force) d = PropertyValue::from_value(image->image_size() / (image->size_is_spatium() ? spatium : ::mu::engraving::dpmm));
     } else {
-        p = pid == Pid::AUTOPLACE ? authored_override_value(*item, pid).value_or(PropertyValue(!item->flag(ElementFlag::NO_AUTOPLACE))) :
-                                    item->get_property(pid);
+        p = pid == Pid::AUTOPLACE ? PropertyValue(!item->flag(ElementFlag::NO_AUTOPLACE)) : item->get_property(pid);
         if (!force) d = item->property_default(pid);
     }
     if (!p.is_valid()) {
@@ -801,16 +800,8 @@ void TWrite::write_item_properties(const EngravingItem *item, XmlWriter &xml, Wr
     write_property(item, xml, Pid::EXCLUDE_FROM_OTHER_PARTS);
 
     write_property(item, xml, Pid::HAS_PARENTHESES);
-    const auto *overrides = authored_override_table(item);
-    const AuthoredChildKey left{AuthoredChildRole::PAREN_LEFT}, right{AuthoredChildRole::PAREN_RIGHT};
-    if (overrides && overrides->carrier(left))
-        write_authored_child(item, left, "Parenthesis", xml, ctx);
-    else if (item->left_paren() && !item->left_paren()->generated())
-        write_item(item->left_paren(), xml, ctx);
-    if (overrides && overrides->carrier(right))
-        write_authored_child(item, right, "Parenthesis", xml, ctx);
-    else if (item->right_paren() && !item->right_paren()->generated())
-        write_item(item->right_paren(), xml, ctx);
+    if (item->left_paren() && !item->left_paren()->generated()) write_item(item->left_paren(), xml, ctx);
+    if (item->right_paren() && !item->right_paren()->generated()) write_item(item->right_paren(), xml, ctx);
 }
 
 void TWrite::write(const Accidental *item, XmlWriter &xml, WriteContext &ctx) {

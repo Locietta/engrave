@@ -47,7 +47,10 @@ void TextLayout::layout_base_text_base(const TextBase *item, TextBase::LayoutDat
     layout_base_text_base1(item, ldata);
 }
 
-void TextLayout::layout_base_text_base(TextBase *item, LayoutContext &) { layout_base_text_base(item, item->mutldata()); }
+void TextLayout::layout_base_text_base(TextBase *item, LayoutContext &) {
+    apply_authored_overrides(*item);
+    layout_base_text_base(item, item->mutldata());
+}
 
 void TextLayout::layout_base_text_base1(const TextBase *item, TextBase::LayoutData *ldata) {
 

@@ -92,24 +92,9 @@ EngravingItem *authored_override_owner(const EngravingItem &item);
 std::optional<PropertyValue> child_override(const EngravingItem &owner, AuthoredChildKey key, Pid pid);
 bool set_child_override(EngravingItem &owner, AuthoredChildKey key, Pid pid, const PropertyValue &value, PropertyFlags flags);
 bool reset_child_override(EngravingItem &owner, AuthoredChildKey key, Pid pid);
-bool authored_override_handles(const EngravingObject &item, Pid pid);
-std::optional<PropertyValue> authored_override_value(const EngravingObject &item, Pid pid);
-std::optional<PropertyFlags> authored_override_flags(const EngravingObject &item, Pid pid);
-bool set_authored_override(EngravingItem &item, Pid pid, const PropertyValue &value);
-bool set_authored_override_flags(EngravingObject &item, Pid pid, PropertyFlags flags);
-void bind_authored_child(EngravingItem &item, AuthoredChildKey key);
+void set_layout_child_key(EngravingItem &item, AuthoredChildKey key);
 void apply_authored_overrides(EngravingItem &item);
-void remember_authored_property(EngravingItem &item, Pid pid, const PropertyValue &value, PropertyFlags flags);
-void finish_authored_read(EngravingItem &item);
-bool has_authored_override(const EngravingItem &item, Pid pid);
-void reset_authored_override(EngravingItem &item, Pid pid);
+void set_child_output_property(EngravingItem &item, Pid pid, const PropertyValue &value, PropertyFlags flags);
 void clone_authored_overrides(AuthoredOverrideTable &destination, const AuthoredOverrideTable &source, EIDRegister &registry);
 
-// A per-display-object scope, not a document/global layout mode.
-struct AuthoredOverrideMirror {
-    EngravingItem &item;
-    bool previous;
-    explicit AuthoredOverrideMirror(EngravingItem &item);
-    ~AuthoredOverrideMirror();
-};
 } // namespace mu::engraving

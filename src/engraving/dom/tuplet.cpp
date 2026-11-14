@@ -106,12 +106,11 @@ Fraction Tuplet::rtick() const { return tick() - measure()->tick(); }
 //   reset number properties to default values
 //   Set FONT_ITALIC to true, because for tuplets number should be italic
 
-void Tuplet::apply_number_style() {
+void Tuplet::apply_number_style() const {
     if (!number()) return;
-    AuthoredOverrideMirror mirror(*number());
+
     for (auto pid : {Pid::FONT_FACE, Pid::FONT_STYLE, Pid::FONT_SIZE, Pid::ALIGN, Pid::POSITION, Pid::SIZE_SPATIUM_DEPENDENT}) {
-        number()->set_property(pid, get_property(pid));
-        number()->set_property_flags(pid, property_flags(pid));
+        set_child_output_property(*number(), pid, get_property(pid), property_flags(pid));
     }
 }
 

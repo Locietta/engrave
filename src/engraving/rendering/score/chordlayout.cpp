@@ -1257,7 +1257,7 @@ void ChordLayout::layout_stem(Chord *item, const LayoutContext &ctx) {
         if (!item->stem_slash()) {
             item->mutldata()->stem_slash = Factory::create_stem_slash(item);
             item->stem_slash()->set_track(item->track());
-            bind_authored_child(*item->stem_slash(), {AuthoredChildRole::STEM_SLASH});
+            set_layout_child_key(*item->stem_slash(), {AuthoredChildRole::STEM_SLASH});
         }
         apply_authored_overrides(*item->stem_slash());
         TLayout::layout_stem_slash(item->stem_slash(), item->stem_slash()->mutldata(), ctx.conf());
@@ -2577,7 +2577,7 @@ void ChordLayout::set_dot_relative_line(Note *note, int dot_move, LayoutContext 
     }
 
     for (NoteDot *dot : note->dots()) {
-        AuthoredOverrideMirror mirror(*dot);
+
         dot->set_track(note->track());
         dot->set_visible(note->display_visible());
         apply_authored_overrides(*dot);
@@ -3235,8 +3235,8 @@ void ChordLayout::create_paren_groups(Chord *chord) {
             paren->set_visible(std::ranges::any_of(group.info.notes(), [](const Note *note) { return note->display_visible(); }));
             paren->set_color(chord->color());
             paren->set_selected(chord->selected());
-            bind_authored_child(*paren,
-                                {left ? AuthoredChildRole::PAREN_LEFT : AuthoredChildRole::PAREN_RIGHT, static_cast<uint32_t>(i), 0, 1});
+            set_layout_child_key(*paren,
+                                 {left ? AuthoredChildRole::PAREN_LEFT : AuthoredChildRole::PAREN_RIGHT, static_cast<uint32_t>(i), 0, 1});
         }
     }
 }
