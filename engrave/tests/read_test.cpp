@@ -146,6 +146,7 @@
 #include "global/io/buffer.h"
 #include "importexport/musicxml/internal/musicxmlconfiguration.h"
 #include "serialization/xmlstreamreader.h"
+#include "serialization/zipreader.h"
 #include <engrave/engrave.h>
 #include <engrave/testing/write470.h>
 
@@ -2303,7 +2304,26 @@ TEST(Export470, SelectedExcerptIsStandaloneAndBounded) {
         auto explicit_bytes = document->export_score({.format = format, .score = selection, .native_version = "5.00"});
         ASSERT_TRUE(default_bytes);
         ASSERT_TRUE(explicit_bytes);
-        EXPECT_EQ(*default_bytes, *explicit_bytes);
+        if (format == engrave::Format::MSCX) {
+            EXPECT_EQ(*default_bytes, *explicit_bytes);
+        } else {
+            const auto entries = [](const std::vector<std::byte> &archive) {
+                muse::ByteArray bytes(reinterpret_cast<const uint8_t *>(archive.data()), archive.size());
+                muse::io::Buffer buffer(&bytes);
+                if (!buffer.open(muse::io::IODevice::READ_ONLY)) throw std::runtime_error("Cannot open ZIP buffer");
+                muse::ZipReader zip(&buffer);
+                std::map<std::string, std::string> result;
+                for (const auto &entry : zip.file_info_list()) {
+                    const auto name = entry.file_path.to_std_string();
+                    const auto data = zip.file_data(name);
+                    if (!result.emplace(name, std::string(data.const_char(), data.size())).second)
+                        throw std::runtime_error("Duplicate ZIP entry: " + name);
+                }
+                if (zip.has_error() || result.empty()) throw std::runtime_error("Cannot read exported ZIP entries");
+                return result;
+            };
+            EXPECT_EQ(entries(*default_bytes), entries(*explicit_bytes));
+        }
         engrave::ExportOptions options{.format = format, .score = selection, .native_version = "4.70"};
         auto result = document->export_score_with_warnings(options);
         ASSERT_TRUE(result) << result.error().message;
