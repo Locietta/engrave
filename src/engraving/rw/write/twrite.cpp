@@ -433,9 +433,9 @@ void write_authored_common(const EngravingItem *owner, AuthoredChildKey child, X
             if (main->is_chord()) {
                 const auto *chord = to_chord(main);
                 if (child.role == AuthoredChildRole::STEM)
-                    emitted = !chord->no_stem() && (main_table->has_entries(matching) || !chord->stem_user_length().is_zero());
+                    emitted = main_table && (main_table->has_entries(matching) || !chord->stem_user_length().is_zero());
                 if (child.role == AuthoredChildRole::HOOK || child.role == AuthoredChildRole::STEM_SLASH)
-                    emitted = main_table->has_entries(matching);
+                    emitted = main_table && main_table->has_entries(matching);
             }
             if (emitted && target && target->legacy_eid.is_valid()) xml.tag("linkedTo", target->legacy_eid.to_std_string());
         }
@@ -760,7 +760,7 @@ String TWrite::line_break_to_tag(const String &str) {
 
 void TWrite::write_styled_properties(const EngravingItem *item, XmlWriter &xml) {
     for (const StyledProperty &spp : *item->styled_properties()) {
-        write_property(item, xml, spp.pid);
+        write_property(item, xml, spp.pid, item->is_fingering() && spp.pid == Pid::PLACEMENT);
     }
 }
 
@@ -792,7 +792,7 @@ void TWrite::write_item_properties(const EngravingItem *item, XmlWriter &xml, Wr
     }
 
     if (!item->has_voice_assignment_properties() && item->property_flags(Pid::PLACEMENT) == PropertyFlags::NOSTYLE) {
-        write_property(item, xml, Pid::PLACEMENT);
+        write_property(item, xml, Pid::PLACEMENT, item->is_fingering());
     }
 
     write_property(item, xml, Pid::POSITION_LINKED_TO_MASTER);
@@ -1405,7 +1405,7 @@ void TWrite::write_properties(const TextBase *item, XmlWriter &xml, WriteContext
             (spp.pid == Pid::FONT_FACE && item->get_property(spp.pid).value<String>() == TextBase::undefined_font_family)) {
             continue;
         }
-        write_property(item, xml, spp.pid);
+        write_property(item, xml, spp.pid, item->is_fingering() && spp.pid == Pid::PLACEMENT);
     }
     if (write_text) {
         xml.write_xml(u"text", line_break_to_tag(item->xml_text()));

@@ -88,13 +88,6 @@ std::string plain_text(const muse::String &text) { return text.to_std_string(); 
 
 // --- properties -----------------------------------------------------------
 
-// These values/defaults are defined by display geometry. Other catalogue
-// properties keep the semantic read path free of layout.
-bool property_needs_layout(Pid pid, const EngravingObject *object = nullptr) {
-    using mu::engraving::ElementType;
-    return pid == Pid::PLACEMENT && (!object || object->type() == ElementType::FINGERING);
-}
-
 PropertyRead read_property(const EngravingObject &object, Pid pid) {
     const mu::engraving::PType type = mu::engraving::property_type(pid);
     PropertyRead read;
@@ -539,15 +532,6 @@ Result<QueryResult> Document::query(const Query &request) {
         if (request.to_tick && !before(where.tick, *request.to_tick)) return std::nullopt;
         return where;
     };
-    if (std::ranges::any_of(*props, [](Pid pid) { return property_needs_layout(pid); })) {
-        // Prepare before retaining row pointers: layout may replace display children.
-        for (const LiveId &entry : live_ids(master)) {
-            if (matches(entry) && std::ranges::any_of(*props, [&](Pid pid) { return property_needs_layout(pid, entry.object); })) {
-                impl_->ensure_layout(score);
-                break;
-            }
-        }
-    }
     std::vector<std::pair<Order, ElementInfo>> rows;
     for (const LiveId &entry : live_ids(master)) {
         const auto matched = matches(entry);
@@ -645,11 +629,6 @@ Result<std::vector<PropertyRead>> Document::get(const Ref &target, const std::ve
     for (std::size_t i = 0; i < named->size(); ++i) {
         if (!has_property(known, (*named)[i]))
             return fail(ErrorCode::INVALID_ARGUMENT, std::format("a {} has no property '{}'", resolved->object->type_name(), props[i]));
-    }
-    if (std::ranges::any_of(*named, [&](Pid pid) { return property_needs_layout(pid, resolved->object); })) {
-        impl_->ensure_layout(*resolved->object->score());
-        resolved = read_target();
-        if (!resolved) return std::unexpected(resolved.error());
     }
     std::vector<PropertyRead> reads;
     reads.reserve(named->size());
