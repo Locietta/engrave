@@ -329,17 +329,14 @@ std::vector<ChordRest *> Beam::source_elements() const {
         const auto finish = [&] {
             const auto at = std::find(group.begin(), group.end(), anchor);
             if (at != group.end()) {
-                // A dormant authored beam must not edit a different authored beam's
-                // chords, even when rendering subsumes both into one automatic group.
-                auto first = at;
-                while (first != group.begin()) {
-                    auto *owner = (*(first - 1))->authored_beam();
-                    if (owner && owner != this) break;
-                    --first;
+                const auto first = std::find_if(group.begin(), group.end(), [](const auto *cr) { return cr->authored_beam(); });
+                auto *owner = first == group.end() ? nullptr : (*first)->authored_beam();
+                // Leading members belong to the first anchor; subsequent members
+                // stay with the latest anchor, so authored ownership never overlaps.
+                for (auto *cr : group) {
+                    if (cr->authored_beam()) owner = cr->authored_beam();
+                    if (owner == this) append(cr);
                 }
-                auto last = at + 1;
-                while (last != group.end() && (!(*last)->authored_beam() || (*last)->authored_beam() == this)) ++last;
-                for (; first != last; ++first) append(*first);
                 found = true;
             }
             group.clear();
