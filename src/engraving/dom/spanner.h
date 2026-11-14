@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include <deque>
+#include <memory>
 
 #include "../types/types.h"
 #include "draw/types/color.h"
@@ -181,6 +181,15 @@ struct Spanner : EngravingItem {
 public:
     AuthoredOverrideTable authored_overrides;
 
+    struct LayoutData : EngravingItem::LayoutData {
+        std::vector<SpannerSegment *> segments;
+        ~LayoutData();
+    };
+    DECLARE_LAYOUTDATA_METHODS(Spanner)
+
+    std::unique_ptr<SpannerSegment> authored_segment(uint32_t ordinal);
+    void for_each_authored_segment(const std::function<void(SpannerSegment &)> &edit);
+
     enum class Anchor : unsigned char { SEGMENT, MEASURE, CHORDREST, NOTE };
 
     ~Spanner() override;
@@ -210,25 +219,25 @@ public:
 
     virtual Anchor anchor() const = 0;
 
-    const std::vector<SpannerSegment *> &spanner_segments() const { return segments_; }
+    const std::vector<SpannerSegment *> &spanner_segments() const;
 
-    void set_spanner_segments(const std::vector<SpannerSegment *> &s) { segments_ = s; }
+    SpannerSegment *front_segment() { return segments_empty() ? nullptr : spanner_segments().front(); }
 
-    SpannerSegment *front_segment() { return segments_.front(); }
+    const SpannerSegment *front_segment() const { return segments_empty() ? nullptr : spanner_segments().front(); }
 
-    const SpannerSegment *front_segment() const { return segments_.front(); }
+    SpannerSegment *back_segment() { return segments_empty() ? nullptr : spanner_segments().back(); }
 
-    SpannerSegment *back_segment() { return segments_.back(); }
+    const SpannerSegment *back_segment() const { return segments_empty() ? nullptr : spanner_segments().back(); }
 
-    const SpannerSegment *back_segment() const { return segments_.back(); }
+    SpannerSegment *segment_at(int n) { return n >= 0 && static_cast<size_t>(n) < nsegments() ? spanner_segments()[n] : nullptr; }
 
-    SpannerSegment *segment_at(int n) { return segments_[n]; }
+    const SpannerSegment *segment_at(int n) const {
+        return n >= 0 && static_cast<size_t>(n) < nsegments() ? spanner_segments()[n] : nullptr;
+    }
 
-    const SpannerSegment *segment_at(int n) const { return segments_[n]; }
+    size_t nsegments() const { return spanner_segments().size(); }
 
-    size_t nsegments() const { return segments_.size(); }
-
-    bool segments_empty() const { return segments_.empty(); }
+    bool segments_empty() const { return spanner_segments().empty(); }
 
     void erase_spanner_segments();
     bool either_end_visible() const;
@@ -297,11 +306,6 @@ public:
 
     using EngravingObject::undo_change_property;
 
-    void push_unused_segment(SpannerSegment *seg);
-    SpannerSegment *pop_unused_segment();
-    void reuse(SpannerSegment *seg); // called when segment from unusedSegments
-                                     // is added back to the spanner.
-    int reuse_segments(int number);
     void fixup_segments(unsigned int target_number, std::function<SpannerSegment *()> create_segment);
 
     bool is_user_modified() const override;
@@ -331,10 +335,5 @@ private:
     Fraction tick_ = Fraction(-1, 1);
     Fraction ticks_ = Fraction(0, 1);
     track_idx_t track2_ = muse::nidx;
-
-    std::vector<SpannerSegment *> segments_;
-    std::deque<SpannerSegment *> unused_segments_; // Currently unused segments which can be reused later.
-                                                   // We cannot just delete them as they can be referenced
-                                                   // in undo stack or other places already.
 };
 } // namespace mu::engraving

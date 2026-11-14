@@ -3232,7 +3232,8 @@ bool Score::undo_property_changed(EngravingItem *item, Pid prop_id, const Proper
         changed = true;
     }
 
-    const std::list<EngravingObject *> linked_items = item->link_list_for_property_propagation();
+    AuthoredPropertyLinks peers(*item);
+    const auto &linked_items = peers.objects;
 
     for (EngravingObject *linked_item : linked_items) {
         if (linked_item == item) {

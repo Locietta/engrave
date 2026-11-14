@@ -417,7 +417,8 @@ static void change_properties(EngravingObject *object, Pid property_id, const Pr
             return;
         }
     }
-    const std::list<EngravingObject *> link_list = object->link_list_for_property_propagation();
+    AuthoredPropertyLinks peers(*object);
+    const auto &link_list = peers.objects;
     for (EngravingObject *linked_object : link_list) {
         if (linked_object == object) {
             change_property(object, property_id, property_value, property_flag, reset_path);

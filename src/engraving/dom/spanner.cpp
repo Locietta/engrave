@@ -21,10 +21,13 @@
  */
 #include "spanner.h"
 
+#include <set>
+
 #include "../editing/navigation.h"
 #include "anchors.h"
 #include "chord.h"
 #include "chordrest.h"
+#include "line.h"
 #include "location.h"
 #include "log.h"
 #include "lyrics.h"
@@ -32,8 +35,10 @@
 #include "measure.h"
 #include "note.h"
 #include "part.h"
+#include "rendering/score/layoutdatastore.h"
 #include "score.h"
 #include "segment.h"
+#include "slurtie.h"
 #include "staff.h"
 #include "system.h"
 #include "translation.h"
@@ -90,6 +95,17 @@ Fraction SpannerSegment::tick() const {
 //---------------------------------------------------------
 
 void SpannerSegment::move_to_system(System *s) {
+    if (s) {
+        auto *owner = spanner();
+        EngravingItem::set_selected(owner->selected());
+        EngravingItem::set_visible(owner->visible());
+        EngravingItem::set_color(owner->color());
+        EngravingItem::set_z(owner->z());
+        EngravingItem::set_autoplace(owner->autoplace());
+        set_track(owner->track());
+        set_system_flag(owner->system_flag());
+        apply_authored_overrides(*this);
+    }
     if (system_ == s) {
         return;
     }
@@ -179,7 +195,7 @@ PropertyValue SpannerSegment::property_default(Pid pid) const {
         return e->property_default(pid);
     }
     switch (pid) {
-        case Pid::OFFSET2: return PropertyValue();
+        case Pid::OFFSET2: return PointF();
         default: return EngravingItem::property_default(pid);
     }
 }
@@ -304,32 +320,7 @@ void SpannerSegment::trigger_layout() const {
     }
 }
 
-std::list<EngravingObject *> SpannerSegment::link_list_for_property_propagation() const {
-    std::list<EngravingObject *> result;
-    result.push_back(const_cast<SpannerSegment *>(this));
-
-    if (is_middle_type()) {
-        return result;
-    }
-
-    const Spanner *sp = spanner();
-    for (const EngravingObject *linked_spanner : sp->link_list()) {
-        if (linked_spanner == sp || to_spanner(linked_spanner)->placement() != sp->placement()) {
-            continue;
-        }
-        const std::vector<SpannerSegment *> &linked_segments = to_spanner(linked_spanner)->spanner_segments();
-        if (linked_segments.empty()) {
-            continue;
-        }
-        if (is_single_begin_type()) {
-            result.push_back(linked_segments.front());
-        } else if (is_single_end_type()) {
-            result.push_back(linked_segments.back());
-        }
-    }
-
-    return result;
-}
+std::list<EngravingObject *> SpannerSegment::link_list_for_property_propagation() const { return {const_cast<SpannerSegment *>(this)}; }
 
 bool SpannerSegment::is_property_linked_to_master(Pid id) const {
     bool linked_for_spanner_segment = EngravingItem::is_property_linked_to_master(id);
@@ -370,19 +361,9 @@ Spanner::Spanner(const Spanner &s) : EngravingItem(s) {
     tick_ = s.tick_;
     ticks_ = s.ticks_;
     track2_ = s.track2_;
-
-    for (auto *segment : s.segments_) {
-        SpannerSegment *new_segment = to_spanner_segment(segment->clone());
-        add(new_segment); // reparents the clone to this spanner
-    }
 }
 
-Spanner::~Spanner() {
-    // A spanner owns its segments (they are its DOM children), so it has to free
-    // them. Without this they would only be unparented onto the dummy, where they
-    // would sit until the score is destroyed - with a dangling spanner() pointer.
-    erase_spanner_segments();
-}
+Spanner::~Spanner() { erase_spanner_segments(); }
 
 //---------------------------------------------------------
 //   mag
@@ -407,7 +388,7 @@ void Spanner::add(EngravingItem *e) {
     //      ls->setAutoplace(autoplace());
     ls->EngravingItem::set_z(z());
     ls->EngravingItem::set_visible(visible());
-    segments_.push_back(ls);
+    mutldata()->segments.push_back(ls);
     e->added();
 }
 
@@ -420,15 +401,11 @@ void Spanner::remove(EngravingItem *e) {
     if (ss->system()) {
         ss->system()->remove(ss);
     }
-    segments_.erase(std::remove(segments_.begin(), segments_.end(), ss), segments_.end());
+    if (has_layout_data()) std::erase(mutldata()->segments, ss);
 }
 
 void Spanner::removed() {
-    for (SpannerSegment *seg : segments_) {
-        seg->move_to_system(nullptr);
-    }
-
-    for (SpannerSegment *seg : unused_segments_) {
+    for (SpannerSegment *seg : ldata()->segments) {
         seg->move_to_system(nullptr);
     }
 }
@@ -540,7 +517,7 @@ bool Spanner::either_end_visible() const {
 
 void Spanner::set_score(Score *s) {
     EngravingItem::set_score(s);
-    for (SpannerSegment *seg : segments_) {
+    for (SpannerSegment *seg : ldata()->segments) {
         seg->set_score(s);
     }
 }
@@ -597,18 +574,14 @@ bool Spanner::set_property(Pid property_id, const PropertyValue &v) {
         case Pid::POSITION_LINKED_TO_MASTER:
             set_position_linked_to_master(v.to_bool());
             if (is_position_linked_to_master()) {
-                for (SpannerSegment *seg : spanner_segments()) {
-                    seg->relink_properties_to_master(PropertyGroup::POSITION);
-                }
+                for_each_authored_segment([](SpannerSegment &seg) { seg.relink_properties_to_master(PropertyGroup::POSITION); });
                 relink_properties_to_master(PropertyGroup::POSITION);
             }
             break;
         case Pid::APPEARANCE_LINKED_TO_MASTER:
             set_appearance_linked_to_master(v.to_bool());
             if (is_appearance_linked_to_master()) {
-                for (SpannerSegment *seg : spanner_segments()) {
-                    seg->relink_properties_to_master(PropertyGroup::APPEARANCE);
-                }
+                for_each_authored_segment([](SpannerSegment &seg) { seg.relink_properties_to_master(PropertyGroup::APPEARANCE); });
                 relink_properties_to_master(PropertyGroup::APPEARANCE);
             }
             break;
@@ -1356,92 +1329,49 @@ void Spanner::trigger_layout() const {
     score()->set_layout(tick_, tick_ + ticks_, staff_idx(), track2staff(tr2), this);
 }
 
-//---------------------------------------------------------
-//   pushUnusedSegment
-//---------------------------------------------------------
-
-void Spanner::push_unused_segment(SpannerSegment *seg) {
-    if (!seg) {
-        return;
-    }
-    seg->move_to_system(nullptr);
-    unused_segments_.push_back(seg);
+const std::vector<SpannerSegment *> &Spanner::spanner_segments() const {
+    static const std::vector<SpannerSegment *> empty;
+    return is_layout_data_current() ? ldata()->segments : empty;
 }
 
-//---------------------------------------------------------
-//   popUnusedSegment
-//    Take the next unused segment for reusing it.
-//    If there is no unused segments left returns nullptr.
-//---------------------------------------------------------
-
-SpannerSegment *Spanner::pop_unused_segment() {
-    if (unused_segments_.empty()) {
-        return nullptr;
-    }
-    SpannerSegment *seg = unused_segments_.front();
-    unused_segments_.pop_front();
-    return seg;
+std::unique_ptr<SpannerSegment> Spanner::authored_segment(uint32_t ordinal) {
+    auto segment =
+        std::unique_ptr<SpannerSegment>(is_slur_tie() ? static_cast<SpannerSegment *>(to_slur_tie(this)->new_slur_tie_segment()) :
+                                                        static_cast<SpannerSegment *>(to_s_line(this)->create_line_segment()));
+    segment->set_track(track());
+    bind_authored_child(*segment, {AuthoredChildRole::SPANNER_SEGMENT, ordinal});
+    return segment;
 }
 
-//---------------------------------------------------------
-//   reuse
-//    called when segment from unusedSegments is added
-//    back to the spanner.
-//---------------------------------------------------------
-
-void Spanner::reuse(SpannerSegment *seg) { add(seg); }
-
-//---------------------------------------------------------
-//   reuseSegments
-//    Adds \p number segments from unusedSegments to this
-//    spanner via reuse() call. Returns number of new
-//    segments that still need to be created, that is,
-//    returns (number - nMovedSegments).
-//---------------------------------------------------------
-
-int Spanner::reuse_segments(int number) {
-    while (number > 0) {
-        SpannerSegment *seg = pop_unused_segment();
-        if (!seg) {
-            break;
-        }
-        reuse(seg);
-        --number;
+void Spanner::for_each_authored_segment(const std::function<void(SpannerSegment &)> &edit) {
+    std::set<uint32_t> ordinals;
+    for (auto *object : link_list()) {
+        auto *spanner = to_spanner(object);
+        const auto role =
+            nested_spanner_role(spanner->authored_child.role) ? spanner->authored_child.role : AuthoredChildRole::SPANNER_SEGMENT;
+        const auto *table = authored_override_table(nested_spanner_role(role) ? authored_override_owner(*spanner) : spanner);
+        if (!table) continue;
+        for (const auto &entry : table->entries)
+            if (entry.child.role == role && (!nested_spanner_role(role) || entry.child.subordinal == 1))
+                ordinals.insert(entry.child.ordinal);
     }
-    return number;
+    for (auto ordinal : ordinals) edit(*authored_segment(ordinal));
 }
-
-//---------------------------------------------------------
-//   fixupSegments
-//    Makes number of segments match targetNumber.
-//    Tries to reuse unused segments. If there are no
-//    unused segments left, uses \p createSegment to create
-//    the needed segments.
-//    Previously unused segments are added via reuse() call
-//---------------------------------------------------------
 
 void Spanner::fixup_segments(unsigned int target_number, std::function<SpannerSegment *()> create_segment) {
-    const int diff = target_number - int(nsegments());
-    if (diff == 0) {
-        for (size_t i = 0; i < segments_.size(); ++i)
-            bind_authored_child(*segments_[i], {AuthoredChildRole::SPANNER_SEGMENT, static_cast<uint32_t>(i)});
-        return;
-    }
-    if (diff > 0) {
-        const int ncreate = reuse_segments(diff);
-        for (int i = 0; i < ncreate; ++i) {
-            add(create_segment());
-        }
-    } else { // diff < 0
-        const int nremove = -diff;
-        for (int i = 0; i < nremove; ++i) {
-            SpannerSegment *seg = segments_.back();
-            segments_.pop_back();
-            push_unused_segment(seg);
+    auto &segments = mutldata()->segments;
+    if (segments.size() > target_number) {
+        if (auto *store = score()->layout_data_store()) store->retire_spanner_borrowers();
+        while (segments.size() > target_number) {
+            auto *segment = segments.back();
+            segments.pop_back();
+            segment->move_to_system(nullptr);
+            delete segment;
         }
     }
-    for (size_t i = 0; i < segments_.size(); ++i)
-        bind_authored_child(*segments_[i], {AuthoredChildRole::SPANNER_SEGMENT, static_cast<uint32_t>(i)});
+    while (segments.size() < target_number) add(create_segment());
+    for (size_t i = 0; i < segments.size(); ++i)
+        bind_authored_child(*segments[i], {AuthoredChildRole::SPANNER_SEGMENT, static_cast<uint32_t>(i)});
 }
 
 bool Spanner::is_user_modified() const {
@@ -1449,34 +1379,24 @@ bool Spanner::is_user_modified() const {
         const auto *table = authored_override_table(authored_override_owner(*this));
         return table && std::ranges::any_of(table->entries, [&](const auto &entry) { return entry.child.role == authored_child.role; });
     }
-    if (is_guitar_bend()) return !authored_overrides.entries.empty();
-    for (const auto *segment : segments_) {
-        if (segment->is_user_modified()) return true;
-    }
-    return false;
+    return !authored_overrides.entries.empty();
 }
 
-//---------------------------------------------------------
-//   eraseSpannerSegments
-//    Completely erase all spanner segments, both used and
-//    unused.
-//---------------------------------------------------------
+Spanner::LayoutData::~LayoutData() {
+    if (!segments.empty()) {
+        if (auto *store = segments.front()->score()->layout_data_store()) store->retire_spanner_borrowers();
+        for (auto *segment : segments) segment->move_to_system(nullptr);
+        muse::delete_all(segments);
+    }
+}
 
 void Spanner::erase_spanner_segments() {
-    // Unplace the used segments explicitly, so that System::remove() calls removed()
-    // on a fully alive segment. ~SpannerSegment would unplace them too, but from there
-    // the virtual call no longer reaches overrides below SpannerSegment.
-    // Unused segments were already unplaced on their way into unusedSegments_.
-    for (SpannerSegment *seg : segments_) {
-        if (System *system = seg->system()) {
-            system->remove(seg);
-        }
-    }
-
-    muse::delete_all(segments_);
-    muse::delete_all(unused_segments_);
-    segments_.clear();
-    unused_segments_.clear();
+    if (!has_layout_data()) return;
+    if (auto *store = score()->layout_data_store()) store->retire_spanner_borrowers();
+    auto &segments = mutldata()->segments;
+    for (auto *segment : segments) segment->move_to_system(nullptr);
+    muse::delete_all(segments);
+    segments.clear();
 }
 
 String SpannerSegment::format_bars_and_beats() const {

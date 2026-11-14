@@ -41,6 +41,7 @@ struct LayoutDataStore {
     void retire_shared_auxiliary_output();
     std::vector<Spanner *> rendered_spanners(int first_tick, int last_tick) const;
     void retire_measure_borrowers(Measure &measure);
+    void retire_spanner_borrowers();
 
     size_t size() const;
     const EngravingItem::LayoutData *find(const EngravingItem &item) const;

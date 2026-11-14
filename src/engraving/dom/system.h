@@ -188,9 +188,10 @@ public:
 
     std::vector<Bracket *> &brackets() { return brackets_; }
 
-    std::list<SpannerSegment *> &spanner_segments() { return spanner_segments_; }
-
-    const std::list<SpannerSegment *> &spanner_segments() const { return spanner_segments_; }
+    const std::list<SpannerSegment *> &spanner_segments() const {
+        static const std::list<SpannerSegment *> empty;
+        return is_layout_data_current() ? spanner_segments_ : empty;
+    }
 
     SystemDivider *system_divider_left() const { return system_divider_left_; }
 

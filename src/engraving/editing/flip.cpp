@@ -242,14 +242,15 @@ void Flip::flip(Transaction &, Score *score) {
                 double new_default_y = ee->property_default(Pid::OFFSET).value<PointF>().y();
                 if (ee->is_spanner()) {
                     Spanner *spanner = to_spanner(ee);
-                    for (SpannerSegment *ss : spanner->spanner_segments()) {
+                    spanner->for_each_authored_segment([&](SpannerSegment &segment) {
+                        auto *ss = &segment;
                         if (!ss->offset().is_null()) {
                             PointF off = ss->get_property(Pid::OFFSET).value<PointF>();
                             double old_y = off.y() - old_default_y;
                             off.ry() = new_default_y - old_y;
                             ss->undo_change_property(Pid::OFFSET, off);
                         }
-                    }
+                    });
                 } else if (!ee->offset().is_null()) {
                     PointF off = ee->get_property(Pid::OFFSET).value<PointF>();
                     double old_y = off.y() - old_default_y;

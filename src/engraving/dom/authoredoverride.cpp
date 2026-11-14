@@ -236,7 +236,12 @@ void mirror_property(EngravingItem &item, Pid pid, const PropertyValue &value, P
                     item.EngravingItem::set_color(value.value<Color>());
                 break;
             case Pid::VISIBLE: item.EngravingItem::set_visible(value.to_bool()); break;
-            case Pid::Z: item.set_z(value.to_int()); break;
+            case Pid::Z:
+                if (item.is_spanner_segment())
+                    item.EngravingItem::set_z(value.to_int());
+                else
+                    item.set_z(value.to_int());
+                break;
             case Pid::OFFSET: item.set_offset(value.value<PointF>()); break;
             case Pid::MIN_DISTANCE: item.set_min_distance(value.value<Spatium>()); break;
             case Pid::AUTOPLACE: item.set_autoplace(value.to_bool()); break;
@@ -457,10 +462,29 @@ bool set_authored_override_flags(EngravingObject &object, Pid pid, PropertyFlags
     return true;
 }
 
+AuthoredPropertyLinks::AuthoredPropertyLinks(EngravingObject &object) {
+    if (!object.is_spanner_segment()) {
+        objects = object.link_list_for_property_propagation();
+        return;
+    }
+    objects.push_back(&object);
+    auto &segment = *to_spanner_segment(&object);
+    auto *owner = segment.spanner();
+    const auto key = child_key(segment);
+    for (auto *peer : owner->link_list()) {
+        if (peer == owner || to_spanner(peer)->EngravingItem::placement() != owner->EngravingItem::placement()) continue;
+        auto carrier = to_spanner(peer)->authored_segment(key.ordinal);
+        objects.push_back(carrier.get());
+        carriers.push_back(std::move(carrier));
+    }
+}
+
+AuthoredPropertyLinks::~AuthoredPropertyLinks() = default;
+
 void bind_authored_child(EngravingItem &item, AuthoredChildKey key) {
     if (item.is_spanner_segment()) {
-        const auto inferred = inferred_key(item);
-        if (nested_spanner_role(inferred.role)) key = inferred;
+        const auto parent_key = static_cast<const EngravingItem *>(item.ownership_parent())->authored_child;
+        if (nested_spanner_role(parent_key.role)) key = {parent_key.role, key.ordinal, 0, 1};
     }
     if (item.authored_child.role != AuthoredChildRole::NONE && item.authored_child != key) {
         if (const auto *table = authored_override_table(authored_override_owner(item))) {
@@ -511,6 +535,12 @@ void reset_authored_override(EngravingItem &item, Pid pid) {
     table.erase(child_key(item), pid);
     // Carrier identity and dormant legacy ordinal survive a property reset.
     if (!fragment_owner(item)) mirror_property(item, pid, mirror_default(item, pid), default_flags(item, pid));
+    if (item.is_spanner_segment()) {
+        auto *spanner = to_spanner_segment(&item)->spanner();
+        for (auto *segment : spanner->ldata()->segments)
+            if (segment != &item && child_key(*segment) == child_key(item))
+                mirror_property(*segment, pid, mirror_default(*segment, pid), default_flags(*segment, pid));
+    }
     item.trigger_layout();
 }
 

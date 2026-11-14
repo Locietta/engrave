@@ -134,7 +134,7 @@ System::~System() {
     if (page_) {
         muse::remove(page_->systems(), this);
     }
-    for (SpannerSegment *ss : spanner_segments()) {
+    for (SpannerSegment *ss : spanner_segments_) {
         if (ss->system() == this) {
             ss->set_system(nullptr);
         }

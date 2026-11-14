@@ -282,10 +282,6 @@ void TextLine::undo_change_property(Pid id, const engraving::PropertyValue &v, P
     if (id == Pid::SYSTEM_FLAG) {
         auto &transaction = score()->transaction_manager()->current_or_dummy_transaction();
         transaction.change_text_line_property(*this, v);
-        for (SpannerSegment *s : spanner_segments()) {
-            transaction.change_text_line_property(*s, v);
-            trigger_layout();
-        }
         return;
     }
     TextLineBase::undo_change_property(id, v, ps);

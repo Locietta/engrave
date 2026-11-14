@@ -78,9 +78,6 @@ void EditSpanner::add_spanner(Transaction &, Score *score, Spanner *spanner, sta
     track_idx_t track = staff_idx * ::mu::engraving::voices;
     spanner->set_track(track);
     spanner->set_track2(track);
-    for (auto ss : spanner->spanner_segments()) {
-        ss->set_track(track);
-    }
 
     bool is_measure_anchor = spanner->anchor() == Spanner::Anchor::MEASURE;
     Fraction tick1 = is_measure_anchor ? start_segment->measure()->tick() : start_segment->tick();

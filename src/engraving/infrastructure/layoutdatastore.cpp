@@ -144,6 +144,15 @@ static void clear_output_anchors(Score &score, const Measure *measure = nullptr)
     }
 }
 
+void LayoutDataStore::retire_spanner_borrowers() {
+    if (score_) score_->selection().retire_spanner_segments();
+    for (auto *page : output_.pages) page->invalidate_bsp_tree();
+    for (auto *system : output_.systems)
+        for (auto *staff : system->staves()) staff->skyline().clear();
+    for (auto &record : records_->items.values())
+        if (record.second.item->is_segment()) to_segment(record.second.item)->clear_shapes();
+}
+
 void LayoutDataStore::retire_measure_borrowers(Measure &measure) {
     if (!score_) return;
     clear_output_anchors(*score_, &measure);

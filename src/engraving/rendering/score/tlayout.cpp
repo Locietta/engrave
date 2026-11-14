@@ -4367,7 +4367,7 @@ void TLayout::layout_line(SLine *item, LayoutContext &ctx) {
     }
 }
 
-void TLayout::layout_note_anchored_line(SLine *item, EngravingItem::LayoutData *ldata, LayoutContext &ctx) {
+void TLayout::layout_note_anchored_line(SLine *item, SLine::LayoutData *ldata, LayoutContext &ctx) {
     double spatium_value = item->spatium();
     Note *start_anchor = to_note(item->start_element());
     Note *end_anchor = to_note(item->end_element());
@@ -6125,13 +6125,9 @@ SpannerSegment *TLayout::get_next_layout_system_segment(Spanner *spanner, System
     }
 
     if (!seg) {
-        if ((seg = spanner->pop_unused_segment())) {
-            spanner->reuse(seg);
-        } else {
-            seg = create_segment();
-            assert(seg);
-            spanner->add(seg);
-        }
+        seg = create_segment();
+        assert(seg);
+        spanner->add(seg);
     }
     seg->move_to_system(system);
     seg->set_spanner(spanner);
