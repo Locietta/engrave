@@ -40,7 +40,6 @@
 #include "segment.h"
 #include "slurtie.h"
 #include "staff.h"
-#include "style/textstyle.h"
 #include "system.h"
 #include "translation.h"
 #include "types/typesconv.h"
@@ -1356,23 +1355,6 @@ void Spanner::for_each_authored_segment(const std::function<void(SpannerSegment 
 
 void Spanner::reset_segment_overrides(PropertyGroup group) {
     if (score()->is_master()) return;
-    if (group == PropertyGroup::APPEARANCE) {
-        // Resetting text size policy must preserve the retained physical position.
-        for (auto &entry : authored_overrides.entries) {
-            if (entry.child.role != AuthoredChildRole::SEGMENT_TEXT || property_type(entry.pid) != PType::POINT) continue;
-            const auto *carrier = authored_overrides.carrier(entry.child);
-            if (!carrier || carrier->type != ElementType::GUITAR_BEND_TEXT) continue;
-            const auto *text_style_entry = authored_overrides.find(entry.child, Pid::TEXT_STYLE);
-            const auto text_type = text_style_entry ? text_style_entry->value.value<TextStyleType>() : TextStyleType::BEND;
-            for (const auto &property : *text_style(text_type)) {
-                if (property.pid != Pid::SIZE_SPATIUM_DEPENDENT) continue;
-                const double old_scale = entry.unit == AuthoredOverrideUnit::MILLIMETRE ? ::mu::engraving::dpmm : style().spatium();
-                const bool dependent = style().style_b(property.sid);
-                entry.value = entry.value.value<PointF>() * old_scale / (dependent ? style().spatium() : ::mu::engraving::dpmm);
-                entry.unit = dependent ? AuthoredOverrideUnit::SPATIUM : AuthoredOverrideUnit::MILLIMETRE;
-            }
-        }
-    }
     const auto erased = std::erase_if(authored_overrides.entries, [group](const auto &entry) {
         const auto key = entry.child;
         return (key.role == AuthoredChildRole::SPANNER_SEGMENT || key.role == AuthoredChildRole::SEGMENT_TEXT ||
