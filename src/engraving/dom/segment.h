@@ -169,6 +169,37 @@ public:
 
     ChordRest *next_chord_rest(track_idx_t track, bool backwards = false, bool stop_at_measure_boundary = false) const;
 
+    // Layout and drawing use this boundary; source traversal stays independent.
+    Segment *rendered_next() const { return next(); }
+
+    Segment *rendered_next(SegmentType types) const { return next(types); }
+
+    Segment *rendered_prev() const { return prev(); }
+
+    Segment *rendered_prev(SegmentType types) const { return prev(types); }
+
+    Segment *rendered_next1() const { return next1(); }
+
+    Segment *rendered_prev1() const { return prev1(); }
+
+    Segment *rendered_next1_enabled() const { return next1enabled(); }
+
+    Segment *rendered_prev1_enabled() const { return prev1enabled(); }
+
+    Segment *rendered_prev1_mm_enabled() const { return prev1_m_menabled(); }
+
+    Segment *rendered_next_active() const { return next_active(); }
+
+    Segment *rendered_prev_active() const { return prev_active(); }
+
+    Segment *rendered_next_enabled() const { return next_enabled(); }
+
+    Segment *rendered_prev_enabled() const { return prev_enabled(); }
+
+    EngravingItem *effective_element(track_idx_t track) const { return element(track); }
+
+    const std::vector<EngravingItem *> &effective_elements() const { return elist(); }
+
     EngravingItem *element(track_idx_t track) const;
 
     const std::vector<EngravingItem *> &elist() const { return elist_; }

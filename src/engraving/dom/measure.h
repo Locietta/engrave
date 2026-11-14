@@ -280,6 +280,26 @@ public:
 
     Segment *last_enabled() const { return segments_.last(ElementFlag::ENABLED); }
 
+    Segment *rendered_first() const { return first(); }
+
+    Segment *rendered_last() const { return last(); }
+
+    Segment *rendered_first_enabled() const { return first_enabled(); }
+
+    Segment *rendered_last_enabled() const { return last_enabled(); }
+
+    Segment *rendered_first_active() const { return first_active(); }
+
+    Segment *rendered_first(SegmentType type) const { return first(type); }
+
+    Segment *rendered_last(SegmentType type) const { return last(type); }
+
+    Segment *find_rendered_segment_r(SegmentType type, const Fraction &rtick) const { return find_segment_r(type, rtick); }
+
+    Segment *find_rendered_first_r(SegmentType type, const Fraction &rtick) const { return find_first_r(type, rtick); }
+
+    Segment *find_rendered_segment(SegmentType type, const Fraction &tick) const { return find_segment(type, tick); }
+
     SegmentList &segments() { return segments_; }
 
     const SegmentList &segments() const { return segments_; }
