@@ -1405,7 +1405,7 @@ void TWrite::write_properties(const TextBase *item, XmlWriter &xml, WriteContext
             (spp.pid == Pid::FONT_FACE && item->get_property(spp.pid).value<String>() == TextBase::undefined_font_family)) {
             continue;
         }
-        write_property(item, xml, spp.pid, item->is_fingering() && spp.pid == Pid::PLACEMENT);
+        write_property(item, xml, spp.pid);
     }
     if (write_text) {
         xml.write_xml(u"text", line_break_to_tag(item->xml_text()));
