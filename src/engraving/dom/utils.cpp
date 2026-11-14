@@ -1044,7 +1044,7 @@ void collect_chords_and_rest(Segment *segment, staff_idx_t staff_idx, std::vecto
     track_idx_t end_track = start_track + ::mu::engraving::voices;
 
     for (track_idx_t track = start_track; track < end_track; ++track) {
-        EngravingItem *e = segment->element(track);
+        EngravingItem *e = segment->effective_element(track);
         if (!e) {
             continue;
         }
@@ -1065,20 +1065,20 @@ void collect_chords_overlapping_rests(Segment *segment, staff_idx_t staff_idx, s
 
     std::set<track_idx_t> tracks_to_check;
     for (track_idx_t track = start_track; track < end_track; ++track) {
-        EngravingItem *item = segment->element(track);
+        EngravingItem *item = segment->effective_element(track);
         if (!item || !item->is_rest()) {
             tracks_to_check.insert(track);
         }
     }
 
     Fraction cur_tick = segment->rtick();
-    for (Segment *prev_seg = segment->prev(); prev_seg; prev_seg = prev_seg->prev()) {
+    for (Segment *prev_seg = segment->rendered_prev(); prev_seg; prev_seg = prev_seg->rendered_prev()) {
         if (!prev_seg->is_chord_rest_type()) {
             continue;
         }
         Fraction prev_seg_tick = prev_seg->rtick();
         for (track_idx_t track : tracks_to_check) {
-            EngravingItem *e = prev_seg->element(track);
+            EngravingItem *e = prev_seg->effective_element(track);
             if (!e || !e->is_chord()) {
                 continue;
             }
