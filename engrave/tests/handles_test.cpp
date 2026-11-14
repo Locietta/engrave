@@ -42,6 +42,7 @@
 #include "engraving/dom/chordbracket.h"
 #include "engraving/dom/clef.h"
 #include "engraving/dom/dummyparent.h"
+#include "engraving/dom/dynamic.h"
 #include "engraving/dom/engravingitem.h"
 #include "engraving/dom/excerpt.h"
 #include "engraving/dom/factory.h"
@@ -75,6 +76,7 @@
 #include "engraving/dom/textline.h"
 #include "engraving/dom/tie.h"
 #include "engraving/dom/tiejumppointlist.h"
+#include "engraving/dom/timesig.h"
 #include "engraving/dom/tremolotwochord.h"
 #include "engraving/editing/addremoveelement.h"
 #include "engraving/editing/editkeysig.h"
@@ -384,6 +386,7 @@ TEST(NativeSave, ColdEqualsWarm) {
     inputs.push_back(g_source_root / "tests/data/inputs/evening.musicxml");
     inputs.push_back(g_source_root / "tests/data/inputs/mmr-boundary.mscx");
     inputs.push_back(g_source_root / "tests/data/inputs/stave-sharing.mscx");
+    inputs.push_back(g_source_root / "tests/data/inputs/stave-sharing-voices.mscx");
     std::ranges::sort(inputs);
     for (const auto &path : inputs) {
         SCOPED_TRACE(path.filename().string());
@@ -650,6 +653,99 @@ TEST(StaveSharingOutput, AuxiliaryRetirementInvalidatesEveryBorrowingPage) {
     master.layout_data_store()->retire_measure_borrowers(*master.first_measure());
     for (auto *page : master.pages()) EXPECT_TRUE(page->items(muse::RectF(0, 0, 10000, 10000)).empty());
     EXPECT_TRUE(master.layout_data_store()->score_output().shared_spanners.empty());
+}
+
+TEST(StaveSharingOutput, MultipleVoicesUseRenderedNotesWithoutChangingSourceVoiceFlags) {
+    using namespace mu::engraving;
+    auto document = open_path(g_source_root / "tests/data/inputs/stave-sharing-voices.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *measure = master.first_measure();
+    const auto cold = source_native(master);
+    EXPECT_FALSE(measure->has_voices(0));
+    ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+    auto *segment = measure->first(SegmentType::CHORD_REST);
+    auto *upper = to_chord(segment->effective_element(0));
+    auto *lower = to_chord(segment->effective_element(1));
+    ASSERT_TRUE(upper && lower);
+    EXPECT_EQ(master.shared_parts().front()->track_map_at_tick(Fraction(0, 1)), (SharedTrackMap{{12, 0}, {16, 1}, {20, 1}}));
+    EXPECT_TRUE(upper->up());
+    EXPECT_FALSE(lower->up());
+    EXPECT_EQ(lower->notes().size(), 2u);
+    EXPECT_TRUE(measure->has_rendered_voices(0));
+    EXPECT_FALSE(measure->has_voices(0));
+    EXPECT_EQ(source_native(master), cold);
+    master.layout_data_store()->clear();
+    EXPECT_FALSE(measure->has_voices(0));
+    EXPECT_EQ(source_native(master), cold);
+}
+
+TEST(StaveSharingOutput, LocalSignatureProjectionLeavesSourceQueriesColdAndWarmIdentical) {
+    using namespace mu::engraving;
+    auto document = open_path(g_source_root / "tests/data/inputs/stave-sharing.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *segment = master.first_measure()->first(SegmentType::TIME_SIG);
+    auto *global = to_time_sig(segment->element(0));
+    auto *local = to_time_sig(segment->element(8));
+    ASSERT_TRUE(global && local);
+    local->set_stretch(Fraction(3, 4));
+    const auto clef = master.staff(0)->clef(Fraction(0, 1));
+    const auto key = master.staff(0)->key(Fraction(0, 1));
+    const auto cold = source_native(master);
+    EXPECT_EQ(master.staff(0)->time_sig(Fraction(0, 1)), global);
+    ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+    EXPECT_EQ(master.staff(0)->time_sig(Fraction(0, 1)), global);
+    EXPECT_EQ(master.staff(0)->rendered_time_sig(Fraction(0, 1)), local);
+    EXPECT_EQ(master.staff(0)->clef(Fraction(0, 1)), clef);
+    EXPECT_EQ(master.staff(0)->key(Fraction(0, 1)), key);
+    EXPECT_EQ(source_native(master), cold);
+}
+
+TEST(StaveSharingOutput, SharedHairpinsSnapToOutputAndSuppressAuthoredSharedTrackSpanners) {
+    using namespace mu::engraving;
+    auto document = open_path(g_source_root / "tests/data/inputs/stave-sharing.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *segment = master.first_measure()->first(SegmentType::CHORD_REST);
+    std::vector<Dynamic *> dynamics;
+    for (track_idx_t track : {8u, 12u}) {
+        auto *dynamic = Factory::create_dynamic(segment);
+        dynamic->set_track(track);
+        dynamic->set_dynamic_type(DynamicType::P);
+        master.add_element(dynamic);
+        dynamic->assign_new_eid();
+        dynamics.push_back(dynamic);
+    }
+    Hairpin *authored_shared = nullptr;
+    for (track_idx_t track : {0u, 8u, 12u}) {
+        for (int half = 0; half < (track ? 2 : 1); ++half) {
+            auto *hairpin = Factory::create_hairpin(master.dummy());
+            hairpin->set_track(track);
+            hairpin->set_track2(track);
+            hairpin->set_tick(Fraction(half, 2));
+            hairpin->set_tick2(Fraction(half + 1, 2));
+            master.add_element(hairpin);
+            hairpin->assign_new_eid();
+            if (!track) authored_shared = hairpin;
+        }
+    }
+    const auto cold = source_native(master);
+    const auto source_spans = master.spanner_list();
+    ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+    for (auto *piece : authored_shared->spanner_segments()) EXPECT_EQ(piece->system(), nullptr);
+    std::vector<Hairpin *> shared;
+    for (auto *span : master.layout_data_store()->score_output().shared_spanners)
+        if (span->is_hairpin()) shared.push_back(to_hairpin(span));
+    ASSERT_EQ(shared.size(), 2u);
+    std::sort(shared.begin(), shared.end(), [](auto *a, auto *b) { return a->tick() < b->tick(); });
+    ASSERT_FALSE(shared.front()->segments_empty());
+    ASSERT_FALSE(shared.back()->segments_empty());
+    auto *before = to_hairpin_segment(shared.front()->front_segment())->find_element_to_snap_before(false);
+    EXPECT_EQ(before, master.layout_copy(*dynamics.front()));
+    EXPECT_EQ(to_hairpin_segment(shared.back()->front_segment())->find_element_to_snap_before(false), shared.front()->back_segment());
+    EXPECT_EQ(master.spanner_list(), source_spans);
+    EXPECT_EQ(source_native(master), cold);
 }
 
 TEST(StaveSharingOutput, EditedUnisonRangeMatchesFullLayout) {

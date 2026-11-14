@@ -27,6 +27,7 @@
 #include "draw/types/transform.h"
 #include "dynamic.h"
 #include "measure.h"
+#include "rendering/score/layoutdatastore.h"
 #include "score.h"
 #include "segment.h"
 #include "system.h"
@@ -158,9 +159,13 @@ EngravingItem *HairpinSegment::find_element_to_snap_before(bool ignore_invisible
     Hairpin *this_hairpin = hairpin();
     Fraction start_tick = hairpin()->tick();
 
-    auto intervals = score()->spanner_map().find_overlapping(start_tick.ticks(), start_tick.ticks());
-    for (auto interval : intervals) {
-        Spanner *spanner = interval.value;
+    std::vector<Spanner *> candidates;
+    if (auto *store = score()->layout_data_store())
+        candidates = store->rendered_spanners(start_tick.ticks(), start_tick.ticks());
+    else
+        for (auto interval : score()->spanner_map().find_overlapping(start_tick.ticks(), start_tick.ticks()))
+            candidates.push_back(interval.value);
+    for (auto *spanner : candidates) {
         bool is_valid_hairpin = spanner->is_hairpin() && !spanner->segments_empty() && spanner != this_hairpin &&
                                 (spanner->add_to_skyline() || !ignore_invisible);
         if (!is_valid_hairpin) {
@@ -194,7 +199,7 @@ TextBase *HairpinSegment::find_start_dynamic_or_expression(bool ignore_invisible
     std::vector<TextBase *> dynamics_and_expr;
     dynamics_and_expr.reserve(2);
 
-    for (Segment *segment = measure->last(); segment; segment = segment->prev1()) {
+    for (Segment *segment = measure->rendered_last(); segment; segment = segment->rendered_prev1()) {
         Fraction segment_tick = segment->tick();
         if (segment_tick > ref_tick) {
             continue;
@@ -202,7 +207,7 @@ TextBase *HairpinSegment::find_start_dynamic_or_expression(bool ignore_invisible
         if (segment_tick < ref_tick) {
             break;
         }
-        for (EngravingItem *item : segment->annotations()) {
+        for (EngravingItem *item : segment->rendered_annotations()) {
             if (!item->is_dynamic() && !item->is_expression()) {
                 continue;
             }
@@ -250,7 +255,8 @@ TextBase *Hairpin::find_end_dynamic_or_expression(PlacementV placement_value, bo
     std::vector<TextBase *> dynamics_and_expr;
     dynamics_and_expr.reserve(2);
 
-    for (Segment *segment = measure->first(); segment; segment = segment->next1()) {
+    for (Segment *segment = is_layout_copy() ? measure->rendered_first() : measure->first(); segment;
+         segment = is_layout_copy() ? segment->rendered_next1() : segment->next1()) {
         Fraction segment_tick = segment->tick();
         if (segment_tick < ref_tick) {
             continue;
@@ -258,7 +264,7 @@ TextBase *Hairpin::find_end_dynamic_or_expression(PlacementV placement_value, bo
         if (segment_tick > ref_tick) {
             break;
         }
-        for (EngravingItem *item : segment->annotations()) {
+        for (EngravingItem *item : is_layout_copy() ? segment->rendered_annotations() : segment->annotations()) {
             if (!item->is_dynamic() && !item->is_expression()) {
                 continue;
             }

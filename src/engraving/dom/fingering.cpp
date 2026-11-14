@@ -83,7 +83,8 @@ PlacementV Fingering::calculate_placement() const {
     Staff *staff = chord->staff();
     Part *part = staff->part();
     size_t nstaves = part->nstaves();
-    bool voices = chord->measure()->has_voices(staff->idx(), chord->tick(), chord->actual_ticks());
+    bool voices = is_layout_copy() ? chord->measure()->has_rendered_voices(staff->idx(), chord->tick(), chord->actual_ticks()) :
+                                     chord->measure()->has_voices(staff->idx(), chord->tick(), chord->actual_ticks());
     bool below = voices ? !chord->up() : (nstaves > 1) && (staff->rstaff() == nstaves - 1);
     return below ? PlacementV::BELOW : PlacementV::ABOVE;
 }

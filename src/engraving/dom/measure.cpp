@@ -252,6 +252,12 @@ bool Measure::has_voices(staff_idx_t staff_idx) const {
     return staff ? staff->has_voices() : false;
 }
 
+bool Measure::has_rendered_voices(staff_idx_t staff_idx) const {
+    const auto *staff = score()->staff(staff_idx);
+    if (staff && staff->part()->is_shared_part()) return has_rendered_voices(staff_idx, tick(), ticks());
+    return has_voices(staff_idx);
+}
+
 void Measure::set_has_voices(staff_idx_t staff_idx, bool v) {
     MStaff *staff = mstaff(staff_idx);
 
@@ -1846,8 +1852,9 @@ void Measure::check_multi_voices(staff_idx_t staff_idx) {
 //   hasVoices
 //---------------------------------------------------------
 
-bool Measure::has_voices(staff_idx_t staff_idx, Fraction stick, Fraction len, bool consider_invisible) const {
+bool Measure::has_voices(staff_idx_t staff_idx, Fraction stick, Fraction len, bool consider_invisible, bool rendered) const {
     Staff *st = score()->staff(staff_idx);
+    rendered = rendered && st->part()->is_shared_part();
     if (st->is_tab_staff(stick)) {
         // TODO: tab staves use different rules for stem direction etc
         // see for example https://musescore.org/en/node/308371
@@ -1863,12 +1870,14 @@ bool Measure::has_voices(staff_idx_t staff_idx, Fraction stick, Fraction len, bo
     track_idx_t etrack = staff_idx * ::mu::engraving::voices + ::mu::engraving::voices;
     Fraction etick = stick + len;
 
-    for (Segment *s = first(SegmentType::CHORD_REST); s; s = s->next(SegmentType::CHORD_REST)) {
+    for (Segment *s = rendered ? rendered_first() : first(SegmentType::CHORD_REST); s;
+         s = rendered ? s->rendered_next() : s->next(SegmentType::CHORD_REST)) {
+        if (!s->is_chord_rest_type()) continue;
         if (s->tick() >= etick) {
             break;
         }
         for (track_idx_t track = strack; track < etrack; ++track) {
-            ChordRest *cr = to_chord_rest(s->element(track));
+            ChordRest *cr = to_chord_rest(rendered ? s->effective_element(track) : s->element(track));
             if (cr) {
                 if (cr->end_tick() <= stick) {
                     continue;

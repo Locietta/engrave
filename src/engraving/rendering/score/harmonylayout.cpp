@@ -704,7 +704,7 @@ void HarmonyLayout::render_action_note(Harmony *item, Harmony::LayoutData *ldata
     }
     const ChordList *chord_list = item->score()->chord_list();
     const Staff *st = item->staff();
-    const Key key = st ? st->key(item->tick()) : Key::INVALID;
+    const Key key = st ? st->rendered_key(item->tick()) : Key::INVALID;
 
     String c;
     AccidentalVal acc;
@@ -740,7 +740,7 @@ void HarmonyLayout::render_action_acc(Harmony *item, Harmony::LayoutData *ldata,
     }
     const ChordList *chord_list = item->score()->chord_list();
     const Staff *st = item->staff();
-    const Key key = st ? st->key(item->tick()) : Key::INVALID;
+    const Key key = st ? st->rendered_key(item->tick()) : Key::INVALID;
 
     String c;
     String acc;

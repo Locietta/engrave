@@ -329,11 +329,16 @@ String Staff::part_name() const { return part_->part_name(); }
 //   Staff::clefType
 //---------------------------------------------------------
 
-ClefTypeList Staff::clef_type(const Fraction &tick) const {
-    if (part_ && part_->is_shared_part() && !score()->normalize_state.running) {
+ClefTypeList Staff::rendered_clef_type(const Fraction &tick) const {
+    if (part_ && part_->is_shared_part()) {
         if (const auto *origin = to_shared_part(part_)->origin_part_for_staff(idx(), tick); origin && !origin->staves().empty())
             return origin->staves().front()->clef_type(tick);
     }
+    return clef_type(tick);
+}
+
+ClefTypeList Staff::clef_type(const Fraction &tick) const {
+
     ClefTypeList ct = clefs_.clef(tick.ticks());
     if (ct.concert_clef == ClefType::INVALID) {
         // Clef compatibility based on instrument (override StaffGroup)
@@ -486,11 +491,16 @@ Fraction Staff::time_stretch(const Fraction &tick) const {
 //    lookup time signature before or at tick
 //---------------------------------------------------------
 
-TimeSig *Staff::time_sig(const Fraction &tick) const {
-    if (part_ && part_->is_shared_part() && !score()->normalize_state.running) {
+TimeSig *Staff::rendered_time_sig(const Fraction &tick) const {
+    if (part_ && part_->is_shared_part()) {
         if (const auto *origin = to_shared_part(part_)->origin_part_for_staff(idx(), tick); origin && !origin->staves().empty())
             return origin->staves().front()->time_sig(tick);
     }
+    return time_sig(tick);
+}
+
+TimeSig *Staff::time_sig(const Fraction &tick) const {
+
     auto i = timesigs_.upper_bound(tick.ticks());
     if (i != timesigs_.begin()) {
         --i;
@@ -615,11 +625,16 @@ Interval Staff::transpose(const Fraction &tick) const {
 //    locates the key sig currently in effect at tick
 //---------------------------------------------------------
 
-KeySigEvent Staff::key_sig_event(const Fraction &tick) const {
-    if (part_ && part_->is_shared_part() && !score()->normalize_state.running) {
+KeySigEvent Staff::rendered_key_sig_event(const Fraction &tick) const {
+    if (part_ && part_->is_shared_part()) {
         if (const auto *origin = to_shared_part(part_)->origin_part_for_staff(idx(), tick); origin && !origin->staves().empty())
             return origin->staves().front()->key_sig_event(tick);
     }
+    return key_sig_event(tick);
+}
+
+KeySigEvent Staff::key_sig_event(const Fraction &tick) const {
+
     auto event = keys_.key(tick.ticks());
     if (keys_.upper_bound(tick.ticks()) == keys_.begin() && part() && part()->instrument(tick) &&
         !score()->style().style_b(Sid::CONCERT_PITCH)) {
@@ -1460,3 +1475,13 @@ bool Staff::is_lines_invisible(const Fraction &tick) const { return staff_type(t
 
 void Staff::set_is_lines_invisible(const Fraction &tick, bool val) { staff_type(tick)->set_invisible(val); }
 } // namespace mu::engraving
+
+ClefType Staff::rendered_clef(const Fraction &tick) const {
+    const auto clefs = rendered_clef_type(tick);
+    return style().style_b(Sid::CONCERT_PITCH) ? clefs.concert_clef : clefs.transposing_clef;
+}
+
+Fraction Staff::rendered_time_stretch(const Fraction &tick) const {
+    const auto *signature = rendered_time_sig(tick);
+    return signature ? signature->stretch() : Fraction(1, 1);
+}

@@ -259,7 +259,7 @@ void BeamLayout::layout1(Beam *item, LayoutContext &ctx) {
     }
     ChordRest *first_note = item->elements().front();
     Measure *measure = first_note->measure();
-    bool has_multiple_voices = measure->has_voices(first_note->staff_idx(), item->tick(), item->ticks());
+    bool has_multiple_voices = measure->has_rendered_voices(first_note->staff_idx(), item->tick(), item->ticks());
     if (compute_up_for_moved_cross(item)) {
     } else if (item->direction() != DirectionV::AUTO) {
         item->set_up(item->direction() == DirectionV::UP);
@@ -660,7 +660,7 @@ void BeamLayout::create_beams(LayoutContext &ctx, Measure *measure) {
         // then perform a prepass to determine the subdivision of each beat
 
         beat_subdivision.clear();
-        TimeSig *ts = stf->time_sig(measure->tick());
+        TimeSig *ts = stf->rendered_time_sig(measure->tick());
         const SegmentType st = SegmentType::CHORD_REST;
         if (ts && ts->denominator() == 4) {
             Fraction stretch = ts->stretch();
@@ -1122,7 +1122,7 @@ bool BeamLayout::calc_is_beamlet_before(const Beam *item, Chord *chord, int i, i
 
     // if the chord ends a subdivision of the beat
     Fraction base_tick = tuplet ? tuplet->tick() : chord->measure()->tick();
-    Fraction stretch = chord->staff()->time_stretch(base_tick);
+    Fraction stretch = chord->staff()->rendered_time_stretch(base_tick);
     Fraction tick_next = (next_chord_rest->tick() - base_tick) * stretch;
     if (tuplet) {
         // for tuplets with odd ratios, apply ratio

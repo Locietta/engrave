@@ -996,6 +996,12 @@ void StaveSharingLayout::disconnect_all(StaveSharingContext &ctx) {
     }
 
     for (Spanner *spanner : ctx.overlapping_spanners) {
+        if (!spanner->is_layout_copy() && !spanner->system_flag() && spanner->track() >= range.start_track &&
+            spanner->track() < range.end_track) {
+            auto &suppressed = output(spanner).score_output().suppressed_shared_spanners;
+            if (std::find(suppressed.begin(), suppressed.end(), spanner) == suppressed.end()) suppressed.push_back(spanner);
+            for (auto *segment : spanner->spanner_segments()) segment->move_to_system(nullptr);
+        }
         if (spanner->is_layout_copy() && !spanner->system_flag() && spanner->track() >= range.start_track &&
             spanner->track() < range.end_track) {
             EngravingItem::disconnect_all_origin_items(spanner);
@@ -1820,6 +1826,12 @@ void StaveSharingLayout::cleanup(StaveSharingContext &ctx) {
     add_measure_rests_if_need(ctx);
 
     for (Spanner *spanner : ctx.overlapping_spanners) {
+        if (!spanner->is_layout_copy() && !spanner->system_flag() && spanner->track() >= range.start_track &&
+            spanner->track() < range.end_track) {
+            auto &suppressed = output(spanner).score_output().suppressed_shared_spanners;
+            if (std::find(suppressed.begin(), suppressed.end(), spanner) == suppressed.end()) suppressed.push_back(spanner);
+            for (auto *segment : spanner->spanner_segments()) segment->move_to_system(nullptr);
+        }
         if (spanner->is_layout_copy() && !spanner->system_flag() && spanner->track() >= range.start_track &&
             spanner->track() < range.end_track && spanner->origin_items().empty()) {
             remove_shared_output(spanner);

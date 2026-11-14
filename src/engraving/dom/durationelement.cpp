@@ -98,7 +98,7 @@ float DurationElement::time_stretch_factor() const {
 
 Fraction DurationElement::actual_ticks_at(const Fraction &tick) const {
     // Use when tick() is unreliable, for example when pasting
-    return global_ticks() / staff()->time_stretch(tick);
+    return global_ticks() / (is_layout_copy() ? staff()->rendered_time_stretch(tick) : staff()->time_stretch(tick));
 }
 
 Fraction DurationElement::actual_ticks() const { return actual_ticks_at(tick()); }

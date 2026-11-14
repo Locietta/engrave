@@ -160,8 +160,8 @@ void TremoloLayout::calc_is_up(TremoloTwoChord *item) {
 
     int up = 0;
     bool is_up = item->up();
-    bool has_voices = item->chord1()->measure()->has_voices(item->chord1()->staff_idx(), item->chord1()->tick(),
-                                                            item->chord2()->tick() - item->chord1()->tick());
+    bool has_voices = item->chord1()->measure()->has_rendered_voices(item->chord1()->staff_idx(), item->chord1()->tick(),
+                                                                     item->chord2()->tick() - item->chord1()->tick());
     if (item->chord1()->stem_direction() == DirectionV::AUTO && item->chord2()->stem_direction() == DirectionV::AUTO &&
         item->chord1()->staff_move() == item->chord2()->staff_move() && !has_voices) {
         std::vector<int> chord1_distances = item->chord1()->note_distances();

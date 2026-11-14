@@ -35,7 +35,10 @@ LayoutDataStore::LayoutDataStore(Score &score) : records_(std::make_unique<Recor
 LayoutDataStore::~LayoutDataStore() { detach_score(); }
 
 void LayoutDataStore::register_layout_copy(const EngravingItem &source, EngravingItem &display) {
+    if (&source == &display) return;
     display.set_layout_copy(true);
+    for (auto &entry : layout_copies_)
+        if (entry.second == &source) entry.second = &display;
     std::erase_if(layout_copies_, [&](const auto &entry) { return entry.first == &source; });
     layout_copies_.emplace_back(&source, &display);
     // Composite annotations (e.g. a fret diagram's harmony) keep their own IDs.
@@ -55,14 +58,8 @@ void LayoutDataStore::register_layout_copy(const EngravingItem &source, Engravin
 }
 
 const EngravingItem *LayoutDataStore::layout_copy(const EngravingItem &source) const {
-    const EngravingItem *current = &source;
-    const EngravingItem *display = nullptr;
-    for (size_t depth = 0; depth < layout_copies_.size(); ++depth) {
-        const auto found = std::ranges::find_if(layout_copies_, [&](const auto &entry) { return entry.first == current; });
-        if (found == layout_copies_.end()) break;
-        display = current = found->second;
-    }
-    return display;
+    const auto found = std::ranges::find_if(layout_copies_, [&](const auto &entry) { return entry.first == &source; });
+    return found != layout_copies_.end() ? found->second : nullptr;
 }
 
 void LayoutDataStore::clear_layout_copies(const Measure &display) {
@@ -168,6 +165,21 @@ void LayoutDataStore::retire_measure_borrowers(Measure &measure) {
     }
 }
 
+std::vector<Spanner *> LayoutDataStore::rendered_spanners(int first_tick, int last_tick) const {
+    std::vector<Spanner *> result;
+    for (auto interval : score_->spanner_map().find_overlapping(first_tick, last_tick)) {
+        if (std::find(output_.suppressed_shared_spanners.begin(), output_.suppressed_shared_spanners.end(), interval.value) ==
+            output_.suppressed_shared_spanners.end())
+            result.push_back(interval.value);
+    }
+    for (auto *span : output_.shared_spanners) {
+        if (!span->is_tie() && span->anchor() != Spanner::Anchor::NOTE && span->tick().ticks() <= last_tick &&
+            span->tick2().ticks() >= first_tick)
+            result.push_back(span);
+    }
+    return result;
+}
+
 void LayoutDataStore::retire_shared_auxiliary_output() {
     if (!output_.shared_spanners.empty() || !output_.shared_tuplets.empty()) {
         // Auxiliary output may span systems beyond the edited measure.
@@ -212,6 +224,7 @@ void LayoutDataStore::discard_score_output() {
     }
     layout_copies_.clear();
     output_.shared_track_maps.clear();
+    output_.suppressed_shared_spanners.clear();
     // Systems unlink their borrowers while pages and source owners are alive.
     muse::delete_all(output_.systems);
     output_.systems.clear();

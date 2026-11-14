@@ -122,25 +122,25 @@ void ModifyDom::sort_measure_segments(Measure *measure, LayoutContext &ctx) {
                 const Staff *staff = ctx.dom().staff(track2staff(track));
 
                 if (seg.is_key_sig_type()) {
-                    const Key continuation_key = staff->key(seg.tick());
-                    const Key repeat_key = staff->key(start_tick);
-                    const Key key_before_continuation = staff->key(seg.tick() - Fraction::eps());
+                    const Key continuation_key = staff->rendered_key(seg.tick());
+                    const Key repeat_key = staff->rendered_key(start_tick);
+                    const Key key_before_continuation = staff->rendered_key(seg.tick() - Fraction::eps());
                     return key_before_continuation != continuation_key && continuation_key == repeat_key;
                 }
 
                 if (seg.is_time_sig_type()) {
-                    const TimeSig *continuation_time_sig = staff->time_sig(seg.tick());
-                    const TimeSig *repeat_time_sig = staff->time_sig(start_tick);
-                    const TimeSig *time_sig_before_continuation = staff->time_sig(seg.tick() - Fraction::eps());
+                    const TimeSig *continuation_time_sig = staff->rendered_time_sig(seg.tick());
+                    const TimeSig *repeat_time_sig = staff->rendered_time_sig(start_tick);
+                    const TimeSig *time_sig_before_continuation = staff->rendered_time_sig(seg.tick() - Fraction::eps());
                     return continuation_time_sig && repeat_time_sig && time_sig_before_continuation &&
                            time_sig_before_continuation->sig() != continuation_time_sig->sig() &&
                            continuation_time_sig->sig() == repeat_time_sig->sig();
                 }
 
                 if (seg.is_clef_type()) {
-                    const ClefType continuation_clef = staff->clef(seg.tick());
-                    const ClefType repeat_clef = staff->clef(start_tick);
-                    const ClefType clef_before_continuation = staff->clef(seg.tick() - Fraction::eps());
+                    const ClefType continuation_clef = staff->rendered_clef(seg.tick());
+                    const ClefType repeat_clef = staff->rendered_clef(start_tick);
+                    const ClefType clef_before_continuation = staff->rendered_clef(seg.tick() - Fraction::eps());
                     if (clef_before_continuation != continuation_clef && continuation_clef == repeat_clef) {
                         return true;
                     }

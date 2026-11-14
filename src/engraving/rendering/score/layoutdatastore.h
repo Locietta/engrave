@@ -22,6 +22,7 @@ struct LayoutDataStore {
         std::vector<Page *> pages;
         std::vector<System *> systems;
         std::vector<Spanner *> shared_spanners;
+        std::vector<const Spanner *> suppressed_shared_spanners;
         std::vector<Tuplet *> shared_tuplets;
         std::map<const SharedPart *, std::map<Fraction, SharedTrackMap>> shared_track_maps;
     };
@@ -38,6 +39,7 @@ struct LayoutDataStore {
     void retire_layout_copy(const EngravingItem &item);
     void discard_score_output();
     void retire_shared_auxiliary_output();
+    std::vector<Spanner *> rendered_spanners(int first_tick, int last_tick) const;
     void retire_measure_borrowers(Measure &measure);
 
     size_t size() const;

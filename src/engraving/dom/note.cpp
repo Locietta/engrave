@@ -2131,7 +2131,7 @@ void Note::update_rel_line(int abs_line, bool undoable) {
         // tab staff is already correct, and the following relStep method doesn't apply whatsoever to tab staves
         return;
     }
-    ClefType clef = staff->clef(chord()->tick());
+    ClefType clef = is_layout_copy() ? staff->rendered_clef(chord()->tick()) : staff->clef(chord()->tick());
     int line = rel_step(abs_line, clef);
 
     if (undoable && (line_ != ::mu::engraving::invalid_line) && (line != line_)) {

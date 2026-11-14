@@ -123,6 +123,7 @@ void ScoreLayout::layout_range(Score *score, const Fraction &st, const Fraction 
         if (auto *mmr = m->mm_rest()) retire_collisions(mmr);
     }
     ctx.mut_layout_data().retire_shared_auxiliary_output();
+    ctx.mut_layout_data().score_output().suppressed_shared_spanners.clear();
     for (auto *m = score->first_measure(); m; m = m->next_measure()) {
         m->reconcile_output_segments();
         if (auto *mmr = m->mm_rest()) mmr->reconcile_output_segments();

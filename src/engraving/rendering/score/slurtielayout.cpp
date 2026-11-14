@@ -2568,7 +2568,7 @@ void SlurTieLayout::compute_up(Slur *slur, LayoutContext &ctx) {
             bool multiple_voices = false;
             Measure *m1 = chord_rest1->measure();
             while (m1 && m1->tick() <= chord_rest2->tick()) {
-                if ((m1->has_voices(chord_rest1->staff_idx(), slur->tick(), slur->ticks() + chord_rest2->ticks())) && chord1) {
+                if ((m1->has_rendered_voices(chord_rest1->staff_idx(), slur->tick(), slur->ticks() + chord_rest2->ticks())) && chord1) {
                     multiple_voices = true;
                     break;
                 }
@@ -2979,10 +2979,10 @@ void SlurTieLayout::calculate_direction(Tie *item) {
         StaffType *st = item->staff()->staff_type(primary_note ? primary_note->tick() : Fraction(0, 1));
         bool simple_exception = st && st->is_simple_tab_staff();
         // if there are multiple voices, the tie direction goes on stem side
-        if (primary_measure->has_voices(primary_chord->staff_idx(), primary_chord->tick(), primary_chord->actual_ticks())) {
+        if (primary_measure->has_rendered_voices(primary_chord->staff_idx(), primary_chord->tick(), primary_chord->actual_ticks())) {
             item->set_up(simple_exception ? is_up_voice(primary_chord->voice()) : primary_chord->up());
-        } else if (tie_has_both_notes &&
-                   secondary_measure->has_voices(secondary_chord->staff_idx(), secondary_chord->tick(), secondary_chord->actual_ticks())) {
+        } else if (tie_has_both_notes && secondary_measure->has_rendered_voices(secondary_chord->staff_idx(), secondary_chord->tick(),
+                                                                                secondary_chord->actual_ticks())) {
             item->set_up(simple_exception ? is_up_voice(secondary_chord->voice()) : secondary_chord->up());
         } else if (n == 1) {
             //
