@@ -472,7 +472,11 @@ void Score::apply_measure_repeat_count(Measure *measure, int count, staff_idx_t 
 
 bool note_change(EngravingObject *object, CommandType type) {
     if (!object) return false;
-    if (object->is_spanner_segment()) object = to_spanner_segment(object)->spanner();
+    if (object->is_spanner_segment()) {
+        auto *source = authored_override_owner(*to_engraving_item(object));
+        if (source && !source->origin_items().empty()) source = source->origin_items().front();
+        object = source ? source : to_spanner_segment(object)->spanner();
+    }
     auto *master = object->master_score();
     if (!master || !master->transaction_manager()->current_transaction() || master->cmd_state().locked()) return false;
     auto &state = master->cmd_state();

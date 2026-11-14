@@ -429,7 +429,9 @@ void Selection::retire_spanner_segments() {
     for (auto *&element : el_) {
         for (auto *owner = element; owner; owner = owner->ownership_parent_item()) {
             if (owner->is_spanner_segment()) {
-                element = to_spanner_segment(owner)->spanner();
+                auto *source = authored_override_owner(*owner);
+                if (source && !source->origin_items().empty()) source = source->origin_items().front();
+                element = source ? source : to_spanner_segment(owner)->spanner();
                 break;
             }
         }

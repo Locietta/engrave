@@ -240,6 +240,7 @@ public:
     bool segments_empty() const { return spanner_segments().empty(); }
 
     void erase_spanner_segments();
+    void erase_detached_segments();
     bool either_end_visible() const;
 
     virtual void trigger_layout() const override;

@@ -136,6 +136,7 @@ void ScoreLayout::layout_range(Score *score, const Fraction &st, const Fraction 
 
     // Init context and layout
     ScorePageViewLayout::layout_page_view(score, ctx, stick, etick);
+    ctx.mut_layout_data().prune_spanner_segments();
     ctx.mut_layout_data().for_each_output(
         [&](EngravingItem &item, EngravingItem::LayoutData &data) { TLayout::complete_item_shape(item, data, ctx.conf()); });
 

@@ -144,13 +144,39 @@ static void clear_output_anchors(Score &score, const Measure *measure = nullptr)
     }
 }
 
-void LayoutDataStore::retire_spanner_borrowers() {
+void LayoutDataStore::retire_spanner_borrowers(const SpannerSegment &segment) {
     if (score_) score_->selection().retire_spanner_segments();
     for (auto *page : output_.pages) page->invalidate_bsp_tree();
-    for (auto *system : output_.systems)
-        for (auto *staff : system->staves()) staff->skyline().clear();
+    const auto borrows_segment = [&](const ShapeElement &element) {
+        for (auto *item = element.item(); item; item = item->ownership_parent_item())
+            if (item == &segment) return true;
+        return false;
+    };
+    // Reusable tail systems live outside ScoreOutput during a range pass.
+    // Records include them and the completed systems whose collisions must stay.
+    for (auto &record : records_->items.values()) {
+        auto *item = record.second.item;
+        auto &data = *record.second.data;
+        if (data.is_set_shape()) data.mut_shape().remove_if(borrows_segment);
+        if (data.mask_.has_value()) data.mask_.mut_value().remove_if(borrows_segment);
+        if (item->is_system()) {
+            for (auto *staff : to_system(item)->staves()) {
+                std::erase_if(staff->skyline().north().elements(), borrows_segment);
+                std::erase_if(staff->skyline().south().elements(), borrows_segment);
+            }
+        } else if (item->is_segment()) {
+            auto *owner = to_segment(item);
+            const auto size = static_cast<const Segment *>(owner)->shapes().size();
+            for (size_t i = 0; i < size; ++i) owner->staff_shape(i).remove_if(borrows_segment);
+        }
+    }
+}
+
+void LayoutDataStore::prune_spanner_segments() {
+    std::vector<Spanner *> spanners;
     for (auto &record : records_->items.values())
-        if (record.second.item->is_segment()) to_segment(record.second.item)->clear_shapes();
+        if (record.second.item->is_spanner()) spanners.push_back(to_spanner(record.second.item));
+    for (auto *spanner : spanners) spanner->erase_detached_segments();
 }
 
 void LayoutDataStore::retire_measure_borrowers(Measure &measure) {

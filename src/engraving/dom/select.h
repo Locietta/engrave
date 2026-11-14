@@ -121,7 +121,7 @@ struct Selection {
 
     const String &lock_reason() const { return lock_reason_; }
 
-    const std::vector<EngravingItem *> &elements() const { return el_; }
+    std::vector<EngravingItem *> elements() const { return el_; }
 
     std::vector<EngravingItem *> elements(ElementType type) const;
     std::vector<Note *> note_list(track_idx_t track = muse::nidx) const;

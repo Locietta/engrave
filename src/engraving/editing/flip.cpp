@@ -72,6 +72,7 @@ void Flip::flip(Transaction &, Score *score) {
     };
 
     for (EngravingItem *e : el) {
+        if (e->is_spanner_segment() && e->has_voice_assignment_properties()) e = to_spanner_segment(e)->spanner();
         if (e->has_voice_assignment_properties()) {
             flip_once(e, [e, direction]() {
                 e->undo_change_property(Pid::DIRECTION, direction(e->get_property(Pid::DIRECTION).value<DirectionV>(), e->place_above(),
