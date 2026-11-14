@@ -468,7 +468,7 @@ bool MMRestLayout::break_mmr_for_element(Measure *measure, Measure *prev_measure
             if (!bl) {
                 continue;
             }
-            BarLineType t = bl->bar_line_type();
+            BarLineType t = bl->display_bar_line_type();
             if (t != BarLineType::NORMAL && t != BarLineType::BROKEN && t != BarLineType::DOTTED && !bl->generated()) {
                 return true;
             } else {

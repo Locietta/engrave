@@ -545,7 +545,7 @@ void TDraw::draw(const BarLine *item, Painter *painter, const PaintOptions &opt)
 
     set_mask(item, painter);
 
-    switch (item->bar_line_type()) {
+    switch (item->display_bar_line_type()) {
         case BarLineType::NORMAL: {
             double lw = item->style().style_absolute(Sid::BAR_WIDTH) * item->mag();
             painter->set_pen(Pen(item->cur_color(opt), lw, PenStyle::SOLID_LINE, PenCapStyle::FLAT_CAP));

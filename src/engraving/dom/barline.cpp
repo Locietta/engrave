@@ -384,7 +384,7 @@ void BarLine::set_selected(bool f) {
 //---------------------------------------------------------
 
 void BarLine::style_changed() {
-    if (ownership_parent() && bar_line_type_ == BarLineType::END_REPEAT) {
+    if (ownership_parent() && display_bar_line_type() == BarLineType::END_REPEAT) {
         score()->undo_update_play_count_text(measure());
     }
     EngravingItem::style_changed();

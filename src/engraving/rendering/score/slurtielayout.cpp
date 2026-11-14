@@ -2018,7 +2018,7 @@ void SlurTieLayout::set_partial_tie_end_pos(PartialTie *item, SlurTiePos &s_pos)
         const double el_pos_in_system_coords = adj_seg->x_pos_in_system_coords() + el_pos;
         width_to_segment = outgoing ? el_pos_in_system_coords - s_pos.p1.x() : s_pos.p2.x() - (el_pos_in_system_coords + element_width);
         bool incoming_from_barline =
-            !outgoing && element && element->is_bar_line() && to_bar_line(element)->bar_line_type() != BarLineType::START_REPEAT;
+            !outgoing && element && element->is_bar_line() && to_bar_line(element)->display_bar_line_type() != BarLineType::START_REPEAT;
         width_to_segment -=
             item->style().style_absolute(incoming_from_barline ? Sid::BARLINE_TO_LINE_START_DISTANCE : Sid::LINE_END_TO_BARLINE_DISTANCE);
     }

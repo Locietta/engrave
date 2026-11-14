@@ -3153,7 +3153,7 @@ const BarLine *Measure::rendered_end_bar_line(staff_idx_t staff_idx, bool first)
 
 BarLineType Measure::rendered_end_bar_line_type() const {
     const BarLine *bl = rendered_end_bar_line();
-    return bl ? bl->bar_line_type() : BarLineType::NORMAL;
+    return bl ? bl->display_bar_line_type() : BarLineType::NORMAL;
 }
 
 bool Measure::rendered_end_bar_line_visible() const {
