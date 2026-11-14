@@ -42,7 +42,8 @@ private:
     static void clear_display_copies(Measure *measure);
     static void populate_display_copies(Measure *first, Measure *last, Measure *display, LayoutContext &ctx);
     static void copy_annotations(const Segment *source, Segment *display, const LayoutContext &ctx, bool check_visibility);
-    static Segment *copy_elements(const Segment *source, Measure *display, const Fraction &tick, LayoutContext &ctx, bool check_visibility);
+    static Segment *copy_elements(const Segment *source, Measure *display, const Fraction &tick, LayoutContext &ctx, bool check_visibility,
+                                  bool rendered_source = false);
 
     static bool valid_mm_rest_measure(const LayoutContext &ctx, const Measure *m);
     static bool break_mmr_for_element(Measure *measure, Measure *prev_measure, const LayoutContext &ctx);

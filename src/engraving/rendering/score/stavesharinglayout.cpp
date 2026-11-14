@@ -967,7 +967,7 @@ void StaveSharingLayout::make_shared_clef_key_time_sigs(StaveSharingContext &ctx
             if (seg->is_clef_type()) {
                 Clef *origin_clef = to_clef(seg->effective_element(origin_track));
                 if (origin_clef) {
-                    make_shared_item(origin_clef, seg->effective_element(shared_track), shared_track, seg,
+                    make_shared_item(origin_clef, seg->element(shared_track), shared_track, seg,
                                      [](const EngravingItem *origin, const EngravingItem *shared) {
                                          return to_clef(shared)->clef_type() == to_clef(origin)->clef_type();
                                      });
@@ -977,7 +977,7 @@ void StaveSharingLayout::make_shared_clef_key_time_sigs(StaveSharingContext &ctx
             if (seg->is_time_sig_type()) {
                 TimeSig *origin_time_sig = to_time_sig(seg->effective_element(origin_track));
                 if (origin_time_sig && origin_time_sig->is_local()) {
-                    make_shared_item(origin_time_sig, seg->effective_element(shared_track), shared_track, seg,
+                    make_shared_item(origin_time_sig, seg->element(shared_track), shared_track, seg,
                                      [](const EngravingItem *origin, const EngravingItem *shared) {
                                          IF_ASSERT_FAILED(origin->is_time_sig() && shared->is_time_sig()) { return false; }
                                          return *to_time_sig(shared) == *to_time_sig(origin);
@@ -988,7 +988,7 @@ void StaveSharingLayout::make_shared_clef_key_time_sigs(StaveSharingContext &ctx
             if (seg->is_key_sig_type()) {
                 KeySig *origin_key_sig = to_key_sig(seg->effective_element(origin_track));
                 if (origin_key_sig) {
-                    make_shared_item(origin_key_sig, seg->effective_element(shared_track), shared_track, seg,
+                    make_shared_item(origin_key_sig, seg->element(shared_track), shared_track, seg,
                                      [](const EngravingItem *origin, const EngravingItem *shared) {
                                          IF_ASSERT_FAILED(origin->is_key_sig() && shared->is_key_sig()) { return false; }
                                          return *to_key_sig(shared) == *to_key_sig(origin);
@@ -1011,7 +1011,7 @@ void StaveSharingLayout::make_shared_chord_rests(StaveSharingContext &ctx) {
                 continue;
             }
 
-            ChordRest *shared_cr = to_chord_rest(seg->effective_element(shared_track));
+            ChordRest *shared_cr = to_chord_rest(seg->element(shared_track));
             if (shared_cr) {
                 bool same_type = shared_cr->type() == origin_cr->type();
                 bool same_duration =
@@ -1145,7 +1145,7 @@ void StaveSharingLayout::make_shared_breaths(StaveSharingContext &ctx) {
                 continue;
             }
 
-            EngravingItem *shared_breath = make_shared_item(origin_breath, seg->effective_element(shared_track), shared_track, seg,
+            EngravingItem *shared_breath = make_shared_item(origin_breath, seg->element(shared_track), shared_track, seg,
                                                             [](const EngravingItem *origin, const EngravingItem *shared) {
                                                                 return to_breath(shared)->sym_id() == to_breath(origin)->sym_id();
                                                             });
@@ -1639,7 +1639,7 @@ void StaveSharingLayout::cleanup(StaveSharingContext &ctx) {
         if (seg->is_type(SegmentType::BREATH | SegmentType::CLEF | SegmentType::TIME_SIG) ||
             (seg->is_key_sig_type() && seg_has_local_key_sig(seg, p))) {
             for (track_idx_t track = range.start_track; track < range.end_track; ++track) {
-                EngravingItem *item = seg->effective_element(track);
+                EngravingItem *item = seg->element(track);
                 if (!item || !item->origin_items().empty() || (item->is_time_sig() && !to_time_sig(item)->is_local())) {
                     continue;
                 }
@@ -1653,7 +1653,7 @@ void StaveSharingLayout::cleanup(StaveSharingContext &ctx) {
         }
 
         for (track_idx_t track = range.start_track; track < range.end_track; ++track) {
-            ChordRest *cr = to_chord_rest(seg->effective_element(track));
+            ChordRest *cr = to_chord_rest(seg->element(track));
             if (!cr) {
                 continue;
             }

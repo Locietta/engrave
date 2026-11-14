@@ -94,13 +94,12 @@ void MMRestLayout::clear_display_copies(Measure *measure) {
         measure->el().remove(item);
         delete item;
     }
-    for (Segment *rendered = measure->rendered_first(); rendered; rendered = rendered->rendered_next()) {
-        Segment &segment = *rendered;
+    for (Segment &segment : measure->segments()) {
         const auto annotations = segment.annotations();
         for (auto *item : annotations) {
             if (item->is_layout_copy()) segment.remove_layout_copy(item);
         }
-        const auto elements = segment.effective_elements();
+        const auto elements = segment.elist();
         for (auto *item : elements) {
             if (item && item->is_layout_copy()) segment.remove_layout_copy(item);
         }
@@ -202,7 +201,7 @@ void MMRestLayout::populate_display_copies(Measure *first_measure, Measure *last
 
     // set mmrMeasure with same barline as last underlying measure
     Segment *last_measure_end_barline_seg = last_measure->find_rendered_segment_r(SegmentType::END_BAR_LINE, last_measure->ticks());
-    copy_elements(last_measure_end_barline_seg, mmr_measure, mmr_measure->ticks(), ctx, false);
+    copy_elements(last_measure_end_barline_seg, mmr_measure, mmr_measure->ticks(), ctx, false, true);
 
     // if last underlying measure ends with clef change, show same at end of mmrest
     Segment *last_measure_clef_seg = last_measure->find_segment_r(SegmentType::CLEF | SegmentType::HEADER_CLEF, last_measure->ticks());
@@ -273,14 +272,14 @@ void MMRestLayout::copy_annotations(const Segment *source, Segment *display, con
 }
 
 Segment *MMRestLayout::copy_elements(const Segment *source, Measure *measure, const Fraction &tick, LayoutContext &ctx,
-                                     bool check_visibility) {
+                                     bool check_visibility, bool rendered_source) {
     if (!source) return nullptr;
     Segment *display = measure->get_segment_r(source->segment_type(), tick);
     for (staff_idx_t staff = 0; staff < ctx.dom().nstaves(); ++staff) {
         const auto track = staff2track(staff);
-        const EngravingItem *item = source->element(track);
+        const EngravingItem *item = rendered_source ? source->effective_element(track) : source->element(track);
         if (!item || !item->visible() || (check_visibility && !ctx.dom().staff(staff)->show())) continue;
-        if (auto *old = display->effective_element(track)) {
+        if (auto *old = display->element(track)) {
             display->set_element(track, nullptr);
             delete old;
         }
