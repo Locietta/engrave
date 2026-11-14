@@ -5520,7 +5520,7 @@ TEST(Read, PartSpannerRelinkClearsLocalPiecesWithoutCopyingMasterOverrides) {
     const auto fixture = [](bool overrides, bool bend) {
         const auto score = [](bool part, bool local) {
             return std::string(R"(<Score><Division>480</Division><Style><spatium>1.75</spatium>
-<hairpinPosAbove x="0" y="0"/><hairpinPosBelow x="0" y="0"/></Style><Part><Staff>)") +
+<hairpinPosAbove x="0" y="0"/><hairpinPosBelow x="0" y="0"/><bendOffset x="0" y="0"/></Style><Part><Staff>)") +
                    (part ? "<linkedTo>S_S</linkedTo>" : "<eid>S_S</eid>") + R"(<StaffType group="pitched"/></Staff>
 <Instrument id="piano"><Channel><program value="0"/></Channel></Instrument></Part><Staff id="1"><Measure><voice>
 <TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig><Rest><durationType>whole</durationType></Rest></voice></Measure></Staff>
@@ -5539,11 +5539,17 @@ TEST(Read, PartSpannerRelinkClearsLocalPiecesWithoutCopyingMasterOverrides) {
         };
         auto xml = "<museScore version=\"5.00\">" + score(false, overrides) + score(true, overrides) + "</Score></Score></museScore>";
         if (bend) {
+            for (size_t at; (at = xml.find("<StaffType group=\"pitched\"/>")) != std::string::npos;)
+                xml.replace(at, 28, "<StaffType group=\"tablature\"><lines>6</lines></StaffType>");
+            const std::string strings = "<StringData><frets>24</frets><string>40</string><string>45</string><string>50</string><string>55</"
+                                        "string><string>59</string><string>64</string></StringData>";
+            for (size_t from = 0, at; (at = xml.find("</Instrument>", from)) != std::string::npos; from = at + strings.size() + 13)
+                xml.insert(at, strings);
             for (const bool part : {false, true}) {
                 const auto notes = std::string("<Chord><durationType>half</durationType><Note><eid>") + (part ? "N_N" : "B_B") +
-                                   "</eid><pitch>60</pitch><tpc>14</tpc></Note></Chord>" +
+                                   "</eid><pitch>60</pitch><tpc>14</tpc><string>1</string><fret>1</fret></Note></Chord>" +
                                    "<Chord><durationType>half</durationType><Note><eid>" + (part ? "O_O" : "C_C") +
-                                   "</eid><pitch>62</pitch><tpc>16</tpc></Note></Chord>";
+                                   "</eid><pitch>62</pitch><tpc>16</tpc><string>1</string><fret>3</fret></Note></Chord>";
                 const auto rest = xml.find("<Rest>");
                 xml.replace(rest, xml.find("</Rest>", rest) + 7 - rest, notes);
             }
@@ -5635,10 +5641,13 @@ TEST(Read, PartSpannerRelinkClearsLocalPiecesWithoutCopyingMasterOverrides) {
                         EXPECT_TRUE(part->pages().empty());
                         EXPECT_TRUE(restored.pages().empty());
                     }
-                    if (bend) continue;
                     part->ensure_layout();
                     ASSERT_NE(piece_owner->front_segment(), nullptr);
-                    if (position)
+                    if (bend) {
+                        const auto offset = to_guitar_bend_segment(piece_owner->front_segment())->bend_text()->offset();
+                        EXPECT_NEAR(offset.x() / ::mu::engraving::dpmm, overrides && !position ? 0.5 : 0.0, 1e-6);
+                        EXPECT_NEAR(offset.y() / ::mu::engraving::dpmm, overrides && !position ? -0.25 : 0.0, 1e-6);
+                    } else if (position)
                         EXPECT_EQ(piece_owner->front_segment()->offset(), PointF());
                     else
                         EXPECT_EQ(piece_owner->front_segment()->color(), muse::draw::Color(0, 0, 0));

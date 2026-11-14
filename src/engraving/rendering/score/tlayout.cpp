@@ -2641,6 +2641,8 @@ void TLayout::layout_guitar_bend(GuitarBend *item, LayoutContext &ctx, System *s
 void TLayout::layout_guitar_bend_segment(GuitarBendSegment *item, LayoutContext &ctx) {
     AuthoredOverrideMirror mirror(*item);
     LAYOUT_CALL_ITEM(item);
+    bind_authored_child(*item->bend_text(), {AuthoredChildRole::SEGMENT_TEXT, item->authored_child.ordinal});
+    AuthoredOverrideMirror text_mirror(*item->bend_text());
     bool tab_staff = item->staff_type()->is_tab_staff();
     if (tab_staff) {
         GuitarBendLayout::layout_tab_staff(item, ctx);
