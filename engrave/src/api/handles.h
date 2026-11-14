@@ -50,10 +50,6 @@ ElementId from_engine(const mu::engraving::EID &id);
 // runs after open, create, restore and commit alike.
 void assign_missing_ids(mu::engraving::MasterScore &score);
 
-// Test-only observer of explicit document enumeration; resolution must never call it.
-using ObjectWalkHook = void (*)();
-void set_object_walk_hook(ObjectWalkHook hook);
-
 // Where an element sits: the score it belongs to, its tick and its track. An
 // operation that recreates an element leaves all three as they were, which is what
 // separates a replacement from a removal.
