@@ -141,9 +141,10 @@ System *SystemLayout::collect_system(LayoutContext &ctx) {
     prev_measure_state.cur_header = ctx.state().cur_measure()->header();
     prev_measure_state.cur_trailer = ctx.state().cur_measure()->trailer();
 
-    const RangeLock *system_lock = ctx.conf().view_mode() == LayoutMode::PAGE || ctx.conf().view_mode() == LayoutMode::SYSTEM ?
-                                       ctx.dom().system_locks()->lock_starting_at(ctx.state().cur_measure()) :
-                                       nullptr;
+    const RangeLock *system_lock =
+        ctx.conf().view_mode() == LayoutMode::PAGE || ctx.conf().view_mode() == LayoutMode::SYSTEM ?
+            (ctx.state().cur_measure()->is_start_of_system_lock() ? ctx.state().cur_measure()->system_lock() : nullptr) :
+            nullptr;
 
     if (system_lock) {
         StaveSharingLayout::update_stave_sharing_for_full_system(system_lock->start_mb(), system_lock->end_mb(), ctx);

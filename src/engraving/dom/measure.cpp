@@ -329,7 +329,8 @@ void Measure::set_mm_rest(Measure *measure) {
 }
 
 Measure::~Measure() {
-    if (!ldata()->segments.empty()) {
+    if (is_mm_rest()) score()->clear_layout_copies(*this);
+    if (is_mm_rest() || !ldata()->segments.empty()) {
         if (auto *store = score()->layout_data_store()) store->retire_measure_borrowers(*this);
     }
     for (Segment *s = first(); s;) {
@@ -671,6 +672,8 @@ void Measure::reconcile_output_segments() {
     for (auto *source = first(); source; source = source->next()) {
         if (resized) {
             source->mutldata()->suppressed = false;
+            for (auto *copy : source->ldata()->display_copies)
+                if (copy && score()->layout_data_store()) score()->layout_data_store()->retire_layout_copy(*copy);
             muse::delete_all(source->mutldata()->display_copies);
             source->mutldata()->display_copies.clear();
             source->set_enabled(true);
@@ -1049,7 +1052,10 @@ void Measure::remove(EngravingItem *e) {
             LOGD("Measure::remove: %s %p not found", e->type_name(), e);
             break;
 
-        case ElementType::MEASURE: set_mm_rest(nullptr); break;
+        case ElementType::MEASURE:
+            score()->clear_layout_copies(*to_measure(e));
+            mutldata()->mm_rest = nullptr;
+            break;
 
         case ElementType::STAFFTYPE_CHANGE: {
             StaffTypeChange *stc = to_staff_type_change(e);
@@ -1699,7 +1705,7 @@ void Measure::scan_elements(std::function<void(EngravingItem *)> func) {
             func(ms->vspacer_down());
         }
 
-        if (ms->mm_range_text()) {
+        if (is_mm_rest() && ms->mm_range_text()) {
             func(ms->mm_range_text());
         }
     }
@@ -2463,7 +2469,10 @@ Measure *Measure::mm_rest_first() const {
 
 Measure *Measure::mm_rest_last() const {
     assert(is_mm_rest());
-    return ldata()->mm_rest_last;
+    if (auto *last = ldata()->mm_rest_last) return last;
+    auto *last = mm_rest_first();
+    for (int i = 1; last && i < mm_rest_count() && last->next_measure(); ++i) last = last->next_measure();
+    return last;
 }
 
 //---------------------------------------------------------

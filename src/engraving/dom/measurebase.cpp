@@ -624,36 +624,43 @@ bool MeasureBase::is_before(const MeasureBase *other) const {
     return false;
 }
 
-const RangeLock *MeasureBase::system_lock() const {
-    return score()->system_locks()->lock_containing(is_measure() && to_measure(this)->is_mm_rest() ? to_measure(this)->mm_rest_first() :
-                                                                                                     this);
+static const MeasureBase *display_lock_endpoint(const MeasureBase *source, bool end) {
+    if (!source->is_measure()) return source;
+    const auto *display = to_measure(source)->covering_mm_rest_or_this();
+    if (display == source || end || display->mm_rest_first() == source) return display;
+    return display->next_mm();
 }
 
-bool MeasureBase::is_start_of_system_lock() const {
-    const RangeLock *lock = score()->system_locks()->lock_starting_at(
-        is_measure() && to_measure(this)->is_mm_rest() ? to_measure(this)->mm_rest_first() : this);
-    return lock != nullptr;
+static const RangeLock *display_lock_at(const RangeLocks &locks, const MeasureBase *base, bool start_only) {
+    const auto *display = base->is_measure() ? to_measure(base)->covering_mm_rest_or_this() : base;
+    for (const auto *lock : locks.all_locks()) {
+        const auto *start = display_lock_endpoint(lock->start_mb(), false);
+        const auto *end = display_lock_endpoint(lock->end_mb(), true);
+        // A lock wholly inside one collapsed range has no display boundary.
+        if (!start || start->is_after(end) || (start == end && start->is_measure() && to_measure(start)->is_mm_rest())) continue;
+        if (start_only ? start == display : start->is_before_or_equal(display) && display->is_before_or_equal(end)) return lock;
+    }
+    return nullptr;
 }
+
+const RangeLock *MeasureBase::system_lock() const { return display_lock_at(*score()->system_locks(), this, false); }
+
+bool MeasureBase::is_start_of_system_lock() const { return display_lock_at(*score()->system_locks(), this, true); }
 
 bool MeasureBase::is_end_of_system_lock() const {
-    const RangeLock *lock = system_lock();
-    return lock && (lock->end_mb()->is_measure() ? to_measure(lock->end_mb())->covering_mm_rest_or_this() : lock->end_mb()) == this;
+    const auto *lock = system_lock();
+    const auto *display = is_measure() ? to_measure(this)->covering_mm_rest_or_this() : this;
+    return lock && display_lock_endpoint(lock->end_mb(), true) == display;
 }
 
-const RangeLock *MeasureBase::page_lock() const {
-    return score()->page_locks()->lock_containing(is_measure() && to_measure(this)->is_mm_rest() ? to_measure(this)->mm_rest_first() :
-                                                                                                   this);
-}
+const RangeLock *MeasureBase::page_lock() const { return display_lock_at(*score()->page_locks(), this, false); }
 
-bool MeasureBase::is_start_of_page_lock() const {
-    const RangeLock *lock =
-        score()->page_locks()->lock_starting_at(is_measure() && to_measure(this)->is_mm_rest() ? to_measure(this)->mm_rest_first() : this);
-    return lock != nullptr;
-}
+bool MeasureBase::is_start_of_page_lock() const { return display_lock_at(*score()->page_locks(), this, true); }
 
 bool MeasureBase::is_end_of_page_lock() const {
-    const RangeLock *lock = page_lock();
-    return lock && (lock->end_mb()->is_measure() ? to_measure(lock->end_mb())->covering_mm_rest_or_this() : lock->end_mb()) == this;
+    const auto *lock = page_lock();
+    const auto *display = is_measure() ? to_measure(this)->covering_mm_rest_or_this() : this;
+    return lock && display_lock_endpoint(lock->end_mb(), true) == display;
 }
 
 //---------------------------------------------------------

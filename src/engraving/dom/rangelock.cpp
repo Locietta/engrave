@@ -27,6 +27,12 @@
 #include "measurebase.h"
 
 namespace mu::engraving {
+RangeLock::RangeLock(MeasureBase *start, MeasureBase *end) {
+    start_mb_ = start->is_measure() && to_measure(start)->is_mm_rest() ? to_measure(start)->mm_rest_first() : start;
+    end_mb_ = end->is_measure() && to_measure(end)->is_mm_rest() ? to_measure(end)->mm_rest_last() : end;
+    assert(start_mb_ && end_mb_ && start_mb_->is_before_or_equal(end_mb_));
+}
+
 bool RangeLock::contains(const MeasureBase *mb) const { return start_mb_->is_before_or_equal(mb) && mb->is_before_or_equal(end_mb_); }
 
 void RangeLocks::add(const RangeLock *lock) {
@@ -46,11 +52,13 @@ void RangeLocks::remove(const RangeLock *lock) {
 }
 
 const RangeLock *RangeLocks::lock_starting_at(const MeasureBase *mb) const {
+    if (mb->is_measure() && to_measure(mb)->is_mm_rest()) mb = to_measure(mb)->mm_rest_first();
     auto iter = range_locks_.find(mb);
     return iter != range_locks_.end() ? iter->second : nullptr;
 }
 
 const RangeLock *RangeLocks::lock_containing(const MeasureBase *mb) const {
+    if (mb->is_measure() && to_measure(mb)->is_mm_rest()) mb = to_measure(mb)->mm_rest_first();
     if (range_locks_.empty()) {
         return nullptr;
     }
@@ -66,6 +74,8 @@ const RangeLock *RangeLocks::lock_containing(const MeasureBase *mb) const {
 }
 
 std::vector<const RangeLock *> RangeLocks::locks_contained_in_range(const MeasureBase *start, const MeasureBase *end) const {
+    if (start->is_measure() && to_measure(start)->is_mm_rest()) start = to_measure(start)->mm_rest_first();
+    if (end->is_measure() && to_measure(end)->is_mm_rest()) end = to_measure(end)->mm_rest_last();
     std::vector<const RangeLock *> result;
 
     for (auto &pair : range_locks_) {

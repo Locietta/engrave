@@ -136,16 +136,16 @@ static void clear_output_anchors(Score &score, const Measure *measure = nullptr)
 
 void LayoutDataStore::retire_measure_borrowers(Measure &measure) {
     if (!score_) return;
+    clear_output_anchors(*score_, &measure);
     auto *system = measure.system();
     if (!system) return;
-    if (score_->master_score()->cmd_state().locked()) return;
-    clear_output_anchors(*score_, &measure);
     if (auto *page = system->page()) page->invalidate_bsp_tree();
     for (auto *staff : system->staves()) staff->skyline().clear();
     for (auto &record : records_->items.values()) {
         auto *item = record.second.item;
         if (item->is_segment() && to_segment(item)->measure()->system() == system) to_segment(item)->clear_shapes();
     }
+    if (score_->master_score()->cmd_state().locked()) return;
     // An edit can delete a source node together with its generated children
     // before the next pass. Rebuild every system whose borrowed views we cleared.
     if (auto *first = system->first_measure()) {

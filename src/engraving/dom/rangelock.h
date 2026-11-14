@@ -28,9 +28,7 @@
 
 namespace mu::engraving {
 struct RangeLock {
-    RangeLock(MeasureBase *start, MeasureBase *end) : start_mb_(start), end_mb_(end) {
-        assert(start_mb_->is_before(end_mb_) || start_mb_ == end_mb_);
-    }
+    RangeLock(MeasureBase *start, MeasureBase *end);
 
     MeasureBase *start_mb() const { return start_mb_; }
 

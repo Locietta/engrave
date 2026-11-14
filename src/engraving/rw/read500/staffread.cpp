@@ -71,6 +71,7 @@ void StaffRead::read_staff(Score *score, XmlReader &e, ReadContext &ctx) {
 
                     if (m1) {
                         ctx.legacy_mmrests.emplace(m1, std::unique_ptr<Measure>(measure));
+                        measure->mutldata()->mm_rest_first = m1;
                         measure->set_tick(m1->tick());
                         measure->set_prev(m1->prev());
                     }
