@@ -279,7 +279,7 @@ void MeasureLayout::layout_measure(MeasureBase *current_mb, LayoutContext &ctx) 
             }
         } else if (segment.is_chord_rest_type()) {
             ChordBracketLayout::layout_segment(&segment, ctx);
-            for (EngravingItem *e : segment.annotations()) {
+            for (EngravingItem *e : segment.rendered_annotations()) {
                 if (e->is_symbol() || e->is_harmony() || e->is_fret_diagram()) {
                     TLayout::layout_item(e, ctx);
                 }
@@ -448,7 +448,7 @@ void MeasureLayout::compute_pre_spacing_items(Measure *m, LayoutContext &ctx) {
             chord->compute_kerning_exceptions();
         }
 
-        for (EngravingItem *annotation : seg.annotations()) {
+        for (EngravingItem *annotation : seg.rendered_annotations()) {
             if (annotation->is_fermata()) {
                 TLayout::layout_item(annotation, ctx);
             }

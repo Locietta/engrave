@@ -10,11 +10,13 @@
 #include "dom/masterscore.h"
 #include "dom/measure.h"
 #include "dom/measurebase.h"
+#include "dom/note.h"
 #include "dom/page.h"
 #include "dom/score.h"
 #include "dom/segment.h"
 #include "dom/spanner.h"
 #include "dom/system.h"
+#include "dom/tuplet.h"
 #include "rendering/score/layoutdatafactory.h"
 #include "rendering/score/scorerenderer.h"
 
@@ -95,6 +97,8 @@ void LayoutDataStore::erase(EngravingItem &item) {
         // The base destructor has already unlinked placement before erasing here.
         if (auto *system = data->system) system->remove_measure(to_measure_base(&item));
     }
+    if (auto *shared = item.shared_item()) EngravingItem::disconnect_shared_item(shared, &item);
+    EngravingItem::disconnect_all_origin_items(&item);
     // Extract before running destructors: Chord payloads still own generated
     // ledger shells, whose destruction recursively retires other records (L3).
     auto data = std::move(it->second.data);
@@ -146,12 +150,24 @@ void LayoutDataStore::retire_measure_borrowers(Measure &measure) {
         if (item->is_segment() && to_segment(item)->measure()->system() == system) to_segment(item)->clear_shapes();
     }
     if (score_->master_score()->cmd_state().locked()) return;
+    retire_shared_auxiliary_output();
     // An edit can delete a source node together with its generated children
     // before the next pass. Rebuild every system whose borrowed views we cleared.
     if (auto *first = system->first_measure()) {
         auto *last = system->last_measure();
         score_->invalidate_layout(first->tick(), last ? last->end_tick() : first->end_tick());
     }
+}
+
+void LayoutDataStore::retire_shared_auxiliary_output() {
+    // Note borrowers must be detached while the display notes are still alive.
+    for (auto *spanner : output_.shared_spanners) {
+        if (auto *start = spanner->start_element(); start && start->is_note()) to_note(start)->remove(spanner);
+    }
+    muse::delete_all(output_.shared_spanners);
+    output_.shared_spanners.clear();
+    muse::delete_all(output_.shared_tuplets);
+    output_.shared_tuplets.clear();
 }
 
 void LayoutDataStore::discard_score_output() {
@@ -178,9 +194,11 @@ void LayoutDataStore::discard_score_output() {
         }
     }
     layout_copies_.clear();
+    output_.shared_track_maps.clear();
     // Systems unlink their borrowers while pages and source owners are alive.
     muse::delete_all(output_.systems);
     output_.systems.clear();
+    retire_shared_auxiliary_output();
     muse::delete_all(output_.pages);
     output_.pages.clear();
 }

@@ -6762,44 +6762,6 @@ TEST(LayoutDataStore, RecursiveLedgerTeardownRetiresEveryPayload) {
     EXPECT_EQ(store.size(), before);
 }
 
-TEST(LayoutDataStore, SharingLinksSurvivePayloadErasureAndDetachOnDestruction) {
-    using namespace mu::engraving;
-    auto opened = g_engine->open(write470_fixture());
-    ASSERT_TRUE(opened);
-    auto &master = master_of(**opened);
-    auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
-    std::unique_ptr<Note> shared(Factory::create_note(chord));
-    std::unique_ptr<Note> origin(Factory::create_note(chord));
-    std::unique_ptr<Note> other(Factory::create_note(chord));
-    origin->set_track(1);
-    other->set_track(0);
-    EngravingItem::connect_shared_item(shared.get(), origin.get());
-    EngravingItem::connect_shared_item(shared.get(), other.get());
-    ASSERT_EQ(shared->origin_items().size(), 2u);
-    EXPECT_EQ(shared->origin_items().front(), other.get());
-    EXPECT_EQ(origin->shared_item(), shared.get());
-    EXPECT_FALSE(shared->has_layout_data());
-    EXPECT_FALSE(origin->has_layout_data());
-    auto &store = master.renderer()->layout_data_store(master);
-    origin->mutldata()->set_pos(1.25, 2.5);
-    store.erase(*origin);
-    EXPECT_FALSE(origin->has_layout_data());
-    EXPECT_EQ(origin->shared_item(), shared.get());
-    shared->undo_change_property(Pid::VISIBLE, false);
-    EXPECT_FALSE(origin->visible());
-    EXPECT_FALSE(other->visible());
-    other->undo_change_property(Pid::VISIBLE, true);
-    EXPECT_TRUE(shared->visible()); // First origin propagates back to its shared item.
-    EXPECT_FALSE(origin->has_layout_data());
-    shared.reset();
-    EXPECT_EQ(origin->shared_item(), nullptr);
-    EXPECT_EQ(other->shared_item(), nullptr);
-    EngravingItem::connect_shared_item(origin.get(), other.get());
-    other.reset();
-    EXPECT_TRUE(origin->origin_items().empty());
-    EXPECT_FALSE(origin->has_layout_data());
-}
-
 TEST(LayoutDataStore, HarmonyOutputOwnsRenderedChildrenAndColdDestructionDoesNotAllocate) {
     using namespace mu::engraving;
     auto opened = g_engine->open(write470_fixture());

@@ -944,6 +944,10 @@ Chord *Spanner::find_end_chord() const {
 
 ChordRest *Spanner::find_start_cr() const {
     assert(anchor() == Anchor::SEGMENT || anchor() == Anchor::CHORDREST);
+    if (is_layout_copy()) {
+        auto *segment = score()->find_rendered_left_segment(tick(), true);
+        return segment ? to_chord_rest(segment->effective_element(track())) : nullptr;
+    }
     return score()->find_cr(tick(), track());
 }
 
@@ -953,9 +957,10 @@ ChordRest *Spanner::find_start_cr() const {
 
 ChordRest *Spanner::find_end_cr() const {
     assert(anchor() == Anchor::SEGMENT || anchor() == Anchor::CHORDREST);
-    Segment *s = score()->tick2segment(tick2(), false, SegmentType::CHORD_REST, !score()->normalize_state.running);
+    Segment *s = is_layout_copy() ? score()->find_rendered_segment(tick2(), false, SegmentType::CHORD_REST, true) :
+                                    score()->tick2segment(tick2(), false, SegmentType::CHORD_REST, !score()->normalize_state.running);
     const track_idx_t tr2 = effective_track2();
-    ChordRest *end_cr = s ? to_chord_rest(s->element(tr2)) : nullptr;
+    ChordRest *end_cr = s ? to_chord_rest(is_layout_copy() ? s->effective_element(tr2) : s->element(tr2)) : nullptr;
     return end_cr;
 }
 

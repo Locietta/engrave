@@ -172,7 +172,7 @@ void BoxLayout::layout_f_box(const FBox *item, FBox::LayoutData *ldata, const La
         /// Perform layout
         for (mu::engraving::Segment *segment = score->first_segment(mu::engraving::SegmentType::CHORD_REST); segment;
              segment = segment->next1(mu::engraving::SegmentType::CHORD_REST)) {
-            for (EngravingItem *seg_item : segment->annotations()) {
+            for (EngravingItem *seg_item : segment->rendered_annotations()) {
                 if (!seg_item || !seg_item->part()) {
                     continue;
                 }

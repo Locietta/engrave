@@ -69,6 +69,5 @@ private:
 
     bool enabled_ = true;
     std::vector<Part *> origin_parts_;
-    std::map<Fraction, SharedTrackMap> track_maps_by_tick_{{Fraction(0, 1), SharedTrackMap()}};
 };
 } // namespace mu::engraving

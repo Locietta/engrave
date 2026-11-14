@@ -43,6 +43,7 @@
 #include "part.h"
 #include "score.h"
 #include "segment.h"
+#include "sharedpart.h"
 #include "stafftype.h"
 #include "timesig.h"
 #include "types/typesconv.h"
@@ -329,6 +330,10 @@ String Staff::part_name() const { return part_->part_name(); }
 //---------------------------------------------------------
 
 ClefTypeList Staff::clef_type(const Fraction &tick) const {
+    if (part_ && part_->is_shared_part() && !score()->normalize_state.running) {
+        if (const auto *origin = to_shared_part(part_)->origin_part_for_staff(idx(), tick); origin && !origin->staves().empty())
+            return origin->staves().front()->clef_type(tick);
+    }
     ClefTypeList ct = clefs_.clef(tick.ticks());
     if (ct.concert_clef == ClefType::INVALID) {
         // Clef compatibility based on instrument (override StaffGroup)
@@ -482,6 +487,10 @@ Fraction Staff::time_stretch(const Fraction &tick) const {
 //---------------------------------------------------------
 
 TimeSig *Staff::time_sig(const Fraction &tick) const {
+    if (part_ && part_->is_shared_part() && !score()->normalize_state.running) {
+        if (const auto *origin = to_shared_part(part_)->origin_part_for_staff(idx(), tick); origin && !origin->staves().empty())
+            return origin->staves().front()->time_sig(tick);
+    }
     auto i = timesigs_.upper_bound(tick.ticks());
     if (i != timesigs_.begin()) {
         --i;
@@ -607,6 +616,10 @@ Interval Staff::transpose(const Fraction &tick) const {
 //---------------------------------------------------------
 
 KeySigEvent Staff::key_sig_event(const Fraction &tick) const {
+    if (part_ && part_->is_shared_part() && !score()->normalize_state.running) {
+        if (const auto *origin = to_shared_part(part_)->origin_part_for_staff(idx(), tick); origin && !origin->staves().empty())
+            return origin->staves().front()->key_sig_event(tick);
+    }
     auto event = keys_.key(tick.ticks());
     if (keys_.upper_bound(tick.ticks()) == keys_.begin() && part() && part()->instrument(tick) &&
         !score()->style().style_b(Sid::CONCERT_PITCH)) {

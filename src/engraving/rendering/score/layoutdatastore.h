@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "dom/engravingitem.h"
+#include "dom/sharedpart.h"
 
 namespace mu::engraving::rendering::score {
 // Item addresses are lifetime-qualified by explicit erase before destruction/address reuse.
@@ -20,6 +21,9 @@ struct LayoutDataStore {
         // LayoutState temporarily borrows a raw tail during range reuse.
         std::vector<Page *> pages;
         std::vector<System *> systems;
+        std::vector<Spanner *> shared_spanners;
+        std::vector<Tuplet *> shared_tuplets;
+        std::map<const SharedPart *, std::map<Fraction, SharedTrackMap>> shared_track_maps;
     };
 
     Score *score() const { return score_; }
@@ -33,6 +37,7 @@ struct LayoutDataStore {
     void clear_layout_copies(const Measure &display);
     void retire_layout_copy(const EngravingItem &item);
     void discard_score_output();
+    void retire_shared_auxiliary_output();
     void retire_measure_borrowers(Measure &measure);
 
     size_t size() const;

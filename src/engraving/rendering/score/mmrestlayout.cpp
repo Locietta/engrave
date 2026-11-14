@@ -282,7 +282,7 @@ void MMRestLayout::populate_display_copies(Measure *first_measure, Measure *last
 
 void MMRestLayout::copy_annotations(const Segment *source, Segment *display, const LayoutContext &ctx, bool check_visibility) {
     if (!source || !display) return;
-    for (const EngravingItem *item : source->annotations()) {
+    for (const EngravingItem *item : source->rendered_annotations()) {
         if (!muse::contains(::break_types, item->type())) continue;
         if (const auto *existing = display->score()->layout_copy(*item); existing && existing->ownership_parent() == display) continue;
         if (check_visibility && (!item->visible() || !ctx.dom().staff(item->staff_idx())->show())) continue;
@@ -333,7 +333,7 @@ bool MMRestLayout::valid_mm_rest_measure(const LayoutContext &ctx, const Measure
 
     int n = 0;
     for (const Segment *s = m->first(); s; s = s->next()) {
-        for (const EngravingItem *e : s->annotations()) {
+        for (const EngravingItem *e : s->rendered_annotations()) {
             if (e->staff_idx() >= nstaves || !e->staff()->show() || !e->visible()) {
                 continue;
             }
@@ -367,7 +367,7 @@ bool MMRestLayout::valid_mm_rest_measure(const LayoutContext &ctx, const Measure
             }
             rest_found = true;
         }
-        for (const EngravingItem *e : s->annotations()) {
+        for (const EngravingItem *e : s->rendered_annotations()) {
             if (e->is_fermata()) {
                 return false;
             }
@@ -406,7 +406,7 @@ bool MMRestLayout::break_mmr_for_element(Measure *measure, Measure *prev_measure
     }
 
     for (Segment *s = measure->first(); s; s = s->next()) {
-        for (EngravingItem *e : s->annotations()) {
+        for (EngravingItem *e : s->rendered_annotations()) {
             if (!e->visible()) {
                 continue;
             }
@@ -467,7 +467,7 @@ bool MMRestLayout::break_mmr_for_element(Measure *measure, Measure *prev_measure
             }
         }
 
-        for (EngravingItem *e : s->annotations()) {
+        for (EngravingItem *e : s->rendered_annotations()) {
             if (!e->visible()) {
                 continue;
             }

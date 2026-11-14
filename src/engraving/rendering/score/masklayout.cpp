@@ -233,7 +233,7 @@ std::vector<TextBase *> MaskLayout::collect_all_system_text(const System *system
             if (!s.is_type(SegmentType::DURATION) || !s.enabled()) {
                 continue;
             }
-            for (EngravingItem *annotation : s.annotations()) {
+            for (EngravingItem *annotation : s.rendered_annotations()) {
                 const SysStaff *staff = system ? system->staff(annotation->staff_idx()) : nullptr;
                 const bool staff_visible = staff && staff->show();
                 if (annotation->is_text_base() && annotation->visible() && staff_visible) {

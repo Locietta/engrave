@@ -104,6 +104,7 @@ Segment::LayoutData::~LayoutData() {
     for (auto *copy : display_copies)
         if (copy && copy->score()->layout_data_store()) copy->score()->layout_data_store()->retire_layout_copy(*copy);
     muse::delete_all(display_copies);
+    muse::delete_all(display_annotations);
     muse::delete_all(generated);
 }
 
@@ -120,9 +121,44 @@ void Segment::add_display_copy(const EngravingItem &source) {
     score()->register_layout_copy(source, *copy);
 }
 
+void Segment::add_display_item(EngravingItem *item) {
+    item->set_layout_copy(true);
+    item->set_ownership_parent(this);
+    if (segment_type(item->type()) == segment_type()) {
+        auto &copies = mutldata()->display_copies;
+        copies.resize(score()->ntracks());
+        assert(!copies[item->track()]);
+        copies[item->track()] = item;
+        auto &suppressed = mutldata()->suppressed_source_tracks;
+        suppressed.resize(score()->ntracks());
+        suppressed[item->track()] = true;
+    } else {
+        mutldata()->display_annotations.push_back(item);
+    }
+}
+
+void Segment::remove_display_item(EngravingItem *item) {
+    auto &copies = mutldata()->display_copies;
+    if (item->track() < copies.size() && copies[item->track()] == item)
+        copies[item->track()] = nullptr;
+    else
+        std::erase(mutldata()->display_annotations, item);
+}
+
+std::vector<EngravingItem *> Segment::rendered_annotations() const {
+    std::vector<EngravingItem *> result;
+    for (auto *item : annotations_) {
+        if (!muse::contains(ldata()->suppressed_annotations, item)) result.push_back(item);
+    }
+    const auto &copies = ldata()->display_annotations;
+    result.insert(result.end(), copies.begin(), copies.end());
+    return result;
+}
+
 EngravingItem *Segment::effective_element(track_idx_t track) const {
     if (ldata()->suppressed) return nullptr;
-    if (auto *authored = element(track)) return authored;
+    const auto &suppressed = ldata()->suppressed_source_tracks;
+    if (auto *authored = element(track); authored && !(track < suppressed.size() && suppressed[track])) return authored;
     const auto &copies = ldata()->display_copies;
     if (track < copies.size() && copies[track]) return copies[track];
     const auto &generated = ldata()->generated;
@@ -1600,7 +1636,7 @@ void Segment::scan_elements(std::function<void(EngravingItem *)> func) {
         }
         e->scan_elements(func);
     }
-    for (EngravingItem *e : annotations()) {
+    for (EngravingItem *e : rendered_annotations()) {
         if (!e->system_flag() && (!measure() || !measure()->visible(e->staff_idx()))) {
             continue;
         }
@@ -2670,7 +2706,7 @@ void Segment::create_shape(staff_idx_t staff_idx) {
         }
     }
 
-    for (EngravingItem *e : annotations_) {
+    for (EngravingItem *e : rendered_annotations()) {
         if (!e || e->staff_idx() != staff_idx) {
             continue;
         }

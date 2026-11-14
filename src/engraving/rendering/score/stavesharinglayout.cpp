@@ -37,12 +37,91 @@
 #include "dom/staff.h"
 #include "dom/system.h"
 #include "dom/timesig.h"
+#include "layoutdatastore.h"
 #include "measurelayout.h"
+#include "scorerenderer.h"
 #include "systemheaderlayout.h"
 
 using namespace mu::engraving;
 
 namespace mu::engraving::rendering::score {
+namespace {
+LayoutDataStore &output(EngravingItem *item) { return item->renderer()->layout_data_store(*item->score()); }
+
+void add_shared_output(EngravingItem *item) {
+    item->set_layout_copy(true);
+    // Note::clone copies an outgoing tie with no endpoint. Sharing reconnects
+    // ties from their origins after all display notes are available.
+    const auto clear_copied_ties = [&](auto &&self, EngravingItem *copy) -> void {
+        if (copy->is_note()) {
+            auto *note = to_note(copy);
+            if (auto *tie = note->tie_for()) {
+                note->set_tie_for(nullptr);
+                delete tie;
+            }
+        }
+        if (copy->is_chord()) {
+            for (auto *note : to_chord(copy)->notes()) self(self, note);
+            for (auto *grace : to_chord(copy)->grace_notes()) self(self, grace);
+        }
+    };
+    if (item->is_chord() || item->is_note()) clear_copied_ties(clear_copied_ties, item);
+    auto *parent = item->ownership_parent_item();
+    if (item->is_spanner()) {
+        auto *spanner = to_spanner(item);
+        output(item).score_output().shared_spanners.push_back(spanner);
+        if (parent && parent->is_note()) parent->add(item);
+    } else if (item->is_tuplet()) {
+        output(item).score_output().shared_tuplets.push_back(to_tuplet(item));
+    } else if (parent->is_segment()) {
+        to_segment(parent)->add_display_item(item);
+    } else {
+        assert(parent->is_layout_copy());
+        parent->add(item);
+    }
+}
+
+void remove_shared_output(EngravingItem *item) {
+    assert(item->is_layout_copy());
+    auto &store = output(item);
+    if (auto *measure = item->find_measure()) store.retire_measure_borrowers(*measure);
+    if (!item->is_spanner()) {
+        auto spans = store.score_output().shared_spanners;
+        for (auto *span : spans) {
+            const auto belongs = [&](const EngravingItem *anchor) {
+                for (const EngravingObject *owner = anchor; owner; owner = owner->ownership_parent())
+                    if (owner == item) return true;
+                return false;
+            };
+            if (belongs(span->start_element()) || belongs(span->end_element())) remove_shared_output(span);
+        }
+    }
+    if (item->is_spanner()) {
+        auto *span = to_spanner(item);
+        if (auto *start = span->start_element(); start && start->is_note()) to_note(start)->remove(span);
+
+        std::erase(store.score_output().shared_spanners, span);
+    } else if (item->is_tuplet()) {
+        std::erase(store.score_output().shared_tuplets, to_tuplet(item));
+    } else if (auto *parent = item->ownership_parent_item(); parent->is_segment()) {
+        to_segment(parent)->remove_display_item(item);
+    } else {
+        parent->remove(item);
+    }
+    delete item;
+}
+
+EngravingItem *shared_slot(Segment *segment, track_idx_t track) {
+    const auto &copies = segment->ldata()->display_copies;
+    return track < copies.size() ? copies[track] : nullptr;
+}
+
+void connect_output(EngravingItem *shared, EngravingItem *origin) {
+    EngravingItem::connect_shared_item(shared, origin);
+    origin->score()->register_layout_copy(*origin, *shared);
+}
+} // namespace
+
 void StaveSharingLayout::update_stave_sharing_for_full_system(MeasureBase *first_mb, MeasureBase *last_mb, LayoutContext &ctx) {
     StaveSharingContext ssctx(first_mb, last_mb, ctx);
     if (ssctx.cr_segments.empty()) {
@@ -96,6 +175,7 @@ void StaveSharingLayout::update_notation_without_recomputing_track_map(Measure *
         if (p->is_shared_part() && to_shared_part(p)->show()) {
             SharedPart *shared_part = to_shared_part(p);
             ssctx.cur_shared_part = shared_part;
+            ssctx.cur_track_map = shared_part->track_map_at_tick(measure->tick());
             update_notation(ssctx);
         }
     }
@@ -553,7 +633,7 @@ bool StaveSharingLayout::check_segment_annotations_for_same_voice(Segment *segme
     std::multimap<ElementType, EngravingItem *> annotations_on_prev_track;
     std::multimap<ElementType, EngravingItem *> annotations_on_next_track;
 
-    for (EngravingItem *annotation : segment->annotations()) {
+    for (EngravingItem *annotation : segment->rendered_annotations()) {
         if (annotation->is_instrument_change()) {
             // Instrument change labels should not prevent combining
             continue;
@@ -765,16 +845,12 @@ bool StaveSharingLayout::can_go_to_same_stave(track_idx_t prev_track, track_idx_
 }
 
 void StaveSharingLayout::update_notation(StaveSharingContext &ctx) {
-    // 0. Compute segments to update (if possible update only last measure)
     compute_segments_to_update(ctx);
 
-    // 1. Disconnect the shared notation from the origin
     disconnect_all(ctx);
 
-    // 2. Recompute shared notation and reconnect
     make_shared_notation(ctx);
 
-    // 3. Remove from shared notation any item that wasn't reconnected
     cleanup(ctx);
 }
 
@@ -804,7 +880,25 @@ void StaveSharingLayout::disconnect_all(StaveSharingContext &ctx) {
     ctx.updated_stave_sharing_labels.clear();
 
     for (Segment *seg : ctx.segments_to_update) {
-        for (EngravingItem *item : seg->annotations()) {
+        for (auto *source : seg->annotations()) {
+            if (source->system_flag() || source->track() < range.start_track || source->track() >= range.end_track) continue;
+            if (muse::contains(seg->ldata()->suppressed_annotations, source)) continue;
+            seg->mutldata()->suppressed_annotations.push_back(source);
+            auto *copy = source->clone();
+            add_shared_output(copy);
+            ctx.score->register_layout_copy(*source, *copy);
+        }
+        if (!seg->header()) {
+            for (track_idx_t track = range.start_track; track < range.end_track; ++track) {
+                auto *source = seg->element(track);
+                if (!source || shared_slot(seg, track) || (source->is_time_sig() && !to_time_sig(source)->is_local())) continue;
+                auto *copy = source->clone();
+                copy->set_ownership_parent(seg);
+                add_shared_output(copy);
+                ctx.score->register_layout_copy(*source, *copy);
+            }
+        }
+        for (EngravingItem *item : seg->rendered_annotations()) {
             if (!item->system_flag() && item->track() >= range.start_track && item->track() < range.end_track) {
                 EngravingItem::disconnect_all_origin_items(item);
 
@@ -897,7 +991,8 @@ void StaveSharingLayout::disconnect_all(StaveSharingContext &ctx) {
     }
 
     for (Spanner *spanner : ctx.overlapping_spanners) {
-        if (!spanner->system_flag() && spanner->track() >= range.start_track && spanner->track() < range.end_track) {
+        if (spanner->is_layout_copy() && !spanner->system_flag() && spanner->track() >= range.start_track &&
+            spanner->track() < range.end_track) {
             EngravingItem::disconnect_all_origin_items(spanner);
         }
     }
@@ -915,16 +1010,13 @@ void StaveSharingLayout::make_shared_notation(StaveSharingContext &ctx) {
 EngravingItem *StaveSharingLayout::make_shared_item(EngravingItem *origin_item, EngravingItem *possible_shared_item,
                                                     track_idx_t shared_track, EngravingObject *shared_parent,
                                                     const std::function<bool(const EngravingItem *, const EngravingItem *)> &is_equal) {
-    // Get a shared item by either reusing an existing or creating a new one
-    // Connect it to the origin item and return it
-    Score *score = origin_item->score();
 
     EngravingItem *shared_item = nullptr;
     if (possible_shared_item) {
         if (is_equal(origin_item, possible_shared_item)) {
             shared_item = possible_shared_item;
         } else {
-            score->undo_remove_element(possible_shared_item);
+            remove_shared_output(possible_shared_item);
         }
     }
 
@@ -932,10 +1024,10 @@ EngravingItem *StaveSharingLayout::make_shared_item(EngravingItem *origin_item, 
         shared_item = origin_item->clone();
         shared_item->set_track(shared_track);
         shared_item->set_ownership_parent(shared_parent);
-        score->undo_add_element(shared_item);
+        add_shared_output(shared_item);
     }
 
-    EngravingItem::connect_shared_item(shared_item, origin_item);
+    connect_output(shared_item, origin_item);
 
     return shared_item;
 }
@@ -967,7 +1059,7 @@ void StaveSharingLayout::make_shared_clef_key_time_sigs(StaveSharingContext &ctx
             if (seg->is_clef_type()) {
                 Clef *origin_clef = to_clef(seg->effective_element(origin_track));
                 if (origin_clef) {
-                    make_shared_item(origin_clef, seg->element(shared_track), shared_track, seg,
+                    make_shared_item(origin_clef, shared_slot(seg, shared_track), shared_track, seg,
                                      [](const EngravingItem *origin, const EngravingItem *shared) {
                                          return to_clef(shared)->clef_type() == to_clef(origin)->clef_type();
                                      });
@@ -977,7 +1069,7 @@ void StaveSharingLayout::make_shared_clef_key_time_sigs(StaveSharingContext &ctx
             if (seg->is_time_sig_type()) {
                 TimeSig *origin_time_sig = to_time_sig(seg->effective_element(origin_track));
                 if (origin_time_sig && origin_time_sig->is_local()) {
-                    make_shared_item(origin_time_sig, seg->element(shared_track), shared_track, seg,
+                    make_shared_item(origin_time_sig, shared_slot(seg, shared_track), shared_track, seg,
                                      [](const EngravingItem *origin, const EngravingItem *shared) {
                                          IF_ASSERT_FAILED(origin->is_time_sig() && shared->is_time_sig()) { return false; }
                                          return *to_time_sig(shared) == *to_time_sig(origin);
@@ -988,7 +1080,7 @@ void StaveSharingLayout::make_shared_clef_key_time_sigs(StaveSharingContext &ctx
             if (seg->is_key_sig_type()) {
                 KeySig *origin_key_sig = to_key_sig(seg->effective_element(origin_track));
                 if (origin_key_sig) {
-                    make_shared_item(origin_key_sig, seg->element(shared_track), shared_track, seg,
+                    make_shared_item(origin_key_sig, shared_slot(seg, shared_track), shared_track, seg,
                                      [](const EngravingItem *origin, const EngravingItem *shared) {
                                          IF_ASSERT_FAILED(origin->is_key_sig() && shared->is_key_sig()) { return false; }
                                          return *to_key_sig(shared) == *to_key_sig(origin);
@@ -1011,13 +1103,13 @@ void StaveSharingLayout::make_shared_chord_rests(StaveSharingContext &ctx) {
                 continue;
             }
 
-            ChordRest *shared_cr = to_chord_rest(seg->element(shared_track));
+            ChordRest *shared_cr = to_chord_rest(shared_slot(seg, shared_track));
             if (shared_cr) {
                 bool same_type = shared_cr->type() == origin_cr->type();
                 bool same_duration =
                     shared_cr->duration_type() == origin_cr->duration_type() && shared_cr->actual_ticks() == origin_cr->actual_ticks();
                 if (!(same_type && same_duration)) {
-                    score->undo_remove_element(shared_cr);
+                    remove_shared_output(shared_cr);
                     shared_cr = nullptr;
                 }
             }
@@ -1032,8 +1124,9 @@ void StaveSharingLayout::make_shared_chord_rests(StaveSharingContext &ctx) {
                 shared_cr = to_chord_rest(origin_cr->clone());
                 shared_cr->set_track(shared_track);
                 shared_cr->set_ownership_parent(seg);
-                score->undo_add_element(shared_cr);
+                add_shared_output(shared_cr);
             }
+            score->register_layout_copy(*origin_cr, *shared_cr);
 
             DurationElement *shared_de = shared_cr;
             for (DurationElement *origin_de = origin_cr; origin_de;) {
@@ -1049,7 +1142,7 @@ void StaveSharingLayout::make_shared_chord_rests(StaveSharingContext &ctx) {
                         shared_tuplet = to_tuplet(origin_tuplet->clone());
                         shared_tuplet->set_track(shared_track);
                         shared_tuplet->set_ownership_parent(origin_tuplet->measure());
-                        score->undo_add_element(shared_tuplet);
+                        add_shared_output(shared_tuplet);
                     }
                 } else {
                     shared_tuplet = to_tuplet(origin_tuplet->shared_item());
@@ -1057,7 +1150,7 @@ void StaveSharingLayout::make_shared_chord_rests(StaveSharingContext &ctx) {
 
                 IF_ASSERT_FAILED(shared_tuplet) { break; }
 
-                EngravingItem::connect_shared_item(shared_tuplet, origin_tuplet);
+                connect_output(shared_tuplet, origin_tuplet);
 
                 shared_tuplet->add(shared_de);
 
@@ -1066,7 +1159,7 @@ void StaveSharingLayout::make_shared_chord_rests(StaveSharingContext &ctx) {
             }
 
             if (origin_cr->is_rest()) {
-                EngravingItem::connect_shared_item(shared_cr, origin_cr);
+                connect_output(shared_cr, origin_cr);
             }
 
             if (!origin_cr->is_chord()) {
@@ -1087,10 +1180,10 @@ void StaveSharingLayout::make_shared_chord_rests(StaveSharingContext &ctx) {
                     shared_note = origin_note->clone();
                     shared_note->set_track(shared_track);
                     shared_note->set_ownership_parent(shared_chord);
-                    score->undo_add_element(shared_note);
+                    add_shared_output(shared_note);
                 }
 
-                EngravingItem::connect_shared_item(shared_note, origin_note);
+                connect_output(shared_note, origin_note);
 
                 if (shared_note->origin_items().size() > 1) {
                     ctx.shared_unison_notes.insert(shared_note);
@@ -1115,8 +1208,9 @@ void StaveSharingLayout::make_shared_chord_rests(StaveSharingContext &ctx) {
                     shared_grace = to_chord(origin_grace->clone());
                     shared_grace->set_track(shared_track);
                     shared_grace->set_ownership_parent(shared_chord);
-                    score->undo_add_element(shared_grace);
+                    add_shared_output(shared_grace);
                 }
+                score->register_layout_copy(*origin_grace, *shared_grace);
 
                 make_shared_notes(origin_grace, shared_grace);
             }
@@ -1145,7 +1239,7 @@ void StaveSharingLayout::make_shared_breaths(StaveSharingContext &ctx) {
                 continue;
             }
 
-            EngravingItem *shared_breath = make_shared_item(origin_breath, seg->element(shared_track), shared_track, seg,
+            EngravingItem *shared_breath = make_shared_item(origin_breath, shared_slot(seg, shared_track), shared_track, seg,
                                                             [](const EngravingItem *origin, const EngravingItem *shared) {
                                                                 return to_breath(shared)->sym_id() == to_breath(origin)->sym_id();
                                                             });
@@ -1157,7 +1251,6 @@ void StaveSharingLayout::make_shared_breaths(StaveSharingContext &ctx) {
 }
 
 void StaveSharingLayout::make_shared_articulations(Chord *origin_chord, Chord *shared_chord) {
-    Score *score = origin_chord->score();
 
     for (Articulation *origin_art : origin_chord->articulations()) {
         Articulation *shared_art = nullptr;
@@ -1173,15 +1266,14 @@ void StaveSharingLayout::make_shared_articulations(Chord *origin_chord, Chord *s
             shared_art->set_track(shared_chord->track());
             shared_art->set_ownership_parent(shared_chord);
 
-            score->undo_add_element(shared_art);
+            add_shared_output(shared_art);
         }
 
-        EngravingItem::connect_shared_item(shared_art, origin_art);
+        connect_output(shared_art, origin_art);
     }
 }
 
 void StaveSharingLayout::make_shared_ties_and_note_spanners(Note *origin_note, Note *shared_note) {
-    Score *score = origin_note->score();
 
     Tie *tie_back = origin_note->tie_back();
     if (tie_back) {
@@ -1191,10 +1283,10 @@ void StaveSharingLayout::make_shared_ties_and_note_spanners(Note *origin_note, N
             Note *shared_start_note = tie_back->start_note() ? to_note(tie_back->start_note()->shared_item()) : nullptr;
             shared_tie_back->set_note_span(shared_start_note, shared_note);
 
-            score->undo_add_element(shared_tie_back);
+            add_shared_output(shared_tie_back);
         }
 
-        EngravingItem::connect_shared_item(shared_tie_back, tie_back);
+        connect_output(shared_tie_back, tie_back);
     }
 
     Tie *tie_for = origin_note->tie_for();
@@ -1204,10 +1296,10 @@ void StaveSharingLayout::make_shared_ties_and_note_spanners(Note *origin_note, N
             shared_tie_for = to_tie(tie_for->clone());
             shared_tie_for->set_note_span(shared_note, nullptr);
 
-            score->undo_add_element(shared_tie_for);
+            add_shared_output(shared_tie_for);
         }
 
-        EngravingItem::connect_shared_item(shared_tie_for, tie_for);
+        connect_output(shared_tie_for, tie_for);
     }
 
     const std::vector<Spanner *> &origin_spanner_back = origin_note->spanner_back();
@@ -1227,10 +1319,10 @@ void StaveSharingLayout::make_shared_ties_and_note_spanners(Note *origin_note, N
             Note *start_note = spanner->start_element() ? to_note(spanner->start_element()->shared_item()) : nullptr;
             shared_spanner->set_note_span(start_note, shared_note);
 
-            score->undo_add_element(shared_spanner);
+            add_shared_output(shared_spanner);
         }
 
-        EngravingItem::connect_shared_item(shared_spanner, spanner);
+        connect_output(shared_spanner, spanner);
     }
 
     for (Spanner *spanner : origin_note->spanner_for()) {
@@ -1251,16 +1343,14 @@ void StaveSharingLayout::make_shared_ties_and_note_spanners(Note *origin_note, N
             shared_spanner->set_track(shared_note->track());
             shared_spanner->set_start_element(shared_note);
 
-            score->undo_add_element(shared_spanner);
+            add_shared_output(shared_spanner);
         }
 
-        EngravingItem::connect_shared_item(shared_spanner, spanner);
+        connect_output(shared_spanner, spanner);
     }
 }
 
 void StaveSharingLayout::make_shared_annotations(StaveSharingContext &ctx) {
-    Score *score = ctx.score;
-
     const SharedTrackMap &track_map = ctx.cur_track_map;
     if (track_map.empty()) {
         return;
@@ -1271,7 +1361,7 @@ void StaveSharingLayout::make_shared_annotations(StaveSharingContext &ctx) {
     std::vector<EngravingItem *> shared_annotations;
 
     for (Segment *seg : ctx.segments_to_update) {
-        std::vector<EngravingItem *> annotations = seg->annotations(); // Copy because we are about to add
+        std::vector<EngravingItem *> annotations = seg->rendered_annotations(); // Copy because we are about to add
         for (EngravingItem *origin_item : annotations) {
             track_idx_t origin_track = origin_item->track();
             if (origin_track < start_origin_track || origin_track > end_origin_track) {
@@ -1293,8 +1383,8 @@ void StaveSharingLayout::make_shared_annotations(StaveSharingContext &ctx) {
 
             track_idx_t shared_track = track_map.at(origin_track);
             EngravingItem *shared_item = nullptr;
-            for (EngravingItem *item : seg->annotations()) {
-                if (item->track() != shared_track || item->type() != origin_item->type()) {
+            for (EngravingItem *item : seg->rendered_annotations()) {
+                if (!item->is_layout_copy() || item->track() != shared_track || item->type() != origin_item->type()) {
                     continue;
                 }
 
@@ -1311,10 +1401,10 @@ void StaveSharingLayout::make_shared_annotations(StaveSharingContext &ctx) {
                 shared_item = origin_item->clone();
                 shared_item->set_track(shared_track);
                 shared_item->set_ownership_parent(seg);
-                score->undo_add_element(shared_item);
+                add_shared_output(shared_item);
             }
 
-            EngravingItem::connect_shared_item(shared_item, origin_item);
+            connect_output(shared_item, origin_item);
 
             shared_annotations.push_back(shared_item);
 
@@ -1354,8 +1444,9 @@ void StaveSharingLayout::make_shared_spanners(StaveSharingContext &ctx) {
 
         Spanner *shared_spanner = nullptr;
         for (Spanner *possible_shared_spanner : ctx.overlapping_spanners) {
-            if (possible_shared_spanner->track() == shared_track && possible_shared_spanner->type() == spanner->type() &&
-                possible_shared_spanner->tick() == spanner->tick() && possible_shared_spanner->ticks() == spanner->ticks()) {
+            if (possible_shared_spanner->is_layout_copy() && possible_shared_spanner->track() == shared_track &&
+                possible_shared_spanner->type() == spanner->type() && possible_shared_spanner->tick() == spanner->tick() &&
+                possible_shared_spanner->ticks() == spanner->ticks()) {
                 shared_spanner = possible_shared_spanner;
                 break;
             }
@@ -1371,11 +1462,11 @@ void StaveSharingLayout::make_shared_spanners(StaveSharingContext &ctx) {
             shared_spanner->set_end_element(nullptr);
             shared_spanner->reset();
 
-            ctx.score->undo_add_element(shared_spanner);
+            add_shared_output(shared_spanner);
             ctx.overlapping_spanners.push_back(shared_spanner);
         }
 
-        EngravingItem::connect_shared_item(shared_spanner, spanner);
+        connect_output(shared_spanner, spanner);
 
         shared_spanners.push_back(shared_spanner);
     }
@@ -1398,8 +1489,8 @@ void StaveSharingLayout::make_stave_sharing_labels(StaveSharingContext &ctx) {
         Segment *segment = unison_note->chord()->segment();
 
         StaveSharingLabel *label = nullptr;
-        for (EngravingItem *item : segment->annotations()) {
-            if (item->is_stave_sharing_label() && item->track() == unison_note->track() &&
+        for (EngravingItem *item : segment->rendered_annotations()) {
+            if (item->is_layout_copy() && item->is_stave_sharing_label() && item->track() == unison_note->track() &&
                 to_stave_sharing_label(item)->xml_text() == text) {
                 label = to_stave_sharing_label(item);
                 break;
@@ -1412,7 +1503,7 @@ void StaveSharingLayout::make_stave_sharing_labels(StaveSharingContext &ctx) {
             label->set_track(unison_note->track());
             label->set_xml_text(text);
 
-            ctx.score->undo_add_element(label, /*addToLinkedStaves*/ false);
+            add_shared_output(label);
         }
 
         updated_stave_sharing_labels.push_back(label);
@@ -1437,7 +1528,7 @@ bool StaveSharingLayout::unison_note_needs_label(Note *unison_note, bool &needs_
     Note *prev_note = nullptr;
     track_idx_t cur_track = unison_note->track();
     Segment *cur_segment = unison_note->chord()->segment();
-    for (Segment *seg = cur_segment->prev1(SegmentType::CHORD_REST); seg; seg = seg->prev1(SegmentType::CHORD_REST)) {
+    for (Segment *seg = cur_segment->rendered_prev1(SegmentType::CHORD_REST); seg; seg = seg->rendered_prev1(SegmentType::CHORD_REST)) {
         if (EngravingItem *el = seg->effective_element(cur_track); el && el->is_chord()) {
             for (Note *note : to_chord(el)->notes()) {
                 if (!note->origin_items().empty()) {
@@ -1619,16 +1710,14 @@ void StaveSharingLayout::manage_voice_property_and_track_for_shared_items(const 
 void StaveSharingLayout::cleanup(StaveSharingContext &ctx) {
     SharedPart *p = ctx.cur_shared_part;
 
-    Score *score = ctx.score;
-
     const TrackRange range = p->track_range();
 
     for (Segment *seg : ctx.segments_to_update) {
-        std::vector<EngravingItem *> annotations = seg->annotations(); // Copy because we may remove elements
+        std::vector<EngravingItem *> annotations = seg->rendered_annotations(); // Copy because we may remove elements
         for (EngravingItem *item : annotations) {
-            if (!item->system_flag() && !item->is_stave_sharing_label() && item->track() >= range.start_track &&
+            if (item->is_layout_copy() && !item->system_flag() && !item->is_stave_sharing_label() && item->track() >= range.start_track &&
                 item->track() < range.end_track && item->origin_items().empty()) {
-                score->undo_remove_element(item);
+                remove_shared_output(item);
             }
         }
 
@@ -1639,11 +1728,11 @@ void StaveSharingLayout::cleanup(StaveSharingContext &ctx) {
         if (seg->is_type(SegmentType::BREATH | SegmentType::CLEF | SegmentType::TIME_SIG) ||
             (seg->is_key_sig_type() && seg_has_local_key_sig(seg, p))) {
             for (track_idx_t track = range.start_track; track < range.end_track; ++track) {
-                EngravingItem *item = seg->element(track);
+                EngravingItem *item = shared_slot(seg, track);
                 if (!item || !item->origin_items().empty() || (item->is_time_sig() && !to_time_sig(item)->is_local())) {
                     continue;
                 }
-                ctx.score->undo_remove_element(item);
+                remove_shared_output(item);
             }
             continue;
         }
@@ -1653,15 +1742,15 @@ void StaveSharingLayout::cleanup(StaveSharingContext &ctx) {
         }
 
         for (track_idx_t track = range.start_track; track < range.end_track; ++track) {
-            ChordRest *cr = to_chord_rest(seg->element(track));
+            ChordRest *cr = to_chord_rest(shared_slot(seg, track));
             if (!cr) {
                 continue;
             }
 
-            for (Tuplet *tuplet = cr->tuplet(); tuplet; tuplet = tuplet->tuplet()) {
-                if (tuplet->origin_items().empty()) {
-                    score->undo_remove_element(tuplet);
-                }
+            for (Tuplet *tuplet = cr->tuplet(); tuplet;) {
+                auto *parent = tuplet->tuplet();
+                if (tuplet->origin_items().empty()) remove_shared_output(tuplet);
+                tuplet = parent;
             }
 
             if (cr->is_rest()) {
@@ -1670,7 +1759,7 @@ void StaveSharingLayout::cleanup(StaveSharingContext &ctx) {
                     continue;
                 }
                 if (cr->origin_items().empty()) {
-                    score->undo_remove_element(cr);
+                    remove_shared_output(cr);
                 }
             }
 
@@ -1679,48 +1768,47 @@ void StaveSharingLayout::cleanup(StaveSharingContext &ctx) {
                     std::vector<Articulation *> articulations = c->articulations(); // copy because may be removed
                     for (Articulation *art : articulations) {
                         if (art->origin_items().empty()) {
-                            score->undo_remove_element(art);
+                            remove_shared_output(art);
                         }
                     }
 
                     std::vector<Note *> notes = c->notes(); // copy because may be removed
                     for (Note *note : notes) {
                         if (Tie *tie_back = note->tie_back(); tie_back && tie_back->origin_items().empty()) {
-                            score->undo_remove_element(tie_back);
+                            remove_shared_output(tie_back);
                         }
 
-                        for (Spanner *sp : note->spanner_back()) {
+                        for (Spanner *sp : std::vector<Spanner *>(note->spanner_back())) {
                             if (sp->origin_items().empty()) {
-                                score->undo_remove_element(sp);
+                                remove_shared_output(sp);
                             }
                         }
 
                         if (Tie *tie_for = note->tie_for(); tie_for && !tie_for->end_element() && tie_for->origin_items().empty()) {
-                            score->undo_remove_element(tie_for);
+                            remove_shared_output(tie_for);
                         }
 
-                        for (Spanner *sp : note->spanner_for()) {
+                        for (Spanner *sp : std::vector<Spanner *>(note->spanner_for())) {
                             if (!sp->end_element() && sp->origin_items().empty()) {
-                                score->undo_remove_element(sp);
+                                remove_shared_output(sp);
                             }
                         }
 
                         if (note->origin_items().empty()) {
-                            score->undo_remove_element(note);
+                            remove_shared_output(note);
                         }
                     }
                     if (c->notes().empty()) {
-                        score->undo_remove_element(c);
+                        remove_shared_output(c);
                     }
                 };
 
                 Chord *c = to_chord(cr);
-                cleanup_chord(c);
-
                 std::vector<Chord *> grace_notes = c->grace_notes(); // copy because we may remove elements
                 for (Chord *grace : grace_notes) {
                     cleanup_chord(grace);
                 }
+                cleanup_chord(c);
             }
         }
     }
@@ -1728,15 +1816,15 @@ void StaveSharingLayout::cleanup(StaveSharingContext &ctx) {
     add_measure_rests_if_need(ctx);
 
     for (Spanner *spanner : ctx.overlapping_spanners) {
-        if (!spanner->system_flag() && spanner->track() >= range.start_track && spanner->track() < range.end_track &&
-            spanner->origin_items().empty()) {
-            score->undo_remove_element(spanner);
+        if (spanner->is_layout_copy() && !spanner->system_flag() && spanner->track() >= range.start_track &&
+            spanner->track() < range.end_track && spanner->origin_items().empty()) {
+            remove_shared_output(spanner);
         }
     }
 
     for (StaveSharingLabel *old_label : ctx.old_stave_sharing_labels) {
         if (!muse::contains(ctx.updated_stave_sharing_labels, old_label)) {
-            ctx.score->undo_remove_element(old_label);
+            remove_shared_output(old_label);
         }
     }
 }
@@ -1759,7 +1847,13 @@ void StaveSharingLayout::add_measure_rests_if_need(StaveSharingContext &ctx) {
                 continue;
             }
 
-            ctx.score->set_rest(measure->tick(), staff_idx * ::mu::engraving::voices, measure->ticks(), false, nullptr);
+            auto *seg = measure->get_rendered_segment_r(SegmentType::CHORD_REST, Fraction(0, 1));
+            if (seg->effective_element(staff_idx * ::mu::engraving::voices)) continue;
+            auto *rest = Factory::create_rest(seg);
+            rest->set_track(staff_idx * ::mu::engraving::voices);
+            rest->set_duration_type(DurationType::V_MEASURE);
+            rest->set_ticks(measure->ticks());
+            add_shared_output(rest);
         }
     }
 }
@@ -1792,6 +1886,10 @@ StaveSharingLayout::StaveSharingContext::StaveSharingContext(MeasureBase *first,
     e_tick = cr_segments.back()->measure()->end_tick();
     score = cr_segments.front()->score();
 
+    for (auto *span : output(cr_segments.front()).score_output().shared_spanners) {
+        if (!span->is_tie() && span->anchor() != Spanner::Anchor::NOTE && span->tick() <= e_tick && span->tick2() >= s_tick)
+            overlapping_spanners.push_back(span);
+    }
     auto spanners = score->spanner_map().find_overlapping(s_tick.ticks(), e_tick.ticks());
     for (auto &i : spanners) {
         overlapping_spanners.push_back(i.value);

@@ -195,6 +195,9 @@ public:
     EngravingItem *effective_element(track_idx_t track) const;
     std::vector<EngravingItem *> effective_elements() const;
     void add_display_copy(const EngravingItem &source);
+    void add_display_item(EngravingItem *item);
+    void remove_display_item(EngravingItem *item);
+    std::vector<EngravingItem *> rendered_annotations() const;
     void add_generated(EngravingItem *item);
     void remove_generated(EngravingItem *item);
     bool owns_generated(const EngravingItem *item) const;
@@ -214,6 +217,9 @@ public:
     struct LayoutData : EngravingItem::LayoutData {
         ~LayoutData() override;
         std::vector<EngravingItem *> display_copies;
+        std::vector<EngravingItem *> display_annotations;
+        std::vector<bool> suppressed_source_tracks;
+        std::vector<EngravingItem *> suppressed_annotations;
         bool suppressed = false;
         std::vector<EngravingItem *> generated;
         bool enabled = true;
