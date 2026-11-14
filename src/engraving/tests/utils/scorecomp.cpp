@@ -24,6 +24,9 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <map>
+#include <regex>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -110,6 +113,25 @@ static std::vector<Edit> compute_diff(const std::vector<std::string_view> &lines
     return edits;
 }
 
+static ByteArray canonical_ids(const ByteArray &xml) {
+    const std::regex identity(
+        R"(<(eid|linkedTo|startElement|endElement|NoteEID|mmRestLast|startMeasure|endMeasure|sharedPart)>([A-Za-z0-9+/]+_[A-Za-z0-9+/]+)</\1>)");
+    std::map<std::string, size_t> ids;
+    const std::string source(xml.const_char(), xml.size());
+    std::string result;
+    size_t cursor = 0;
+    for (std::sregex_iterator it(source.begin(), source.end(), identity), end; it != end; ++it) {
+        const auto &match = *it;
+        result.append(source, cursor, match.position() - cursor);
+        const auto value = match[2].str();
+        const auto [id, inserted] = ids.try_emplace(value, ids.size());
+        result += "<" + match[1].str() + ">id" + std::to_string(id->second) + "</" + match[1].str() + ">";
+        cursor = match.position() + match.length();
+    }
+    result.append(source, cursor, source.size() - cursor);
+    return ByteArray(result.data(), result.size());
+}
+
 bool ScoreComp::save_compare_score(Score *score, const String &save_name, const String &compare_with_local_path) {
     if (!ScoreRW::save_score(score, save_name)) {
         return false;
@@ -139,8 +161,12 @@ bool ScoreComp::compare_files(const String &full_path1, const String &full_path2
         return false;
     }
 
-    const std::vector<std::string_view> lines1 = split_lines(rv1.val);
-    const std::vector<std::string_view> lines2 = split_lines(rv2.val);
+    // Excerpt cloning now visits source only; output allocation must not define
+    // the spelling of newly minted identities in a notation comparison.
+    const auto canonical1 = canonical_ids(rv1.val);
+    const auto canonical2 = canonical_ids(rv2.val);
+    const std::vector<std::string_view> lines1 = split_lines(canonical1);
+    const std::vector<std::string_view> lines2 = split_lines(canonical2);
     if (lines1 == lines2) {
         return true;
     }
