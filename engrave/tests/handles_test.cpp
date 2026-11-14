@@ -527,6 +527,69 @@ TEST(NativeSave, S13HiddenFBoxHarmonyDoesNotPaintItsOldLabel) {
     EXPECT_NE(text_of(visible->pages.front()).find("rgb(100%, 0%, 0%)"), std::string::npos);
 }
 
+TEST(NativeSave, S13HarmonyCreationParsesTypeBeforeText) {
+    using namespace mu::engraving;
+    for (bool type_first : {false, true}) {
+        auto document = open_path(g_source_root / "tests/data/inputs/fbox.mscx");
+        ASSERT_TRUE(document);
+        auto &master = master_of(*document);
+        const engrave::Address at =
+            engrave::SegmentAddress{.measure = engine_id(*master.first_measure()), .tick = {0, 1}, .kind = "ChordRest"};
+        std::vector<std::pair<std::string, engrave::Value>> props{{"text", std::string("1")}, {"harmonyType", std::int32_t{2}}};
+        if (type_first) std::reverse(props.begin(), props.end());
+        const auto added = document->edit({{engrave::Add{at, "Harmony", props}}});
+        ASSERT_TRUE(added) << added.error().message;
+        ASSERT_FALSE(added->rejection);
+        ASSERT_EQ(added->ops.front().created.size(), 1u);
+        ASSERT_TRUE(added->ops.front().created.front());
+        const auto id = *added->ops.front().created.front();
+        const auto item = engrave::resolve(master, id);
+        ASSERT_TRUE(item);
+        auto *harmony = to_harmony(item->object);
+        ASSERT_EQ(harmony->chords().size(), 1u);
+        EXPECT_EQ(harmony->harmony_type(), HarmonyType::NASHVILLE);
+        EXPECT_EQ(harmony->chords().front()->root_tpc(), 14);
+        EXPECT_TRUE(harmony->is_realizable());
+        EXPECT_EQ(harmony->display_name(), u"1");
+        expect_no_layout(master);
+        const auto saved = document->export_score({.format = engrave::Format::MSCX});
+        ASSERT_TRUE(saved);
+        auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
+        ASSERT_TRUE(reopened);
+        const auto found = engrave::resolve(master_of(**reopened), id);
+        ASSERT_TRUE(found);
+        EXPECT_EQ(to_harmony(found->object)->chords().front()->root_tpc(), 14);
+        EXPECT_EQ(to_harmony(found->object)->harmony_type(), HarmonyType::NASHVILLE);
+        EXPECT_EQ(to_harmony(found->object)->display_name(), u"1");
+        expect_no_layout(master_of(**reopened));
+    }
+}
+
+TEST(NativeSave, S13EmptyHarmonyCreationIsRejectedBeforePublication) {
+    using Props = std::vector<std::pair<std::string, engrave::Value>>;
+    for (const Props &props : std::vector<Props>{{},
+                                                 {{"text", std::string{}}},
+                                                 {{"text", std::string(" \t\n")}},
+                                                 {{"text", std::string("()")}},
+                                                 {{"text", std::string("|")}}}) {
+        auto document = open_path(g_source_root / "tests/data/inputs/fbox.mscx");
+        ASSERT_TRUE(document);
+        auto &master = master_of(*document);
+        const auto before = native_captures(*document);
+        const engrave::Address at =
+            engrave::SegmentAddress{.measure = engine_id(*master.first_measure()), .tick = {0, 1}, .kind = "ChordRest"};
+        const auto added = document->edit({{engrave::Add{at, "Harmony", props}}});
+        ASSERT_FALSE(added);
+        EXPECT_EQ(added.error().code, engrave::ErrorCode::INVALID_ARGUMENT);
+        const auto harmonies = document->query({.types = {"Harmony"}});
+        ASSERT_TRUE(harmonies);
+        EXPECT_EQ(harmonies->total, 4u);
+        EXPECT_EQ(document->revision(), 1u);
+        EXPECT_EQ(native_captures(*document), before);
+        expect_no_layout(master);
+    }
+}
+
 TEST(NativeSave, FBoxS13SynchronizesColdAndSurvivesRender) {
     using namespace mu::engraving;
     auto document = open_path(g_source_root / "tests/data/inputs/fbox.mscx");

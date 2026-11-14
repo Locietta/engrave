@@ -20,6 +20,7 @@
 #include "engraving/dom/engravingitem.h"
 #include "engraving/dom/engravingobject.h"
 #include "engraving/dom/factory.h"
+#include "engraving/dom/harmony.h"
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/note.h"
 #include "engraving/dom/property.h"
@@ -275,6 +276,17 @@ Result<Step> prepare(EditContext &context, const Add &op) {
     if (!addable(name)) return invalid(std::format("Add creates {}; not a {}", add_pairs_text(), name));
     auto props = settings(op.props, name);
     if (!props) return std::unexpected(props.error());
+    if (type == ElementType::HARMONY) {
+        const auto last_text =
+            std::find_if(props->rbegin(), props->rend(), [](const Setting &setting) { return setting.pid == Pid::TEXT; });
+        if (last_text == props->rend()) return invalid("a harmony requires nonempty initial text");
+        // Parsing creates authored parentheses, so reject empty tokens before running setters.
+        auto text = last_text->value.value<muse::String>().trimmed();
+        if (text.starts_with('(')) text.remove(0, 1);
+        if (text.ends_with(')') && text.count('(') < text.count(')')) text.remove(text.size() - 1, 1);
+        if (std::ranges::none_of(text.to_std_u16_string(), [](char16_t c) { return c != u'|' && !muse::Char::is_space(c); }))
+            return invalid("a harmony requires nonempty initial text");
+    }
     auto anchor = context.target(op.anchor);
     if (!anchor) return std::unexpected(anchor.error());
     // An OpRef's element exists only when the step runs; the step checks the pair
@@ -293,7 +305,18 @@ Result<Step> prepare(EditContext &context, const Add &op) {
         std::unique_ptr<EngravingItem> created(mu::engraving::Factory::create_item(type, mu::engraving::to_engraving_item(*object)));
         if (!created) return invalid(std::format("the engine does not create a {}", name));
         created->set_track(*track);
-        for (const Setting &setting : props) set_setting(*created, setting);
+        if (type == ElementType::HARMONY) {
+            // The parser's meaning depends on the type, independently of property order.
+            for (const Setting &setting : props)
+                if (setting.pid == Pid::HARMONY_TYPE) set_setting(*created, setting);
+        }
+        for (const Setting &setting : props)
+            if (type != ElementType::HARMONY || setting.pid != Pid::HARMONY_TYPE) set_setting(*created, setting);
+        if (type == ElementType::HARMONY) {
+            const auto *harmony = mu::engraving::to_harmony(created.get());
+            if (harmony->chords().empty() || harmony->xml_text().trimmed().empty())
+                return invalid("a harmony requires nonempty initial text");
+        }
         Score *score = created->score();
         EngravingItem *added = created.release();
         score->undo_add_element(added);
