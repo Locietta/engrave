@@ -3751,7 +3751,7 @@ TEST(Read, OutlineDescribesTheScore) {
 }
 
 TEST(Read, FiltersAndPagingAgree) {
-    auto document = open_path(corpus_file({".mscx"}));
+    auto document = open_path(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "tests/data/inputs/golden/layout_elements.mscx");
     ASSERT_TRUE(document);
     const auto outline = document->outline();
     ASSERT_TRUE(outline) << outline.error().message;
