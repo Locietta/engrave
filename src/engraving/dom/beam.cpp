@@ -323,10 +323,10 @@ std::vector<ChordRest *> Beam::source_elements() const {
         if (std::find(members.begin(), members.end(), cr) == members.end()) members.push_back(cr);
     };
     for (auto *anchor : elements_) {
-        const auto accepts = [&](ChordRest *cr, ChordRest *prev, bool grace) {
+        const auto accepts = [&](ChordRest *cr, ChordRest *prev) {
             if (cr->authored_beam() && cr->authored_beam() != this) return false;
-            const auto mode = grace ? Groups::base_beam_mode(cr) : Groups::actual_beam_mode(cr, prev);
-            if ((cr->duration_type().type() <= DurationType::V_QUARTER && (grace || !cr->is_rest())) || mode == BeamMode::NONE ||
+            const auto mode = Groups::actual_beam_mode(cr, prev);
+            if ((cr->duration_type().type() <= DurationType::V_QUARTER && !cr->is_rest()) || mode == BeamMode::NONE ||
                 mode == BeamMode::BEGIN)
                 return false;
             append(cr);
@@ -335,16 +335,41 @@ std::vector<ChordRest *> Beam::source_elements() const {
         if (anchor->is_grace()) {
             auto *main = to_chord(anchor->ownership_parent());
             for (const auto &notes : {main->grace_notes_before(), main->grace_notes_after()}) {
-                auto it = std::find(notes.begin(), notes.end(), anchor);
-                if (it == notes.end() || Groups::base_beam_mode(anchor) == BeamMode::END ||
-                    Groups::base_beam_mode(anchor) == BeamMode::NONE || anchor->duration_type().type() <= DurationType::V_QUARTER)
-                    continue;
-                for (++it; it != notes.end(); ++it)
-                    if (!accepts(*it, nullptr, true)) break;
+                if (std::find(notes.begin(), notes.end(), anchor) == notes.end()) continue;
+                std::vector<ChordRest *> group;
+                bool beamed = false;
+                const auto finish = [&] {
+                    if (beamed && std::find(group.begin(), group.end(), anchor) != group.end())
+                        for (auto *cr : group) append(cr);
+                    group.clear();
+                    beamed = false;
+                };
+                for (auto *cr : notes) {
+                    const auto mode = Groups::grace_beam_mode(cr);
+                    if (mode == BeamMode::NONE) {
+                        finish();
+                        continue;
+                    }
+                    if (mode == BeamMode::BEGIN) finish();
+                    group.push_back(cr);
+                    // Layout handles END only on an established beam, after the initial pair.
+                    if (beamed && mode == BeamMode::END)
+                        finish();
+                    else if (group.size() == 2)
+                        beamed = true;
+                }
+                finish();
             }
             continue;
         }
-        if (!anchor->segment() || anchor->beam_mode() == BeamMode::END || anchor->beam_mode() == BeamMode::NONE ||
+        if (!anchor->segment()) continue;
+        const ChordRest *previous = nullptr;
+        for (auto *segment = anchor->segment()->prev(SegmentType::CHORD_REST); segment; segment = segment->prev(SegmentType::CHORD_REST)) {
+            previous = to_chord_rest(segment->element(anchor->track()));
+            if (previous) break;
+        }
+        const auto anchor_mode = Groups::actual_beam_mode(anchor, previous);
+        if (anchor_mode == BeamMode::END || anchor_mode == BeamMode::NONE ||
             (anchor->is_chord() && anchor->duration_type().type() <= DurationType::V_QUARTER))
             continue;
         auto *measure = anchor->measure();
@@ -354,7 +379,7 @@ std::vector<ChordRest *> Beam::source_elements() const {
             for (; segment; segment = segment->next(SegmentType::CHORD_REST)) {
                 auto *cr = to_chord_rest(segment->element(anchor->track()));
                 if (!cr) continue;
-                if (!accepts(cr, prev, false)) break;
+                if (!accepts(cr, prev)) break;
                 prev = cr;
             }
             if (segment) break;

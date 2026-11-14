@@ -26,6 +26,7 @@
 #include "engraving/dom/spanner.h"
 #include "engraving/dom/staff.h"
 #include "engraving/dom/stafftype.h"
+#include "engraving/dom/tapping.h"
 #include "engraving/dom/tempotext.h"
 #include "engraving/dom/tempotimeline.h"
 #include "engraving/dom/textbase.h"
@@ -36,6 +37,7 @@
 #include "engraving/dom/tremolotwochord.h"
 #include "engraving/dom/tuplet.h"
 #include "engraving/dom/volta.h"
+#include "engraving/types/symnames.h"
 #include "engraving/types/typesconv.h"
 
 using namespace mu::engraving;
@@ -222,7 +224,13 @@ json chord_rest_json(const ChordRest *cr) {
         out["notes"] = notes;
         json articulations = make_array<json>();
         for (const Articulation *a : chord->articulations()) {
-            array_push(articulations, str(TConv::to_xml(static_cast<mu::engraving::SymId>(a->subtype()))));
+            if (a->is_tapping()) {
+                array_push(articulations, "tapping:" + str(TConv::to_xml(to_tapping(a)->hand())));
+            } else if (a->text_type() != ArticulationTextType::NO_TEXT) {
+                array_push(articulations, str(TConv::to_xml(a->text_type())));
+            } else {
+                array_push(articulations, str(SymNames::name_for_sym_id(static_cast<SymId>(a->subtype()))));
+            }
         }
         if (!articulations.empty()) {
             out["articulations"] = articulations;

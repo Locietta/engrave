@@ -5996,6 +5996,214 @@ TEST(Read, PublicStemSlashEditReachesTheRenderedGraceBeam) {
     for (auto *grace : restored->grace_notes()) EXPECT_FALSE(grace->show_stem_slash());
 }
 
+TEST(Read, S16RemovingDuplicatePageBreakPreservesFollowingRepeat) {
+    using namespace mu::engraving;
+    for (bool remove_all : {false, true}) {
+        for (bool warm : {false, true}) {
+            SCOPED_TRACE(remove_all);
+            SCOPED_TRACE(warm);
+            auto xml = legacy_segment_fixture("");
+            xml.insert(xml.find("</voice>"), "<BarLine><subtype>double</subtype></BarLine>");
+            const std::string ending = "</voice></Measure></Staff>";
+            xml.replace(xml.find(ending), ending.size(),
+                        "</voice><LayoutBreak><subtype>section</subtype></LayoutBreak>"
+                        "<LayoutBreak><subtype>page</subtype></LayoutBreak></Measure>"
+                        "<Measure><startRepeat/><voice><Rest><durationType>whole</durationType></Rest></voice></Measure></Staff>");
+            auto opened = g_engine->open(as_bytes(xml));
+            ASSERT_TRUE(opened);
+            auto &document = **opened;
+            auto &master = master_of(document);
+            auto *measure = master.first_measure();
+            auto *bar = measure->end_bar_line();
+            ASSERT_NE(bar, nullptr);
+            ASSERT_TRUE(measure->section_break());
+            ASSERT_TRUE(measure->page_break());
+            auto *section = measure->section_break_element();
+            ASSERT_NE(section, nullptr);
+            LayoutBreak *page = nullptr;
+            for (auto *item : measure->el())
+                if (item->is_layout_break() && to_layout_break(item)->is_page_break()) page = to_layout_break(item);
+            ASSERT_NE(page, nullptr);
+            const auto section_id = engrave::from_engine(section->eid());
+            const auto page_id = engrave::from_engine(page->eid());
+            if (warm) ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+            const auto layouts = layout_count(master);
+            ASSERT_TRUE(document.edit({{engrave::SetProperty{section_id, "LAYOUT_BREAK", engrave::Enum{"page"}}}}));
+            EXPECT_FALSE(measure->section_break());
+            ASSERT_TRUE(document.edit({{engrave::Remove{section_id}}}));
+            EXPECT_TRUE(measure->page_break());
+            if (remove_all) ASSERT_TRUE(document.edit({{engrave::Remove{page_id}}}));
+            ASSERT_TRUE(document.edit({{engrave::SetProperty{engrave::from_engine(bar->eid()), "BARLINE_TYPE", engrave::Enum{"end"}}}}));
+            EXPECT_EQ(measure->next_measure()->repeat_start(), !remove_all);
+            EXPECT_EQ(measure->page_break(), !remove_all);
+            EXPECT_EQ(layout_count(master), layouts);
+        }
+    }
+}
+
+TEST(Read, S16RestAnchorUsesEffectiveBeamMode) {
+    using namespace mu::engraving;
+    for (const std::string mode : {"auto", "no", "begin", "mid"}) {
+        for (bool warm : {false, true}) {
+            SCOPED_TRACE(mode);
+            SCOPED_TRACE(warm);
+            auto xml = legacy_segment_fixture("");
+            for (size_t at; (at = xml.find("<durationType>half</durationType>")) != std::string::npos;)
+                xml.replace(at, 33, "<durationType>eighth</durationType>");
+            xml.insert(xml.find("<Chord>"), "<Beam><eid>F_F</eid></Beam><Rest><durationType>quarter</durationType>"
+                                            "<BeamMode>begin</BeamMode></Rest>");
+            auto opened = g_engine->open(as_bytes(xml));
+            ASSERT_TRUE(opened);
+            auto &document = **opened;
+            auto &master = master_of(document);
+            auto *rest = to_rest(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+            auto *first = to_chord(rest->segment()->next(SegmentType::CHORD_REST)->element(0));
+            auto *second = to_chord(first->segment()->next(SegmentType::CHORD_REST)->element(0));
+            auto *beam = rest->authored_beam();
+            ASSERT_NE(beam, nullptr);
+            if (warm) ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+            const auto layouts = layout_count(master);
+            ASSERT_TRUE(document.edit({{engrave::SetProperty{engrave::from_engine(rest->eid()), "BeamMode", engrave::Enum{mode}}}}));
+            ASSERT_TRUE(document.edit({{engrave::SetProperty{engrave::from_engine(beam->eid()), "StemDirection", engrave::Enum{"down"}}}}));
+            const auto expected = mode == "begin" || mode == "mid" ? DirectionV::DOWN : DirectionV::AUTO;
+            EXPECT_EQ(first->stem_direction(), expected);
+            EXPECT_EQ(second->stem_direction(), expected);
+            EXPECT_EQ(layout_count(master), layouts);
+            ASSERT_TRUE(document.page_count());
+            if (mode == "auto" || mode == "no") {
+                EXPECT_EQ(rest->beam(), nullptr);
+                EXPECT_NE(first->beam(), nullptr);
+                EXPECT_EQ(first->beam(), second->beam());
+            } else {
+                ASSERT_NE(rest->beam(), nullptr);
+                EXPECT_EQ(first->beam(), rest->beam());
+                EXPECT_EQ(second->beam(), rest->beam());
+            }
+        }
+    }
+}
+
+std::string cross_staff_grace_beam_fixture(bool after, int anchor_index) {
+    auto xml = legacy_segment_fixture("");
+    xml.insert(xml.find("</Part>"), "<Staff><StaffType group=\"pitched\"/></Staff>");
+    xml.insert(xml.find("<SpannerMap>"),
+               "<Staff id=\"2\"><Measure><voice><Rest><durationType>whole</durationType></Rest></voice></Measure></Staff>");
+    std::string grace_xml;
+    for (int i = 0; i < 3; ++i) {
+        const int index = after ? 2 - i : i;
+        if (index == anchor_index) grace_xml += "<Beam><eid>F_F</eid></Beam>";
+        grace_xml += "<Chord>";
+        grace_xml += after ? "<grace8after/>" : "<acciaccatura/>";
+        grace_xml += "<durationType>eighth</durationType>";
+        if (index == 0) grace_xml += "<staffMove>1</staffMove>";
+        grace_xml += "<Note><pitch>" + std::to_string(65 + i) + "</pitch><tpc>13</tpc></Note></Chord>";
+    }
+    xml.insert(xml.find("<Chord>"), grace_xml);
+    return xml;
+}
+
+TEST(Read, S16GraceBeamValidationIncludesPrecedingMembers) {
+    using namespace mu::engraving;
+    for (bool after : {false, true}) {
+        for (int anchor_index : {0, 1}) {
+            for (bool warm : {false, true}) {
+                SCOPED_TRACE(after);
+                SCOPED_TRACE(anchor_index);
+                SCOPED_TRACE(warm);
+                auto xml = cross_staff_grace_beam_fixture(after, anchor_index);
+                auto opened = g_engine->open(as_bytes(xml));
+                ASSERT_TRUE(opened);
+                auto &document = **opened;
+                auto &master = master_of(document);
+                auto *main = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+                const auto notes = after ? main->grace_notes_after() : main->grace_notes_before();
+                ASSERT_EQ(notes.size(), 3u);
+                ASSERT_EQ(notes.front()->staff_move(), 1);
+                auto *beam = notes[anchor_index]->authored_beam();
+                ASSERT_NE(beam, nullptr);
+                if (warm) ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+                const auto layouts = layout_count(master);
+                const auto id = engrave::from_engine(beam->eid());
+                ASSERT_TRUE(document.edit({{engrave::SetProperty{id, "crossStaffMove", int64_t{-1}}}}));
+                EXPECT_EQ(beam->cross_staff_move(), -1);
+                ASSERT_TRUE(document.edit({{engrave::SetProperty{id, "crossStaffMove", int64_t{-2}}}}));
+                EXPECT_EQ(beam->cross_staff_move(), -1);
+                ASSERT_TRUE(document.edit({{engrave::SetProperty{id, "StemDirection", engrave::Enum{"down"}}}}));
+                EXPECT_EQ(beam->direction(), DirectionV::AUTO);
+                for (auto *note : notes) EXPECT_EQ(note->stem_direction(), DirectionV::AUTO);
+                EXPECT_EQ(layout_count(master), layouts);
+            }
+        }
+    }
+}
+
+TEST(Read, S16GraceAnchorRespectsBeamBoundaries) {
+    using namespace mu::engraving;
+    for (bool after : {false, true}) {
+        for (const std::string boundary : {"begin", "no", "quarter", "end"}) {
+            for (bool warm : {false, true}) {
+                SCOPED_TRACE(after);
+                SCOPED_TRACE(boundary);
+                SCOPED_TRACE(warm);
+                auto xml = cross_staff_grace_beam_fixture(after, 1);
+                const auto anchor = xml.find("<Chord>", xml.find("<Beam>"));
+                if (boundary == "quarter")
+                    xml.replace(xml.find("<durationType>eighth</durationType>", anchor), 35, "<durationType>quarter</durationType>");
+                else
+                    xml.insert(anchor + 7, "<BeamMode>" + boundary + "</BeamMode>");
+                auto opened = g_engine->open(as_bytes(xml));
+                ASSERT_TRUE(opened);
+                auto &document = **opened;
+                auto &master = master_of(document);
+                auto *main = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+                const auto notes = after ? main->grace_notes_after() : main->grace_notes_before();
+                ASSERT_EQ(notes.size(), 3u);
+                auto *beam = notes[1]->authored_beam();
+                ASSERT_NE(beam, nullptr);
+                if (warm) ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+                const auto layouts = layout_count(master);
+                const auto id = engrave::from_engine(beam->eid());
+                ASSERT_TRUE(document.edit({{engrave::SetProperty{id, "crossStaffMove", int64_t{-1}},
+                                            engrave::SetProperty{id, "StemDirection", engrave::Enum{"down"}}}}));
+                const bool cross = boundary == "end";
+                EXPECT_EQ(beam->cross_staff_move(), cross ? -1 : 0);
+                EXPECT_EQ(beam->direction(), cross ? DirectionV::AUTO : DirectionV::DOWN);
+                EXPECT_EQ(notes[0]->stem_direction(), DirectionV::AUTO);
+                EXPECT_EQ(notes[1]->stem_direction(), cross ? DirectionV::AUTO : DirectionV::DOWN);
+                EXPECT_EQ(notes[2]->stem_direction(), boundary == "begin" ? DirectionV::DOWN : DirectionV::AUTO);
+                EXPECT_EQ(layout_count(master), layouts);
+            }
+        }
+    }
+}
+
+TEST(Read, S16SemanticArticulationsDistinguishTextTappingAndSymbols) {
+    const std::array<std::pair<std::string_view, std::string_view>, 5> cases{{
+        {"<Articulation><subtype>Slap</subtype></Articulation>", "Slap"},
+        {"<Articulation><subtype>Pop</subtype></Articulation>", "Pop"},
+        {"<Tapping><hand>left</hand></Tapping>", "tapping:left"},
+        {"<Tapping><hand>right</hand></Tapping>", "tapping:right"},
+        {"<Articulation><subtype>articStaccatoBelow</subtype></Articulation>", "articStaccatoAbove"},
+    }};
+    for (const auto &[element, expected] : cases) {
+        SCOPED_TRACE(expected);
+        auto xml = legacy_segment_fixture("");
+        xml.insert(xml.find("</Chord>"), element);
+        auto opened = g_engine->open(as_bytes(xml));
+        ASSERT_TRUE(opened);
+        auto &document = **opened;
+        auto &master = master_of(document);
+        const auto before = layout_count(master);
+        const auto dump = music::semantic_dump(&master);
+        EXPECT_EQ(layout_count(master), before);
+        const auto &articulations = dump["events"][0][0][0]["articulations"];
+        ASSERT_EQ(articulations.size(), 1u);
+        EXPECT_EQ(articulations[0].get<std::string>(), expected);
+        ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+        EXPECT_TRUE(music::json_equal(dump, music::semantic_dump(&master)));
+    }
+}
+
 TEST(Read, NativeBeamDirectionRespectsCrossMeasureBoundaries) {
     using namespace mu::engraving;
     for (const std::string boundary : {"", "line", "page", "section", "frame", "other-beam", "end-mode"}) {
