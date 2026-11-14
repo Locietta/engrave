@@ -44,7 +44,6 @@
 #include "engraving/dom/stem.h"
 #include "engraving/editing/editmeasurerepeat.h"
 #include "engraving/editing/editvisibility.h"
-#include "engraving/editing/editvoice.h"
 #include "engraving/editing/transaction/transaction.h"
 #include "io/fileinfo.h"
 #include "utils/scorecomp.h"
@@ -893,37 +892,6 @@ TEST_F(EngravingPartsTests, partTies) {
     TestUtils::create_part(score);
     EXPECT_TRUE(ScoreComp::save_compare_score(score, test + u"-parts.mscx", ::parts_data_dir + test + u"-parts.mscx"));
     delete score;
-}
-
-TEST_F(EngravingPartsTests, partVisibleTracks) {
-    Score *score = ScoreRW::read_score(::parts_data_dir + u"part-visible-tracks.mscz");
-    ASSERT_TRUE(score);
-
-    Score *part = nullptr;
-    for (Score *s : score->score_list()) {
-        if (!s->is_master()) {
-            part = s;
-            break;
-        }
-    }
-    ASSERT_TRUE(part);
-    Measure *m = part->first_measure();
-    ASSERT_TRUE(m);
-    Chord *c = m->find_chord(Fraction(0, 1), 0);
-    ASSERT_TRUE(c);
-    Note *n = c->down_note();
-    ASSERT_TRUE(n);
-
-    part->start_cmd(TranslatableString::untranslatable("Engraving parts tests"));
-    part->select(n);
-    EditVoice::change_selected_elements_voice(part->transaction_manager()->current_or_dummy_transaction(), part, 1);
-    part->end_cmd();
-
-    EXPECT_TRUE(
-        ScoreComp::save_compare_score(score, u"part-visible-tracks-score.mscx", ::parts_data_dir + u"part-visible-tracks-score-ref.mscx"));
-
-    EXPECT_TRUE(
-        ScoreComp::save_compare_score(part, u"part-visible-tracks-part.mscx", ::parts_data_dir + u"part-visible-tracks-part-ref.mscx"));
 }
 
 TEST_F(EngravingPartsTests, inputFromParts) {

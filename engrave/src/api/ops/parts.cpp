@@ -14,7 +14,6 @@
 #include "engraving/dom/score.h"
 #include "engraving/dom/staff.h"
 #include "engraving/dom/stafftype.h"
-#include "engraving/editing/editexcerpt.h"
 #include "engraving/editing/editpart.h"
 
 namespace engrave::api {

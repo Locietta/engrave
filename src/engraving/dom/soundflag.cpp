@@ -24,7 +24,6 @@
 
 #include <climits>
 
-#include "../editing/editsoundflag.h"
 #include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
 #include "linkedobjects.h"
 #include "mscore.h"
@@ -143,28 +142,6 @@ bool SoundFlag::should_hide(bool is_printing) const {
     }
 
     return true;
-}
-
-void SoundFlag::undo_change_sound_flag(const PresetCodes &presets, const PlayingTechniqueCode &technique) {
-    if (sound_presets_ == presets && playing_technique_ == technique) {
-        return;
-    }
-
-    apply_change_sound_flag(this, presets, technique);
-    trigger_layout();
-
-    const LinkedObjects *links = this->links();
-    if (!links) {
-        return;
-    }
-
-    for (EngravingObject *obj : *links) {
-        if (obj->is_sound_flag()) {
-            SoundFlag *linked_sound_flag = to_sound_flag(obj);
-            apply_change_sound_flag(linked_sound_flag, presets, technique);
-            linked_sound_flag->trigger_layout();
-        }
-    }
 }
 
 char16_t SoundFlag::icon_code() const { return 0xEF4E; }

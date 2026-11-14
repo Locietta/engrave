@@ -23,7 +23,6 @@
 #include "fret.h"
 
 #include "../editing/addremoveelement.h"
-#include "../editing/editfretboarddiagram.h"
 #include "anchors.h"
 #include "chord.h"
 #include "factory.h"
@@ -437,36 +436,14 @@ void FretDiagram::set_barre(int string, int fret, [[maybe_unused]] bool add /*= 
 //   undoSetFretDot
 //---------------------------------------------------------
 
-void FretDiagram::undo_set_fret_dot(int input_string, int input_fret, bool input_add /*= true*/,
-                                    FretDotType input_dtype /*= FretDotType::NORMAl*/) {
-    for (EngravingObject *e : link_list()) {
-        FretDiagram *fd = to_fret_diagram(e);
-        apply_fret_dot(fd, input_string, input_fret, input_add, input_dtype);
-    }
-}
-
 //---------------------------------------------------------
 //   undoSetFretMarker
 //---------------------------------------------------------
-
-void FretDiagram::undo_set_fret_marker(int input_string, FretMarkerType input_mtype) {
-    for (EngravingObject *e : link_list()) {
-        FretDiagram *fd = to_fret_diagram(e);
-        apply_fret_marker(fd, input_string, input_mtype);
-    }
-}
 
 //---------------------------------------------------------
 //   undoSetFretBarre
 //    add refers to using multiple dots per string when adding dots automatically
 //---------------------------------------------------------
-
-void FretDiagram::undo_set_fret_barre(int input_string, int input_fret, bool input_add /*= false*/) {
-    for (EngravingObject *e : link_list()) {
-        FretDiagram *fd = to_fret_diagram(e);
-        apply_fret_barre(fd, input_string, input_fret, input_add);
-    }
-}
 
 //---------------------------------------------------------
 //   removeBarre
@@ -798,13 +775,6 @@ bool FretDiagram::is_clear() const { return barres_.empty() && dots_.empty() && 
 //---------------------------------------------------------
 //   undoFretClear
 //---------------------------------------------------------
-
-void FretDiagram::undo_fret_clear() {
-    for (EngravingObject *e : link_list()) {
-        FretDiagram *fd = to_fret_diagram(e);
-        apply_fret_clear(fd);
-    }
-}
 
 int FretDiagram::num_pos() const { return style().style_i(Sid::FRET_NUM_POS); }
 

@@ -24,7 +24,6 @@
 
 #include <cmath>
 
-#include "../editing/editfretboarddiagram.h"
 #include "editing/transaction/transaction.h"
 #include "factory.h"
 #include "fret.h"

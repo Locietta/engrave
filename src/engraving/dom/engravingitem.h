@@ -24,7 +24,6 @@
 
 #include <memory>
 
-#include "../editing/editdata.h"
 #include "../infrastructure/ld_access.h"
 #include "../infrastructure/shape.h"
 #include "../infrastructure/skyline.h"

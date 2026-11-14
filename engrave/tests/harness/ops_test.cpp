@@ -50,7 +50,6 @@
 #include "engraving/dom/tremolosinglechord.h"
 #include "engraving/dom/tremolotwochord.h"
 #include "engraving/dom/tuplet.h"
-#include "engraving/editing/editexcerpt.h"
 #include "engraving/editing/editstaffbrackets.h"
 #include "engraving/editing/editstyle.h"
 #include "engraving/editing/transaction/transaction.h"

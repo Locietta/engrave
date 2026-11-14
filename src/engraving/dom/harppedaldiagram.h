@@ -74,8 +74,6 @@ public:
     String create_diagram_text();
     void update_diagram_text();
 
-    void undo_change_pedal_state(std::array<PedalPosition, ::mu::engraving::harp_string_no> pedal_state);
-
     bool is_tpc_playable(int tpc);
 
     const std::set<int> &playable_tpcs() const { return playable_tpcs_; }

@@ -97,8 +97,6 @@ struct NoteInput {
     static void increase_duration(Transaction &tx, Score *score);
     static void decrease_duration(Transaction &tx, Score *score);
 
-    static void realtime_advance(Transaction &tx, Score *score, bool allow_transposition, const std::vector<int> &active_midi_pitches);
-
 private:
     //! NOTE: Shared prologue/epilogue for the setDuration/toggleRest/toggleDots commands above.
     static bool note_value_change_allowed(const Score *score);

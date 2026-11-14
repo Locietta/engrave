@@ -32,7 +32,6 @@
 #include <iterator>
 
 #include "../editing/addremoveelement.h"
-#include "../editing/editdata.h"
 #include "../editing/navigation.h"
 #include "../editing/transaction/transaction.h"
 #include "chord.h"
@@ -1982,8 +1981,6 @@ void EngravingItem::trigger_layout_to_end() const {
 //---------------------------------------------------------
 //   addData
 //---------------------------------------------------------
-
-void EditData::add_data(std::shared_ptr<ElementEditData> ed) { data_.push_back(ed); }
 
 //---------------------------------------------------------
 //   styleP

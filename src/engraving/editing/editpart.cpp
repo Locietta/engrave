@@ -36,7 +36,6 @@
 #include "../dom/stafftype.h"
 #include "../dom/stringtunings.h"
 #include "../dom/utils.h"
-#include "editscoreproperties.h"
 #include "log.h"
 #include "transaction/transaction.h"
 #include "transpose.h"
@@ -371,14 +370,4 @@ void EditPart::replace_part(Score *score, Part *old_part, const InstrumentTempla
     size_t part_index = muse::index_of(score->parts(), old_part);
     score->cmd_remove_part(old_part);
     insert_part(score, templ, part_index);
-}
-
-void EditPart::set_score_order(Score *score, const ScoreOrder &order) {
-    if (!score) {
-        return;
-    }
-
-    apply_change_score_order(score, order);
-    ScoreOrder mutable_order = order;
-    mutable_order.set_brackets_and_barlines(score);
 }

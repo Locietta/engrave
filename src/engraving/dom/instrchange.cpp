@@ -23,7 +23,6 @@
 #include "instrchange.h"
 
 #include "../editing/editclef.h"
-#include "../editing/editinstrumentchange.h"
 #include "../editing/editkeysig.h"
 #include "../editing/transaction/transaction.h"
 #include "../editing/transpose.h"
@@ -76,80 +75,6 @@ void InstrumentChange::set_instrument(const Instrument &i) {
     *instrument_ = i;
     //delete _instrument;
     //_instrument = new Instrument(i);
-}
-
-void InstrumentChange::setup_instrument(const Instrument *instrument, bool update_text) {
-    if (!init_) {
-        return;
-    }
-
-    Transaction &tx = score()->transaction_manager()->current_or_dummy_transaction();
-
-    Fraction tick_start = segment()->tick();
-    Part *part = staff()->part();
-    Interval old_v = part->instrument(tick_start)->transpose();
-    Interval old_kv = staff()->transpose(tick_start);
-    Interval v = instrument->transpose();
-    bool conc_pitch = style().style_b(Sid::CONCERT_PITCH);
-
-    // change the clef for each staff
-    for (size_t i = 0; i < part->nstaves(); i++) {
-        ClefType old_clef_type = conc_pitch ? part->instrument(tick_start)->clef_type(i).concert_clef :
-                                              part->instrument(tick_start)->clef_type(i).transposing_clef;
-        ClefType new_clef_type = conc_pitch ? instrument->clef_type(i).concert_clef : instrument->clef_type(i).transposing_clef;
-        // Introduce cleff change only if the new clef *symbol* is different from the old one
-        if (ClefInfo::sym_id(old_clef_type) != ClefInfo::sym_id(new_clef_type)) {
-            // If instrument change is at the start of a measure, use the measure as the element, as this will place the instrument change before the barline.
-            EngravingItem *element = rtick().is_zero() ? to_engraving_item(find_measure()) : to_engraving_item(this);
-            EditClef::undo_change_clef(tx, score(), part->staff(i), element, new_clef_type, true);
-        }
-    }
-
-    // Change key signature if necessary. CAUTION: not necessary in case of octave-transposing!
-    if ((v.chromatic - old_v.chromatic) % 12) {
-        for (size_t i = 0; i < part->nstaves(); i++) {
-            if (!part->staff(i)->key_sig_event(tick_start).is_atonal()) {
-                KeySigEvent ks;
-                // Check, if some key signature is already there, if no, mark new one "for instrument change"
-                Segment *seg = segment()->prev1(SegmentType::KEY_SIG);
-                voice_idx_t voice = part->staff(i)->idx() * ::mu::engraving::voices;
-                KeySig *ksig = seg ? to_key_sig(seg->element(voice)) : nullptr;
-                bool for_inst_change = !(ksig && ksig->tick() == tick_start && !ksig->generated());
-                ks.set_for_instrument_change(for_inst_change);
-                Key c_key = part->staff(i)->concert_key(tick_start);
-                ks.set_concert_key(c_key);
-                EditKeySig::undo_change_key_sig(tx, score(), part->staff(i), tick_start, ks);
-            }
-        }
-    }
-
-    // change instrument in all linked scores
-    for (EngravingObject *se : link_list()) {
-        InstrumentChange *lic = static_cast<InstrumentChange *>(se);
-        Instrument *new_instrument = new Instrument(*instrument);
-        apply_change_instrument(lic, new_instrument);
-    }
-
-    // transpose for current score only
-    // this automatically propagates to linked scores
-    if (part->instrument(tick_start)->transpose() != old_v) {
-        auto i = part->instruments().upper_bound(tick_start.ticks()); // find(), ++i
-        Fraction tick_end;
-        if (i == part->instruments().end()) {
-            tick_end = Fraction(-1, 1);
-        } else {
-            tick_end = Fraction::from_ticks(i->first);
-        }
-        Transpose::transposition_changed(tx, score(), part, old_kv, tick_start, tick_end);
-    }
-
-    if (!update_text) {
-        return;
-    }
-
-    //: The text of an "instrument change" marking. It is an instruction to the player to switch to another instrument.
-    const String new_instr_change_text = muse::mtrc("engraving", "To %1").arg(instrument->track_name());
-    undo_change_property(Pid::TEXT, TextBase::plain_to_xml_text(new_instr_change_text));
 }
 
 //---------------------------------------------------------

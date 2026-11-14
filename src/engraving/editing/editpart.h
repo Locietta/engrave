@@ -57,8 +57,6 @@ struct EditPart {
     static void insert_part(Score *score, const InstrumentTemplate *templ, size_t index);
     static void replace_part(Score *score, Part *old_part, const InstrumentTemplate *templ);
 
-    static void set_score_order(Score *score, const ScoreOrder &order);
-
 private:
     static void do_append_staff(Score *score, Staff *staff, Part *destination_part, bool create_rests = true);
 };

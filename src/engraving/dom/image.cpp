@@ -22,7 +22,6 @@
 
 #include "image.h"
 
-#include "../editing/editdata.h"
 #include "draw/svgrenderer.h"
 #include "draw/types/pixmap.h"
 #include "imageStore.h"

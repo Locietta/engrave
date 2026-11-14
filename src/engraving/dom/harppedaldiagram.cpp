@@ -22,7 +22,6 @@
 
 #include "harppedaldiagram.h"
 
-#include "../editing/editharppedaldiagram.h"
 #include "log.h"
 #include "part.h"
 #include "score.h"
@@ -200,23 +199,6 @@ String HarpPedalDiagram::create_diagram_text() {
 }
 
 void HarpPedalDiagram::update_diagram_text() { undo_change_property(Pid::TEXT, create_diagram_text(), PropertyFlags::STYLED); }
-
-void HarpPedalDiagram::undo_change_pedal_state(std::array<PedalPosition, ::mu::engraving::harp_string_no> pedal_state) {
-    const std::list<EngravingObject *> links = link_list();
-    for (EngravingObject *obj : links) {
-        if (!obj || !obj->is_harp_pedal_diagram()) {
-            continue;
-        }
-
-        HarpPedalDiagram *item = to_harp_pedal_diagram(obj);
-        Score *linked_score = item->score();
-        if (!linked_score) {
-            continue;
-        }
-
-        apply_change_harp_pedal_state(item, pedal_state);
-    }
-}
 
 bool HarpPedalDiagram::is_tpc_playable(int tpc) { return playable_tpcs_.find(tpc) != playable_tpcs_.cend(); }
 

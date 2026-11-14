@@ -31,7 +31,6 @@
 #include "editing/editkeysig.h"
 #include "editing/editrehearsalmark.h"
 #include "editing/navigation.h"
-#include "editing/splitjoinmeasure.h"
 #include "editing/transaction/transaction.h"
 #include "editing/transpose.h"
 #include "engraving/rendering/score/scorerenderer.h"

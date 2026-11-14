@@ -23,7 +23,6 @@
 #include "excerpt.h"
 
 #include "../editing/addremoveelement.h"
-#include "../editing/editexcerpt.h"
 #include "../editing/transaction/transaction.h"
 #include "../editing/transpose.h"
 #include "barline.h"
