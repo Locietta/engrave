@@ -76,6 +76,7 @@
 #include "engraving/dom/image.h"
 #include "engraving/dom/instrument.h"
 #include "engraving/dom/jump.h"
+#include "engraving/dom/layoutbreak.h"
 #include "engraving/dom/ledgerline.h"
 #include "engraving/dom/lyrics.h"
 #include "engraving/dom/marker.h"
@@ -5388,6 +5389,102 @@ TEST(Read, SegmentEditsReachColdLinkedPartsAndSelectionFallsBack) {
     master.layout_data_store()->clear();
     EXPECT_EQ(master.selection().element(), line);
     EXPECT_EQ(master.first_measure()->first(SegmentType::CHORD_REST)->first_spanner(0), line);
+}
+
+std::string split_spanner_fixture(std::string_view overrides = "") {
+    auto xml = legacy_segment_fixture(std::string(R"(<HairPin><eid>F_F</eid><track>0</track><subtype>0</subtype>
+<startTick>0/1</startTick><ticks>2/1</ticks><track2>0</track2>)") +
+                                      std::string(overrides) + "</HairPin>");
+    xml.insert(xml.find("</Staff><SpannerMap>"), R"(<Measure><voice>
+<Chord><durationType>half</durationType><Note><pitch>64</pitch><tpc>18</tpc></Note></Chord>
+<Chord><durationType>half</durationType><Note><pitch>65</pitch><tpc>13</tpc></Note></Chord>
+</voice></Measure>)");
+    return xml;
+}
+
+void break_first_measure(MasterScore &master) {
+    using namespace mu::engraving;
+    auto *line_break = Factory::create_layout_break(master.first_measure());
+    line_break->set_layout_break_type(LayoutBreakType::LINE);
+    master.first_measure()->add(line_break);
+    master.set_layout_all();
+}
+
+TEST(Read, OnlyBeginSegmentEditsPropagateAcrossDifferentSystemBreaks) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(as_bytes(split_spanner_fixture()));
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    auto outline = document.outline();
+    ASSERT_TRUE(outline);
+    ASSERT_TRUE(document.edit({{engrave::GenerateExcerpts{{outline->parts.front().id}}}}));
+    auto *part = master.excerpts().front()->excerpt_score();
+    auto *line = master.spanner_list().front();
+    auto *clone = part->spanner_list().front();
+    break_first_measure(master);
+    line->authored_segment(0)->undo_change_property(Pid::OFFSET2, PointF(2, -1) * master.style().spatium());
+    const AuthoredChildKey begin{AuthoredChildRole::SPANNER_SEGMENT};
+    ASSERT_NE(clone->authored_overrides.find(begin, Pid::OFFSET2), nullptr);
+    EXPECT_EQ(clone->authored_overrides.find(begin, Pid::OFFSET2)->value, PropertyValue(PointF(2, -1)));
+    EXPECT_TRUE(clone->segments_empty());
+    master.ensure_layout();
+    part->ensure_layout();
+    ASSERT_EQ(line->nsegments(), 2u);
+    ASSERT_EQ(clone->nsegments(), 1u);
+    EXPECT_TRUE(line->front_segment()->is_begin_type());
+    EXPECT_TRUE(line->back_segment()->is_end_type());
+    EXPECT_TRUE(clone->front_segment()->is_single_type());
+    line->back_segment()->undo_change_property(Pid::OFFSET2, PointF(-3, 0.5) * master.style().spatium());
+    EXPECT_EQ(clone->authored_overrides.find(begin, Pid::OFFSET2)->value, PropertyValue(PointF(2, -1)));
+    EXPECT_EQ(clone->authored_overrides.find({AuthoredChildRole::SPANNER_SEGMENT, 1}, Pid::OFFSET2), nullptr);
+    EXPECT_EQ(line->authored_overrides.find({AuthoredChildRole::SPANNER_SEGMENT, 1}, Pid::OFFSET2)->value, PropertyValue(PointF(-3, 0.5)));
+}
+
+TEST(Read, SegmentColorCreationAndReusePreserveSourceAndDrawAuthoredColor) {
+    using namespace mu::engraving;
+    auto input = read_text(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "tests/data/inputs/native-save-overrides.mscx");
+    input.insert(input.find("<guitarBendType>"), R"(<color r="153" g="51" b="17" a="255"/>)");
+    auto opened = g_engine->open(as_bytes(input));
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    auto resolved = engrave::resolve(master, *engrave::element_id_from_string("H_H"));
+    ASSERT_TRUE(resolved);
+    auto *bend = to_guitar_bend(resolved->object);
+    EXPECT_EQ(bend->color(), muse::draw::Color(0, 0, 0));
+    auto carrier = bend->authored_segment(0);
+    EXPECT_EQ(bend->color(), muse::draw::Color(0, 0, 0));
+    carrier.reset();
+    ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+    ASSERT_NE(bend->front_segment(), nullptr);
+    auto *segment = bend->front_segment();
+    EXPECT_EQ(segment->color(), muse::draw::Color(153, 51, 17));
+    EXPECT_EQ(bend->color(), muse::draw::Color(0, 0, 0));
+    bend->set_property(Pid::COLOR, muse::draw::Color(17, 51, 153));
+    const auto authored_raw_color = bend->color();
+    const auto rendered = document.render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(rendered);
+    EXPECT_EQ(bend->front_segment(), segment);
+    EXPECT_EQ(segment->color(), muse::draw::Color(17, 51, 153));
+    EXPECT_EQ(bend->color(), authored_raw_color);
+    const auto &bytes = rendered->pages.front();
+    const std::string svg(reinterpret_cast<const char *>(bytes.data()), bytes.size());
+    EXPECT_NE(svg.find("stroke=\"rgb(6.666667%, 20%, 60%)\""), std::string::npos);
+}
+
+TEST(Read, LaterSystemsPreserveTheBeginSegmentVisibilityOverride) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(as_bytes(split_spanner_fixture(R"(<Segment no="0"><visible>0</visible></Segment>)")));
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    break_first_measure(master);
+    master.ensure_layout();
+    auto *line = master.spanner_list().front();
+    ASSERT_EQ(line->nsegments(), 2u);
+    EXPECT_FALSE(line->front_segment()->visible());
+    EXPECT_TRUE(line->back_segment()->visible());
+    EXPECT_TRUE(line->visible());
 }
 
 TEST(Read, LegacySlurGripOrdinalGapsBaselineBeforeLayout) {

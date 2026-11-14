@@ -121,7 +121,7 @@ static const ElementStyle vibrato_segment_style{
 LineSegment *Vibrato::create_line_segment() {
     VibratoSegment *seg = new VibratoSegment(this);
     seg->set_track(track());
-    seg->set_color(line_color());
+    seg->EngravingItem::set_color(line_color());
     seg->init_element_style(&::mu::engraving::vibrato_segment_style);
     return seg;
 }

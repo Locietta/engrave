@@ -6132,7 +6132,6 @@ SpannerSegment *TLayout::get_next_layout_system_segment(Spanner *spanner, System
     seg->move_to_system(system);
     seg->set_spanner(spanner);
     seg->set_track(spanner->track());
-    seg->set_visible(spanner->visible());
     const auto &segments = spanner->spanner_segments();
     const auto ordinal = static_cast<uint32_t>(std::find(segments.begin(), segments.end(), seg) - segments.begin());
     bind_authored_child(*seg, {AuthoredChildRole::SPANNER_SEGMENT, ordinal});

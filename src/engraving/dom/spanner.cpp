@@ -99,7 +99,7 @@ void SpannerSegment::move_to_system(System *s) {
         auto *owner = spanner();
         EngravingItem::set_selected(owner->selected());
         EngravingItem::set_visible(owner->visible());
-        EngravingItem::set_color(owner->color());
+        EngravingItem::set_color(owner->get_property(Pid::COLOR).value<Color>());
         EngravingItem::set_z(owner->z());
         EngravingItem::set_autoplace(owner->autoplace());
         set_track(owner->track());

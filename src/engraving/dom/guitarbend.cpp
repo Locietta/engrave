@@ -60,7 +60,7 @@ GuitarBend::LayoutData::~LayoutData() { delete hold_line; }
 LineSegment *GuitarBend::create_line_segment() {
     GuitarBendSegment *seg = new GuitarBendSegment(this);
     seg->set_track(track());
-    seg->set_color(line_color());
+    seg->EngravingItem::set_color(line_color());
     return seg;
 }
 
@@ -916,7 +916,7 @@ GuitarBendHold::GuitarBendHold(const GuitarBendHold &h) : SLine(h) {}
 LineSegment *GuitarBendHold::create_line_segment() {
     GuitarBendHoldSegment *seg = new GuitarBendHoldSegment(this);
     seg->set_track(track());
-    seg->set_color(line_color());
+    seg->EngravingItem::set_color(line_color());
     return seg;
 }
 

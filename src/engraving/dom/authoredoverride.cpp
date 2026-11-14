@@ -471,6 +471,7 @@ AuthoredPropertyLinks::AuthoredPropertyLinks(EngravingObject &object) {
     auto &segment = *to_spanner_segment(&object);
     auto *owner = segment.spanner();
     const auto key = child_key(segment);
+    if (key.ordinal != 0) return;
     for (auto *peer : owner->link_list()) {
         if (peer == owner || to_spanner(peer)->EngravingItem::placement() != owner->EngravingItem::placement()) continue;
         auto carrier = to_spanner(peer)->authored_segment(key.ordinal);
