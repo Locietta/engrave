@@ -69,6 +69,15 @@ System *Beam::system() const {
 
 EngravingItem *Beam::layout_parent() const { return system(); }
 
+staff_idx_t Beam::v_staff_idx() const { return ldata()->visual_staff_idx.value_or(staff_idx()); }
+
+Staff *Beam::visual_staff() const { return has_staff() && !score()->staves().empty() ? score()->staff(v_staff_idx()) : nullptr; }
+
+double Beam::visual_spatium() const {
+    const Staff *staff = visual_staff();
+    return staff ? staff->spatium(this) : style().spatium();
+}
+
 //---------------------------------------------------------
 //   Beam
 //---------------------------------------------------------
@@ -297,10 +306,6 @@ void Beam::calc_beam_breaks(const ChordRest *cr, const ChordRest *prev_cr, int l
 
 void Beam::spatium_changed(double, double) {}
 
-//---------------------------------------------------------
-//   setBeamDirection
-//---------------------------------------------------------
-
 std::pair<int, int> Beam::source_staff_move_bounds() const {
     std::optional<std::pair<int, int>> bounds;
     for (const auto *member : elements_) {
@@ -417,7 +422,7 @@ void Beam::set_no_slope(bool b) {
 void Beam::compute_and_set_slope() {
     double x_diff = end_anchor_.x() - start_anchor_.x();
     double y_diff = end_anchor_.y() - start_anchor_.y();
-    if (std::abs(x_diff) < 0.5 * spatium()) {
+    if (std::abs(x_diff) < 0.5 * visual_spatium()) {
         // Temporary safeguard: a beam this short is invalid, and exists only as a temporary state,
         // so don't try to compute the slope as it will be wrong. Needs a better solution in future.
         set_slope(0.0);
@@ -616,7 +621,8 @@ Shape BeamSegment::shape() const {
     }
     // If not, break the beam shape into multiple rectangles
     double beam_height_diff = end_point.y() - start_point.y();
-    int sub_boxes_count = floor(beam_horizontal_length / parent_element->spatium());
+    const double spatium = parent_element->is_beam() ? to_beam(parent_element)->visual_spatium() : parent_element->spatium();
+    int sub_boxes_count = floor(beam_horizontal_length / spatium);
     sub_boxes_count = std::max(sub_boxes_count, 1); // at least one rectangle, of course (avoid division by zero)
     double horizontal_step = beam_horizontal_length / sub_boxes_count;
     double vertical_step = beam_height_diff / sub_boxes_count;

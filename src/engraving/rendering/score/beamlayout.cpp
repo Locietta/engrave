@@ -170,7 +170,7 @@ void BeamLayout::layout1(Beam *item, LayoutContext &ctx) {
     Beam::LayoutData *ldata = item->mutldata();
     ldata->effective_cross_staff_move.reset();
 
-    const StaffType *staff_type = item->staff_type();
+    const StaffType *staff_type = item->visual_staff() ? item->visual_staff()->staff_type_for_element(item) : nullptr;
     item->set_tab((staff_type && staff_type->is_tab_staff()) ? staff_type : nullptr);
     item->set_is_beside_tab_staff(item->tab() && !item->tab()->stemless() && !item->tab()->stem_through());
 
@@ -190,7 +190,7 @@ void BeamLayout::layout1(Beam *item, LayoutContext &ctx) {
         return;
     }
 
-    if (item->staff()->is_drum_staff(item->tick())) {
+    if (item->visual_staff()->is_drum_staff(item->tick())) {
         if (item->direction() != DirectionV::AUTO) {
             item->set_up(item->direction() == DirectionV::UP);
         } else if (item->is_grace()) {
@@ -212,7 +212,7 @@ void BeamLayout::layout1(Beam *item, LayoutContext &ctx) {
                     break;
                 }
                 if (first_chord) {
-                    const Staff *staff = item->staff();
+                    const Staff *staff = item->visual_staff();
                     const Part *part = staff ? staff->part() : nullptr;
                     const Drumset *ds = part ? part->instrument(item->tick())->drumset() : nullptr;
                     first_up = ds ? ds->stem_direction(chord->up_note()->pitch()) == DirectionV::UP : chord->up();
@@ -307,12 +307,12 @@ void BeamLayout::layout1(Beam *item, LayoutContext &ctx) {
     bool is_entirely_moved = false;
     if (item->min_cr_move() == item->max_cr_move() && item->min_cr_move() != 0) {
         is_entirely_moved = true;
-        item->set_staff_idx(staff_idx);
+        ldata->visual_staff_idx = staff_idx;
         if (item->direction() == DirectionV::AUTO) {
             item->set_up(item->max_cr_move() > 0);
         }
     } else if (item->rendered_elements().size()) {
-        item->set_staff_idx(item->rendered_elements().at(0)->staff_idx());
+        ldata->visual_staff_idx = item->rendered_elements().at(0)->staff_idx();
     }
     item->set_full_cross(is_entirely_moved);
 
@@ -357,8 +357,8 @@ void BeamLayout::layout2(Beam *item, const LayoutContext &ctx, const std::vector
     }
 
     item->set_beam_spacing(ctx.conf().style_b(Sid::USE_WIDE_BEAMS) ? 4 : 3);
-    item->set_beam_dist((item->beam_spacing() / 4.0) * item->spatium() * item->mag());
-    item->set_beam_width(item->absolute_from_spatium(ctx.conf().style_s(Sid::BEAM_WIDTH)) * item->mag());
+    item->set_beam_dist((item->beam_spacing() / 4.0) * item->visual_spatium() * item->mag());
+    item->set_beam_width(ctx.conf().style_s(Sid::BEAM_WIDTH).val() * item->visual_spatium() * item->mag());
 
     item->set_start_anchor(BeamTremoloLayout::chord_beam_anchor(item->ldata(), start_chord, ChordBeamAnchorType::START));
     item->set_end_anchor(BeamTremoloLayout::chord_beam_anchor(item->ldata(), end_chord, ChordBeamAnchorType::END));
@@ -373,13 +373,13 @@ void BeamLayout::layout2(Beam *item, const LayoutContext &ctx, const std::vector
         {AuthoredChildRole::BEAM_FRAGMENT, static_cast<uint32_t>(frag), static_cast<uint8_t>(fragment_index)}, Pid::BEAM_POS);
     if (manual) {
         const auto endpoints = manual->value.value<PairF>();
-        item->beam_fragments()[frag]->py1[fragment_index] = endpoints.first * item->spatium();
-        item->beam_fragments()[frag]->py2[fragment_index] = endpoints.second * item->spatium();
+        item->beam_fragments()[frag]->py1[fragment_index] = endpoints.first * item->visual_spatium();
+        item->beam_fragments()[frag]->py2[fragment_index] = endpoints.second * item->visual_spatium();
         BeamTremoloLayout::setup_l_data(item, item->mutldata(), ctx);
         double start_y = item->beam_fragments()[frag]->py1[fragment_index];
         double end_y = item->beam_fragments()[frag]->py2[fragment_index];
         if (ctx.conf().style_b(Sid::SNAP_CUSTOM_BEAMS_TO_GRID)) {
-            const double quarter_space = item->spatium() / 4;
+            const double quarter_space = item->visual_spatium() / 4;
             start_y = round(start_y / quarter_space) * quarter_space;
             end_y = round(end_y / quarter_space) * quarter_space;
         }
@@ -465,7 +465,7 @@ void BeamLayout::restore_beams(Measure *m, LayoutContext &ctx) {
                 Beam *b = cr->beam();
                 if (b && !b->rendered_elements().empty() && b->rendered_elements().front() == cr) {
                     TLayout::layout_beam(b, ctx);
-                    b->add_skyline(m->system()->staff(b->staff_idx())->skyline());
+                    b->add_skyline(m->system()->staff(b->v_staff_idx())->skyline());
                 }
             }
         }
@@ -868,7 +868,7 @@ void BeamLayout::layout_non_cross_beams(ChordRest *cr, LayoutContext &ctx) {
     }
 
     for (ChordRest *beam_cr_value : beam->rendered_elements()) {
-        if (beam_cr_value->is_rest() && beam_cr_value->v_staff_idx() == beam->staff_idx()) {
+        if (beam_cr_value->is_rest() && beam_cr_value->v_staff_idx() == beam->v_staff_idx()) {
             vertical_adjust_beamed_rests(to_rest(beam_cr_value), beam, ctx);
         }
     }
