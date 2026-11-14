@@ -443,7 +443,13 @@ public:
     virtual EngravingItem *find_linked_in_score(const Score *score) const;
     EngravingItem *find_linked_in_staff(const Staff *staff) const;
 
+    struct SharingLinks {
+        EngravingItem *shared_item = nullptr;
+        std::vector<EngravingItem *> origin_items;
+    };
+
     struct LayoutData {
+        SharingLinks sharing_links;
         virtual ~LayoutData() = default;
 
         virtual void reset() {
@@ -686,14 +692,6 @@ private:
     friend struct EngravingObject;
     void transfer_layout_data(Score *destination);
 
-    // Transitional semantic routing for L6. Geometry can be discarded without
-    // losing property propagation; only participating items allocate this record.
-    struct SharingLinks {
-        EngravingItem *shared_item = nullptr;
-        std::vector<EngravingItem *> origin_items;
-    };
-
-    std::unique_ptr<SharingLinks> sharing_links_;
     SharingLinks &mut_sharing_links();
 
     PointF offset_; // offset from reference position, set by autoplace or user

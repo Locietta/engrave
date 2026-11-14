@@ -1162,17 +1162,11 @@ void EngravingItem::manage_exclusion_from_parts(bool exclude) {
     }
 }
 
-EngravingItem::SharingLinks &EngravingItem::mut_sharing_links() {
-    if (!sharing_links_) sharing_links_ = std::make_unique<SharingLinks>();
-    return *sharing_links_;
-}
+EngravingItem::SharingLinks &EngravingItem::mut_sharing_links() { return mutldata()->sharing_links; }
 
-EngravingItem *EngravingItem::shared_item() const { return sharing_links_ ? sharing_links_->shared_item : nullptr; }
+EngravingItem *EngravingItem::shared_item() const { return ldata()->sharing_links.shared_item; }
 
-const std::vector<EngravingItem *> &EngravingItem::origin_items() const {
-    static const std::vector<EngravingItem *> empty;
-    return sharing_links_ ? sharing_links_->origin_items : empty;
-}
+const std::vector<EngravingItem *> &EngravingItem::origin_items() const { return ldata()->sharing_links.origin_items; }
 
 void EngravingItem::connect_shared_item(EngravingItem *shared_item, EngravingItem *origin_item) {
     if (origin_item->shared_item() == shared_item) return;
@@ -1191,14 +1185,14 @@ void EngravingItem::connect_shared_item(EngravingItem *shared_item, EngravingIte
 
 void EngravingItem::disconnect_shared_item(EngravingItem *shared_item, EngravingItem *origin_item) {
     IF_ASSERT_FAILED(origin_item->shared_item() == shared_item) { return; }
-    origin_item->sharing_links_->shared_item = nullptr;
-    DO_ASSERT(muse::remove(shared_item->sharing_links_->origin_items, origin_item));
+    origin_item->mut_sharing_links().shared_item = nullptr;
+    DO_ASSERT(muse::remove(shared_item->mut_sharing_links().origin_items, origin_item));
 }
 
 void EngravingItem::disconnect_all_origin_items(EngravingItem *shared_item) {
-    if (!shared_item->sharing_links_) return;
-    for (auto *origin : shared_item->sharing_links_->origin_items) origin->sharing_links_->shared_item = nullptr;
-    shared_item->sharing_links_->origin_items.clear();
+    if (shared_item->origin_items().empty()) return;
+    for (auto *origin : shared_item->mut_sharing_links().origin_items) origin->mut_sharing_links().shared_item = nullptr;
+    shared_item->mut_sharing_links().origin_items.clear();
 }
 
 void EngravingItem::disconnect_shared_tree(EngravingItem *item) {

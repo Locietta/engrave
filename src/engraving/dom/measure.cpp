@@ -672,6 +672,10 @@ void Measure::reconcile_output_segments() {
     for (auto *source = first(); source; source = source->next()) {
         if (resized) {
             source->mutldata()->suppressed = false;
+            source->mutldata()->suppressed_source_tracks.clear();
+            source->mutldata()->suppressed_annotations.clear();
+            muse::delete_all(source->mutldata()->display_annotations);
+            source->mutldata()->display_annotations.clear();
             for (auto *copy : source->ldata()->display_copies)
                 if (copy && score()->layout_data_store()) score()->layout_data_store()->retire_layout_copy(*copy);
             muse::delete_all(source->mutldata()->display_copies);

@@ -61,6 +61,8 @@
 #include "engraving/dom/rangelock.h"
 #include "engraving/dom/score.h"
 #include "engraving/dom/segment.h"
+#include "engraving/dom/sharedpart.h"
+#include "engraving/dom/slur.h"
 #include "engraving/dom/spacer.h"
 #include "engraving/dom/staff.h"
 #include "engraving/dom/system.h"
@@ -377,6 +379,7 @@ TEST(NativeSave, ColdEqualsWarm) {
     }
     inputs.push_back(g_source_root / "tests/data/inputs/evening.musicxml");
     inputs.push_back(g_source_root / "tests/data/inputs/mmr-boundary.mscx");
+    inputs.push_back(g_source_root / "tests/data/inputs/stave-sharing.mscx");
     std::ranges::sort(inputs);
     for (const auto &path : inputs) {
         SCOPED_TRACE(path.filename().string());
@@ -422,6 +425,144 @@ TEST(NativeSave, ColdEqualsWarm) {
         const auto warm = write();
         EXPECT_EQ(cold, warm);
     }
+}
+
+std::string source_native(Score &score) {
+    muse::io::Buffer buffer;
+    buffer.open(muse::io::IODevice::WRITE_ONLY);
+    mu::engraving::rw::WriteInOutData inout(&score);
+    inout.ctx.set_inline_style(true);
+    EXPECT_TRUE(mu::engraving::rw::RWRegister::writer()->write_score(&score, &buffer, &inout));
+    return std::string(reinterpret_cast<const char *>(buffer.data().const_data()), buffer.data().size());
+}
+
+TEST(StaveSharingOutput, UnisonRenderingPreservesAuthoredSourceAndHandles) {
+    using namespace mu::engraving;
+    auto document = open_path(g_source_root / "tests/data/inputs/stave-sharing.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    ASSERT_EQ(master.shared_parts().size(), 1u);
+    auto *part = master.shared_parts().front();
+    ASSERT_EQ(part->origin_parts().size(), 2u);
+    auto *segment = master.first_measure()->first(SegmentType::CHORD_REST);
+    auto *authored_rest = segment->element(0);
+    ASSERT_TRUE(authored_rest && authored_rest->is_rest());
+    auto *origin = to_chord(segment->element(8))->up_note();
+    EXPECT_EQ(origin->pitch(), 72);
+    const auto objects = engrave::document_objects(master);
+    const auto handles = master.eid_register()->size();
+    const auto cold = source_native(master);
+    EXPECT_NE(cold.find("<SharedPart"), std::string::npos);
+    EXPECT_NE(cold.find("<sharedPart>A_A</sharedPart>"), std::string::npos);
+    for (int cycle = 0; cycle < 2; ++cycle) {
+        auto svg = document->render({.format = engrave::RenderFormat::SVG});
+        ASSERT_TRUE(svg) << svg.error().message;
+        ASSERT_EQ(svg->pages.size(), 1u);
+        EXPECT_GT(svg->pages.front().size(), 1000u);
+        auto *shown = segment->effective_element(0);
+        ASSERT_TRUE(shown && shown->is_chord());
+        EXPECT_EQ(to_chord(shown)->up_note()->pitch(), 72);
+        EXPECT_GT(to_chord(shown)->up_note()->width(), 0.0);
+        EXPECT_EQ(to_chord(shown)->up_note()->origin_items().size(), 2u);
+        EXPECT_EQ(master.layout_copy(*origin), to_chord(shown)->up_note());
+        EXPECT_FALSE(source_object(*shown));
+        EXPECT_EQ(segment->element(0), authored_rest);
+        EXPECT_EQ(part->track_map_at_tick(Fraction(0, 1)), (SharedTrackMap{{8, 0}, {12, 0}}));
+        EXPECT_EQ(engrave::document_objects(master), objects);
+        EXPECT_EQ(master.eid_register()->size(), handles);
+        EXPECT_EQ(source_native(master), cold);
+        ASSERT_FALSE(segment->rendered_annotations().empty());
+        EXPECT_TRUE(segment->rendered_annotations().back()->is_stave_sharing_label());
+        EXPECT_TRUE(segment->annotations().empty());
+        size_t labels_drawn = 0;
+        segment->scan_elements([&](auto *item) {
+            if (item->is_stave_sharing_label()) ++labels_drawn;
+        });
+        EXPECT_EQ(labels_drawn, 1u);
+        EXPECT_TRUE(master.systems().front()->staff(0)->show());
+        EXPECT_FALSE(master.systems().front()->staff(2)->show());
+        EXPECT_FALSE(master.systems().front()->staff(3)->show());
+        master.layout_data_store()->clear();
+        EXPECT_EQ(segment->effective_element(0), authored_rest);
+        EXPECT_EQ(master.layout_copy(*origin), nullptr);
+        EXPECT_EQ(source_native(master), cold);
+    }
+}
+
+TEST(StaveSharingOutput, TiesAndSlursRemainOutsideSourceSpannerMembership) {
+    using namespace mu::engraving;
+    auto document = open_path(g_source_root / "tests/data/inputs/stave-sharing.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *first = master.first_measure()->first(SegmentType::CHORD_REST);
+    auto *second = first->next(SegmentType::CHORD_REST);
+    for (track_idx_t track : {8u, 12u}) {
+        auto *start = to_chord(first->element(track))->up_note();
+        auto *end = to_chord(second->element(track))->up_note();
+        end->set_pitch(72);
+        end->set_tpc1(14);
+        end->set_tpc2(14);
+        auto *tie = Factory::create_tie(start);
+        tie->set_note_span(start, end);
+        master.add_element(tie);
+        tie->assign_new_eid();
+        auto *slur = Factory::create_slur(master.dummy());
+        slur->set_track(track);
+        slur->set_track2(track);
+        slur->set_tick(first->tick());
+        slur->set_tick2(second->tick());
+        master.add_element(slur);
+        slur->assign_new_eid();
+    }
+    const auto objects = engrave::document_objects(master);
+    const auto spans = master.spanner_list();
+    const auto cold = source_native(master);
+    for (int cycle = 0; cycle < 2; ++cycle) {
+        ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+        const auto &shared = master.layout_data_store()->score_output().shared_spanners;
+        EXPECT_EQ(std::ranges::count_if(shared, [](auto *sp) { return sp->is_tie(); }), 1);
+        EXPECT_EQ(std::ranges::count_if(shared, [](auto *sp) { return sp->is_slur(); }), 1);
+        for (auto *span : shared) {
+            EXPECT_FALSE(source_object(*span));
+            EXPECT_FALSE(span->spanner_segments().empty());
+            ASSERT_NE(span->start_element(), nullptr);
+            ASSERT_NE(span->end_element(), nullptr);
+            EXPECT_FALSE(source_object(*span->start_element()));
+            EXPECT_FALSE(source_object(*span->end_element()));
+        }
+        EXPECT_EQ(master.spanner_list(), spans);
+        EXPECT_EQ(engrave::document_objects(master), objects);
+        EXPECT_EQ(source_native(master), cold);
+        master.layout_data_store()->clear();
+    }
+}
+
+TEST(StaveSharingOutput, EditedUnisonRangeMatchesFullLayout) {
+    using namespace mu::engraving;
+    auto document = open_path(g_source_root / "tests/data/inputs/stave-sharing.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+    auto *measure = master.first_measure()->next_measure();
+    auto *note = to_chord(measure->first(SegmentType::CHORD_REST)->element(12))->up_note();
+    note->set_pitch(71);
+    note->set_tpc1(19);
+    note->set_tpc2(19);
+    master.invalidate_layout(measure->tick(), measure->end_tick());
+    auto range = document->render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(range) << range.error().message;
+    EXPECT_GT(master.layout_state.range_count, 0u);
+    auto *display = measure->first(SegmentType::CHORD_REST)->effective_element(0);
+    ASSERT_TRUE(display && display->is_chord());
+    std::set<int> pitches;
+    for (auto *n : to_chord(display)->notes()) pitches.insert(n->pitch());
+    EXPECT_EQ(pitches, (std::set<int>{71, 72}));
+    const auto saved = source_native(master);
+    master.layout_data_store()->clear();
+    auto full = document->render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(full) << full.error().message;
+    EXPECT_EQ(range->pages, full->pages);
+    EXPECT_EQ(source_native(master), saved);
 }
 
 TEST(MmrOutput, InternalLockKeepsSourceIdentityWithoutAnInternalDisplayBoundary) {

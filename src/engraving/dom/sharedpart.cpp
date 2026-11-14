@@ -23,6 +23,8 @@
 
 #include <sstream>
 
+#include "rendering/score/layoutdatastore.h"
+#include "rendering/score/scorerenderer.h"
 #include "score.h"
 #include "staff.h"
 
@@ -100,28 +102,31 @@ Part *SharedPart::origin_part_for_staff(staff_idx_t shared_staff_idx, const Frac
 }
 
 const SharedTrackMap &SharedPart::track_map_at_tick(const Fraction &tick) const {
+    static const SharedTrackMap empty;
+    const auto *store = score()->layout_data_store();
+    if (!store) return empty;
+    const auto &maps = store->score_output().shared_track_maps;
+    const auto found = maps.find(this);
+    if (found == maps.end() || found->second.empty()) return empty;
+    const auto &track_maps_by_tick_ = found->second;
     static constexpr Fraction tick_zero = Fraction(0, 1);
 
-    IF_ASSERT_FAILED(track_maps_by_tick_.size() > 0) {
-        const_cast<SharedPart *>(this)->track_maps_by_tick_[tick_zero] = SharedTrackMap();
-        return track_maps_by_tick_.at(tick_zero);
-    }
-
-    DO_ASSERT(muse::contains(track_maps_by_tick_, tick_zero));
-
-    IF_ASSERT_FAILED(tick.positive()) { return track_maps_by_tick_.at(tick_zero); }
+    if (tick <= tick_zero) return track_maps_by_tick_.begin()->second;
 
     auto upper_bound_value = track_maps_by_tick_.upper_bound(tick);
-    DO_ASSERT(upper_bound_value != track_maps_by_tick_.begin());
+    if (upper_bound_value == track_maps_by_tick_.begin()) return empty;
 
     --upper_bound_value;
 
     return upper_bound_value->second;
 }
 
-void SharedPart::set_track_map_at_tick(const SharedTrackMap &map, const Fraction &tick) { track_maps_by_tick_[tick] = map; }
+void SharedPart::set_track_map_at_tick(const SharedTrackMap &map, const Fraction &tick) {
+    score()->renderer()->layout_data_store(*score()).score_output().shared_track_maps[this][tick] = map;
+}
 
 void mu::engraving::SharedPart::remove_maps_between_ticks(const Fraction &start_tick, const Fraction &end_tick) {
+    auto &track_maps_by_tick_ = score()->renderer()->layout_data_store(*score()).score_output().shared_track_maps[this];
     auto upper_bound_value = track_maps_by_tick_.lower_bound(start_tick);
     if (upper_bound_value == track_maps_by_tick_.end()) {
         return;

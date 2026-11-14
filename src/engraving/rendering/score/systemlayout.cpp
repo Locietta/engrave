@@ -75,6 +75,7 @@
 #include "guitardivelayout.h"
 #include "harmonylayout.h"
 #include "horizontalspacing.h"
+#include "layoutdatastore.h"
 #include "log.h"
 #include "lyricslayout.h"
 #include "measurelayout.h"
@@ -304,7 +305,7 @@ System *SystemLayout::collect_system(LayoutContext &ctx) {
                     Segment &seg = *rendered;
                     prev_measure_state.element_positions.emplace(&seg, seg.ldata()->pos());
                     prev_measure_state.element_widths.emplace(&seg, seg.width());
-                    for (EngravingItem *item : seg.annotations()) {
+                    for (EngravingItem *item : seg.rendered_annotations()) {
                         if (item->is_harmony() || item->is_fret_diagram()) {
                             prev_measure_state.element_positions.emplace(item, item->ldata()->pos());
                         }
@@ -1443,7 +1444,7 @@ void SystemLayout::collect_elements_to_layout(Measure *measure, ElementsToLayout
 
     track_idx_t n_tracks = ctx.dom().ntracks();
     for (Segment *s = measure->rendered_first(); s; s = s->rendered_next()) {
-        if (s->is_chord_rest_type() || !s->annotations().empty()) {
+        if (s->is_chord_rest_type() || !s->rendered_annotations().empty()) {
             elements.segments.push_back(s);
         }
 
@@ -1514,7 +1515,7 @@ void SystemLayout::collect_elements_to_layout(Measure *measure, ElementsToLayout
             ++track;
         }
 
-        for (EngravingItem *item : s->annotations()) {
+        for (EngravingItem *item : s->rendered_annotations()) {
             if (!item->system_flag() && !system->staff(item->staff_idx())->show()) {
                 continue;
             }
@@ -1567,6 +1568,12 @@ void SystemLayout::collect_spanners_to_layout(ElementsToLayout &elements, const 
     all_spanners.reserve(spanners.size());
     for (auto item : spanners) {
         all_spanners.push_back(item.value);
+    }
+
+    if (auto *store = system->score()->layout_data_store()) {
+        for (auto *span : store->score_output().shared_spanners) {
+            if (!span->is_tie() && span->anchor() != Spanner::Anchor::NOTE) all_spanners.push_back(span);
+        }
     }
 
     for (Spanner *spanner : all_spanners) {
@@ -2616,7 +2623,7 @@ void SystemLayout::collect_centerable_items(const System *system, std::vector<Ga
                     }
                 }
             }
-            for (EngravingItem *item : seg.annotations()) {
+            for (EngravingItem *item : seg.rendered_annotations()) {
                 if ((item->is_dynamic() || item->is_expression()) && snap_chain_should_be_centered_between_staves(item, system)) {
                     add_item(item, item->place_above(), false);
                 }
