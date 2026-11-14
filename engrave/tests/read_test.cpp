@@ -6125,17 +6125,18 @@ TEST(Read, AuthoredBeamPositionSurvivesRegroupingAndFullLayout) {
     EXPECT_DOUBLE_EQ(authored->beam_fragments().front()->py2[0] / authored->spatium(), 6.0);
     ASSERT_TRUE(document.edit({{engrave::SetProperty{engrave::from_engine(first->eid()), "color", engrave::Color{20, 40, 60}},
                                 engrave::SetProperty{engrave::from_engine(authored->eid()), "StemDirection", engrave::Enum{"down"}}}}));
-    EXPECT_EQ(second->stem_direction(), DirectionV::DOWN);
+    EXPECT_EQ(first->stem_direction(), DirectionV::DOWN);
+    EXPECT_EQ(second->stem_direction(), DirectionV::AUTO);
     ASSERT_TRUE(document.edit({{engrave::SetProperty{engrave::from_engine(second->eid()), "BeamMode", engrave::Enum{"no"}}}}));
     ASSERT_TRUE(document.page_count());
-    EXPECT_EQ(second->stem_direction(), DirectionV::DOWN);
+    EXPECT_EQ(second->stem_direction(), DirectionV::AUTO);
     const auto saved = document.export_score({.format = engrave::Format::MSCX});
     ASSERT_TRUE(saved);
     auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
     ASSERT_TRUE(reopened);
     const auto restored = engrave::resolve(master_of(**reopened), engrave::from_engine(second->eid()));
     ASSERT_TRUE(restored);
-    EXPECT_EQ(to_chord(restored->object)->stem_direction(), DirectionV::DOWN);
+    EXPECT_EQ(to_chord(restored->object)->stem_direction(), DirectionV::AUTO);
 }
 
 TEST(Read, IndividualTabStemSuppressionOnlyDetachesRenderedBeams) {
