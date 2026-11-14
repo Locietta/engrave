@@ -88,6 +88,10 @@ bool nested_spanner_role(AuthoredChildRole role);
 AuthoredOverrideTable *authored_override_table(EngravingItem *owner);
 const AuthoredOverrideTable *authored_override_table(const EngravingItem *owner);
 EngravingItem *authored_override_owner(const EngravingItem &item);
+// Values use engine property units; the table retains normalized wire coordinates.
+std::optional<PropertyValue> child_override(const EngravingItem &owner, AuthoredChildKey key, Pid pid);
+bool set_child_override(EngravingItem &owner, AuthoredChildKey key, Pid pid, const PropertyValue &value, PropertyFlags flags);
+bool reset_child_override(EngravingItem &owner, AuthoredChildKey key, Pid pid);
 bool authored_override_handles(const EngravingObject &item, Pid pid);
 std::optional<PropertyValue> authored_override_value(const EngravingObject &item, Pid pid);
 std::optional<PropertyFlags> authored_override_flags(const EngravingObject &item, Pid pid);

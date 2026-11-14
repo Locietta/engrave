@@ -366,6 +366,121 @@ EngravingItem *authored_override_owner(const EngravingItem &item) {
     return authored_override_table(owner) ? owner : nullptr;
 }
 
+namespace {
+EngravingObject *routed_owner(EngravingItem &owner, AuthoredChildKey key, Pid pid) {
+    if (key.role == AuthoredChildRole::STEM && pid == Pid::USER_LEN && owner.is_chord()) return &owner;
+    if (key.role == AuthoredChildRole::TUPLET_NUMBER && number_style_property(pid) && owner.is_tuplet()) return &owner;
+    if (key.role == AuthoredChildRole::SPANNER_SEGMENT && owner.is_spanner()) {
+        const auto &properties = TextLineBase::text_line_base_property_ids();
+        if (pid == Pid::TEXT_STYLE || std::find(properties.begin(), properties.end(), pid) != properties.end()) return &owner;
+    }
+    return nullptr;
+}
+
+bool child_spatium_dependent(const EngravingItem &owner, AuthoredChildKey key) {
+    if (key.role == AuthoredChildRole::TUPLET_NUMBER && owner.is_tuplet()) return owner.get_property(Pid::SIZE_SPATIUM_DEPENDENT).to_bool();
+    if (const auto *table = authored_override_table(&owner))
+        if (const auto *entry = table->find(key, Pid::SIZE_SPATIUM_DEPENDENT)) return entry->value.to_bool();
+    if (key.role == AuthoredChildRole::SEGMENT_TEXT) {
+        const auto *table = authored_override_table(&owner);
+        const auto *carrier = table ? table->carrier(key) : nullptr;
+        const auto *style = table ? table->find(key, Pid::TEXT_STYLE) : nullptr;
+        const auto type = style                                                            ? style->value.value<TextStyleType>() :
+                          carrier && carrier->type == ElementType::HAMMER_ON_PULL_OFF_TEXT ? TextStyleType::HAMMER_ON_PULL_OFF :
+                                                                                             TextStyleType::BEND;
+        for (const auto &property : *text_style(type))
+            if (property.pid == Pid::SIZE_SPATIUM_DEPENDENT) return owner.style().style_b(property.sid);
+    }
+    return true;
+}
+
+ElementType carrier_type(AuthoredChildRole role) {
+    switch (role) {
+        case AuthoredChildRole::STEM: return ElementType::STEM;
+        case AuthoredChildRole::HOOK: return ElementType::HOOK;
+        case AuthoredChildRole::STEM_SLASH: return ElementType::STEM_SLASH;
+        case AuthoredChildRole::DOT: return ElementType::NOTEDOT;
+        case AuthoredChildRole::PAREN_LEFT:
+        case AuthoredChildRole::PAREN_RIGHT: return ElementType::PARENTHESIS;
+        case AuthoredChildRole::TUPLET_NUMBER: return ElementType::TEXT;
+        default: return ElementType::INVALID;
+    }
+}
+
+void ensure_source_carrier(EngravingItem &owner, AuthoredOverrideTable &table, AuthoredChildKey key) {
+    if (key.role == AuthoredChildRole::BEAM_FRAGMENT || table.carrier(key)) return;
+    if (key.role == AuthoredChildRole::DOT)
+        for (uint32_t i = 0; i < key.ordinal; ++i) ensure_source_carrier(owner, table, {AuthoredChildRole::DOT, i});
+    table.set_carrier({key, carrier_type(key.role), owner.master_score()->eid_register()->new_eid(false)});
+}
+} // namespace
+
+std::optional<PropertyValue> child_override(const EngravingItem &owner, AuthoredChildKey key, Pid pid) {
+    if (key.role == AuthoredChildRole::STEM && pid == Pid::USER_LEN && owner.is_chord())
+        return static_cast<const Chord &>(owner).stem_user_length();
+    if (auto *routed = routed_owner(const_cast<EngravingItem &>(owner), key, pid)) return routed->get_property(pid);
+    const auto *table = authored_override_table(&owner);
+    const auto *entry = table ? table->find(key, pid) : nullptr;
+    return entry ? std::optional(effective_value(owner, *entry)) : std::nullopt;
+}
+
+bool set_child_override(EngravingItem &owner, AuthoredChildKey key, Pid pid, const PropertyValue &value, PropertyFlags flags) {
+    if (key.role == AuthoredChildRole::STEM && pid == Pid::USER_LEN && owner.is_chord()) {
+        static_cast<Chord &>(owner).set_stem_user_length(value.value<Spatium>());
+        ensure_source_carrier(owner, *authored_override_table(&owner), key);
+        owner.trigger_layout();
+        return true;
+    }
+    if (auto *routed = routed_owner(owner, key, pid)) {
+        const bool result = routed->set_property(pid, value);
+        routed->set_property_flags(pid, flags);
+        return result;
+    }
+    auto *table = authored_override_table(&owner);
+    if (!table || !supported_property(key.role, pid)) return false;
+    if ((key.role == AuthoredChildRole::PAREN_LEFT || key.role == AuthoredChildRole::PAREN_RIGHT) && key.subordinal == 1 &&
+        owner.is_chord() && key.ordinal >= static_cast<Chord &>(owner).note_parentheses().size() && !table->carrier(key))
+        return false;
+    ensure_source_carrier(owner, *table, key);
+    AuthoredOverrideEntry entry{key, pid, value, flags};
+    if (property_type(pid) == PType::POINT || property_type(pid) == PType::ABSOLUTE) {
+        entry.unit = property_type(pid) == PType::ABSOLUTE || fixed_spatium_property(pid) || child_spatium_dependent(owner, key) ?
+                         AuthoredOverrideUnit::SPATIUM :
+                         AuthoredOverrideUnit::MILLIMETRE;
+        const double scale = unit_scale(owner, entry);
+        if (value.is_valid())
+            entry.value = property_type(pid) == PType::POINT ? PropertyValue(value.value<PointF>() / scale) :
+                                                               PropertyValue(value.to_double() / scale);
+    }
+    table->set(std::move(entry));
+    if (pid == Pid::SIZE_SPATIUM_DEPENDENT) {
+        for (auto &point : table->entries) {
+            if (point.child != key || property_type(point.pid) != PType::POINT || fixed_spatium_property(point.pid)) continue;
+            const auto physical = effective_value(owner, point).value<PointF>();
+            point.unit = value.to_bool() ? AuthoredOverrideUnit::SPATIUM : AuthoredOverrideUnit::MILLIMETRE;
+            point.value = physical / unit_scale(owner, point);
+        }
+    }
+    owner.trigger_layout();
+    return true;
+}
+
+bool reset_child_override(EngravingItem &owner, AuthoredChildKey key, Pid pid) {
+    if (key.role == AuthoredChildRole::STEM && pid == Pid::USER_LEN && owner.is_chord()) {
+        static_cast<Chord &>(owner).set_stem_user_length(0.0_sp);
+    } else if (auto *routed = routed_owner(owner, key, pid)) {
+        routed->reset_property(pid);
+        return true;
+    } else {
+        auto *table = authored_override_table(&owner);
+        if (!table || !supported_property(key.role, pid)) return false;
+        // Carrier identity and dormant legacy ordinal survive a property reset.
+        table->erase(key, pid);
+    }
+    owner.trigger_layout();
+    return true;
+}
+
 bool authored_override_handles(const EngravingObject &object, Pid pid) {
     if (object.is_spanner_segment()) {
         // These are logical spanner properties delegated by the legacy segment
@@ -383,7 +498,9 @@ std::optional<PropertyValue> authored_override_value(const EngravingObject &obje
     if (!authored_override_handles(object, pid)) return std::nullopt;
     const auto &item = *bound_item(object);
     const auto *table = authored_override_table(authored_override_owner(item));
-    if (const auto *entry = table->find(child_key(item), pid)) return effective_value(item, *entry);
+    if (const auto *entry = table->find(child_key(item), pid))
+        return entry->flags == PropertyFlags::STYLED ? item.property_default(pid) :
+                                                       *child_override(*authored_override_owner(item), child_key(item), pid);
     return std::nullopt;
 }
 
@@ -401,20 +518,7 @@ void remember_authored_property(EngravingItem &item, Pid pid, const PropertyValu
     if (item.authored_child.role == AuthoredChildRole::NONE) item.authored_child = inferred_key(item);
     auto &table = *authored_override_table(authored_override_owner(item));
     if (!fragment_owner(item)) prepare_carrier(item, table);
-    AuthoredOverrideEntry entry{child_key(item), pid, value, flags};
-    if (property_type(pid) == PType::POINT || property_type(pid) == PType::ABSOLUTE) {
-        entry.unit = property_type(pid) == PType::ABSOLUTE || fixed_spatium_property(pid) || item.offset_is_spatium_dependent() ?
-                         AuthoredOverrideUnit::SPATIUM :
-                         AuthoredOverrideUnit::MILLIMETRE;
-        const double scale = unit_scale(item, entry);
-        const auto normalize = [pid, scale](const PropertyValue &v) -> PropertyValue {
-            if (!v.is_valid()) return v;
-            if (property_type(pid) == PType::POINT) return v.value<PointF>() / scale;
-            return v.to_double() / scale;
-        };
-        entry.value = normalize(value);
-    }
-    table.set(std::move(entry));
+    set_child_override(*authored_override_owner(item), child_key(item), pid, value, flags);
 }
 
 bool set_authored_override(EngravingItem &item, Pid pid, const PropertyValue &value) {
@@ -423,16 +527,6 @@ bool set_authored_override(EngravingItem &item, Pid pid, const PropertyValue &va
     if (item.authored_child.role == AuthoredChildRole::NONE) item.authored_child = inferred_key(item);
     const auto flags = *authored_override_flags(item, pid);
     remember_authored_property(item, pid, value, flags);
-    if (pid == Pid::SIZE_SPATIUM_DEPENDENT) {
-        auto &table = *authored_override_table(authored_override_owner(item));
-        for (auto &entry : table.entries) {
-            if (entry.child != item.authored_child || property_type(entry.pid) != PType::POINT || fixed_spatium_property(entry.pid))
-                continue;
-            const auto physical = effective_value(item, entry).value<PointF>();
-            entry.unit = value.to_bool() ? AuthoredOverrideUnit::SPATIUM : AuthoredOverrideUnit::MILLIMETRE;
-            entry.value = physical / unit_scale(item, entry);
-        }
-    }
     mirror_property(item, pid, value, flags);
     item.trigger_layout();
     return true;
@@ -509,7 +603,7 @@ bool has_authored_override(const EngravingItem &item, Pid pid) {
 
 void reset_authored_override(EngravingItem &item, Pid pid) {
     auto &table = *authored_override_table(authored_override_owner(item));
-    table.erase(child_key(item), pid);
+    reset_child_override(*authored_override_owner(item), child_key(item), pid);
     // Carrier identity and dormant legacy ordinal survive a property reset.
     if (!fragment_owner(item)) mirror_property(item, pid, mirror_default(item, pid), default_flags(item, pid));
     if (item.is_spanner_segment()) {
