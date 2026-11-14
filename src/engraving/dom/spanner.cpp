@@ -946,7 +946,7 @@ Segment *Spanner::start_segment() const {
     assert(score() != nullptr);
 
     // Normalization resolves real source anchors without preparing their geometry.
-    const bool source_only = score()->normalize_state.running || (!score()->cmd_state().locked() && !is_layout_data_current());
+    const bool source_only = score()->normalize_state.running;
     bool mm_rest = !source_only && style().style_b(Sid::CREATE_MULTI_MEASURE_RESTS);
     Fraction start_tick = tick();
     track_idx_t track_idx = track();
@@ -989,7 +989,7 @@ Segment *Spanner::end_segment() const {
     assert(score() != nullptr);
 
     // Normalization resolves real source anchors without preparing their geometry.
-    const bool source_only = score()->normalize_state.running || (!score()->cmd_state().locked() && !is_layout_data_current());
+    const bool source_only = score()->normalize_state.running;
     bool mm_rest = !source_only && style().style_b(Sid::CREATE_MULTI_MEASURE_RESTS);
     Fraction end_tick = tick2();
     track_idx_t track_idx = effective_track2();

@@ -145,7 +145,6 @@ static void clear_output_anchors(Score &score, const Measure *measure = nullptr)
 }
 
 void LayoutDataStore::retire_spanner_borrowers(const SpannerSegment &segment) {
-    if (score_) score_->selection().retire_spanner_segments();
     for (auto *page : output_.pages) page->invalidate_bsp_tree();
     const auto borrows_segment = [&](const ShapeElement &element) {
         for (auto *item = element.item(); item; item = item->ownership_parent_item())

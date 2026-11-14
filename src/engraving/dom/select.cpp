@@ -425,21 +425,6 @@ void Selection::clear() {
     set_state(SelState::NONE);
 }
 
-void Selection::retire_spanner_segments() {
-    for (auto *&element : el_) {
-        for (auto *owner = element; owner; owner = owner->ownership_parent_item()) {
-            if (owner->is_spanner_segment()) {
-                auto *source = authored_override_owner(*owner);
-                if (source && !source->origin_items().empty()) source = source->origin_items().front();
-                element = source ? source : to_spanner_segment(owner)->spanner();
-                break;
-            }
-        }
-    }
-    std::set<EngravingItem *> seen;
-    std::erase_if(el_, [&](auto *item) { return !seen.insert(item).second; });
-}
-
 void Selection::remove(EngravingItem *el) {
     const bool removed = muse::remove(el_, el);
     el->set_selected(false);
@@ -492,7 +477,6 @@ void Selection::append_filtered(const std::unordered_set<EngravingItem *> &elems
             if (!note_anchored_spanner_is_in_range(spanner, tick_start(), tick_end())) {
                 continue;
             }
-            if (spanner->segments_empty()) append_filtered(elem);
             for (SpannerSegment *spanner_seg : spanner->spanner_segments()) {
                 append_filtered(spanner_seg);
             }
@@ -796,7 +780,6 @@ void Selection::update_selected_elements() {
             continue;
         }
 
-        if (sp->segments_empty()) append_filtered(sp);
         for (auto seg : sp->spanner_segments()) {
             append_filtered(seg);
         }
