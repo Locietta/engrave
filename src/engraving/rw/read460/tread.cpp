@@ -3589,7 +3589,9 @@ bool TRead::read_properties(Spanner *s, XmlReader &e, ReadContext &ctx) {
         s->set_ticks(e.read_fraction());
         return true;
     } else if (tag == "play") {
-        s->set_play_spanner(e.read_bool());
+        const bool play = e.read_bool();
+        s->set_play_spanner(play);
+        remember_authored_property(*s, Pid::PLAY, play, PropertyFlags::NOSTYLE);
         return true;
     } else if (!read_item_properties(s, e, ctx)) {
         return false;

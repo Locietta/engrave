@@ -68,6 +68,8 @@ public:
 
     SizeF size() const { return size_.is_null() ? pixel2size(image_size()) : size_; }
 
+    SizeF source_size(double spatium) const;
+
     void update_image_height(const double &height);
     void update_image_width(const double &width);
     double image_height() const;

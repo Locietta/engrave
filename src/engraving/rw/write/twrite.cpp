@@ -568,17 +568,23 @@ void TWrite::write_property(const EngravingItem *item, XmlWriter &xml, Pid pid, 
     if (item->is_styled(pid)) {
         return;
     }
-    PropertyValue p = pid == Pid::AUTOPLACE ?
-                          authored_override_value(*item, pid).value_or(PropertyValue(!item->flag(ElementFlag::NO_AUTOPLACE))) :
-                          item->get_property(pid);
+    const double spatium = source_spatium(*item);
+    PropertyValue p, d;
+    if (item->is_image() && pid == Pid::SIZE) {
+        const auto *image = to_image(item);
+        p = PropertyValue::from_value(image->source_size(spatium));
+        if (!force) d = PropertyValue::from_value(image->image_size() / (image->size_is_spatium() ? spatium : ::mu::engraving::dpmm));
+    } else {
+        p = pid == Pid::AUTOPLACE ? authored_override_value(*item, pid).value_or(PropertyValue(!item->flag(ElementFlag::NO_AUTOPLACE))) :
+                                    item->get_property(pid);
+        if (!force) d = item->property_default(pid);
+    }
     if (!p.is_valid()) {
         LOGD("%s invalid property %d <%s>", item->type_name(), int(pid), property_name(pid));
         return;
     }
-    PropertyValue d = force ? PropertyValue() : item->property_default(pid);
 
-    write_property_value(xml, pid, p, d, source_spatium(*item),
-                         item->offset_is_spatium_dependent() ? item->style().spatium() : ::mu::engraving::dpmm);
+    write_property_value(xml, pid, p, d, spatium, item->offset_is_spatium_dependent() ? item->style().spatium() : ::mu::engraving::dpmm);
 }
 
 void TWrite::write_page_locks(const Score *score, XmlWriter &xml) {
@@ -1093,6 +1099,7 @@ void TWrite::write(const Breath *item, XmlWriter &xml, WriteContext &ctx) {
 void TWrite::write(const Chord *item, XmlWriter &xml, WriteContext &ctx) {
     if (item->notes().empty()) {
         if (item->tuplet()) {
+            write_chord_rest_beam(item, xml, ctx);
             xml.start_element("Rest");
             write_properties(to_chord_rest(item), xml, ctx);
             xml.end_element();

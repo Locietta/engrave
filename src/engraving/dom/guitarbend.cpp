@@ -940,6 +940,7 @@ Note *GuitarBendHold::end_note() const {
 }
 
 double GuitarBendHold::line_width() const {
+    if (has_authored_override(*this, Pid::LINE_WIDTH)) return SLine::line_width().to_absolute(spatium());
     return style().style_absolute(parent() && to_guitar_bend(parent())->is_dive() ? Sid::GUITAR_DIVE_LINE_WIDTH_TAB :
                                                                                     Sid::GUITAR_BEND_LINE_WIDTH_TAB);
 }

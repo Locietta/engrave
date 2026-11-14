@@ -267,6 +267,10 @@ bool Image::load_from_data(const std::string &name, const muse::ByteArray &ba) {
 //   pixel2Size
 //---------------------------------------------------------
 
+SizeF Image::source_size(double spatium) const {
+    return size_.is_null() ? image_size() / (size_is_spatium_ ? spatium : ::mu::engraving::dpmm) : size_;
+}
+
 SizeF Image::pixel2size(const SizeF &s) const { return s / (size_is_spatium_ ? spatium() : ::mu::engraving::dpmm); }
 
 //---------------------------------------------------------
