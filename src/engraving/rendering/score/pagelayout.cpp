@@ -139,7 +139,7 @@ void PageLayout::collect_page(LayoutContext &ctx) {
     int system_idx = -1;
 
     auto get_page_lock = [&ctx](MeasureBase *mb) -> const RangeLock * {
-        return mb && ctx.conf().view_mode() == LayoutMode::PAGE ? ctx.dom().page_locks()->lock_starting_at(mb) : nullptr;
+        return mb && ctx.conf().view_mode() == LayoutMode::PAGE && mb->is_start_of_page_lock() ? mb->page_lock() : nullptr;
     };
 
     const RangeLock *page_lock = nullptr;

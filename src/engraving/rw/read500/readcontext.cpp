@@ -151,16 +151,21 @@ void ReadContext::add_mm_rest_end_measure_eid(Measure *mmrest, EID last_measure_
 
 void ReadContext::set_mm_rest_end_measures() {
     EIDRegister *eid_register = score()->master_score()->eid_register();
-    for (auto &[mmrest, last_measure_eid] : mm_rest_end_measures_) {
-        EngravingObject *linked_element = eid_register->item_from_eid(last_measure_eid);
+    for (auto it = mm_rest_end_measures_.begin(); it != mm_rest_end_measures_.end();) {
+        auto *mmrest = it->first;
+        if (mmrest->score() != score()) {
+            ++it;
+            continue;
+        }
+        EngravingObject *linked_element = eid_register->item_from_eid(it->second);
+        it = mm_rest_end_measures_.erase(it);
         IF_ASSERT_FAILED(linked_element && linked_element->is_measure()) {
             LOGE() << "No valid end measure found for MMRest at " << mmrest->tick().to_string();
             continue;
         }
-
-        Measure *last_measure = to_measure(linked_element);
-        MeasureBase *next_mb = last_measure->next();
-        mmrest->set_next(next_mb);
+        Measure *last = to_measure(linked_element);
+        mmrest->mutldata()->mm_rest_last = last;
+        mmrest->set_next(last->next());
     }
 }
 
