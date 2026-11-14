@@ -38,7 +38,6 @@ struct RemoveStaff {
     Ref staff;
 };
 
-// Generates one excerpt per selected master part.
 struct GenerateExcerpts {
     std::vector<Ref> parts;
 };

@@ -315,10 +315,9 @@ public:
     bool operator<(const Segment &) const;
     bool operator>(const Segment &) const;
 
-    EngravingItem *first_in_next_segments(staff_idx_t active_staff) const; //<
-                                                                           //<
-    EngravingItem *first_element_for_navigation(staff_idx_t staff) const;  //<  These methods are used for navigation
-    EngravingItem *last_element_for_navigation(staff_idx_t staff) const;   //<  for next-element and prev-element
+    EngravingItem *first_in_next_segments(staff_idx_t active_staff) const;
+    EngravingItem *first_element_for_navigation(staff_idx_t staff) const; //<  These methods are used for navigation
+    EngravingItem *last_element_for_navigation(staff_idx_t staff) const;  //<  for next-element and prev-element
     EngravingItem *first_element_of_segment(staff_idx_t active_staff) const;
     EngravingItem *next_element_of_segment(EngravingItem *e, staff_idx_t active_staff) const;
 

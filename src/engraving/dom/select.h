@@ -97,8 +97,6 @@ struct Selection {
 
     //! NOTE If locked, the selected items should not be changed.
 
-    // reason for clarity
-
     bool is_locked() const { return !lock_reason_.is_empty(); }
 
     const String &lock_reason() const { return lock_reason_; }

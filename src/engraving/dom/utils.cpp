@@ -1706,7 +1706,6 @@ Segment *Score::find_rendered_left_segment(const Fraction &tick, bool use_m_mres
         return 0;
     }
 
-    // loop over all segments
     Segment *ps = 0;
     for (Segment *s = m->rendered_first(seg_type); s; s = s->rendered_next(seg_type)) {
         if (tick < s->tick()) {
@@ -1725,7 +1724,6 @@ Segment *Score::find_rendered_right_segment(const Fraction &tick, bool use_m_mre
         //LOGD("tick2nearestSegment(): not found tick %d", tick.ticks());
         return 0;
     }
-    // loop over all segments
     for (Segment *s = m->rendered_first(seg_type); s; s = s->rendered_next1()) {
         if ((s->segment_type() & seg_type) && tick <= s->tick()) {
             return s;
