@@ -180,9 +180,6 @@ public:
     };
     DECLARE_LAYOUTDATA_METHODS(Spanner)
 
-    std::unique_ptr<SpannerSegment> authored_segment(uint32_t ordinal);
-    void for_each_authored_segment(const std::function<void(SpannerSegment &)> &edit);
-
     enum class Anchor : unsigned char { SEGMENT, MEASURE, CHORDREST, NOTE };
 
     ~Spanner() override;

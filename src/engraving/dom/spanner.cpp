@@ -1063,25 +1063,6 @@ const std::vector<SpannerSegment *> &Spanner::spanner_segments() const {
     return is_layout_data_current() ? ldata()->segments : empty;
 }
 
-std::unique_ptr<SpannerSegment> Spanner::authored_segment(uint32_t ordinal) {
-    auto segment =
-        std::unique_ptr<SpannerSegment>(is_slur_tie() ? static_cast<SpannerSegment *>(to_slur_tie(this)->new_slur_tie_segment()) :
-                                                        static_cast<SpannerSegment *>(to_s_line(this)->create_line_segment()));
-    segment->set_track(track());
-    set_layout_child_key(*segment, {AuthoredChildRole::SPANNER_SEGMENT, ordinal});
-    return segment;
-}
-
-void Spanner::for_each_authored_segment(const std::function<void(SpannerSegment &)> &edit) {
-    std::set<uint32_t> ordinals;
-    const auto role = nested_spanner_role(authored_child.role) ? authored_child.role : AuthoredChildRole::SPANNER_SEGMENT;
-    const auto *table = authored_override_table(nested_spanner_role(role) ? authored_override_owner(*this) : this);
-    if (!table) return;
-    for (const auto &entry : table->entries)
-        if (entry.child.role == role && (!nested_spanner_role(role) || entry.child.subordinal == 1)) ordinals.insert(entry.child.ordinal);
-    for (auto ordinal : ordinals) edit(*authored_segment(ordinal));
-}
-
 void Spanner::reset_segment_overrides(PropertyGroup group) {
     if (score()->is_master()) return;
     const auto erased = std::erase_if(authored_overrides.entries, [group](const auto &entry) {
