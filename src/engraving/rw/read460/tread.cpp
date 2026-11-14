@@ -337,6 +337,14 @@ bool TRead::read_property(EngravingItem *item, const AsciiStringView &tag, XmlRe
     return false;
 }
 
+namespace {
+void read_child_property(EngravingItem &carrier, Pid pid, const PropertyValue &value, PropertyFlags flags) {
+    auto *owner = authored_override_owner(carrier);
+    if (!owner || carrier.authored_child.role == AuthoredChildRole::NONE) return;
+    set_child_override(*owner, carrier.authored_child, pid, value, flags);
+}
+} // namespace
+
 void TRead::read_property(EngravingItem *item, XmlReader &xml, ReadContext &ctx, Pid pid) {
     double spatium = ctx.score() ? ctx.spatium() : item->spatium();
     PropertyValue v = read_property_value(pid, xml, ctx);
@@ -375,7 +383,7 @@ void TRead::read_property(EngravingItem *item, XmlReader &xml, ReadContext &ctx,
         if (item->is_styled(pid)) {
             item->set_property_flags(pid, PropertyFlags::UNSTYLED);
         }
-        remember_authored_property(*item, pid, v, item->property_flags(pid));
+        read_child_property(*item, pid, v, item->property_flags(pid));
     }
 }
 
@@ -410,10 +418,12 @@ bool TRead::read_item_properties(EngravingItem *item, XmlReader &e, ReadContext 
         }
     } else if (tag == "color") {
         const auto color = PropertyValue::from_value(e.read_color());
-        if (!set_authored_override(*item, Pid::COLOR, color)) item->set_color(color.value<Color>());
+        item->set_color(color.value<Color>());
+        read_child_property(*item, Pid::COLOR, color, PropertyFlags::NOSTYLE);
     } else if (tag == "visible") {
         const auto visible = PropertyValue(bool(e.read_int()));
-        if (!set_authored_override(*item, Pid::VISIBLE, visible)) item->set_visible(visible.to_bool());
+        item->set_visible(visible.to_bool());
+        read_child_property(*item, Pid::VISIBLE, visible, PropertyFlags::NOSTYLE);
     } else if (tag == "linkedTo") {
         read_item_link(item, e, ctx);
     } else if (TRead::read_property(item, tag, e, ctx, Pid::POSITION_LINKED_TO_MASTER)) {
@@ -426,7 +436,8 @@ bool TRead::read_item_properties(EngravingItem *item, XmlReader &e, ReadContext 
     } else if (TRead::read_property(item, tag, e, ctx, Pid::PLACEMENT)) {
     } else if (tag == "z") {
         const auto z = PropertyValue(e.read_int());
-        if (!set_authored_override(*item, Pid::Z, z)) item->set_z(z.to_int());
+        item->set_z(z.to_int());
+        read_child_property(*item, Pid::Z, z, PropertyFlags::NOSTYLE);
     } else if (TRead::read_property(item, tag, e, ctx, Pid::HAS_PARENTHESES)) {
     } else if (tag == "Parenthesis") {
         Parenthesis *p = Factory::create_parenthesis(item);
@@ -2101,7 +2112,6 @@ void TRead::read(Symbol *sym, XmlReader &e, ReadContext &ctx) {
             }
             sym->set_sym(sym_id);
             if (sym->is_system_divider()) to_system_divider(sym)->set_authored_sym(sym_id);
-            remember_authored_property(*sym, Pid::SYMBOL, PropertyValue::from_value(sym_id), PropertyFlags::NOSTYLE);
         } else if (tag == "font") {
             read_property(sym, e, ctx, Pid::SCORE_FONT);
         } else if (read_property(sym, tag, e, ctx, Pid::SCORE_FONT)) {
@@ -2853,7 +2863,7 @@ bool TRead::read_properties(LineSegment *l, XmlReader &e, ReadContext &ctx) {
     if (tag == "subtype") {
         const int subtype = e.read_int();
         l->set_spanner_segment_type(SpannerSegmentType(subtype));
-        remember_authored_property(*l, Pid::SUBTYPE, subtype, PropertyFlags::NOSTYLE);
+        read_child_property(*l, Pid::SUBTYPE, subtype, PropertyFlags::NOSTYLE);
     } else if (tag == "off2") {
         l->set_property(Pid::OFFSET2, e.read_point() * l->style().spatium());
     } else if (l->is_guitar_bend_segment() && read_properties(static_cast<GuitarBendSegment *>(l), tag, e, ctx)) {
@@ -3398,7 +3408,7 @@ bool TRead::read_properties(SLine *l, XmlReader &e, ReadContext &ctx) {
     } else if (tag == "lineColor" || tag == "color") {
         const auto color = e.read_color();
         l->set_line_color(color);
-        remember_authored_property(*l, Pid::COLOR, color, PropertyFlags::NOSTYLE);
+        read_child_property(*l, Pid::COLOR, color, PropertyFlags::NOSTYLE);
     } else if (!read_properties(to_spanner(l), e, ctx)) {
         return false;
     }
@@ -3438,7 +3448,7 @@ bool TRead::read_properties(SlurTie *s, XmlReader &e, ReadContext &ctx) {
     } else if (TRead::read_property(s, tag, e, ctx, Pid::MASK_SLURTIE)) {
     } else if (tag == "lineType") {
         s->set_style_type(static_cast<SlurStyleType>(e.read_int()));
-        remember_authored_property(*s, Pid::SLUR_STYLE_TYPE, PropertyValue::from_value(s->style_type()), PropertyFlags::NOSTYLE);
+        read_child_property(*s, Pid::SLUR_STYLE_TYPE, PropertyValue::from_value(s->style_type()), PropertyFlags::NOSTYLE);
     } else if (tag == "SlurSegment" || tag == "TieSegment" || tag == "LaissezVibSegment" || tag == "PartialTieSegment" ||
                tag == "HammerOnPullOffSegment" || tag == "TappingHalfSlurSegment") {
         const int idx = e.int_attribute("no", 0);
@@ -3458,13 +3468,21 @@ void TRead::read(SlurTieSegment *s, XmlReader &e, ReadContext &ctx) {
     while (e.read_next_start_element()) {
         const AsciiStringView tag(e.name());
         if (tag == "o1") {
-            s->set_property(Pid::SLUR_UOFF1, e.read_point() * spatium_value);
+            const auto value = e.read_point() * spatium_value;
+            s->set_property(Pid::SLUR_UOFF1, value);
+            read_child_property(*s, Pid::SLUR_UOFF1, value, PropertyFlags::NOSTYLE);
         } else if (tag == "o2") {
-            s->set_property(Pid::SLUR_UOFF2, e.read_point() * spatium_value);
+            const auto value = e.read_point() * spatium_value;
+            s->set_property(Pid::SLUR_UOFF2, value);
+            read_child_property(*s, Pid::SLUR_UOFF2, value, PropertyFlags::NOSTYLE);
         } else if (tag == "o3") {
-            s->set_property(Pid::SLUR_UOFF3, e.read_point() * spatium_value);
+            const auto value = e.read_point() * spatium_value;
+            s->set_property(Pid::SLUR_UOFF3, value);
+            read_child_property(*s, Pid::SLUR_UOFF3, value, PropertyFlags::NOSTYLE);
         } else if (tag == "o4") {
-            s->set_property(Pid::SLUR_UOFF4, e.read_point() * spatium_value);
+            const auto value = e.read_point() * spatium_value;
+            s->set_property(Pid::SLUR_UOFF4, value);
+            read_child_property(*s, Pid::SLUR_UOFF4, value, PropertyFlags::NOSTYLE);
         } else if (tag == "HammerOnPullOffText") {
             DO_ASSERT(s->is_hammer_on_pull_off_segment());
             read_hopo_text(to_hammer_on_pull_off_segment(s), e, ctx, e.int_attribute("idx"));
@@ -3592,7 +3610,7 @@ bool TRead::read_properties(Spanner *s, XmlReader &e, ReadContext &ctx) {
     } else if (tag == "play") {
         const bool play = e.read_bool();
         s->set_play_spanner(play);
-        remember_authored_property(*s, Pid::PLAY, play, PropertyFlags::NOSTYLE);
+        read_child_property(*s, Pid::PLAY, play, PropertyFlags::NOSTYLE);
         return true;
     } else if (!read_item_properties(s, e, ctx)) {
         return false;
@@ -3907,7 +3925,7 @@ void TRead::read(Text *t, XmlReader &e, ReadContext &ctx) {
                 continue;
             }
             t->init_text_style_type(s);
-            remember_authored_property(*t, Pid::TEXT_STYLE, PropertyValue::from_value(s), t->property_flags(Pid::TEXT_STYLE));
+            read_child_property(*t, Pid::TEXT_STYLE, PropertyValue::from_value(s), t->property_flags(Pid::TEXT_STYLE));
         } else if (!read_properties(to_text_base(t), e, ctx)) {
             e.unknown();
         }
@@ -4142,7 +4160,7 @@ bool TRead::read_properties(TextBase *t, XmlReader &e, ReadContext &ctx) {
     if (tag == "text") {
         String str = line_break_from_tag(e.read_xml());
         t->set_xml_text(str);
-        remember_authored_property(*t, Pid::TEXT, str, t->property_flags(Pid::TEXT));
+        read_child_property(*t, Pid::TEXT, str, t->property_flags(Pid::TEXT));
         t->check_custom_formatting(str);
     } else if (tag == "bold") {
         bool val = e.read_int();
@@ -4194,7 +4212,7 @@ bool TRead::read_properties(TextBase *t, XmlReader &e, ReadContext &ctx) {
         return false;
     }
     if (tag == "bold" || tag == "italic" || tag == "underline" || tag == "strike")
-        remember_authored_property(*t, Pid::FONT_STYLE, static_cast<int>(t->font_style()), PropertyFlags::UNSTYLED);
+        read_child_property(*t, Pid::FONT_STYLE, static_cast<int>(t->font_style()), PropertyFlags::UNSTYLED);
     return true;
 }
 
