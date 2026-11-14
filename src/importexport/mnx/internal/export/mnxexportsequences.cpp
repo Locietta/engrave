@@ -527,7 +527,7 @@ void MnxExporter::create_beam(ExportContext &ctx, ChordRest *chord_rest) {
     if (!beam) {
         return;
     }
-    const std::vector<ChordRest *> &elements = beam->elements();
+    const std::vector<ChordRest *> &elements = beam->rendered_elements();
     if (elements.empty() || elements.front() != chord_rest) {
         return;
     }

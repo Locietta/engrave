@@ -687,7 +687,7 @@ void HorizontalSpacing::check_collisions_with_cross_staff_stems(const Segment *t
 
     for (ChordRest *cr : items_to_check) {
         Chord *potential_colliding_chord = nullptr;
-        for (ChordRest *beam_element : cr->beam()->elements()) {
+        for (ChordRest *beam_element : cr->beam()->rendered_elements()) {
             if (beam_element->is_chord() && beam_element->parent() == this_seg) {
                 potential_colliding_chord = to_chord(beam_element);
                 break;
@@ -869,7 +869,7 @@ double HorizontalSpacing::min_stem_dist_on_non_adjacent_cross(const Segment *thi
         }
 
         Beam *beam = chord->beam();
-        std::vector<ChordRest *> beam_elements = beam->elements();
+        std::vector<ChordRest *> beam_elements = beam->rendered_elements();
         Chord *prev_chord_on_beam = nullptr;
         for (size_t i = 0; i < beam_elements.size(); ++i) {
             if (beam_elements[i] == chord) {
@@ -948,7 +948,7 @@ HorizontalSpacing::CrossBeamSpacing HorizontalSpacing::compute_cross_beam_spacin
         if (!beam && this_cr->actual_ticks() <= this_seg->ticks()) {
             can_be_adjusted = false;
         }
-        if (!beam || (beam->elements().size() == 2 && this_cr->up())) {
+        if (!beam || (beam->rendered_elements().size() == 2 && this_cr->up())) {
             continue;
         }
         for (EngravingItem *ee : next_seg->effective_elements()) {

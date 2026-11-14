@@ -5932,13 +5932,96 @@ TEST(Read, ThirdDotEditKeepsPrecedingLegacyOrdinalCarriers) {
     ASSERT_NE(restored->authored_overrides.find({AuthoredChildRole::DOT, 2}, Pid::COLOR), nullptr);
 }
 
+TEST(Read, PublicStemSlashEditReachesTheRenderedGraceBeam) {
+    using namespace mu::engraving;
+    auto xml = legacy_segment_fixture("");
+    xml.insert(xml.find("<Chord>"), R"(<Chord><eid>D_D</eid><acciaccatura/><durationType>eighth</durationType>
+<Note><pitch>65</pitch><tpc>13</tpc></Note></Chord>
+<Chord><eid>E_E</eid><acciaccatura/><durationType>eighth</durationType>
+<Note><pitch>67</pitch><tpc>15</tpc></Note></Chord>)");
+    auto opened = g_engine->open(as_bytes(xml));
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    auto *main = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    ASSERT_FALSE(main->grace_notes().empty());
+    ASSERT_TRUE(document.page_count());
+    auto *first = main->grace_notes().front();
+    ASSERT_NE(first->beam(), nullptr);
+    EXPECT_EQ(first->authored_beam(), nullptr);
+    const auto edited = document.edit({{engrave::SetProperty{engrave::from_engine(first->eid()), "showStemSlash", false}}});
+    ASSERT_TRUE(edited) << edited.error().message;
+    for (auto *grace : main->grace_notes()) EXPECT_FALSE(grace->show_stem_slash());
+    const auto saved = document.export_score({.format = engrave::Format::MSCX});
+    ASSERT_TRUE(saved);
+    auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
+    ASSERT_TRUE(reopened);
+    auto *restored = to_chord(master_of(**reopened).first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    for (auto *grace : restored->grace_notes()) EXPECT_FALSE(grace->show_stem_slash());
+}
+
+TEST(Read, AutomaticBeamsStayOutsideSourceAndHandlesAcrossRegrouping) {
+    using namespace mu::engraving;
+    auto xml = legacy_segment_fixture("");
+    for (size_t at; (at = xml.find("<durationType>half</durationType>")) != std::string::npos;)
+        xml.replace(at, 33, "<durationType>eighth</durationType>");
+    xml.replace(xml.find("<durationType>eighth</durationType>"), 35, "<durationType>16th</durationType>");
+    auto opened = g_engine->open(as_bytes(xml));
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    auto *first = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    auto *second = to_chord(first->segment()->next(SegmentType::CHORD_REST)->element(0));
+    const auto cold = document.export_score({.format = engrave::Format::MSCX});
+    ASSERT_TRUE(cold);
+    const auto cold_beams = document.query({.types = {"Beam"}});
+    ASSERT_TRUE(cold_beams);
+    EXPECT_TRUE(cold_beams->elements.empty());
+    ASSERT_TRUE(document.page_count());
+    ASSERT_NE(first->beam(), nullptr);
+    EXPECT_EQ(first->beam(), second->beam());
+    ASSERT_NE(first->beamlet(), nullptr);
+    EXPECT_EQ(first->authored_beam(), nullptr);
+    EXPECT_EQ(second->authored_beam(), nullptr);
+    EXPECT_FALSE(source_object(*first->beam()));
+    EXPECT_FALSE(engrave::takes_id(*first->beam()));
+    EXPECT_FALSE(engrave::address_of(*first->beam()));
+    engrave::assign_missing_ids(master);
+    EXPECT_FALSE(engrave::resolve(master, engrave::from_engine(first->beam()->eid())));
+    EXPECT_FALSE(document.edit({{engrave::SetProperty{engrave::from_engine(first->beam()->eid()), "growLeft", 0.5}}}));
+    const auto warm_beams = document.query({.types = {"Beam"}});
+    ASSERT_TRUE(warm_beams);
+    EXPECT_TRUE(warm_beams->elements.empty());
+    const auto warm = document.export_score({.format = engrave::Format::MSCX});
+    ASSERT_TRUE(warm);
+    EXPECT_EQ(*cold, *warm);
+    master.layout_data_store()->clear();
+    EXPECT_EQ(first->beamlet(), nullptr);
+    EXPECT_EQ(first->beam(), nullptr);
+    ASSERT_TRUE(document.page_count());
+    ASSERT_NE(first->beamlet(), nullptr);
+    const auto edited = document.edit({{engrave::SetProperty{engrave::from_engine(second->eid()), "BeamMode", engrave::Enum{"no"}}}});
+    ASSERT_TRUE(edited) << edited.error().message;
+    EXPECT_EQ(first->beam(), nullptr);
+    master.do_layout_range(Fraction(0, 1), Fraction(1, 1));
+    EXPECT_EQ(first->beam(), nullptr);
+    EXPECT_EQ(second->beam(), nullptr);
+    const auto range = document.render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(range);
+    master.do_layout();
+    const auto full = document.render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(full);
+    EXPECT_EQ(range->pages, full->pages);
+    master.layout_data_store()->clear();
+    EXPECT_EQ(first->beamlet(), nullptr);
+    EXPECT_EQ(first->beam(), nullptr);
+}
+
 TEST(Read, BeamManualLegacyOrdinalsAndDirectionsSurviveLayout) {
     using namespace mu::engraving;
     for (const std::string version : {"4.60", "5.00"}) {
         auto input = read_text(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "tests/data/inputs/golden/layout_elements.mscx");
-        const auto version_start = input.find("version=\"");
         const auto score_version = input.find("version=\"", input.find("<museScore"));
-        (void) version_start;
         input.replace(score_version + 9, 4, version);
         input.insert(input.find("<Beam>") + 6, R"(<Fragment><y1>1.25</y1><y2>2.5</y2></Fragment>
 <Fragment no="2"><y1>3.75</y1><y2>4.5</y2></Fragment>
@@ -5956,6 +6039,11 @@ TEST(Read, BeamManualLegacyOrdinalsAndDirectionsSurviveLayout) {
         };
         auto *beam = find(master_of(**document));
         ASSERT_NE(beam, nullptr);
+        EXPECT_TRUE(beam->beam_fragments().empty());
+        EXPECT_TRUE(beam->beam_segments().empty());
+        EXPECT_DOUBLE_EQ(beam->beam_pos().first, 3.75);
+        EXPECT_DOUBLE_EQ(beam->beam_pos().second, 4.5);
+        const auto beam_id = engrave::from_engine(beam->eid());
         const auto source = beam->authored_overrides.entries;
         const auto bytes = legacy_override_write(beam);
         EXPECT_NE(bytes.find("no=\"2\""), std::string::npos);
@@ -5964,6 +6052,9 @@ TEST(Read, BeamManualLegacyOrdinalsAndDirectionsSurviveLayout) {
         beam = find(master_of(**document));
         ASSERT_NE(beam, nullptr);
         EXPECT_EQ(legacy_override_write(beam), bytes);
+        ASSERT_FALSE(beam->beam_fragments().empty());
+        EXPECT_DOUBLE_EQ(beam->beam_fragments().front()->py1[0] / beam->spatium(), 1.25);
+        EXPECT_DOUBLE_EQ(beam->beam_fragments().front()->py2[0] / beam->spatium(), 2.5);
         ASSERT_EQ(beam->authored_overrides.entries.size(), source.size());
         for (size_t i = 0; i < source.size(); ++i) EXPECT_EQ(beam->authored_overrides.entries[i].value, source[i].value);
         for (auto *fragment : beam->beam_fragments()) {
@@ -5980,6 +6071,20 @@ TEST(Read, BeamManualLegacyOrdinalsAndDirectionsSurviveLayout) {
         EXPECT_EQ(legacy_override_write(restored), bytes);
         std::unique_ptr<Beam> copy(restored->clone());
         EXPECT_EQ(copy->authored_overrides.entries.size(), source.size());
+        const auto edited =
+            (*document)->edit({{engrave::SetProperty{beam_id, "BEAM_POS", engrave::Point{5.25, 6.75}},
+                                engrave::SetProperty{beam_id, "noSlope", true}, engrave::SetProperty{beam_id, "growLeft", 0.5}}});
+        ASSERT_TRUE(edited) << edited.error().message;
+        EXPECT_DOUBLE_EQ(beam->beam_pos().first, 6.0);
+        EXPECT_DOUBLE_EQ(beam->beam_pos().second, 6.0);
+        EXPECT_DOUBLE_EQ(beam->grow_left(), 0.5);
+        const auto authored = beam->elements();
+        master_of(**document).layout_data_store()->clear();
+        EXPECT_TRUE(beam->beam_fragments().empty());
+        EXPECT_TRUE(beam->beam_segments().empty());
+        ASSERT_TRUE((*document)->page_count());
+        EXPECT_EQ(beam->elements(), authored);
+        EXPECT_TRUE(engrave::resolve(master_of(**document), beam_id));
     }
 }
 

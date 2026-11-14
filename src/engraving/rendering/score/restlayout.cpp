@@ -358,14 +358,14 @@ void RestLayout::resolve_rest_vs_rest(std::vector<Rest *> &rests, const Staff *s
             shape1 = rest1->shape().translate(rest1->pos() - rest1->offset());
             shape2 = rest2->shape().translate(rest2->pos() - rest2->offset());
 
-            ChordRest *beam1_start = beam1->elements().front();
-            ChordRest *beam1_end = beam1->elements().back();
+            ChordRest *beam1_start = beam1->rendered_elements().front();
+            ChordRest *beam1_end = beam1->rendered_elements().back();
             double y1_start = BeamLayout::chord_beam_anchor_y(beam1, beam1_start) - beam1_start->page_pos().y();
             double y1_end = BeamLayout::chord_beam_anchor_y(beam1, beam1_end) - beam1_end->page_pos().y();
             double beam1_ymid = 0.5 * (y1_start + y1_end);
 
-            ChordRest *beam2_start = beam2->elements().front();
-            ChordRest *beam2_end = beam2->elements().back();
+            ChordRest *beam2_start = beam2->rendered_elements().front();
+            ChordRest *beam2_end = beam2->rendered_elements().back();
             double y2_start = BeamLayout::chord_beam_anchor_y(beam2, beam2_start) - beam2_start->page_pos().y();
             double y2_end = BeamLayout::chord_beam_anchor_y(beam2, beam2_end) - beam2_end->page_pos().y();
             double beam2_ymid = 0.5 * (y2_start + y2_end);

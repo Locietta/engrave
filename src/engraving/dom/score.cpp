@@ -1279,9 +1279,10 @@ void Score::remove_element(EngravingItem *element) {
         case ElementType::REST:
         case ElementType::MMREST: {
             ChordRest *cr = to_chord_rest(element);
-            if (cr->beam()) {
-                cr->beam()->remove(cr);
+            if (cr->has_layout_data()) {
+                if (auto *beam = cr->ldata()->rendered_beam.value_or(cr->authored_beam())) beam->remove_rendered(cr);
             }
+            if (cr->authored_beam()) cr->authored_beam()->remove(cr);
             for (Lyrics *lyr : cr->lyrics()) {
                 lyr->remove_from_score();
             }

@@ -99,9 +99,9 @@ public:
 
     void set_beam_fragment(const BeamFragment &bf);
 
-    const BeamFragment &beam_fragment() const { return beam_fragment_; }
+    const BeamFragment &beam_fragment() const { return ldata()->beam_fragment; }
 
-    BeamFragment &beam_fragment() { return beam_fragment_; }
+    BeamFragment &beam_fragment() { return mutldata()->beam_fragment; }
 
     bool play_tremolo() const { return play_tremolo_; }
 
@@ -114,6 +114,11 @@ public:
     PropertyValue property_default(Pid property_id) const override;
 
     bool is_movable() const override { return true; }
+
+    struct LayoutData : BeamBase::LayoutData {
+        BeamFragment beam_fragment{};
+    };
+    DECLARE_LAYOUTDATA_METHODS(TremoloTwoChord)
 
     void clear_beam_segments() override;
 
@@ -146,12 +151,6 @@ private:
 
     int lines_ = 0; // derived from _subtype
     TremoloStyle style_ = TremoloStyle::DEFAULT;
-
-    // for _startAnchor and _slope, once we decide to change trems so that they can
-    // continue from one system to the other (or indeed, one measure to the other)
-    // we will want a vector of fragments similar to Beam's _beamFragments structure.
-    // for now, a single fragment is sufficient
-    BeamFragment beam_fragment_{};
 
     //! NOTE for palette
     PainterPath path_;

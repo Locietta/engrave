@@ -341,7 +341,7 @@ void PageLayout::collect_page(LayoutContext &ctx) {
                         if (cr->is_chord()) {
                             Chord *c = to_chord(cr);
                             for (Chord *cc : c->grace_notes()) {
-                                if (cc->beam() && cc->beam()->elements().front() == cc) {
+                                if (cc->beam() && cc->beam()->rendered_elements().front() == cc) {
                                     TLayout::layout_beam(cc->beam(), ctx);
                                     BeamLayout::check_cross_pos_and_stem_consistency(cc->beam(), ctx);
                                 }

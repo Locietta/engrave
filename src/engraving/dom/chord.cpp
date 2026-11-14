@@ -942,14 +942,14 @@ bool Chord::under_beam() const {
     if (!beam || !cr->beam()->up()) {
         return false;
     }
-    size_t s = beam->elements().size();
+    size_t s = beam->rendered_elements().size();
     if (is_grace_before()) {
-        if (beam->elements()[0] != cr) {
+        if (beam->rendered_elements()[0] != cr) {
             return true;
         }
     }
     if (is_grace_after()) {
-        if (beam->elements()[s - 1] != cr) {
+        if (beam->rendered_elements()[s - 1] != cr) {
             return true;
         }
     }
@@ -1865,7 +1865,7 @@ void Chord::request_show_stem_slash(bool show) {
         return;
     }
     if (beam()) {
-        for (ChordRest *chord_rest : beam()->elements()) {
+        for (ChordRest *chord_rest : beam()->rendered_elements()) {
             if (chord_rest->is_chord()) {
                 Chord *chord = to_chord(chord_rest);
                 chord->set_show_stem_slash(show);

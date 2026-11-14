@@ -25,7 +25,6 @@ namespace mu::engraving {
 
 bool source_object(const EngravingObject &item) {
     // Output remains outside membership even when it is parented to source.
-    // Automatic beam ownership is still handled by the separate beam slice.
     for (const EngravingObject *node = &item; node; node = node->ownership_parent()) {
         switch (node->type()) {
             case ElementType::GUITAR_BEND_HOLD:

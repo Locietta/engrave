@@ -187,8 +187,8 @@ bool Tuplet::calc_has_bracket(const DurationElement *cr1, const DurationElement 
     if (!beam_start || !beam_end || beam_start != beam_end) {
         return true;
     }
-    bool tuplet_starts_beam = beam_start->elements().front() == c1;
-    bool tuplet_ends_beam = beam_end->elements().back() == c2;
+    bool tuplet_starts_beam = beam_start->rendered_elements().front() == c1;
+    bool tuplet_ends_beam = beam_end->rendered_elements().back() == c2;
     bool head_side = is_up() != (c1->up() || c2->up());
     bool is_cross = c1->v_staff_idx() != c2->v_staff_idx();
     if (tuplet_starts_beam && tuplet_ends_beam && (!head_side || is_cross)) {

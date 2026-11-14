@@ -1253,7 +1253,7 @@ void ChordLayout::layout_stem(Chord *item, const LayoutContext &ctx) {
     }
 
     // Add Stem slash
-    if ((item->show_stem_slash()) && !(item->beam() && item->beam()->elements().front() != item)) {
+    if ((item->show_stem_slash()) && !(item->beam() && item->beam()->rendered_elements().front() != item)) {
         if (!item->stem_slash()) {
             item->mutldata()->stem_slash = Factory::create_stem_slash(item);
             item->stem_slash()->set_track(item->track());
@@ -1440,11 +1440,11 @@ bool ChordLayout::is_chord_pos_below_beam(const Chord *item, Beam *beam) {
         return beam->cross() ? item->is_below_cross_beam(beam) : beam->up();
     }
 
-    if (item == beam->elements().front()) {
+    if (item == beam->rendered_elements().front()) {
         return note_y > start_anchor.y();
     }
 
-    if (item == beam->elements().back()) {
+    if (item == beam->rendered_elements().back()) {
         return note_y > end_anchor.y();
     }
 
@@ -1522,7 +1522,7 @@ void ChordLayout::compute_up(const Chord *item, ChordRest::LayoutData *ldata, co
     assert(!item->notes().empty());
 
     // Beams with one chord will be removed later, ignore
-    const bool has_beam = item->beam() && item->beam()->elements().size() > 1;
+    const bool has_beam = item->beam() && item->beam()->rendered_elements().size() > 1;
 
     const StaffType *tab = item->staff() ? item->staff()->staff_type_for_element(item) : 0;
     bool is_tab_staff = tab && tab->is_tab_staff();
@@ -1592,7 +1592,7 @@ void ChordLayout::compute_up(ChordRest *item, const LayoutContext &ctx) {
     } else {
         // base ChordRest
         // Beams with one chord will be removed later, ignore
-        const bool has_beam = item->beam() && item->beam()->elements().size() > 1;
+        const bool has_beam = item->beam() && item->beam()->rendered_elements().size() > 1;
         if (has_beam) {
             item->mutldata()->up = item->beam()->up();
         } else {

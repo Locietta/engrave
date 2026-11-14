@@ -57,7 +57,7 @@ void BeamTremoloLayout::setup_l_data(const BeamBase *item, BeamBase::LayoutData 
         ldata->beam = item_cast<const Beam *>(item);
         ldata->up = ldata->beam->up();
         ldata->trem = nullptr; // there can be many different trems in a beam, they will all be checked
-        is_grace = ldata->beam->elements().front()->is_grace();
+        is_grace = ldata->beam->rendered_elements().front()->is_grace();
     }
     else {
         ldata->trem = item_cast<const TremoloTwoChord *>(item);
@@ -544,7 +544,7 @@ bool BeamTremoloLayout::compute_tremolo_up(const BeamBase::LayoutData *ldata) {
     Chord *c1 = ldata->trem->chord1();
     Chord *c2 = ldata->trem->chord2();
     int staff_move = 0;
-    for (ChordRest *cr : ldata->beam->elements()) {
+    for (ChordRest *cr : ldata->beam->rendered_elements()) {
         if (cr->staff_move() != 0) {
             staff_move = cr->staff_move();
             break;
