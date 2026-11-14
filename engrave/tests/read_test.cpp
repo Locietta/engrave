@@ -1763,7 +1763,7 @@ TEST(Read, NormalizeRepairsLyricDurationsAndTieTicksWithoutLayout) {
     EXPECT_EQ(tie_score.layout_state.whole_count + tie_score.layout_state.range_count, tie_count);
 }
 
-TEST(Read, NormalizeCreatesTimeAnchorsWithoutPreparingTheirGeometry) {
+TEST(Read, NormalizeKeepsOffNoteAnchorsOutOfSourceAndDoesNotLayOut) {
     using namespace mu::engraving;
     auto document = open_path(write470_fixture());
     ASSERT_TRUE(document);
@@ -1776,15 +1776,12 @@ TEST(Read, NormalizeCreatesTimeAnchorsWithoutPreparingTheirGeometry) {
     master.add_spanner(hairpin, false);
     master.set_layout_all();
     const auto count = master.layout_state.whole_count + master.layout_state.range_count;
+    const auto objects = engrave::document_objects(master);
     normalize_score(master);
-    ASSERT_NE(hairpin->start_element(), nullptr);
-    ASSERT_NE(hairpin->end_element(), nullptr);
-    EXPECT_EQ(hairpin->start_element()->tick(), Fraction(1, 4));
-    EXPECT_EQ(hairpin->end_element()->tick(), Fraction(3, 4));
+    EXPECT_EQ(engrave::document_objects(master), objects);
+    EXPECT_EQ(master.first_measure()->find_segment(SegmentType::TIME_TICK, Fraction(1, 4)), nullptr);
+    EXPECT_EQ(master.first_measure()->find_segment(SegmentType::TIME_TICK, Fraction(3, 4)), nullptr);
     EXPECT_FALSE(hairpin->has_layout_data());
-    EXPECT_FALSE(hairpin->start_element()->has_layout_data());
-    EXPECT_FALSE(hairpin->end_element()->has_layout_data());
-    EXPECT_FALSE(hairpin->start_element()->find_measure()->find_segment(SegmentType::TIME_TICK, Fraction(1, 4))->has_layout_data());
     EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
 }
 

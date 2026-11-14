@@ -45,7 +45,9 @@
 #include "engraving/dom/excerpt.h"
 #include "engraving/dom/factory.h"
 #include "engraving/dom/guitarbend.h"
+#include "engraving/dom/hairpin.h"
 #include "engraving/dom/instrtemplate.h"
+#include "engraving/dom/instrument.h"
 #include "engraving/dom/keysig.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
@@ -69,6 +71,7 @@
 #include "engraving/dom/tremolotwochord.h"
 #include "engraving/editing/addremoveelement.h"
 #include "engraving/editing/editkeysig.h"
+#include "engraving/editing/editmeasures.h"
 #include "engraving/editing/editpagelocks.h"
 #include "engraving/editing/edittremolo.h"
 #include "engraving/editing/transaction/transaction.h"
@@ -529,6 +532,180 @@ TEST(SegmentOutput, RemovingKeyEventRemovesAuthoredSignature) {
     auto *header = measure->find_rendered_segment_r(SegmentType::KEY_SIG, Fraction(0, 1));
     ASSERT_NE(header, nullptr);
     EXPECT_EQ(to_key_sig(header->effective_element(0))->key(), Key::C);
+}
+
+TEST(SegmentOutput, ResizedMeasureRetiresOldBoundary) {
+    using namespace mu::engraving;
+    auto ranged = open_path(g_source_root / "tests/data/inputs/segment-purity.mscx");
+    auto full = open_path(g_source_root / "tests/data/inputs/segment-purity.mscx");
+    ASSERT_TRUE(ranged);
+    ASSERT_TRUE(full);
+    auto &master = master_of(*ranged);
+    master.ensure_layout();
+    const auto shorten = [](engrave::Document &document) {
+        auto &score = master_of(document);
+        auto *measure = score.first_measure()->next_measure();
+        apply_measure_length(measure, mu::engraving::Fraction(3, 4));
+        for (auto *item : measure->first(SegmentType::CHORD_REST)->elist())
+            if (item && item->is_chord_rest()) to_chord_rest(item)->set_ticks(mu::engraving::Fraction(3, 4));
+        score.invalidate_layout(measure->tick(), measure->end_tick());
+    };
+    shorten(*ranged);
+    shorten(*full);
+    auto actual = ranged->render({.format = engrave::RenderFormat::SVG});
+    auto expected = full->render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(actual);
+    ASSERT_TRUE(expected);
+    EXPECT_EQ(actual->pages, expected->pages);
+    auto *measure = master.first_measure()->next_measure();
+    size_t boundaries = 0;
+    for (auto *seg = measure->rendered_first(); seg; seg = seg->rendered_next()) {
+        if (!seg->is_end_bar_line_type()) continue;
+        ++boundaries;
+        EXPECT_EQ(seg->rtick(), mu::engraving::Fraction(3, 4));
+    }
+    EXPECT_EQ(boundaries, 1u);
+}
+
+TEST(SegmentOutput, ImplicitWrittenKeyAndGeneratedRemovalStayOutOfSource) {
+    using namespace mu::engraving;
+    auto document = open_path(g_source_root / "tests/data/inputs/segment-purity.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    master.parts().front()->instrument()->set_transpose(Interval(-1, -2));
+    master.style().set(Sid::CONCERT_PITCH, false);
+    master.ensure_layout();
+    const auto check = [&](Key expected) {
+        auto *measure = master.first_measure();
+        EXPECT_EQ(measure->find_segment_r(SegmentType::KEY_SIG, mu::engraving::Fraction(0, 1)), nullptr);
+        EXPECT_TRUE(master.staff(0)->key_list()->empty());
+        auto *segment = measure->find_rendered_segment_r(SegmentType::KEY_SIG, mu::engraving::Fraction(0, 1));
+        ASSERT_NE(segment, nullptr);
+        auto *key = to_key_sig(segment->effective_element(0));
+        ASSERT_NE(key, nullptr);
+        EXPECT_EQ(key->key(), expected);
+        apply_change_key_sig(key, key->key_sig_event(), key->show_courtesy(), false);
+        EXPECT_EQ(segment->effective_element(0), key);
+    };
+    check(Key::D);
+    master.cmd_concert_pitch_changed(true);
+    master.ensure_layout();
+    check(Key::C);
+    master.cmd_concert_pitch_changed(false);
+    master.ensure_layout();
+    check(Key::D);
+}
+
+TEST(SegmentOutput, RepeatDisplayKeepsAuthoredBarline) {
+    using namespace mu::engraving;
+    auto document = open_path(g_source_root / "tests/data/inputs/segment-purity.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *measure = master.first_measure();
+    measure->set_repeat_end(true);
+    auto *barline = to_bar_line(measure->find_segment_r(SegmentType::END_BAR_LINE, measure->ticks())->element(0));
+    const auto write = [&] {
+        muse::io::Buffer buffer;
+        buffer.open(muse::io::IODevice::WRITE_ONLY);
+        rw::WriteInOutData inout(&master);
+        EXPECT_TRUE(rw::RWRegister::writer()->write_score(&master, &buffer, &inout));
+        return std::string(reinterpret_cast<const char *>(buffer.data().const_data()), buffer.data().size());
+    };
+    const auto cold = write();
+    master.ensure_layout();
+    EXPECT_EQ(barline->bar_line_type(), BarLineType::DOUBLE);
+    EXPECT_FALSE(barline->generated());
+    EXPECT_EQ(barline->display_bar_line_type(), BarLineType::END_REPEAT);
+    EXPECT_EQ(write(), cold);
+}
+
+TEST(SegmentOutput, OutputHeaderOrdersKeysBeforeAuthoredClef) {
+    using namespace mu::engraving;
+    auto document = open_path(g_source_root / "tests/data/inputs/segment-purity.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *first = master.first_measure();
+    auto *second = first->next_measure();
+    auto changed = document->edit({{engrave::SetKeySig{.measure = engine_id(*first), .key = 2, .staff = engine_id(*master.staff(0))}}});
+    ASSERT_TRUE(changed);
+    first->set_repeat_end(true);
+    second->set_repeat_start(true);
+    master.style().set(Sid::CHANGES_BETWEEN_END_START_REPEAT, true);
+    auto *source = second->get_segment_r(SegmentType::CLEF, mu::engraving::Fraction(0, 1));
+    auto *clef = Factory::create_clef(source);
+    clef->set_track(0);
+    clef->set_clef_type(ClefType::F);
+    clef->set_clef_to_barline_position(ClefToBarlinePosition::AFTER);
+    source->add(clef);
+    master.ensure_layout();
+    int header = -1, key = -1, authored = -1, index = 0;
+    for (auto *segment = second->rendered_first(); segment; segment = segment->rendered_next(), ++index) {
+        if (segment->is_header_clef_type()) header = index;
+        if (segment->is_key_sig_type()) key = index;
+        if (segment == source) authored = index;
+    }
+    ASSERT_GE(header, 0);
+    ASSERT_GE(key, 0);
+    ASSERT_GE(authored, 0);
+    EXPECT_LT(header, key);
+    EXPECT_LT(key, authored);
+}
+
+TEST(SegmentOutput, AuthoredCourtesiesSurviveSuppressedDisplay) {
+    using namespace mu::engraving;
+    auto source = read_text(g_source_root / "tests/data/inputs/segment-purity.mscx");
+    source.insert(source.find("</voice>"), R"(<TimeSig><isCourtesy>1</isCourtesy><sigN>3</sigN><sigD>4</sigD></TimeSig>
+<KeySig><isCourtesy>1</isCourtesy><concertKey>2</concertKey></KeySig>)");
+    auto opened = g_engine->open(as_bytes(source), {.format = engrave::Format::MSCX});
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto *measure = master.first_measure();
+    auto *time = measure->find_segment_r(SegmentType::TIME_SIG_ANNOUNCE, measure->ticks());
+    auto *key = measure->find_segment_r(SegmentType::KEY_SIG_ANNOUNCE, measure->ticks());
+    ASSERT_NE(time, nullptr);
+    ASSERT_NE(key, nullptr);
+    auto *authored_time = time->element(0);
+    auto *authored_key = key->element(0);
+    ASSERT_NE(authored_time, nullptr);
+    ASSERT_NE(authored_key, nullptr);
+    const auto write = [&] {
+        muse::io::Buffer buffer;
+        buffer.open(muse::io::IODevice::WRITE_ONLY);
+        rw::WriteInOutData inout(&master);
+        EXPECT_TRUE(rw::RWRegister::writer()->write_score(&master, &buffer, &inout));
+        return std::string(reinterpret_cast<const char *>(buffer.data().const_data()), buffer.data().size());
+    };
+    const auto cold = write();
+    master.ensure_layout();
+    EXPECT_EQ(time->element(0), authored_time);
+    EXPECT_EQ(key->element(0), authored_key);
+    EXPECT_EQ(write(), cold);
+}
+
+TEST(SegmentOutput, NonzeroVoiceSpannerUsesOwnedTimeAnchor) {
+    using namespace mu::engraving;
+    auto document = open_path(g_source_root / "tests/data/inputs/segment-purity.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *line = Factory::create_hairpin(master.dummy());
+    line->set_track(1);
+    line->set_track2(1);
+    line->set_tick(mu::engraving::Fraction(3, 8));
+    line->set_ticks(mu::engraving::Fraction(1, 4));
+    master.add_spanner(line);
+    master.ensure_layout();
+    line->compute_start_element();
+    line->compute_end_element();
+    ASSERT_NE(line->start_element(), nullptr);
+    ASSERT_NE(line->end_element(), nullptr);
+    EXPECT_TRUE(line->start_element()->is_time_tick_anchor());
+    EXPECT_TRUE(line->end_element()->is_time_tick_anchor());
+    EXPECT_FALSE(source_object(*line->start_element()));
+    auto *measure = master.first_measure();
+    EXPECT_EQ(measure->find_segment_r(SegmentType::TIME_TICK, mu::engraving::Fraction(3, 8)), nullptr);
+    master.layout_data_store()->clear();
+    EXPECT_EQ(line->start_element(), nullptr);
+    EXPECT_EQ(line->end_element(), nullptr);
 }
 
 TEST(NativeSave, GeneratedGhostParenthesesStayInDisplayOutput) {

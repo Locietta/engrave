@@ -1186,3 +1186,8 @@ TEST_F(EngravingPartsTests, crossMeasureUpwardGlissExcerpt) {
     EXPECT_EQ(to_note(cloned->spanner_for().front()->end_element())->pitch(), 84);
     delete master;
 }
+
+TEST_F(EngravingPartsTests, rejects_wrong_external_link) {
+    const auto root = ScoreRW::root_path() + u"/../../../tests/data/";
+    EXPECT_FALSE(ScoreComp::compare_files(root + u"external-link-expected.xml", root + u"external-link-wrong.xml"));
+}
