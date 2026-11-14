@@ -32,6 +32,7 @@ struct AddText {
 // fermata, dynamic, staff text, tempo text or harmony on a ChordRest segment.  Every other
 // pair, and every other type, is an InvalidArgument.  props are set as SetProperty
 // sets them; an articulation needs its "symbol" and a text its "text".
+// A Harmony requires nonempty initial text in props.
 struct Add {
     Ref anchor;
     std::string type;
