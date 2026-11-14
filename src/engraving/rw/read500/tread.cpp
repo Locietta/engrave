@@ -427,11 +427,17 @@ bool TRead::read_item_properties(EngravingItem *item, XmlReader &e, ReadContext 
         }
     } else if (tag == "color") {
         const auto color = PropertyValue::from_value(e.read_color());
-        item->set_color(color.value<Color>());
+        if (authored_override_owner(*item) && item->authored_child.role != AuthoredChildRole::NONE)
+            item->EngravingItem::set_color(color.value<Color>());
+        else
+            item->set_color(color.value<Color>());
         read_child_property(*item, Pid::COLOR, color, PropertyFlags::NOSTYLE);
     } else if (tag == "visible") {
         const auto visible = PropertyValue(bool(e.read_int()));
-        item->set_visible(visible.to_bool());
+        if (authored_override_owner(*item) && item->authored_child.role != AuthoredChildRole::NONE)
+            item->EngravingItem::set_visible(visible.to_bool());
+        else
+            item->set_visible(visible.to_bool());
         read_child_property(*item, Pid::VISIBLE, visible, PropertyFlags::NOSTYLE);
     } else if (tag == "linkedTo") {
         read_item_link(item, e, ctx);
@@ -445,7 +451,10 @@ bool TRead::read_item_properties(EngravingItem *item, XmlReader &e, ReadContext 
     } else if (TRead::read_property(item, tag, e, ctx, Pid::PLACEMENT)) {
     } else if (tag == "z") {
         const auto z = PropertyValue(e.read_int());
-        item->set_z(z.to_int());
+        if (authored_override_owner(*item) && item->authored_child.role != AuthoredChildRole::NONE)
+            item->EngravingItem::set_z(z.to_int());
+        else
+            item->set_z(z.to_int());
         read_child_property(*item, Pid::Z, z, PropertyFlags::NOSTYLE);
     } else if (TRead::read_property(item, tag, e, ctx, Pid::HAS_PARENTHESES)) {
     } else if (tag == "Parenthesis") {
@@ -2179,6 +2188,7 @@ void TRead::read(Symbol *sym, XmlReader &e, ReadContext &ctx) {
                 }
             }
             sym->set_sym(sym_id);
+            read_child_property(*sym, Pid::SYMBOL, PropertyValue::from_value(sym_id), PropertyFlags::NOSTYLE);
             if (sym->is_system_divider()) to_system_divider(sym)->set_authored_sym(sym_id);
         } else if (tag == "font") {
             read_property(sym, e, ctx, Pid::SCORE_FONT);
