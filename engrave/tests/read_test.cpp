@@ -7666,6 +7666,44 @@ TEST(Read, GenericRestParenthesesKeepAuthoredColorWithoutTableCarriers) {
     }
 }
 
+TEST(Read, LinkedRestParenthesesSaveAfterPublicMasterAndPartEdits) {
+    using namespace mu::engraving;
+    const std::string fixture = R"(<museScore version="5.00"><Score><Division>480</Division>
+<Part><Staff><StaffType group="pitched"/></Staff><Instrument id="piano"><Channel><program value="0"/></Channel></Instrument></Part>
+<Staff id="1"><Measure><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
+<Rest><durationType>whole</durationType></Rest></voice></Measure></Staff></Score></museScore>)";
+    for (const bool from_part : {false, true}) {
+        auto opened = g_engine->open(as_bytes(fixture));
+        ASSERT_TRUE(opened);
+        auto &master = master_of(**opened);
+        const auto outline = (*opened)->outline();
+        ASSERT_TRUE(outline);
+        ASSERT_TRUE((*opened)->edit({{engrave::GenerateExcerpts{{outline->parts.front().id}}}}));
+        auto *part = master.excerpts().front()->excerpt_score();
+        auto *score = from_part ? part : &master;
+        auto *rest = to_rest(score->first_measure()->first(SegmentType::CHORD_REST)->element(0));
+        ASSERT_TRUE((*opened)->edit({{engrave::SetProperty{engrave::from_engine(rest->eid()), "parentheses", engrave::Enum{"both"}}}}));
+        auto saved = (*opened)->export_score({.format = engrave::Format::MSCX});
+        ASSERT_TRUE(saved) << saved.error().message;
+        auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
+        ASSERT_TRUE(reopened) << reopened.error().message;
+        auto &copy = master_of(**reopened);
+        ASSERT_EQ(copy.excerpts().size(), 1u);
+        for (auto *linked_score : {static_cast<Score *>(&copy), copy.excerpts().front()->excerpt_score()}) {
+            const auto *restored = to_rest(linked_score->first_measure()->first(SegmentType::CHORD_REST)->element(0));
+            EXPECT_EQ(restored->parentheses_mode(), ParenthesesMode::BOTH);
+            ASSERT_NE(restored->left_paren(), nullptr);
+            ASSERT_NE(restored->right_paren(), nullptr);
+            EXPECT_TRUE(restored->left_paren()->eid().is_valid());
+            EXPECT_TRUE(restored->right_paren()->eid().is_valid());
+            EXPECT_EQ(restored->left_paren()->authored_child.role, AuthoredChildRole::NONE);
+            EXPECT_FALSE(restored->authored_overrides.has_entries({AuthoredChildRole::PAREN_LEFT}));
+            EXPECT_FALSE(restored->authored_overrides.has_entries({AuthoredChildRole::PAREN_RIGHT}));
+        }
+        ASSERT_TRUE((*reopened)->render({.format = engrave::RenderFormat::SVG}));
+    }
+}
+
 TEST(Read, OwnerColorKeepsGeneratedStemAndDotDefaultsAfterColdSave) {
     using namespace mu::engraving;
     auto xml = legacy_segment_fixture("");
