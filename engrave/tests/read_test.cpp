@@ -5320,7 +5320,7 @@ TEST(Read, SegmentColorCreationAndReusePreserveSourceAndDrawAuthoredColor) {
     ASSERT_TRUE(resolved);
     auto *bend = to_guitar_bend(resolved->object);
     EXPECT_EQ(bend->color(), muse::draw::Color(0, 0, 0));
-    auto carrier = bend->authored_segment(0);
+    std::unique_ptr<SpannerSegment> carrier(bend->create_line_segment());
     EXPECT_EQ(bend->color(), muse::draw::Color(0, 0, 0));
     carrier.reset();
     ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
