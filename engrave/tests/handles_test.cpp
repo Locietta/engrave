@@ -471,6 +471,62 @@ TEST(NativeSave, ColdEqualsWarm) {
     }
 }
 
+TEST(NativeSave, S13MissingCapoIdentityKeepsCustomFBoxChildren) {
+    using namespace mu::engraving;
+    auto xml = read_text(g_source_root / "tests/data/inputs/fbox.mscx");
+    xml.insert(xml.find("<Division>"), "<Style><displayCapoChords>2</displayCapoChords><capoPosition>0</capoPosition></Style>");
+    xml.replace(xml.find("<frets>4</frets>"), 16, "<frets>7</frets><visible>0</visible>");
+    auto document = open_text(xml);
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *box = to_f_box(master.first());
+    ASSERT_EQ(box->el().size(), 2u);
+    EXPECT_EQ(to_fret_diagram(box->el().front())->frets(), 7);
+    EXPECT_FALSE(box->el().front()->visible());
+    expect_no_layout(master);
+    const auto saved = document->export_score({.format = engrave::Format::MSCX});
+    ASSERT_TRUE(saved);
+    auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
+    ASSERT_TRUE(reopened);
+    auto *copy_box = to_f_box(master_of(**reopened).first());
+    ASSERT_EQ(copy_box->el().size(), 2u);
+    EXPECT_EQ(to_fret_diagram(copy_box->el().front())->frets(), 7);
+    EXPECT_FALSE(copy_box->el().front()->visible());
+    ASSERT_TRUE(document->edit({{engrave::SetStyle{{}, "displayCapoChords", std::int32_t{0}}}}));
+    const auto children = box->el();
+    ASSERT_TRUE(document->edit(
+        {{engrave::SetStyle{{}, "displayCapoChords", std::int32_t{2}}, engrave::SetStyle{{}, "capoPosition", std::int32_t{2}}}}));
+    EXPECT_EQ(box->el(), children);
+    ASSERT_EQ(box->el().size(), 2u);
+    EXPECT_EQ(to_fret_diagram(box->el().front())->frets(), 7);
+    EXPECT_FALSE(box->el().front()->visible());
+    expect_no_layout(master);
+}
+
+TEST(NativeSave, S13HiddenFBoxHarmonyDoesNotPaintItsOldLabel) {
+    using namespace mu::engraving;
+    auto document = open_path(g_source_root / "tests/data/inputs/fbox.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *box = to_f_box(master.first());
+    auto *diagram = to_fret_diagram(box->el().front());
+    const auto label_id = engine_id(*diagram->harmony());
+    ASSERT_TRUE(document->edit({{engrave::SetProperty{label_id, "color", engrave::Color{255, 0, 0, 255}}}}));
+    auto before = document->render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(before);
+    ASSERT_NE(text_of(before->pages.front()).find("rgb(100%, 0%, 0%)"), std::string::npos);
+    const engrave::Address at = engrave::SegmentAddress{.measure = engine_id(*master.first_measure()), .tick = {0, 1}, .kind = "ChordRest"};
+    ASSERT_TRUE(document->edit(
+        {{engrave::SetProperty{engine_id(*diagram), "visible", false}, engrave::Add{at, "Harmony", {{"text", std::string("Dm")}}}}}));
+    auto hidden = document->render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(hidden);
+    EXPECT_EQ(text_of(hidden->pages.front()).find("rgb(100%, 0%, 0%)"), std::string::npos);
+    ASSERT_TRUE(document->edit({{engrave::SetProperty{engine_id(*diagram), "visible", true}}}));
+    auto visible = document->render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(visible);
+    EXPECT_NE(text_of(visible->pages.front()).find("rgb(100%, 0%, 0%)"), std::string::npos);
+}
+
 TEST(NativeSave, FBoxS13SynchronizesColdAndSurvivesRender) {
     using namespace mu::engraving;
     auto document = open_path(g_source_root / "tests/data/inputs/fbox.mscx");

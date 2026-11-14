@@ -156,11 +156,15 @@ void BoxLayout::layout_f_box(const FBox *item, FBox::LayoutData *ldata, const La
 
     std::vector<FretDiagram *> fret_diagrams;
     for (EngravingItem *element : item->el()) {
-        if (!element || !element->is_fret_diagram() || !element->visible()) {
+        if (!element || !element->is_fret_diagram()) {
             continue;
         }
 
-        fret_diagrams.emplace_back(to_fret_diagram(element));
+        FretDiagram *diagram = to_fret_diagram(element);
+        diagram->mutldata()->set_is_skip_draw(!diagram->visible());
+        if (diagram->harmony()) diagram->harmony()->mutldata()->set_is_skip_draw(!diagram->visible());
+        if (!diagram->visible()) continue;
+        fret_diagrams.emplace_back(diagram);
     }
 
     //! NOTE: layout fret diagrams and calculate sizes
