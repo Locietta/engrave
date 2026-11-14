@@ -1154,7 +1154,8 @@ void TWrite::write(const Chord *item, XmlWriter &xml, WriteContext &ctx) {
     const auto &overrides = item->authored_overrides;
     if (item->no_stem()) {
         xml.tag("noStem", item->no_stem());
-    } else if (overrides.has_entries({AuthoredChildRole::STEM}) || !item->stem_user_length().is_zero()) {
+    }
+    if (overrides.has_entries({AuthoredChildRole::STEM}) || !item->stem_user_length().is_zero()) {
         write_authored_child(item, {AuthoredChildRole::STEM}, "Stem", xml, ctx);
     }
     if (overrides.has_entries({AuthoredChildRole::HOOK})) {

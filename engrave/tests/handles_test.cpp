@@ -431,6 +431,52 @@ std::map<std::string, std::string> native_captures(engrave::Document &document, 
     return captures;
 }
 
+TEST(NativeSave, S14StemOverridesSurviveSuppressionSaveAndCheckpoint) {
+    using namespace mu::engraving;
+    for (const std::string version : {"4.60", "5.00"}) {
+        for (bool stem_first : {false, true}) {
+            std::string xml = R"(<museScore version="5.00"><Score><Division>480</Division>
+<Part><Staff><StaffType group="pitched"/></Staff><Instrument id="piano"><Channel><program value="0"/></Channel></Instrument></Part>
+<Staff id="1"><Measure><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
+<Chord><eid>B_B</eid><durationType>quarter</durationType><Note><pitch>60</pitch><tpc>14</tpc></Note></Chord>
+</voice></Measure></Staff></Score></museScore>)";
+            xml.replace(xml.find("5.00"), 4, version);
+            const std::string stem = "<Stem><color r=\"17\" g=\"34\" b=\"51\" a=\"255\"/><userLen>2.5</userLen></Stem>";
+            xml.insert(xml.find("<durationType>"), stem_first ? stem + "<noStem>1</noStem>" : "<noStem>1</noStem>" + stem);
+            auto opened = g_engine->open(as_bytes(xml));
+            ASSERT_TRUE(opened);
+            const auto check = [](engrave::Document &document, bool suppressed) {
+                auto *chord = to_chord(master_of(document).first_measure()->first(SegmentType::CHORD_REST)->element(0));
+                EXPECT_EQ(chord->no_stem(), suppressed);
+                EXPECT_DOUBLE_EQ(chord->stem_user_length().val(), 2.5);
+                const auto *color = chord->authored_overrides.find({AuthoredChildRole::STEM}, Pid::COLOR);
+                ASSERT_NE(color, nullptr);
+                EXPECT_EQ(color->value.value<muse::draw::Color>(), muse::draw::Color(17, 34, 51));
+            };
+            auto &document = **opened;
+            check(document, true);
+            const auto id =
+                engrave::from_engine(to_chord(master_of(document).first_measure()->first(SegmentType::CHORD_REST)->element(0))->eid());
+            ASSERT_TRUE(document.edit({{engrave::SetProperty{id, "noStem", false}}}));
+            ASSERT_TRUE(document.edit({{engrave::SetProperty{id, "noStem", true}}}));
+            ASSERT_TRUE(document.checkpoint("hidden"));
+            const auto saved = document.export_score({.format = engrave::Format::MSCX, .native_version = "5.00"});
+            ASSERT_TRUE(saved);
+            auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
+            ASSERT_TRUE(reopened);
+            check(**reopened, true);
+            ASSERT_TRUE((*reopened)->edit({{engrave::SetProperty{id, "noStem", false}}}));
+            check(**reopened, false);
+            ASSERT_TRUE(document.restore_checkpoint("hidden"));
+            check(document, true);
+            ASSERT_TRUE(document.edit({{engrave::SetProperty{id, "noStem", false}}}));
+            check(document, false);
+            const auto &master = master_of(document);
+            EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+        }
+    }
+}
+
 TEST(NativeSave, ColdEqualsWarm) {
     std::vector<std::filesystem::path> inputs;
     for (const auto &entry : std::filesystem::directory_iterator(g_source_root / "tests/data/inputs/golden")) {
