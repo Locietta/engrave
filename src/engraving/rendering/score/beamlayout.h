@@ -47,6 +47,7 @@ struct BeamLayout {
 
     static bool is_start_of_non_cross_beam(ChordRest *cr);
     static bool is_start_of_cross_beam(ChordRest *cr);
+    static void detach_beam_for_layout(ChordRest *cr, bool beamed);
     static void create_beams(LayoutContext &ctx, Measure *measure);
     static void restore_beams(Measure *m, LayoutContext &ctx);
     static bool measure_may_have_beams_joined_into_next(const Measure *measure);

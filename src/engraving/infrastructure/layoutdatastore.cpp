@@ -309,6 +309,7 @@ void LayoutDataStore::discard_score_output() {
         }
     }
     for (auto &record : records_->items.values()) {
+        if (record.second.item->is_beam()) static_cast<Beam::LayoutData *>(record.second.data.get())->members.reset();
         if (record.second.item->is_chord_rest()) {
             auto *data = static_cast<ChordRest::LayoutData *>(record.second.data.get());
             data->beamlet = nullptr;
