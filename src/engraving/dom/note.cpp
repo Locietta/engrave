@@ -703,7 +703,7 @@ Note::Note(const Note &n, bool link) : EngravingItem(n, link) {
             score()->apply_link(tie_for_, n.tie_for_);
         }
     } else if (n.outgoing_partial_tie()) {
-        set_tie_for(Factory::copy_partial_tie(*to_partial_tie(n.tie_for_)));
+        tie_for_ = Factory::copy_partial_tie(*to_partial_tie(n.tie_for_));
         tie_for_->set_ownership_parent(this);
         tie_for_->set_start_note(this);
         tie_for_->set_tick(tick());
@@ -718,7 +718,7 @@ Note::Note(const Note &n, bool link) : EngravingItem(n, link) {
     }
 
     if (n.incoming_partial_tie()) {
-        set_tie_back(Factory::copy_partial_tie(*to_partial_tie(n.tie_back_)));
+        tie_back_ = Factory::copy_partial_tie(*to_partial_tie(n.tie_back_));
         tie_back_->set_ownership_parent(this);
         tie_back_->set_end_note(this);
         tie_back_->set_tick(tick());
@@ -1963,7 +1963,7 @@ void Note::set_tie_for(Tie *t) {
     }
     tie_for_ = t;
     source_child_added(*this, t);
-    if (tie_for_ && !tie_for_->is_laissez_vib()) {
+    if (source_object(*this) && tie_for_ && !tie_for_->is_laissez_vib()) {
         tie_for_->update_possible_jump_points();
     }
 }
