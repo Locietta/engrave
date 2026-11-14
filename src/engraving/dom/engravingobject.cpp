@@ -361,10 +361,16 @@ bool EngravingObject::is_styled(Pid pid) const {
 //   changeProperty
 //---------------------------------------------------------
 
+static bool requests_spanner_relink(const EngravingObject &object, Pid id, const PropertyValue &value) {
+    return object.is_spanner() && !object.score()->is_master() &&
+           (id == Pid::POSITION_LINKED_TO_MASTER || id == Pid::APPEARANCE_LINKED_TO_MASTER) && value.to_bool();
+}
+
 static void change_property(EngravingObject *e, Pid t, const PropertyValue &st, PropertyFlags ps, bool reset_path = false) {
     const bool new_authored_entry = authored_override_handles(*e, t) && !has_authored_override(*to_engraving_item(e), t);
-    if (reset_path || new_authored_entry || (e->is_chord_line() && t == Pid::PATH && to_chord_line(e)->has_source_offsets()) ||
-        e->get_property(t) != st || e->property_flags(t) != ps) {
+    if (reset_path || new_authored_entry || requests_spanner_relink(*e, t, st) ||
+        (e->is_chord_line() && t == Pid::PATH && to_chord_line(e)->has_source_offsets()) || e->get_property(t) != st ||
+        e->property_flags(t) != ps) {
         if (e->is_bracket_item()) {
             BracketItem *bi = to_bracket_item(e);
             e->score()->transaction_manager()->current_or_dummy_transaction().change_bracket_property(*bi, t, st, ps);
@@ -465,7 +471,8 @@ void EngravingObject::undo_change_property(Pid id, const PropertyValue &v) { und
 void EngravingObject::undo_change_property(Pid id, const PropertyValue &v, PropertyFlags ps) {
     const bool changes_chord_line_path_source = is_chord_line() && id == Pid::PATH && to_chord_line(this)->has_source_offsets();
     const bool new_authored_entry = authored_override_handles(*this, id) && !has_authored_override(*to_engraving_item(this), id);
-    if ((get_property(id) == v) && (property_flags(id) == ps) && !changes_chord_line_path_source && !new_authored_entry) {
+    if ((get_property(id) == v) && (property_flags(id) == ps) && !changes_chord_line_path_source && !new_authored_entry &&
+        !requests_spanner_relink(*this, id, v)) {
         return;
     }
     if (is_bracket_item()) {
