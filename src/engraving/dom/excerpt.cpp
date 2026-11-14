@@ -635,6 +635,9 @@ void Excerpt::clone_spanner(Spanner *s, Score *score, track_idx_t dst_track, tra
         }
     } else if (ns->is_trill()) {
         ns->compute_start_element();
+    } else if (ns->anchor() == Spanner::Anchor::SEGMENT) {
+        ns->set_start_element(nullptr);
+        ns->set_end_element(nullptr);
     } else {
         if (!ns->start_element()) {
             ns->compute_start_element();
@@ -644,7 +647,7 @@ void Excerpt::clone_spanner(Spanner *s, Score *score, track_idx_t dst_track, tra
         }
     }
 
-    if (!ns->start_element() || !ns->end_element()) {
+    if (ns->anchor() != Spanner::Anchor::SEGMENT && (!ns->start_element() || !ns->end_element())) {
         if (EngravingItem *start_element = ns->start_element()) {
             if (start_element->is_chord()) {
                 to_chord(start_element)->remove_starting_spanner(ns);

@@ -29,6 +29,7 @@ struct LayoutDataStore {
     ScoreOutput &score_output() { return output_; }
 
     void discard_score_output();
+    void retire_measure_borrowers(Measure &measure);
 
     size_t size() const;
     const EngravingItem::LayoutData *find(const EngravingItem &item) const;

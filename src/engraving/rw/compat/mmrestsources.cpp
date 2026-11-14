@@ -33,9 +33,6 @@ void restore_mm_rest_sources(Score &score) {
             const Fraction tick = at_start ? Fraction(0, 1) : last->ticks();
             auto target_segment = [&] {
                 Segment *target = target_measure->get_segment_r(segment.segment_type(), tick);
-                target->set_enabled(segment.enabled());
-                target->set_header(segment.header());
-                target->set_trailer(segment.trailer());
                 target->set_end_of_measure_change(segment.end_of_measure_change());
                 return target;
             };

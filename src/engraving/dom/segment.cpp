@@ -45,6 +45,7 @@
 #include "ornament.h"
 #include "part.h"
 #include "rendering/score/chordlayout.h"
+#include "rendering/score/layoutdatastore.h"
 #include "rendering/score/tlayout.h"
 #include "rest.h"
 #include "score.h"
@@ -98,6 +99,210 @@ const char *Segment::sub_type_name(SegmentType t) {
 //---------------------------------------------------------
 //   setElement
 //---------------------------------------------------------
+
+Segment::LayoutData::~LayoutData() { muse::delete_all(generated); }
+
+EngravingItem *Segment::effective_element(track_idx_t track) const {
+    if (auto *authored = element(track)) return authored;
+    const auto &generated = ldata()->generated;
+    return track < generated.size() ? generated[track] : nullptr;
+}
+
+std::vector<EngravingItem *> Segment::effective_elements() const {
+    auto result = elist_;
+    for (track_idx_t track = 0; track < result.size(); ++track) result[track] = effective_element(track);
+    return result;
+}
+
+bool Segment::has_effective_elements() const { return has_effective_elements(0, score()->ntracks() - 1); }
+
+bool Segment::has_effective_elements(staff_idx_t staff) const { return has_effective_elements(staff * voices, (staff + 1) * voices - 1); }
+
+bool Segment::has_effective_elements(track_idx_t first, track_idx_t last) const {
+    for (track_idx_t track = first; track <= last; ++track)
+        if (effective_element(track)) return true;
+    return false;
+}
+
+void Segment::add_generated(EngravingItem *item) {
+    auto &generated = mutldata()->generated;
+    generated.resize(std::max(generated.size(), score()->ntracks()));
+    const auto track = item->track();
+    assert(!generated[track] || generated[track] == item);
+    item->set_ownership_parent(this);
+    generated[track] = item;
+}
+
+bool Segment::owns_generated(const EngravingItem *item) const {
+    const auto &generated = ldata()->generated;
+    return item->track() < generated.size() && generated[item->track()] == item;
+}
+
+void Segment::remove_generated(EngravingItem *item) {
+    assert(owns_generated(item));
+    mutldata()->generated[item->track()] = nullptr;
+}
+
+Segment *Segment::rendered_next() const {
+    const auto &items = measure()->ldata()->rendered;
+    if (items.empty()) return next();
+    auto it = std::find(items.begin(), items.end(), this);
+    return it != items.end() && ++it != items.end() ? *it : nullptr;
+}
+
+Segment *Segment::rendered_prev() const {
+    const auto &items = measure()->ldata()->rendered;
+    if (items.empty()) return prev();
+    auto it = std::find(items.begin(), items.end(), this);
+    return it != items.end() && it != items.begin() ? *--it : nullptr;
+}
+
+Segment *Segment::rendered_next1() const {
+    if (auto *next = rendered_next()) return next;
+    auto *m = measure()->next_measure();
+    return m ? m->rendered_first() : nullptr;
+}
+
+Segment *Segment::rendered_prev1() const {
+    if (auto *prev = rendered_prev()) return prev;
+    auto *m = measure()->prev_measure();
+    return m ? m->rendered_last() : nullptr;
+}
+
+Segment *Segment::rendered_prev1_mm() const {
+    if (auto *prev = rendered_prev()) return prev;
+    auto *m = measure()->prev_measure_mm();
+    return m ? m->rendered_last() : nullptr;
+}
+
+Segment *Segment::rendered_next(SegmentType types) const {
+    for (Segment *s = rendered_next(); s; s = s->rendered_next()) {
+        if (s->segment_type() & types) {
+            return s;
+        }
+    }
+    return 0;
+}
+
+Segment *Segment::rendered_prev(SegmentType types) const {
+    for (Segment *s = rendered_prev(); s; s = s->rendered_prev()) {
+        if (s->segment_type() & types) {
+            return s;
+        }
+    }
+    return 0;
+}
+
+Segment *Segment::rendered_prev1(SegmentType types) const {
+    for (Segment *s = rendered_prev1(); s; s = s->rendered_prev1()) {
+        if (s->segment_type() & types) {
+            return s;
+        }
+    }
+    return 0;
+}
+
+Segment *Segment::rendered_next_cr(track_idx_t track, bool same_staff) const {
+    track_idx_t strack = track;
+    track_idx_t etrack;
+    if (same_staff) {
+        strack &= ~(::mu::engraving::voices - 1);
+        etrack = strack + ::mu::engraving::voices;
+    } else {
+        etrack = strack + 1;
+    }
+    for (Segment *seg = rendered_next1(); seg; seg = seg->rendered_next1()) {
+        if (seg->is_chord_rest_type()) {
+            if (track == muse::nidx) {
+                return seg;
+            }
+            for (track_idx_t t = strack; t < etrack; ++t) {
+                if (seg->effective_element(t)) {
+                    return seg;
+                }
+            }
+        }
+    }
+    return 0;
+}
+
+Segment *Segment::rendered_next1_enabled() const {
+    Segment *s = rendered_next1();
+    while (s && !s->enabled()) {
+        s = s->rendered_next1();
+    }
+    return s;
+}
+
+Segment *Segment::rendered_prev1_enabled() const {
+    Segment *s = rendered_prev1();
+    while (s && !s->enabled()) {
+        s = s->rendered_prev1();
+    }
+    return s;
+}
+
+Segment *Segment::rendered_prev1_mm_enabled() const {
+    Segment *s = rendered_prev1_mm();
+    while (s && !s->enabled()) {
+        s = s->rendered_prev1_mm();
+    }
+    return s;
+}
+
+Segment *Segment::rendered_next_active() const {
+    Segment *ns = rendered_next();
+    while (ns && !ns->is_active()) {
+        ns = ns->rendered_next();
+    }
+    return ns;
+}
+
+Segment *Segment::rendered_prev_active() const {
+    Segment *ps = rendered_prev();
+    while (ps && !ps->is_active()) {
+        ps = ps->rendered_prev();
+    }
+    return ps;
+}
+
+Segment *Segment::rendered_next_enabled() const {
+    Segment *ns = rendered_next();
+    while (ns && !ns->enabled()) {
+        ns = ns->rendered_next();
+    }
+    return ns;
+}
+
+Segment *Segment::rendered_prev_enabled() const {
+    Segment *ps = rendered_prev();
+    while (ps && !ps->enabled()) {
+        ps = ps->rendered_prev();
+    }
+    return ps;
+}
+
+Segment *Segment::rendered_next_in_staff(staff_idx_t staff_idx, SegmentType type) const {
+    Segment *s = rendered_next(type);
+    const track_idx_t min_track = staff_idx * ::mu::engraving::voices;
+    const track_idx_t max_track = (staff_idx + 1) * ::mu::engraving::voices - 1;
+    while (s && !s->has_effective_elements(min_track, max_track)) {
+        s = s->rendered_next(type);
+    }
+    return s;
+}
+
+Segment *Segment::rendered_next1_with_elems_on_staff(staff_idx_t staff_idx, SegmentType seg_type) const {
+    Segment *next = rendered_next1();
+
+    track_idx_t start_track = staff_idx * ::mu::engraving::voices;
+    track_idx_t end_track = start_track + ::mu::engraving::voices - 1;
+    while (next && (!(next->segment_type() & seg_type) || !next->has_effective_elements(start_track, end_track))) {
+        next = next->rendered_next1();
+    }
+
+    return next;
+}
 
 void Segment::set_element(track_idx_t track, EngravingItem *el) {
     if (elist_[track] != el) source_child_removed(*this, elist_[track]);
@@ -182,6 +387,7 @@ void Segment::set_ownership_parent(DummyParentOr<Measure> parent) { EngravingIte
 
 void Segment::set_segment_type(SegmentType t) {
     assert(segment_type_ != SegmentType::CLEF || t != SegmentType::CHORD_REST);
+    if (segment_type_ != t) touch_source_subtree(*this);
     segment_type_ = t;
 }
 
@@ -202,6 +408,9 @@ void Segment::set_score(Score *score) {
 }
 
 Segment::~Segment() {
+    if (!ldata()->generated.empty()) {
+        if (auto *store = score()->layout_data_store()) store->retire_measure_borrowers(*measure());
+    }
     for (EngravingItem *e : elist_) {
         if (!e) {
             continue;
@@ -257,9 +466,6 @@ Segment *Segment::next1() const {
 
 Segment *Segment::next1enabled() const {
     Segment *s = next1();
-    while (s && !s->enabled()) {
-        s = s->next1();
-    }
     return s;
 }
 
@@ -317,9 +523,6 @@ Segment *Segment::next1_mm(SegmentType types) const {
 
 Segment *Segment::next1_m_menabled() const {
     Segment *s = next1_mm();
-    while (s && !s->enabled()) {
-        s = s->next1_mm();
-    }
     return s;
 }
 
@@ -414,9 +617,6 @@ Segment *Segment::prev1_with_elems_on_track(track_idx_t track_idx, SegmentType s
 
 Segment *Segment::prev1enabled() const {
     Segment *s = prev1();
-    while (s && !s->enabled()) {
-        s = s->prev1();
-    }
     return s;
 }
 
@@ -430,9 +630,6 @@ Segment *Segment::prev1_mm() const {
 
 Segment *Segment::prev1_m_menabled() const {
     Segment *s = prev1_mm();
-    while (s && !s->enabled()) {
-        s = s->prev1_mm();
-    }
     return s;
 }
 
@@ -456,7 +653,7 @@ Segment *Segment::prev1_mm(SegmentType types) const {
 
 Segment *Segment::next_active() const {
     Segment *ns = next();
-    while (ns && !ns->is_active()) {
+    while (ns && (ns->is_time_tick_type() || !ns->visible())) {
         ns = ns->next();
     }
     return ns;
@@ -464,15 +661,12 @@ Segment *Segment::next_active() const {
 
 Segment *Segment::next_enabled() const {
     Segment *ns = next();
-    while (ns && !ns->enabled()) {
-        ns = ns->next();
-    }
     return ns;
 }
 
 Segment *Segment::prev_active() const {
     Segment *ps = prev();
-    while (ps && !ps->is_active()) {
+    while (ps && (ps->is_time_tick_type() || !ps->visible())) {
         ps = ps->prev();
     }
     return ps;
@@ -480,9 +674,6 @@ Segment *Segment::prev_active() const {
 
 Segment *Segment::prev_enabled() const {
     Segment *ps = prev();
-    while (ps && !ps->enabled()) {
-        ps = ps->prev();
-    }
     return ps;
 }
 
@@ -815,6 +1006,10 @@ void Segment::add(EngravingItem *el) {
 //---------------------------------------------------------
 
 void Segment::remove(EngravingItem *el) {
+    if (owns_generated(el)) {
+        remove_generated(el);
+        return;
+    }
     // LOGD("%p Segment::remove %s %p", this, el->typeName(), el);
 
     track_idx_t track = el->track();
@@ -2811,3 +3006,5 @@ bool Segment::goes_before(const Segment *next_segment) const {
     return segment_type() < next_segment->segment_type();
 }
 } // namespace mu::engraving
+
+bool Segment::rendered_is_before(const Segment *other) const { return is_before(other); }

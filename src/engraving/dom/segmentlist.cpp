@@ -35,6 +35,12 @@ namespace mu::engraving {
 //---------------------------------------------------------
 
 void SegmentList::clear() {
+    if (owner_) {
+        owner_->mutldata()->rendered.clear();
+        owner_->mutldata()->set_need_layout(true);
+        owner_->score()->invalidate_layout(owner_->tick(), owner_->end_tick());
+    }
+
     if (owner_) source_collection_cleared(*owner_, SourceCollection::SEGMENTS);
     first_ = last_ = nullptr;
     size_ = 0;
@@ -71,7 +77,7 @@ Segment *SegmentList::at(int index) const {
 
 Segment *SegmentList::first_active() const {
     if (Segment *segment = first_) {
-        return segment->is_active() ? segment : segment->next_active();
+        return !segment->is_time_tick_type() && segment->visible() ? segment : segment->next_active();
     }
     return nullptr;
 }
@@ -151,6 +157,12 @@ void SegmentList::check() {
 //---------------------------------------------------------
 
 void SegmentList::insert(Segment *e, Segment *el) {
+    if (owner_) {
+        owner_->mutldata()->rendered.clear();
+        owner_->mutldata()->set_need_layout(true);
+        owner_->score()->invalidate_layout(owner_->tick(), owner_->end_tick());
+    }
+
     if (el == 0) {
         push_back(e);
     } else if (el == first()) {
@@ -171,6 +183,12 @@ void SegmentList::insert(Segment *e, Segment *el) {
 //---------------------------------------------------------
 
 void SegmentList::remove(Segment *e) {
+    if (owner_) {
+        owner_->mutldata()->rendered.clear();
+        owner_->mutldata()->set_need_layout(true);
+        owner_->score()->invalidate_layout(owner_->tick(), owner_->end_tick());
+    }
+
     if (owner_) source_child_removed(*owner_, e);
 #ifndef NDEBUG
     check();
@@ -210,6 +228,12 @@ void SegmentList::remove(Segment *e) {
 //---------------------------------------------------------
 
 void SegmentList::push_back(Segment *e) {
+    if (owner_) {
+        owner_->mutldata()->rendered.clear();
+        owner_->mutldata()->set_need_layout(true);
+        owner_->score()->invalidate_layout(owner_->tick(), owner_->end_tick());
+    }
+
     ++size_;
     e->set_next(0);
     if (last_) {
@@ -228,6 +252,12 @@ void SegmentList::push_back(Segment *e) {
 //---------------------------------------------------------
 
 void SegmentList::push_front(Segment *e) {
+    if (owner_) {
+        owner_->mutldata()->rendered.clear();
+        owner_->mutldata()->set_need_layout(true);
+        owner_->score()->invalidate_layout(owner_->tick(), owner_->end_tick());
+    }
+
     ++size_;
     e->set_prev(0);
     if (first_) {

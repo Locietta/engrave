@@ -37,6 +37,7 @@
 #include "dom/pagelockindicator.h"
 #include "dom/parenthesis.h"
 #include "dom/rest.h"
+#include "dom/segment.h"
 #include "dom/slurtie.h"
 #include "dom/spacer.h"
 #include "dom/staffstate.h"
@@ -139,6 +140,7 @@ decltype(auto) dispatch_layout_data(ElementType type, Action &&action) {
         case ElementType::VBOX:
         case ElementType::TBOX:
         case ElementType::FBOX: return action.template operator()<MeasureBase::LayoutData>();
+        case ElementType::SEGMENT: return action.template operator()<Segment::LayoutData>();
         case ElementType::MEASURE: return action.template operator()<Measure::LayoutData>();
         case ElementType::MEASURE_REPEAT: return action.template operator()<MeasureRepeat::LayoutData>();
         case ElementType::MMREST: return action.template operator()<MMRest::LayoutData>();

@@ -554,13 +554,9 @@ public:
     MeasureBase *tick2measure_base(const Fraction &tick) const;
     Segment *tick2segment(const Fraction &tick, bool first, SegmentType st, bool use_m_mrest = false) const;
 
-    Segment *find_rendered_segment(const Fraction &tick, bool first, SegmentType type, bool use_mmrest = false) const {
-        return tick2segment(tick, first, type, use_mmrest);
-    }
+    Segment *find_rendered_segment(const Fraction &tick, bool first, SegmentType type, bool use_mmrest = false) const;
 
-    Segment *find_rendered_right_segment(const Fraction &tick, bool use_mmrest = false, SegmentType type = SegmentType::CHORD_REST) const {
-        return tick2right_segment(tick, use_mmrest, type);
-    }
+    Segment *find_rendered_right_segment(const Fraction &tick, bool use_mmrest = false, SegmentType type = SegmentType::CHORD_REST) const;
 
     Segment *tick2segment(const Fraction &tick) const;
     Segment *tick2segment(const Fraction &tick, bool first) const;
@@ -569,9 +565,7 @@ public:
     Segment *tick2segment_mm(const Fraction &tick, bool first) const;
     Segment *tick2left_segment(const Fraction &tick, bool use_m_mrest = false, SegmentType seg_type = SegmentType::CHORD_REST) const;
 
-    Segment *find_rendered_left_segment(const Fraction &tick, bool use_m_mrest = false, SegmentType type = SegmentType::CHORD_REST) const {
-        return tick2left_segment(tick, use_m_mrest, type);
-    }
+    Segment *find_rendered_left_segment(const Fraction &tick, bool use_m_mrest = false, SegmentType type = SegmentType::CHORD_REST) const;
 
     Segment *tick2right_segment(const Fraction &tick, bool use_m_mrest = false, SegmentType seg_type = SegmentType::CHORD_REST) const;
 

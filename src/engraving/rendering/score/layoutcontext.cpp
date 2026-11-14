@@ -317,11 +317,22 @@ void DomAccessor::undo_remove_element(EngravingItem *item) {
 
 void DomAccessor::add_element(EngravingItem *item) {
     IF_ASSERT_FAILED(score()) { return; }
+    if (item->generated() && item->ownership_parent() && item->ownership_parent()->is_segment()) {
+        to_segment(item->ownership_parent())->add_generated(item);
+        return;
+    }
     score()->add_element(item);
 }
 
 void DomAccessor::remove_element(EngravingItem *item) {
     IF_ASSERT_FAILED(score()) { return; }
+    if (item->ownership_parent() && item->ownership_parent()->is_segment()) {
+        auto *segment = to_segment(item->ownership_parent());
+        if (segment->owns_generated(item)) {
+            segment->remove_generated(item);
+            return;
+        }
+    }
     score()->remove_element(item);
 }
 

@@ -110,8 +110,8 @@ void EditTimeTickAnchors::update_anchors(Measure *measure, staff_idx_t staff_idx
     update_layout(measure);
 }
 
-TimeTickAnchor *EditTimeTickAnchors::create_time_tick_anchor(Measure *measure, Fraction rel_tick, staff_idx_t staff_idx,
-                                                             bool use_mm_rests) {
+TimeTickAnchor *EditTimeTickAnchors::create_time_tick_anchor(Measure *measure, Fraction rel_tick, staff_idx_t staff_idx, bool use_mm_rests,
+                                                             bool layout_output) {
     TimeTickAnchor *return_anchor = nullptr;
 
     Staff *staff = measure->score()->staff(staff_idx);
@@ -128,14 +128,20 @@ TimeTickAnchor *EditTimeTickAnchors::create_time_tick_anchor(Measure *measure, F
             continue;
         }
 
-        Segment *segment = linked_measure->get_segment_r(SegmentType::TIME_TICK, rel_tick);
+        Segment *segment = layout_output ? linked_measure->get_rendered_segment_r(SegmentType::TIME_TICK, rel_tick) :
+                                           linked_measure->get_segment_r(SegmentType::TIME_TICK, rel_tick);
         track_idx_t track = staff2track(linked_staff->idx());
-        EngravingItem *element = segment->element(track);
+        EngravingItem *element = layout_output ? segment->effective_element(track) : segment->element(track);
         TimeTickAnchor *anchor = element ? to_time_tick_anchor(element) : nullptr;
         if (!anchor) {
             anchor = Factory::create_time_tick_anchor(segment);
             anchor->set_track(track);
-            segment->add(anchor);
+            if (layout_output) {
+                anchor->set_generated(true);
+                segment->add_generated(anchor);
+            } else {
+                segment->add(anchor);
+            }
         }
         if (linked_measure == measure) {
             return_anchor = anchor;

@@ -24,8 +24,8 @@
 namespace mu::engraving {
 
 bool source_object(const EngravingObject &item) {
-    // The remaining mixed segment/beam representation is separated in the layout
-    // track. These unambiguous display families never become source members.
+    // Output remains outside membership even when it is parented to source.
+    // Automatic beam ownership is still handled by the separate beam slice.
     for (const EngravingObject *node = &item; node; node = node->ownership_parent()) {
         switch (node->type()) {
             case ElementType::SYSTEM:
@@ -48,6 +48,13 @@ bool source_object(const EngravingObject &item) {
             case ElementType::DUMMY: return false;
             default: break;
         }
+        if (node->is_segment()) {
+            auto *owner = node->ownership_parent();
+            if (!owner || !owner->is_measure() || to_measure(owner)->owns_output_segment(to_segment(node))) return false;
+        }
+        if (node->ownership_parent() && node->ownership_parent()->is_segment() && node->is_engraving_item() &&
+            to_segment(node->ownership_parent())->owns_generated(to_engraving_item(node)))
+            return false;
         if (node->is_spanner_segment()) return false;
         if (node->is_measure() && to_measure(node)->is_mm_rest()) return false;
         if (node->is_text() && node->ownership_parent() && node->ownership_parent()->is_tuplet()) return false;
@@ -189,6 +196,12 @@ void source_child_removed(EngravingObject &owner, EngravingObject *item) {
 }
 
 void touch_source_subtree(EngravingObject &item) {
+    if (item.is_segment() && source_object(item)) {
+        auto *measure = to_segment(&item)->measure();
+        measure->mutldata()->rendered.clear();
+        measure->mutldata()->set_need_layout(true);
+        measure->score()->invalidate_layout(measure->tick(), measure->end_tick());
+    }
     auto *registry = active_register(item);
     if (!registry || !registry->tracking_ids()) return;
     registry->touch(item);

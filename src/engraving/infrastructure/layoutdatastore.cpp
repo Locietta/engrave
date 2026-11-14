@@ -8,10 +8,12 @@
 #include <ankerl/unordered_dense.h>
 
 #include "dom/masterscore.h"
+#include "dom/measure.h"
 #include "dom/measurebase.h"
 #include "dom/page.h"
 #include "dom/score.h"
 #include "dom/segment.h"
+#include "dom/spanner.h"
 #include "dom/system.h"
 #include "rendering/score/layoutdatafactory.h"
 #include "rendering/score/scorerenderer.h"
@@ -92,8 +94,39 @@ void LayoutDataStore::clear() {
     while (!records_->items.empty()) erase(*records_->items.begin()->second.item);
 }
 
+static void clear_output_anchors(Score &score, const Measure *measure = nullptr) {
+    const auto retired = [&](const EngravingItem *item) {
+        return item && !source_object(*item) && (!measure || item->find_measure() == measure);
+    };
+    for (auto *spanner : score.spanner_list()) {
+        if (retired(spanner->start_element())) spanner->set_start_element(nullptr);
+        if (retired(spanner->end_element())) spanner->set_end_element(nullptr);
+    }
+}
+
+void LayoutDataStore::retire_measure_borrowers(Measure &measure) {
+    if (!score_) return;
+    auto *system = measure.system();
+    if (!system) return;
+    if (score_->master_score()->cmd_state().locked()) return;
+    clear_output_anchors(*score_, &measure);
+    if (auto *page = system->page()) page->invalidate_bsp_tree();
+    for (auto *staff : system->staves()) staff->skyline().clear();
+    for (auto &record : records_->items.values()) {
+        auto *item = record.second.item;
+        if (item->is_segment() && to_segment(item)->measure()->system() == system) to_segment(item)->clear_shapes();
+    }
+    // An edit can delete a source node together with its generated children
+    // before the next pass. Rebuild every system whose borrowed views we cleared.
+    if (auto *first = system->first_measure()) {
+        auto *last = system->last_measure();
+        score_->invalidate_layout(first->tick(), last ? last->end_tick() : first->end_tick());
+    }
+}
+
 void LayoutDataStore::discard_score_output() {
     if (score_) {
+        clear_output_anchors(*score_);
         // These legacy L5 caches can retain pointers to output-owned ledger and
         // Harmony parenthesis shells. Retire their views before deleting shells.
         for (auto *page : output_.pages) page->invalidate_bsp_tree();

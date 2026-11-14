@@ -204,9 +204,6 @@ bool Transpose::transpose(Transaction &tx, Score *score, TransposeMode mode, Tra
     }
     Segment *s2 = selection.end_segment();
     for (Segment *segment = s1; segment && segment != s2; segment = segment->next1()) {
-        if (!segment->enabled()) {
-            continue;
-        }
         for (track_idx_t track : tracks) {
             if (score->staff(track / ::mu::engraving::voices)->staff_type(s1->tick())->group() == StaffGroup::PERCUSSION) {
                 continue;
@@ -313,9 +310,8 @@ void Transpose::transpose_keys(Transaction &tx, Score *score, staff_idx_t staff_
             continue;
         }
 
-        bool create_key = tick_start.is_zero();
         for (Segment *s = score->first_segment(SegmentType::KEY_SIG); s; s = s->next1(SegmentType::KEY_SIG)) {
-            if (!s->enabled() || s->tick() < tick_start) {
+            if (s->tick() < tick_start) {
                 continue;
             }
             if (tick_end != Fraction(-1, 1) && s->tick() >= tick_end) {
@@ -338,29 +334,6 @@ void Transpose::transpose_keys(Transaction &tx, Score *score, staff_idx_t staff_
                 ke.set_key(n_key);
                 apply_change_key_sig(ks, ke, ks->show_courtesy());
             }
-            if (s->tick().is_zero()) {
-                create_key = false;
-            }
-        }
-        if (create_key && score->first_measure()) {
-            Segment *seg = score->first_measure()->undo_get_segment_r(SegmentType::KEY_SIG, Fraction(0, 1));
-            seg->set_header(true);
-            KeySig *ks = Factory::create_key_sig(seg);
-            ks->set_track(staff_idx * ::mu::engraving::voices);
-            Interval v = ks->part()->instrument()->transpose();
-            Key c_key = Key::C;
-            Key n_key = c_key;
-            if (flip) {
-                if (!v.is_zero()) {
-                    v.flip();
-                    n_key = transpose_key(Key::C, v, ks->part()->prefer_sharp_flat());
-                }
-            } else {
-                c_key = transpose_key(Key::C, v);
-                n_key = c_key;
-            }
-            ks->set_key(c_key, n_key);
-            score->undo_add_element(ks);
         }
     }
 }

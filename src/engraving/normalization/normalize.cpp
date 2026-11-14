@@ -240,7 +240,7 @@ static void normalize_segments(Measure *measure, Score &score) {
         }
 
         // Move key sigs and time sigs at the end of this measure into the next measure
-        if ((seg.is_key_sig_type() || seg.is_time_sig_type()) && !seg.header() && !seg.trailer() &&
+        if ((seg.is_key_sig_type() || seg.is_time_sig_type()) &&
             (!sigs_should_be_in_this_measure || !change_applies_to_repeat_and_continuation(seg))) {
             if (next_measure && next_measure->find_segment_r(seg.segment_type(), Fraction(0, 1))) {
                 segs_to_remove.push_back(&seg);
@@ -289,7 +289,7 @@ static void normalize_segments(Measure *measure, Score &score) {
         }
 
         // Move key sigs and time sigs at the start of the next measure to the end of this measure
-        if ((seg.is_time_sig_type() || seg.is_key_sig_type()) && !seg.header() && !seg.trailer() && sigs_should_be_in_this_measure &&
+        if ((seg.is_time_sig_type() || seg.is_key_sig_type()) && sigs_should_be_in_this_measure &&
             change_applies_to_repeat_and_continuation(seg)) {
             if (measure->find_segment_r(seg.segment_type(), measure->ticks())) {
                 segs_to_remove.push_back(&seg);

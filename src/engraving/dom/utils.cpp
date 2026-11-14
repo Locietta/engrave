@@ -1772,3 +1772,75 @@ void update_percussion_notes(Chord *c, const Drumset *drumset) {
     }
 }
 } // namespace mu::engraving
+
+namespace mu::engraving {
+Segment *Score::find_rendered_segment(const Fraction &t, bool first, SegmentType st, bool use_m_mrest) const {
+    Fraction tick(t);
+    Measure *m;
+    if (use_m_mrest) {
+        m = tick2measure_mm(tick);
+        // When mmRest force tick to the first segment of mmRest.
+        if (m && m->is_mm_rest() && tick != m->end_tick()) {
+            tick = m->tick();
+        }
+    } else {
+        m = tick2measure(tick);
+    }
+
+    if (m == 0) {
+        LOGD() << "no measure for tick " << tick.ticks();
+        return 0;
+    }
+    for (Segment *segment = m->rendered_first(st); segment;) {
+        Fraction t1 = segment->tick();
+        Segment *nsegment = segment->rendered_next(st);
+        if (tick == t1) {
+            if (first) {
+                return segment;
+            } else {
+                if (!nsegment || tick < nsegment->tick()) {
+                    return segment;
+                }
+            }
+        }
+        segment = nsegment;
+    }
+    return 0;
+}
+
+Segment *Score::find_rendered_left_segment(const Fraction &tick, bool use_m_mrest, SegmentType seg_type) const {
+    Measure *m = use_m_mrest ? tick2measure_mm(tick) : tick2measure(tick);
+    if (m == 0) {
+        LOGD("tick2leftSegment(): not found tick %d", tick.ticks());
+        return 0;
+    }
+
+    // loop over all segments
+    Segment *ps = 0;
+    for (Segment *s = m->rendered_first(seg_type); s; s = s->rendered_next(seg_type)) {
+        if (tick < s->tick()) {
+            return ps;
+        } else if (tick == s->tick()) {
+            return s;
+        }
+        ps = s;
+    }
+    return ps;
+}
+
+Segment *Score::find_rendered_right_segment(const Fraction &tick, bool use_m_mrest, SegmentType seg_type) const {
+    Measure *m = use_m_mrest ? tick2measure_mm(tick) : tick2measure(tick);
+    if (m == 0) {
+        //LOGD("tick2nearestSegment(): not found tick %d", tick.ticks());
+        return 0;
+    }
+    // loop over all segments
+    for (Segment *s = m->rendered_first(seg_type); s; s = s->rendered_next1()) {
+        if ((s->segment_type() & seg_type) && tick <= s->tick()) {
+            return s;
+        }
+    }
+    return 0;
+}
+
+} // namespace mu::engraving

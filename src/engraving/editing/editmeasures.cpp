@@ -96,7 +96,7 @@ void mu::engraving::insert_measure_chain(MeasureBase *fm, MeasureBase *lm, bool 
         fs = to_measure(fm)->first();
         ls = to_measure(lm)->last();
         for (Segment *s = fs; s && s != ls; s = s->next1()) {
-            if (!s->enabled() || !(s->segment_type() & (SegmentType::CLEF | SegmentType::HEADER_CLEF | SegmentType::KEY_SIG))) {
+            if (!(s->segment_type() & (SegmentType::CLEF | SegmentType::HEADER_CLEF | SegmentType::KEY_SIG))) {
                 continue;
             }
             for (track_idx_t track = 0; track < score->ntracks(); track += ::mu::engraving::voices) {

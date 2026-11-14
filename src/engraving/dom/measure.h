@@ -250,17 +250,17 @@ public:
 
     void set_repeat_jump(bool v) { set_flag(ElementFlag::REPEAT_JUMP, v); }
 
-    bool has_courtesy_key_sig() const { return flag(ElementFlag::COURTESY_KEYSIG); }
+    bool has_courtesy_key_sig() const { return ldata()->has_courtesy_key_sig; }
 
-    void set_has_courtesy_key_sig(bool v) { set_flag(ElementFlag::COURTESY_KEYSIG, v); }
+    void set_has_courtesy_key_sig(bool v) const { const_cast<Measure *>(this)->mutldata()->has_courtesy_key_sig = v; }
 
-    bool has_courtesy_time_sig() const { return flag(ElementFlag::COURTESY_TIMESIG); }
+    bool has_courtesy_time_sig() const { return ldata()->has_courtesy_time_sig; }
 
-    void set_has_courtesy_time_sig(bool v) const { set_flag(ElementFlag::COURTESY_TIMESIG, v); }
+    void set_has_courtesy_time_sig(bool v) const { const_cast<Measure *>(this)->mutldata()->has_courtesy_time_sig = v; }
 
-    bool has_courtesy_clef() const { return flag(ElementFlag::COURTESY_CLEF); }
+    bool has_courtesy_clef() const { return ldata()->has_courtesy_clef; }
 
-    void set_has_courtesy_clef(bool v) const { set_flag(ElementFlag::COURTESY_CLEF, v); }
+    void set_has_courtesy_clef(bool v) const { const_cast<Measure *>(this)->mutldata()->has_courtesy_clef = v; }
 
     bool end_of_measure_change() const { return flag(ElementFlag::END_OF_MEASURE_CHANGE); }
 
@@ -280,23 +280,20 @@ public:
 
     Segment *last_enabled() const { return segments_.last(ElementFlag::ENABLED); }
 
-    Segment *rendered_first() const { return first(); }
-
-    Segment *rendered_last() const { return last(); }
-
-    Segment *rendered_first_enabled() const { return first_enabled(); }
-
-    Segment *rendered_last_enabled() const { return last_enabled(); }
-
-    Segment *rendered_first(SegmentType type) const { return first(type); }
-
-    Segment *rendered_last(SegmentType type) const { return last(type); }
-
-    Segment *find_rendered_segment_r(SegmentType type, const Fraction &rtick) const { return find_segment_r(type, rtick); }
-
-    Segment *find_rendered_first_r(SegmentType type, const Fraction &rtick) const { return find_first_r(type, rtick); }
-
-    Segment *find_rendered_segment(SegmentType type, const Fraction &tick) const { return find_segment(type, tick); }
+    Segment *rendered_first() const;
+    Segment *rendered_last() const;
+    Segment *rendered_first_enabled() const;
+    Segment *rendered_last_enabled() const;
+    Segment *rendered_first(SegmentType type) const;
+    Segment *rendered_last(SegmentType type) const;
+    Segment *find_rendered_segment_r(SegmentType type, const Fraction &rtick) const;
+    Segment *find_rendered_first_r(SegmentType type, const Fraction &rtick) const;
+    Segment *find_rendered_segment(SegmentType type, const Fraction &tick) const;
+    Segment *get_rendered_segment_r(SegmentType type, const Fraction &rtick);
+    void add_output_segment(Segment *segment);
+    void rebuild_rendered_segments();
+    void reconcile_output_segments();
+    bool owns_output_segment(const Segment *segment) const;
 
     SegmentList &segments() { return segments_; }
 
@@ -308,7 +305,7 @@ public:
 
     void compute_ticks();
 
-    void compute_rendered_ticks() { compute_ticks(); }
+    void compute_rendered_ticks();
 
     Fraction anacrusis_offset() const;
     Fraction max_ticks() const;
@@ -447,17 +444,17 @@ public:
 
     void style_changed() override;
 
-    BarLineType rendered_end_bar_line_type() const { return end_bar_line_type(); }
+    BarLineType rendered_end_bar_line_type() const;
 
-    bool rendered_end_bar_line_visible() const { return end_bar_line_visible(); }
+    bool rendered_end_bar_line_visible() const;
 
-    const BarLine *rendered_end_bar_line() const { return end_bar_line(); }
+    const BarLine *rendered_end_bar_line() const;
 
-    const BarLine *rendered_end_bar_line(staff_idx_t staff, bool first = false) const { return end_bar_line(staff, first); }
+    const BarLine *rendered_end_bar_line(staff_idx_t staff, bool first = false) const;
 
-    const BarLine *rendered_start_bar_line() const { return start_bar_line(); }
+    const BarLine *rendered_start_bar_line() const;
 
-    const BarLine *rendered_start_bar_line(staff_idx_t staff, bool first = false) const { return start_bar_line(staff, first); }
+    const BarLine *rendered_start_bar_line(staff_idx_t staff, bool first = false) const;
 
     const BarLine *end_bar_line() const;
     const BarLine *end_bar_line(staff_idx_t staff_idx, bool first = false) const;
@@ -478,6 +475,12 @@ public:
     bool can_add_staff_type_change(staff_idx_t staff_idx) const;
 
     struct LayoutData : public MeasureBase::LayoutData {
+        ~LayoutData() override;
+        std::vector<Segment *> segments;
+        std::vector<Segment *> rendered;
+        bool has_courtesy_key_sig = false;
+        bool has_courtesy_time_sig = false;
+        bool has_courtesy_clef = false;
     private:
         bool need_layout_ = true;
     public:

@@ -658,7 +658,8 @@ void Spanner::do_compute_start_element() {
             if (system_flag()) {
                 start_element_ = start_segment();
             } else {
-                EngravingItem *start_el = start_seg->element(track());
+                EngravingItem *start_el =
+                    score()->normalize_state.running ? start_seg->element(track()) : start_seg->effective_element(track());
                 if (start_el) {
                     start_element_ = start_el;
                 } else {
@@ -704,7 +705,8 @@ void Spanner::do_compute_end_element() {
                 end_element_ = end_seg;
             } else {
                 track_idx_t track_idx = effective_track2();
-                EngravingItem *end_el = end_seg->element(track_idx);
+                EngravingItem *end_el =
+                    score()->normalize_state.running ? end_seg->element(track_idx) : end_seg->effective_element(track_idx);
                 if (end_el) {
                     end_element_ = end_el;
                 } else {
@@ -967,8 +969,8 @@ Segment *Spanner::start_segment() const {
     if (!start_seg && start_tick < score()->end_tick()) {
         Measure *measure = mm_rest ? score()->tick2measure_mm(start_tick) : score()->tick2measure(start_tick);
         if (measure) {
-            TimeTickAnchor *anchor =
-                EditTimeTickAnchors::create_time_tick_anchor(measure, start_tick - measure->tick(), track2staff(track_idx), !source_only);
+            TimeTickAnchor *anchor = EditTimeTickAnchors::create_time_tick_anchor(measure, start_tick - measure->tick(),
+                                                                                  track2staff(track_idx), !source_only, !source_only);
             IF_ASSERT_FAILED(anchor) { return nullptr; }
             if (!source_only) EditTimeTickAnchors::update_layout(measure);
             return anchor->segment();
@@ -1009,8 +1011,8 @@ Segment *Spanner::end_segment() const {
     if (!end_seg && !end_tick.is_zero()) {
         Measure *measure = mm_rest ? score()->tick2measure_mm(end_tick) : score()->tick2measure(end_tick);
         if (measure) {
-            TimeTickAnchor *anchor =
-                EditTimeTickAnchors::create_time_tick_anchor(measure, end_tick - measure->tick(), track2staff(track_idx), !source_only);
+            TimeTickAnchor *anchor = EditTimeTickAnchors::create_time_tick_anchor(measure, end_tick - measure->tick(),
+                                                                                  track2staff(track_idx), !source_only, !source_only);
             if (!source_only) EditTimeTickAnchors::update_layout(measure);
             return anchor->segment();
         }

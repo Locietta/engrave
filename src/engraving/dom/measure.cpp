@@ -63,6 +63,7 @@
 #include "part.h"
 #include "pitchspelling.h"
 #include "playcounttext.h"
+#include "rendering/score/layoutdatastore.h"
 #include "rest.h"
 #include "score.h"
 #include "segment.h"
@@ -323,6 +324,9 @@ void Measure::set_mm_rest(Measure *measure) {
 }
 
 Measure::~Measure() {
+    if (!ldata()->segments.empty()) {
+        if (auto *store = score()->layout_data_store()) store->retire_measure_borrowers(*this);
+    }
     for (Segment *s = first(); s;) {
         Segment *ns = s->next();
         delete s;
@@ -631,6 +635,107 @@ Segment *Measure::tick2segment(const Fraction &input_t, SegmentType st) {
 //    Search for a segment of type st at measure relative
 //    position t.
 //---------------------------------------------------------
+
+Measure::LayoutData::~LayoutData() { muse::delete_all(segments); }
+
+bool Measure::owns_output_segment(const Segment *segment) const {
+    const auto &owned = ldata()->segments;
+    return std::find(owned.begin(), owned.end(), segment) != owned.end();
+}
+
+void Measure::rebuild_rendered_segments() {
+    auto &rendered = mutldata()->rendered;
+    rendered.clear();
+    for (auto *s = first(); s; s = s->next()) rendered.push_back(s);
+    for (auto *s : ldata()->segments) {
+        if (find_segment_r(s->segment_type(), s->rtick())) continue;
+        auto position = rendered.begin();
+        while (position != rendered.end() && (*position)->rtick() < s->rtick()) ++position;
+        while (position != rendered.end() && (*position)->rtick() == s->rtick() && !s->goes_before(*position)) ++position;
+        rendered.insert(position, s);
+    }
+}
+
+void Measure::reconcile_output_segments() {
+    for (auto *source = first(); source; source = source->next()) {
+        auto &generated = source->mutldata()->generated;
+        if (!generated.empty() && generated.size() != score()->ntracks()) {
+            muse::delete_all(generated);
+            generated.clear();
+        }
+    }
+    auto &owned = mutldata()->segments;
+    for (auto it = owned.begin(); it != owned.end();) {
+        auto *segment = *it;
+        if (find_segment_r(segment->segment_type(), segment->rtick()) || segment->elist().size() != score()->ntracks()) {
+            it = owned.erase(it);
+            delete segment;
+        } else
+            ++it;
+    }
+    rebuild_rendered_segments();
+}
+
+void Measure::add_output_segment(Segment *segment) {
+    segment->set_ownership_parent(this);
+    mutldata()->segments.push_back(segment);
+    rebuild_rendered_segments();
+}
+
+Segment *Measure::get_rendered_segment_r(SegmentType type, const Fraction &rtick) {
+    if (auto *s = find_rendered_segment_r(type, rtick)) return s;
+    for (auto *s : ldata()->segments) {
+        if (s->segment_type() == type && s->rtick() == rtick) {
+            rebuild_rendered_segments();
+            return s;
+        }
+    }
+    auto *s = Factory::create_segment(this, type, rtick);
+    add_output_segment(s);
+    return s;
+}
+
+Segment *Measure::rendered_first() const { return ldata()->rendered.empty() ? first() : ldata()->rendered.front(); }
+
+Segment *Measure::rendered_last() const { return ldata()->rendered.empty() ? last() : ldata()->rendered.back(); }
+
+Segment *Measure::rendered_first_enabled() const {
+    auto *s = rendered_first();
+    return s && !s->enabled() ? s->rendered_next_enabled() : s;
+}
+
+Segment *Measure::rendered_last_enabled() const {
+    auto *s = rendered_last();
+    return s && !s->enabled() ? s->rendered_prev_enabled() : s;
+}
+
+Segment *Measure::rendered_first(SegmentType type) const {
+    auto *s = rendered_first();
+    return s && !(s->segment_type() & type) ? s->rendered_next(type) : s;
+}
+
+Segment *Measure::rendered_last(SegmentType type) const {
+    auto *s = rendered_last();
+    return s && !(s->segment_type() & type) ? s->rendered_prev(type) : s;
+}
+
+Segment *Measure::find_rendered_segment_r(SegmentType type, const Fraction &rtick) const {
+    for (auto *s = rendered_first(); s; s = s->rendered_next()) {
+        if (s->rtick() == rtick && (s->segment_type() & type)) return s;
+    }
+    return nullptr;
+}
+
+Segment *Measure::find_rendered_first_r(SegmentType type, const Fraction &rtick) const {
+    for (auto *s = rendered_first(); s && s->rtick() <= rtick; s = s->rendered_next()) {
+        if (s->segment_type() & type) return s;
+    }
+    return nullptr;
+}
+
+Segment *Measure::find_rendered_segment(SegmentType type, const Fraction &tick) const {
+    return find_rendered_segment_r(type, tick - this->tick());
+}
 
 Segment *Measure::find_segment_r(SegmentType st, const Fraction &t) const {
     Segment *s;
@@ -2038,10 +2143,7 @@ Measure *Measure::clone_measure(Score *sc, const Fraction &tick, TieMap *tie_map
 
     for (Segment *oseg = first(); oseg; oseg = oseg->next()) {
         Segment *s = Factory::create_segment(m, oseg->segment_type(), oseg->rtick());
-        s->set_enabled(oseg->enabled());
         s->set_visible(oseg->visible());
-        s->set_header(oseg->header());
-        s->set_trailer(oseg->trailer());
 
         m->segments_.push_back(s);
         for (track_idx_t track = 0; track < tracks; ++track) {
@@ -2886,7 +2988,7 @@ void Measure::check_trailer() {
 void Measure::check_end_of_measure_change() {
     bool found = false;
     for (Segment *seg = last(); seg != first(); seg = seg->prev()) {
-        if (seg->enabled() && seg->end_of_measure_change()) {
+        if (seg->end_of_measure_change()) {
             set_end_of_measure_change(seg->end_of_measure_change());
             found = true;
             break;
@@ -2992,3 +3094,78 @@ void Measure::respace_segments() {
     set_width(x);
 }
 } // namespace mu::engraving
+
+void Measure::compute_rendered_ticks() {
+    Segment *start = rendered_first_enabled();
+    if (start && !start->is_active()) start = start->rendered_next_active();
+    for (Segment *segment = start; segment; segment = segment->rendered_next_active()) {
+        Segment *next_segment = segment->rendered_next_active();
+        Fraction next_tick = next_segment ? next_segment->rtick() : ticks();
+        segment->set_ticks(next_tick - segment->rtick());
+    }
+
+    for (Segment *segment = rendered_first(SegmentType::TIME_TICK); segment; segment = segment->rendered_next(SegmentType::TIME_TICK)) {
+        segment->set_ticks(Fraction(0, 1));
+        Segment *next_segment = segment->rendered_next();
+        while (next_segment) {
+            Fraction tick_diff = next_segment->rtick() - segment->rtick();
+            if (!tick_diff.is_zero()) {
+                segment->set_ticks(tick_diff);
+                break;
+            }
+            next_segment = next_segment->rendered_next();
+        }
+        if (segment->ticks().is_zero()) {
+            segment->set_ticks(ticks() - segment->rtick());
+        }
+    }
+}
+
+const BarLine *Measure::rendered_end_bar_line() const { return rendered_end_bar_line(0, true); }
+
+const BarLine *Measure::rendered_end_bar_line(staff_idx_t staff_idx, bool first) const {
+    // search barline segment:
+    Segment *s = rendered_last();
+    while (s && !s->is_end_bar_line_type()) {
+        s = s->rendered_prev();
+    }
+
+    if (s) {
+        for (const EngravingItem *e : s->effective_elements()) {
+            // Return first barline or barline with matching staffIdx
+            if (e && (e->staff_idx() == staff_idx || first)) {
+                return to_bar_line(e);
+            }
+        }
+    }
+    return nullptr;
+}
+
+BarLineType Measure::rendered_end_bar_line_type() const {
+    const BarLine *bl = rendered_end_bar_line();
+    return bl ? bl->bar_line_type() : BarLineType::NORMAL;
+}
+
+bool Measure::rendered_end_bar_line_visible() const {
+    const BarLine *bl = rendered_end_bar_line();
+    return bl ? bl->visible() : true;
+}
+
+const BarLine *Measure::rendered_start_bar_line() const { return rendered_start_bar_line(0, true); }
+
+const BarLine *Measure::rendered_start_bar_line(staff_idx_t staff_idx, bool first_staff) const {
+    // search barline segment:
+    Segment *s = rendered_first();
+    while (s && !(s->is_start_repeat_bar_line_type() || s->is_begin_bar_line_type())) {
+        s = s->rendered_next();
+    }
+    // search first element
+    if (s) {
+        for (const EngravingItem *e : s->effective_elements()) {
+            if (e && (e->staff_idx() == staff_idx || first_staff)) {
+                return to_bar_line(e);
+            }
+        }
+    }
+    return nullptr;
+}
