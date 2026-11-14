@@ -377,61 +377,223 @@ std::string composition_input() {
     return xml + "</score-partwise>";
 }
 
+std::vector<Score *> native_scores(MasterScore &master) {
+    std::vector<Score *> scores{&master};
+    for (const auto *excerpt : master.excerpts()) scores.push_back(excerpt->excerpt_score());
+    return scores;
+}
+
+void expect_no_layout(MasterScore &master) {
+    for (const auto *score : native_scores(master)) {
+        EXPECT_EQ(score->layout_state.whole_count, 0u);
+        EXPECT_EQ(score->layout_state.range_count, 0u);
+        EXPECT_TRUE(score->pages().empty());
+    }
+}
+
+std::map<std::string, std::string> native_captures(engrave::Document &document, bool legacy = false) {
+    std::map<std::string, std::string> captures;
+    for (auto *score : native_scores(master_of(document))) {
+        for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
+            for (const auto version : {"5.00", "4.70"}) {
+                if (!legacy && version == std::string_view("4.70")) continue;
+                engrave::ExportOptions options{.format = format, .native_version = version};
+                if (!score->is_master()) options.score.excerpt = engine_id(*score);
+                const auto key = std::format("{}/{}/{}", id_text(*score), version, format == engrave::Format::MSCX ? "mscx" : "mscz");
+                SCOPED_TRACE(key);
+                const auto output = document.export_score(options);
+                EXPECT_TRUE(output) << output.error().message;
+                if (!output) continue;
+                const auto data = text_of(*output);
+                if (format == engrave::Format::MSCX) {
+                    captures[key] = data;
+                } else {
+                    auto entries = unzip_entries(data);
+                    EXPECT_TRUE(entries.contains("score.mscx"));
+                    for (const auto &[name, xml] : entries) {
+                        if (name.ends_with(".mscx")) captures[key + "/" + name] = xml;
+                    }
+                }
+            }
+        }
+    }
+    return captures;
+}
+
 TEST(NativeSave, ColdEqualsWarm) {
-    using namespace mu::engraving;
     std::vector<std::filesystem::path> inputs;
     for (const auto &entry : std::filesystem::directory_iterator(g_source_root / "tests/data/inputs/golden")) {
         if (written_by_engine(entry.path()) || entry.path().filename() == "created.json") inputs.push_back(entry.path());
     }
-    inputs.push_back(g_source_root / "tests/data/inputs/evening.musicxml");
-    inputs.push_back(g_source_root / "tests/data/inputs/mmr-boundary.mscx");
-    inputs.push_back(g_source_root / "tests/data/inputs/stave-sharing.mscx");
-    inputs.push_back(g_source_root / "tests/data/inputs/stave-sharing-voices.mscx");
-    inputs.push_back(g_source_root / "tests/data/inputs/stave-sharing-mmr.mscx");
+    for (const auto name : {"evening.musicxml", "mmr-boundary.mscx", "segment-purity.mscx", "segment-range.mscx", "stave-sharing.mscx",
+                            "stave-sharing-voices.mscx", "stave-sharing-mmr.mscx"})
+        inputs.push_back(g_source_root / "tests/data/inputs" / name);
     std::ranges::sort(inputs);
     for (const auto &path : inputs) {
         SCOPED_TRACE(path.filename().string());
         auto opened = path.extension() == ".json" ? g_engine->open(as_bytes(composition_input())) : g_engine->open(path);
         ASSERT_TRUE(opened) << opened.error().message;
-        auto &master = master_of(**opened);
-        std::vector<Score *> scores{&master};
-        for (const auto *excerpt : master.excerpts()) scores.push_back(excerpt->excerpt_score());
-        const auto check_cold = [&] {
-            for (const auto *score : scores) {
-                EXPECT_EQ(score->layout_state.whole_count, 0u);
-                EXPECT_EQ(score->layout_state.range_count, 0u);
-                EXPECT_TRUE(score->pages().empty());
-            }
+        auto &document = **opened;
+        auto &master = master_of(document);
+        expect_no_layout(master);
+        const auto membership = [&] {
+            std::map<ElementId, EngravingObject *> handles;
+            for (const auto &entry : engrave::live_ids(master)) handles.emplace(entry.id, entry.object);
+            return handles;
         };
-        const auto write = [&] {
-            muse::io::Buffer buffer;
-            buffer.open(muse::io::IODevice::WRITE_ONLY);
-            rw::WriteInOutData inout(&master);
-            inout.ctx.set_inline_style(true);
-            inout.ctx.set_inline_excerpts(true);
-            EXPECT_TRUE(rw::RWRegister::writer()->write_score(&master, &buffer, &inout));
-            return std::string(reinterpret_cast<const char *>(buffer.data().const_data()), buffer.data().size());
-        };
-        check_cold();
-        const auto cold = write();
-        check_cold();
-        EXPECT_EQ(cold, write());
-        check_cold();
-        for (auto *score : scores) {
-            score->ensure_layout();
+        const auto objects = membership();
+        const auto cold = native_captures(document);
+        EXPECT_EQ(membership(), objects);
+        expect_no_layout(master);
+        EXPECT_EQ(cold, native_captures(document));
+        expect_no_layout(master);
+        for (auto *score : native_scores(master)) {
+            auto rendered = document.render({.score = score->is_master() ? engrave::ScoreSel{} : engrave::ScoreSel{engine_id(*score)},
+                                             .format = engrave::RenderFormat::SVG});
+            ASSERT_TRUE(rendered) << rendered.error().message;
             EXPECT_GT(score->layout_state.whole_count, 0u);
             EXPECT_FALSE(score->pages().empty());
         }
-        size_t generated = 0;
-        for (auto *object : engrave::document_objects(master)) {
-            if (!object->is_note()) continue;
-            const auto *note = to_note(object);
-            const auto *group = note->chord()->layout_parenthesis_group(note);
-            if (group && group->info.generated()) ++generated;
+        EXPECT_EQ(cold, native_captures(document));
+        EXPECT_EQ(membership(), objects);
+    }
+}
+
+TEST(NativeSave, TestModeKeepsAuthoredOverridesAndOmitsGeometry) {
+    using namespace mu::engraving;
+
+    struct RestoreMode {
+        bool previous = MScore::test_mode;
+
+        ~RestoreMode() { MScore::test_mode = previous; }
+    } restore;
+
+    MScore::test_mode = true;
+    auto document = open_text(R"(<museScore version="5.00"><Score><Division>480</Division>
+<Part><Staff id="1"/><Instrument><trackName>Piano</trackName></Instrument></Part>
+<Staff id="1"><Measure><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
+<Beam><eid>Z_Z</eid><Fragment><y1>-3.25</y1><y2>-2.5</y2></Fragment></Beam>
+<Chord><durationType>eighth</durationType><Note><eid>B_B</eid><pitch>60</pitch><tpc>14</tpc></Note></Chord>
+<Chord><durationType>eighth</durationType><Note><eid>C_C</eid><pitch>62</pitch><tpc>16</tpc></Note></Chord>
+<Chord><durationType>eighth</durationType><Note><pitch>64</pitch><tpc>18</tpc></Note></Chord>
+<Chord><durationType>eighth</durationType><Note><pitch>65</pitch><tpc>13</tpc></Note></Chord>
+<Chord><durationType>quarter</durationType><Note><pitch>67</pitch><tpc>15</tpc></Note>
+<TremoloTwoChord><subtype>c16</subtype><Fragment><y1>1.25</y1><y2>2.75</y2></Fragment></TremoloTwoChord></Chord>
+<Chord><durationType>quarter</durationType><Note><pitch>69</pitch><tpc>17</tpc></Note></Chord>
+</voice></Measure><Measure><voice>
+<Chord><durationType>eighth</durationType><Note><pitch>60</pitch><tpc>14</tpc></Note></Chord>
+<Chord><durationType>eighth</durationType><Note><pitch>62</pitch><tpc>16</tpc></Note></Chord>
+<Chord><durationType>eighth</durationType><Note><pitch>64</pitch><tpc>18</tpc></Note></Chord>
+<Chord><durationType>eighth</durationType><Note><pitch>65</pitch><tpc>13</tpc></Note></Chord>
+<Rest><durationType>half</durationType></Rest></voice></Measure></Staff><SpannerMap>
+<Slur><track>0</track><track2>0</track2><startTick>0/1</startTick><ticks>1/8</ticks>
+<SlurSegment no="0"><o2 x="1.5" y="-0.75"/></SlurSegment></Slur>
+<Pedal><track>0</track><track2>0</track2><startTick>0/1</startTick><ticks>1/2</ticks>
+<Segment><subtype>0</subtype><offset x="2" y="1"/><off2 x="-1" y="0.5"/></Segment></Pedal>
+</SpannerMap></Score></museScore>)");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    const auto cold = native_captures(*document);
+    expect_no_layout(master);
+    const auto &xml = cold.begin()->second;
+    for (const auto authored : {"<y1>-3.25</y1>", "<y2>-2.5</y2>", "<y1>1.25</y1>", "<y2>2.75</y2>", "<o2 x=\"1.5\" y=\"-0.75\"",
+                                "<offset x=\"2\" y=\"1\"", "<off2 x=\"-1\" y=\"0.5\""})
+        EXPECT_NE(xml.find(authored), std::string::npos) << authored;
+    ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+    const auto warm = native_captures(*document);
+    EXPECT_EQ(cold, warm);
+    for (const auto &[key, saved] : warm) {
+        EXPECT_EQ(saved.find("<l1>"), std::string::npos) << key;
+        EXPECT_EQ(saved.find("<l2>"), std::string::npos) << key;
+        const auto first = saved.find("<Beam>");
+        ASSERT_NE(first, std::string::npos);
+        EXPECT_EQ(saved.find("<Beam>", first + 1), std::string::npos);
+    }
+}
+
+TEST(NativeSave, LegacyAndBoundedExportsReopenPinnedLinkedNotesWithoutLayout) {
+    auto document = open_path(g_source_root / "engrave/tests/data/write470/excerpts.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    const auto check = [](MasterScore &score, bool standalone) {
+        for (const auto id : {"I_I", "NB_NB"}) {
+            if (standalone && std::string_view(id) == "I_I") continue;
+            auto found = engrave::resolve(score, *engrave::element_id_from_string(id));
+            ASSERT_TRUE(found) << id;
+            ASSERT_TRUE(found->object->is_note());
+            const auto *note = mu::engraving::to_note(found->object);
+            EXPECT_EQ(note->pitch(), 71);
+            EXPECT_EQ(note->chord()->actual_ticks(), mu::engraving::Fraction(1, 4));
         }
-        if (generated) std::printf("S5b generated-parenthesis fixture: %s (%zu notes)\n", path.filename().string().c_str(), generated);
-        const auto warm = write();
-        EXPECT_EQ(cold, warm);
+    };
+    check(master, false);
+    expect_no_layout(master);
+    const auto cold = native_captures(*document, true);
+    expect_no_layout(master);
+    for (auto *score : native_scores(master)) {
+        for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
+            for (const auto version : {"5.00", "4.70"}) {
+                engrave::ExportOptions options{.format = format, .native_version = version};
+                if (!score->is_master()) options.score.excerpt = engine_id(*score);
+                options.capture.max_bytes = 1024 * 1024;
+                const auto output = document->export_score(options);
+                ASSERT_TRUE(output) << output.error().message;
+                expect_no_layout(master);
+                auto reopened = g_engine->open(*output, {.format = format});
+                ASSERT_TRUE(reopened) << reopened.error().message;
+                check(master_of(**reopened), !score->is_master());
+                check(master, false);
+            }
+        }
+    }
+    for (auto *score : native_scores(master)) {
+        ASSERT_TRUE(document->render({.score = score->is_master() ? engrave::ScoreSel{} : engrave::ScoreSel{engine_id(*score)},
+                                      .format = engrave::RenderFormat::SVG}));
+    }
+    EXPECT_EQ(cold, native_captures(*document, true));
+    check(master, false);
+}
+
+TEST(NativeSave, EditsAndMmrTogglesSaveBeforeRendering) {
+    using namespace mu::engraving;
+    auto document = open_path(g_source_root / "tests/data/inputs/golden/linked_parts.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto note = engrave::resolve(master, *engrave::element_id_from_string("NB_NB"));
+    ASSERT_TRUE(note && note->object->is_note());
+    ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+    ASSERT_TRUE(document->edit({{engrave::SetProperty{engine_id(*note->object), "color", engrave::Color{200, 10, 20, 255}}}}));
+    const auto check = [&] {
+        const auto whole = master.layout_state.whole_count;
+        const auto range = master.layout_state.range_count;
+        const auto cold = native_captures(*document);
+        EXPECT_EQ(master.layout_state.whole_count, whole);
+        EXPECT_EQ(master.layout_state.range_count, range);
+        for (auto *score : native_scores(master)) {
+            ASSERT_TRUE(document->render({.score = score->is_master() ? engrave::ScoreSel{} : engrave::ScoreSel{engine_id(*score)},
+                                          .format = engrave::RenderFormat::SVG}));
+        }
+        EXPECT_EQ(cold, native_captures(*document));
+    };
+    EXPECT_EQ(to_note(note->object)->color(), muse::draw::Color(200, 10, 20, 255));
+    const auto original = engrave::resolve(master, *engrave::element_id_from_string("I_I"));
+    ASSERT_TRUE(original && original->object->is_note());
+    EXPECT_EQ(to_note(original->object)->pitch(), 71);
+    check();
+    auto mmr_document = open_path(g_source_root / "tests/data/inputs/mmr-boundary.mscx");
+    ASSERT_TRUE(mmr_document);
+    for (bool enabled : {false, true, false, true}) {
+        auto &mmr = master_of(*mmr_document);
+        mmr.style().set(Sid::CREATE_MULTI_MEASURE_RESTS, enabled);
+        mmr.set_layout_all();
+        const auto whole = mmr.layout_state.whole_count;
+        const auto range = mmr.layout_state.range_count;
+        const auto cold = native_captures(*mmr_document);
+        EXPECT_EQ(mmr.layout_state.whole_count, whole);
+        EXPECT_EQ(mmr.layout_state.range_count, range);
+        ASSERT_TRUE(mmr_document->render({.format = engrave::RenderFormat::SVG}));
+        EXPECT_EQ(cold, native_captures(*mmr_document));
+        EXPECT_EQ(cold.begin()->second.find("<multiMeasureRest>"), std::string::npos);
     }
 }
 

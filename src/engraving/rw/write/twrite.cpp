@@ -490,14 +490,12 @@ void write_authored_segment_text(const Spanner *owner, const AuthoredOverrideCar
     xml.end_element();
 }
 
-bool write_authored_segments(const Spanner *owner, bool slur, XmlWriter &xml, WriteContext &ctx) {
+void write_authored_segments(const Spanner *owner, bool slur, XmlWriter &xml, WriteContext &ctx) {
     const auto &table = owner->authored_overrides;
-    bool written = false;
     uint32_t next = 0;
     for (const auto &carrier : table.carriers) {
         const auto key = carrier.child;
         if (key.role != AuthoredChildRole::SPANNER_SEGMENT) continue;
-        written = true;
         if (slur)
             xml.start_element(TConv::to_xml(carrier.type), {{"no", key.ordinal}});
         else if (key.ordinal != next)
@@ -533,7 +531,6 @@ bool write_authored_segments(const Spanner *owner, bool slur, XmlWriter &xml, Wr
         }
         xml.end_element();
     }
-    return written;
 }
 } // namespace
 
@@ -917,7 +914,7 @@ void TWrite::write(const BarLine *item, XmlWriter &xml, WriteContext &ctx) {
 }
 
 void TWrite::write(const Beam *item, XmlWriter &xml, WriteContext &ctx) {
-    if (item->elements().empty()) {
+    if (item->generated() || item->elements().empty()) {
         return;
     }
     xml.start_element(item);
@@ -946,16 +943,6 @@ void TWrite::write(const Beam *item, XmlWriter &xml, WriteContext &ctx) {
             xml.tag("y2", endpoints.second);
             xml.end_element();
             next = entry.child.ordinal + 1;
-        }
-    }
-
-    // this info is used for regression testing
-    // l1/l2 is the beam position of the layout engine
-    if (MScore::test_mode) {
-        double spatium8 = item->spatium() * .125;
-        for (BeamFragment *f : item->beam_fragments()) {
-            xml.tag("l1", int(lrint(f->py1[idx] / spatium8)));
-            xml.tag("l2", int(lrint(f->py2[idx] / spatium8)));
         }
     }
 
@@ -1193,7 +1180,7 @@ void TWrite::write(const Chord *item, XmlWriter &xml, WriteContext &ctx) {
 
 void TWrite::write_chord_rest_beam(const ChordRest *item, XmlWriter &xml, WriteContext &ctx) {
     Beam *b = item->beam();
-    if (b && b->elements().front() == item && (MScore::test_mode || !b->generated() || b->user_modified())) {
+    if (b && !b->generated() && !b->elements().empty() && b->elements().front() == item) {
         write(b, xml, ctx);
     }
 }
@@ -1562,24 +1549,13 @@ void TWrite::write(const GuitarBend *item, XmlWriter &xml, WriteContext &ctx) {
     write_properties(static_cast<const SLine *>(item), xml, ctx);
 
     GuitarBendHold *hold = item->hold_line();
-    if (hold) {
+    if (hold && !hold->generated()) {
         xml.start_element(hold);
         write_properties(static_cast<const SLine *>(hold), xml, ctx);
         xml.end_element();
     }
 
     xml.end_element();
-}
-
-void TWrite::write_properties(const GuitarBendSegment *item, XmlWriter &xml, WriteContext &ctx) {
-    write_property(item, xml, Pid::BEND_VERTEX_OFF);
-
-    GuitarBendText *text = item->bend_text();
-    if (text && text->is_user_modified()) {
-        xml.start_element(text);
-        write_properties(to_text_base(text), xml, ctx, false);
-        xml.end_element();
-    }
 }
 
 void TWrite::write_properties(const SLine *item, XmlWriter &xml, WriteContext &ctx) {
@@ -1596,25 +1572,7 @@ void TWrite::write_properties(const SLine *item, XmlWriter &xml, WriteContext &c
 
     write_styled_properties(item, xml);
 
-    if (write_authored_segments(item, false, xml, ctx)) return;
-
-    if (!item->is_user_modified()) {
-        return;
-    }
-
-    double spatium_value = item->style().spatium();
-    for (const SpannerSegment *seg : item->spanner_segments()) {
-        xml.start_element("Segment", seg);
-        xml.tag("subtype", int(seg->spanner_segment_type()));
-        xml.tag_point("offset", seg->offset() / spatium_value);
-        xml.tag_point("off2", seg->user_off2() / spatium_value);
-        write_property(seg, xml, Pid::MIN_DISTANCE);
-        if (seg->is_guitar_bend_segment()) {
-            write_properties(static_cast<const GuitarBendSegment *>(seg), xml, ctx);
-        }
-        write_item_properties(seg, xml, ctx);
-        xml.end_element();
-    }
+    write_authored_segments(item, false, xml, ctx);
 }
 
 void TWrite::write_properties(const Spanner *item, XmlWriter &xml, WriteContext &ctx) {
@@ -1701,23 +1659,6 @@ void TWrite::write(const HammerOnPullOff *item, XmlWriter &xml, WriteContext &ct
 
     write_properties(to_slur(item), xml, ctx);
 
-    xml.end_element();
-}
-
-void TWrite::write_properties(const HammerOnPullOffSegment *seg, XmlWriter &xml, WriteContext &ctx) {
-    for (size_t i = 0; i < seg->hopo_text().size(); ++i) {
-        HammerOnPullOffText *hopo_text = seg->hopo_text()[i];
-        if (!hopo_text->is_user_modified()) {
-            continue;
-        }
-        write(hopo_text, xml, ctx, i);
-    }
-}
-
-void TWrite::write(const HammerOnPullOffText *item, XmlWriter &xml, WriteContext &ctx, size_t idx) {
-    xml.start_element(item, {{"idx", idx}});
-
-    write_properties(to_text_base(item), xml, ctx, /*writeText*/ false);
     xml.end_element();
 }
 
@@ -2611,42 +2552,10 @@ void TWrite::write(const Slur *item, XmlWriter &xml, WriteContext &ctx) {
 
 void TWrite::write_properties(const SlurTie *item, XmlWriter &xml, WriteContext &ctx) {
     write_properties(static_cast<const Spanner *>(item), xml, ctx);
-    if (!write_authored_segments(item, true, xml, ctx)) {
-        int idx = 0;
-        for (const SpannerSegment *ss : item->spanner_segments()) write_slur(static_cast<const SlurTieSegment *>(ss), xml, ctx, idx++);
-    }
+    write_authored_segments(item, true, xml, ctx);
     write_property(item, xml, Pid::SLUR_DIRECTION);
     write_property(item, xml, Pid::SLUR_STYLE_TYPE);
     write_property(item, xml, Pid::MASK_SLURTIE);
-}
-
-void TWrite::write_slur(const SlurTieSegment *seg, XmlWriter &xml, WriteContext &ctx, int no) {
-    if (!seg->is_user_modified()) {
-        return;
-    }
-
-    xml.start_element(seg, {{"no", no}});
-
-    double spatium_value = seg->style().spatium();
-    if (!seg->ups(Grip::START).off.is_null()) {
-        xml.tag_point("o1", seg->ups(Grip::START).off / spatium_value);
-    }
-    if (!seg->ups(Grip::BEZIER1).off.is_null()) {
-        xml.tag_point("o2", seg->ups(Grip::BEZIER1).off / spatium_value);
-    }
-    if (!seg->ups(Grip::BEZIER2).off.is_null()) {
-        xml.tag_point("o3", seg->ups(Grip::BEZIER2).off / spatium_value);
-    }
-    if (!seg->ups(Grip::END).off.is_null()) {
-        xml.tag_point("o4", seg->ups(Grip::END).off / spatium_value);
-    }
-
-    if (seg->is_hammer_on_pull_off_segment()) {
-        write_properties(to_hammer_on_pull_off_segment(seg), xml, ctx);
-    }
-
-    write_item_properties(seg, xml, ctx);
-    xml.end_element();
 }
 
 void TWrite::write(const Spacer *item, XmlWriter &xml, WriteContext &ctx) {
@@ -3151,13 +3060,6 @@ void TWrite::write(const TremoloTwoChord *item, XmlWriter &xml, WriteContext &ct
         xml.end_element();
     }
 
-    // this info is used for regression testing
-    // l1/l2 is the beam position of the layout engine
-    if (MScore::test_mode) {
-        double spatium8 = item->spatium() * .125;
-        xml.tag("l1", int(lrint(item->beam_fragment().py1[idx] / spatium8)));
-        xml.tag("l2", int(lrint(item->beam_fragment().py2[idx] / spatium8)));
-    }
     xml.end_element();
 }
 

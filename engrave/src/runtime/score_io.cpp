@@ -235,16 +235,8 @@ std::string export_native_score(const EngineContext &context, const ScoreProject
     // Audio formats are rendered by the worker's MuseScore engine; the
     // SoundFont parameter is retained for source compatibility.
     auto *score = options.transaction_snapshot ? project->master_score() : select_score(project->master_score(), options.excerpt_id);
-    // Native notation still serializes display overrides; S4 separates those.
-    if (!options.transaction_snapshot && format != "midi" && format != "metadata") {
+    if (!options.transaction_snapshot && format != "mscx" && format != "mscz" && format != "midi" && format != "metadata") {
         score->ensure_layout();
-        // A master native save includes its excerpts. Their geometry may still
-        // be absent or stale even when the selected master is already current.
-        if ((format == "mscx" || format == "mscz") && options.excerpt_id == -1) {
-            for (const auto *excerpt : score->master_score()->excerpts()) {
-                if (auto *part = excerpt->excerpt_score()) part->ensure_layout();
-            }
-        }
     }
     if (format == "metadata") return music::dump_json(score_metadata(score));
     if (format == "measurePositions" || format == "segmentPositions")

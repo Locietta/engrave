@@ -66,12 +66,9 @@ struct Glissando;
 struct GradualTempoChange;
 struct Groups;
 struct GuitarBend;
-struct GuitarBendSegment;
 
 struct Hairpin;
 struct HammerOnPullOff;
-struct HammerOnPullOffSegment;
-struct HammerOnPullOffText;
 struct Harmony;
 struct HarmonicMark;
 struct HarpPedalDiagram;
@@ -123,7 +120,6 @@ struct Rest;
 struct Segment;
 struct Slur;
 struct SlurTie;
-struct SlurTieSegment;
 struct SLine;
 struct Spanner;
 struct Spacer;
@@ -349,13 +345,8 @@ private:
     static void write(const StaffTextBase *item, XmlWriter &xml, WriteContext &ctx);
     static void write_properties(const StaffTextBase *item, XmlWriter &xml, WriteContext &ctx);
     static void write_properties(const SlurTie *item, XmlWriter &xml, WriteContext &ctx);
-    static void write_slur(const SlurTieSegment *seg, XmlWriter &xml, WriteContext &ctx, int no);
-
-    static void write_properties(const HammerOnPullOffSegment *seg, XmlWriter &xml, WriteContext &ctx);
-    static void write(const HammerOnPullOffText *item, XmlWriter &xml, WriteContext &ctx, size_t idx);
 
     static void write_properties(const SLine *item, XmlWriter &xml, WriteContext &ctx);
-    static void write_properties(const GuitarBendSegment *item, XmlWriter &xml, WriteContext &ctx);
     static void write_properties(const Spanner *item, XmlWriter &xml, WriteContext &ctx);
     static void write_properties(const BSymbol *item, XmlWriter &xml, WriteContext &ctx);
 

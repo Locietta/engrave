@@ -255,8 +255,6 @@
         <voice>
           <Beam>
             <eid>W_W</eid>
-            <l1>-6</l1>
-            <l2>-4</l2>
             </Beam>
           <Chord>
             <eid>X_X</eid>
@@ -296,8 +294,6 @@
             </Chord>
           <Beam>
             <eid>f_f</eid>
-            <l1>38</l1>
-            <l2>32</l2>
             </Beam>
           <Chord>
             <eid>g_g</eid>
@@ -688,8 +684,6 @@
           <voice>
             <Beam>
               <eid>fB_fB</eid>
-              <l1>-6</l1>
-              <l2>-4</l2>
               </Beam>
             <Chord>
               <eid>eB_eB</eid>
@@ -737,8 +731,6 @@
               </Chord>
             <Beam>
               <eid>oB_oB</eid>
-              <l1>38</l1>
-              <l2>32</l2>
               </Beam>
             <Chord>
               <eid>nB_nB</eid>

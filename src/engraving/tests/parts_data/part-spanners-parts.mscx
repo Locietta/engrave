@@ -210,8 +210,6 @@
             <TremoloTwoChord>
               <subtype>c16</subtype>
               <eid>W_W</eid>
-              <l1>0</l1>
-              <l2>2</l2>
               </TremoloTwoChord>
             </Chord>
           <Chord>
@@ -404,8 +402,6 @@
             <TremoloTwoChord>
               <subtype>c16</subtype>
               <eid>7_7</eid>
-              <l1>0</l1>
-              <l2>2</l2>
               </TremoloTwoChord>
             </Chord>
           <Chord>
@@ -704,8 +700,6 @@
                 <subtype>c16</subtype>
                 <eid>yB_yB</eid>
                 <linkedTo>W_W</linkedTo>
-                <l1>0</l1>
-                <l2>2</l2>
                 </TremoloTwoChord>
               </Chord>
             <Chord>
@@ -1015,8 +1009,6 @@
                 <subtype>c16</subtype>
                 <eid>dC_dC</eid>
                 <linkedTo>7_7</linkedTo>
-                <l1>0</l1>
-                <l2>2</l2>
                 </TremoloTwoChord>
               </Chord>
             <Chord>
