@@ -114,7 +114,7 @@ std::vector<EngravingItem *> Segment::effective_elements() const {
     return result;
 }
 
-bool Segment::has_effective_elements() const { return has_effective_elements(0, score()->ntracks() - 1); }
+bool Segment::has_effective_elements() const { return score()->ntracks() && has_effective_elements(0, score()->ntracks() - 1); }
 
 bool Segment::has_effective_elements(staff_idx_t staff) const { return has_effective_elements(staff * voices, (staff + 1) * voices - 1); }
 
@@ -2924,7 +2924,7 @@ bool Segment::has_accidentals() const {
     return false;
 }
 
-bool Segment::goes_before(const Segment *next_segment) const {
+bool Segment::goes_before(const Segment *next_segment, bool rendered) const {
     Measure *meas = measure();
     Measure *prev_measure = meas->prev_measure();
     const bool this_measure_is_start_repeat = meas->repeat_start();
@@ -2943,7 +2943,15 @@ bool Segment::goes_before(const Segment *next_segment) const {
     bool next_is_time_sig = next_segment->is_time_sig_type();
 
     // Place non header clefs AFTER header clefs, key signatures, time signatures
-    const bool first_system_measure = meas->find_segment_r(SegmentType::HEADER_CLEF, Fraction(0, 1));
+    bool first_system_measure = meas->find_segment_r(SegmentType::HEADER_CLEF, Fraction(0, 1));
+    if (rendered && !first_system_measure) {
+        for (auto *output : meas->ldata()->segments) {
+            if (output->is_header_clef_type() && output->rtick().is_zero()) {
+                first_system_measure = true;
+                break;
+            }
+        }
+    }
     bool this_is_header = is_header_clef_type() || (rtick() == Fraction(0, 1) && first_system_measure && !this_is_clef);
     bool next_is_header =
         next_segment->is_header_clef_type() || (next_segment->rtick() == Fraction(0, 1) && first_system_measure && !next_is_clef);
@@ -2971,7 +2979,7 @@ bool Segment::goes_before(const Segment *next_segment) const {
 
     if (this_is_clef && next_is_barline) {
         ClefToBarlinePosition clef_pos = ClefToBarlinePosition::AUTO;
-        for (EngravingItem *item : elist()) {
+        for (EngravingItem *item : rendered ? effective_elements() : elist()) {
             if (item && item->is_clef()) {
                 clef_pos = to_clef(item)->clef_to_barline_position();
                 break;
@@ -2982,7 +2990,7 @@ bool Segment::goes_before(const Segment *next_segment) const {
 
     if (this_is_barline && next_is_clef) {
         ClefToBarlinePosition clef_pos = ClefToBarlinePosition::AUTO;
-        for (EngravingItem *item : next_segment->elist()) {
+        for (EngravingItem *item : rendered ? next_segment->effective_elements() : next_segment->elist()) {
             if (item && item->is_clef()) {
                 clef_pos = to_clef(item)->clef_to_barline_position();
                 break;
@@ -3007,4 +3015,8 @@ bool Segment::goes_before(const Segment *next_segment) const {
 }
 } // namespace mu::engraving
 
-bool Segment::rendered_is_before(const Segment *other) const { return is_before(other); }
+bool Segment::rendered_is_before(const Segment *other) const {
+    if (!other) return false;
+    if (tick() != other->tick() || measure() != other->measure()) return is_before(other);
+    return goes_before(other, true);
+}

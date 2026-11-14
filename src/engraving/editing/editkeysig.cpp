@@ -42,9 +42,9 @@ void mu::engraving::apply_change_key_sig(KeySig *keysig, KeySigEvent ks, bool sh
     Fraction tick = segment->tick();
     Staff *staff = keysig->staff();
 
-    const bool cur_evt_in_staff = (staff->current_key_tick(tick) == tick);
+    const bool cur_evt_in_staff = staff->key_list()->contains(tick.ticks());
     const bool authored = segment->element(keysig->track()) == keysig;
-    if (!evt_in_staff && !authored && !cur_evt_in_staff) return;
+    if (!evt_in_staff && !authored) return;
     if (evt_in_staff && authored && cur_evt_in_staff && keysig->key_sig_event() == ks && keysig->show_courtesy() == show_courtesy &&
         staff->key_sig_event(tick) == ks)
         return;

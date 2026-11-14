@@ -478,6 +478,8 @@ public:
         ~LayoutData() override;
         std::vector<Segment *> segments;
         std::vector<Segment *> rendered;
+        Fraction output_ticks = Fraction(-1, 1);
+        bool segment_output_invalid = false;
         bool has_courtesy_key_sig = false;
         bool has_courtesy_time_sig = false;
         bool has_courtesy_clef = false;

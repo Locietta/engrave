@@ -434,7 +434,7 @@ public:
 
     void clear_pre_appended(track_idx_t track) { pre_appended_items_[track] = nullptr; }
 
-    bool goes_before(const Segment *next_segment) const;
+    bool goes_before(const Segment *next_segment, bool rendered = false) const;
 
     void check_empty() const;
 

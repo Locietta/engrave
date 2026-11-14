@@ -37,6 +37,7 @@ namespace mu::engraving {
 void SegmentList::clear() {
     if (owner_) {
         owner_->mutldata()->rendered.clear();
+        owner_->mutldata()->segment_output_invalid = true;
         owner_->mutldata()->set_need_layout(true);
         owner_->score()->invalidate_layout(owner_->tick(), owner_->end_tick());
     }
@@ -159,6 +160,7 @@ void SegmentList::check() {
 void SegmentList::insert(Segment *e, Segment *el) {
     if (owner_) {
         owner_->mutldata()->rendered.clear();
+        owner_->mutldata()->segment_output_invalid = true;
         owner_->mutldata()->set_need_layout(true);
         owner_->score()->invalidate_layout(owner_->tick(), owner_->end_tick());
     }
@@ -185,6 +187,7 @@ void SegmentList::insert(Segment *e, Segment *el) {
 void SegmentList::remove(Segment *e) {
     if (owner_) {
         owner_->mutldata()->rendered.clear();
+        owner_->mutldata()->segment_output_invalid = true;
         owner_->mutldata()->set_need_layout(true);
         owner_->score()->invalidate_layout(owner_->tick(), owner_->end_tick());
     }
@@ -230,6 +233,7 @@ void SegmentList::remove(Segment *e) {
 void SegmentList::push_back(Segment *e) {
     if (owner_) {
         owner_->mutldata()->rendered.clear();
+        owner_->mutldata()->segment_output_invalid = true;
         owner_->mutldata()->set_need_layout(true);
         owner_->score()->invalidate_layout(owner_->tick(), owner_->end_tick());
     }
@@ -254,6 +258,7 @@ void SegmentList::push_back(Segment *e) {
 void SegmentList::push_front(Segment *e) {
     if (owner_) {
         owner_->mutldata()->rendered.clear();
+        owner_->mutldata()->segment_output_invalid = true;
         owner_->mutldata()->set_need_layout(true);
         owner_->score()->invalidate_layout(owner_->tick(), owner_->end_tick());
     }

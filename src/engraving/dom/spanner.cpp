@@ -663,7 +663,15 @@ void Spanner::do_compute_start_element() {
                 if (start_el) {
                     start_element_ = start_el;
                 } else {
-                    start_element_ = start_seg->first_element(track2staff(track()));
+                    if (score()->normalize_state.running)
+                        start_element_ = start_seg->first_element(track2staff(track()));
+                    else
+                        for (auto voice = track_zero_voice(track()); voice < track_zero_voice(track()) + voices; ++voice) {
+                            if (auto *item = start_seg->effective_element(voice)) {
+                                start_element_ = item;
+                                break;
+                            }
+                        }
                 }
             }
         } break;
@@ -710,7 +718,15 @@ void Spanner::do_compute_end_element() {
                 if (end_el) {
                     end_element_ = end_el;
                 } else {
-                    end_element_ = end_seg->first_element(track2staff(track_idx));
+                    if (score()->normalize_state.running)
+                        end_element_ = end_seg->first_element(track2staff(track_idx));
+                    else
+                        for (auto voice = track_zero_voice(track_idx); voice < track_zero_voice(track_idx) + voices; ++voice) {
+                            if (auto *item = end_seg->effective_element(voice)) {
+                                end_element_ = item;
+                                break;
+                            }
+                        }
                 }
             }
         } break;
@@ -966,7 +982,8 @@ Segment *Spanner::start_segment() const {
                                    score()->find_rendered_segment(start_tick, true, SegmentType::TIME_TICK, mm_rest));
     }
 
-    if (!start_seg && start_tick < score()->end_tick()) {
+    if (!source_only && (!start_seg || (start_seg->is_time_tick_type() && !start_seg->has_effective_elements(staff_idx))) &&
+        start_tick < score()->end_tick()) {
         Measure *measure = mm_rest ? score()->tick2measure_mm(start_tick) : score()->tick2measure(start_tick);
         if (measure) {
             TimeTickAnchor *anchor = EditTimeTickAnchors::create_time_tick_anchor(measure, start_tick - measure->tick(),
@@ -1008,7 +1025,8 @@ Segment *Spanner::end_segment() const {
                                  score()->find_rendered_segment(end_tick, true, SegmentType::TIME_TICK, mm_rest));
     }
 
-    if (!end_seg && !end_tick.is_zero()) {
+    if (!source_only && (!end_seg || (end_seg->is_time_tick_type() && !end_seg->has_effective_elements(staff_idx))) &&
+        !end_tick.is_zero()) {
         Measure *measure = mm_rest ? score()->tick2measure_mm(end_tick) : score()->tick2measure(end_tick);
         if (measure) {
             TimeTickAnchor *anchor = EditTimeTickAnchors::create_time_tick_anchor(measure, end_tick - measure->tick(),
