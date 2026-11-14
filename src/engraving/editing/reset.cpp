@@ -29,6 +29,7 @@
 #include "../dom/layoutbreak.h"
 #include "../dom/masterscore.h"
 #include "../dom/measure.h"
+#include "../dom/parenthesis.h"
 #include "../dom/score.h"
 #include "../dom/segment.h"
 #include "../dom/spacer.h"
@@ -53,6 +54,15 @@ static void reset_element_position(EngravingItem *e) {
     e->undo_reset_property(Pid::LEADING_SPACE);
     if (e->is_spanner()) {
         e->undo_reset_property(Pid::OFFSET2);
+    }
+    // Generic parentheses are owned source children outside handle membership.
+    for (auto *child : {e->left_paren(), e->right_paren()}) {
+        if (!child || child->generated()) continue;
+        for (const auto pid : {Pid::AUTOPLACE, Pid::OFFSET}) {
+            if (child->get_property(pid) == child->property_default(pid) && child->property_flags(pid) != PropertyFlags::UNSTYLED) continue;
+            e->notify_property_change(pid);
+            child->undo_reset_property(pid);
+        }
     }
 }
 
