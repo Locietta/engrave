@@ -2128,7 +2128,8 @@ EngravingItem *Chord::prev_element() {
 
                     Note *prev_note = grace_notes_before_last_chord->notes().back();
                     if (prev_note->is_pre_bend_or_dive_start() || prev_note->is_grace_bend_start()) {
-                        return prev_note->bend_for()->front_segment();
+                        return prev_note->bend_for()->segments_empty() ? static_cast<EngravingItem *>(prev_note->bend_for()) :
+                                                                         prev_note->bend_for()->front_segment();
                     }
 
                     ChordRest *prev = Navigation::prev_chord_rest(this);

@@ -2511,8 +2511,11 @@ EngravingItem *Note::next_element() {
             return nullptr;
         }
 
+        case ElementType::TIE:
         case ElementType::TIE_SEGMENT:
+        case ElementType::LAISSEZ_VIB:
         case ElementType::LAISSEZ_VIB_SEGMENT:
+        case ElementType::PARTIAL_TIE:
         case ElementType::PARTIAL_TIE_SEGMENT:
             if (!spanner_for_.empty()) {
                 for (auto i : spanner_for_) {
@@ -2523,8 +2526,11 @@ EngravingItem *Note::next_element() {
             }
             return chord()->next_element();
 
+        case ElementType::NOTELINE:
         case ElementType::NOTELINE_SEGMENT:
+        case ElementType::GLISSANDO:
         case ElementType::GLISSANDO_SEGMENT:
+        case ElementType::GUITAR_BEND:
         case ElementType::GUITAR_BEND_SEGMENT: return chord()->next_element();
 
         case ElementType::ACCIDENTAL:
@@ -2599,15 +2605,21 @@ EngravingItem *Note::prev_element() {
             }
         }
             return this;
+        case ElementType::TIE:
         case ElementType::TIE_SEGMENT:
+        case ElementType::PARTIAL_TIE:
         case ElementType::PARTIAL_TIE_SEGMENT:
+        case ElementType::LAISSEZ_VIB:
         case ElementType::LAISSEZ_VIB_SEGMENT:
             if (!el_.empty()) {
                 return el_.back();
             }
             return this;
+        case ElementType::NOTELINE:
         case ElementType::NOTELINE_SEGMENT:
+        case ElementType::GLISSANDO:
         case ElementType::GLISSANDO_SEGMENT:
+        case ElementType::GUITAR_BEND:
         case ElementType::GUITAR_BEND_SEGMENT:
             if (tie_valid(tie_for_)) {
                 return tie_for_->segments_empty() ? static_cast<EngravingItem *>(tie_for_) : tie_for_->front_segment();
