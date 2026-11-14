@@ -21,6 +21,8 @@
  */
 #include "guitardivelayout.h"
 
+#include <deque>
+
 #include "dom/guitarbend.h"
 #include "dom/note.h"
 #include "dom/staff.h"

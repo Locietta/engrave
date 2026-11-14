@@ -410,7 +410,7 @@ void SLine::set_len(double l) {
     if (spanner_segments().empty()) {
         add(create_line_segment());
     }
-    LineSegment *s = front_segment();
+    LineSegment *s = to_line_segment(mutldata()->segments.front());
     s->set_pos(PointF());
     s->set_pos2(PointF(l, 0));
 }

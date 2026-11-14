@@ -5268,11 +5268,11 @@ TEST(Read, LegacyLineSegmentOrdinalAndExplicitZeroBaselineBeforeLayout) {
     auto &master = master_of(**document);
     ASSERT_EQ(master.spanner_map().map().size(), 1u);
     auto *line = master.spanner_map().map().begin()->second;
-    ASSERT_EQ(line->spanner_segments().size(), 2u);
-    EXPECT_EQ(int(line->spanner_segments()[0]->spanner_segment_type()), 1);
-    EXPECT_EQ(int(line->spanner_segments()[1]->spanner_segment_type()), 3);
-    EXPECT_DOUBLE_EQ(line->spanner_segments()[0]->get_property(mu::engraving::Pid::MIN_DISTANCE).to_double(), 0.0);
-    EXPECT_EQ(line->spanner_segments()[0]->property_flags(mu::engraving::Pid::MIN_DISTANCE), mu::engraving::PropertyFlags::UNSTYLED);
+    using namespace mu::engraving;
+    EXPECT_TRUE(line->segments_empty());
+    ASSERT_NE(line->authored_overrides.find({AuthoredChildRole::SPANNER_SEGMENT}, Pid::MIN_DISTANCE), nullptr);
+    EXPECT_DOUBLE_EQ(line->authored_overrides.find({AuthoredChildRole::SPANNER_SEGMENT}, Pid::MIN_DISTANCE)->value.to_double(), 0.0);
+    EXPECT_EQ(line->authored_overrides.find({AuthoredChildRole::SPANNER_SEGMENT, 1}, Pid::OFFSET2)->value, PropertyValue(PointF(1, 0)));
     const auto bytes = legacy_override_write(line);
     EXPECT_EQ(legacy_override_write(line), bytes);
     EXPECT_NE(bytes.find("<minDistance>0</minDistance>"), std::string::npos);
@@ -5294,6 +5294,102 @@ TEST(Read, LegacyLineSegmentOrdinalAndExplicitZeroBaselineBeforeLayout) {
     EXPECT_EQ(legacy_override_write(line), bytes);
 }
 
+TEST(Read, AuthoredSpannerOffsetsRenderAndColdEditSurvivesReopen) {
+    using namespace mu::engraving;
+    for (const std::string version : {"4.60", "5.00"}) {
+        auto xml = legacy_segment_fixture(R"(<HairPin><eid>F_F</eid><track>0</track><subtype>0</subtype>
+<startTick>0/1</startTick><ticks>1/1</ticks><track2>0</track2>
+<Segment no="0"><offset x="0.25" y="0.5"/><off2 x="-0.25" y="0"/></Segment></HairPin>)");
+        SCOPED_TRACE(version);
+        if (version == "4.60") {
+            xml = legacy_segment_fixture("");
+            xml.replace(xml.find("5.00"), 4, version);
+            xml.insert(xml.find("<Chord>"), R"(<Spanner type="HairPin"><HairPin><eid>F_F</eid><subtype>0</subtype>
+<Segment no="0"><offset x="0.25" y="0.5"/><off2 x="-0.25" y="0"/></Segment></HairPin>
+<next><location><fractions>1/1</fractions></location></next></Spanner>)");
+            xml.insert(xml.find("</voice>"),
+                       R"(<Spanner type="HairPin"><prev><location><fractions>-1/1</fractions></location></prev></Spanner>)");
+        }
+        auto opened = g_engine->open(as_bytes(xml));
+        ASSERT_TRUE(opened) << opened.error().message;
+        auto &document = **opened;
+        auto &master = master_of(document);
+        ASSERT_FALSE(master.spanner_map().map().empty());
+        auto *line = master.spanner_map().map().begin()->second;
+        const AuthoredChildKey key{AuthoredChildRole::SPANNER_SEGMENT};
+        EXPECT_TRUE(line->segments_empty());
+        EXPECT_EQ(line->front_segment(), nullptr);
+        const auto *entry = line->authored_overrides.find(key, Pid::OFFSET);
+        ASSERT_NE(entry, nullptr);
+        EXPECT_EQ(entry->value, PropertyValue(PointF(0.25, 0.5)));
+        ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+        ASSERT_NE(line->front_segment(), nullptr);
+        EXPECT_EQ(line->front_segment()->offset() / master.style().spatium(), PointF(0.25, 0.5));
+        master.layout_data_store()->clear();
+        EXPECT_TRUE(line->segments_empty());
+        auto carrier = line->authored_segment(0);
+        carrier->undo_change_property(Pid::OFFSET2, PointF(1.5, -0.75) * master.style().spatium());
+        carrier.reset();
+        EXPECT_TRUE(line->segments_empty());
+        auto saved = document.export_score({.format = engrave::Format::MSCX, .native_version = "5.00"});
+        ASSERT_TRUE(saved) << saved.error().message;
+        auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
+        ASSERT_TRUE(reopened) << reopened.error().message;
+        auto &copy = master_of(**reopened);
+        auto *restored = copy.spanner_map().map().begin()->second;
+        const auto *offset = restored->authored_overrides.find(key, Pid::OFFSET2);
+        ASSERT_NE(offset, nullptr);
+        EXPECT_EQ(offset->value, PropertyValue(PointF(1.5, -0.75)));
+        EXPECT_TRUE(restored->segments_empty());
+        ASSERT_TRUE((*reopened)->render({.format = engrave::RenderFormat::SVG}));
+        ASSERT_NE(restored->front_segment(), nullptr);
+        EXPECT_EQ(restored->front_segment()->user_off2() / copy.style().spatium(), PointF(1.5, 0));
+        restored->authored_segment(0)->reset_property(Pid::OFFSET2);
+        ASSERT_TRUE((*reopened)->render({.format = engrave::RenderFormat::SVG}));
+        ASSERT_NE(restored->front_segment(), nullptr);
+        EXPECT_EQ(restored->front_segment()->user_off2(), PointF());
+        restored->set_property(Pid::SPANNER_TICKS, Fraction(1, 2));
+        EXPECT_TRUE(restored->segments_empty());
+        EXPECT_EQ(restored->front_segment(), nullptr);
+    }
+}
+
+TEST(Read, SegmentEditsReachColdLinkedPartsAndSelectionFallsBack) {
+    using namespace mu::engraving;
+    auto xml = legacy_segment_fixture(R"(<HairPin><eid>F_F</eid><track>0</track><subtype>0</subtype>
+<startTick>0/1</startTick><ticks>1/1</ticks><track2>0</track2>
+<Segment no="0"><off2 x="-0.25" y="0"/></Segment></HairPin>)");
+    auto opened = g_engine->open(as_bytes(xml));
+    ASSERT_TRUE(opened) << opened.error().message;
+    auto &document = **opened;
+    auto &master = master_of(document);
+    auto outline = document.outline();
+    ASSERT_TRUE(outline);
+    ASSERT_TRUE(document.edit({{engrave::GenerateExcerpts{{outline->parts.front().id}}}}));
+    auto *line = master.spanner_map().map().begin()->second;
+    auto *part = master.excerpts().front()->excerpt_score();
+    auto *clone = part->spanner_map().map().begin()->second;
+    const AuthoredChildKey key{AuthoredChildRole::SPANNER_SEGMENT};
+    EXPECT_TRUE(line->segments_empty());
+    EXPECT_TRUE(clone->segments_empty());
+    line->authored_segment(0)->undo_change_property(Pid::OFFSET2, PointF(2, -1) * master.style().spatium());
+    const auto *offset = clone->authored_overrides.find(key, Pid::OFFSET2);
+    ASSERT_NE(offset, nullptr);
+    EXPECT_EQ(offset->value, PropertyValue(PointF(2, -1)));
+    clone->authored_segment(0)->undo_change_property(Pid::OFFSET2, PointF(3, 1) * part->style().spatium());
+    line->authored_segment(0)->undo_change_property(Pid::OFFSET2, PointF(4, -2) * master.style().spatium());
+    EXPECT_EQ(clone->authored_overrides.find(key, Pid::OFFSET2)->value, PropertyValue(PointF(3, 1)));
+    ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+    ASSERT_NE(line->front_segment(), nullptr);
+    master.selection().add(line->front_segment());
+    line->front_segment()->undo_change_property(Pid::OFFSET2, PointF(0.5, 1.5) * master.style().spatium());
+    EXPECT_TRUE(line->segments_empty());
+    EXPECT_EQ(master.selection().element(), line);
+    master.layout_data_store()->clear();
+    EXPECT_EQ(master.selection().element(), line);
+    EXPECT_EQ(master.first_measure()->first(SegmentType::CHORD_REST)->first_spanner(0), line);
+}
+
 TEST(Read, LegacySlurGripOrdinalGapsBaselineBeforeLayout) {
     const auto xml = legacy_segment_fixture(R"(<Slur><eid>F_F</eid><track>0</track>
 <startElement>B_B</startElement><endElement>C_C</endElement>
@@ -5304,7 +5400,11 @@ TEST(Read, LegacySlurGripOrdinalGapsBaselineBeforeLayout) {
     auto &master = master_of(**document);
     ASSERT_EQ(master.spanner_map().map().size(), 1u);
     auto *slur = master.spanner_map().map().begin()->second;
-    ASSERT_EQ(slur->spanner_segments().size(), 3u);
+    using namespace mu::engraving;
+    EXPECT_TRUE(slur->segments_empty());
+    ASSERT_NE(slur->authored_overrides.find({AuthoredChildRole::SPANNER_SEGMENT, 2}, Pid::SLUR_UOFF3), nullptr);
+    EXPECT_EQ(slur->authored_overrides.find({AuthoredChildRole::SPANNER_SEGMENT, 2}, Pid::SLUR_UOFF3)->value,
+              PropertyValue(PointF(-0.75, 0)));
     const auto bytes = legacy_override_write(slur);
     EXPECT_NE(bytes.find("no=\"0\""), std::string::npos);
     EXPECT_EQ(bytes.find("no=\"1\""), std::string::npos);
@@ -5313,7 +5413,7 @@ TEST(Read, LegacySlurGripOrdinalGapsBaselineBeforeLayout) {
     ASSERT_TRUE(reopened) << reopened.error().message;
     const auto &restored = master_of(**reopened).spanner_map().map();
     ASSERT_EQ(restored.size(), 1u);
-    ASSERT_EQ(restored.begin()->second->spanner_segments().size(), 3u);
+    EXPECT_TRUE(restored.begin()->second->segments_empty());
     EXPECT_EQ(legacy_override_write(restored.begin()->second), bytes);
     EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
     const auto source = slur->authored_overrides.entries;

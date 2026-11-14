@@ -108,6 +108,25 @@ decltype(auto) dispatch_layout_data(ElementType type, Action &&action) {
         case ElementType::HAMMER_ON_PULL_OFF:
         case ElementType::TAPPING_HALF_SLUR: return action.template operator()<SlurTie::LayoutData>();
         case ElementType::FERMATA: return action.template operator()<Fermata::LayoutData>();
+        case ElementType::VOLTA:
+        case ElementType::OTTAVA:
+        case ElementType::TRILL:
+        case ElementType::LET_RING:
+        case ElementType::GRADUAL_TEMPO_CHANGE:
+        case ElementType::VIBRATO:
+        case ElementType::PALM_MUTE:
+        case ElementType::WHAMMY_BAR:
+        case ElementType::RASGUEADO:
+        case ElementType::HARMONIC_MARK:
+        case ElementType::PICK_SCRAPE:
+        case ElementType::TEXTLINE:
+        case ElementType::PEDAL:
+        case ElementType::LYRICSLINE:
+        case ElementType::PARTIAL_LYRICSLINE:
+        case ElementType::GLISSANDO:
+        case ElementType::NOTELINE:
+        case ElementType::GUITAR_BEND_HOLD:
+        case ElementType::TEXTLINE_BASE: return action.template operator()<Spanner::LayoutData>();
         case ElementType::HAIRPIN: return action.template operator()<Hairpin::LayoutData>();
         case ElementType::FRET_DIAGRAM: return action.template operator()<FretDiagram::LayoutData>();
         case ElementType::GRADUAL_TEMPO_CHANGE_SEGMENT:

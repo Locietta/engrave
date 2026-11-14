@@ -2462,7 +2462,6 @@ void TRead::read(Fingering *f, XmlReader &e, ReadContext &ctx) {
 }
 
 void TRead::read(Glissando *g, XmlReader &e, ReadContext &ctx) {
-    g->erase_spanner_segments();
 
     staff_idx_t staff_idx = track2staff(ctx.track());
     Staff *staff = ctx.score()->staff(staff_idx);
@@ -2542,7 +2541,6 @@ void TRead::read(Groups *g, XmlReader &e, ReadContext &) {
 }
 
 void TRead::read(GuitarBend *g, XmlReader &e, ReadContext &ctx) {
-    g->erase_spanner_segments();
 
     while (e.read_next_start_element()) {
         const AsciiStringView tag = e.name();
@@ -2571,7 +2569,6 @@ void TRead::read(GuitarBend *g, XmlReader &e, ReadContext &ctx) {
 }
 
 void TRead::read(GuitarBendHold *h, XmlReader &xml, ReadContext &ctx) {
-    h->erase_spanner_segments();
 
     while (xml.read_next_start_element()) {
         if (!TRead::read_properties(static_cast<SLine *>(h), xml, ctx)) {
@@ -2597,7 +2594,6 @@ bool TRead::read_properties(GuitarBendSegment *g, const AsciiStringView &tag, Xm
 }
 
 void TRead::read(Hairpin *h, XmlReader &e, ReadContext &ctx) {
-    h->erase_spanner_segments();
 
     while (e.read_next_start_element()) {
         const AsciiStringView tag(e.name());
@@ -3123,7 +3119,6 @@ void TRead::read(NoteHead *h, XmlReader &xml, ReadContext &ctx) { read(static_ca
 void TRead::read(NoteLine *nl, XmlReader &xml, ReadContext &ctx) { TRead::read(to_text_line_base(nl), xml, ctx); }
 
 void TRead::read(Ottava *o, XmlReader &e, ReadContext &ctx) {
-    o->erase_spanner_segments();
     while (e.read_next_start_element()) {
         read_properties(o, e, ctx);
     }
@@ -3360,7 +3355,6 @@ void TRead::read(Segment *s, XmlReader &e, [[maybe_unused]] ReadContext &ctx) {
 }
 
 void TRead::read(SLine *l, XmlReader &e, ReadContext &ctx) {
-    l->erase_spanner_segments();
 
     while (e.read_next_start_element()) {
         if (!read_properties(l, e, ctx)) {
@@ -3375,11 +3369,16 @@ bool TRead::read_properties(SLine *l, XmlReader &e, ReadContext &ctx) {
     if (tag == "ticks") {
         l->set_ticks(Fraction::from_ticks(e.read_int()));
     } else if (tag == "Segment") {
-        LineSegment *ls = l->create_line_segment();
+        auto carrier = std::unique_ptr<LineSegment>(l->create_line_segment());
+        auto *ls = carrier.get();
         ls->set_track(l->track()); // needed in read to get the right staff mag
-        const auto ordinal = static_cast<uint32_t>(e.int_attribute("no", static_cast<int>(l->spanner_segments().size())));
-        while (l->spanner_segments().size() < ordinal) l->add(l->create_line_segment());
-        l->add(ls);
+        uint32_t next = 0;
+        const auto role = nested_spanner_role(l->authored_child.role) ? l->authored_child.role : AuthoredChildRole::SPANNER_SEGMENT;
+        if (const auto *table = authored_override_table(nested_spanner_role(role) ? authored_override_owner(*l) : l))
+            for (const auto &entry : table->carriers)
+                if (entry.child.role == role && (!nested_spanner_role(role) || entry.child.subordinal == 1))
+                    next = std::max(next, entry.child.ordinal + 1);
+        const auto ordinal = static_cast<uint32_t>(e.int_attribute("no", static_cast<int>(next)));
         bind_authored_child(*ls, {AuthoredChildRole::SPANNER_SEGMENT, ordinal});
         TRead::read(ls, e, ctx);
         finish_authored_read(*ls);
@@ -3437,12 +3436,8 @@ bool TRead::read_properties(SlurTie *s, XmlReader &e, ReadContext &ctx) {
     } else if (tag == "SlurSegment" || tag == "TieSegment" || tag == "LaissezVibSegment" || tag == "PartialTieSegment" ||
                tag == "HammerOnPullOffSegment" || tag == "TappingHalfSlurSegment") {
         const int idx = e.int_attribute("no", 0);
-        const int n = int(s->spanner_segments().size());
-        for (int i = n; i < idx; ++i) {
-            s->add(s->new_slur_tie_segment());
-        }
-        SlurTieSegment *sts = s->new_slur_tie_segment();
-        s->add(sts);
+        auto carrier = std::unique_ptr<SlurTieSegment>(s->new_slur_tie_segment());
+        auto *sts = carrier.get();
         bind_authored_child(*sts, {AuthoredChildRole::SPANNER_SEGMENT, static_cast<uint32_t>(idx)});
         TRead::read(sts, e, ctx);
         finish_authored_read(*sts);
@@ -3921,7 +3916,6 @@ void TRead::read(TextLine *l, XmlReader &e, ReadContext &ctx) {
 }
 
 void TRead::read(TextLineBase *b, XmlReader &e, ReadContext &ctx) {
-    b->erase_spanner_segments();
 
     while (e.read_next_start_element()) {
         if (!read_properties(b, e, ctx)) {
@@ -4210,7 +4204,6 @@ bool TRead::read_properties(TextLineBase *b, XmlReader &e, ReadContext &ctx) {
 }
 
 void TRead::read(Trill *t, XmlReader &e, ReadContext &ctx) {
-    t->erase_spanner_segments();
 
     while (e.read_next_start_element()) {
         const AsciiStringView tag(e.name());
@@ -4241,7 +4234,6 @@ void TRead::read(Trill *t, XmlReader &e, ReadContext &ctx) {
 }
 
 void TRead::read(Vibrato *v, XmlReader &e, ReadContext &ctx) {
-    v->erase_spanner_segments();
 
     while (e.read_next_start_element()) {
         const AsciiStringView tag(e.name());
@@ -4254,7 +4246,6 @@ void TRead::read(Vibrato *v, XmlReader &e, ReadContext &ctx) {
 }
 
 void TRead::read(Volta *v, XmlReader &e, ReadContext &ctx) {
-    v->erase_spanner_segments();
 
     while (e.read_next_start_element()) {
         const AsciiStringView tag(e.name());

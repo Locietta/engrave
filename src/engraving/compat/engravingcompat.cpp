@@ -373,9 +373,7 @@ void EngravingCompat::migrate_offset500(MasterScore *master_score) {
             sp->set_placement_based_on_voice_assignment(
                 sp->style().style_v(Sid::DYNAMICS_HAIRPIN_VOICE_BASED_PLACEMENT).value<DirectionV>());
             do_migrate_offset500(sp);
-            for (SpannerSegment *seg : sp->spanner_segments()) {
-                do_migrate_offset500(seg);
-            }
+            sp->for_each_authored_segment([](SpannerSegment &seg) { do_migrate_offset500(&seg); });
         }
 
         score->scan_elements(do_migrate_offset500);

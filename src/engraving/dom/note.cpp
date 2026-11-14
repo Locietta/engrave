@@ -2476,7 +2476,7 @@ EngravingItem *Note::prev_in_el(EngravingItem *e) {
     return *(i - 1);
 }
 
-static bool tie_valid(Tie *tie) { return tie && !tie->segments_empty(); }
+static bool tie_valid(Tie *tie) { return tie != nullptr; }
 
 //---------------------------------------------------------
 //   nextElement
@@ -2500,11 +2500,11 @@ EngravingItem *Note::next_element() {
             if (next) {
                 return next;
             } else if (tie_valid(tie_for_)) {
-                return tie_for_->front_segment();
+                return tie_for_->segments_empty() ? static_cast<EngravingItem *>(tie_for_) : tie_for_->front_segment();
             } else if (!spanner_for_.empty()) {
                 for (auto i : spanner_for_) {
                     if (i->is_glissando()) {
-                        return i->spanner_segments().front();
+                        return i->segments_empty() ? static_cast<EngravingItem *>(const_cast<Spanner *>(i)) : i->spanner_segments().front();
                     }
                 }
             }
@@ -2517,7 +2517,7 @@ EngravingItem *Note::next_element() {
             if (!spanner_for_.empty()) {
                 for (auto i : spanner_for_) {
                     if (i->is_glissando()) {
-                        return i->spanner_segments().front();
+                        return i->segments_empty() ? static_cast<EngravingItem *>(const_cast<Spanner *>(i)) : i->spanner_segments().front();
                     }
                 }
             }
@@ -2532,12 +2532,12 @@ EngravingItem *Note::next_element() {
                 return el_[0];
             }
             if (tie_valid(tie_for_)) {
-                return tie_for_->front_segment();
+                return tie_for_->segments_empty() ? static_cast<EngravingItem *>(tie_for_) : tie_for_->front_segment();
             }
             if (!spanner_for_.empty()) {
                 for (auto i : spanner_for_) {
                     if (i->is_glissando()) {
-                        return i->spanner_segments().front();
+                        return i->segments_empty() ? static_cast<EngravingItem *>(const_cast<Spanner *>(i)) : i->spanner_segments().front();
                     }
                 }
             }
@@ -2545,7 +2545,7 @@ EngravingItem *Note::next_element() {
 
         case ElementType::NOTE: {
             if (is_pre_bend_or_dive_start() || is_grace_bend_start()) {
-                return bend_for()->front_segment();
+                return bend_for()->segments_empty() ? static_cast<EngravingItem *>(bend_for()) : bend_for()->front_segment();
             }
 
             const auto grace_notes_after = chord()->grace_notes_after();
@@ -2560,12 +2560,12 @@ EngravingItem *Note::next_element() {
                 return el_[0];
             }
             if (tie_valid(tie_for_)) {
-                return tie_for_->front_segment();
+                return tie_for_->segments_empty() ? static_cast<EngravingItem *>(tie_for_) : tie_for_->front_segment();
             }
             if (!spanner_for_.empty()) {
                 for (auto i : spanner_for_) {
                     if (i->is_glissando() || i->is_guitar_bend()) {
-                        return i->spanner_segments().front();
+                        return i->segments_empty() ? static_cast<EngravingItem *>(const_cast<Spanner *>(i)) : i->spanner_segments().front();
                     }
                 }
             }
@@ -2610,7 +2610,7 @@ EngravingItem *Note::prev_element() {
         case ElementType::GLISSANDO_SEGMENT:
         case ElementType::GUITAR_BEND_SEGMENT:
             if (tie_valid(tie_for_)) {
-                return tie_for_->front_segment();
+                return tie_for_->segments_empty() ? static_cast<EngravingItem *>(tie_for_) : tie_for_->front_segment();
             } else if (!el_.empty()) {
                 return el_.back();
             }
@@ -2628,12 +2628,12 @@ EngravingItem *Note::last_element_before_segment() {
     if (!spanner_for_.empty()) {
         for (auto i : spanner_for_) {
             if (i->is_glissando() || i->is_guitar_bend() || i->is_note_line()) {
-                return i->spanner_segments().front();
+                return i->segments_empty() ? static_cast<EngravingItem *>(const_cast<Spanner *>(i)) : i->spanner_segments().front();
             }
         }
     }
     if (tie_valid(tie_for_)) {
-        return tie_for_->front_segment();
+        return tie_for_->segments_empty() ? static_cast<EngravingItem *>(tie_for_) : tie_for_->front_segment();
     }
     if (!el_.empty()) {
         return el_.back();

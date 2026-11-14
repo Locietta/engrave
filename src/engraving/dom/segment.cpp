@@ -2025,56 +2025,32 @@ EngravingItem *Segment::last_element_of_segment(staff_idx_t active_staff) const 
 //---------------------------------------------------------
 
 Spanner *Segment::first_spanner(staff_idx_t active_staff) const {
-    std::multimap<int, Spanner *> mmap = score()->spanner();
-    auto range = mmap.equal_range(tick().ticks());
-    if (range.first != range.second) { // range not empty
-        for (auto i = range.first; i != range.second; ++i) {
-            Spanner *s = i->second;
-            if (s->segments_empty()) {
-                continue;
-            }
-
-            EngravingItem *e = s->start_element();
-            if (!e) {
-                continue;
-            }
-            if (s->start_segment() == this) {
-                if (e->staff_idx() == active_staff || (e->is_measure() && active_staff == 0)) {
-                    return s;
-                }
-            }
+    const auto range = score()->spanner().equal_range(tick().ticks());
+    for (auto i = range.first; i != range.second; ++i) {
+        auto *spanner = i->second;
+        if (!spanner->is_layout_data_current()) {
+            if (spanner->staff_idx() == active_staff || (spanner->system_flag() && active_staff == 0)) return spanner;
+            continue;
         }
+        auto *start = spanner->start_element();
+        if (start && spanner->start_segment() == this && (start->staff_idx() == active_staff || (start->is_measure() && active_staff == 0)))
+            return spanner;
     }
     return nullptr;
 }
 
-//---------------------------------------------------------
-//   lastSpanner
-//---------------------------------------------------------
-
 Spanner *Segment::last_spanner(staff_idx_t active_staff) const {
-    std::multimap<int, Spanner *> mmap = score()->spanner();
-    auto range = mmap.equal_range(tick().ticks());
-    if (range.first != range.second) { // range not empty
-        for (auto i = --range.second;; --i) {
-            Spanner *s = i->second;
-            if (s->segments_empty()) {
-                continue;
-            }
-
-            EngravingItem *e = s->start_element();
-            if (!e) {
-                continue;
-            }
-            if (s->start_segment() == this) {
-                if (e->staff_idx() == active_staff || (e->is_measure() && active_staff == 0)) {
-                    return s;
-                }
-            }
-            if (i == range.first) {
-                break;
-            }
+    const auto range = score()->spanner().equal_range(tick().ticks());
+    auto i = range.second;
+    while (i != range.first) {
+        auto *spanner = (--i)->second;
+        if (!spanner->is_layout_data_current()) {
+            if (spanner->staff_idx() == active_staff || (spanner->system_flag() && active_staff == 0)) return spanner;
+            continue;
         }
+        auto *start = spanner->start_element();
+        if (start && spanner->start_segment() == this && (start->staff_idx() == active_staff || (start->is_measure() && active_staff == 0)))
+            return spanner;
     }
     return nullptr;
 }
@@ -2140,7 +2116,7 @@ EngravingItem *Segment::next_element(staff_idx_t active_staff) {
             } else {
                 Spanner *s = first_spanner(active_staff);
                 if (s) {
-                    return s->spanner_segments().front();
+                    return s->segments_empty() ? static_cast<EngravingItem *>(const_cast<Spanner *>(s)) : s->spanner_segments().front();
                 }
             }
             Segment *next_segment = this->next1_m_menabled();
@@ -2180,7 +2156,7 @@ EngravingItem *Segment::next_element(staff_idx_t active_staff) {
             }
             Spanner *sp = first_spanner(active_staff);
             if (sp) {
-                return sp->spanner_segments().front();
+                return sp->segments_empty() ? static_cast<EngravingItem *>(const_cast<Spanner *>(sp)) : sp->spanner_segments().front();
             }
 
             Segment *next_segment = this->next1_m_menabled();
@@ -2237,7 +2213,7 @@ EngravingItem *Segment::next_element(staff_idx_t active_staff) {
             }
             Spanner *s = first_spanner(active_staff);
             if (s) {
-                return s->spanner_segments().front();
+                return s->segments_empty() ? static_cast<EngravingItem *>(const_cast<Spanner *>(s)) : s->spanner_segments().front();
             }
 
             for (SpannerSegment *spanner_seg : system()->spanner_segments()) {
@@ -2256,7 +2232,8 @@ EngravingItem *Segment::next_element(staff_idx_t active_staff) {
                     return annotation;
                 }
                 if (Spanner *spanner = next_segment->first_spanner(active_staff)) {
-                    return spanner->spanner_segments().front();
+                    return spanner->segments_empty() ? static_cast<EngravingItem *>(const_cast<Spanner *>(spanner)) :
+                                                       spanner->spanner_segments().front();
                 }
             }
             if (!next_segment) {
@@ -2364,7 +2341,7 @@ EngravingItem *Segment::prev_element(staff_idx_t active_staff) {
             } else if (const Segment *prev_seg = prev1()) {
                 const Spanner *s = prev_seg->last_spanner(active_staff);
                 if (s) {
-                    return s->spanner_segments().back();
+                    return s->segments_empty() ? static_cast<EngravingItem *>(const_cast<Spanner *>(s)) : s->spanner_segments().back();
                 }
             }
 
@@ -2474,7 +2451,8 @@ EngravingItem *Segment::prev_element(staff_idx_t active_staff) {
             Segment *prev_seg = seg->prev1_m_menabled();
             for (; prev_seg && prev_seg->is_time_tick_type(); prev_seg = prev_seg->prev1_m_menabled()) {
                 if (Spanner *spanner = prev_seg->last_spanner(active_staff)) {
-                    return spanner->spanner_segments().front();
+                    return spanner->segments_empty() ? static_cast<EngravingItem *>(const_cast<Spanner *>(spanner)) :
+                                                       spanner->spanner_segments().front();
                 }
                 if (EngravingItem *annotation = prev_seg->last_annotation(active_staff)) {
                     return annotation;
@@ -2542,7 +2520,7 @@ EngravingItem *Segment::prev_element(staff_idx_t active_staff) {
             }
             Spanner *s1 = prev_seg->last_spanner(active_staff);
             if (s1) {
-                return s1->spanner_segments().front();
+                return s1->segments_empty() ? static_cast<EngravingItem *>(const_cast<Spanner *>(s1)) : s1->spanner_segments().front();
             } else if (!prev_seg->annotations().empty()) {
                 EngravingItem *next = prev_seg->last_annotation(active_staff);
                 if (next) {

@@ -810,13 +810,7 @@ NoteLine *CompatUtils::create_note_line_from_text_line(TextLine *text_line) {
         note_line->set_property(pid, text_line->get_property(pid));
     }
 
-    for (const SpannerSegment *old_seg : text_line->spanner_segments()) {
-        LineSegment *new_seg = note_line->create_line_segment();
-        new_seg->set_offset(old_seg->offset());
-        new_seg->set_user_off2(old_seg->user_off2());
-
-        note_line->add(new_seg);
-    }
+    note_line->authored_overrides = text_line->authored_overrides;
 
     LinkedObjects *links = text_line->links();
     note_line->set_links(links);

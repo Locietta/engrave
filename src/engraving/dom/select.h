@@ -135,6 +135,7 @@ struct Selection {
     void deselect_all();
     void remove(EngravingItem *);
     void clear();
+    void retire_spanner_segments();
     EngravingItem *element() const;
     ChordRest *cr() const;
     ChordRest *first_chord_rest(track_idx_t track = muse::nidx) const;

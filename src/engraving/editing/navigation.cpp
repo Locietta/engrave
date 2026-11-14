@@ -786,7 +786,8 @@ EngravingItem *Score::next_element() {
                 Spanner *sp = s->spanner();
                 Spanner *next_sp = sp->next_spanner(sp, staff_id);
                 if (next_sp) {
-                    return next_sp->spanner_segments().front();
+                    return next_sp->segments_empty() ? static_cast<EngravingItem *>(const_cast<Spanner *>(next_sp)) :
+                                                       next_sp->spanner_segments().front();
                 }
 
                 Segment *seg = tick2segment(sp->tick());
@@ -798,7 +799,8 @@ EngravingItem *Score::next_element() {
                                 return annotation;
                             }
                             if (Spanner *spanner = next_segment->first_spanner(staff_id)) {
-                                return spanner->spanner_segments().front();
+                                return spanner->segments_empty() ? static_cast<EngravingItem *>(const_cast<Spanner *>(spanner)) :
+                                                                   spanner->spanner_segments().front();
                             }
                         } else if (EngravingItem *next_el = next_segment->first_element_of_segment(staff_id)) {
                             return next_el;
@@ -1031,7 +1033,8 @@ EngravingItem *Score::prev_element() {
                 EngravingItem *st_el = sp->start_element();
                 Spanner *prev_sp = sp->prev_spanner(sp, staff_id);
                 if (prev_sp) {
-                    return prev_sp->spanner_segments().front();
+                    return prev_sp->segments_empty() ? static_cast<EngravingItem *>(const_cast<Spanner *>(prev_sp)) :
+                                                       prev_sp->spanner_segments().front();
                 } else {
                     Segment *start_seg = sp->start_segment();
                     if (EngravingItem *annotation = start_seg->last_annotation(staff_id)) {
@@ -1041,7 +1044,8 @@ EngravingItem *Score::prev_element() {
                         start_seg = start_seg->prev1_m_menabled();
                         for (; start_seg && start_seg->is_time_tick_type(); start_seg = start_seg->prev1_m_menabled()) {
                             if (Spanner *spanner = start_seg->last_spanner(staff_id)) {
-                                return spanner->spanner_segments().front();
+                                return spanner->segments_empty() ? static_cast<EngravingItem *>(const_cast<Spanner *>(spanner)) :
+                                                                   spanner->spanner_segments().front();
                             }
                             if (EngravingItem *annotation = start_seg->last_annotation(staff_id)) {
                                 return annotation;
@@ -1052,7 +1056,8 @@ EngravingItem *Score::prev_element() {
                         }
                         // Also check first non-timeTick segment encountered.
                         if (Spanner *spanner = start_seg->last_spanner(staff_id)) {
-                            return spanner->spanner_segments().front();
+                            return spanner->segments_empty() ? static_cast<EngravingItem *>(const_cast<Spanner *>(spanner)) :
+                                                               spanner->spanner_segments().front();
                         }
                         if (EngravingItem *annotation = start_seg->last_annotation(staff_id)) {
                             return annotation;
