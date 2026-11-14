@@ -54,6 +54,7 @@
 #include "engraving/dom/accidental.h"
 #include "engraving/dom/anchors.h"
 #include "engraving/dom/bagpembell.h"
+#include "engraving/dom/barline.h"
 #include "engraving/dom/beam.h"
 #include "engraving/dom/breath.h"
 #include "engraving/dom/capo.h"
@@ -6001,6 +6002,48 @@ TEST(Read, S14MovedBeamRenderingPreservesSourceTrackAndRevision) {
         ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
         EXPECT_EQ(beam->v_staff_idx(), 1u);
         if (pass == 1) engrave::DocumentAccess::impl(document).discard_layout_output(master);
+    }
+}
+
+TEST(Read, S14EndBarlinePreservesRepeatOnlyAtAuthoredBoundaries) {
+    using namespace mu::engraving;
+    for (const std::string boundary : {"", "line", "page", "section", "frame", "removed-line"}) {
+        for (bool warm : {false, true}) {
+            SCOPED_TRACE(boundary);
+            SCOPED_TRACE(warm);
+            auto xml = legacy_segment_fixture("");
+            const std::string subtype = boundary == "removed-line" ? "line" : boundary;
+            std::string measure_end = "</voice>";
+            if (!boundary.empty() && boundary != "frame") measure_end += "<LayoutBreak><subtype>" + subtype + "</subtype></LayoutBreak>";
+            measure_end += "</Measure>";
+            if (boundary == "frame") measure_end += "<VBox><height>4</height></VBox>";
+            measure_end += "<Measure><startRepeat/><voice><Rest><durationType>whole</durationType></Rest></voice></Measure></Staff>";
+            xml.insert(xml.find("</voice>"), "<BarLine><subtype>double</subtype></BarLine>");
+            const std::string ending = "</voice></Measure></Staff>";
+            xml.replace(xml.find(ending), ending.size(), measure_end);
+            auto opened = g_engine->open(as_bytes(xml));
+            ASSERT_TRUE(opened);
+            auto &document = **opened;
+            auto &master = master_of(document);
+            auto *measure = master.first_measure();
+            ASSERT_TRUE(measure->next_measure()->repeat_start());
+            auto *bar = measure->end_bar_line();
+            ASSERT_NE(bar, nullptr);
+            ASSERT_EQ(bar->bar_line_type(), BarLineType::DOUBLE);
+            if (warm) ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+            if (boundary == "removed-line") {
+                const auto breaks = document.query({.types = {"LayoutBreak"}});
+                ASSERT_TRUE(breaks);
+                ASSERT_EQ(breaks->elements.size(), 1u);
+                ASSERT_TRUE(document.edit({{engrave::Remove{breaks->elements.front().id}}}));
+            }
+            const auto layouts = layout_count(master);
+            const auto changed =
+                document.edit({{engrave::SetProperty{engrave::from_engine(bar->eid()), "BARLINE_TYPE", engrave::Enum{"end"}}}});
+            ASSERT_TRUE(changed) << changed.error().message;
+            EXPECT_EQ(measure->next_measure()->repeat_start(), !boundary.empty() && boundary != "removed-line");
+            EXPECT_EQ(layout_count(master), layouts);
+        }
     }
 }
 
