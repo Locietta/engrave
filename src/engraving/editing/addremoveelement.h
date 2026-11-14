@@ -28,9 +28,7 @@ namespace mu::engraving {
 void validate_element_add(EngravingItem &item);
 void prepare_element_removal(EngravingItem &item);
 void apply_element_add(EngravingItem &item);
-void revert_element_add(EngravingItem &item);
 void apply_element_remove(EngravingItem &item);
-void revert_element_remove(EngravingItem &item);
 void apply_element_replace(EngravingItem &before, EngravingItem &after);
 void apply_element_reparent(EngravingItem &item, EngravingItem &parent, track_idx_t track);
 void apply_segment_reparent(Segment &segment, Measure &parent, Fraction tick);

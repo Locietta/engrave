@@ -31,16 +31,10 @@ struct Score;
 struct Transaction;
 
 struct EditParentheses {
-    static void toggle_parentheses(Transaction &tx, Score *score);
 
     static void add_parentheses_to_notes(Transaction &tx, const std::vector<Note *> &notes);
-    static void remove_parentheses_from_notes(Transaction &tx, const std::vector<Note *> &notes);
-    static void add_parentheses_to_notes(Transaction &tx, Score *score);
-    static void remove_parentheses_from_notes(Transaction &tx, Score *score);
 
-    static void toggle_parentheses_on_notes(Transaction &tx, Score *score);
 
 private:
-    static void toggle_parentheses_on_item(Transaction &tx, EngravingItem *el);
 };
 } // namespace mu::engraving

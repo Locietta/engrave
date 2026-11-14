@@ -36,7 +36,7 @@ enum class SymId;
 struct EditChord {
     static void add_chord_parentheses(Chord *chord, std::vector<Note *> notes, bool add_to_linked = true, bool generated = false);
     static void remove_chord_parentheses(Chord *chord, std::vector<Note *> notes, bool add_to_linked = true, bool generated = false);
-    static void toggle_articulation(Score *score, SymId attr);
+
     static bool toggle_articulation(Score *score, EngravingItem *el, Articulation *a);
 
 private:
@@ -47,8 +47,6 @@ private:
     static void undo_clear_parenthesis_group(Chord *chord, std::vector<Note *> notes, const NoteParenthesisInfo *group,
                                              bool remove_from_linked = true);
 };
-
-void apply_change_chord_staff_move(ChordRest *cr, int v);
 
 void apply_change_span_arpeggio(Chord *chord, Arpeggio *span_arp);
 

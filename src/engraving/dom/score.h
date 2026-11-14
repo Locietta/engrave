@@ -283,17 +283,8 @@ public:
     void set_excerpt(Excerpt *e) { excerpt_ = e; }
 
     void cmd_remove_part(Part *);
-    void cmd_add_ottava(OttavaType);
-    void add_note_line();
 
-    void cmd_add_grace(NoteType, int);
-    void cmd_toggle_layout_break(LayoutBreakType);
     void remove_chord_rest(ChordRest *cr, bool clear_segment);
-    void cmd_toggle_mmrest();
-    void cmd_toggle_hide_empty();
-    void cmd_set_hide_staff_if_empty_override(staff_idx_t staff_idx, System *system, engraving::AutoOnOff value);
-    void cmd_move_rest(Rest *, DirectionV);
-    void cmd_move_lyrics(Lyrics *, DirectionV);
 
     const std::vector<Staff *> &staves() const { return staves_; }
 
@@ -338,9 +329,7 @@ public:
     void undo_insert_part(Part *part, size_t target_part_index);
     void undo_remove_staff(Staff *staff);
     void undo_insert_staff(Staff *staff, staff_idx_t idx, bool create_rests = true);
-    bool undo_property_changed(EngravingItem *item, Pid prop_id, const PropertyValue &prop_value,
-                               PropertyFlags prop_flags = PropertyFlags::NOSTYLE);
-    void undo_property_changed(EngravingObject *, Pid, const PropertyValue &v, PropertyFlags ps = PropertyFlags::NOSTYLE);
+
     TransactionManager *transaction_manager() const;
     void undo_remove_measures(Measure *, Measure *, bool preserve_ties = false, bool move_staff_type_changes = true);
     void undo_change_measure_repeat_count(Measure *m, int count, staff_idx_t staff_idx);
@@ -373,16 +362,13 @@ public:
     void apply_measure_length(Measure *measure, Fraction length);
     void apply_measure_repeat_count(Measure *measure, int count, staff_idx_t staff);
     void undo_change_style_val(Sid idx, const PropertyValue &v);
-    void undo_change_style_values(std::unordered_map<Sid, PropertyValue> values);
 
     void undo_change_parent(EngravingItem *element, EngravingItem *parent, staff_idx_t input_staff, bool change_links_parents = true);
-    void undo_reset_play_count_text_settings(BarLine *bl);
+
     void undo_update_play_count_text(Measure *m);
     void undo_change_bar_line_type(BarLine *bl, BarLineType bar_type, bool all_staves, bool replace = false);
 
     void update_instrument_change_transpositions(KeySigEvent &key, Staff *staff, const Fraction &tick);
-
-    Measure *undo_get_measure(const Fraction &tick);
 
     Note *set_grace_note(Chord *, int pitch, NoteType type, int len);
 
@@ -397,10 +383,8 @@ public:
                            InputState *external_input_state = nullptr);
     void change_c_rlen(ChordRest *cr, const TDuration &);
     void change_c_rlen(ChordRest *cr, const Fraction &, bool fill_with_rest = true);
-    void create_cr_sequence(const Fraction &f, ChordRest *cr, const Fraction &tick);
 
     Fraction make_gap(Segment *, track_idx_t track, const Fraction &, Tuplet *, bool keep_chord = false, bool delete_annotations = true);
-    bool make_gap_voice(Segment *seg, track_idx_t track, Fraction len, const Fraction &tick, bool delete_annotations = true);
 
     Rest *add_rest(const Fraction &tick, track_idx_t track, TDuration, Tuplet *);
     Rest *add_rest(Segment *seg, track_idx_t track, TDuration d, Tuplet *);
@@ -417,8 +401,6 @@ public:
     std::vector<Rest *> set_rests(const Fraction &tick, track_idx_t track, const Fraction &l, bool use_dots, Tuplet *tuplet,
                                   bool use_full_measure_rest = true);
 
-    ChordRest *search_note(const Fraction &tick, track_idx_t track) const;
-
     // undo/redo ops
     void add_element(EngravingItem *);
     void do_undo_add_element(EngravingItem *);
@@ -432,10 +414,6 @@ public:
     void delete_measures(MeasureBase *first_measure, MeasureBase *last_measure, bool preserve_ties = false);
     void restore_initial_key_sig_and_time_sig();
     void reconnect_slurs(MeasureBase *mb_start, MeasureBase *mb_last);
-    void cmd_delete_selection();
-    std::vector<ChordRest *> delete_range(Segment *seg_start, Segment *seg_end, track_idx_t track_start, track_idx_t track_end,
-                                          const SelectionFilter &filter, bool selection_contains_multi_note_chords);
-    void cmd_full_measure_rest();
 
     void start_cmd(const TranslatableString &action_name); // start undoable command
     void end_cmd(bool failed = false);
@@ -449,8 +427,6 @@ public:
     virtual const CmdState &cmd_state() const;
     virtual void add_layout_flags(LayoutFlags);
     virtual void set_instruments_changed(bool);
-
-    void cmd_toggle_autoplace(bool all);
 
     bool play_note() const { return update_state_.play_note; }
 
@@ -516,8 +492,6 @@ public:
     const ShowAnchors &show_anchors() const { return show_anchors_; }
 
     ChordRest *get_selected_chord_rest() const;
-    std::set<ChordRest *> get_selected_chord_rests() const;
-    void get_selected_start_end_chord_rests(ChordRest *&cr1, ChordRest *&cr2) const;
 
     void select(EngravingItem *item, SelectType = SelectType::SINGLE, staff_idx_t staff = 0);
     void select(const std::vector<EngravingItem *> &items, SelectType = SelectType::SINGLE, staff_idx_t staff = 0);
@@ -616,7 +590,6 @@ public:
     PageSizeSetAccessor page_size() { return PageSizeSetAccessor(style_); }
 
     void reset_style_value(Sid style_to_reset);
-    void reset_style_values(const StyleIdSet &style_id_set);
 
     void set_style(const MStyle &s, const bool overlap = false);
 
@@ -749,11 +722,7 @@ public:
     void split_staff(staff_idx_t staff_idx, int split_point);
     FiguredBass *add_figured_bass();
     void expand_voice(Segment *s, track_idx_t track);
-    void expand_voice();
 
-    void cmd_enter_rest(const TDuration &d);
-    void enter_rest(const TDuration &d, InputState *external_input_state = nullptr);
-    void add_interval(int, const std::vector<Note *> &);
     void cmd_create_tuplet(ChordRest *, Tuplet *);
 
     bool auto_layout_enabled() const;
@@ -921,8 +890,6 @@ public:
     int duration() const;
     int duration_without_repeats() const;
 
-    void cmd_remove_empty_trailing_measures();
-
     Measure *first_trailing_measure(ChordRest **cr = nullptr);
 
     muse::Ret sanity_check_local();
@@ -938,10 +905,6 @@ public:
     /// For MasterScores: returns the filename without extension
     /// For Scores: returns the excerpt name
     virtual String name() const;
-
-    bool check_time_delete(Segment *start_segment, Segment *end_segment);
-    void do_time_delete(Segment *start_segment, Segment *end_segment);
-    void do_time_delete_for_measure(Measure *, Segment *, const Fraction &);
 
     void for_all_lyrics(std::function<void(Lyrics *)> f);
 
@@ -1000,7 +963,6 @@ private:
 
     static std::set<Score *> valid_scores;
 
-    Note *get_selected_note();
     ChordRest *find_chord_rest_ending_before_tick_in_staff_and_voice(const Fraction &tick, staff_idx_t staff_idx, bool force_voice,
                                                                      voice_idx_t voice) const;
 
@@ -1022,16 +984,8 @@ private:
     void do_undo_remove_stale_tie_jump_points(Tie *tie, bool undo = true);
     void do_undo_reset_partial_slur(Slur *slur, bool undo);
 
-    void delete_or_shorten_out_spanners_from_range(const Fraction &t1, const Fraction &t2, track_idx_t track_start, track_idx_t track_end,
-                                                   const SelectionFilter &filter);
     void delete_slurs_from_range(const Fraction &t1, const Fraction &t2, track_idx_t track_start, track_idx_t track_end,
                                  const SelectionFilter &filter);
-    void delete_annotations_from_range(Segment *seg_start, Segment *seg_end, track_idx_t track_start, track_idx_t track_end,
-                                       const SelectionFilter &filter);
-
-    void delete_range_at_track(std::vector<ChordRest *> &crs_to_select, const track_idx_t track, Segment *start_seg,
-                               const Fraction &end_tick, Tuplet *current_tuplet, const SelectionFilter &filter,
-                               bool selection_contains_multi_note_chords);
 
     muse::ID new_staff_id() const;
     muse::ID new_part_id() const;

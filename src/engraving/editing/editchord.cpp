@@ -49,29 +49,6 @@ void EditChord::add_chord_parentheses(Chord *chord, std::vector<Note *> notes, b
 ///   Toggle attribute \a attr for all selected notes/rests.
 //---------------------------------------------------------
 
-void EditChord::toggle_articulation(Score *score, SymId attr) {
-    std::set<Chord *> set;
-    for (EngravingItem *el : score->selection().elements()) {
-        if (el->is_note() || el->is_chord()) {
-            Chord *cr = nullptr;
-            if (el->is_note()) {
-                cr = to_note(el)->chord();
-                if (muse::contains(set, cr)) {
-                    continue;
-                }
-            }
-            Articulation *na = Factory::create_articulation(score->dummy());
-            na->set_sym_id(attr);
-            if (!EditChord::toggle_articulation(score, el, na)) {
-                delete na;
-            }
-            if (cr) {
-                set.insert(cr);
-            }
-        }
-    }
-}
-
 bool EditChord::toggle_articulation(Score *score, EngravingItem *el, Articulation *a) {
     Chord *c;
     if (el->is_note()) {
@@ -236,29 +213,6 @@ void EditChord::undo_clear_parenthesis_group(Chord *chord, std::vector<Note *> n
         if (!note) continue;
         const auto *linked_group = linked_chord == chord ? group : linked_chord->matching_parenthesis_group(original);
         if (linked_group) apply_remove_note_parenthesis_info(linked_chord, const_cast<NoteParenthesisInfo *>(linked_group));
-    }
-}
-
-void mu::engraving::apply_change_chord_staff_move(ChordRest *chord_rest, int staff_move) {
-    note_change(chord_rest, CommandType::CHANGE_CHORD_STAFF_MOVE);
-
-    staff_idx_t old_staff = chord_rest->v_staff_idx();
-
-    chord_rest->set_staff_move(staff_move);
-    chord_rest->check_staff_move_validity();
-    chord_rest->trigger_layout();
-    if (chord_rest->v_staff_idx() == old_staff) {
-        return;
-    }
-
-    for (EngravingObject *e : chord_rest->link_list()) {
-        ChordRest *cr = to_chord_rest(e);
-        if (cr == chord_rest) {
-            continue;
-        }
-        cr->set_staff_move(staff_move);
-        cr->check_staff_move_validity();
-        cr->trigger_layout();
     }
 }
 

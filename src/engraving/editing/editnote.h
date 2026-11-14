@@ -37,17 +37,12 @@ struct Articulation;
 enum class UpDownMode : char { CHROMATIC, OCTAVE, DIATONIC };
 
 struct EditNote {
-    static void toggle_ornament(Score *score, SymId attr);
-    static void toggle_accidental(Score *score, AccidentalType at);
-    static void apply_accidental_to_input_notes(Score *score, AccidentalType accidental_type);
-    static void change_accidental(Score *score, AccidentalType idx);
+
     static void change_accidental(Score *score, Note *note, AccidentalType accidental);
     static void undo_change_pitch(Score *score, Note *note, int pitch, int tpc1, int tpc2);
-    static void undo_change_fretting(Score *score, Note *note, int pitch, int string, int fret, int tpc1, int tpc2);
-    static void up_down(Score *score, bool up, UpDownMode mode);
+
 private:
     static void change_accidental2(Note *n, int pitch, int tpc);
-    static void up_down_chromatic(bool up, int pitch, Note *n, Key key, int tpc1, int tpc2, int &new_pitch, int &new_tpc1, int &new_tpc2);
 };
 
 } // namespace mu::engraving

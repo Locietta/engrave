@@ -38,22 +38,9 @@ enum class LayoutBreakType : unsigned char;
 struct EditPageLocks {
     static void undo_add_page_lock(Transaction &tx, const RangeLock *lock);
     static void undo_remove_page_lock(Transaction &tx, const RangeLock *lock);
-    static void undo_remove_all_locks(Transaction &tx, Score *score);
-
-    static void toggle_page_lock(Transaction &tx, Score *score, const std::vector<Page *> &pages);
-    static void toggle_score_lock(Transaction &tx, Score *score);
-
-    static void add_remove_page_locks(Transaction &tx, Score *score, int interval, bool lock);
-
-    static void make_into_page(Transaction &tx, Score *score, MeasureBase *first, MeasureBase *last);
-    static void move_measures_to_prev_page(Transaction &tx, Score *score, MeasureBase *first, MeasureBase *last);
-    static void move_measures_to_next_page(Transaction &tx, Score *score, MeasureBase *first, MeasureBase *last);
-
-    static void apply_lock_to_selection(Transaction &tx, Score *score);
 
     static void remove_layout_breaks_on_add_page_lock(Transaction &tx, const RangeLock *lock);
-    static void remove_page_locks_on_add_layout_break(Transaction &tx, Score *score, LayoutBreakType break_type,
-                                                      const MeasureBase *measure);
+
     static void remove_page_locks_on_remove_measures(Transaction &tx, Score *score, const MeasureBase *m1, const MeasureBase *m2);
     static void remove_page_locks_containing_mm_rests(Transaction &tx, Score *score);
     static void update_page_locks_on_create_mm_rests(Transaction &tx, Score *score, Measure *first, Measure *last);

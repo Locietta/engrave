@@ -37,21 +37,7 @@ enum class LayoutBreakType : unsigned char;
 struct EditSystemLocks {
     static void undo_add_system_lock(Transaction &tx, const RangeLock *lock);
     static void undo_remove_system_lock(Transaction &tx, const RangeLock *lock);
-    static void undo_remove_all_locks(Transaction &tx, Score *score);
 
-    static void toggle_system_lock(Transaction &tx, Score *score, const std::vector<System *> &systems);
-    static void toggle_score_lock(Transaction &tx, Score *score);
-
-    static void add_remove_system_locks(Transaction &tx, Score *score, int interval, bool lock);
-
-    static void make_into_system(Transaction &tx, Score *score, MeasureBase *first, MeasureBase *last);
-    static void move_measure_to_prev_system(Transaction &tx, Score *score, MeasureBase *m);
-    static void move_measure_to_next_system(Transaction &tx, Score *score, MeasureBase *m);
-
-    static void apply_lock_to_selection(Transaction &tx, Score *score);
-
-    static void remove_system_locks_on_add_layout_break(Transaction &tx, Score *score, LayoutBreakType break_type,
-                                                        const MeasureBase *measure);
     static void update_layout_breaks_on_add_system_lock(Transaction &tx, const RangeLock *lock);
     static void remove_system_locks_on_remove_measures(Transaction &tx, Score *score, const MeasureBase *m1, const MeasureBase *m2);
     static void remove_system_locks_containing_mm_rests(Transaction &tx, Score *score);

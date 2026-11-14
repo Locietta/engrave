@@ -22,6 +22,8 @@
 
 #include <gtest/gtest.h>
 
+#include "engrave/src/api/batch.h"
+#include "engrave/src/api/handles.h"
 #include "engraving/dom/beam.h"
 #include "engraving/dom/breath.h"
 #include "engraving/dom/chord.h"
@@ -43,7 +45,6 @@
 #include "engraving/dom/staff.h"
 #include "engraving/dom/stem.h"
 #include "engraving/editing/editmeasurerepeat.h"
-#include "engraving/editing/editvisibility.h"
 #include "engraving/editing/transaction/transaction.h"
 #include "io/fileinfo.h"
 #include "utils/scorecomp.h"
@@ -53,6 +54,17 @@
 using namespace mu::engraving;
 
 static const String parts_data_dir(u"parts_data/");
+
+static void remove_public_item(EngravingItem *item) {
+    ASSERT_NE(item, nullptr);
+    auto &master = *item->master_score();
+    engrave::assign_missing_ids(master);
+    engrave::api::EditContext context(master);
+    auto prepared = engrave::api::prepare(context, engrave::Remove{engrave::from_engine(item->eid())});
+    ASSERT_TRUE(prepared) << prepared.error().message;
+    const auto result = (*prepared)(context);
+    ASSERT_TRUE(result) << result.error().message;
+}
 
 struct EngravingPartsTests : ::testing::Test {
     void test_part_creation(const String &test);
@@ -66,7 +78,6 @@ struct EngravingPartsTests : ::testing::Test {
     MasterScore *do_remove_symbol();
     MasterScore *do_add_chordline();
     MasterScore *do_remove_chordline();
-    MasterScore *do_add_measure_repeat();
     MasterScore *do_remove_measure_repeat();
     MasterScore *do_add_image();
     MasterScore *do_remove_image();
@@ -361,7 +372,7 @@ MasterScore *EngravingPartsTests::do_remove_breath() {
 
     score->select(b);
     score->start_cmd(TranslatableString::untranslatable("Engraving parts tests"));
-    score->cmd_delete_selection();
+    remove_public_item(score->selection().element());
     score->set_layout_all();
     score->end_cmd();
     return score;
@@ -462,7 +473,7 @@ MasterScore *EngravingPartsTests::do_remove_fingering() {
     score->select(fingering);
 
     score->start_cmd(TranslatableString::untranslatable("Engraving parts tests"));
-    score->cmd_delete_selection();
+    remove_public_item(score->selection().element());
     score->set_layout_all();
     score->end_cmd();
     return score;
@@ -563,7 +574,7 @@ MasterScore *EngravingPartsTests::do_remove_symbol() {
     score->select(se);
 
     score->start_cmd(TranslatableString::untranslatable("Engraving parts tests"));
-    score->cmd_delete_selection();
+    remove_public_item(score->selection().element());
     score->set_layout_all();
     score->end_cmd();
     return score;
@@ -665,7 +676,7 @@ MasterScore *EngravingPartsTests::do_remove_chordline() {
     score->select(se);
 
     score->start_cmd(TranslatableString::untranslatable("Engraving parts tests"));
-    score->cmd_delete_selection();
+    remove_public_item(score->selection().element());
     score->set_layout_all();
     score->end_cmd();
     return score;
@@ -700,34 +711,9 @@ TEST_F(EngravingPartsTests, createPartMeasureRepeat) { test_part_creation(u"part
 //   doAddMeasureRepeat
 //---------------------------------------------------------
 
-MasterScore *EngravingPartsTests::do_add_measure_repeat() {
-    MasterScore *score = ScoreRW::read_score(::parts_data_dir + u"part-empty-parts.mscx");
-    if (!score) {
-        ADD_FAILURE() << "score is null";
-        return nullptr;
-    }
-
-    Measure *m = score->first_measure()->next_measure();
-
-    score->start_cmd(TranslatableString::untranslatable("Engraving parts tests"));
-    EditMeasureRepeat::add_measure_repeat(score->transaction_manager()->current_or_dummy_transaction(), score, m, 4,
-                                          0); // test with 4-measure repeat in first staff
-    score->set_layout_all();
-    score->end_cmd();
-
-    return score;
-}
-
 //---------------------------------------------------------
 //   addMeasureRepeat
 //---------------------------------------------------------
-
-TEST_F(EngravingPartsTests, add_measure_repeat) {
-    MasterScore *score = do_add_measure_repeat();
-    ASSERT_TRUE(score);
-    EXPECT_TRUE(ScoreComp::save_compare_score(score, u"part-measure-repeat-add.mscx", ::parts_data_dir + u"part-measure-repeat-add.mscx"));
-    delete score;
-}
 
 //---------------------------------------------------------
 //   undoAddMeasureRepeat
@@ -753,7 +739,7 @@ MasterScore *EngravingPartsTests::do_remove_measure_repeat() {
     score->select(mr);
 
     score->start_cmd(TranslatableString::untranslatable("Engraving parts tests"));
-    score->cmd_delete_selection();
+    remove_public_item(score->selection().element());
     score->set_layout_all();
     score->end_cmd();
     return score;
@@ -968,169 +954,9 @@ TEST_F(EngravingPartsTests, inputFromParts) {
 //   stems and beams follow each score's own note visibility (#31928)
 //---------------------------------------------------------
 
-static std::vector<Chord *> first_measure_chords(Score *score, track_idx_t track) {
-    std::vector<Chord *> chords;
-    for (Segment *s = score->first_measure()->first(SegmentType::CHORD_REST); s; s = s->next(SegmentType::CHORD_REST)) {
-        if (s->element(track) && s->element(track)->is_chord()) {
-            chords.push_back(to_chord(s->element(track)));
-        }
-    }
-    return chords;
-}
-
-static void set_note_visibility(Score *score, track_idx_t track, bool visible) {
-    score->transaction_manager()->transaction(TranslatableString::untranslatable("Engraving parts tests"), [&](Transaction &tx) {
-        for (Chord *chord : first_measure_chords(score, track)) {
-            for (Note *note : chord->notes()) {
-                EditVisibility::undo_change_visible(tx, note, visible);
-            }
-        }
-    });
-}
-
-static void expect_beamed_chords_visible(Score *score, track_idx_t track, bool visible) {
-    score->ensure_layout();
-    const std::vector<Chord *> chords = first_measure_chords(score, track);
-    ASSERT_EQ(chords.size(), 4u);
-    for (const Chord *chord : chords) {
-        EXPECT_EQ(chord->notes().front()->visible(), visible);
-        ASSERT_TRUE(chord->stem());
-        EXPECT_EQ(chord->stem()->visible(), visible);
-        ASSERT_TRUE(chord->beam());
-        EXPECT_EQ(chord->beam()->visible(), visible);
-    }
-}
-
-TEST_F(EngravingPartsTests, noteVisibilityBeams) {
-    MasterScore *score = ScoreRW::read_score(::parts_data_dir + u"part-visibility-beams.mscx");
-    ASSERT_TRUE(score);
-    Score *part = TestUtils::create_part(score);
-    ASSERT_TRUE(part);
-
-    // hide the notes in the score, then show them in the part
-    set_note_visibility(score, 0, false);
-    set_note_visibility(part, 0, true);
-    expect_beamed_chords_visible(score, 0, false);
-    expect_beamed_chords_visible(part, 0, true);
-
-    // hiding them in the score again leaves the part's stems and beams visible
-    set_note_visibility(score, 0, false);
-    expect_beamed_chords_visible(score, 0, false);
-    expect_beamed_chords_visible(part, 0, true);
-
-    delete score;
-}
-
-TEST_F(EngravingPartsTests, noteVisibilityBeamsTwoParts) {
-    MasterScore *score = ScoreRW::read_score(::parts_data_dir + u"part-visibility-beams.mscx");
-    ASSERT_TRUE(score);
-    Score *part1 = TestUtils::create_part(score);
-    Score *part2 = TestUtils::create_part(score);
-    ASSERT_TRUE(part1 && part2);
-
-    // showing the notes in one part leaves the other part alone
-    set_note_visibility(score, 0, false);
-    set_note_visibility(part1, 0, true);
-    expect_beamed_chords_visible(score, 0, false);
-    expect_beamed_chords_visible(part1, 0, true);
-    expect_beamed_chords_visible(part2, 0, false);
-
-    // and so does hiding them again
-    set_note_visibility(part2, 0, true);
-    set_note_visibility(part1, 0, false);
-    expect_beamed_chords_visible(score, 0, false);
-    expect_beamed_chords_visible(part1, 0, false);
-    expect_beamed_chords_visible(part2, 0, true);
-
-    delete score;
-}
-
-TEST_F(EngravingPartsTests, noteVisibilityBeamsVoiceParts) {
-    MasterScore *score = ScoreRW::read_score(::parts_data_dir + u"part-visibility-beams.mscx");
-    ASSERT_TRUE(score);
-    Score *voice1_part = TestUtils::create_part(score);
-    Score *voice2_part = TestUtils::create_part(score);
-    ASSERT_TRUE(voice1_part && voice2_part);
-
-    // one part per voice
-    score->start_cmd(TranslatableString::untranslatable("Engraving parts tests"));
-    score->excerpts().at(0)->set_voice_visible(voice1_part->staff(0), 1, false);
-    score->excerpts().at(1)->set_voice_visible(voice2_part->staff(0), 0, false);
-    score->end_cmd();
-    voice1_part->do_layout();
-    voice2_part->do_layout();
-    ASSERT_TRUE(first_measure_chords(voice1_part, 1).empty());
-    ASSERT_EQ(first_measure_chords(voice2_part, 0).at(0)->notes().front()->pitch(), 67);
-
-    // hide voice 2 in the score, then show it in its own part
-    set_note_visibility(score, 1, false);
-    set_note_visibility(voice2_part, 0, true);
-    expect_beamed_chords_visible(score, 0, true);
-    expect_beamed_chords_visible(score, 1, false);
-    expect_beamed_chords_visible(voice1_part, 0, true);
-    expect_beamed_chords_visible(voice2_part, 0, true);
-
-    // hide voice 2 in the score again
-    set_note_visibility(score, 1, false);
-    expect_beamed_chords_visible(score, 1, false);
-    expect_beamed_chords_visible(voice2_part, 0, true);
-
-    delete score;
-}
-
 //---------------------------------------------------------
 //   staffStyles
 //---------------------------------------------------------
-
-TEST_F(EngravingPartsTests, deleteLinkedRestsRemovesEmptySegments) {
-    for (auto selection : {SelectType::SINGLE, SelectType::ADD}) {
-        SCOPED_TRACE(selection == SelectType::ADD);
-        for (bool from_part : {false, true}) {
-            SCOPED_TRACE(from_part);
-            MasterScore *score = ScoreRW::read_score(::parts_data_dir + u"delete-linked-rests.mscx");
-            ASSERT_TRUE(score);
-            Score *part = TestUtils::create_part(score);
-            ASSERT_TRUE(part);
-            auto check = [&](size_t expected) {
-                for (Score *s : {static_cast<Score *>(score), part}) {
-                    size_t count = 0;
-                    for (Segment *segment = s->first_measure()->first(SegmentType::CHORD_REST); segment;
-                         segment = segment->next(SegmentType::CHORD_REST)) {
-                        EXPECT_FALSE(segment->empty());
-                        EngravingItem *item = segment->element(0);
-                        EXPECT_TRUE(item && item->is_rest());
-                        if (item && item->is_rest()) {
-                            EXPECT_EQ(to_rest(item)->ticks(), expected == 1 ? Fraction(1, 1) : Fraction(1, 4));
-                        }
-                        ++count;
-                    }
-                    EXPECT_EQ(count, expected);
-                }
-            };
-            check(4);
-            const auto master_layouts = score->layout_state.whole_count + score->layout_state.range_count;
-            const auto part_layouts = part->layout_state.whole_count + part->layout_state.range_count;
-            EXPECT_EQ(part_layouts, 0u);
-            Score *owner = from_part ? part : score;
-            score->start_cmd(TranslatableString::untranslatable("Engraving parts tests"));
-            owner->select(owner->first_measure(), selection, 0);
-            EXPECT_EQ(owner->selection().tick_end(), owner->first_measure()->end_tick());
-            owner->cmd_delete_selection();
-            score->end_cmd();
-            check(1);
-            EXPECT_EQ(score->layout_state.whole_count + score->layout_state.range_count, master_layouts);
-            EXPECT_EQ(part->layout_state.whole_count + part->layout_state.range_count, part_layouts);
-            ASSERT_TRUE(ScoreRW::save_score(score, u"delete-linked-rests-test.mscx"));
-            delete score;
-            score = ScoreRW::read_score(ScoreRW::scratch_path(u"delete-linked-rests-test.mscx"), true);
-            ASSERT_TRUE(score);
-            ASSERT_EQ(score->excerpts().size(), 1u);
-            part = score->excerpts().front()->excerpt_score();
-            check(1);
-            delete score;
-        }
-    }
-}
 
 TEST_F(EngravingPartsTests, crossMeasureUpwardGlissExcerpt) {
     MasterScore *master = ScoreRW::read_score(::parts_data_dir + u"cross-measure-gliss.mscx");

@@ -43,118 +43,11 @@ using namespace mu::engraving;
 //   addMeasureRepeat
 //---------------------------------------------------------
 
-void EditMeasureRepeat::add_measure_repeat(Transaction &tx, Score *score, Measure *first_measure, int num_measures, staff_idx_t staff_idx) {
-    //
-    // make measures into group
-    //
-    if (!make_measure_repeat_group(tx, score, first_measure, num_measures, staff_idx)) {
-        return;
-    }
-
-    //
-    // add MeasureRepeat element
-    //
-    int measure_with_element_no;
-    if (num_measures % 2) {
-        // odd number, element anchored to center measure of group
-        measure_with_element_no = num_measures / 2 + 1;
-    } else {
-        // even number, element anchored to last measure in first half of group
-        measure_with_element_no = num_measures / 2;
-    }
-    Measure *measure_with_element = first_measure;
-    for (int i = 1; i < measure_with_element_no; ++i) {
-        measure_with_element = measure_with_element->next_measure();
-    }
-    // MeasureRepeat element will be positioned appropriately (in center of measure / on following barline)
-    // when stretchMeasure() is called on measureWithElement
-    MeasureRepeat *mr = add_measure_repeat(tx, score, measure_with_element->tick(), staff2track(staff_idx), num_measures);
-    score->select(mr, SelectType::SINGLE, 0);
-}
-
 //---------------------------------------------------------
 //   makeMeasureRepeatGroup
 ///   clear measures, apply noBreak, set measureRepeatCount
 ///   returns false if these measures won't work or user aborted
 //---------------------------------------------------------
-
-bool EditMeasureRepeat::make_measure_repeat_group(Transaction &, Score *score, Measure *first_measure, int num_measures,
-                                                  staff_idx_t staff_idx) {
-    //
-    // check that sufficient measures exist, with equal durations
-    //
-    std::vector<Measure *> measures;
-    Measure *measure = first_measure;
-    for (int i = 1; i <= num_measures; ++i) {
-        if (!measure || measure->ticks() != first_measure->ticks()) {
-            MScore::set_error(MsError::INSUFFICIENT_MEASURES);
-            return false;
-        }
-        measures.push_back(measure);
-        measure = measure->next_measure();
-    }
-
-    //
-    // warn user if things will have to be deleted to make room for measure repeat
-    //
-    bool empty = true;
-    for (auto m : measures) {
-        if (m != measures.back()) {
-            if (m->repeat_end() || m->end_bar_line_type() != BarLineType::NORMAL) {
-                empty = false;
-                break;
-            }
-        }
-        for (auto seg = m->first(); seg && empty; seg = seg->next()) {
-            if (seg->segment_type() & SegmentType::CHORD_REST) {
-                track_idx_t strack = staff_idx * ::mu::engraving::voices;
-                track_idx_t etrack = strack + ::mu::engraving::voices;
-                for (track_idx_t track = strack; track < etrack; ++track) {
-                    EngravingItem *e = seg->element(track);
-                    if (e && !e->generated() && !e->is_rest()) {
-                        empty = false;
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    if (!empty) {
-        auto b = MessageBox().warning(muse::trc("engraving", "Current contents of measures will be replaced"),
-                                      muse::trc("engraving", "Continue with inserting measure repeat?"));
-        if (b == MessageBox::Button::CANCEL) {
-            return false;
-        }
-    }
-
-    //
-    // group measures and clear current contents
-    //
-
-    score->deselect_all();
-    int i = 1;
-    for (auto m : measures) {
-        score->select(m, SelectType::RANGE, staff_idx);
-        if (m->is_measure_repeat_group(staff_idx)) {
-            score->delete_item(m->measure_repeat_element(staff_idx)); // reset measures related to an earlier MeasureRepeat
-        }
-        score->undo_change_measure_repeat_count(m, i++, staff_idx);
-        if (m != measures.front()) {
-            m->undo_change_property(Pid::REPEAT_START, false);
-        }
-        if (m != measures.back()) {
-            m->undo_set_no_break(true);
-            Segment *seg = m->find_segment_r(SegmentType::END_BAR_LINE, m->ticks());
-            if (seg) {
-                if (auto *barline = seg->element(staff2track(staff_idx))) score->delete_item(barline);
-            }
-            m->undo_change_property(Pid::REPEAT_END, false);
-        }
-    }
-    score->cmd_delete_selection();
-    return true;
-}
 
 //---------------------------------------------------------
 //   addMeasureRepeat

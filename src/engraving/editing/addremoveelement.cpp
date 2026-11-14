@@ -83,18 +83,6 @@ static void update_element_membership(EngravingItem *element, bool removing) {
     }
 }
 
-void mu::engraving::revert_element_add(EngravingItem &item) {
-    auto *element = &item;
-    Score *score = element->score();
-    EngravingItem::disconnect_shared_tree(element);
-
-    if (!element->is_tuplet()) {
-        score->remove_element(element);
-    }
-
-    update_element_membership(element, true);
-}
-
 void mu::engraving::apply_element_add(EngravingItem &item) {
     auto *element = &item;
     Score *score = element->score();
@@ -104,29 +92,6 @@ void mu::engraving::apply_element_add(EngravingItem &item) {
     }
 
     update_element_membership(element, false);
-}
-
-void mu::engraving::revert_element_remove(EngravingItem &item) {
-    auto *element = &item;
-    Score *score = element->score();
-
-    if (!element->is_tuplet()) {
-        score->add_element(element);
-    }
-
-    if (element->is_chord_rest()) {
-        if (element->is_chord()) {
-            Chord *chord = to_chord(element);
-            for (Note *note : chord->notes()) {
-                note->connect_tied_notes();
-            }
-        }
-        undo_add_tuplet(to_chord_rest(element));
-    } else if (element->is_clef()) {
-        score->set_layout(element->staff()->next_clef_tick(element->tick()), element->staff_idx());
-    } else if (element->is_key_sig()) {
-        score->set_layout(element->staff()->next_key_tick(element->tick()), element->staff_idx());
-    }
 }
 
 void mu::engraving::apply_element_remove(EngravingItem &item) {

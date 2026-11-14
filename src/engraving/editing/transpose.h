@@ -37,8 +37,6 @@ struct Transpose {
 
     static void transposition_changed(Transaction &tx, Score *score, Part *part, Interval old_v, Fraction tick_start = {0, 1},
                                       Fraction tick_end = {-1, 1});
-    static void transposition_changed(Transaction &tx, Score *score, Part *part, const Fraction &instrument_tick,
-                                      Interval old_transposition);
 
     static Key transpose_key(Key old_key, const Interval &interval, PreferSharpFlat prefer = PreferSharpFlat::NONE);
     static int transpose_tpc(int tpc, Interval interval, bool use_double_sharps_flats);

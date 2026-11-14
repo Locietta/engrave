@@ -34,12 +34,7 @@ struct Selection;
 struct Tie;
 struct TieJumpPointList;
 
-struct EditTie {
-    static void cmd_add_tie(Score *score, bool add_to_chord = false);
-    static Tie *cmd_toggle_tie(Score *score);
-    static void cmd_toggle_laissez_vib(Score *score);
-    static std::vector<Note *> cmd_tie_note_list(const Selection &selection, bool note_entry_mode);
-};
+struct EditTie {};
 
 void apply_change_tie_jump_point_active(TieJumpPointList *jump_point_list, muse::String id, bool active);
 } // namespace mu::engraving

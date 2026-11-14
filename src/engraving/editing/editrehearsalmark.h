@@ -30,7 +30,6 @@ struct Score;
 struct Transaction;
 
 struct EditRehearsalMark {
-    static void resequence_rehearsal_marks(Transaction &tx, Score *score);
 
     static muse::String create_rehearsal_mark_text(const Score *score, RehearsalMark *current);
 
