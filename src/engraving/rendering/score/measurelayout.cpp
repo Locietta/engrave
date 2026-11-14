@@ -772,8 +772,8 @@ void MeasureLayout::create_end_bar_lines(Measure *m, bool is_last_measure_in_sys
         Fraction tick = m->end_tick();
         for (staff_idx_t staff_idx = 0; staff_idx < nstaves; ++staff_idx) {
             const Staff *staff = ctx.dom().staff(staff_idx);
-            const KeySigEvent key1 = staff->key_sig_event(tick - Fraction::eps());
-            const KeySigEvent key2 = staff->key_sig_event(tick);
+            const KeySigEvent key1 = staff->rendered_key_sig_event(tick - Fraction::eps());
+            const KeySigEvent key2 = staff->rendered_key_sig_event(tick);
             if (key1 == key2) {
                 continue;
             }
@@ -989,8 +989,8 @@ void MeasureLayout::set_courtesy_time_sig(Measure *m, const Fraction &ref_sig_ti
     Segment *courtesy_sig_seg = m->find_rendered_segment_r(courtesy_seg_type, courtesy_sig_r_tick);
     for (track_idx_t track = 0; track < nstaves * ::mu::engraving::voices; track += ::mu::engraving::voices) {
         const Staff *staff = ctx.dom().staff(track2staff(track));
-        const TimeSig *actual_time_sig = staff->time_sig(ref_sig_tick);
-        const TimeSig *cur_time_sig = staff->time_sig(courtesy_sig_tick - Fraction::eps());
+        const TimeSig *actual_time_sig = staff->rendered_time_sig(ref_sig_tick);
+        const TimeSig *cur_time_sig = staff->rendered_time_sig(courtesy_sig_tick - Fraction::eps());
         if (!actual_time_sig || !cur_time_sig) {
             continue;
         }
@@ -1128,10 +1128,10 @@ void MeasureLayout::set_courtesy_key_sig(Measure *m, const Fraction &ref_sig_tic
                                       nullptr;
         const KeySig *actual_key_sig = el ? to_key_sig(el) : nullptr;
 
-        const KeySigEvent ref_key = staff->key_sig_event(ref_sig_tick);
+        const KeySigEvent ref_key = staff->rendered_key_sig_event(ref_sig_tick);
         // Get info from correct tick for repeats
         // For trailers and pre-repeat courtesies, signatures should be different
-        const bool sigs_different = staff->key(m->end_tick() - Fraction::eps()) != ref_key.key();
+        const bool sigs_different = staff->rendered_key(m->end_tick() - Fraction::eps()) != ref_key.key();
         const bool needs_courtesy = is_continuation_courtesy ? should_show_cont_courtesy && prev_courtesy_segment &&
                                                                    prev_courtesy_segment->effective_element(track) :
                                                                sigs_different;
@@ -1260,9 +1260,9 @@ void MeasureLayout::set_courtesy_clef(Measure *m, const Fraction &ref_clef_tick,
                                                     nullptr;
         const Clef *actual_clef = el ? to_clef(el) : nullptr;
 
-        const ClefType ref_clef = staff->clef(ref_clef_tick);
+        const ClefType ref_clef = staff->rendered_clef(ref_clef_tick);
         // For trailers and pre-repeat courtesies, clefs should be different
-        const bool clefs_different = staff->clef(m->end_tick() - Fraction::eps()) != ref_clef;
+        const bool clefs_different = staff->rendered_clef(m->end_tick() - Fraction::eps()) != ref_clef;
         const bool needs_courtesy = is_continuation_courtesy ? should_show_cont_courtesy && prev_courtesy_segment &&
                                                                    prev_courtesy_segment->effective_element(track) :
                                                                clefs_different;
@@ -1715,7 +1715,7 @@ Segment *MeasureLayout::add_header_clef(Measure *m, bool is_first_clef, const St
         staff_type->is_tab_staff() ? ctx.conf().style_b(Sid::HIDE_TAB_CLEF_AFTER_FIRST) : !ctx.conf().style_b(Sid::GEN_CLEF);
 
     // find the clef type at the previous tick
-    ClefTypeList cl = staff->clef_type(m->tick() - Fraction::eps());
+    ClefTypeList cl = staff->rendered_clef_type(m->tick() - Fraction::eps());
     bool show_courtesy = true;
     Segment *s = nullptr;
     if (m->prev_measure()) {
@@ -1779,7 +1779,7 @@ Segment *MeasureLayout::add_header_key_sig(Measure *m, bool is_first_keysig, con
     // a courtesy key sig, don’t create it and switch generated flags.
     // This avoids creating an invisible KeySig which can distort layout.
 
-    KeySigEvent key_idx = staff->key_sig_event(m->tick());
+    KeySigEvent key_idx = staff->rendered_key_sig_event(m->tick());
     KeySig *ks_announce = 0;
     if ((is_first_keysig || ctx.conf().style_b(Sid::GEN_KEYSIG)) && (key_idx.key() == Key::C)) {
         Measure *pm = m->prev_measure_mm();
@@ -1827,7 +1827,7 @@ Segment *MeasureLayout::add_header_key_sig(Measure *m, bool is_first_keysig, con
         // do not remove user modified keysigs
         bool remove = true;
         EngravingItem *e = k_segment->effective_element(staff_idx * ::mu::engraving::voices);
-        Key key = staff->key(m->tick());
+        Key key = staff->rendered_key(m->tick());
         if ((e && !e->generated()) || (key != key_idx.key())) {
             remove = false;
         }

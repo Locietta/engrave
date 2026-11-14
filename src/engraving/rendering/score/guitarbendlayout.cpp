@@ -227,7 +227,7 @@ void GuitarBendLayout::compute_up(GuitarBend *item) {
     if (!measure) {
         return;
     }
-    if (measure->has_voices(item->staff_idx())) {
+    if (measure->has_rendered_voices(item->staff_idx())) {
         layout_data->set_up(item->track() % 2);
         return;
     }

@@ -506,8 +506,8 @@ void TLayout::layout_ambitus(const Ambitus *item, Ambitus::LayoutData *ldata, co
     {
         const Fraction tick = item->segment()->tick();
         const Staff *stf = ctx.dom().staff(item->staff_idx());
-        const ClefType clf = stf->clef(tick);
-        const Key key = stf->key(tick);
+        const ClefType clf = stf->rendered_clef(tick);
+        const Key key = stf->rendered_key(tick);
         const double line_dist = stf->line_distance(tick) * spatium;
 
         // top notehead
@@ -2118,7 +2118,7 @@ void TLayout::layout_fingering(const Fingering *item, Fingering::LayoutData *lda
         const Note *note = item->note();
         const Chord *chord = note->chord();
 
-        bool voices = chord->measure()->has_voices(chord->staff_idx(), chord->tick(), chord->actual_ticks());
+        bool voices = chord->measure()->has_rendered_voices(chord->staff_idx(), chord->tick(), chord->actual_ticks());
         bool tight = voices && chord->notes().size() == 1 && !chord->beam() && item->text_style_type() != TextStyleType::STRING_NUMBER;
 
         double head_width = note->bbox_right_pos();
@@ -3183,7 +3183,7 @@ void TLayout::layout_key_sig(const KeySig *item, KeySig::LayoutData *ldata, cons
             }
         }
         // If no clef found, get the clef type from the clefs list (using the previous tick)
-        clef = c ? c->clef_type() : item->staff()->clef(item->tick() - Fraction::eps());
+        clef = c ? c->clef_type() : item->staff()->rendered_clef(item->tick() - Fraction::eps());
     }
 
     int t1 = int(item->key());
@@ -3278,7 +3278,8 @@ void TLayout::layout_key_sig(const KeySig *item, KeySig::LayoutData *ldata, cons
         const bool prev_trailer_courtesy = pm && !pm->section_break() && (!pm->trailer() || !pm->has_courtesy_key_sig());
         if (!item->hide_naturals() && track != muse::nidx &&
             (conf.style_i(Sid::KEY_SIG_NATURALS) != int(KeySigNatural::NONE) || (t1 == 0)) && (is_courtesy || prev_trailer_courtesy)) {
-            KeySigEvent prev_ks_event = item->staff() ? item->staff()->key_sig_event(item->tick() - Fraction::eps()) : KeySigEvent();
+            KeySigEvent prev_ks_event =
+                item->staff() ? item->staff()->rendered_key_sig_event(item->tick() - Fraction::eps()) : KeySigEvent();
             int t2 = int(prev_ks_event.key());
 
             // Handle naturals in continuation courtesy

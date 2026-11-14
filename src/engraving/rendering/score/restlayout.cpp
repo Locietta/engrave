@@ -452,7 +452,7 @@ RestGroups RestLayout::compute_rest_groups(const System *system, LayoutContext &
 
     for (staff_idx_t staff_idx = 0; staff_idx < ctx.dom().nstaves(); ++staff_idx) {
         for (const MeasureBase *mb : system->measures()) {
-            if (!(mb->is_measure() && to_measure(mb)->has_voices(staff_idx))) {
+            if (!(mb->is_measure() && to_measure(mb)->has_rendered_voices(staff_idx))) {
                 continue;
             }
 
@@ -578,7 +578,7 @@ InterruptionPoints RestLayout::compute_interruption_points(const Measure *measur
 void RestLayout::check_full_measure_rest_collisions(const System *system, LayoutContext &ctx) {
     for (staff_idx_t staff_idx = 0; staff_idx < ctx.dom().nstaves(); ++staff_idx) {
         for (MeasureBase *mb : system->measures()) {
-            if (!(mb->is_measure() && to_measure(mb)->has_voices(staff_idx))) {
+            if (!(mb->is_measure() && to_measure(mb)->has_rendered_voices(staff_idx))) {
                 continue;
             }
 
@@ -686,7 +686,8 @@ int RestLayout::compute_voice_offset(const Rest *item, Rest::LayoutData *ldata) 
     ldata->merged_rests.clear();
     Segment *s = item->segment();
     Measure *measure = item->measure();
-    bool offset_voices = s && measure && (item->voice() > 0 || measure->has_voices(item->staff_idx(), item->tick(), item->actual_ticks()));
+    bool offset_voices =
+        s && measure && (item->voice() > 0 || measure->has_rendered_voices(item->staff_idx(), item->tick(), item->actual_ticks()));
     if (offset_voices && item->voice() == 0) {
         // do not offset voice 1 rest if there exists a matching invisible rest in voice 2;
         EngravingItem *e = s->effective_element(item->track() + 1);

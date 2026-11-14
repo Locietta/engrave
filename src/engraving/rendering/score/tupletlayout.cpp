@@ -230,7 +230,7 @@ void TupletLayout::compute_direction(Tuplet *item) {
     if (up == 0) {
         // this is a tuplet full of rests, default to up but also take voices into consideration
         Measure *m = item->measure();
-        if (m && m->has_voices(item->staff_idx())) {
+        if (m && m->has_rendered_voices(item->staff_idx())) {
             up = item->voice() % 2 == 0 ? 1 : -1;
         } else {
             up = 1; // default up

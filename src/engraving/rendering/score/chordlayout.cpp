@@ -713,7 +713,7 @@ void ChordLayout::layout_lv_articulation(Chord *item, LayoutContext &ctx) {
     for (Articulation *a : item->articulations()) {
         if (a->is_laissez_vib()) {
             // Must set direction before laying out
-            if (item->measure()->has_voices(a->staff_idx(), item->tick(), item->actual_ticks()) &&
+            if (item->measure()->has_rendered_voices(a->staff_idx(), item->tick(), item->actual_ticks()) &&
                 a->anchor() == ArticulationAnchor::AUTO) {
                 a->set_up(item->up()); // if there are voices place articulation at stem
             } else if (a->anchor() == ArticulationAnchor::AUTO) {
@@ -830,7 +830,8 @@ void ChordLayout::layout_articulations(Chord *item, LayoutContext &ctx) {
 
     Articulation *prev_visible_articulation = nullptr;
     for (Articulation *a : item->articulations()) {
-        if (item->measure()->has_voices(a->staff_idx(), item->tick(), item->actual_ticks()) && a->anchor() == ArticulationAnchor::AUTO) {
+        if (item->measure()->has_rendered_voices(a->staff_idx(), item->tick(), item->actual_ticks()) &&
+            a->anchor() == ArticulationAnchor::AUTO) {
             a->set_up(item->up()); // if there are voices place articulation at stem
         } else if (a->anchor() == ArticulationAnchor::AUTO) {
             if (a->is_ornament()) {
@@ -1531,7 +1532,7 @@ void ChordLayout::compute_up(const Chord *item, ChordRest::LayoutData *ldata, co
             return;
         }
         if (!tab->stem_through()) {
-            bool staff_has_multiple_voices = item->measure()->has_voices(item->staff_idx(), item->tick(), item->actual_ticks());
+            bool staff_has_multiple_voices = item->measure()->has_rendered_voices(item->staff_idx(), item->tick(), item->actual_ticks());
             if (staff_has_multiple_voices) {
                 bool is_track_even = item->track() % 2 == 0;
                 ldata->up = is_track_even;
@@ -1560,7 +1561,7 @@ void ChordLayout::compute_up(const Chord *item, ChordRest::LayoutData *ldata, co
         return;
     }
 
-    bool staff_has_multiple_voices = item->measure()->has_voices(item->staff_idx(), item->tick(), item->actual_ticks());
+    bool staff_has_multiple_voices = item->measure()->has_rendered_voices(item->staff_idx(), item->tick(), item->actual_ticks());
     if (staff_has_multiple_voices) {
         bool is_track_even = item->track() % 2 == 0;
         ldata->up = is_track_even;
@@ -2817,7 +2818,7 @@ void ChordLayout::layout_ledger_lines(const std::vector<Chord *> &chords, Layout
 void ChordLayout::get_note_list_for_dots(Chord *c, std::vector<Note *> &top_down_notes, std::vector<Note *> &bottom_up_notes,
                                          std::vector<int> &anchored_dots) {
     Measure *measure = c->measure();
-    bool has_voices = measure->has_voices(c->v_staff_idx(), c->tick(), c->ticks(), true);
+    bool has_voices = measure->has_rendered_voices(c->v_staff_idx(), c->tick(), c->ticks(), true);
     bool has_upper_cross_notes = false;
     bool has_lower_cross_notes = false;
     const TrackRange part_track_range = c->part()->track_range();

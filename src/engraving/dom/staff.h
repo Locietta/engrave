@@ -79,6 +79,14 @@ public:
     ClefList &clef_list() { return clefs_; }
 
     ClefTypeList clef_type(const Fraction &) const;
+    ClefTypeList rendered_clef_type(const Fraction &) const;
+    ClefType rendered_clef(const Fraction &) const;
+    TimeSig *rendered_time_sig(const Fraction &) const;
+    KeySigEvent rendered_key_sig_event(const Fraction &) const;
+
+    Key rendered_key(const Fraction &tick) const { return rendered_key_sig_event(tick).key(); }
+
+    Fraction rendered_time_stretch(const Fraction &) const;
 
     ClefTypeList default_clef_type() const { return default_clef_type_; }
 

@@ -1375,7 +1375,8 @@ PlacementV EngravingItem::placement_based_on_voice_assignment(DirectionV styled_
                 start_tick = measure->tick();
                 length = measure->ticks();
             }
-            if (measure && measure->has_voices(staff_idx(), start_tick, length)) {
+            if (measure && (is_layout_copy() ? measure->has_rendered_voices(staff_idx(), start_tick, length) :
+                                               measure->has_voices(staff_idx(), start_tick, length))) {
                 new_placement = PlacementV::ABOVE;
             } else {
                 new_placement = PlacementV::BELOW;

@@ -2673,7 +2673,7 @@ void Segment::create_shape(staff_idx_t staff_idx) {
         track_idx_t effective_track = e->v_staff_idx() * ::mu::engraving::voices + e->voice();
         if (effective_track >= strack && effective_track < etrack) {
             set_visible(true);
-            if (e->is_rest() && to_rest(e)->is_full_measure_rest() && measure()->has_voices(e->staff_idx())) {
+            if (e->is_rest() && to_rest(e)->is_full_measure_rest() && measure()->has_rendered_voices(e->staff_idx())) {
                 // A full measure rest in a measure with multiple voices must be ignored
                 // Unless the measure is made of *only* full rests
                 bool is_all_full_rests = true;
@@ -2952,7 +2952,7 @@ Fraction Segment::shortest_chord_rest() const {
     for (auto elem : effective_elements()) {
         if (!elem || !elem->staff()->show() || !elem->is_chord_rest() || (elem->is_rest() && to_rest(elem)->is_gap()) ||
             (!elem->visible() &&
-             measure()->has_voices(elem->staff_idx(), measure()->tick(), measure()->ticks(), /*considerInvisible*/ true))) {
+             measure()->has_rendered_voices(elem->staff_idx(), measure()->tick(), measure()->ticks(), /*considerInvisible*/ true))) {
             continue;
         }
         cur = to_chord_rest(elem)->actual_ticks();

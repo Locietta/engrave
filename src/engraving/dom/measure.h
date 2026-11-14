@@ -185,7 +185,13 @@ public:
     void change(EngravingItem *o, EngravingItem *n) override;
     void spatium_changed(double old_value, double new_value) override;
 
-    bool has_voices(staff_idx_t staff_idx, Fraction stick, Fraction len, bool consider_invisible = false) const;
+    bool has_voices(staff_idx_t staff_idx, Fraction stick, Fraction len, bool consider_invisible = false, bool rendered = false) const;
+
+    bool has_rendered_voices(staff_idx_t staff_idx, Fraction stick, Fraction len, bool consider_invisible = false) const {
+        return has_voices(staff_idx, stick, len, consider_invisible, true);
+    }
+
+    bool has_rendered_voices(staff_idx_t staff_idx) const;
     bool has_voices(staff_idx_t staff_idx) const;
     void set_has_voices(staff_idx_t staff_idx, bool v);
 

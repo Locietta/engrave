@@ -632,15 +632,14 @@ static StaffHideMode compute_hide_mode(const System *system, const Staff *staff,
 }
 
 static bool compute_show_sys_staff(const System *system, const Staff *staff, const staff_idx_t staff_idx, const Fraction &stick,
-                                   const SpannerMap::IntervalList &spanners, const StaffHideMode hide_mode) {
+                                   const std::vector<Spanner *> &spanners, const StaffHideMode hide_mode) {
     if (hide_mode == StaffHideMode::ALWAYS_SHOW) {
         return true;
     }
 
     // Check if there are spanners
     for (const auto &spanner : spanners) {
-        if (spanner.value->staff() == staff && !spanner.value->system_flag() &&
-            !(spanner.stop == stick.ticks() && !spanner.value->is_slur())) {
+        if (spanner->staff() == staff && !spanner->system_flag() && !(spanner->tick2() == stick && !spanner->is_slur())) {
             return true;
         }
     }
@@ -713,7 +712,7 @@ void SystemLayout::hide_empty_staves(System *system, LayoutContext &ctx, bool is
 
     const Fraction stick = system->first()->tick();
     const Fraction etick = system->last()->end_tick();
-    const auto &spanners = ctx.dom().spanner_map().find_overlapping(stick.ticks(), etick.ticks() - 1);
+    const auto &spanners = ctx.dom().score()->layout_data_store()->rendered_spanners(stick.ticks(), etick.ticks() - 1);
 
     const bool global_hide_if_empty =
         ctx.conf().style_b(Sid::HIDE_EMPTY_STAVES) && !(is_first_system && ctx.conf().style_b(Sid::DONT_HIDE_STAVES_IN_FIRST_SYSTEM));
@@ -779,7 +778,7 @@ bool SystemLayout::can_change_sys_staff_visibility(const System *system, const s
         // SysStaff is visible; check if can hide
         const Fraction stick = system->first()->tick();
         const Fraction etick = system->last()->end_tick();
-        const auto &spanners = system->score()->spanner_map().find_overlapping(stick.ticks(), etick.ticks() - 1);
+        const auto &spanners = system->score()->layout_data_store()->rendered_spanners(stick.ticks(), etick.ticks() - 1);
 
         return !compute_show_sys_staff(system, staff, staff_idx, system->first()->tick(), spanners, StaffHideMode::HIDE_WHEN_STAFF_EMPTY);
     }
@@ -1561,20 +1560,9 @@ void SystemLayout::collect_spanners_to_layout(ElementsToLayout &elements, const 
     Fraction stick = system->measures().front()->tick();
     Fraction etick = system->measures().back()->end_tick();
 
-    auto spanners = ctx.dom().spanner_map().find_overlapping(stick.ticks(), etick.ticks());
-    std::sort(spanners.begin(), spanners.end(), [](const auto &sp1, const auto &sp2) { return sp1.value->tick() < sp2.value->tick(); });
-
-    std::vector<Spanner *> all_spanners;
-    all_spanners.reserve(spanners.size());
-    for (auto item : spanners) {
-        all_spanners.push_back(item.value);
-    }
-
-    if (auto *store = system->score()->layout_data_store()) {
-        for (auto *span : store->score_output().shared_spanners) {
-            if (!span->is_tie() && span->anchor() != Spanner::Anchor::NOTE) all_spanners.push_back(span);
-        }
-    }
+    auto all_spanners = ctx.dom().score()->layout_data_store()->rendered_spanners(stick.ticks(), etick.ticks());
+    std::sort(all_spanners.begin(), all_spanners.end(),
+              [](const auto *first, const auto *second) { return first->tick() < second->tick(); });
 
     for (Spanner *spanner : all_spanners) {
         if (!spanner->system_flag() && !system->staff(spanner->staff_idx())->show()) {
