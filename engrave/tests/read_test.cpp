@@ -6109,6 +6109,108 @@ TEST(Read, S14EndBarlinePreservesRepeatOnlyAtAuthoredBoundaries) {
     }
 }
 
+TEST(Read, LayoutBreakSubtypeEditsControlFollowingRepeatWithoutLayout) {
+    using namespace mu::engraving;
+    for (const std::string target : {"nobreak", "line", "page", "section"}) {
+        for (bool warm : {false, true}) {
+            SCOPED_TRACE(target);
+            SCOPED_TRACE(warm);
+            auto xml = legacy_segment_fixture("");
+            xml.insert(xml.find("</voice>"), "<BarLine><subtype>double</subtype></BarLine>");
+            const std::string ending = "</voice></Measure></Staff>";
+            const std::string initial = target == "nobreak" ? "line" : "nobreak";
+            xml.replace(xml.find(ending), ending.size(),
+                        "</voice><LayoutBreak><subtype>" + initial +
+                            "</subtype></LayoutBreak></Measure><Measure><startRepeat/><voice><Rest>"
+                            "<durationType>whole</durationType></Rest></voice></Measure></Staff>");
+            auto opened = g_engine->open(as_bytes(xml));
+            ASSERT_TRUE(opened);
+            auto &document = **opened;
+            auto &master = master_of(document);
+            auto *measure = master.first_measure();
+            const auto breaks = document.query({.types = {"LayoutBreak"}});
+            ASSERT_TRUE(breaks);
+            ASSERT_EQ(breaks->elements.size(), 1u);
+            if (warm) ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+            const auto layouts = layout_count(master);
+            ASSERT_TRUE(document.edit({{engrave::SetProperty{breaks->elements.front().id, "LAYOUT_BREAK", engrave::Enum{target}}}}));
+            ASSERT_TRUE(document.edit(
+                {{engrave::SetProperty{engrave::from_engine(measure->end_bar_line()->eid()), "BARLINE_TYPE", engrave::Enum{"end"}}}}));
+            EXPECT_EQ(measure->next_measure()->repeat_start(), target != "nobreak");
+            EXPECT_EQ(layout_count(master), layouts);
+            const auto saved = document.export_score({.format = engrave::Format::MSCX});
+            ASSERT_TRUE(saved);
+            auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
+            ASSERT_TRUE(reopened);
+            auto *restored = master_of(**reopened).first_measure();
+            EXPECT_EQ(restored->line_break(), target == "line");
+            EXPECT_EQ(restored->page_break(), target == "page");
+            EXPECT_EQ(restored->section_break(), target == "section");
+            EXPECT_EQ(restored->no_break(), target == "nobreak");
+            EXPECT_EQ(restored->next_measure()->repeat_start(), target != "nobreak");
+        }
+    }
+}
+
+TEST(Read, StartRepeatBarlineEditsUseAuthoredBoundaries) {
+    using namespace mu::engraving;
+    for (const std::string boundary : {"first", "line", "page", "section", "frame", "wrapped"}) {
+        for (const std::string type : {"end", "normal", "end-repeat"}) {
+            for (bool warm : {false, true}) {
+                SCOPED_TRACE(boundary + ":" + type);
+                SCOPED_TRACE(warm);
+                auto xml = legacy_segment_fixture("");
+                const std::string ending = "</voice></Measure></Staff>";
+                if (boundary != "first") {
+                    xml.insert(xml.find("</voice>"), "<BarLine><subtype>double</subtype></BarLine>");
+                    std::string tail = "</voice>";
+                    if (boundary == "line" || boundary == "page" || boundary == "section")
+                        tail += "<LayoutBreak><subtype>" + boundary + "</subtype></LayoutBreak>";
+                    tail += "</Measure>";
+                    if (boundary == "frame") tail += "<VBox><height>4</height></VBox>";
+                    tail += "<Measure><voice><Rest><durationType>whole</durationType></Rest></voice></Measure></Staff>";
+                    xml.replace(xml.find(ending), ending.size(), tail);
+                }
+                const auto voice = boundary == "first" ? xml.find("<voice>") : xml.rfind("<voice>");
+                xml.insert(voice + 7, "<BarLine><subtype>start-repeat</subtype></BarLine>");
+                xml.insert(voice, "<startRepeat/>");
+                if (boundary == "wrapped") {
+                    xml.insert(xml.find("<Style>") + 7,
+                               "<pageWidth>4</pageWidth><pagePrintableWidth>2</pagePrintableWidth><minMeasureWidth>16</minMeasureWidth>");
+                }
+                auto opened = g_engine->open(as_bytes(xml));
+                ASSERT_TRUE(opened);
+                auto &document = **opened;
+                auto &master = master_of(document);
+                auto *measure = boundary == "first" ? master.first_measure() : master.first_measure()->next_measure();
+                auto *bar = to_bar_line(measure->first(SegmentType::START_REPEAT_BAR_LINE)->element(0));
+                ASSERT_NE(bar, nullptr);
+                const auto bar_id = engrave::from_engine(bar->eid());
+                if (warm) {
+                    ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+                    if (boundary == "wrapped") EXPECT_NE(measure->system(), measure->prev_measure()->system());
+                }
+                const auto layouts = layout_count(master);
+                ASSERT_TRUE(document.edit({{engrave::SetProperty{bar_id, "BARLINE_TYPE", engrave::Enum{type}}}}));
+                EXPECT_EQ(measure->repeat_start(), type == "end-repeat" && boundary != "wrapped");
+                if (auto *prev = measure->prev_measure()) {
+                    EXPECT_EQ(prev->repeat_end(), boundary == "wrapped" && type == "end-repeat");
+                    if (boundary != "wrapped") EXPECT_EQ(prev->end_bar_line()->bar_line_type(), BarLineType::DOUBLE);
+                }
+                EXPECT_EQ(layout_count(master), layouts);
+                const auto saved = document.export_score({.format = engrave::Format::MSCX});
+                ASSERT_TRUE(saved);
+                auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
+                ASSERT_TRUE(reopened);
+                auto *restored = master_of(**reopened).first_measure();
+                if (boundary != "first") restored = restored->next_measure();
+                EXPECT_EQ(restored->repeat_start(), type == "end-repeat" && boundary != "wrapped");
+                if (auto *prev = restored->prev_measure()) EXPECT_EQ(prev->repeat_end(), boundary == "wrapped" && type == "end-repeat");
+            }
+        }
+    }
+}
+
 TEST(Read, S14BeamCrossStaffValidationUsesCurrentSourceMoves) {
     using namespace mu::engraving;
     auto xml = legacy_segment_fixture("");

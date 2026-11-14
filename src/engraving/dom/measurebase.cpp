@@ -420,9 +420,31 @@ MeasureBase *Score::first() const { return measures_.first(); }
 
 MeasureBase *Score::last() const { return measures_.last(); }
 
-//---------------------------------------------------------
-//   undoSetBreak
-//---------------------------------------------------------
+void MeasureBase::sync_break_flags() {
+    const bool was_section = section_break();
+    bool line = false;
+    bool page = false;
+    bool section = false;
+    bool no_break = false;
+    for (const auto *item : el_) {
+        if (!item->is_layout_break()) continue;
+        const auto *br = to_layout_break(item);
+        line |= br->is_line_break();
+        page |= br->is_page_break();
+        section |= br->is_section_break();
+        no_break |= br->is_no_break();
+    }
+    set_line_break(line);
+    set_page_break(page);
+    set_section_break(section);
+    set_no_break(no_break);
+    if (section != was_section) {
+        score()->invalidate_repeat_list();
+        trigger_layout_to_end();
+    }
+    trigger_layout();
+    if (next()) next()->trigger_layout();
+}
 
 void MeasureBase::undo_set_break(bool v, LayoutBreakType type) {
     switch (type) {

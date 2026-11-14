@@ -81,11 +81,13 @@ char16_t LayoutBreak::icon_code() const {
     }
 }
 
-//---------------------------------------------------------
-//   setLayoutBreakType
-//---------------------------------------------------------
-
-void LayoutBreak::set_layout_break_type(LayoutBreakType val) { layout_break_type_ = val; }
+void LayoutBreak::set_layout_break_type(LayoutBreakType val) {
+    if (layout_break_type_ == val) return;
+    note_change(this, CommandType::UNKNOWN);
+    layout_break_type_ = val;
+    auto *parent = measure();
+    if (parent && muse::contains(parent->el(), static_cast<EngravingItem *>(this))) parent->sync_break_flags();
+}
 
 //---------------------------------------------------------
 //   getProperty

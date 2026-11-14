@@ -2067,6 +2067,10 @@ void Score::undo_update_play_count_text(Measure *m) {
     }
 }
 
+static bool ends_authored_system(const MeasureBase &measure) {
+    return measure.line_break() || measure.page_break() || measure.section_break() || (measure.next() && !measure.next()->is_measure());
+}
+
 void Score::undo_change_bar_line_type(BarLine *bl, BarLineType bar_type, bool all_staves, bool replace) {
     if (bar_type == bl->bar_line_type()) {
         return;
@@ -2085,7 +2089,8 @@ void Score::undo_change_bar_line_type(BarLine *bl, BarLineType bar_type, bool al
             return;
         }
     } else if (bl->bar_line_type() == BarLineType::START_REPEAT) {
-        if (m->system() && m->is_first_in_system()) {
+        const Measure *prev = m->prev_measure();
+        if (!prev || ends_authored_system(*prev)) {
             if (bar_type != BarLineType::END_REPEAT) {
                 for (Score *lscore : m->score()->score_list()) {
                     Measure *lmeasure = lscore->tick2measure(m->tick());
@@ -2125,7 +2130,7 @@ void Score::undo_change_bar_line_type(BarLine *bl, BarLineType bar_type, bool al
         case BarLineType::REVERSE_END:
         case BarLineType::HEAVY:
         case BarLineType::DOUBLE_HEAVY: {
-            if (m2->line_break() || m2->page_break() || m2->section_break() || (m2->next() && !m2->next()->is_measure())) {
+            if (ends_authored_system(*m2)) {
                 keep_start_repeat = true;
             }
 
