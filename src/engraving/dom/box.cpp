@@ -350,7 +350,10 @@ void FBox::init() {
     for (EngravingItem *element : el()) {
         FretDiagram *diagram = to_fret_diagram(element);
         old_diagrams.push_back(diagram);
-        old_diagrams_names.push_back(diagram->harmony_display_text());
+        const String name = diagram->harmony_display_text();
+        // A suppressed capo display has no identity; it cannot justify deleting authored diagrams.
+        if (name.empty()) return;
+        old_diagrams_names.push_back(name);
     }
 
     StringList diagrams_names_in_score;
@@ -373,7 +376,8 @@ void FBox::init() {
             String harmony_name = item->is_harmony()      ? to_harmony(item)->display_name() :
                                   item->is_fret_diagram() ? to_fret_diagram(item)->harmony_display_text() :
                                                             String();
-            if (harmony_name.empty() || muse::contains(diagrams_names_in_score, harmony_name)) {
+            if (harmony_name.empty()) return;
+            if (muse::contains(diagrams_names_in_score, harmony_name)) {
                 continue;
             }
 
