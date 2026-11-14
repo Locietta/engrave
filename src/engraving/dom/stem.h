@@ -41,7 +41,6 @@ public:
 
     EngravingItem *element_base() const override;
 
-    void reset() override;
     PropertyValue get_property(Pid property_id) const override;
     bool set_property(Pid property_id, const PropertyValue &) override;
     PropertyValue property_default(Pid id) const override;

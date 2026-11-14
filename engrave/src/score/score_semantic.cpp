@@ -222,7 +222,7 @@ json chord_rest_json(const ChordRest *cr) {
         out["notes"] = notes;
         json articulations = make_array<json>();
         for (const Articulation *a : chord->articulations()) {
-            array_push(articulations, str(TConv::to_xml(a->sym_id())));
+            array_push(articulations, str(TConv::to_xml(static_cast<mu::engraving::SymId>(a->subtype()))));
         }
         if (!articulations.empty()) {
             out["articulations"] = articulations;

@@ -1427,7 +1427,7 @@ constexpr PidEntry pid_support[] = {
     { Pid::HAS_PARENTHESES, true }, { Pid::LINE_WIDTH, true }, { Pid::MIN_DISTANCE, true }, { Pid::OFFSET, true },
     { Pid::PLACEMENT, true }, { Pid::POSITION_LINKED_TO_MASTER, true }, { Pid::SELECTED, false },
     { Pid::SIZE_SPATIUM_DEPENDENT, true }, { Pid::STEM_DIRECTION, true }, { Pid::SYSTEM_FLAG, true },
-    { Pid::TICK, false }, { Pid::TRACK, false }, { Pid::USER_LEN, true }, { Pid::VISIBLE, true },
+    { Pid::TICK, false }, { Pid::TRACK, false }, { Pid::USER_LEN, false }, { Pid::VISIBLE, true },
     { Pid::VOICE, true }, { Pid::Z, true },
     // StemSlash
     { Pid::APPEARANCE_LINKED_TO_MASTER, true }, { Pid::AUTOPLACE, true }, { Pid::COLOR, true },
