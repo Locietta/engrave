@@ -319,6 +319,18 @@ public:
 
     bool has_modifiers() const;
 
+    struct DisplayAction {
+        enum class Kind { TEXT, SET, COMMAND, RESET, NOMINAL_ADJUST, PAREN };
+        Kind kind = Kind::TEXT;
+        RenderActionPtr command;
+        String text;
+        int font_idx = 0;
+        double scale = 1.0;
+        bool literal = false;
+    };
+
+    // Retain positioning commands for layout while deriving all text from source.
+    String display_name(std::vector<std::vector<DisplayAction>> *chords = nullptr) const;
     String display_text() const;
     String harmony_name() const;
 

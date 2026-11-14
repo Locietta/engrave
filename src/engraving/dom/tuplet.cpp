@@ -60,7 +60,6 @@ Tuplet::Tuplet(DummyParentOr<Measure> parent) : DurationElement(ElementType::TUP
     number_type_ = TupletNumberType::SHOW_NUMBER;
     bracket_type_ = TupletBracketType::AUTO_BRACKET;
     ratio_ = Fraction(1, 1);
-    has_bracket_ = false;
     init_element_style(&::mu::engraving::tuplet_style);
 }
 
@@ -68,7 +67,6 @@ Tuplet::Tuplet(const Tuplet &t) : DurationElement(t) {
     clone_authored_overrides(authored_overrides, t.authored_overrides, *master_score()->eid_register());
     number_style_ = t.number_style_;
     tick_ = t.tick_;
-    has_bracket_ = t.has_bracket_;
     ratio_ = t.ratio_;
     base_len_ = t.base_len_;
     direction_ = t.direction_;
@@ -76,8 +74,6 @@ Tuplet::Tuplet(const Tuplet &t) : DurationElement(t) {
     bracket_type_ = t.bracket_type_;
     bracket_width_ = t.bracket_width_;
 
-    p1_ = t.p1_;
-    p2_ = t.p2_;
     user_p1_ = t.user_p1_;
     user_p2_ = t.user_p2_;
 }

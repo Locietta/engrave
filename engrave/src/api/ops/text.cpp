@@ -132,6 +132,7 @@ constexpr Pair add_pairs[] = {
     // Score::addText's TEMPO case (editing/edit.cpp:941-1005) and the reader's
     // TempoText (rw/read500/measureread.cpp:477-486).
     {"Segment", "Tempo"},
+    {"Segment", "Harmony"},
 };
 
 const Pair *add_pair(std::string_view anchor, std::string_view child) {

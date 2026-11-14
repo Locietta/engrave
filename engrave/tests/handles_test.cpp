@@ -35,6 +35,7 @@
 #include "engrave/src/score/export_options.h"
 #include "engrave/src/score/json.h"
 #include "engrave/src/score/score_excerpts.h"
+#include "engraving/dom/accidental.h"
 #include "engraving/dom/barline.h"
 #include "engraving/dom/beam.h"
 #include "engraving/dom/box.h"
@@ -47,8 +48,10 @@
 #include "engraving/dom/excerpt.h"
 #include "engraving/dom/factory.h"
 #include "engraving/dom/fingering.h"
+#include "engraving/dom/fret.h"
 #include "engraving/dom/guitarbend.h"
 #include "engraving/dom/hairpin.h"
+#include "engraving/dom/harmony.h"
 #include "engraving/dom/image.h"
 #include "engraving/dom/instrtemplate.h"
 #include "engraving/dom/instrument.h"
@@ -465,6 +468,138 @@ TEST(NativeSave, ColdEqualsWarm) {
         }
         EXPECT_EQ(cold, native_captures(document));
         EXPECT_EQ(membership(), objects);
+    }
+}
+
+TEST(NativeSave, FBoxS13SynchronizesColdAndSurvivesRender) {
+    using namespace mu::engraving;
+    auto document = open_path(g_source_root / "tests/data/inputs/fbox.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    ASSERT_TRUE(master.first()->is_f_box());
+    FBox *box = to_f_box(master.first());
+    ASSERT_NE(box, nullptr);
+    const auto names = [](const FBox &frame) {
+        std::vector<std::string> result;
+        for (const auto *child : frame.el()) result.push_back(to_fret_diagram(child)->harmony()->display_name().to_std_string());
+        return result;
+    };
+    EXPECT_EQ(names(*box), (std::vector<std::string>{"C", "G"}));
+    EXPECT_FALSE(box->needs_rebuild());
+    expect_no_layout(master);
+    const engrave::Address at = engrave::SegmentAddress{.measure = engine_id(*master.first_measure()), .tick = {0, 1}, .kind = "ChordRest"};
+    const auto added = document->edit({{engrave::Add{at, "Harmony", {{"text", std::string("Dm")}}}}});
+    ASSERT_TRUE(added) << added.error().message;
+    EXPECT_EQ(names(*box), (std::vector<std::string>{"C", "Dm", "G"}));
+    EXPECT_FALSE(box->needs_rebuild());
+    expect_no_layout(master);
+    const auto saved = document->export_score({.format = engrave::Format::MSCX});
+    ASSERT_TRUE(saved);
+    auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
+    ASSERT_TRUE(reopened);
+    auto &copy = master_of(**reopened);
+    ASSERT_TRUE(copy.first()->is_f_box());
+    FBox *copy_box = to_f_box(copy.first());
+    ASSERT_NE(copy_box, nullptr);
+    EXPECT_EQ(names(*copy_box), (std::vector<std::string>{"C", "Dm", "G"}));
+    expect_no_layout(copy);
+    const auto children = copy_box->el();
+    const auto cold = native_captures(**reopened);
+    for (int pass = 0; pass < 2; ++pass) {
+        ASSERT_TRUE((*reopened)->render({.format = engrave::RenderFormat::SVG}));
+        EXPECT_EQ(copy_box->el(), children);
+        EXPECT_EQ(names(*copy_box), (std::vector<std::string>{"C", "Dm", "G"}));
+        EXPECT_EQ(cold, native_captures(**reopened));
+    }
+}
+
+TEST(HarmonyNames, ColdS13NamesEqualRenderedText) {
+    using namespace mu::engraving;
+    for (const auto name : {"harmony-display.mscx", "fbox.mscx", "golden/layout_elements.mscx"}) {
+        for (const auto capo : {DisplayCapoChordType::CONCERT, DisplayCapoChordType::BOTH, DisplayCapoChordType::TRANSPOSED}) {
+            SCOPED_TRACE(name);
+            SCOPED_TRACE(static_cast<int>(capo));
+            auto document = open_path(g_source_root / "tests/data/inputs" / name);
+            ASSERT_TRUE(document);
+            auto &master = master_of(*document);
+            master.style().set(Sid::CAPO_POSITION, 2);
+            master.style().set(Sid::DISPLAY_CAPO_CHORDS, static_cast<int>(capo));
+            std::map<Harmony *, String> cold;
+            for (auto *object : engrave::document_objects(master)) {
+                if (object->is_harmony()) cold.emplace(to_harmony(object), to_harmony(object)->display_name());
+            }
+            ASSERT_FALSE(cold.empty());
+            expect_no_layout(master);
+            ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+            for (const auto &[harmony, expected] : cold) {
+                // This is the pre-S13 display_text calculation over actual rendered items.
+                String rendered;
+                for (const auto *item : harmony->ldata()->render_item_list()) {
+                    if (const auto *text = dynamic_cast<const TextSegment *>(item)) {
+                        String value = text->text();
+                        value.replace(u"\uE87C", u"/");
+                        rendered += value;
+                    } else if (const auto *paren = dynamic_cast<const ChordSymbolParen *>(item)) {
+                        rendered += paren->paren_item->direction() == DirectionH::LEFT ? u"(" : u")";
+                    }
+                }
+                EXPECT_EQ(expected, rendered);
+                EXPECT_EQ(harmony->display_text(), rendered);
+            }
+        }
+    }
+}
+
+TEST(NativeSave, S13KeepsAuthoredOffsetAndGraceOrderCold) {
+    using namespace mu::engraving;
+    auto document = open_path(g_source_root / "tests/data/inputs/layout-scratch.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    Chord *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    ASSERT_NE(chord, nullptr);
+    ASSERT_EQ(chord->grace_notes().size(), 3u);
+    EXPECT_EQ(chord->grace_notes()[0]->grace_index(), 0u);
+    EXPECT_EQ(chord->grace_notes()[1]->grace_index(), 1u);
+    EXPECT_EQ(chord->grace_notes()[2]->grace_index(), 2u);
+    Note *note = chord->notes().front();
+    ASSERT_NE(note->accidental(), nullptr);
+    EXPECT_EQ(note->accidental()->stacking_order_offset(), 20);
+    EXPECT_EQ(note->user_dot_position(), DirectionV::DOWN);
+    const auto cold = native_captures(*document);
+    expect_no_layout(master);
+    ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+    EXPECT_EQ(note->accidental()->stacking_order_offset(), 20);
+    EXPECT_EQ(note->accidental()->ldata()->stacking_order_offset, 0);
+    EXPECT_EQ(note->user_dot_position(), DirectionV::DOWN);
+    EXPECT_EQ(cold, native_captures(*document));
+    Chord *removed = chord->grace_notes()[1];
+    chord->remove(removed);
+    EXPECT_EQ(chord->grace_notes()[0]->grace_index(), 0u);
+    EXPECT_EQ(chord->grace_notes()[1]->grace_index(), 1u);
+    std::unique_ptr<Chord> copy(Factory::copy_chord(*chord));
+    ASSERT_EQ(copy->grace_notes().size(), 2u);
+    EXPECT_EQ(copy->grace_notes()[0]->grace_index(), 0u);
+    EXPECT_EQ(copy->grace_notes()[1]->grace_index(), 1u);
+    removed->set_grace_index(1);
+    chord->add(removed);
+    EXPECT_EQ(chord->grace_notes()[0]->grace_index(), 0u);
+    EXPECT_EQ(chord->grace_notes()[1]->grace_index(), 1u);
+    EXPECT_EQ(chord->grace_notes()[2]->grace_index(), 2u);
+}
+
+TEST(NativeSave, S13TwoRendersPreserveSourceBytes) {
+    using namespace mu::engraving;
+    for (const auto name :
+         {"harmony-display.mscx", "fbox.mscx", "golden/layout_elements.mscx", "golden/tab_grace_prebend.mscx", "layout-scratch.mscx"}) {
+        SCOPED_TRACE(name);
+        auto document = open_path(g_source_root / "tests/data/inputs" / name);
+        ASSERT_TRUE(document);
+        const auto before = native_captures(*document);
+        expect_no_layout(master_of(*document));
+        for (int pass = 0; pass < 2; ++pass) {
+            ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+            EXPECT_EQ(before, native_captures(*document));
+        }
     }
 }
 

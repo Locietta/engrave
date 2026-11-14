@@ -3782,19 +3782,18 @@ void TLayout::layout_note(const Note *item, Note::LayoutData *ldata) {
         const StaffType *tab = st->staff_type_for_element(item);
         // not complete but we need systems to be laid out to add parenthesis
         if (item->fixed()) {
-            const_cast<Note *>(item)->set_fret_string(u"/");
+            ldata->fret_string = u"/";
         } else {
-            const_cast<Note *>(item)->set_fret_string(tab->fret_string(std::fabs(item->fret()), item->string(), item->dead_note()));
+            ldata->fret_string = tab->fret_string(std::fabs(item->fret()), item->string(), item->dead_note());
 
             if (item->negative_fret_used() && !item->dead_note()) {
-                const_cast<Note *>(item)->set_fret_string(u"-" + item->fret_string());
+                ldata->fret_string = u"-" + item->fret_string();
             }
 
             if (item->display_fret() == Note::DisplayFretOption::ARTIFICIAL_HARMONIC) {
-                const_cast<Note *>(item)->set_fret_string(
-                    String(u"%1 <%2>").arg(item->fret_string(), String::number(item->harmonic_fret())));
+                ldata->fret_string = String(u"%1 <%2>").arg(item->fret_string(), String::number(item->harmonic_fret()));
             } else if (item->display_fret() == Note::DisplayFretOption::NATURAL_HARMONIC) {
-                const_cast<Note *>(item)->set_fret_string(String(u"<%1>").arg(String::number(item->harmonic_fret())));
+                ldata->fret_string = String(u"<%1>").arg(String::number(item->harmonic_fret()));
             }
         }
 
@@ -5990,13 +5989,13 @@ void TLayout::fill_tuplet_shape(const Tuplet *item, Tuplet::LayoutData *ldata) {
         };
 
         double height = item->style().style_absolute(Sid::TUPLET_BRACKET_HOOK_HEIGHT);
-        s.add(tuplet_rect(item->bracket_l[0], item->bracket_l[1], height, item));
-        s.add(tuplet_rect(item->bracket_l[1], item->bracket_l[2], height, item));
+        s.add(tuplet_rect(item->ldata()->bracket_l[0], item->ldata()->bracket_l[1], height, item));
+        s.add(tuplet_rect(item->ldata()->bracket_l[1], item->ldata()->bracket_l[2], height, item));
         if (item->number()) {
-            s.add(tuplet_rect(item->bracket_r[0], item->bracket_r[1], height, item));
-            s.add(tuplet_rect(item->bracket_r[1], item->bracket_r[2], height, item));
+            s.add(tuplet_rect(item->ldata()->bracket_r[0], item->ldata()->bracket_r[1], height, item));
+            s.add(tuplet_rect(item->ldata()->bracket_r[1], item->ldata()->bracket_r[2], height, item));
         } else {
-            s.add(tuplet_rect(item->bracket_l[2], item->bracket_l[3], height, item));
+            s.add(tuplet_rect(item->ldata()->bracket_l[2], item->ldata()->bracket_l[3], height, item));
         }
     }
     if (item->number()) {

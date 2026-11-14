@@ -280,7 +280,7 @@ public:
     static double subtype2cent_offset(AccidentalType);
     static AccidentalType cent_offset2_subtype(double cent_offset);
 
-    int stacking_order() const { return ldata()->stacking_number + stacking_order_offset_; }
+    int stacking_order() const { return ldata()->stacking_number + ldata()->stacking_order_offset; }
 
     int line() const;
 
@@ -296,6 +296,7 @@ public:
         };
 
         std::vector<Sym> syms;
+        int stacking_order_offset = 0;
 
         ld_field<int> stacking_number = {"[Accidental] stackingNumber", 0};
         ld_field<int> vertical_subgroup = {"[Accidental] verticalSubgroup", 0};

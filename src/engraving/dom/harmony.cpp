@@ -159,22 +159,7 @@ ParsedChord *HarmonyInfo::get_parsed_chord() {
 
 bool HarmonyInfo::has_modifiers() const { return parsed_chord_ ? parsed_chord_->modifiers().size() > 0 : false; }
 
-String Harmony::display_text() const {
-    // String representation of what the user sees on the score
-    // Used in fretbox
-    String name;
-    for (const HarmonyRenderItem *segment : ldata()->render_item_list()) {
-        if (const TextSegment *text_seg = dynamic_cast<const TextSegment *>(segment)) {
-            String t = text_seg->text();
-            t.replace(u"\uE87C", u"/");
-            name += t;
-        } else if (const ChordSymbolParen *paren_seg = dynamic_cast<const ChordSymbolParen *>(segment)) {
-            name += paren_seg->paren_item->direction() == DirectionH::LEFT ? u"(" : u")";
-        }
-    }
-
-    return name;
-}
+String Harmony::display_text() const { return display_name(); }
 
 //---------------------------------------------------------
 //   harmonyName
@@ -625,20 +610,12 @@ NoteCaseType Harmony::root_render_case(HarmonyInfo *info) const {
             // use chord description if possible
             // this is the usual case
             quality = cd->quality();
-        } else if (info->get_parsed_chord()) {
-            // this happens on load of new chord list
-            // for chord symbols that were added/edited since the score was loaded
-            // or read aloud with screenreader
-            // parsed form is usable even if out of date with respect to chord list
-            quality = info->get_parsed_chord()->quality();
+        } else if (info->parsed_chord()) {
+            quality = info->parsed_chord()->quality();
         } else {
-            // this happens on load of new chord list
-            // for chord symbols that have not been edited since the score was loaded
-            // we need to parse this chord for now to determine quality
-            // but don't keep the parsed form around as we're not ready for it yet
-            quality = info->get_parsed_chord()->quality();
-            delete info->parsed_chord();
-            info->set_parsed_chord(nullptr);
+            ParsedChord parsed;
+            parsed.parse(info->text_name(), info->chord_list(), false);
+            quality = parsed.quality();
         }
         if (quality == "minor" || quality == "diminished" || quality == "half-diminished") {
             note_case = NoteCaseType::LOWER;

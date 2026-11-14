@@ -66,13 +66,13 @@ using namespace mu;
 using namespace mu::engraving;
 
 namespace mu::engraving {
+ChordRest::LayoutData::~LayoutData() { delete tab_dur; }
+
 ChordRest::ChordRest(const ElementType &type, DummyParentOr<Segment> parent) : DurationElement(type, parent) {
     staff_move_ = 0;
     beam_ = 0;
-    tab_dur_ = 0;
     beam_mode_ = BeamMode::AUTO;
     is_small_ = false;
-    melisma_end_ = false;
     cross_measure_ = CrossMeasure::UNKNOWN;
 }
 
@@ -80,12 +80,9 @@ ChordRest::ChordRest(const ChordRest &cr, bool link) : DurationElement(cr, link)
     duration_type_ = cr.duration_type_;
     staff_move_ = cr.staff_move_;
     beam_ = 0;
-    tab_dur_ = 0; // tab sur. symb. depends upon context: can't be
-                  // simply copied from another CR
 
     beam_mode_ = cr.beam_mode_;
     is_small_ = cr.is_small_;
-    melisma_end_ = cr.melisma_end_;
     cross_measure_ = cr.cross_measure_;
 
     for (Lyrics *l : cr.lyrics_) { // make deep copy
@@ -112,7 +109,6 @@ ChordRest::~ChordRest() {
     }
     muse::delete_all(lyrics_);
     muse::delete_all(el_);
-    delete tab_dur_;
 
     if (beam_) {
         muse::remove(beam_->elements(), this);
@@ -372,8 +368,8 @@ void ChordRest::process_siblings(std::function<void(EngravingItem *)> func) {
     if (beam_) {
         func(beam_);
     }
-    if (tab_dur_) {
-        func(tab_dur_);
+    if (tab_dur()) {
+        func(tab_dur());
     }
     for (Lyrics *l : lyrics_) {
         func(l);
@@ -520,17 +516,15 @@ void ChordRest::scan_elements(std::function<void(EngravingItem *)> func) {
         de->tuplet()->scan_elements(func);
         de = de->tuplet();
     }
-    if (tab_dur_) {
-        func(tab_dur_);
+    if (tab_dur()) {
+        func(tab_dur());
     }
 }
 
-//    returns true if chordrest represents the end of a melisma
-
-bool ChordRest::is_melisma_end() const { return melisma_end_; }
+bool ChordRest::is_melisma_end() const { return ldata()->melisma_end; }
 
 void ChordRest::set_melisma_end(bool v) {
-    melisma_end_ = v;
+    mutldata()->melisma_end = v;
     // TODO: don't take "false" at face value
     // check to see if some other melisma ends here,
     // in which case we can leave this set to true

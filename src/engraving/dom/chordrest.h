@@ -186,9 +186,7 @@ public:
 
     virtual double intrinsic_mag() const = 0;
 
-    TabDurationSymbol *tab_dur() const { return tab_dur_; }
-
-    void set_tab_dur(TabDurationSymbol *s) { tab_dur_ = s; }
+    TabDurationSymbol *tab_dur() const { return has_layout_data() ? ldata()->tab_dur : nullptr; }
 
     bool is_below_cross_beam(const BeamBase *beam_base) const;
 
@@ -196,6 +194,9 @@ public:
     bool has_preceding_jump_item() const;
 
     struct LayoutData : public DurationElement::LayoutData {
+        ~LayoutData() override;
+        TabDurationSymbol *tab_dur = nullptr;
+        bool melisma_end = false;
         std::optional<Beam *> rendered_beam;
         BeamSegment *beamlet = nullptr;
         ld_field<bool> up = {"[ChordRest] up", true}; // actual stem direction
@@ -225,12 +226,10 @@ protected:
     void clear_els() { el_.clear(); }
 
     std::vector<Lyrics *> lyrics_;
-    TabDurationSymbol *tab_dur_ = nullptr; // stores a duration symbol in tablature staves
 
     Beam *beam_ = nullptr;
     BeamMode beam_mode_ = BeamMode::INVALID;
     bool is_small_ = false;
-    bool melisma_end_ = false;
 
     // CrossMeasure: combine 2 tied notes if across a bar line and can be combined in a single duration
     CrossMeasure cross_measure_ = CrossMeasure::UNKNOWN; ///< 0: no cross-measure modification; 1: 1st note of a mod.; -1: 2nd note

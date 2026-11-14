@@ -60,7 +60,7 @@ void TupletLayout::layout(Tuplet *item, LayoutContext &ctx) {
     compute_start_end_cr(item, &cr1, &cr2);
 
     bool has_bracket = item->calc_has_bracket(cr1, cr2);
-    item->set_has_bracket(has_bracket);
+    item->mutldata()->has_bracket = has_bracket;
 
     double mag = (cr1->mag() + cr2->mag()) / 2;
     ldata->set_mag(mag);
@@ -75,12 +75,14 @@ void TupletLayout::layout(Tuplet *item, LayoutContext &ctx) {
         r |= item->number()->ldata()->bbox().translated(item->number()->pos());
         if (item->has_bracket()) {
             RectF b;
-            b.set_coords(item->bracket_l[1].x(), item->bracket_l[1].y(), item->bracket_r[2].x(), item->bracket_r[2].y());
+            b.set_coords(item->mutldata()->bracket_l[1].x(), item->mutldata()->bracket_l[1].y(), item->mutldata()->bracket_r[2].x(),
+                         item->mutldata()->bracket_r[2].y());
             r |= b;
         }
     } else if (item->has_bracket()) {
         RectF b;
-        b.set_coords(item->bracket_l[1].x(), item->bracket_l[1].y(), item->bracket_l[3].x(), item->bracket_l[3].y());
+        b.set_coords(item->mutldata()->bracket_l[1].x(), item->mutldata()->bracket_l[1].y(), item->mutldata()->bracket_l[3].x(),
+                     item->mutldata()->bracket_l[3].y());
         r |= b;
     }
     item->setbbox(r);
@@ -199,10 +201,10 @@ void TupletLayout::create_number(Tuplet *item, LayoutContext &ctx) {
 
     apply_authored_overrides(*item->number());
 
-    item->set_is_small(true);
+    item->mutldata()->is_small = true;
     for (const DurationElement *e : item->elements()) {
         if ((e->is_chord_rest() && !to_chord_rest(e)->is_small()) || (e->is_tuplet() && !to_tuplet(e)->is_small())) {
-            item->set_is_small(false);
+            item->mutldata()->is_small = false;
             break;
         }
     }
@@ -212,7 +214,7 @@ void TupletLayout::create_number(Tuplet *item, LayoutContext &ctx) {
 
 void TupletLayout::compute_direction(Tuplet *item) {
     if (item->direction() != DirectionV::AUTO) {
-        item->set_is_up(item->direction() == DirectionV::UP);
+        item->mutldata()->up = item->direction() == DirectionV::UP;
         return;
     }
 
@@ -237,7 +239,7 @@ void TupletLayout::compute_direction(Tuplet *item) {
         }
     }
 
-    item->set_is_up(up > 0);
+    item->mutldata()->up = up > 0;
 }
 
 void TupletLayout::compute_start_end_cr(Tuplet *item, const ChordRest **cr1, const ChordRest **cr2) {
@@ -301,13 +303,13 @@ void TupletLayout::layout_bracket(Tuplet *item, const ChordRest *cr1, const Chor
         v_head_distance = -v_head_distance;
     }
 
-    item->set_p1(cr1->page_pos());
-    item->set_p2(cr2->page_pos());
+    item->mutldata()->p1 = cr1->page_pos();
+    item->mutldata()->p2 = cr2->page_pos();
 
-    item->p1().rx() -= note_left;
-    item->p2().rx() += ctx.conf().note_head_width() + note_right;
-    item->p1().ry() += v_head_distance; // TODO: Direction ?
-    item->p2().ry() += v_head_distance;
+    item->mutldata()->p1.rx() -= note_left;
+    item->mutldata()->p2.rx() += ctx.conf().note_head_width() + note_right;
+    item->mutldata()->p1.ry() += v_head_distance; // TODO: Direction ?
+    item->mutldata()->p2.ry() += v_head_distance;
 
     double xx1 = item->p1().x(); // use to center the number on the beam
 
@@ -331,12 +333,12 @@ void TupletLayout::layout_bracket(Tuplet *item, const ChordRest *cr1, const Chor
                 xx1 = stem->page_bounding_rect().x();
             }
             if (chord1->up() && stem) {
-                item->p1().ry() = stem->page_bounding_rect().y();
+                item->mutldata()->p1.ry() = stem->page_bounding_rect().y();
                 l2l = v_stem_distance;
-                item->p1().rx() = stem->page_bounding_rect().left() - stem_left;
+                item->mutldata()->p1.rx() = stem->page_bounding_rect().left() - stem_left;
             } else {
-                item->p1().ry() = chord1->up_note()->page_bounding_rect().top();
-                item->p1().rx() = left_note_edge - note_left;
+                item->mutldata()->p1.ry() = chord1->up_note()->page_bounding_rect().top();
+                item->mutldata()->p1.rx() = left_note_edge - note_left;
             }
         }
 
@@ -344,12 +346,12 @@ void TupletLayout::layout_bracket(Tuplet *item, const ChordRest *cr1, const Chor
             const Chord *chord2 = to_chord(cr2);
             Stem *stem = chord2->stem();
             if (stem && chord2->up()) {
-                item->p2().ry() = stem->page_bounding_rect().top();
+                item->mutldata()->p2.ry() = stem->page_bounding_rect().top();
                 l2r = v_stem_distance;
-                item->p2().rx() = stem->page_bounding_rect().right() + stem_right;
+                item->mutldata()->p2.rx() = stem->page_bounding_rect().right() + stem_right;
             } else {
-                item->p2().ry() = chord2->up_note()->page_bounding_rect().top();
-                item->p2().rx() = right_note_edge + note_right;
+                item->mutldata()->p2.ry() = chord2->up_note()->page_bounding_rect().top();
+                item->mutldata()->p2.rx() = right_note_edge + note_right;
             }
         }
         //
@@ -358,15 +360,15 @@ void TupletLayout::layout_bracket(Tuplet *item, const ChordRest *cr1, const Chor
         //
         if (!cr1->is_chord() && cr2->is_chord()) {
             if (item->p2().y() < item->p1().y()) {
-                item->p1().set_y(item->p2().y());
+                item->mutldata()->p1.set_y(item->p2().y());
             } else {
-                item->p2().set_y(item->p1().y());
+                item->mutldata()->p2.set_y(item->p1().y());
             }
         } else if (cr1->is_chord() && !cr2->is_chord()) {
             if (item->p1().y() < item->p2().y()) {
-                item->p2().set_y(item->p1().y());
+                item->mutldata()->p2.set_y(item->p1().y());
             } else {
-                item->p1().set_y(item->p2().y());
+                item->mutldata()->p1.set_y(item->p2().y());
             }
         }
 
@@ -374,12 +376,12 @@ void TupletLayout::layout_bracket(Tuplet *item, const ChordRest *cr1, const Chor
         if (out_of_staff) {
             double min = cr1->measure()->staff_page_bounding_rect(cr1->staff_idx() + move).y();
             if (min < item->p1().y()) {
-                item->p1().ry() = min;
+                item->mutldata()->p1.ry() = min;
                 l2l = v_stem_distance;
             }
             min = cr2->measure()->staff_page_bounding_rect(cr2->staff_idx() + move).y();
             if (min < item->p2().y()) {
-                item->p2().ry() = min;
+                item->mutldata()->p2.ry() = min;
                 l2r = v_stem_distance;
             }
         }
@@ -388,10 +390,10 @@ void TupletLayout::layout_bracket(Tuplet *item, const ChordRest *cr1, const Chor
         double d = (item->p2().y() - item->p1().y()) / (item->p2().x() - item->p1().x());
         if (d < -max_slope) {
             // move p1 y up
-            item->p1().ry() = item->p2().y() + max_slope * (item->p2().x() - item->p1().x());
+            item->mutldata()->p1.ry() = item->p2().y() + max_slope * (item->p2().x() - item->p1().x());
         } else if (d > max_slope) {
             // move p2 y up
-            item->p2().ry() = item->p1().ry() + max_slope * (item->p2().x() - item->p1().x());
+            item->mutldata()->p2.ry() = item->mutldata()->p1.ry() + max_slope * (item->p2().x() - item->p1().x());
         }
 
         // check for collisions
@@ -410,8 +412,8 @@ void TupletLayout::layout_bracket(Tuplet *item, const ChordRest *cr1, const Chor
                         double y0 = item->p1().y() + (x3 - item->p1().x()) * d;
                         double c = y0 - y3;
                         if (c > 0) {
-                            item->p1().ry() -= c;
-                            item->p2().ry() -= c;
+                            item->mutldata()->p1.ry() -= c;
+                            item->mutldata()->p2.ry() -= c;
                         }
                     }
                 }
@@ -425,12 +427,12 @@ void TupletLayout::layout_bracket(Tuplet *item, const ChordRest *cr1, const Chor
                 xx1 = stem->page_bounding_rect().x();
             }
             if (!chord1->up() && stem) {
-                item->p1().ry() = stem->page_bounding_rect().bottom();
+                item->mutldata()->p1.ry() = stem->page_bounding_rect().bottom();
                 l2l = v_stem_distance;
-                item->p1().rx() = stem->page_bounding_rect().left() - stem_left;
+                item->mutldata()->p1.rx() = stem->page_bounding_rect().left() - stem_left;
             } else {
-                item->p1().ry() = chord1->down_note()->page_bounding_rect().bottom();
-                item->p1().rx() = left_note_edge - note_left;
+                item->mutldata()->p1.ry() = chord1->down_note()->page_bounding_rect().bottom();
+                item->mutldata()->p1.rx() = left_note_edge - note_left;
             }
         }
 
@@ -438,12 +440,12 @@ void TupletLayout::layout_bracket(Tuplet *item, const ChordRest *cr1, const Chor
             const Chord *chord2 = to_chord(cr2);
             Stem *stem = chord2->stem();
             if (stem && !chord2->up()) {
-                item->p2().ry() = stem->page_bounding_rect().bottom();
+                item->mutldata()->p2.ry() = stem->page_bounding_rect().bottom();
                 l2r = v_stem_distance;
-                item->p2().rx() = stem->page_bounding_rect().right() + stem_right;
+                item->mutldata()->p2.rx() = stem->page_bounding_rect().right() + stem_right;
             } else {
-                item->p2().ry() = chord2->down_note()->page_bounding_rect().bottom();
-                item->p2().rx() = right_note_edge + note_right;
+                item->mutldata()->p2.ry() = chord2->down_note()->page_bounding_rect().bottom();
+                item->mutldata()->p2.rx() = right_note_edge + note_right;
             }
         }
         //
@@ -452,27 +454,27 @@ void TupletLayout::layout_bracket(Tuplet *item, const ChordRest *cr1, const Chor
         //
         if (!cr1->is_chord() && cr2->is_chord()) {
             if (item->p2().y() > item->p1().y()) {
-                item->p1().set_y(item->p2().y());
+                item->mutldata()->p1.set_y(item->p2().y());
             } else {
-                item->p2().set_y(item->p1().y());
+                item->mutldata()->p2.set_y(item->p1().y());
             }
         } else if (cr1->is_chord() && !cr2->is_chord()) {
             if (item->p1().y() > item->p2().y()) {
-                item->p2().set_y(item->p1().y());
+                item->mutldata()->p2.set_y(item->p1().y());
             } else {
-                item->p1().set_y(item->p2().y());
+                item->mutldata()->p1.set_y(item->p2().y());
             }
         }
         // outOfStaff
         if (out_of_staff) {
             double max = cr1->measure()->staff_page_bounding_rect(cr1->staff_idx() + move).bottom();
             if (max > item->p1().y()) {
-                item->p1().ry() = max;
+                item->mutldata()->p1.ry() = max;
                 l2l = v_stem_distance;
             }
             max = cr2->measure()->staff_page_bounding_rect(cr2->staff_idx() + move).bottom();
             if (max > item->p2().y()) {
-                item->p2().ry() = max;
+                item->mutldata()->p2.ry() = max;
                 l2r = v_stem_distance;
             }
         }
@@ -480,10 +482,10 @@ void TupletLayout::layout_bracket(Tuplet *item, const ChordRest *cr1, const Chor
         double d = (item->p2().y() - item->p1().y()) / (item->p2().x() - item->p1().x());
         if (d < -max_slope) {
             // move p1 y up
-            item->p2().ry() = item->p1().y() - max_slope * (item->p2().x() - item->p1().x());
+            item->mutldata()->p2.ry() = item->p1().y() - max_slope * (item->p2().x() - item->p1().x());
         } else if (d > max_slope) {
             // move p2 y up
-            item->p1().ry() = item->p2().ry() - max_slope * (item->p2().x() - item->p1().x());
+            item->mutldata()->p1.ry() = item->mutldata()->p2.ry() - max_slope * (item->p2().x() - item->p1().x());
         }
 
         // check for collisions
@@ -502,8 +504,8 @@ void TupletLayout::layout_bracket(Tuplet *item, const ChordRest *cr1, const Chor
                         double y0 = item->p1().y() + (x3 - item->p1().x()) * d;
                         double c = y0 - y3;
                         if (c < 0) {
-                            item->p1().ry() -= c;
-                            item->p2().ry() -= c;
+                            item->mutldata()->p1.ry() -= c;
+                            item->mutldata()->p2.ry() -= c;
                         }
                     }
                 }
@@ -512,13 +514,13 @@ void TupletLayout::layout_bracket(Tuplet *item, const ChordRest *cr1, const Chor
     }
 
     if (!cr1->is_chord()) {
-        item->p1().rx() = cr1->page_bounding_rect().left() - note_left;
+        item->mutldata()->p1.rx() = cr1->page_bounding_rect().left() - note_left;
     }
     if (!cr2->is_chord()) {
         Shape shape = cr2->ldata()->shape();
         auto sh_el = shape.find_if([](const ShapeElement &i) { return i.item() && i.item()->is_chord_rest(); });
         DO_ASSERT(sh_el);
-        item->p2().rx() = sh_el->translated(cr2->page_pos()).right() + note_right;
+        item->mutldata()->p2.rx() = sh_el->translated(cr2->page_pos()).right() + note_right;
     }
 
     PointF mp(item->layout_parent()->page_pos());
@@ -529,20 +531,20 @@ void TupletLayout::layout_bracket(Tuplet *item, const ChordRest *cr1, const Chor
             mp.ry() += tuplet_staff ? tuplet_staff->y() : 0.0;
         }
     }
-    item->p1() -= mp;
-    item->p2() -= mp;
+    item->mutldata()->p1 -= mp;
+    item->mutldata()->p2 -= mp;
 
-    item->p1() += item->user_p1();
-    item->p2() += item->user_p2();
+    item->mutldata()->p1 += item->user_p1();
+    item->mutldata()->p2 += item->user_p2();
     xx1 -= mp.x();
 
-    item->p1().ry() -= l2l * (item->is_up() ? 1.0 : -1.0);
-    item->p2().ry() -= l2r * (item->is_up() ? 1.0 : -1.0);
+    item->mutldata()->p1.ry() -= l2l * (item->is_up() ? 1.0 : -1.0);
+    item->mutldata()->p2.ry() -= l2r * (item->is_up() ? 1.0 : -1.0);
 
     const double y_offset = item->staff_offset_y();
 
-    item->p1().ry() -= y_offset;
-    item->p2().ry() -= y_offset;
+    item->mutldata()->p1.ry() -= y_offset;
+    item->mutldata()->p2.ry() -= y_offset;
 
     if (style.style_b(Sid::TUPLET_EXTEND_TO_END_OF_DURATION)) {
         extend_to_end_of_duration(item, to_chord_rest(cr2));
@@ -589,47 +591,47 @@ void TupletLayout::layout_bracket(Tuplet *item, const ChordRest *cr1, const Chor
             if (item->number()) {
                 //set width of bracket hole
                 double x = x_number - number_width * .5 - number_gap;
-                item->p1().rx() = std::min(item->p1().x(), x - 0.5 * l1); // ensure enough space for the number
+                item->mutldata()->p1.rx() = std::min(item->p1().x(), x - 0.5 * l1); // ensure enough space for the number
                 double y = item->p1().y() + (x - item->p1().x()) * slope;
-                item->bracket_l[0] = PointF(item->p1().x(), item->p1().y());
-                item->bracket_l[1] = PointF(item->p1().x(), item->p1().y() - l1);
-                item->bracket_l[2] = PointF(x, y - l1);
+                item->mutldata()->bracket_l[0] = PointF(item->p1().x(), item->p1().y());
+                item->mutldata()->bracket_l[1] = PointF(item->p1().x(), item->p1().y() - l1);
+                item->mutldata()->bracket_l[2] = PointF(x, y - l1);
 
                 //set width of bracket hole
                 x = x_number + number_width * .5 + number_gap;
-                item->p2().rx() = std::max(item->p2().x(), x + 0.5 * l1); // ensure enough space for the number
+                item->mutldata()->p2.rx() = std::max(item->p2().x(), x + 0.5 * l1); // ensure enough space for the number
                 y = item->p1().y() + (x - item->p1().x()) * slope;
-                item->bracket_r[0] = PointF(x, y - l1);
-                item->bracket_r[1] = PointF(item->p2().x(), item->p2().y() - l1);
-                item->bracket_r[2] = PointF(item->p2().x(), item->p2().y());
+                item->mutldata()->bracket_r[0] = PointF(x, y - l1);
+                item->mutldata()->bracket_r[1] = PointF(item->p2().x(), item->p2().y() - l1);
+                item->mutldata()->bracket_r[2] = PointF(item->p2().x(), item->p2().y());
             } else {
-                item->bracket_l[0] = PointF(item->p1().x(), item->p1().y());
-                item->bracket_l[1] = PointF(item->p1().x(), item->p1().y() - l1);
-                item->bracket_l[2] = PointF(item->p2().x(), item->p2().y() - l1);
-                item->bracket_l[3] = PointF(item->p2().x(), item->p2().y());
+                item->mutldata()->bracket_l[0] = PointF(item->p1().x(), item->p1().y());
+                item->mutldata()->bracket_l[1] = PointF(item->p1().x(), item->p1().y() - l1);
+                item->mutldata()->bracket_l[2] = PointF(item->p2().x(), item->p2().y() - l1);
+                item->mutldata()->bracket_l[3] = PointF(item->p2().x(), item->p2().y());
             }
         } else {
             if (item->number()) {
                 //set width of bracket hole
                 double x = x_number - number_width * .5 - number_gap;
-                item->p1().rx() = std::min(item->p1().x(), x - 0.5 * l1); // ensure enough space for the number
+                item->mutldata()->p1.rx() = std::min(item->p1().x(), x - 0.5 * l1); // ensure enough space for the number
                 double y = item->p1().y() + (x - item->p1().x()) * slope;
-                item->bracket_l[0] = PointF(item->p1().x(), item->p1().y());
-                item->bracket_l[1] = PointF(item->p1().x(), item->p1().y() + l1);
-                item->bracket_l[2] = PointF(x, y + l1);
+                item->mutldata()->bracket_l[0] = PointF(item->p1().x(), item->p1().y());
+                item->mutldata()->bracket_l[1] = PointF(item->p1().x(), item->p1().y() + l1);
+                item->mutldata()->bracket_l[2] = PointF(x, y + l1);
 
                 //set width of bracket hole
                 x = x_number + number_width * .5 + number_gap;
-                item->p2().rx() = std::max(item->p2().x(), x + 0.5 * l1);
+                item->mutldata()->p2.rx() = std::max(item->p2().x(), x + 0.5 * l1);
                 y = item->p1().y() + (x - item->p1().x()) * slope;
-                item->bracket_r[0] = PointF(x, y + l1);
-                item->bracket_r[1] = PointF(item->p2().x(), item->p2().y() + l1);
-                item->bracket_r[2] = PointF(item->p2().x(), item->p2().y());
+                item->mutldata()->bracket_r[0] = PointF(x, y + l1);
+                item->mutldata()->bracket_r[1] = PointF(item->p2().x(), item->p2().y() + l1);
+                item->mutldata()->bracket_r[2] = PointF(item->p2().x(), item->p2().y());
             } else {
-                item->bracket_l[0] = PointF(item->p1().x(), item->p1().y());
-                item->bracket_l[1] = PointF(item->p1().x(), item->p1().y() + l1);
-                item->bracket_l[2] = PointF(item->p2().x(), item->p2().y() + l1);
-                item->bracket_l[3] = PointF(item->p2().x(), item->p2().y());
+                item->mutldata()->bracket_l[0] = PointF(item->p1().x(), item->p1().y());
+                item->mutldata()->bracket_l[1] = PointF(item->p1().x(), item->p1().y() + l1);
+                item->mutldata()->bracket_l[2] = PointF(item->p2().x(), item->p2().y() + l1);
+                item->mutldata()->bracket_l[3] = PointF(item->p2().x(), item->p2().y());
             }
         }
     }
@@ -783,5 +785,5 @@ void TupletLayout::extend_to_end_of_duration(Tuplet *item, const ChordRest *end_
     x_result = std::min(x_result, left - padding);
 
     double cur_pos = item->p2().x();
-    item->p2().rx() = std::max(cur_pos, x_result - item->measure()->page_pos().x());
+    item->mutldata()->p2.rx() = std::max(cur_pos, x_result - item->measure()->page_pos().x());
 }

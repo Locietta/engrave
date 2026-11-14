@@ -244,8 +244,6 @@ Chord::Chord(DummyParentOr<Segment> parent) : ChordRest(ElementType::CHORD, pare
     no_stem_ = false;
     show_stem_slash_ = note_type_ == NoteType::ACCIACCATURA;
     play_event_type_ = PlayEventType::AUTO;
-    space_lw_ = 0.;
-    space_rw_ = 0.;
     cross_measure_ = CrossMeasure::UNKNOWN;
     grace_index_ = 0;
     combine_voice_ = AutoOnOff::AUTO;
@@ -268,6 +266,7 @@ Chord::Chord(const Chord &c, bool link) : ChordRest(c, link) {
     }
     for (Chord *gn : c.grace_notes()) {
         Chord *nc = new Chord(*gn, link);
+        nc->set_grace_index(grace_notes_.size());
         add(nc);
     }
     for (Articulation *a : c.articulations_) { // make deep copy
@@ -567,6 +566,7 @@ void Chord::add(EngravingItem *e) {
             size_t idx = gc->grace_index();
             gc->set_flag(ElementFlag::MOVABLE, true);
             grace_notes_.insert(grace_notes_.begin() + idx, gc);
+            for (size_t i = idx; i < grace_notes_.size(); ++i) grace_notes_[i]->set_grace_index(i);
         } break;
         case ElementType::LEDGER_LINE: ASSERT_X("Chord::add ledgerline"); break;
         case ElementType::ARTICULATION:
@@ -642,6 +642,7 @@ void Chord::remove(EngravingItem *e) {
             Chord *grace = *i;
             grace->set_grace_index(i - grace_notes_.begin());
             grace_notes_.erase(i);
+            for (size_t idx = 0; idx < grace_notes_.size(); ++idx) grace_notes_[idx]->set_grace_index(idx);
         } break;
         case ElementType::ARTICULATION:
         case ElementType::ORNAMENT:
@@ -843,7 +844,8 @@ void Chord::set_beam_extension(double extension) {
     if (stem()) {
         double base_length = stem()->absolute_from_spatium(stem()->base_length());
         stem()->set_base_length(std::max(Spatium::from_absolute(base_length + extension, spatium()), 0.0_sp));
-        default_stem_length_ = std::max(default_stem_length_ + extension, stem()->absolute_from_spatium(stem()->base_length()));
+        mutldata()->default_stem_length =
+            std::max(ldata()->default_stem_length + extension, stem()->absolute_from_spatium(stem()->base_length()));
     }
 }
 
@@ -1993,20 +1995,20 @@ void Chord::style_changed() {
 }
 
 void Chord::compute_kerning_exceptions() {
-    allow_kerning_above_ = true;
-    allow_kerning_below_ = true;
+    mutldata()->allow_kerning_above = true;
+    mutldata()->allow_kerning_below = true;
     for (Articulation *art : articulations_) {
         if (art->up()) {
-            allow_kerning_above_ = false;
+            mutldata()->allow_kerning_above = false;
         } else {
-            allow_kerning_below_ = false;
+            mutldata()->allow_kerning_below = false;
         }
     }
-    if ((start_end_slurs_.start_up || start_end_slurs_.end_up) && !ldata()->up) {
-        allow_kerning_above_ = false;
+    if ((ldata()->start_end_slurs.start_up || ldata()->start_end_slurs.end_up) && !ldata()->up) {
+        mutldata()->allow_kerning_above = false;
     }
-    if ((start_end_slurs_.start_down || start_end_slurs_.end_down) && ldata()->up) {
-        allow_kerning_below_ = false;
+    if ((ldata()->start_end_slurs.start_down || ldata()->start_end_slurs.end_down) && ldata()->up) {
+        mutldata()->allow_kerning_below = false;
     }
 }
 

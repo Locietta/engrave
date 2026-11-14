@@ -1,0 +1,11 @@
+<museScore version="5.00"><Score><Division>480</Division>
+<Part><Staff id="1"/><Instrument id="guitar-acoustic"><trackName>Guitar</trackName><instrumentId>pluck.guitar.acoustic</instrumentId></Instrument></Part>
+<Staff id="1"><FBox>
+<FretDiagram><strings>6</strings><frets>4</frets><Harmony><harmonyInfo><root>14</root></harmonyInfo></Harmony></FretDiagram>
+<FretDiagram><strings>6</strings><frets>4</frets><Harmony><harmonyInfo><root>15</root></harmonyInfo></Harmony></FretDiagram>
+</FBox><Measure><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
+<Harmony><harmonyInfo><root>14</root></harmonyInfo></Harmony>
+<Chord><durationType>half</durationType><Note><pitch>60</pitch><tpc>14</tpc></Note></Chord>
+<Harmony><harmonyInfo><root>15</root></harmonyInfo></Harmony>
+<Chord><durationType>half</durationType><Note><pitch>67</pitch><tpc>15</tpc></Note></Chord>
+</voice></Measure></Staff></Score></museScore>
