@@ -517,43 +517,94 @@ TEST(Read, OutlineCountsAreAbsentUntilCurrentAndMetadataIgnoresDisplayPositions)
     EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 1u);
 }
 
-TEST(Read, GeometryAddressesAndFingeringDefaultsExplicitlyPrepareLayout) {
+TEST(Read, FingeringSourceReadsDeferLayoutUntilGeometryAddresses) {
     using namespace mu::engraving;
     auto source = read_text(write470_fixture());
-    const auto at = source.find("</Measure>");
-    source.insert(at, "<voice><Chord><durationType>whole</durationType><Note><pitch>48</pitch><tpc>14</tpc>"
-                      "<Fingering><text>1</text></Fingering></Note></Chord></voice>");
+    source.insert(source.find("</Measure>"), "<voice><Chord><durationType>whole</durationType><Note><pitch>48</pitch><tpc>14</tpc>"
+                                             "<Fingering><text>1</text></Fingering></Note></Chord></voice>");
     auto opened = g_engine->open(as_bytes(source), {.format = engrave::Format::MSCX});
     ASSERT_TRUE(opened);
     auto &document = **opened;
     auto &master = master_of(document);
-    auto fingers = document.query({.types = {"Fingering"}, .props = {"text"}});
+    auto fingers = document.query({.types = {"Fingering"}, .props = {"placement"}});
     ASSERT_TRUE(fingers);
     ASSERT_EQ(fingers->elements.size(), 1u);
     const auto id = fingers->elements.front().id;
-    ASSERT_TRUE(document.get(id, {"text"}));
-    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
-    auto placement = document.get(id, {"placement"});
-    ASSERT_TRUE(placement);
-    ASSERT_EQ(placement->size(), 1u);
-    EXPECT_TRUE(placement->front().is_default);
+    for (bool warm : {false, true}) {
+        SCOPED_TRACE(warm);
+        const auto layouts = master.layout_state.whole_count + master.layout_state.range_count;
+        const auto placement = document.get(id, {"placement"});
+        ASSERT_TRUE(placement);
+        EXPECT_EQ(std::get<engrave::Enum>(placement->front().value).token, "above");
+        EXPECT_TRUE(placement->front().is_default);
+        const auto query = document.query({.types = {"Fingering"}, .props = {"placement"}});
+        ASSERT_TRUE(query);
+        EXPECT_EQ(std::get<engrave::Enum>(query->elements.front().props.front().value).token, "above");
+        EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, layouts);
+        if (!warm) {
+            EXPECT_FALSE(document.outline()->pages.has_value());
+            ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+        }
+    }
     const auto resolved = engrave::resolve(master, id);
     ASSERT_TRUE(resolved);
     EXPECT_EQ(to_fingering(resolved->object)->placement(), PlacementV::BELOW);
-    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 1u);
+    const auto saved = document.export_score({.format = engrave::Format::MSCX});
+    ASSERT_TRUE(saved);
+    const std::string saved_xml(reinterpret_cast<const char *>(saved->data()), saved->size());
+    const auto begin = saved_xml.find("<Fingering>");
+    ASSERT_NE(begin, std::string::npos);
+    EXPECT_EQ(saved_xml.substr(begin, saved_xml.find("</Fingering>", begin) - begin).find("<placement>"), std::string::npos);
+    master.invalidate_layout(Fraction(0, 1), Fraction(-1, 1));
     ASSERT_TRUE(document.get(engrave::Address{engrave::PageAddress{}}, {"visible"}));
-    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 1u);
-    const auto notes = document.query({.types = {"Note"}, .limit = 1});
-    ASSERT_TRUE(notes);
-    ASSERT_TRUE(document.edit({{engrave::SetPitch{notes->elements.front().id, 67}}}));
-    ASSERT_TRUE(document.get(engrave::Address{engrave::SystemAddress{}}, {"visible"}));
     EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 2u);
     master.invalidate_layout(Fraction(0, 1), Fraction(-1, 1));
-    auto query = document.query({.types = {"Fingering"}, .props = {"placement"}});
+    ASSERT_TRUE(document.get(engrave::Address{engrave::SystemAddress{}}, {"visible"}));
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 3u);
+}
+
+TEST(Read, SourceSemanticDumpIsUnchangedByRendering) {
+    const auto root = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT);
+    for (const auto &path :
+         {root / "src/importexport/mnx/tests/data/project_examples/bowDirection.mnx",
+          root / "tests/data/inputs/golden/hairpins_and_repeats.mscx", root / "tests/data/inputs/golden/tab_grace_prebend.mscx"}) {
+        SCOPED_TRACE(path.string());
+        auto opened = g_engine->open(path);
+        ASSERT_TRUE(opened) << opened.error().message;
+        auto &document = **opened;
+        const auto cold = music::semantic_dump(&master_of(document));
+        ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+        EXPECT_TRUE(music::json_equal(cold, music::semantic_dump(&master_of(document))));
+    }
+}
+
+TEST(Read, ExplicitFingeringPlacementSurvivesColdAndWarmSave) {
+    using namespace mu::engraving;
+    auto source = read_text(write470_fixture());
+    source.insert(source.find("</Measure>"), "<voice><Chord><durationType>whole</durationType><Note><pitch>48</pitch><tpc>14</tpc>"
+                                             "<Fingering><placement>above</placement><text>1</text></Fingering></Note></Chord></voice>");
+    auto opened = g_engine->open(as_bytes(source));
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    const auto cold = document.export_score({.format = engrave::Format::MSCX});
+    ASSERT_TRUE(cold);
+    ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+    const auto warm = document.export_score({.format = engrave::Format::MSCX});
+    ASSERT_TRUE(warm);
+    EXPECT_EQ(*cold, *warm);
+    const std::string xml(reinterpret_cast<const char *>(cold->data()), cold->size());
+    EXPECT_NE(xml.find("<placement>above</placement>"), std::string::npos);
+    auto reopened = g_engine->open(*cold, {.format = engrave::Format::MSCX});
+    ASSERT_TRUE(reopened);
+    ASSERT_TRUE((*reopened)->render({.format = engrave::RenderFormat::SVG}));
+    const auto query = (*reopened)->query({.types = {"Fingering"}, .props = {"placement"}});
     ASSERT_TRUE(query);
     ASSERT_EQ(query->elements.size(), 1u);
-    EXPECT_TRUE(query->elements.front().props.front().is_default);
-    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 3u);
+    EXPECT_EQ(std::get<engrave::Enum>(query->elements.front().props.front().value).token, "above");
+    const auto resolved = engrave::resolve(master_of(**reopened), query->elements.front().id);
+    ASSERT_TRUE(resolved);
+    EXPECT_EQ(to_fingering(resolved->object)->property_flags(Pid::PLACEMENT), PropertyFlags::UNSTYLED);
+    EXPECT_EQ(to_fingering(resolved->object)->placement(), PlacementV::ABOVE);
 }
 
 TEST(Read, SpannerSegmentAddressPreparesFreshDisplaySegments) {
@@ -7751,6 +7802,43 @@ static std::string parenthesis_link_fixture() {
                                         "<Parenthesis><horizontalDirection>right</horizontalDirection><eid>H_H</eid></Parenthesis>"
                                         "<Notes><NoteEID>J_J</NoteEID></Notes></NoteParenGroup>");
     return xml;
+}
+
+TEST(Read, SuppressedStemOverridesKeepPartLinksAcrossNativeSave) {
+    using namespace mu::engraving;
+    for (bool suppressed : {false, true}) {
+        SCOPED_TRACE(suppressed);
+        auto xml = legacy_segment_fixture("");
+        xml.insert(xml.find("<Note>"), "<Stem><eid>F_F</eid><userLen>1.25</userLen><color r=\"20\" g=\"40\" b=\"60\" a=\"255\"/></Stem>");
+        auto opened = g_engine->open(as_bytes(xml));
+        ASSERT_TRUE(opened);
+        auto &document = **opened;
+        const auto chords = document.query({.types = {"Chord"}, .limit = 1});
+        ASSERT_TRUE(chords);
+        ASSERT_TRUE(document.edit({{engrave::SetProperty{chords->elements.front().id, "noStem", suppressed}}}));
+        const auto outline = document.outline();
+        ASSERT_TRUE(outline);
+        ASSERT_TRUE(document.edit({{engrave::GenerateExcerpts{{outline->parts.front().id}}}}));
+        const auto saved = document.export_score({.format = engrave::Format::MSCX});
+        ASSERT_TRUE(saved);
+        const std::string saved_xml(reinterpret_cast<const char *>(saved->data()), saved->size());
+        EXPECT_NE(saved_xml.find("<linkedTo>F_F</linkedTo>"), std::string::npos);
+        auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
+        ASSERT_TRUE(reopened);
+        ASSERT_TRUE((*reopened)->edit({{engrave::SetProperty{chords->elements.front().id, "StemDirection", engrave::Enum{"down"}}}}));
+        auto &master = master_of(**reopened);
+        ASSERT_FALSE(master.excerpts().empty());
+        auto *part = master.excerpts().front()->excerpt_score();
+        auto *clone = to_chord(part->first_measure()->first(SegmentType::CHORD_REST)->element(0));
+        EXPECT_EQ(clone->stem_direction(), DirectionV::DOWN);
+        EXPECT_EQ(clone->no_stem(), suppressed);
+        EXPECT_DOUBLE_EQ(clone->stem_user_length().val(), 1.25);
+        ASSERT_TRUE((*reopened)->render({.format = engrave::RenderFormat::SVG}));
+        const auto warm = (*reopened)->export_score({.format = engrave::Format::MSCX});
+        ASSERT_TRUE(warm);
+        const std::string warm_xml(reinterpret_cast<const char *>(warm->data()), warm->size());
+        EXPECT_NE(warm_xml.find("<linkedTo>F_F</linkedTo>"), std::string::npos);
+    }
 }
 
 TEST(Read, ParenthesisAndStemLinksFollowTheirChord) {

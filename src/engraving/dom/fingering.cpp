@@ -30,6 +30,7 @@
 #include "skyline.h"
 #include "staff.h"
 #include "stem.h"
+#include "style/style.h"
 #include "system.h"
 #include "translation.h"
 
@@ -102,13 +103,9 @@ bool Fingering::is_on_cross_beam_side() const {
            place_above() == chord->up();
 }
 
-//---------------------------------------------------------
-//   propertyDefault
-//---------------------------------------------------------
-
 engraving::PropertyValue Fingering::property_default(Pid id) const {
     switch (id) {
-        case Pid::PLACEMENT: return calculate_placement();
+        case Pid::PLACEMENT: return style().style_v(Sid::FINGERING_PLACEMENT);
         case Pid::TEXT_STYLE: return TextStyleType::FINGERING;
         default: return TextBase::property_default(id);
     }

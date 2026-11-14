@@ -58,10 +58,6 @@ public:
         return is_styled(Pid::PLACEMENT) && is_layout_data_current() && ld->placed ? *ld->placed : EngravingItem::placement();
     }
 
-    PropertyValue get_property(Pid id) const override {
-        return id == Pid::PLACEMENT ? PropertyValue(placement()) : TextBase::get_property(id);
-    }
-
     PropertyValue property_default(Pid id) const override;
 
     bool is_on_cross_beam_side() const;
