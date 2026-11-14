@@ -365,7 +365,17 @@ void write_authored_property(const EngravingItem *owner, AuthoredChildKey child,
         xml.tag("strike", style & FontStyle::STRIKE);
         return;
     }
-    const double point_unit = entry->unit == AuthoredOverrideUnit::MILLIMETRE ? ::mu::engraving::dpmm : owner->style().spatium();
+    double point_unit = entry->unit == AuthoredOverrideUnit::MILLIMETRE ? ::mu::engraving::dpmm : owner->style().spatium();
+    const auto *carrier = table->carrier(child);
+    if (property_type(pid) == PType::POINT && child.role == AuthoredChildRole::SEGMENT_TEXT && carrier &&
+        carrier->type == ElementType::GUITAR_BEND_TEXT && !table->find(child, Pid::SIZE_SPATIUM_DEPENDENT)) {
+        const auto *text_style_entry = table->find(child, Pid::TEXT_STYLE);
+        const auto type = text_style_entry ? text_style_entry->value.value<TextStyleType>() : TextStyleType::BEND;
+        // The wire follows the current style; stored point units survive style edits.
+        for (const auto &property : *text_style(type))
+            if (property.pid == Pid::SIZE_SPATIUM_DEPENDENT)
+                point_unit = owner->style().style_b(property.sid) ? owner->style().spatium() : ::mu::engraving::dpmm;
+    }
     write_property_value(xml, pid, value, d, source_spatium(*owner), point_unit);
 }
 

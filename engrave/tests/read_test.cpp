@@ -5648,6 +5648,37 @@ TEST(Read, PartSpannerRelinkClearsLocalPiecesWithoutCopyingMasterOverrides) {
     }
 }
 
+TEST(Read, BendTextOffsetRetainsPhysicalPositionAcrossColdStyleChangeAndSave) {
+    using namespace mu::engraving;
+    const AuthoredChildKey key{AuthoredChildRole::SEGMENT_TEXT};
+    for (const bool dependent : {false, true}) {
+        auto xml = legacy_segment_fixture("");
+        xml.insert(xml.find("</Style>"), dependent ? "<bendFontSpatiumDependent>1</bendFontSpatiumDependent>" :
+                                                     "<bendFontSpatiumDependent>0</bendFontSpatiumDependent>");
+        xml.insert(xml.find("<Note>") + 6, "<eid>N_N</eid>");
+        xml.insert(xml.rfind("<Note>") + 6, "<eid>O_O</eid>");
+        xml.insert(xml.rfind("</Note>"), R"(<GuitarBend><eid>F_F</eid><track>0</track>
+<startElement>N_N</startElement><endElement>O_O</endElement><Segment><GuitarBendText>
+<offset x="0.5" y="-0.25"/><text>full</text></GuitarBendText></Segment></GuitarBend>)");
+        auto opened = g_engine->open(as_bytes(xml));
+        ASSERT_TRUE(opened);
+        ASSERT_TRUE((*opened)->edit({{engrave::SetStyle{{}, "bendFontSpatiumDependent", !dependent}}}));
+        auto bytes = (*opened)->export_score({.format = engrave::Format::MSCZ});
+        ASSERT_TRUE(bytes);
+        auto reopened = g_engine->open(*bytes, {.format = engrave::Format::MSCZ});
+        ASSERT_TRUE(reopened);
+        auto &master = master_of(**reopened);
+        auto *bend = static_cast<GuitarBend *>(master.eid_register()->item_from_eid(EID::from_std_string(std::string_view("F_F"))));
+        ASSERT_NE(bend, nullptr);
+        const auto *offset = bend->authored_overrides.find(key, Pid::OFFSET);
+        ASSERT_NE(offset, nullptr);
+        EXPECT_NEAR(offset->value.value<PointF>().x(), dependent ? 0.875 : 2.0 / 7.0, 1e-6);
+        EXPECT_NEAR(offset->value.value<PointF>().y(), dependent ? -0.4375 : -1.0 / 7.0, 1e-6);
+        EXPECT_EQ(bend->authored_overrides.find(key, Pid::SIZE_SPATIUM_DEPENDENT), nullptr);
+        EXPECT_TRUE(master.pages().empty());
+    }
+}
+
 TEST(Read, LegacySlurGripOrdinalGapsBaselineBeforeLayout) {
     const auto xml = legacy_segment_fixture(R"(<Slur><eid>F_F</eid><track>0</track>
 <startElement>B_B</startElement><endElement>C_C</endElement>
