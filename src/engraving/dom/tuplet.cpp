@@ -41,10 +41,6 @@ using namespace mu;
 using namespace mu::engraving;
 
 namespace mu::engraving {
-//---------------------------------------------------------
-//   tupletStyle
-//---------------------------------------------------------
-
 static const ElementStyle tuplet_style{
     {Sid::TUPLET_DIRECTION, Pid::DIRECTION},
     {Sid::TUPLET_NUMBER_TYPE, Pid::NUMBER_TYPE},
@@ -58,10 +54,6 @@ static const ElementStyle tuplet_style{
     {Sid::TUPLET_MIN_DISTANCE, Pid::MIN_DISTANCE},
     {Sid::TUPLET_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
 };
-
-//---------------------------------------------------------
-//   Tuplet
-//---------------------------------------------------------
 
 Tuplet::Tuplet(DummyParentOr<Measure> parent) : DurationElement(ElementType::TUPLET, parent) {
     direction_ = DirectionV::AUTO;
@@ -90,9 +82,7 @@ Tuplet::Tuplet(const Tuplet &t) : DurationElement(t) {
     user_p2_ = t.user_p2_;
 }
 
-//---------------------------------------------------------
 //   ~Tuplet
-//---------------------------------------------------------
 
 Tuplet::~Tuplet() {
     being_destructed_ = true;
@@ -105,35 +95,16 @@ Tuplet::~Tuplet() {
 
 void Tuplet::set_ownership_parent(DummyParentOr<Measure> parent) { EngravingItem::set_ownership_parent(parent); }
 
-//---------------------------------------------------------
-//   setSelected
-//---------------------------------------------------------
-
 void Tuplet::set_selected(bool f) { EngravingItem::set_selected(f); }
-
-//---------------------------------------------------------
-//   setVisible
-//---------------------------------------------------------
 
 void Tuplet::set_visible(bool f) { EngravingItem::set_visible(f); }
 
-//---------------------------------------------------------
-//   setColor
-//---------------------------------------------------------
-
 void Tuplet::set_color(const Color &col) { EngravingItem::set_color(col); }
-
-//---------------------------------------------------------
-//   rtick
-//---------------------------------------------------------
 
 Fraction Tuplet::rtick() const { return tick() - measure()->tick(); }
 
-//---------------------------------------------------------
-//   resetNumberProperty
 //   reset number properties to default values
 //   Set FONT_ITALIC to true, because for tuplets number should be italic
-//---------------------------------------------------------
 
 void Tuplet::apply_number_style() {
     if (!number()) return;
@@ -164,10 +135,6 @@ void Tuplet::reset_number_property(Text *number) {
         number->reset_property(p);
     }
 }
-
-//---------------------------------------------------------
-//   calcHasBracket
-//---------------------------------------------------------
 
 bool Tuplet::calc_has_bracket(const DurationElement *cr1, const DurationElement *cr2) const {
     if (bracket_type_ != TupletBracketType::AUTO_BRACKET) {
@@ -244,10 +211,6 @@ bool Tuplet::calc_has_bracket(const DurationElement *cr1, const DurationElement 
     return true;
 }
 
-//---------------------------------------------------------
-//   scanElements
-//---------------------------------------------------------
-
 void Tuplet::scan_elements(std::function<void(EngravingItem *)> func) {
     if (number()) {
         number()->scan_elements(func);
@@ -255,10 +218,6 @@ void Tuplet::scan_elements(std::function<void(EngravingItem *)> func) {
 
     func(this);
 }
-
-//---------------------------------------------------------
-//   add
-//---------------------------------------------------------
 
 void Tuplet::add(EngravingItem *e) {
 #ifndef NDEBUG
@@ -300,10 +259,6 @@ void Tuplet::add(EngravingItem *e) {
     e->added();
 }
 
-//---------------------------------------------------------
-//   remove
-//---------------------------------------------------------
-
 void Tuplet::remove(EngravingItem *e) {
     switch (e->type()) {
             //            case ElementType::TEXT:
@@ -342,32 +297,16 @@ void Tuplet::remove_duration_element(DurationElement *de) {
     all_elements_.erase(de);
 }
 
-//---------------------------------------------------------
-//   isEditable
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   reset
-//---------------------------------------------------------
-
 void Tuplet::reset() {
     undo_change_property(Pid::P1, PointF());
     undo_change_property(Pid::P2, PointF());
     EngravingItem::reset();
 }
 
-//---------------------------------------------------------
-//   dump
-//---------------------------------------------------------
-
 void Tuplet::dump() const {
     EngravingItem::dump();
     LOGD() << "ratio: " << ratio_.to_string();
 }
-
-//---------------------------------------------------------
-//   setTrack
-//---------------------------------------------------------
 
 void Tuplet::set_track(track_idx_t val) {
     if (tuplet()) {
@@ -376,21 +315,9 @@ void Tuplet::set_track(track_idx_t val) {
     EngravingItem::set_track(val);
 }
 
-//---------------------------------------------------------
-//   tickGreater
-//---------------------------------------------------------
-
 static bool tick_greater(const DurationElement *a, const DurationElement *b) { return a->tick() < b->tick(); }
 
-//---------------------------------------------------------
-//   sortElements
-//---------------------------------------------------------
-
 void Tuplet::sort_elements() { std::sort(current_elements_.begin(), current_elements_.end(), tick_greater); }
-
-//---------------------------------------------------------
-//   cross
-//---------------------------------------------------------
 
 bool Tuplet::cross() const {
     for (DurationElement *de : current_elements_) {
@@ -409,10 +336,7 @@ bool Tuplet::cross() const {
     return false;
 }
 
-//---------------------------------------------------------
-//   vStaffIdx
 ///  Staff index for layout based on the first ChordRest
-//---------------------------------------------------------
 
 staff_idx_t Tuplet::v_staff_idx() const {
     if (elements().empty()) {
@@ -435,11 +359,8 @@ staff_idx_t Tuplet::v_staff_idx() const {
     return cr->v_staff_idx();
 }
 
-//---------------------------------------------------------
-//   elementsDuration
 ///  Get the sum of the element fraction in the tuplet,
 ///  even if the tuplet is not complete yet
-//---------------------------------------------------------
 
 Fraction Tuplet::elements_duration() {
     Fraction f;
@@ -448,10 +369,6 @@ Fraction Tuplet::elements_duration() {
     }
     return f;
 }
-
-//---------------------------------------------------------
-//   getProperty
-//---------------------------------------------------------
 
 PropertyValue Tuplet::get_property(Pid property_id) const {
     switch (property_id) {
@@ -473,10 +390,6 @@ PropertyValue Tuplet::get_property(Pid property_id) const {
     }
     return DurationElement::get_property(property_id);
 }
-
-//---------------------------------------------------------
-//   setProperty
-//---------------------------------------------------------
 
 bool Tuplet::set_property(Pid property_id, const PropertyValue &v) {
     switch (property_id) {
@@ -513,10 +426,6 @@ bool Tuplet::set_property(Pid property_id, const PropertyValue &v) {
     return true;
 }
 
-//---------------------------------------------------------
-//   propertyDefault
-//---------------------------------------------------------
-
 PropertyValue Tuplet::property_default(Pid id) const {
     switch (id) {
         case Pid::TEXT_STYLE: return TextStyleType::TUPLET;
@@ -545,13 +454,10 @@ PropertyValue Tuplet::property_default(Pid id) const {
     return DurationElement::property_default(id);
 }
 
-//---------------------------------------------------------
-//   sanitizeTuplet
 ///    Check validity of tuplets and coherence between duration
 ///    and baselength. Needed for importing old files due to a bug
 ///    in the released version for corner-case tuplets.
 ///    See issue #136406 and Pull request #2881
-//---------------------------------------------------------
 
 void Tuplet::sanitize_tuplet() {
     if (ratio().numerator() == ratio().reduced().numerator()) { // return if the ratio is an irreducible fraction
@@ -601,12 +507,9 @@ void Tuplet::sanitize_tuplet() {
     }
 }
 
-//---------------------------------------------------------
-//   addMissingElement
 //     Add a rest with the given start and end ticks.
 //     Should only be called from Tuplet::addMissingElements().
 //     Needed for importing files that saved incomplete tuplets.
-//---------------------------------------------------------
 
 Fraction Tuplet::add_missing_element(const Fraction &start_tick, const Fraction &end_tick) {
     Fraction f = (end_tick - start_tick) * ratio();
@@ -628,12 +531,9 @@ Fraction Tuplet::add_missing_element(const Fraction &start_tick, const Fraction 
     return f;
 }
 
-//---------------------------------------------------------
-//   addMissingElements
 //     Make this tuplet complete by filling in holes where
 //     there ought to be rests. Needed for importing files
 //     that saved incomplete tuplets.
-//---------------------------------------------------------
 
 void Tuplet::add_missing_elements() {
     if (tuplet()) {
@@ -729,12 +629,6 @@ EngravingItem *Tuplet::next_element() {
     return first_element;
 }
 
-EngravingItem *Tuplet::prev_element() {
-    ChordRest *first_element = to_chord_rest(elements().front());
-    staff_idx_t staff_id = first_element->staff_idx();
-    EngravingItem *prev_item = first_element->segment()->prev_element(staff_id);
-    return prev_item;
-}
 } // namespace mu::engraving
 
 namespace mu::engraving {

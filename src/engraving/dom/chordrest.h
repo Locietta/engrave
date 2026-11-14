@@ -43,10 +43,7 @@ struct TabDurationSymbol;
 struct Transaction;
 enum class SegmentType;
 
-//-------------------------------------------------------------------
-//   ChordRest
 //    Virtual base class. Chords and rests can be part of a beam
-//-------------------------------------------------------------------
 
 struct ChordRest : DurationElement {
 private:
@@ -175,10 +172,9 @@ public:
     EngravingItem *next_articulation_or_lyric(EngravingItem *e);
     EngravingItem *prev_articulation_or_lyric(EngravingItem *e);
     virtual EngravingItem *next_element() override;
-    virtual EngravingItem *prev_element() override;
+
     EngravingItem *last_element_before_segment();
     virtual EngravingItem *next_segment_element() override;
-    virtual EngravingItem *prev_segment_element() override;
 
     virtual void compute_up();
 

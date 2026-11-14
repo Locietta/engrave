@@ -67,15 +67,7 @@
 using namespace mu;
 
 namespace mu::engraving {
-//---------------------------------------------------------
-//   handleRect
-//---------------------------------------------------------
-
 RectF handle_rect(const PointF &pos) { return RectF(pos.x() - 4, pos.y() - 4, 8, 8); }
-
-//---------------------------------------------------------
-//   tick2measure
-//---------------------------------------------------------
 
 Measure *Score::tick2measure(const Fraction &tick) const {
     if (tick == Fraction(-1, 1)) { // special number
@@ -87,10 +79,6 @@ Measure *Score::tick2measure(const Fraction &tick) const {
 
     return measures_.measure_by_tick(tick.ticks());
 }
-
-//---------------------------------------------------------
-//   tick2measureMM
-//---------------------------------------------------------
 
 Measure *Score::tick2measure_mm(const Fraction &t) const {
     Fraction tick(t);
@@ -120,10 +108,6 @@ MeasureBase *Score::tick2measure_base(const Fraction &tick) const {
 
     return measures_.first_measure_base_at_tick(tick.ticks());
 }
-
-//---------------------------------------------------------
-//   tick2segment
-//---------------------------------------------------------
 
 Segment *Score::tick2segment_mm(const Fraction &tick, bool first, SegmentType st) const { return tick2segment(tick, first, st, true); }
 
@@ -169,11 +153,8 @@ Segment *Score::tick2segment(const Fraction &tick) const { return tick2segment(t
 
 Segment *Score::tick2segment(const Fraction &tick, bool first) const { return tick2segment(tick, first, SegmentType::ALL, false); }
 
-//---------------------------------------------------------
-//   tick2leftSegment
 /// return the segment at this tick position if any or
 /// the first segment *before* this tick position
-//---------------------------------------------------------
 
 Segment *Score::tick2left_segment(const Fraction &tick, bool use_m_mrest, SegmentType seg_type) const {
     Measure *m = use_m_mrest ? tick2measure_mm(tick) : tick2measure(tick);
@@ -195,11 +176,8 @@ Segment *Score::tick2left_segment(const Fraction &tick, bool use_m_mrest, Segmen
     return ps;
 }
 
-//---------------------------------------------------------
-//   tick2rightSegment
 /// return the segment at this tick position if any or
 /// the first segment *after* this tick position
-//---------------------------------------------------------
 
 Segment *Score::tick2right_segment(const Fraction &tick, bool use_m_mrest, SegmentType seg_type) const {
     Measure *m = use_m_mrest ? tick2measure_mm(tick) : tick2measure(tick);
@@ -215,10 +193,6 @@ Segment *Score::tick2right_segment(const Fraction &tick, bool use_m_mrest, Segme
     }
     return 0;
 }
-
-//---------------------------------------------------------
-//   tick2beatType
-//---------------------------------------------------------
 
 BeatType Score::tick2beat_type(const Fraction &tick) const {
     Measure *m = tick2measure(tick);
@@ -236,14 +210,12 @@ BeatType Score::tick2beat_type(const Fraction &tick) const {
 
 void Score::check_chord_list() { chord_list_.check_chord_list(style()); }
 
-//---------------------------------------------------------
 //    next/prevChordNote
 //
 //    returns the top note of the next/previous chord. If a
 //    chord exists in the same track as note,
 //    it is used. If not, the topmost existing chord is used.
 //    May return nullptr if there is no next/prev note
-//---------------------------------------------------------
 
 Note *next_chord_note(Note *note) {
     track_idx_t track = note->track();
@@ -295,13 +267,10 @@ Note *prev_chord_note(Note *note) {
     return nullptr;
 }
 
-//---------------------------------------------------------
-//   pitchKeyAdjust
 //    change entered note to sounding pitch dependent
 //    on key.
 //    Example: if F is entered in G-major, a Fis is played
 //    key -7 ... +7
-//---------------------------------------------------------
 
 int pitch_key_adjust(int step, Key key) {
     static int ptab[15][7] = {
@@ -325,19 +294,12 @@ int pitch_key_adjust(int step, Key key) {
     return ptab[int(key) + 7][step];
 }
 
-//---------------------------------------------------------
-//   y2pitch
-//---------------------------------------------------------
-
 int y2pitch(double y, ClefType clef, double spatium) {
     int l = lrint(y / spatium * 2.0);
     return line2pitch(l, clef, Key::C);
 }
 
-//---------------------------------------------------------
-//   line2pitch
 //    key  -7 ... +7
-//---------------------------------------------------------
 
 int line2pitch(int line, ClefType clef, Key key) {
     int l = std::max(ClefInfo::pitch_offset(clef) - line, 0);
@@ -440,10 +402,7 @@ String convert_pitch_string_flats_and_sharps_to_unicode(const String &str) {
     return value;
 }
 
-//---------------------------------------------------------
-//   searchTieNote
 //    search Note to tie to "note"
-//---------------------------------------------------------
 
 Note *search_tie_note(const Note *note, const Segment *next_segment, const bool disable_over_repeats) {
     if (!note) {
@@ -548,11 +507,8 @@ Note *search_tie_note(const Note *note, const Segment *next_segment, const bool 
     return note2;
 }
 
-//---------------------------------------------------------
-//   absStep
 ///   Compute absolute step.
 ///   C D E F G A B ....
-//---------------------------------------------------------
 
 int abs_step(int tpc, int pitch) {
     int line = tpc2step(tpc) + (pitch / ::mu::engraving::pitch_delta_octave) * ::mu::engraving::step_delta_octave;
@@ -574,21 +530,15 @@ int abs_step(int pitch) {
 
 int abs_step(int line, ClefType clef) { return ClefInfo::pitch_offset(clef) - line; }
 
-//---------------------------------------------------------
-//   relStep
 ///   Compute relative step from absolute step
 ///   which depends on actual clef. Step 0 starts on the
 ///   first (top) staff line.
-//---------------------------------------------------------
 
 int rel_step(int line, ClefType clef) { return ClefInfo::pitch_offset(clef) - line; }
 
 int rel_step(int pitch, int tpc, ClefType clef) { return rel_step(abs_step(tpc, pitch), clef); }
 
-//---------------------------------------------------------
-//   pitch2step
 //   returns one of { 0, 1, 2, 3, 4, 5, 6 }
-//---------------------------------------------------------
 
 int pitch2step(int pitch) {
     //                            C  C# D  D# E  F  F# G  G# A  A# B
@@ -596,20 +546,14 @@ int pitch2step(int pitch) {
     return tab[pitch % 12];
 }
 
-//---------------------------------------------------------
-//   step2pitch
 //   returns one of { 0, 2, 4, 5, 7, 9, 11 }
-//---------------------------------------------------------
 
 int step2pitch(int step) {
     static const char tab[7] = {0, 2, 4, 5, 7, 9, 11};
     return tab[step % 7];
 }
 
-//---------------------------------------------------------
-//   convertLine
 // find the line in clefF corresponding to lineL2 in clefR
-//---------------------------------------------------------
 
 int convert_line(int line_l2, ClefType clef_l, ClefType clef_r) {
     int line_r2 = line_l2;
@@ -624,18 +568,14 @@ int convert_line(int line_l2, ClefType clef_l, ClefType clef_r) {
     return line_r2;
 }
 
-//---------------------------------------------------------
-//   convertLine
 // find the line in clef for NoteL corresponding to lineL2 in clef for noteR
 // for example middle C is line 10 in Treble clef, but is line -2 in Bass clef.
-//---------------------------------------------------------
 
 int convert_line(int line_l2, const Note *note_l, const Note *note_r) {
     return convert_line(line_l2, note_l->chord()->staff()->clef(note_l->chord()->tick()),
                         note_r->chord()->staff()->clef(note_r->chord()->tick()));
 }
 
-//---------------------------------------------------------
 //   chromaticPitchSteps -- an articulation such as a trill, or mordant consists of several notes
 // played in succession.  The pitch offsets of each such note in the sequence can be represented either
 // as a number of steps in the diatonic scale, or in half steps as on a piano keyboard.
@@ -658,7 +598,6 @@ int convert_line(int line_l2, const Note *note_l, const Note *note_r) {
 //    for ornament calculation noteL and noteR are the same, but for glissando they are
 //     the start and end note of glissando.
 // nominalDiatonicSteps is the desired number of diatonic steps between the base note and this articulation step.
-//---------------------------------------------------------
 
 int chromatic_pitch_steps(const Note *note_l, const Note *note_r, const int nominal_diatonic_steps) {
     if (0 == nominal_diatonic_steps) {
@@ -781,11 +720,8 @@ int compare_notes_pos(const Note *n1, const Note *n2) {
     }
 }
 
-//---------------------------------------------------------
-//   skipTuplet
 //    return segment of rightmost chord/rest in a
 //    (possible nested) tuplet
-//---------------------------------------------------------
 
 Segment *skip_tuplet(Tuplet *tuplet) {
     DurationElement *nde = tuplet->elements().back();
@@ -796,10 +732,7 @@ Segment *skip_tuplet(Tuplet *tuplet) {
     return to_chord_rest(nde)->segment();
 }
 
-//---------------------------------------------------------
-//   timeSigSymIdsFromString
 //    replace ascii with bravura symbols
-//---------------------------------------------------------
 
 SymIdList time_sig_sym_ids_from_string(const String &string, TimeSigStyle time_sig_style) {
     static const std::map<Char, SymId> dict = {
@@ -906,54 +839,12 @@ SymIdList time_sig_sym_ids_from_string(const String &string, TimeSigStyle time_s
     return list;
 }
 
-//---------------------------------------------------------
-//   actualTicks
-//---------------------------------------------------------
-
 Fraction actual_ticks(Fraction duration, Tuplet *tuplet, Fraction time_stretch) {
     Fraction f = duration / time_stretch;
     for (Tuplet *t = tuplet; t; t = t->tuplet()) {
         f /= t->ratio();
     }
     return f;
-}
-
-bool drag_position_to_measure(const PointF &pos, const Score *score, Measure **measure, staff_idx_t *staff_idx,
-                              const double spacing_factor) {
-    const System *preferred_system = (*measure) ? (*measure)->system() : nullptr;
-
-    MeasureBase *mb = score->search_measure_base(pos, /*scanMeasuresOnly*/ true, preferred_system, spacing_factor);
-    Measure *m = mb && mb->is_measure() ? to_measure(mb) : nullptr;
-    if (!m) {
-        return false;
-    }
-
-    const System *system = m->system();
-    const double y = pos.y() - system->canvas_pos().y();
-    const staff_idx_t i = system->search_staff(y, *staff_idx, spacing_factor);
-    if (!score->staff(i)) {
-        return false;
-    }
-
-    *measure = m;
-    *staff_idx = i;
-    return true;
-}
-
-bool drag_position_to_segment(const PointF &pos, const Measure *measure, const staff_idx_t staff_idx, Segment **segment,
-                              const double spacing_factor, const bool allow_time_anchor) {
-    const track_idx_t strack = staff_idx * ::mu::engraving::voices;
-    const track_idx_t etrack = strack + ::mu::engraving::voices;
-
-    const double x = pos.x() - measure->canvas_pos().x();
-    const SegmentType st = allow_time_anchor ? SegmentType::DURATION : SegmentType::CHORD_REST;
-    Segment *s = measure->search_segment(x, st, strack, etrack, *segment, spacing_factor);
-    if (!s) {
-        return false;
-    }
-
-    *segment = segment_or_chord_rest_segment_at_same_tick(s);
-    return true;
 }
 
 Segment *segment_or_chord_rest_segment_at_same_tick(Segment *segment) {

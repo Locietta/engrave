@@ -34,7 +34,5 @@ struct Selection;
 struct Tie;
 struct TieJumpPointList;
 
-struct EditTie {};
-
 void apply_change_tie_jump_point_active(TieJumpPointList *jump_point_list, muse::String id, bool active);
 } // namespace mu::engraving

@@ -29,15 +29,12 @@ namespace mu::engraving {
 struct SLine;
 struct System;
 
-//---------------------------------------------------------
-//   @@ LineSegment
 ///    Virtual base class for segmented lines segments
 ///    (OttavaSegment, HairpinSegment, TrillSegment...)
 ///
 ///    This class describes one segment of an segmented
 ///    line object. Line objects can span multiple staves.
 ///    For every staff a segment is created.
-//---------------------------------------------------------
 
 struct LineSegment : SpannerSegment {
 protected:
@@ -62,23 +59,9 @@ public:
     double absolute_from_spatium(const Spatium &sp) const override;
 
 protected:
-    virtual void rebase_offsets_on_anchor_changed(Grip grip, const PointF &old_pos, System *sys);
-
-private:
-    PointF left_anchor_position(const double &system_position_y) const;
-    PointF right_anchor_position(const double &system_position_y) const;
-
-    Segment *find_segment_for_grip(Grip grip, PointF pos) const;
-    static PointF delta_rebase_left(const Segment *old_seg, const Segment *new_seg);
-    static PointF delta_rebase_right(const Segment *old_seg, const Segment *new_seg);
-    static Fraction last_segment_end_tick(const Segment *last_seg, const Spanner *s);
-    LineSegment *rebase_anchor(Grip grip, Segment *new_seg);
 };
 
-//---------------------------------------------------------
-//   @@ SLine
 ///    virtual base class for Hairpin, Trill and TextLine
-//---------------------------------------------------------
 
 struct SLine : Spanner {
 

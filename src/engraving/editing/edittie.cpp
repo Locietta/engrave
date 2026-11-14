@@ -24,19 +24,16 @@
 
 #include "../dom/chord.h"
 #include "../dom/factory.h"
-#include "../dom/input.h"
 #include "../dom/laissezvib.h"
 #include "../dom/masterscore.h"
 #include "../dom/note.h"
 #include "../dom/partialtie.h"
 #include "../dom/score.h"
-#include "../dom/select.h"
 #include "../dom/tie.h"
 #include "../dom/tiejumppointlist.h"
 #include "../dom/utils.h"
 #include "editchord.h"
 #include "log.h"
-#include "noteinput.h"
 #include "transaction/transaction.h"
 
 using namespace mu::engraving;

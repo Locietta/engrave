@@ -63,8 +63,6 @@ struct Segment;
 struct BracketItem;
 struct PaddingTable;
 
-struct EditData;
-
 struct Selection;
 } // namespace mu::engraving
 

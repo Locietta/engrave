@@ -48,20 +48,13 @@ static constexpr int barline_span_shor_t1_to = -2;
 static constexpr int barline_span_shor_t2_from = 1;
 static constexpr int barline_span_shor_t2_to = -1;
 
-//---------------------------------------------------------
-//   BarLineTableItem
-//---------------------------------------------------------
-
 struct BarLineTableItem {
     BarLineType type;
     const muse::TranslatableString &user_name;
 };
 
-//---------------------------------------------------------
-//   @@ BarLine
 //
 //   @P barLineType  enum  (BarLineType.NORMAL, .DOUBLE, .START_REPEAT, .END_REPEAT, .BROKEN, .END, .END_START_REPEAT, .DOTTED)
-//---------------------------------------------------------
 
 struct BarLine final : EngravingItem {
 private:
@@ -135,7 +128,6 @@ public:
     PlayCountText *play_count_text() const;
 
     EngravingItem *next_segment_element() override;
-    EngravingItem *prev_segment_element() override;
 
     void set_selected(bool f) override;
 

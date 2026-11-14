@@ -38,10 +38,6 @@ using namespace mu;
 using namespace mu::engraving;
 
 namespace mu::engraving {
-//---------------------------------------------------------
-//   KeySig
-//---------------------------------------------------------
-
 KeySig::KeySig(DummyParentOr<Segment> s) : EngravingItem(ElementType::KEYSIG, s, ElementFlag::ON_STAFF) {
     show_courtesy_ = true;
     hide_naturals_ = false;
@@ -53,15 +49,7 @@ KeySig::KeySig(const KeySig &k) : EngravingItem(k) {
     hide_naturals_ = false;
 }
 
-//---------------------------------------------------------
-//   mag
-//---------------------------------------------------------
-
 double KeySig::mag() const { return staff() ? staff()->staff_mag(this) : 1.0; }
-
-//---------------------------------------------------------
-//   setKey
-//---------------------------------------------------------
 
 void KeySig::set_key(Key concert_key) {
     KeySigEvent e;
@@ -78,10 +66,6 @@ void KeySig::set_key(Key concert_key) {
     set_key_sig_event(e);
 }
 
-//---------------------------------------------------------
-//   setKey
-//---------------------------------------------------------
-
 void KeySig::set_key(Key concert_key, Key transposed_key) {
     KeySigEvent e;
     e.set_concert_key(concert_key);
@@ -89,15 +73,9 @@ void KeySig::set_key(Key concert_key, Key transposed_key) {
     set_key_sig_event(e);
 }
 
-//---------------------------------------------------------
 //   operator==
-//---------------------------------------------------------
 
 bool KeySig::operator==(const KeySig &k) const { return sig_ == k.sig_; }
-
-//---------------------------------------------------------
-//   isChange
-//---------------------------------------------------------
 
 bool KeySig::is_change() const {
     if (!staff()) {
@@ -109,10 +87,6 @@ bool KeySig::is_change() const {
     const Fraction key_tick = tick();
     return staff()->current_key_tick(key_tick) == key_tick;
 }
-
-//---------------------------------------------------------
-//   changeKeySigEvent
-//---------------------------------------------------------
 
 void KeySig::change_key_sig_event(const KeySigEvent &t) {
     if (sig_ == t) {
@@ -153,10 +127,6 @@ EngravingObject *KeySig::property_delegate(Pid property_id) const {
     return nullptr;
 }
 
-//---------------------------------------------------------
-//   getProperty
-//---------------------------------------------------------
-
 PropertyValue KeySig::get_property(Pid property_id) const {
     if (EngravingObject *e = property_delegate(property_id)) {
         return e->get_property(property_id);
@@ -170,10 +140,6 @@ PropertyValue KeySig::get_property(Pid property_id) const {
         default: return EngravingItem::get_property(property_id);
     }
 }
-
-//---------------------------------------------------------
-//   setProperty
-//---------------------------------------------------------
 
 bool KeySig::set_property(Pid property_id, const PropertyValue &v) {
     if (EngravingObject *e = property_delegate(property_id)) {
@@ -217,10 +183,6 @@ bool KeySig::set_property(Pid property_id, const PropertyValue &v) {
     return true;
 }
 
-//---------------------------------------------------------
-//   undoChangeProperty
-//---------------------------------------------------------
-
 void KeySig::undo_change_property(Pid id, const PropertyValue &v, PropertyFlags ps) {
     if (EngravingObject *e = property_delegate(id)) {
         /* If this is a courtesy, we must change the property of the _real_ key signature,
@@ -237,10 +199,6 @@ void KeySig::undo_change_property(Pid id, const PropertyValue &v, PropertyFlags 
     EngravingItem::undo_change_property(id, v, ps);
 }
 
-//---------------------------------------------------------
-//   propertyDefault
-//---------------------------------------------------------
-
 PropertyValue KeySig::property_default(Pid id) const {
     switch (id) {
         case Pid::KEY: return int(Key::INVALID);
@@ -252,25 +210,7 @@ PropertyValue KeySig::property_default(Pid id) const {
     }
 }
 
-//---------------------------------------------------------
-//   nextSegmentElement
-//---------------------------------------------------------
-
 EngravingItem *KeySig::next_segment_element() { return segment()->first_in_next_segments(staff_idx()); }
-
-//---------------------------------------------------------
-//   prevSegmentElement
-//---------------------------------------------------------
-
-EngravingItem *KeySig::prev_segment_element() { return segment()->last_in_prev_segments(staff_idx()); }
-
-//---------------------------------------------------------
-//   accessibleInfo
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   translatedSubtypeUserName
-//---------------------------------------------------------
 
 muse::TranslatableString KeySig::subtype_user_name() const { return TConv::user_name(key(), is_atonal(), is_custom()); }
 } // namespace mu::engraving

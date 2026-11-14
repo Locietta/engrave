@@ -92,38 +92,11 @@ void apply_part_label(Part &part, Fraction tick, const String &value, bool long_
     part.score()->set_layout_all();
 }
 
-void exchange_part_instrument(Part &part, std::unique_ptr<Instrument> &held) {
-    auto *before = part.instrument();
-    part.set_instrument(held.get());
-    held.release();
-    held.reset(before);
-}
-
-void refresh_part_instrument(Part &part) {
-    part.update_harmony_channels(false);
-    auto *score = part.score();
-    score->master_score()->rebuild_midi_mapping();
-    score->set_instruments_changed(true);
-    score->set_layout_all();
-}
-
 void apply_staff_membership(Staff &staff, staff_idx_t index, bool adding) {
     if (adding)
         staff.score()->insert_staff(&staff, index);
     else
         staff.score()->remove_staff(&staff);
-}
-
-void apply_system_staff(Staff &staff, bool adding) {
-    if (adding)
-        staff.score()->add_system_object_staff(&staff);
-    else
-        staff.score()->remove_system_object_staff(&staff);
-}
-
-void apply_staff_hide(Measure &measure, staff_idx_t staff, AutoOnOff value) {
-    measure.set_hide_staff_if_empty(staff, value);
-    measure.trigger_layout(staff);
 }
 
 void apply_staff_brackets(Staff &staff, size_t level, BracketType type, size_t span, bool adding) {
@@ -189,12 +162,6 @@ void Transaction::change_measures(MeasureBase *first, MeasureBase *last, bool ad
         remove_measure_chain(first, last, move_staff_type_changes);
 }
 
-void Transaction::change_measure_length(Measure *measure, Fraction length) {
-    note_change(measure, CommandType::CHANGE_MEASURE_LEN);
-
-    apply_measure_length(measure, length);
-}
-
 void Transaction::change_measure_repeat_count(Measure *measure, int count, staff_idx_t staff) {
     note_change(measure, CommandType::CHANGE_MEASURE_REPEAT_COUNT);
 
@@ -241,25 +208,6 @@ void Transaction::change_staff_membership(Staff *staff, staff_idx_t index, bool 
     apply_staff_membership(*staff, index, adding);
 }
 
-void Transaction::change_system_staff(Staff *staff, bool adding) {
-    note_change(staff, adding ? CommandType::ADD_SYSTEM_OBJECT_STAFF : CommandType::REMOVE_SYSTEM_OBJECT_STAFF);
-
-    apply_system_staff(*staff, adding);
-}
-
-void Transaction::change_staff_order(Score *score, const std::vector<staff_idx_t> &order) {
-    note_change(score, CommandType::SORT_STAVES);
-
-    auto forward = order;
-    score->sort_staves(forward);
-}
-
-void Transaction::change_staff_hide(Measure *measure, staff_idx_t staff, AutoOnOff value) {
-    note_change(measure, CommandType::CHANGE_M_STAFF_HIDE_IF_EMPTY);
-
-    apply_staff_hide(*measure, staff, value);
-}
-
 void Transaction::change_part_membership(Part *part, size_t index, bool adding) {
     note_change(part, adding ? CommandType::INSERT_PART : CommandType::REMOVE_PART);
     if (!adding) defer_root(*part, part->master_score()->eid_register()->enroll(*part));
@@ -271,19 +219,6 @@ void Transaction::change_part_label(Fraction tick, Part *part, const String &val
     note_change(part, long_name ? CommandType::CHANGE_INSTRUMENT_LONG : CommandType::CHANGE_INSTRUMENT_SHORT);
 
     apply_part_label(*part, tick, value, long_name);
-}
-
-void Transaction::replace_part_instrument(Part *part, std::unique_ptr<Instrument> value) {
-    note_change(part, CommandType::CHANGE_PART);
-
-    exchange_part_instrument(*part, value);
-    refresh_part_instrument(*part);
-}
-
-void Transaction::change_string_data(StringTunings *item, const StringData &value) {
-    note_change(item, CommandType::UNKNOWN);
-
-    item->set_string_data(value);
 }
 
 void Transaction::change_shared_origin(SharedPart *shared, Part *origin, bool connecting) {
@@ -414,18 +349,6 @@ void Score::apply_part_membership(Part *part, size_t index, bool adding) {
     transaction_manager()->current_or_dummy_transaction().change_part_membership(part, index, adding);
 }
 
-void Score::apply_part_label(Fraction tick, Part *part, const String &value, bool long_name) {
-    transaction_manager()->current_or_dummy_transaction().change_part_label(tick, part, value, long_name);
-}
-
-void Score::apply_part_instrument(Part *part, std::unique_ptr<Instrument> value) {
-    transaction_manager()->current_or_dummy_transaction().replace_part_instrument(part, std::move(value));
-}
-
-void Score::apply_string_data(StringTunings *item, const StringData &value) {
-    transaction_manager()->current_or_dummy_transaction().change_string_data(item, value);
-}
-
 void Score::apply_excerpt(Excerpt *excerpt, bool adding) {
     transaction_manager()->current_or_dummy_transaction().change_excerpt_membership(excerpt, adding);
 }
@@ -442,28 +365,12 @@ void Score::apply_staff_membership(Staff *staff, staff_idx_t index, bool adding)
     transaction_manager()->current_or_dummy_transaction().change_staff_membership(staff, index, adding);
 }
 
-void Score::apply_system_staff(Staff *staff, bool adding) {
-    transaction_manager()->current_or_dummy_transaction().change_system_staff(staff, adding);
-}
-
-void Score::apply_staff_order(const std::vector<staff_idx_t> &order) {
-    transaction_manager()->current_or_dummy_transaction().change_staff_order(this, order);
-}
-
-void Score::apply_staff_hide(Measure *measure, staff_idx_t staff, AutoOnOff value) {
-    transaction_manager()->current_or_dummy_transaction().change_staff_hide(measure, staff, value);
-}
-
 void Score::apply_time_insertion(Score *target, Fraction tick, Fraction length, bool unmanaged) {
     transaction_manager()->current_or_dummy_transaction().insert_time(*target, tick, length, unmanaged);
 }
 
 void Score::apply_measures(MeasureBase *first, MeasureBase *last, bool adding, bool move_staff_type_changes) {
     transaction_manager()->current_or_dummy_transaction().change_measures(first, last, adding, move_staff_type_changes);
-}
-
-void Score::apply_measure_length(Measure *measure, Fraction length) {
-    transaction_manager()->current_or_dummy_transaction().change_measure_length(measure, length);
 }
 
 void Score::apply_measure_repeat_count(Measure *measure, int count, staff_idx_t staff) {

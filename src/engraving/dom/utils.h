@@ -82,10 +82,6 @@ extern Segment *skip_tuplet(Tuplet *tuplet);
 extern SymIdList time_sig_sym_ids_from_string(const String &, TimeSigStyle time_sig_style = TimeSigStyle::NORMAL);
 extern Fraction actual_ticks(Fraction duration, Tuplet *tuplet, Fraction time_stretch);
 
-extern bool drag_position_to_measure(const PointF &pos, const Score *score, Measure **measure, staff_idx_t *staff_idx,
-                                     const double spacing_factor = 0.5);
-extern bool drag_position_to_segment(const PointF &pos, const Measure *measure, const staff_idx_t staff_idx, Segment **segment,
-                                     const double spacing_factor = 0.5, const bool allow_time_anchor = false);
 extern Segment *segment_or_chord_rest_segment_at_same_tick(Segment *segment);
 
 extern double y_staff_difference(const System *system1, const System *system2, staff_idx_t staff_idx1);

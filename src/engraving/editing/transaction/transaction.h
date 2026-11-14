@@ -40,11 +40,7 @@ void apply_text_line_property(EngravingObject &object, const PropertyValue &valu
 void apply_text_format(TextBase &text, Pid id, const PropertyValue &value, PropertyFlags flags);
 void apply_part_membership(Part &part, size_t index, bool adding);
 void apply_part_label(Part &part, Fraction tick, const String &value, bool long_name);
-void exchange_part_instrument(Part &part, std::unique_ptr<Instrument> &held);
-void refresh_part_instrument(Part &part);
 void apply_staff_membership(Staff &staff, staff_idx_t index, bool adding);
-void apply_system_staff(Staff &staff, bool adding);
-void apply_staff_hide(Measure &measure, staff_idx_t staff, AutoOnOff value);
 void apply_staff_brackets(Staff &staff, size_t level, BracketType type, size_t span, bool adding);
 void apply_staff_tracks(Measure &measure, staff_idx_t first, staff_idx_t last, bool adding);
 bool style_value_refreshes_chords(Sid id);
@@ -71,20 +67,16 @@ struct Transaction {
     void change_staff_tracks(Measure *measure, staff_idx_t first, staff_idx_t last, bool adding);
     void change_staff_brackets(Staff *staff, size_t level, BracketType type, size_t span, bool adding);
     void change_staff_membership(Staff *staff, staff_idx_t index, bool adding);
-    void change_system_staff(Staff *staff, bool adding);
-    void change_staff_order(Score *score, const std::vector<staff_idx_t> &order);
-    void change_staff_hide(Measure *measure, staff_idx_t staff, AutoOnOff value);
 
     void change_part_membership(Part *part, size_t index, bool adding);
     void change_part_label(Fraction tick, Part *part, const String &value, bool long_name);
-    void replace_part_instrument(Part *part, std::unique_ptr<Instrument> value);
-    void change_string_data(StringTunings *item, const StringData &value);
+
     void change_shared_origin(SharedPart *shared, Part *origin, bool connecting);
     void change_excerpt_membership(Excerpt *excerpt, bool adding);
 
     void insert_time(Score &score, Fraction tick, Fraction length, bool unmanaged = false);
     void change_measures(MeasureBase *first, MeasureBase *last, bool adding, bool move_staff_type_changes = true);
-    void change_measure_length(Measure *measure, Fraction length);
+
     void change_measure_repeat_count(Measure *measure, int count, staff_idx_t staff);
 };
 

@@ -25,12 +25,9 @@
 #include "textbase.h"
 
 namespace mu::engraving {
-//---------------------------------------------------------
-//   @@ Marker
 //
 //   @P label       string
 //   @P markerType  enum (Marker.CODA, .CODETTA, .FINE, .SEGNO, .TOCODA, .USER, .VARCODA, .VARSEGNO)
-//---------------------------------------------------------
 
 struct Marker final : TextBase {
 private:
@@ -76,7 +73,6 @@ public:
     PropertyValue property_default(Pid) const override;
 
     EngravingItem *next_segment_element() override;
-    EngravingItem *prev_segment_element() override;
 
     bool position_relative_to_notehead_rest() const override { return false; }
 

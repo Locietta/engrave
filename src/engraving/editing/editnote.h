@@ -34,8 +34,6 @@ struct Score;
 struct EngravingItem;
 struct Articulation;
 
-enum class UpDownMode : char { CHROMATIC, OCTAVE, DIATONIC };
-
 struct EditNote {
 
     static void change_accidental(Score *score, Note *note, AccidentalType accidental);

@@ -98,7 +98,6 @@ public:
     EngravingObject *property_delegate(Pid) const override;
 
     EngravingItem *next_segment_element() override;
-    EngravingItem *prev_segment_element() override;
 
     int subtype() const override { return int(key()) + 7; }
 

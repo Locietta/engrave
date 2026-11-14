@@ -28,10 +28,7 @@
 namespace mu::engraving {
 struct Transaction;
 
-//---------------------------------------------------------
-//   Box
 //   virtual base class for frames "boxes"
-//---------------------------------------------------------
 
 struct Box : MeasureBase {
 
@@ -107,10 +104,7 @@ private:
     bool is_auto_size_enabled_ = true;
 };
 
-//---------------------------------------------------------
-//   HBox
 //   horizontal frame
-//---------------------------------------------------------
 
 struct HBox final : Box {
 private:
@@ -136,10 +130,7 @@ private:
     bool create_system_header_ = true;
 };
 
-//---------------------------------------------------------
-//   VBox
 //   vertical frame
-//---------------------------------------------------------
 
 struct VBox : Box {
 private:
@@ -171,10 +162,7 @@ private:
     Spatium padding_to_notation_below_;
 };
 
-//---------------------------------------------------------
-//   FBox
 //   frame containing fret diagrams
-//---------------------------------------------------------
 
 struct FBox : VBox {
 private:
@@ -206,7 +194,6 @@ public:
     bool set_property(Pid property_id, const PropertyValue &val) override;
     PropertyValue property_default(Pid property_id) const override;
 
-    void undo_reorder_elements(const StringList &new_order);
     void reorder_elements(const StringList &new_order);
     StringList diagrams_order() const;
 
@@ -232,10 +219,7 @@ private:
     StringList diagrams_order_in_score_;
 };
 
-//---------------------------------------------------------
-//   TBox
 //   Text frame.
-//---------------------------------------------------------
 
 struct Text;
 

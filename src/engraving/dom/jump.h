@@ -27,8 +27,6 @@
 #include "textbase.h"
 
 namespace mu::engraving {
-//---------------------------------------------------------
-//   @@ Jump
 ///    Jump label
 //
 //   @P continueAt  string
@@ -36,7 +34,6 @@ namespace mu::engraving {
 // not used?
 //      jumpType    enum (Jump.DC, .DC_AL_FINE, .DC_AL_CODA, .DS_AL_CODA, .DS_AL_FINE, .DS, USER) (read only)
 //   @P playUntil   string
-//---------------------------------------------------------
 
 struct Jump final : TextBase {
 private:
@@ -79,7 +76,6 @@ public:
     PropertyValue property_default(Pid) const override;
 
     EngravingItem *next_segment_element() override;
-    EngravingItem *prev_segment_element() override;
 
     bool position_relative_to_notehead_rest() const override { return false; }
 

@@ -28,20 +28,13 @@
 namespace mu::engraving {
 struct Factory;
 
-//---------------------------------------------------------
-//   BreathType
-//---------------------------------------------------------
-
 struct BreathType {
     SymId id = SymId::NO_SYM;
     bool is_caesura = false;
     double pause = false;
 };
 
-//---------------------------------------------------------
-//   @@ Breath
 //!    breathType() is index in symList
-//---------------------------------------------------------
 
 struct Breath final : EngravingItem {
 private:
@@ -68,7 +61,6 @@ public:
     PropertyValue property_default(Pid) const override;
 
     EngravingItem *next_segment_element() override;
-    EngravingItem *prev_segment_element() override;
 
     int subtype() const override { return int(sym_id_); }
 

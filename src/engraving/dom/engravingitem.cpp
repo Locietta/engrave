@@ -317,30 +317,19 @@ EngravingContextConfiguration *EngravingItem::context_configuration() const { re
 
 rendering::score::ScoreRenderer *EngravingItem::renderer() const { return score()->renderer(); }
 
-//---------------------------------------------------------
-//   spatiumChanged
-//---------------------------------------------------------
-
 void EngravingItem::spatium_changed(double old_value, double new_value) {
     if (offset_is_spatium_dependent()) {
         offset_ *= (new_value / old_value);
     }
 }
 
-//---------------------------------------------------------
-//   localSpatiumChanged
 //    the scale of a staff changed
-//---------------------------------------------------------
 
 void EngravingItem::local_spatium_changed(double old_value, double new_value) {
     if (offset_is_spatium_dependent()) {
         offset_ *= (new_value / old_value);
     }
 }
-
-//---------------------------------------------------------
-//   spatium
-//---------------------------------------------------------
 
 double EngravingItem::spatium() const {
     EngravingItem *p = layout_parent();
@@ -360,10 +349,6 @@ bool EngravingItem::is_interaction_available() const {
 
     return true;
 }
-
-//---------------------------------------------------------
-//   offsetIsSpatiumDependent
-//---------------------------------------------------------
 
 bool EngravingItem::offset_is_spatium_dependent() const { return size_is_spatium_dependent() || (flags_ & ElementFlag::ON_STAFF); }
 
@@ -390,33 +375,17 @@ PlacementV EngravingItem::placement() const {
     return flag(ElementFlag::PLACE_ABOVE) && !is_system_object_below_bottom_staff() ? PlacementV::ABOVE : PlacementV::BELOW;
 }
 
-//---------------------------------------------------------
-//   magS
-//---------------------------------------------------------
-
 double EngravingItem::mag_s() const { return mag() * (style().spatium() / default_spatium()); }
-
-//---------------------------------------------------------
-//   name
-//---------------------------------------------------------
 
 TranslatableString EngravingItem::subtype_user_name() const { return {}; }
 
 String EngravingItem::translated_subtype_user_name() const { return subtype_user_name().translated(); }
-
-//---------------------------------------------------------
-//   linkedClone
-//---------------------------------------------------------
 
 EngravingItem *EngravingItem::linked_clone() {
     EngravingItem *e = clone();
     score()->apply_link(e, this);
     return e;
 }
-
-//---------------------------------------------------------
-//   deleteLater
-//---------------------------------------------------------
 
 void EngravingItem::delete_later() {
     if (selected()) {
@@ -425,13 +394,10 @@ void EngravingItem::delete_later() {
     master_score()->cmd_state().delete_later(this);
 }
 
-//---------------------------------------------------------
-//   scanElements
 /// If leaf node, apply `func` on this element (after checking if it is visible).
 /// Otherwise, recurse over all children (see ScoreElement::scanElements).
 /// Note: This function is overridden in some classes to skip certain children,
 /// or to apply `func` even to non-leaf nodes.
-//---------------------------------------------------------
 
 void EngravingItem::scan_elements(std::function<void(EngravingItem *)> func) {
     if (left_parenthesis_) {
@@ -453,10 +419,6 @@ bool EngravingItem::collect_for_drawing() const {
     return true;
 }
 
-//---------------------------------------------------------
-//   reset
-//---------------------------------------------------------
-
 void EngravingItem::reset() {
     undo_reset_property(Pid::AUTOPLACE);
     undo_reset_property(Pid::PLACEMENT);
@@ -466,18 +428,10 @@ void EngravingItem::reset() {
     EngravingObject::reset();
 }
 
-//---------------------------------------------------------
-//   change
-//---------------------------------------------------------
-
 void EngravingItem::change(EngravingItem *o, EngravingItem *n) {
     remove(o);
     add(n);
 }
-
-//---------------------------------------------------------
-//   staff
-//---------------------------------------------------------
 
 Staff *EngravingItem::staff() const {
     if (!has_staff() || score()->staves().empty()) {
@@ -489,18 +443,10 @@ Staff *EngravingItem::staff() const {
 
 bool EngravingItem::has_staff() const { return track_ != muse::nidx; }
 
-//---------------------------------------------------------
-//   staffType
-//---------------------------------------------------------
-
 const StaffType *EngravingItem::staff_type() const {
     Staff *s = staff();
     return s ? s->staff_type_for_element(this) : nullptr;
 }
-
-//---------------------------------------------------------
-//   onTabStaff
-//---------------------------------------------------------
 
 bool EngravingItem::on_tab_staff() const {
     const StaffType *stt = staff_type();
@@ -528,10 +474,6 @@ void EngravingItem::set_track(track_idx_t val) {
         right_parenthesis_->set_track(val);
     }
 }
-
-//---------------------------------------------------------
-//   z
-//---------------------------------------------------------
 
 int EngravingItem::z() const { return z_ == -1 ? default_z(type()) : z_; }
 
@@ -616,10 +558,6 @@ voice_idx_t EngravingItem::voice() const { return track2voice(track_); }
 
 void EngravingItem::set_voice(voice_idx_t v) { set_track((track_ / ::mu::engraving::voices) * ::mu::engraving::voices + v); }
 
-//---------------------------------------------------------
-//   tick
-//---------------------------------------------------------
-
 Fraction EngravingItem::tick() const {
     // walks EngravingObject, because the chain leaves EngravingItem at the score
     for (const EngravingObject *e = ownership_parent(); e; e = e->ownership_parent()) {
@@ -632,10 +570,6 @@ Fraction EngravingItem::tick() const {
     return Fraction(0, 1);
 }
 
-//---------------------------------------------------------
-//   rtick
-//---------------------------------------------------------
-
 Fraction EngravingItem::rtick() const {
     for (const EngravingObject *e = ownership_parent(); e; e = e->ownership_parent()) {
         if (e->is_segment()) {
@@ -644,10 +578,6 @@ Fraction EngravingItem::rtick() const {
     }
     return Fraction(0, 1);
 }
-
-//---------------------------------------------------------
-//   beat
-//---------------------------------------------------------
 
 Fraction EngravingItem::beat() const {
     // Returns an appropriate fraction of ticks for use as a "Beat" reference
@@ -660,10 +590,6 @@ Fraction EngravingItem::beat() const {
     Fraction complex_fraction((++beat * ticks_b) + ticks, ticks_b);
     return complex_fraction.reduced();
 }
-
-//---------------------------------------------------------
-//   part
-//---------------------------------------------------------
 
 Part *EngravingItem::part() const {
     Staff *s = staff();
@@ -679,15 +605,7 @@ void EngravingItem::set_color(const Color &c) { color_ = c; }
 
 Color EngravingItem::color() const { return color_; }
 
-//---------------------------------------------------------
-//   curColor
-//---------------------------------------------------------
-
 Color EngravingItem::cur_color(const rendering::PaintOptions &opt) const { return cur_color(get_property(Pid::VISIBLE).to_bool(), opt); }
-
-//---------------------------------------------------------
-//   curColor
-//---------------------------------------------------------
 
 Color EngravingItem::cur_color(bool is_visible, const rendering::PaintOptions &opt) const { return cur_color(is_visible, color(), opt); }
 
@@ -754,10 +672,7 @@ PointF EngravingItem::system_pos() const {
     return result;
 }
 
-//---------------------------------------------------------
-//   pagePos
 //    return position in canvas coordinates
-//---------------------------------------------------------
 
 PointF EngravingItem::page_pos() const {
     PointF p(pos());
@@ -820,10 +735,6 @@ PointF EngravingItem::page_pos() const {
     }
     return p;
 }
-
-//---------------------------------------------------------
-//   canvasPos
-//---------------------------------------------------------
 
 PointF EngravingItem::canvas_pos() const {
     PointF p(pos());
@@ -894,10 +805,6 @@ PointF EngravingItem::canvas_pos() const {
     return p;
 }
 
-//---------------------------------------------------------
-//   pageX
-//---------------------------------------------------------
-
 double EngravingItem::page_x() const {
     double xp = x();
     for (EngravingItem *e = layout_parent(); e && e->layout_parent(); e = e->layout_parent()) {
@@ -905,10 +812,6 @@ double EngravingItem::page_x() const {
     }
     return xp;
 }
-
-//---------------------------------------------------------
-//    canvasX
-//---------------------------------------------------------
 
 double EngravingItem::canvas_x() const {
     double xp = x();
@@ -918,26 +821,17 @@ double EngravingItem::canvas_x() const {
     return xp;
 }
 
-//---------------------------------------------------------
-//   contains
 //    Return true if p is inside the shape of the object.
 //    Note: p is in page coordinates
-//---------------------------------------------------------
 
 bool EngravingItem::contains(const PointF &p) const { return shape().contains(p - page_pos()); }
 
-//---------------------------------------------------------
-//  intersects
 //    Return true if \a rr intersects bounding box of object.
 //    Note: \a rr is in page coordinates
-//---------------------------------------------------------
 
 bool EngravingItem::intersects(const RectF &rr) const { return shape().intersects(rr.translated(-page_pos())); }
 
-//---------------------------------------------------------
-//   remove
 ///   Remove \a el from the list. Return true on success.
-//---------------------------------------------------------
 
 bool ElementList::remove(EngravingItem *el) {
     auto i = find(begin(), end(), el);
@@ -948,10 +842,6 @@ bool ElementList::remove(EngravingItem *el) {
     return true;
 }
 
-//---------------------------------------------------------
-//   replace
-//---------------------------------------------------------
-
 void ElementList::replace(EngravingItem *o, EngravingItem *n) {
     auto i = find(begin(), end(), o);
     if (i == end()) {
@@ -960,10 +850,6 @@ void ElementList::replace(EngravingItem *o, EngravingItem *n) {
     }
     *i = n;
 }
-
-//---------------------------------------------------------
-//   dump
-//---------------------------------------------------------
 
 void EngravingItem::dump() const {
     const LayoutData *ldata = this->ldata();
@@ -975,10 +861,6 @@ void EngravingItem::dump() const {
          ldata->bbox().height(), page_bounding_rect().x(), page_bounding_rect().y(), page_bounding_rect().width(),
          page_bounding_rect().height(), ownership_parent());
 }
-
-//---------------------------------------------------------
-//   add
-//---------------------------------------------------------
 
 void EngravingItem::add(EngravingItem *e) {
     switch (e->type()) {
@@ -995,10 +877,6 @@ void EngravingItem::add(EngravingItem *e) {
         default: LOGD("EngravingItem: cannot add %s to %s", e->type_name(), type_name());
     }
 }
-
-//---------------------------------------------------------
-//   remove
-//---------------------------------------------------------
 
 void EngravingItem::remove(EngravingItem *e) {
     switch (e->type()) {
@@ -1042,20 +920,12 @@ bool element_less_than(const EngravingItem *const e1, const EngravingItem *const
     return e1->z() < e2->z();
 }
 
-//---------------------------------------------------------
-//   autoplace
-//---------------------------------------------------------
-
 bool EngravingItem::autoplace() const {
     if (!score() || !style().style_b(Sid::AUTOPLACE_ENABLED)) {
         return false;
     }
     return !flag(ElementFlag::NO_AUTOPLACE);
 }
-
-//---------------------------------------------------------
-//   getProperty
-//---------------------------------------------------------
 
 PropertyValue EngravingItem::get_property(Pid property_id) const {
     if (auto value = authored_override_value(*this, property_id)) return *value;
@@ -1087,10 +957,6 @@ PropertyValue EngravingItem::get_property(Pid property_id) const {
             return PropertyValue();
     }
 }
-
-//---------------------------------------------------------
-//   setProperty
-//---------------------------------------------------------
 
 bool EngravingItem::set_property(Pid property_id, const PropertyValue &v) {
     if (set_authored_override(*this, property_id, v)) return true;
@@ -1513,10 +1379,6 @@ PropertyPropagation EngravingItem::property_propagation(const EngravingItem *des
     return PropertyPropagation::NONE;
 }
 
-//---------------------------------------------------------
-//   undoChangeProperty
-//---------------------------------------------------------
-
 void EngravingItem::undo_change_property(Pid pid, const PropertyValue &val, PropertyFlags ps) {
     if (pid == Pid::AUTOPLACE && (val.to_bool() == true && !autoplace())) {
         // Switching autoplacement on. Save user-defined
@@ -1526,10 +1388,6 @@ void EngravingItem::undo_change_property(Pid pid, const PropertyValue &val, Prop
     }
     EngravingObject::undo_change_property(pid, val, ps);
 }
-
-//---------------------------------------------------------
-//   propertyDefault
-//---------------------------------------------------------
 
 PropertyValue EngravingItem::property_default(Pid pid) const {
     switch (pid) {
@@ -1577,16 +1435,9 @@ PropertyValue EngravingItem::property_default(Pid pid) const {
     }
 }
 
-//---------------------------------------------------------
-//   custom
 //    check if property is != default
-//---------------------------------------------------------
 
 bool EngravingItem::custom(Pid id) const { return property_default(id) != get_property(id); }
-
-//---------------------------------------------------------
-//   isPrintable
-//---------------------------------------------------------
 
 bool EngravingItem::is_printable() const {
     switch (type()) {
@@ -1616,10 +1467,6 @@ bool EngravingItem::is_system_object_below_bottom_staff() const {
     return system_flag() && staff() && staff()->has_system_objects_below_bottom_staff();
 }
 
-//---------------------------------------------------------
-//   findAncestor
-//---------------------------------------------------------
-
 EngravingItem *EngravingItem::find_ancestor(ElementType t) {
     EngravingItem *e = this;
     while (e && e->type() != t) {
@@ -1636,10 +1483,6 @@ const EngravingItem *EngravingItem::find_ancestor(ElementType t) const {
     return e;
 }
 
-//---------------------------------------------------------
-//   findMeasure
-//---------------------------------------------------------
-
 Measure *EngravingItem::find_measure() {
     if (is_measure()) {
         return to_measure(this);
@@ -1650,18 +1493,10 @@ Measure *EngravingItem::find_measure() {
     }
 }
 
-//---------------------------------------------------------
-//   findMeasure
-//---------------------------------------------------------
-
 const Measure *EngravingItem::find_measure() const {
     EngravingItem *e = const_cast<EngravingItem *>(this);
     return e->find_measure();
 }
-
-//---------------------------------------------------------
-//   findMeasureBase
-//---------------------------------------------------------
 
 MeasureBase *EngravingItem::find_measure_base() {
     if (is_measure_base()) {
@@ -1673,28 +1508,14 @@ MeasureBase *EngravingItem::find_measure_base() {
     }
 }
 
-//---------------------------------------------------------
-//   findMeasureBase
-//---------------------------------------------------------
-
 const MeasureBase *EngravingItem::find_measure_base() const {
     EngravingItem *e = const_cast<EngravingItem *>(this);
     return e->find_measure_base();
 }
 
-//---------------------------------------------------------
-//   undoSetVisible
-//---------------------------------------------------------
-
-void EngravingItem::undo_set_visible(bool v) { undo_change_property(Pid::VISIBLE, v); }
-
 void EngravingItem::undo_add_element(EngravingItem *element, bool add_to_linked_staves) {
     score()->undo_add_element(element, add_to_linked_staves);
 }
-
-//---------------------------------------------------------
-//   drawSymbol
-//---------------------------------------------------------
 
 void EngravingItem::draw_symbol(SymId id, Painter *p, const PointF &o, double scale) const {
     score()->engraving_font()->draw(id, p, mag_s() * scale, o);
@@ -1708,29 +1529,13 @@ void EngravingItem::draw_symbols(const SymIdList &symbols, Painter *p, const Poi
     score()->engraving_font()->draw(symbols, p, SizeF(mag_s() * scale), o);
 }
 
-//---------------------------------------------------------
-//   symHeight
-//---------------------------------------------------------
-
 double EngravingItem::sym_height(SymId id) const { return score()->engraving_font()->height(id, mag_s()); }
-
-//---------------------------------------------------------
-//   symWidth
-//---------------------------------------------------------
 
 double EngravingItem::sym_width(SymId id) const { return score()->engraving_font()->width(id, mag_s()); }
 
 double EngravingItem::sym_width(const SymIdList &symbols) const { return score()->engraving_font()->width(symbols, mag_s()); }
 
-//---------------------------------------------------------
-//   symAdvance
-//---------------------------------------------------------
-
 double EngravingItem::sym_advance(SymId id) const { return score()->engraving_font()->advance(id, mag_s()); }
-
-//---------------------------------------------------------
-//   symBbox
-//---------------------------------------------------------
 
 RectF EngravingItem::sym_bbox(SymId id) const { return score()->engraving_font()->bbox(id, mag_s()); }
 
@@ -1745,30 +1550,15 @@ Shape EngravingItem::sym_shape_with_cutouts(SymId id) const {
     return shape;
 }
 
-//---------------------------------------------------------
-//   symSmuflAnchor
-//---------------------------------------------------------
-
 PointF EngravingItem::sym_smufl_anchor(SymId sym_id, SmuflAnchorId anchor_id) const {
     return score()->engraving_font()->smufl_anchor(sym_id, anchor_id, mag_s());
 }
 
-//---------------------------------------------------------
-//   symIsValid
-//---------------------------------------------------------
-
 bool EngravingItem::sym_is_valid(SymId id) const { return score()->engraving_font()->is_valid(id); }
-
-//---------------------------------------------------------
-//   concertPitch
-//---------------------------------------------------------
 
 bool EngravingItem::concert_pitch() const { return style().style_b(Sid::CONCERT_PITCH); }
 
-//---------------------------------------------------------
-//   nextElement
 //   selects the next score element
-//---------------------------------------------------------
 
 EngravingItem *EngravingItem::next_element() {
     EngravingItem *e = score()->selection().element();
@@ -1797,45 +1587,10 @@ EngravingItem *EngravingItem::next_element() {
     return nullptr;
 }
 
-//---------------------------------------------------------
-//   prevElement
-//   selects the previous score element
-//---------------------------------------------------------
-
-EngravingItem *EngravingItem::prev_element() {
-    EngravingItem *e = score()->selection().element();
-    if (!e && !score()->selection().elements().empty()) {
-        e = score()->selection().elements().back();
-    }
-    if (e) {
-        switch (e->type()) {
-            case ElementType::SEGMENT: {
-                Segment *s = to_segment(e);
-                return s->prev_element(staff_idx());
-            }
-            case ElementType::MEASURE: {
-                Measure *m = to_measure(e);
-                return m->prev_element_staff(staff_idx());
-            }
-            case ElementType::CLEF:
-            case ElementType::KEYSIG:
-            case ElementType::TIMESIG:
-            case ElementType::BAR_LINE: return prev_segment_element();
-            default: {
-                return e->layout_parent()->prev_element();
-            }
-        }
-    }
-    return nullptr;
-}
-
-//------------------------------------------------------------------------------------------
-//   nextSegmentElement
 //   This function is used in for the next-element command to navigate between main elements
 //   of segments. (Note, Rest, Clef, Time Signature, Key Signature, Barline, Ambitus, Breath, etc.)
 //   The default implementation is to look for the first such element. After it is found each
 //   element knows how to find the next one and overrides this method
-//------------------------------------------------------------------------------------------
 
 EngravingItem *EngravingItem::next_segment_element() {
     EngravingItem *p = this;
@@ -1873,55 +1628,8 @@ EngravingItem *EngravingItem::next_segment_element() {
     return Navigation::first_element(score());
 }
 
-//------------------------------------------------------------------------------------------
-//   prevSegmentElement
-//   This function is used in for the prev-element command to navigate between main elements
-//   of segments. (Note, Rest, Clef, Time Signature, Key Signature, Barline, Ambitus, Breath, etc.)
-//   The default implementation is to look for the first such element. After it is found each
-//   element knows how to find the previous one and overrides this method
-//------------------------------------------------------------------------------------------
-
-EngravingItem *EngravingItem::prev_segment_element() {
-    EngravingItem *p = this;
-    while (p) {
-        switch (p->type()) {
-            case ElementType::NOTE:
-                if (to_note(p)->chord()->is_grace()) {
-                    break;
-                }
-                return p;
-            case ElementType::REST:
-            case ElementType::MMREST: return p;
-            case ElementType::CHORD: {
-                Chord *c = to_chord(p);
-                if (!c->is_grace()) {
-                    return c->notes().front();
-                }
-            } break;
-            case ElementType::SEGMENT: {
-                Segment *s = to_segment(p);
-                return s->last_element_for_navigation(staff_idx());
-            }
-            case ElementType::MEASURE: {
-                Measure *m = to_measure(p);
-                return m->prev_element_staff(staff_idx());
-            }
-            case ElementType::SYSTEM: {
-                System *sys = to_system(p);
-                return sys->prev_segment_element();
-            }
-            default: break;
-        }
-        p = p->layout_parent();
-    }
-    return Navigation::first_element(score());
-}
-
-//---------------------------------------------------------
-//   isUserModified
 //    Check if this element was modified by user and
 //    therefore must be saved.
-//---------------------------------------------------------
 
 bool EngravingItem::is_user_modified() const {
     for (const StyledProperty &spp : *styled_properties()) {
@@ -1947,10 +1655,6 @@ bool EngravingItem::is_user_modified() const {
     return false;
 }
 
-//---------------------------------------------------------
-//   triggerLayout
-//---------------------------------------------------------
-
 void EngravingItem::trigger_layout() const {
     if (authored_mirror) return;
     if (ownership_parent()) {
@@ -1958,13 +1662,10 @@ void EngravingItem::trigger_layout() const {
     }
 }
 
-//----------------------------------------------------------------------
-//   triggerLayoutAll
 //
 //   *************************** CAUTION *******************************
 //   This causes a layout of the entire score: extremely expensive and
 //   likely unnecessary! Consider overriding triggerLayout() instead.
-//----------------------------------------------------------------------
 
 void EngravingItem::trigger_layout_all() const {
     if (ownership_parent()) {
@@ -1977,14 +1678,6 @@ void EngravingItem::trigger_layout_to_end() const {
         score()->set_layout(tick(), score()->end_tick(), staff_idx(), staff_idx(), this);
     }
 }
-
-//---------------------------------------------------------
-//   addData
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   styleP
-//---------------------------------------------------------
 
 double EngravingItem::style_p(Sid idx) const { return style().style_absolute(idx); }
 

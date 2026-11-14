@@ -36,7 +36,6 @@
 using namespace mu;
 using namespace mu::engraving;
 
-// STYLE
 static const ElementStyle string_tunings_style{
     {Sid::STAFF_TEXT_PLACEMENT, Pid::PLACEMENT},
     {Sid::STAFF_TEXT_MIN_DISTANCE, Pid::MIN_DISTANCE},
@@ -144,11 +143,6 @@ const StringData *StringTunings::string_data() const { return &string_data_; }
 
 void StringTunings::set_string_data(const StringData &string_data) {
     string_data_.set(string_data);
-    trigger_layout();
-}
-
-void StringTunings::undo_string_data(const StringData &string_data) {
-    score()->apply_string_data(this, string_data);
     trigger_layout();
 }
 

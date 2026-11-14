@@ -31,18 +31,10 @@ using namespace mu;
 using namespace mu::engraving;
 
 namespace mu::engraving {
-//---------------------------------------------------------
-//   jumpStyle
-//---------------------------------------------------------
-
 static const ElementStyle jump_style{
     {Sid::REPEAT_RIGHT_PLACEMENT, Pid::PLACEMENT},
     {Sid::REPEAT_MIN_DISTANCE, Pid::MIN_DISTANCE},
 };
-
-//---------------------------------------------------------
-//   JumpTypeTable
-//---------------------------------------------------------
 
 const std::vector<JumpTypeTableItem> jump_type_table{
     {JumpType::DC, "D.C.", "start", "end", ""},
@@ -60,19 +52,11 @@ const std::vector<JumpTypeTableItem> jump_type_table{
     {JumpType::DSS_AL_FINE, "D.D.S. al Fine", "varsegno", "fine", ""},
 };
 
-//---------------------------------------------------------
-//   Jump
-//---------------------------------------------------------
-
 Jump::Jump(DummyParentOr<Measure> parent)
     : TextBase(ElementType::JUMP, parent, TextStyleType::REPEAT_RIGHT, ElementFlag::MOVABLE | ElementFlag::SYSTEM | ElementFlag::ON_STAFF) {
     init_element_style(&::mu::engraving::jump_style);
     play_repeats_ = false;
 }
-
-//---------------------------------------------------------
-//   setJumpType
-//---------------------------------------------------------
 
 void Jump::set_jump_type(JumpType t) {
     for (const JumpTypeTableItem &p : ::mu::engraving::jump_type_table) {
@@ -87,10 +71,6 @@ void Jump::set_jump_type(JumpType t) {
     }
 }
 
-//---------------------------------------------------------
-//   jumpType
-//---------------------------------------------------------
-
 JumpType Jump::jump_type() const {
     for (const JumpTypeTableItem &t : ::mu::engraving::jump_type_table) {
         if (jump_to_ == t.jump_to && play_until_ == t.play_until && continue_at_ == t.continue_at) {
@@ -102,10 +82,6 @@ JumpType Jump::jump_type() const {
 
 String Jump::jump_type_user_name() const { return TConv::translated_user_name(jump_type()); }
 
-//---------------------------------------------------------
-//   getProperty
-//---------------------------------------------------------
-
 PropertyValue Jump::get_property(Pid property_id) const {
     switch (property_id) {
         case Pid::JUMP_TO: return jump_to();
@@ -116,10 +92,6 @@ PropertyValue Jump::get_property(Pid property_id) const {
     }
     return TextBase::get_property(property_id);
 }
-
-//---------------------------------------------------------
-//   setProperty
-//---------------------------------------------------------
 
 bool Jump::set_property(Pid property_id, const PropertyValue &v) {
     switch (property_id) {
@@ -138,10 +110,6 @@ bool Jump::set_property(Pid property_id, const PropertyValue &v) {
     return true;
 }
 
-//---------------------------------------------------------
-//   propertyDefault
-//---------------------------------------------------------
-
 PropertyValue Jump::property_default(Pid property_id) const {
     switch (property_id) {
         case Pid::JUMP_TO:
@@ -154,28 +122,10 @@ PropertyValue Jump::property_default(Pid property_id) const {
     return TextBase::property_default(property_id);
 }
 
-//---------------------------------------------------------
-//   nextSegmentElement
-//---------------------------------------------------------
-
 EngravingItem *Jump::next_segment_element() {
     Segment *seg = measure()->last();
     return seg->first_element_for_navigation(staff_idx());
 }
-
-//---------------------------------------------------------
-//   prevSegmentElement
-//---------------------------------------------------------
-
-EngravingItem *Jump::prev_segment_element() { return next_segment_element(); }
-
-//---------------------------------------------------------
-//   accessibleInfo
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   subtypeUserName
-//---------------------------------------------------------
 
 muse::TranslatableString Jump::subtype_user_name() const { return TConv::user_name(jump_type()); }
 } // namespace mu::engraving

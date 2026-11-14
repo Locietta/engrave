@@ -43,7 +43,6 @@ public:
 
     const StringData *string_data() const;
     void set_string_data(const StringData &string_data);
-    void undo_string_data(const StringData &string_data);
 
     const String &preset() const;
     void set_preset(const String &preset);

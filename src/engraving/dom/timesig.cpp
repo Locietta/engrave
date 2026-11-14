@@ -41,13 +41,10 @@ static const ElementStyle ts_style{
     {Sid::TIME_SIG_NORMAL_SCALE, Pid::SCALE},
 };
 
-//---------------------------------------------------------
-//   TimeSig
 //    Constructs an invalid time signature element.
 //    After construction first call setTrack() then
 //    call setSig().
 //    Layout() is static and called in setSig().
-//---------------------------------------------------------
 
 TimeSig::TimeSig(DummyParentOr<Segment> parent)
     : EngravingItem(ElementType::TIMESIG, parent, ElementFlag::ON_STAFF | ElementFlag::MOVABLE | ElementFlag::PLACE_ABOVE) {
@@ -63,16 +60,9 @@ TimeSig::TimeSig(DummyParentOr<Segment> parent)
 
 void TimeSig::set_ownership_parent(DummyParentOr<Segment> parent) { EngravingItem::set_ownership_parent(parent); }
 
-//---------------------------------------------------------
-//   mag
-//---------------------------------------------------------
-
 double TimeSig::mag() const { return time_sig_placement() == TimeSigPlacement::NORMAL && staff() ? staff()->staff_mag(this) : 1.0; }
 
-//---------------------------------------------------------
-//   setSig
 //    custom text has to be set after setSig()
-//---------------------------------------------------------
 
 void TimeSig::set_sig(const Fraction &f, TimeSigType st) {
     sig_ = f;
@@ -82,10 +72,7 @@ void TimeSig::set_sig(const Fraction &f, TimeSigType st) {
     denominator_string_.clear();
 }
 
-//---------------------------------------------------------
-//   setNumeratorString
 //    setSig() has to be called first
-//---------------------------------------------------------
 
 void TimeSig::set_numerator_string(const String &a) {
     if (time_sig_type_ == TimeSigType::NORMAL) {
@@ -93,20 +80,13 @@ void TimeSig::set_numerator_string(const String &a) {
     }
 }
 
-//---------------------------------------------------------
-//   setDenominatorString
 //    setSig() has to be called first
-//---------------------------------------------------------
 
 void TimeSig::set_denominator_string(const String &a) {
     if (time_sig_type_ == TimeSigType::NORMAL) {
         denominator_string_ = a;
     }
 }
-
-//---------------------------------------------------------
-//   setFrom
-//---------------------------------------------------------
 
 void TimeSig::set_from(const TimeSig *ts) {
     time_sig_type_ = ts->time_sig_type();
@@ -116,15 +96,7 @@ void TimeSig::set_from(const TimeSig *ts) {
     stretch_ = ts->stretch_;
 }
 
-//---------------------------------------------------------
-//   ssig
-//---------------------------------------------------------
-
 String TimeSig::ssig() const { return String(u"%1/%2").arg(sig_.numerator()).arg(sig_.denominator()); }
-
-//---------------------------------------------------------
-//   setSSig
-//---------------------------------------------------------
 
 void TimeSig::set_s_sig(const String &s) {
     StringList sl = s.split(u'/');
@@ -133,10 +105,6 @@ void TimeSig::set_s_sig(const String &s) {
         sig_.set_denominator(sl[1].to_int());
     }
 }
-
-//---------------------------------------------------------
-//   getProperty
-//---------------------------------------------------------
 
 PropertyValue TimeSig::get_property(Pid property_id) const {
     switch (property_id) {
@@ -153,10 +121,6 @@ PropertyValue TimeSig::get_property(Pid property_id) const {
         default: return EngravingItem::get_property(property_id);
     }
 }
-
-//---------------------------------------------------------
-//   setProperty
-//---------------------------------------------------------
 
 bool TimeSig::set_property(Pid property_id, const PropertyValue &v) {
     switch (property_id) {
@@ -186,10 +150,6 @@ bool TimeSig::set_property(Pid property_id, const PropertyValue &v) {
     return true;
 }
 
-//---------------------------------------------------------
-//   propertyDefault
-//---------------------------------------------------------
-
 PropertyValue TimeSig::property_default(Pid id) const {
     switch (id) {
         case Pid::SHOW_COURTESY: return true;
@@ -212,21 +172,7 @@ PointF TimeSig::staff_offset() const {
     return PointF(0.0, y_offset);
 }
 
-//---------------------------------------------------------
-//   nextSegmentElement
-//---------------------------------------------------------
-
 EngravingItem *TimeSig::next_segment_element() { return segment()->first_in_next_segments(staff_idx()); }
-
-//---------------------------------------------------------
-//   prevSegmentElement
-//---------------------------------------------------------
-
-EngravingItem *TimeSig::prev_segment_element() { return segment()->last_in_prev_segments(staff_idx()); }
-
-//---------------------------------------------------------
-//   subtype
-//---------------------------------------------------------
 
 int TimeSig::subtype() const {
     size_t h1 = std::hash<int>{}(numerator());
@@ -235,10 +181,6 @@ int TimeSig::subtype() const {
 
     return static_cast<int>(h1 ^ (h2 << 1) ^ (h3 << 2));
 }
-
-//---------------------------------------------------------
-//   subtypeUserName
-//---------------------------------------------------------
 
 muse::TranslatableString TimeSig::subtype_user_name() const {
     switch (time_sig_type()) {
@@ -249,10 +191,6 @@ muse::TranslatableString TimeSig::subtype_user_name() const {
         default: return TranslatableString("engraving/timesig", "%1/%2 time").arg(numerator(), denominator());
     }
 }
-
-//---------------------------------------------------------
-//   accessibleInfo
-//---------------------------------------------------------
 
 void TimeSig::init_element_style(const ElementStyle *element_stype) {
     EngravingItem::init_element_style(element_stype);
@@ -318,9 +256,7 @@ bool TimeSig::is_above_staves() const { return time_sig_placement() == TimeSigPl
 
 bool TimeSig::is_across_staves() const { return time_sig_placement() == TimeSigPlacement::ACROSS_STAVES; }
 
-//---------------------------------------------------------
 //   operator==
-//---------------------------------------------------------
 
 bool TimeSig::operator==(const TimeSig &ts) const {
     return (time_sig_type() == ts.time_sig_type()) && (sig().identical(ts.sig())) && (stretch() == ts.stretch()) &&

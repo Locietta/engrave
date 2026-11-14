@@ -26,20 +26,9 @@
 #include "../dom/rehearsalmark.h"
 #include "../dom/score.h"
 #include "../dom/segment.h"
-#include "../dom/select.h"
 
 using namespace mu;
 using namespace mu::engraving;
-
-//---------------------------------------------------------
-//   resequenceRehearsalMarks
-///   resequences rehearsal marks within a range selection
-///   or, if nothing is selected, the entire score
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   createRehearsalMarkText
-//---------------------------------------------------------
 
 String EditRehearsalMark::create_rehearsal_mark_text(const Score *score, RehearsalMark *current) {
     Fraction tick = current->segment()->tick();
@@ -85,8 +74,6 @@ String EditRehearsalMark::create_rehearsal_mark_text(const Score *score, Rehears
     return s;
 }
 
-//---------------------------------------------------------
-//   nextRehearsalMarkText
 //    finds next rehearsal in sequence established by previous
 //     Alphabetic sequences:
 //      A, B, ..., Y, Z, AA, BB, ..., YY, ZZ
@@ -94,7 +81,6 @@ String EditRehearsalMark::create_rehearsal_mark_text(const Score *score, Rehears
 //     Numeric sequences:
 //      1, 2, 3, ...
 //      If number of previous rehearsal mark matches measure number, assume use of measure numbers throughout
-//---------------------------------------------------------
 
 String EditRehearsalMark::next_rehearsal_mark_text(const RehearsalMark *previous, const RehearsalMark *current) {
     String previous_text = previous->xml_text();

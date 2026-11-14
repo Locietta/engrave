@@ -38,18 +38,12 @@ struct Score;
 struct System;
 struct RangeLock;
 
-//---------------------------------------------------------
-//   Repeat
-//---------------------------------------------------------
-
 enum class Repeat : char { NONE = 0, END = 1, START = 2, MEASURE = 4, JUMP = 8 };
 
 constexpr Repeat operator|(Repeat t1, Repeat t2) { return static_cast<Repeat>(static_cast<int>(t1) | static_cast<int>(t2)); }
 
 constexpr bool operator&(Repeat t1, Repeat t2) { return static_cast<int>(t1) & static_cast<int>(t2); }
 
-//---------------------------------------------------------
-//   @@ MeasureBase
 ///    Virtual base class for Measure, HBox and VBox
 //
 //   @P lineBreak       bool        true if a system break is positioned on this measure
@@ -58,7 +52,6 @@ constexpr bool operator&(Repeat t1, Repeat t2) { return static_cast<int>(t1) & s
 //   @P pageBreak       bool        true if a page break is positioned on this measure
 //   @P prevMeasure     Measure     the previous Measure (read-only)
 //   @P prevMeasureMM   Measure     the previous multi-measure rest Measure (read-only)
-//---------------------------------------------------------
 
 struct MeasureBase : EngravingItem {
 
@@ -120,12 +113,6 @@ public:
     LayoutBreak *section_break_element() const;
 
     void undo_set_break(bool v, LayoutBreakType type);
-
-    void undo_set_line_break(bool v) { undo_set_break(v, LayoutBreakType::LINE); }
-
-    void undo_set_page_break(bool v) { undo_set_break(v, LayoutBreakType::PAGE); }
-
-    void undo_set_section_break(bool v) { undo_set_break(v, LayoutBreakType::SECTION); }
 
     void undo_set_no_break(bool v) { undo_set_break(v, LayoutBreakType::NOBREAK); }
 
@@ -210,10 +197,6 @@ private:
 
     Fraction tick_ = Fraction(0, 1);
 };
-
-//---------------------------------------------------------
-//   MeasureBaseList
-//---------------------------------------------------------
 
 struct MeasureBaseList {
     explicit MeasureBaseList(Score *owner = nullptr);

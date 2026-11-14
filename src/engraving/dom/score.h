@@ -151,15 +151,6 @@ enum class LayoutBreakType : unsigned char;
 enum class CommandType : signed char;
 enum class SystemDividerType : unsigned char;
 
-struct Position {
-    Segment *segment = nullptr;
-    staff_idx_t staff_idx = muse::nidx;
-    int line = 0;
-    int fret = ::mu::engraving::invalid_fret_index;
-    PointF pos;
-    bool beyond_score = false;
-};
-
 struct ShowAnchors {
     ShowAnchors() = default;
 
@@ -204,8 +195,6 @@ struct ShowAnchors {
 // transaction commits or an undo/redo completes.
 struct PlaybackModel;
 
-//---------------------------------------------------------------------------------------
-//   @@ Score
 //   @P composer        string            composer of the score (read only)
 //   @P duration        int               duration of score in seconds (read only)
 //   @P excerpts        array[Excerpt]    the list of the excerpts (linked parts)
@@ -228,7 +217,6 @@ struct PlaybackModel;
 //   @P parts           array[Part]       the list of parts (read only)
 //
 //    a Score has always an associated MasterScore
-//---------------------------------------------------------------------------------------
 
 struct Score : EngravingObject {
 private:
@@ -311,12 +299,6 @@ public:
 
     const std::vector<Staff *> system_object_staves_with_top_staff() const;
 
-    MeasureBase *pos2measure_base(const PointF &, bool scan_measures_only, staff_idx_t *staff_idx, int *pitch, Segment **,
-                                  PointF *offset) const;
-    Measure *pos2measure(const PointF &p, staff_idx_t *staff_idx, int *pitch, Segment **seg, PointF *offset) const;
-    void drag_position(const PointF &, staff_idx_t *staff_idx, Segment **, double spacing_factor = 0.5,
-                       bool allow_time_anchor = false) const;
-
     void undo_add_element(EngravingItem *element, bool add_to_linked_staves = true, bool ctrl_modifier = false,
                           EngravingItem *element_to_relink = nullptr);
     void undo_add_cr(ChordRest *element, Measure *, const Fraction &tick);
@@ -344,22 +326,18 @@ public:
     void apply_link(EngravingObject *item, EngravingObject *peer);
     void apply_unlink(EngravingObject *item);
     void apply_staff_membership(Staff *staff, staff_idx_t index, bool adding);
-    void apply_system_staff(Staff *staff, bool adding);
-    void apply_staff_order(const std::vector<staff_idx_t> &order);
-    void apply_staff_hide(Measure *measure, staff_idx_t staff, AutoOnOff value);
+
     void apply_mstaff(Measure *measure, MStaff *row, staff_idx_t index, bool adding);
     void apply_mstaff_add(Measure *measure, std::unique_ptr<MStaff> row, staff_idx_t index);
     void apply_staff_tracks(Measure *measure, staff_idx_t first, staff_idx_t last, bool adding);
     void apply_bracket_add(Staff *staff, size_t level, BracketType type, size_t span);
     void apply_bracket_remove(Staff *staff, size_t level);
     void apply_part_membership(Part *part, size_t index, bool adding);
-    void apply_part_label(Fraction tick, Part *part, const String &value, bool long_name);
-    void apply_part_instrument(Part *part, std::unique_ptr<Instrument> value);
-    void apply_string_data(StringTunings *item, const StringData &value);
+
     void apply_excerpt(Excerpt *excerpt, bool adding);
     void apply_time_insertion(Score *target, Fraction tick, Fraction length, bool unmanaged = false);
     void apply_measures(MeasureBase *first, MeasureBase *last, bool adding, bool move_staff_type_changes = true);
-    void apply_measure_length(Measure *measure, Fraction length);
+
     void apply_measure_repeat_count(Measure *measure, int count, staff_idx_t staff);
     void undo_change_style_val(Sid idx, const PropertyValue &v);
 
@@ -548,13 +526,6 @@ public:
 
     bool need_update_ticks_and_time_sig_map() const { return need_update_ticks_and_time_sig_map_; }
 
-    EngravingItem *next_element();
-    EngravingItem *prev_element();
-    ChordRest *next_track(ChordRest *cr, bool skip_measure_repeat_rests = true);
-    ChordRest *prev_track(ChordRest *cr, bool skip_measure_repeat_rests = true);
-    ChordRest *cmd_next_prev_system(ChordRest *, bool);
-    Box *cmd_next_prev_frame(MeasureBase *, bool) const;
-    EngravingItem *cmd_next_prev_section(EngravingItem *, bool) const;
     MeasureBase *get_next_prev_section_break(MeasureBase *, bool) const;
     EngravingItem *get_score_element_of_measure_base(MeasureBase *) const;
 
@@ -609,8 +580,6 @@ public:
 
     bool note_entry_mode() const { return input_state().note_entry_mode(); }
 
-    bool using_note_entry_method(NoteEntryMethod m) { return input_state().using_note_entry_method(m); }
-
     const InputState &input_state() const { return is_; }
 
     InputState &input_state() { return is_; }
@@ -646,14 +615,6 @@ public:
     void update_braces_and_barlines(Part *part, size_t index);
     void set_brackets_and_barlines();
     void remap_brackets_and_barlines();
-
-    Page *search_page(const PointF &) const;
-    std::vector<System *> search_system(const PointF &p, bool include_measureless_systems = true, const System *preferred_system = nullptr,
-                                        double spacing_factor = 0.5, double preferred_spacing_factor = 1.0) const;
-    MeasureBase *search_measure_base(const PointF &p, bool scan_measures_only = false, const System *preferred_system = nullptr,
-                                     double spacing_factor = 0.5, double preferred_spacing_factor = 1.0) const;
-
-    bool get_position(Position *pos, const PointF &, voice_idx_t voice) const;
 
     void cmd_delete_tuplet(Tuplet *, bool replace_with_rest);
 
@@ -821,9 +782,6 @@ public:
     bool linear_mode() const { return false; }
 
     // ----
-
-    void cmd_select_all();
-    void cmd_select_section();
 
     struct InsertMeasureOptions {
         InsertMeasureOptions() {}
@@ -1073,10 +1031,6 @@ static inline const Score *to_score(const EngravingObject *e) {
     assert(!e || e->is_score());
     return static_cast<const Score *>(e);
 }
-
-//---------------------------------------------------------
-//   ScoreLoad
-//---------------------------------------------------------
 
 struct ScoreLoad {
 private:

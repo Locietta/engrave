@@ -80,10 +80,7 @@ using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
 namespace mu::engraving {
-//---------------------------------------------------------
-//   noteHeads
 //    notehead groups
-//---------------------------------------------------------
 
 //int(NoteHeadGroup::HEAD_GROUPS) - 1: "-1" is needed to prevent building CUSTOM_GROUP noteheads set, since it is built by users and keep a specific set of existing noteheads
 static const SymId note_heads[2][int(NoteHeadGroup::HEAD_GROUPS) - 1][int(NoteHeadType::HEAD_TYPES)] = {
@@ -289,10 +286,6 @@ static const SymId note_heads[2][int(NoteHeadGroup::HEAD_GROUPS) - 1][int(NoteHe
 
      {SymId::NO_SYM, SymId::SWISS_RUDIMENTS_NOTEHEAD_HALF_FLAM, SymId::SWISS_RUDIMENTS_NOTEHEAD_BLACK_FLAM, SymId::NO_SYM},
      {SymId::NO_SYM, SymId::SWISS_RUDIMENTS_NOTEHEAD_HALF_DOUBLE, SymId::SWISS_RUDIMENTS_NOTEHEAD_BLACK_DOUBLE, SymId::NO_SYM}}};
-
-//---------------------------------------------------------
-//   noteHead
-//---------------------------------------------------------
 
 SymId Note::note_head(int direction, NoteHeadGroup group, NoteHeadType t) {
     return ::mu::engraving::note_heads[direction][int(group)][int(t)];
@@ -575,11 +568,8 @@ SymId Note::note_head(int direction, NoteHeadGroup group, NoteHeadType t, int tp
 
 NoteHead::NoteHead(DummyParentOr<Note> parent) : Symbol(ElementType::NOTEHEAD, parent) {}
 
-//---------------------------------------------------------
-//   headGroup
 //   used only when dropping a notehead from the palette
 //   they are either half note, either double whole
-//---------------------------------------------------------
 
 NoteHeadGroup NoteHead::head_group() const {
     NoteHeadGroup group = NoteHeadGroup::HEAD_INVALID;
@@ -591,10 +581,6 @@ NoteHeadGroup NoteHead::head_group() const {
     }
     return group;
 }
-
-//---------------------------------------------------------
-//   Note
-//---------------------------------------------------------
 
 Note::Note(DummyParentOr<Chord> ch) : EngravingItem(ElementType::NOTE, ch, ElementFlag::MOVABLE) {
     play_events_.push_back(NoteEvent()); // add default play event
@@ -734,15 +720,7 @@ Note::Note(const Note &n, bool link) : EngravingItem(n, link) {
 
 void Note::set_ownership_parent(DummyParentOr<Chord> ch) { EngravingItem::set_ownership_parent(ch); }
 
-//---------------------------------------------------------
-//   concertPitchIdx
-//---------------------------------------------------------
-
 inline int Note::concert_pitch_idx() const { return concert_pitch() ? 0 : 1; }
-
-//---------------------------------------------------------
-//   setPitch
-//---------------------------------------------------------
 
 void Note::set_pitch(int val, bool notify_about_changed) {
     assert(pitch_is_valid(val));
@@ -761,10 +739,6 @@ void Note::set_pitch(int pitch, int tpc1, int tpc2) {
     set_pitch(pitch);
 }
 
-//---------------------------------------------------------
-//   tpc1default
-//---------------------------------------------------------
-
 int Note::tpc1default(int p) const {
     Key key = Key::C;
     if (staff() && chord()) {
@@ -773,10 +747,6 @@ int Note::tpc1default(int p) const {
     }
     return pitch2tpc(p, key, Prefer::NEAREST);
 }
-
-//---------------------------------------------------------
-//   tpc2default
-//---------------------------------------------------------
 
 int Note::tpc2default(int p) const {
     Key key = Key::C;
@@ -793,10 +763,6 @@ int Note::tpc2default(int p) const {
     }
     return pitch2tpc(p - transposition(), key, Prefer::NEAREST);
 }
-
-//---------------------------------------------------------
-//   setTpcFromPitch
-//---------------------------------------------------------
 
 void Note::set_tpc_from_pitch(Prefer prefer /* = Prefer::NEAREST */) {
     // works best if note is already added to score, otherwise we can't determine transposition or key
@@ -816,41 +782,12 @@ void Note::set_tpc_from_pitch(Prefer prefer /* = Prefer::NEAREST */) {
     assert(tpc_is_valid(tpc_[1]));
 }
 
-//---------------------------------------------------------
-//   setTpc
-//---------------------------------------------------------
-
 void Note::set_tpc(int v) {
     IF_ASSERT_FAILED(tpc_is_valid(v)) { return; }
     tpc_[concert_pitch_idx()] = v;
 }
 
-//---------------------------------------------------------
-//   undoSetTpc
-//    change the current tpc
-//---------------------------------------------------------
-
-void Note::undo_set_tpc(int v) {
-    if (concert_pitch()) {
-        if (v != tpc1()) {
-            undo_change_property(Pid::TPC1, v);
-        }
-    } else {
-        if (v != tpc2()) {
-            undo_change_property(Pid::TPC2, v);
-        }
-    }
-}
-
-//---------------------------------------------------------
-//   tpc
-//---------------------------------------------------------
-
 int Note::tpc() const { return tpc_[concert_pitch_idx()]; }
-
-//---------------------------------------------------------
-//   tpcUserName
-//---------------------------------------------------------
 
 String Note::tpc_user_name(const bool explicit_accidental, bool full) const {
     String pitch_name = engraving::tpc_user_name(tpc(), epitch() + ottave_capo_fret(), explicit_accidental, full);
@@ -886,12 +823,9 @@ String Note::tpc_user_name(const bool explicit_accidental, bool full) const {
     return pitch_name + pitch_offset;
 }
 
-//---------------------------------------------------------
-//   transposeTpc
 //    return transposed tpc
 //    If in concertPitch mode return tpc for transposed view
 //    else return tpc for concert pitch view.
-//---------------------------------------------------------
 
 int Note::transpose_tpc(int tpc) const {
     Fraction tick = chord() ? chord()->tick() : Fraction(-1, 1);
@@ -926,10 +860,6 @@ int Note::playing_tpc() const {
 
     return result;
 }
-
-//---------------------------------------------------------
-//   noteHead
-//---------------------------------------------------------
 
 SymId Note::note_head() const {
     // A detached custom palette head keeps its symbol in display data.
@@ -988,21 +918,15 @@ SymId Note::note_head(int direction) const {
     return t;
 }
 
-//---------------------------------------------------------
-//   headWidth
 //
 //    returns the x of the symbol bbox. It is different from headWidth() because zero point could be different from leftmost bbox position.
-//---------------------------------------------------------
 double Note::bbox_right_pos() const {
     const auto &bbox = score()->engraving_font()->bbox(note_head(), mag_s());
     return bbox.right();
 }
 
-//---------------------------------------------------------
-//   headBodyWidth
 //
 //    returns the width of the notehead "body". It is actual for slashed noteheads like -O-, where O is body.
-//---------------------------------------------------------
 double Note::head_body_width() const {
     const StaffType *st = staff_type();
     if (st && st->is_tab_staff()) {
@@ -1011,11 +935,8 @@ double Note::head_body_width() const {
     return head_width() + 2 * bbox_x_shift();
 }
 
-//---------------------------------------------------------
-//   outsideTieAttachX
 //
 //    returns the X-position for tie attachment for this particular notehead
-//---------------------------------------------------------
 double Note::outside_tie_attach_x(bool up) const {
     double xo = 0;
 
@@ -1093,35 +1014,22 @@ void Note::update_head_group(const NoteHeadGroup head_group) {
     }
 }
 
-//---------------------------------------------------------
-//   headWidth
 //
 //    returns the width of the symbol bbox
 //    or the width of the string representation of the fret mark
-//---------------------------------------------------------
 
 double Note::head_width() const { return sym_width(note_head()); }
 
-//---------------------------------------------------------
-//   bboxXShift
 //
 //    returns the x shift of the notehead bounding box
-//---------------------------------------------------------
 double Note::bbox_x_shift() const {
     const auto &bbox = score()->engraving_font()->bbox(note_head(), mag_s());
     return bbox.bottom_left().x();
 }
 
-//---------------------------------------------------------
-//   noteheadCenterX
 //
 //    returns the x coordinate of the notehead center related to the basepoint of the notehead bbox
-//---------------------------------------------------------
 double Note::notehead_center_x() const { return score()->engraving_font()->width(note_head(), mag_s()) / 2 + bbox_x_shift(); }
-
-//---------------------------------------------------------
-//   tabHeadWidth
-//---------------------------------------------------------
 
 double Note::tab_head_width(const StaffType *tab) const {
     double val;
@@ -1135,18 +1043,11 @@ double Note::tab_head_width(const StaffType *tab) const {
     return val;
 }
 
-//---------------------------------------------------------
-//   headHeight
 //
 //    returns the height of the notehead symbol
 //    or the height of the string representation of the fret mark
-//---------------------------------------------------------
 
 double Note::head_height() const { return sym_height(note_head()); }
-
-//---------------------------------------------------------
-//   tabHeadHeight
-//---------------------------------------------------------
 
 double Note::tab_head_height(const StaffType *tab) const {
     if (tab && fret_ != ::mu::engraving::invalid_fret_index && string_ != ::mu::engraving::invalid_string_index) {
@@ -1155,29 +1056,15 @@ double Note::tab_head_height(const StaffType *tab) const {
     return head_height();
 }
 
-//---------------------------------------------------------
-//   stemDownNW
-//---------------------------------------------------------
-
 PointF Note::stem_down_nw() const { return sym_smufl_anchor(note_head(), SmuflAnchorId::STEM_DOWN_NW); }
-
-//---------------------------------------------------------
-//   stemUpSE
-//---------------------------------------------------------
 
 PointF Note::stem_up_se() const { return sym_smufl_anchor(note_head(), SmuflAnchorId::STEM_UP_SE); }
 
-//---------------------------------------------------------
-//   playTicks
 ///   Return total tick len of tied notes
-//---------------------------------------------------------
 
 int Note::play_ticks() const { return play_ticks_fraction().ticks(); }
 
-//---------------------------------------------------------
-//   playTicksFraction
 ///   Return total tick len of tied notes
-//---------------------------------------------------------
 
 Fraction Note::play_ticks_fraction() const {
     if (!tie_back_ && !tie_for_ && chord()) {
@@ -1185,10 +1072,6 @@ Fraction Note::play_ticks_fraction() const {
     }
     return last_tied_note()->chord()->end_tick() - first_tied_note()->chord()->tick();
 }
-
-//---------------------------------------------------------
-//   addSpanner
-//---------------------------------------------------------
 
 void Note::set_accidental(Accidental *a) {
     if (accidental_ != a) source_child_removed(*this, accidental_);
@@ -1220,10 +1103,6 @@ void Note::add_spanner(Spanner *l) {
     add_spanner_for(l);
 }
 
-//---------------------------------------------------------
-//   removeSpanner
-//---------------------------------------------------------
-
 void Note::remove_spanner(Spanner *l) {
     Note *e = to_note(l->end_element());
     if (e && e->is_note()) {
@@ -1240,10 +1119,6 @@ void Note::remove_spanner(Spanner *l) {
         // abort();
     }
 }
-
-//---------------------------------------------------------
-//   add
-//---------------------------------------------------------
 
 void Note::add(EngravingItem *e) {
     if (e->ownership_parent() != this) {
@@ -1304,10 +1179,6 @@ void Note::add(EngravingItem *e) {
     e->added();
 }
 
-//---------------------------------------------------------
-//   remove
-//---------------------------------------------------------
-
 void Note::remove(EngravingItem *e) {
     switch (e->type()) {
 
@@ -1362,10 +1233,6 @@ void Note::remove(EngravingItem *e) {
     source_child_removed(*this, e);
     e->removed();
 }
-
-//---------------------------------------------------------
-//   isNoteName
-//---------------------------------------------------------
 
 bool Note::is_note_name() const {
     if (chord() && chord()->staff()) {
@@ -1580,19 +1447,11 @@ void Note::setup_after_read(const Fraction &ctx_tick, bool paste_mode) {
     }
 }
 
-//---------------------------------------------------------
-//   transposition
-//---------------------------------------------------------
-
 int Note::transposition() const {
     Fraction tick = chord() ? chord()->tick() : Fraction(-1, 1);
     Part *origin = origin_part();
     return origin ? origin->instrument(tick)->transpose().chromatic : 0;
 }
-
-//---------------------------------------------------------
-//   dotIsUp
-//---------------------------------------------------------
 
 bool Note::dot_is_up() const {
     if (user_dot_position_ != DirectionV::AUTO) return user_dot_position_ == DirectionV::UP;
@@ -1608,10 +1467,7 @@ static bool has_altered_unison(Note *note) {
            }) != chord_notes.end();
 }
 
-//---------------------------------------------------------
-//   updateAccidental
 //    set _accidental and _line depending on tpc
-//---------------------------------------------------------
 
 void Note::update_accidental(AccidentalState *as) {
     if (dead_note() && configuration()->keep_dead_notes_unchanged_on_transpose()) {
@@ -1718,15 +1574,7 @@ void Note::update_accidental(AccidentalState *as) {
     update_rel_line(abs_line, true);
 }
 
-//---------------------------------------------------------
-//   noteType
-//---------------------------------------------------------
-
 NoteType Note::note_type() const { return chord()->note_type(); }
-
-//---------------------------------------------------------
-//   noteTypeUserName
-//---------------------------------------------------------
 
 String Note::note_type_user_name() const {
     switch (note_type()) {
@@ -1741,10 +1589,6 @@ String Note::note_type_user_name() const {
         default: return muse::mtrc("engraving", "Note");
     }
 }
-
-//---------------------------------------------------------
-//   scanElements
-//---------------------------------------------------------
 
 void Note::scan_elements(std::function<void(EngravingItem *)> func) {
     func(this);
@@ -1763,10 +1607,6 @@ void Note::scan_elements(std::function<void(EngravingItem *)> func) {
         func(dot);
     }
 }
-
-//---------------------------------------------------------
-//   setTrack
-//---------------------------------------------------------
 
 void Note::set_track(track_idx_t val) {
     EngravingItem::set_track(val);
@@ -1810,10 +1650,6 @@ void Note::set_track(track_idx_t val) {
     }
 }
 
-//---------------------------------------------------------
-//    reset
-//---------------------------------------------------------
-
 void Note::reset() {
     undo_change_property(Pid::OFFSET, PointF());
     undo_reset_property(Pid::LEADING_SPACE);
@@ -1825,10 +1661,6 @@ void Note::reset() {
 
 float Note::user_velocity_fraction() const { return user_velocity_ / 127.f; }
 
-//---------------------------------------------------------
-//   mag
-//---------------------------------------------------------
-
 double Note::mag() const {
     double m = chord() ? chord()->mag() : 1.0;
     if (is_small_) {
@@ -1837,14 +1669,7 @@ double Note::mag() const {
     return m;
 }
 
-//---------------------------------------------------------
-//   elementBase
-//---------------------------------------------------------
 EngravingItem *Note::element_base() const { return chord(); }
-
-//---------------------------------------------------------
-//   setSmall
-//---------------------------------------------------------
 
 void Note::set_small(bool val) { is_small_ = val; }
 
@@ -1979,34 +1804,19 @@ void Note::set_tie_back(Tie *t) {
     if (t && t->is_partial_tie() && !to_partial_tie(t)->is_outgoing()) source_child_added(*this, t);
 }
 
-//---------------------------------------------------------
-//   line
-//---------------------------------------------------------
-
 int Note::line() const { return fixed() ? fixed_line_ : line_; }
-
-//---------------------------------------------------------
-//   setHeadScheme
-//---------------------------------------------------------
 
 void Note::set_head_scheme(NoteHeadScheme val) {
     IF_ASSERT_FAILED(int(val) >= -1 && int(val) < int(NoteHeadScheme::HEAD_SCHEMES)) { val = NoteHeadScheme::HEAD_AUTO; }
     head_scheme_ = val;
 }
 
-//---------------------------------------------------------
-//   setHeadGroup
-//---------------------------------------------------------
-
 void Note::set_head_group(NoteHeadGroup val) {
     assert(int(val) >= 0 && int(val) < int(NoteHeadGroup::HEAD_GROUPS));
     head_group_ = val;
 }
 
-//---------------------------------------------------------
-//   ottaveCapoFret
 //    offset added by Ottava's and Capo Fret.
-//---------------------------------------------------------
 
 int Note::ottave_capo_fret() const {
     const Chord *ch = chord();
@@ -2026,10 +1836,7 @@ int Note::ottave_capo_fret() const {
     return staff->pitch_offset(segment_tick) + capo_fret;
 }
 
-//---------------------------------------------------------
-//   ppitch
 //    playback pitch
-//---------------------------------------------------------
 
 int Note::ppitch() const {
     const Chord *ch = chord();
@@ -2054,20 +1861,14 @@ int Note::ppitch() const {
     return pitch_ + ottave_capo_fret() + linked_ottava_pitch_offset();
 }
 
-//---------------------------------------------------------
-//   epitch
 //    effective pitch, i.e. a pitch which is visible in the
 //    currently used written notation.
 //    honours transposing instruments
-//---------------------------------------------------------
 
 int Note::epitch() const { return pitch_ - (concert_pitch() ? 0 : transposition()) + linked_ottava_pitch_offset(); }
 
-//---------------------------------------------------------
-//   linkedOttavaPitchOffset
 //    if an ottava exists in another part but has been excluded
 //    from this one, this returns the corresponding pitch offset
-//---------------------------------------------------------
 
 int Note::linked_ottava_pitch_offset() const {
     int linked_ottava_pitch_offset = 0;
@@ -2083,10 +1884,7 @@ int Note::linked_ottava_pitch_offset() const {
     return linked_ottava_pitch_offset;
 }
 
-//---------------------------------------------------------
-//   octave
 //    compute octave number from note information
-//---------------------------------------------------------
 
 int Note::octave() const { return ((epitch() + ottave_capo_fret() - static_cast<int>(tpc2alter(tpc()))) / 12) - 1; }
 
@@ -2094,13 +1892,10 @@ int Note::playing_octave() const { return mu::engraving::playing_octave(ppitch()
 
 double Note::playing_tuning() const { return tuning_ + cent_offset_; }
 
-//---------------------------------------------------------
-//   customizeVelocity
 //    Input is the global velocity determined by dynamic
 //    signs and crescendo/diminuendo etc.
 //    Returns the actual play velocity for this note
 //    modified by veloOffset
-//---------------------------------------------------------
 
 int Note::customize_velocity(int velo) const {
     if (velo_type_ == VeloType::OFFSET_VAL) {
@@ -2111,11 +1906,8 @@ int Note::customize_velocity(int velo) const {
     return std::clamp(velo, 1, 127);
 }
 
-//---------------------------------------------------------
-//   updateRelLine
 //    calculate the real note line depending on clef,
 //    absLine is the absolute line
-//---------------------------------------------------------
 
 void Note::update_rel_line(int abs_line, bool undoable) {
     if (!staff()) {
@@ -2141,19 +1933,12 @@ void Note::update_rel_line(int abs_line, bool undoable) {
     }
 }
 
-//---------------------------------------------------------
-//   updateLine
-//---------------------------------------------------------
-
 void Note::update_line() {
     int abs_line = abs_step(tpc(), epitch());
     update_rel_line(abs_line, false);
 }
 
-//---------------------------------------------------------
-//   setNval
 //    set note properties from NoteVal
-//---------------------------------------------------------
 
 void Note::set_nval(const NoteVal &nval, Fraction tick) {
     set_pitch(nval.pitch);
@@ -2192,10 +1977,6 @@ void Note::set_nval(const NoteVal &nval, Fraction tick) {
     head_group_ = NoteHeadGroup(nval.head_group);
 }
 
-//---------------------------------------------------------
-//   localSpatiumChanged
-//---------------------------------------------------------
-
 void Note::local_spatium_changed(double old_value, double new_value) {
     EngravingItem::local_spatium_changed(old_value, new_value);
     for (EngravingItem *e : el()) {
@@ -2207,10 +1988,6 @@ void Note::local_spatium_changed(double old_value, double new_value) {
         }
     }
 }
-
-//---------------------------------------------------------
-//   getProperty
-//---------------------------------------------------------
 
 PropertyValue Note::get_property(Pid property_id) const {
     switch (property_id) {
@@ -2246,10 +2023,6 @@ PropertyValue Note::get_property(Pid property_id) const {
     }
     return EngravingItem::get_property(property_id);
 }
-
-//---------------------------------------------------------
-//   setProperty
-//---------------------------------------------------------
 
 bool Note::set_property(Pid property_id, const PropertyValue &v) {
     Measure *m = chord() ? chord()->measure() : nullptr;
@@ -2325,10 +2098,6 @@ bool Note::set_property(Pid property_id, const PropertyValue &v) {
     return true;
 }
 
-//---------------------------------------------------------
-//   propertyDefault
-//---------------------------------------------------------
-
 PropertyValue Note::property_default(Pid property_id) const {
     switch (property_id) {
         case Pid::CENT_OFFSET: return 0.0;
@@ -2380,33 +2149,17 @@ void Note::style_changed() {
     EngravingItem::style_changed();
 }
 
-//---------------------------------------------------------
-//   setHeadType
-//---------------------------------------------------------
-
 void Note::set_head_type(NoteHeadType t) { head_type_ = t; }
-
-//---------------------------------------------------------
-//   setOnTimeOffset
-//---------------------------------------------------------
 
 void Note::set_on_time_offset(int val) {
     play_events_[0].set_ontime(val);
     chord()->set_play_event_type(PlayEventType::USER);
 }
 
-//---------------------------------------------------------
-//   setOffTimeOffset
-//---------------------------------------------------------
-
 void Note::set_off_time_offset(int val) {
     play_events_[0].set_len(val - play_events_[0].ontime());
     chord()->set_play_event_type(PlayEventType::USER);
 }
-
-//---------------------------------------------------------
-//   setScore
-//---------------------------------------------------------
 
 void Note::set_score(Score *s) {
     EngravingItem::set_score(s);
@@ -2421,10 +2174,6 @@ void Note::set_score(Score *s) {
     }
 }
 
-//---------------------------------------------------------
-//   accessibleExtraInfo
-//---------------------------------------------------------
-
 NoteVal Note::note_val() const {
     NoteVal nval;
     nval.pitch = pitch();
@@ -2438,16 +2187,9 @@ NoteVal Note::note_val() const {
     return nval;
 }
 
-//---------------------------------------------------------
-//   subtypeUserName
-//---------------------------------------------------------
-
 TranslatableString Note::subtype_user_name() const { return TConv::user_name(head_group_); }
 
-//---------------------------------------------------------
-//   nextInEl
 //   returns next element in _el
-//---------------------------------------------------------
 
 EngravingItem *Note::next_in_el(EngravingItem *e) {
     if (e == el_.back()) {
@@ -2460,10 +2202,7 @@ EngravingItem *Note::next_in_el(EngravingItem *e) {
     return *(i + 1);
 }
 
-//---------------------------------------------------------
-//   prevInEl
 //   returns prev element in _el
-//---------------------------------------------------------
 
 EngravingItem *Note::prev_in_el(EngravingItem *e) {
     if (e == el_.front()) {
@@ -2477,10 +2216,6 @@ EngravingItem *Note::prev_in_el(EngravingItem *e) {
 }
 
 static bool tie_valid(Tie *tie) { return tie && !tie->segments_empty(); }
-
-//---------------------------------------------------------
-//   nextElement
-//---------------------------------------------------------
 
 EngravingItem *Note::next_element() {
     EngravingItem *e = score()->selection().element();
@@ -2575,55 +2310,6 @@ EngravingItem *Note::next_element() {
     }
 }
 
-//---------------------------------------------------------
-//   prevElement
-//---------------------------------------------------------
-
-EngravingItem *Note::prev_element() {
-    EngravingItem *e = score()->selection().element();
-    if (!e && !score()->selection().elements().empty()) {
-        e = score()->selection().elements().back();
-    }
-    if (!e) {
-        return nullptr;
-    }
-    switch (e->type()) {
-        case ElementType::SYMBOL:
-        case ElementType::IMAGE:
-        case ElementType::FINGERING:
-        case ElementType::TEXT:
-        case ElementType::BEND: {
-            EngravingItem *prev = prev_in_el(e); // return prev element in _el
-            if (prev) {
-                return prev;
-            }
-        }
-            return this;
-        case ElementType::TIE_SEGMENT:
-        case ElementType::PARTIAL_TIE_SEGMENT:
-        case ElementType::LAISSEZ_VIB_SEGMENT:
-            if (!el_.empty()) {
-                return el_.back();
-            }
-            return this;
-        case ElementType::NOTELINE_SEGMENT:
-        case ElementType::GLISSANDO_SEGMENT:
-        case ElementType::GUITAR_BEND_SEGMENT:
-            if (tie_valid(tie_for_)) {
-                return tie_for_->front_segment();
-            } else if (!el_.empty()) {
-                return el_.back();
-            }
-            return this;
-        case ElementType::ACCIDENTAL: return this;
-        default: return nullptr;
-    }
-}
-
-//---------------------------------------------------------
-//   lastElementBeforeSegment
-//---------------------------------------------------------
-
 EngravingItem *Note::last_element_before_segment() {
     if (!spanner_for_.empty()) {
         for (auto i : spanner_for_) {
@@ -2641,10 +2327,6 @@ EngravingItem *Note::last_element_before_segment() {
     return this;
 }
 
-//---------------------------------------------------------
-//   nextSegmentElement
-//---------------------------------------------------------
-
 EngravingItem *Note::next_segment_element() {
     if (chord()->is_grace()) {
         return EngravingItem::next_segment_element();
@@ -2657,27 +2339,6 @@ EngravingItem *Note::next_segment_element() {
     auto i = std::find(notes.begin(), notes.end(), this);
     return *(i - 1);
 }
-
-//---------------------------------------------------------
-//   prevSegmentElement
-//---------------------------------------------------------
-
-EngravingItem *Note::prev_segment_element() {
-    if (chord()->is_grace()) {
-        return EngravingItem::prev_segment_element();
-    }
-
-    const std::vector<Note *> &notes = chord()->notes();
-    if (this == notes.back()) {
-        return chord()->prev_segment_element();
-    }
-    auto i = std::find(notes.begin(), notes.end(), this);
-    return *++i;
-}
-
-//---------------------------------------------------------
-//   lastTiedNote
-//---------------------------------------------------------
 
 Note *Note::last_tied_note(bool ignore_playback) const {
     std::vector<const Note *> notes;
@@ -2696,11 +2357,8 @@ Note *Note::last_tied_note(bool ignore_playback) const {
     return const_cast<Note *>(note);
 }
 
-//---------------------------------------------------------
-//   firstTiedNote
 //    if note has ties, return last note in chain
 //    - handle recursion in connected notes
-//---------------------------------------------------------
 
 Note *Note::first_tied_note(bool ignore_playback) const {
     std::vector<const Note *> notes;
@@ -2718,10 +2376,6 @@ Note *Note::first_tied_note(bool ignore_playback) const {
     }
     return const_cast<Note *>(note);
 }
-
-//---------------------------------------------------------
-//   tiedNotes
-//---------------------------------------------------------
 
 std::vector<Note *> Note::find_tied_notes(Note *start_note, bool follow_partial_ties) {
     // Returns all notes ahead of startNote in a chain of ties
@@ -2767,10 +2421,6 @@ std::vector<Note *> Note::tied_notes() const {
     return notes;
 }
 
-//---------------------------------------------------------
-//   unisonIndex
-//---------------------------------------------------------
-
 int Note::unison_index() const {
     int index = 0;
     for (Note *n : chord()->notes()) {
@@ -2785,10 +2435,6 @@ int Note::unison_index() const {
     return 0;
 }
 
-//---------------------------------------------------------
-//   disconnectTiedNotes
-//---------------------------------------------------------
-
 void Note::disconnect_tied_notes() {
     if (tie_back() && tie_back()->start_note()) {
         tie_back()->start_note()->remove(tie_back());
@@ -2797,10 +2443,6 @@ void Note::disconnect_tied_notes() {
         tie_for()->end_note()->set_tie_back(0);
     }
 }
-
-//---------------------------------------------------------
-//   connectTiedNotes
-//---------------------------------------------------------
 
 void Note::connect_tied_notes() {
     if (tie_back() && !tie_back()->is_partial_tie()) {
@@ -2814,25 +2456,13 @@ void Note::connect_tied_notes() {
     }
 }
 
-//---------------------------------------------------------
-//   accidentalType
-//---------------------------------------------------------
-
 AccidentalType Note::accidental_type() const { return accidental_ ? accidental_->accidental_type() : AccidentalType::NONE; }
-
-//---------------------------------------------------------
-//   setAccidentalType
-//---------------------------------------------------------
 
 void Note::set_accidental_type(AccidentalType type) {
     if (score()) {
         EditNote::change_accidental(score(), this, type);
     }
 }
-
-//---------------------------------------------------------
-//   undoUnlink
-//---------------------------------------------------------
 
 void Note::undo_unlink() {
     EngravingItem::undo_unlink();
@@ -2846,10 +2476,6 @@ void Note::undo_unlink() {
         tie_for_->undo_unlink();
     }
 }
-
-//---------------------------------------------------------
-//   slides
-//---------------------------------------------------------
 
 static bool is_slide_to(Note::SlideType slide_type) {
     return slide_type == Note::SlideType::UP_TO_NOTE || slide_type == Note::SlideType::DOWN_TO_NOTE;
@@ -3011,9 +2637,7 @@ int Note::string_or_line() const {
     return staff()->staff_type(tick())->is_tab_staff() ? string() * 2 : line();
 }
 
-//---------------------------------------------------------
 //   Note::transposeDiatonic
-//---------------------------------------------------------
 
 bool Note::transpose_diatonic(int interval, bool keep_alterations, bool use_double_accidentals) {
     // compute note current absolute step

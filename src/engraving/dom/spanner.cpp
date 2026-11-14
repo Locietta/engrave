@@ -48,10 +48,6 @@ using namespace mu;
 using namespace mu::engraving;
 
 namespace mu::engraving {
-//---------------------------------------------------------
-//   SpannerSegment
-//---------------------------------------------------------
-
 SpannerSegment::SpannerSegment(const ElementType &type, Spanner *sp, ElementFlags f) : EngravingItem(type, sp, f) {
     set_spanner_segment_type(SpannerSegmentType::SINGLE);
 }
@@ -74,10 +70,6 @@ void SpannerSegment::set_ownership_parent(Spanner *spanner) { EngravingItem::set
 
 EngravingItem *SpannerSegment::layout_parent() const { return system_; }
 
-//---------------------------------------------------------
-//   mag
-//---------------------------------------------------------
-
 double SpannerSegment::mag() const {
     if (spanner()->system_flag()) {
         return 1.0;
@@ -89,10 +81,6 @@ Fraction SpannerSegment::tick() const {
     const Spanner *sp = spanner();
     return sp ? sp->tick() : Fraction(0, 1);
 }
-
-//---------------------------------------------------------
-//   moveToSystem
-//---------------------------------------------------------
 
 void SpannerSegment::move_to_system(System *s) {
     if (s) {
@@ -118,20 +106,12 @@ void SpannerSegment::move_to_system(System *s) {
     }
 }
 
-//---------------------------------------------------------
-//   spatiumChanged
-//---------------------------------------------------------
-
 void SpannerSegment::spatium_changed(double ov, double nv) {
     EngravingItem::spatium_changed(ov, nv);
     if (offset_is_spatium_dependent()) {
         offset2_ *= (nv / ov);
     }
 }
-
-//---------------------------------------------------------
-//   propertyDelegate
-//---------------------------------------------------------
 
 EngravingObject *SpannerSegment::property_delegate(Pid pid) const {
     switch (pid) {
@@ -152,10 +132,6 @@ EngravingObject *SpannerSegment::property_delegate(Pid pid) const {
     return nullptr;
 }
 
-//---------------------------------------------------------
-//   getProperty
-//---------------------------------------------------------
-
 engraving::PropertyValue SpannerSegment::get_property(Pid pid) const {
     if (auto value = authored_override_value(*this, pid)) return *value;
     if (EngravingObject *e = const_cast<SpannerSegment *>(this)->property_delegate(pid)) {
@@ -166,10 +142,6 @@ engraving::PropertyValue SpannerSegment::get_property(Pid pid) const {
         default: return EngravingItem::get_property(pid);
     }
 }
-
-//---------------------------------------------------------
-//   setProperty
-//---------------------------------------------------------
 
 bool SpannerSegment::set_property(Pid pid, const PropertyValue &v) {
     if (set_authored_override(*this, pid, v)) return true;
@@ -186,10 +158,6 @@ bool SpannerSegment::set_property(Pid pid, const PropertyValue &v) {
     return true;
 }
 
-//---------------------------------------------------------
-//   propertyDefault
-//---------------------------------------------------------
-
 PropertyValue SpannerSegment::property_default(Pid pid) const {
     if (EngravingObject *e = const_cast<SpannerSegment *>(this)->property_delegate(pid)) {
         return e->property_default(pid);
@@ -202,20 +170,12 @@ PropertyValue SpannerSegment::property_default(Pid pid) const {
 
 PointF SpannerSegment::default_pos() const { return spanner() ? spanner()->default_pos() : PointF(); }
 
-//---------------------------------------------------------
-//   getPropertyStyle
-//---------------------------------------------------------
-
 Sid SpannerSegment::get_property_style(Pid pid) const {
     if (EngravingObject *e = const_cast<SpannerSegment *>(this)->property_delegate(pid)) {
         return e->get_property_style(pid);
     }
     return EngravingItem::get_property_style(pid);
 }
-
-//---------------------------------------------------------
-//   resetProperty
-//---------------------------------------------------------
 
 void SpannerSegment::reset_property(Pid pid) {
     if (EngravingObject *e = property_delegate(pid)) {
@@ -224,25 +184,13 @@ void SpannerSegment::reset_property(Pid pid) {
     return EngravingItem::reset_property(pid);
 }
 
-//---------------------------------------------------------
-//   styleChanged
-//---------------------------------------------------------
-
 void SpannerSegment::style_changed() { spanner()->style_changed(); }
-
-//---------------------------------------------------------
-//   reset
-//---------------------------------------------------------
 
 void SpannerSegment::reset() {
     undo_change_property(Pid::OFFSET2, PointF());
     EngravingItem::reset();
     spanner()->reset();
 }
-
-//---------------------------------------------------------
-//   undoChangeProperty
-//---------------------------------------------------------
 
 void SpannerSegment::undo_change_property(Pid pid, const PropertyValue &val, PropertyFlags ps) {
     if (pid == Pid::AUTOPLACE && (val.to_bool() == true && !autoplace())) {
@@ -254,20 +202,12 @@ void SpannerSegment::undo_change_property(Pid pid, const PropertyValue &val, Pro
     EngravingItem::undo_change_property(pid, val, ps);
 }
 
-//---------------------------------------------------------
-//   setSelected
-//---------------------------------------------------------
-
 void SpannerSegment::set_selected(bool f) {
     EngravingItem::set_selected(f);
     if (spanner()->selected() != f) {
         spanner()->set_selected(f);
     }
 }
-
-//---------------------------------------------------------
-//   setVisible
-//---------------------------------------------------------
 
 void SpannerSegment::set_visible(bool f) {
     if (Spanner *sp = spanner()) {
@@ -276,20 +216,12 @@ void SpannerSegment::set_visible(bool f) {
     EngravingItem::set_visible(f);
 }
 
-//---------------------------------------------------------
-//   setColor
-//---------------------------------------------------------
-
 void SpannerSegment::set_color(const Color &col) {
     if (Spanner *sp = spanner()) {
         sp->set_color(col);
     }
     EngravingItem::set_color(col);
 }
-
-//---------------------------------------------------------
-//   setZ
-//---------------------------------------------------------
 
 void SpannerSegment::set_z(int val) {
     if (Spanner *sp = spanner()) {
@@ -298,21 +230,7 @@ void SpannerSegment::set_z(int val) {
     EngravingItem::set_z(val);
 }
 
-//---------------------------------------------------------
-//   nextSegmentElement
-//---------------------------------------------------------
-
 EngravingItem *SpannerSegment::next_segment_element() { return spanner()->next_segment_element(); }
-
-//---------------------------------------------------------
-//   prevSegmentElement
-//---------------------------------------------------------
-
-EngravingItem *SpannerSegment::prev_segment_element() { return spanner()->prev_segment_element(); }
-
-//---------------------------------------------------------
-//   triggerLayout
-//---------------------------------------------------------
 
 void SpannerSegment::trigger_layout() const {
     if (Spanner *sp = spanner()) {
@@ -347,10 +265,6 @@ int SpannerSegment::subtype() const { return spanner()->subtype(); }
 
 TranslatableString SpannerSegment::subtype_user_name() const { return spanner()->subtype_user_name(); }
 
-//---------------------------------------------------------
-//   Spanner
-//---------------------------------------------------------
-
 Spanner::Spanner(const ElementType &type, EngravingObject *parent, ElementFlags f) : EngravingItem(type, parent, f) {}
 
 Spanner::Spanner(const Spanner &s) : EngravingItem(s) {
@@ -365,20 +279,12 @@ Spanner::Spanner(const Spanner &s) : EngravingItem(s) {
 
 Spanner::~Spanner() { erase_spanner_segments(); }
 
-//---------------------------------------------------------
-//   mag
-//---------------------------------------------------------
-
 double Spanner::mag() const {
     if (system_flag()) {
         return 1.0;
     }
     return staff() ? staff()->staff_mag(tick()) : 1.0;
 }
-
-//---------------------------------------------------------
-//   add
-//---------------------------------------------------------
 
 void Spanner::add(EngravingItem *e) {
     SpannerSegment *ls = to_spanner_segment(e);
@@ -391,10 +297,6 @@ void Spanner::add(EngravingItem *e) {
     mutldata()->segments.push_back(ls);
     e->added();
 }
-
-//---------------------------------------------------------
-//   remove
-//---------------------------------------------------------
 
 void Spanner::remove(EngravingItem *e) {
     SpannerSegment *ss = to_spanner_segment(e);
@@ -410,8 +312,6 @@ void Spanner::removed() {
     }
 }
 
-//---------------------------------------------------------
-//   removeUnmanaged
 //
 //    Remove the Spanner and its segments from objects which may know about them
 //
@@ -419,7 +319,6 @@ void Spanner::removed() {
 //    which manage their parts themselves without using the standard management supplied by Score;
 //    Example can be the LyricsLine within a Lyrics element or the FiguredBassLine within a FiguredBass
 //    (not implemented yet).
-//---------------------------------------------------------
 
 void Spanner::remove_unmanaged() {
     for (SpannerSegment *ss : spanner_segments()) {
@@ -429,10 +328,6 @@ void Spanner::remove_unmanaged() {
     }
     score()->remove_unmanaged_spanner(this);
 }
-
-//---------------------------------------------------------
-//   insertTimeUnmanaged
-//---------------------------------------------------------
 
 void Spanner::insert_time_unmanaged(const Fraction &from_tick, const Fraction &len) {
     Fraction new_tick1 = tick();
@@ -485,10 +380,6 @@ void Spanner::insert_time_unmanaged(const Fraction &from_tick, const Fraction &l
     }
 }
 
-//---------------------------------------------------------
-//   isVisibleCR
-//---------------------------------------------------------
-
 static bool is_visible_cr(EngravingItem *e) {
     if (!e || !e->is_chord_rest()) {
         return true; // assume visible
@@ -496,10 +387,6 @@ static bool is_visible_cr(EngravingItem *e) {
     ChordRest *cr = to_chord_rest(e);
     return cr->measure()->visible(cr->staff_idx());
 }
-
-//---------------------------------------------------------
-//   eitherEndVisible
-//---------------------------------------------------------
 
 bool Spanner::either_end_visible() const {
     if (is_volta()) {
@@ -511,20 +398,12 @@ bool Spanner::either_end_visible() const {
     return is_visible_cr(start_element()) || is_visible_cr(end_element());
 }
 
-//---------------------------------------------------------
-//   setScore
-//---------------------------------------------------------
-
 void Spanner::set_score(Score *s) {
     EngravingItem::set_score(s);
     for (SpannerSegment *seg : ldata()->segments) {
         seg->set_score(s);
     }
 }
-
-//---------------------------------------------------------
-//   getProperty
-//---------------------------------------------------------
 
 PropertyValue Spanner::get_property(Pid property_id) const {
     switch (property_id) {
@@ -542,10 +421,6 @@ PropertyValue Spanner::get_property(Pid property_id) const {
     }
     return EngravingItem::get_property(property_id);
 }
-
-//---------------------------------------------------------
-//   setProperty
-//---------------------------------------------------------
 
 bool Spanner::set_property(Pid property_id, const PropertyValue &v) {
     if (set_authored_override(*this, property_id, v)) return true;
@@ -591,10 +466,6 @@ bool Spanner::set_property(Pid property_id, const PropertyValue &v) {
     return true;
 }
 
-//---------------------------------------------------------
-//   propertyDefault
-//---------------------------------------------------------
-
 PropertyValue Spanner::property_default(Pid property_id) const {
     switch (property_id) {
         case Pid::PLAY: return true;
@@ -602,10 +473,6 @@ PropertyValue Spanner::property_default(Pid property_id) const {
     }
     return EngravingItem::property_default(property_id);
 }
-
-//---------------------------------------------------------
-//   computeStartElement
-//---------------------------------------------------------
 
 void Spanner::compute_start_element() {
     EngravingItem *old_start_element = start_element_;
@@ -656,10 +523,6 @@ void Spanner::do_compute_start_element() {
         case Anchor::NOTE: break;
     }
 }
-
-//---------------------------------------------------------
-//   computeEndElement
-//---------------------------------------------------------
 
 void Spanner::compute_end_element() {
     EngravingItem *old_end_element = end_element_;
@@ -724,8 +587,6 @@ bool Spanner::can_be_cross_staff() const {
     }
 }
 
-//---------------------------------------------------------
-//   startElementFromSpanner
 //
 //    Given a Spanner and an end element, determines a start element suitable for the end
 //    element of a new Spanner, so that it is 'parallel' to the old one.
@@ -734,7 +595,6 @@ bool Spanner::can_be_cross_staff() const {
 //    NOTES:      Only spanners with Anchor::NOTE are currently supported.
 //                Going back from end to start ensures the 'other' anchor of this is already set up
 //                      (for instance, while cloning staves)
-//---------------------------------------------------------
 
 Note *Spanner::start_element_from_spanner(Spanner *sp, EngravingItem *new_end) {
     if (sp->anchor() != Anchor::NOTE) {
@@ -761,15 +621,12 @@ Note *Spanner::start_element_from_spanner(Spanner *sp, EngravingItem *new_end) {
     return new_start;
 }
 
-//---------------------------------------------------------
-//   endElementFromSpanner
 //
 //    Given a Spanner and a start element, determines an end element suitable for the start
 //    element of a new Spanner, so that it is 'parallel' to the old one.
 //    Can be used while cloning a linked Spanner, to update the cloned spanner start and end elements
 //    (Spanner(const Spanner&) copies start and end elements from the original to the copy).
 //    NOTES:      Only spanners with Anchor::NOTE are currently supported.
-//---------------------------------------------------------
 
 Note *Spanner::end_element_from_spanner(Spanner *sp, EngravingItem *new_start) {
     if (sp->anchor() != Anchor::NOTE) {
@@ -796,11 +653,8 @@ Note *Spanner::end_element_from_spanner(Spanner *sp, EngravingItem *new_start) {
     return new_end;
 }
 
-//---------------------------------------------------------
-//   setNoteSpan
 //
 //    Sets up all the variables congruent with given start and end note anchors.
-//---------------------------------------------------------
 
 void Spanner::set_note_span(Note *start_note, Note *end_note) {
     if (anchor() != Anchor::NOTE) {
@@ -824,10 +678,6 @@ void Spanner::set_note_span(Note *start_note, Note *end_note) {
     set_track2(end_track);
 }
 
-//---------------------------------------------------------
-//   startChord
-//---------------------------------------------------------
-
 Chord *Spanner::start_chord() {
     if (anchor() != Anchor::CHORDREST) {
         return nullptr;
@@ -842,10 +692,6 @@ Chord *Spanner::start_chord() {
 
     return nullptr;
 }
-
-//---------------------------------------------------------
-//   endChord
-//---------------------------------------------------------
 
 Chord *Spanner::end_chord() {
     if (anchor() != Anchor::CHORDREST) {
@@ -862,10 +708,6 @@ Chord *Spanner::end_chord() {
     return nullptr;
 }
 
-//---------------------------------------------------------
-//   startCR
-//---------------------------------------------------------
-
 ChordRest *Spanner::start_cr() {
     assert(anchor() == Anchor::SEGMENT || anchor() == Anchor::CHORDREST);
     if (!start_element_ || start_element_->score() != score()) {
@@ -874,10 +716,6 @@ ChordRest *Spanner::start_cr() {
     }
     return (start_element_ && start_element_->is_chord_rest()) ? to_chord_rest(start_element_) : nullptr;
 }
-
-//---------------------------------------------------------
-//   endCR
-//---------------------------------------------------------
 
 ChordRest *Spanner::end_cr() {
     assert(anchor() == Anchor::SEGMENT || anchor() == Anchor::CHORDREST);
@@ -888,19 +726,11 @@ ChordRest *Spanner::end_cr() {
     return (end_element_ && end_element_->is_chord_rest()) ? to_chord_rest(end_element_) : nullptr;
 }
 
-//---------------------------------------------------------
-//   findStartChord
-//---------------------------------------------------------
-
 Chord *Spanner::find_start_chord() const {
     assert(anchor() == Anchor::CHORDREST);
     ChordRest *cr = score()->find_cr(tick(), track());
     return cr && cr->is_chord() ? to_chord(cr) : nullptr;
 }
-
-//---------------------------------------------------------
-//   findEndChord
-//---------------------------------------------------------
 
 Chord *Spanner::find_end_chord() const {
     assert(anchor() == Anchor::CHORDREST);
@@ -912,10 +742,6 @@ Chord *Spanner::find_end_chord() const {
     return to_chord(end_cr);
 }
 
-//---------------------------------------------------------
-//   findStartCR
-//---------------------------------------------------------
-
 ChordRest *Spanner::find_start_cr() const {
     assert(anchor() == Anchor::SEGMENT || anchor() == Anchor::CHORDREST);
     if (is_layout_copy()) {
@@ -925,10 +751,6 @@ ChordRest *Spanner::find_start_cr() const {
     return score()->find_cr(tick(), track());
 }
 
-//---------------------------------------------------------
-//   findEndCR
-//---------------------------------------------------------
-
 ChordRest *Spanner::find_end_cr() const {
     assert(anchor() == Anchor::SEGMENT || anchor() == Anchor::CHORDREST);
     Segment *s = is_layout_copy() ? score()->find_rendered_segment(tick2(), false, SegmentType::CHORD_REST, true) :
@@ -937,10 +759,6 @@ ChordRest *Spanner::find_end_cr() const {
     ChordRest *end_cr = s ? to_chord_rest(is_layout_copy() ? s->effective_element(tr2) : s->element(tr2)) : nullptr;
     return end_cr;
 }
-
-//---------------------------------------------------------
-//   startSegment
-//---------------------------------------------------------
 
 Segment *Spanner::start_segment() const {
     assert(score() != nullptr);
@@ -980,10 +798,6 @@ Segment *Spanner::start_segment() const {
 
     return start_seg;
 }
-
-//---------------------------------------------------------
-//   endSegment
-//---------------------------------------------------------
 
 Segment *Spanner::end_segment() const {
     assert(score() != nullptr);
@@ -1033,15 +847,7 @@ bool Spanner::element_applies_to_track(const track_idx_t ref_track) const {
            EngravingItem::element_applies_to_track(track2(), ref_track, voice_assignment, part());
 }
 
-//---------------------------------------------------------
-//   startMeasure
-//---------------------------------------------------------
-
 Measure *Spanner::start_measure() const { return to_measure(start_element_); }
-
-//---------------------------------------------------------
-//   endMeasure
-//---------------------------------------------------------
 
 Measure *Spanner::end_measure() const {
     assert(anchor() == Spanner::Anchor::MEASURE);
@@ -1064,10 +870,6 @@ Measure *Spanner::find_end_measure() const {
     return to_measure(end_element_->find_ancestor(ElementType::MEASURE));
 }
 
-//---------------------------------------------------------
-//   setSelected
-//---------------------------------------------------------
-
 void Spanner::set_selected(bool f) {
     EngravingItem::set_selected(f);
 
@@ -1078,20 +880,12 @@ void Spanner::set_selected(bool f) {
     }
 }
 
-//---------------------------------------------------------
-//   setVisible
-//---------------------------------------------------------
-
 void Spanner::set_visible(bool f) {
     for (SpannerSegment *ss : spanner_segments()) {
         ss->EngravingItem::set_visible(f);
     }
     EngravingItem::set_visible(f);
 }
-
-//---------------------------------------------------------
-//   setAutoplace
-//---------------------------------------------------------
 
 void Spanner::set_autoplace(bool f) {
     for (SpannerSegment *ss : spanner_segments()) {
@@ -1100,10 +894,6 @@ void Spanner::set_autoplace(bool f) {
     EngravingItem::set_autoplace(f);
 }
 
-//---------------------------------------------------------
-//   setColor
-//---------------------------------------------------------
-
 void Spanner::set_color(const Color &col) {
     for (SpannerSegment *ss : spanner_segments()) {
         ss->EngravingItem::set_color(col);
@@ -1111,20 +901,12 @@ void Spanner::set_color(const Color &col) {
     EngravingItem::set_color(col);
 }
 
-//---------------------------------------------------------
-//   setZ
-//---------------------------------------------------------
-
 void Spanner::set_z(int val) {
     for (SpannerSegment *ss : spanner_segments()) {
         ss->EngravingItem::set_z(val);
     }
     EngravingItem::set_z(val);
 }
-
-//---------------------------------------------------------
-//   setStartElement
-//---------------------------------------------------------
 
 void Spanner::set_start_element(EngravingItem *e) {
 #ifndef NDEBUG
@@ -1135,10 +917,6 @@ void Spanner::set_start_element(EngravingItem *e) {
     start_element_ = e;
 }
 
-//---------------------------------------------------------
-//   setEndElement
-//---------------------------------------------------------
-
 void Spanner::set_end_element(EngravingItem *e) {
 #ifndef NDEBUG
     if (anchor() == Anchor::NOTE) {
@@ -1147,10 +925,6 @@ void Spanner::set_end_element(EngravingItem *e) {
 #endif
     end_element_ = e;
 }
-
-//---------------------------------------------------------
-//   nextSpanner
-//---------------------------------------------------------
 
 Spanner *Spanner::next_spanner(EngravingItem *e, staff_idx_t active_staff) {
     std::multimap<int, Spanner *> mmap = score()->spanner();
@@ -1183,10 +957,6 @@ Spanner *Spanner::next_spanner(EngravingItem *e, staff_idx_t active_staff) {
     return nullptr;
 }
 
-//---------------------------------------------------------
-//   prevSpanner
-//---------------------------------------------------------
-
 Spanner *Spanner::prev_spanner(EngravingItem *e, staff_idx_t active_staff) {
     std::multimap<int, Spanner *> mmap = score()->spanner();
     auto range = mmap.equal_range(tick().ticks());
@@ -1215,10 +985,6 @@ Spanner *Spanner::prev_spanner(EngravingItem *e, staff_idx_t active_staff) {
     return nullptr;
 }
 
-//---------------------------------------------------------
-//   nextSegmentElement
-//---------------------------------------------------------
-
 EngravingItem *Spanner::next_segment_element() {
     Segment *s = start_segment();
     if (s) {
@@ -1226,22 +992,6 @@ EngravingItem *Spanner::next_segment_element() {
     }
     return Navigation::last_element(score());
 }
-
-//---------------------------------------------------------
-//   prevSegmentElement
-//---------------------------------------------------------
-
-EngravingItem *Spanner::prev_segment_element() {
-    Segment *s = end_segment();
-    if (s) {
-        return s->last_element_for_navigation(staff_idx());
-    }
-    return Navigation::first_element(score());
-}
-
-//---------------------------------------------------------
-//   setTick
-//---------------------------------------------------------
 
 void Spanner::set_tick(const Fraction &v) {
     if (tick_ == v) {
@@ -1258,10 +1008,6 @@ void Spanner::set_tick(const Fraction &v) {
     }
 }
 
-//---------------------------------------------------------
-//   setTick2
-//---------------------------------------------------------
-
 void Spanner::set_tick2(const Fraction &f) {
     Fraction ticks = f - tick_;
     IF_ASSERT_FAILED(f >= tick_) {
@@ -1270,10 +1016,6 @@ void Spanner::set_tick2(const Fraction &f) {
     }
     set_ticks(ticks);
 }
-
-//---------------------------------------------------------
-//   setTicks
-//---------------------------------------------------------
 
 void Spanner::set_ticks(const Fraction &f) {
     if (ticks_ == f) {
@@ -1313,10 +1055,6 @@ void Spanner::set_track2(track_idx_t v) {
 }
 
 track_idx_t Spanner::effective_track2() const { return can_be_cross_staff() && track2_ != muse::nidx ? track2_ : track_; }
-
-//---------------------------------------------------------
-//   triggerLayout
-//---------------------------------------------------------
 
 void Spanner::trigger_layout() const {
     // Don't trigger layout until the tick is correctly set, otherwise is triggers layout of the entire score

@@ -33,8 +33,5 @@ struct Transaction;
 struct EditParentheses {
 
     static void add_parentheses_to_notes(Transaction &tx, const std::vector<Note *> &notes);
-
-
-private:
 };
 } // namespace mu::engraving

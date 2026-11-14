@@ -35,10 +35,6 @@
 
 using namespace mu::engraving;
 
-//---------------------------------------------------------
-//   EditSpanner
-//---------------------------------------------------------
-
 void EditSpanner::add_spanner(Transaction &, Score *score, Spanner *spanner, staff_idx_t staff_idx, Segment *start_segment,
                               Segment *end_segment, bool ctrl_modifier) {
     track_idx_t track = staff_idx * ::mu::engraving::voices;

@@ -112,8 +112,6 @@ struct DiagramInfo {
     String diagram_pattern;
 };
 
-//---------------------------------------------------------
-//   @@ FretDiagram
 ///    Fretboard diagram
 //
 //   @P userMag    double
@@ -122,7 +120,6 @@ struct DiagramInfo {
 //   @P fretOffset int
 //
 //   Note that, while strings are zero-indexed, frets are one-indexed
-//---------------------------------------------------------
 
 struct FretDiagram final : EngravingItem {
 private:
@@ -281,8 +278,6 @@ private:
     void remove_barres(int string, int fret = 0);
     void remove_marker(int s);
     void remove_dots_markers(int ss, int es, int fret);
-
-    static void apply_diagram_pattern(FretDiagram *diagram, const String &pattern);
 
     int strings_ = 0;
     int frets_ = 0;

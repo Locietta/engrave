@@ -28,8 +28,6 @@
 #include "../editing/addremoveelement.h"
 #include "../editing/editchord.h"
 #include "../editing/editmeasurerepeat.h"
-#include "../editing/editvisibility.h"
-#include "../editing/noteinput.h"
 #include "../editing/transaction/transaction.h"
 #include "articulation.h"
 #include "chord.h"
@@ -52,10 +50,6 @@ using namespace mu;
 using namespace mu::engraving;
 
 namespace mu::engraving {
-//---------------------------------------------------------
-//    Rest
-//--------------------------------------------------------
-
 Rest::Rest(DummyParentOr<Segment> parent) : Rest(ElementType::REST, parent) {}
 
 Rest::Rest(const ElementType &type, DummyParentOr<Segment> parent) : ChordRest(type, parent) { beam_mode_ = BeamMode::NONE; }
@@ -90,12 +84,10 @@ Rest::Rest(const Rest &r, bool link) : ChordRest(r, link) {
 
 void Rest::hack_to_rest_type() { hack_set_type(ElementType::REST); }
 
-//---------------------------------------------------------
 //   setOffset, overridden from EngravingItem
 //    (- raster vertical position in spatium units) -> no
 //    - half rests and whole rests outside the staff are
 //      replaced by special symbols with ledger lines
-//---------------------------------------------------------
 
 void Rest::set_offset(const PointF &o) {
     double spatium_value = spatium();
@@ -118,10 +110,6 @@ void Rest::set_offset(const PointF &o) {
 
     EngravingItem::set_offset(o);
 }
-
-//---------------------------------------------------------
-//   getSymbol
-//---------------------------------------------------------
 
 SymId Rest::get_symbol(DurationType type, int line, int lines) const {
     switch (type) {
@@ -169,10 +157,6 @@ const std::vector<NoteDot *> &Rest::dot_list() const {
     return has_layout_data() ? ldata()->dots : empty;
 }
 
-//---------------------------------------------------------
-//   getDotline
-//---------------------------------------------------------
-
 int Rest::get_dotline(DurationType duration_type) {
     int dl = -1;
     switch (duration_type) {
@@ -199,21 +183,9 @@ bool Rest::is_breve_rest() const {
     return dur_type == DurationType::V_BREVE || (dur_type == DurationType::V_MEASURE && measure() && measure()->ticks() >= Fraction(2, 1));
 }
 
-//---------------------------------------------------------
-//   upPos
-//---------------------------------------------------------
-
 double Rest::up_pos() const { return sym_bbox(ldata()->sym()).y(); }
 
-//---------------------------------------------------------
-//   downPos
-//---------------------------------------------------------
-
 double Rest::down_pos() const { return sym_bbox(ldata()->sym()).y() + sym_height(ldata()->sym()); }
-
-//---------------------------------------------------------
-//   scanElements
-//---------------------------------------------------------
 
 void Rest::scan_elements(std::function<void(EngravingItem *)> func) {
     ChordRest::scan_elements(func);
@@ -234,26 +206,15 @@ void Rest::scan_elements(std::function<void(EngravingItem *)> func) {
     }
 }
 
-//---------------------------------------------------------
-//   setTrack
-//---------------------------------------------------------
-
 void Rest::set_track(track_idx_t val) { ChordRest::set_track(val); }
-
-//---------------------------------------------------------
-//   mag
-//---------------------------------------------------------
 
 double Rest::mag() const {
     double m = staff() ? staff()->staff_mag(this) : 1.0;
     return m * intrinsic_mag();
 }
 
-//---------------------------------------------------------
-//   intrinsicMag
 //   returns the INTRINSIC mag of the rest (i.e. NOT scaled
 //   by staff size)
-//---------------------------------------------------------
 
 double Rest::intrinsic_mag() const {
     double m = 1.0;
@@ -263,10 +224,6 @@ double Rest::intrinsic_mag() const {
     return m;
 }
 
-//---------------------------------------------------------
-//   rightEdge
-//---------------------------------------------------------
-
 double Rest::right_edge() const { return x() + width(); }
 
 double Rest::center_x() const {
@@ -275,15 +232,7 @@ double Rest::center_x() const {
     return bbox.left() + bbox.width() / 2;
 }
 
-//---------------------------------------------------------
-//   accent
-//---------------------------------------------------------
-
 bool Rest::accent() { return voice() >= 2 && is_small(); }
-
-//---------------------------------------------------------
-//   setAccent
-//---------------------------------------------------------
 
 void Rest::set_accent(bool flag) {
     undo_change_property(Pid::SMALL, flag);
@@ -297,10 +246,6 @@ void Rest::set_accent(bool flag) {
         }
     }
 }
-
-//---------------------------------------------------------
-//   add
-//---------------------------------------------------------
 
 void Rest::add(EngravingItem *e) {
     if (e->ownership_parent() != this) {
@@ -316,10 +261,6 @@ void Rest::add(EngravingItem *e) {
         default: ChordRest::add(e); break;
     }
 }
-
-//---------------------------------------------------------
-//   remove
-//---------------------------------------------------------
 
 void Rest::remove(EngravingItem *e) {
     switch (e->type()) {
@@ -337,20 +278,12 @@ void Rest::remove(EngravingItem *e) {
     }
 }
 
-//---------------------------------------------------------
-//   localSpatiumChanged
-//---------------------------------------------------------
-
 void Rest::local_spatium_changed(double old_value, double new_value) {
     ChordRest::local_spatium_changed(old_value, new_value);
     for (EngravingItem *e : el()) {
         e->local_spatium_changed(old_value, new_value);
     }
 }
-
-//---------------------------------------------------------
-//   propertyDefault
-//---------------------------------------------------------
 
 PropertyValue Rest::property_default(Pid property_id) const {
     switch (property_id) {
@@ -360,18 +293,10 @@ PropertyValue Rest::property_default(Pid property_id) const {
     }
 }
 
-//---------------------------------------------------------
-//   resetProperty
-//---------------------------------------------------------
-
 void Rest::reset_property(Pid id) {
     set_property(id, property_default(id));
     return;
 }
-
-//---------------------------------------------------------
-//   getProperty
-//---------------------------------------------------------
 
 PropertyValue Rest::get_property(Pid property_id) const {
     switch (property_id) {
@@ -380,10 +305,6 @@ PropertyValue Rest::get_property(Pid property_id) const {
         default: return ChordRest::get_property(property_id);
     }
 }
-
-//---------------------------------------------------------
-//   setProperty
-//---------------------------------------------------------
 
 bool Rest::set_property(Pid property_id, const PropertyValue &v) {
     switch (property_id) {
@@ -402,30 +323,12 @@ bool Rest::set_property(Pid property_id, const PropertyValue &v) {
     return true;
 }
 
-//---------------------------------------------------------
-//   undoChangeDotsVisible
-//---------------------------------------------------------
-
-void Rest::undo_change_dots_visible(bool v) { EditVisibility::change_dots_visible(this, dots(), v); }
-
-//---------------------------------------------------------
-//   nextElement
-//---------------------------------------------------------
-
 EngravingItem *Rest::next_element() { return ChordRest::next_element(); }
 
-//---------------------------------------------------------
-//   prevElement
-//---------------------------------------------------------
-
-EngravingItem *Rest::prev_element() { return ChordRest::prev_element(); }
-
-//---------------------------------------------------------
 //   Rest::shouldNotBeDrawn
 //    in tab staff, do not draw rests (except mmrests)
 //    if rests are off OR if dur. symbols are on
 //    also measures covered by MeasureRepeat show no rests
-//---------------------------------------------------------
 
 bool Rest::should_not_be_drawn() const {
     const StaffType *st = staff() ? staff()->staff_type_for_element(this) : nullptr;
@@ -446,8 +349,5 @@ bool Rest::should_not_be_drawn() const {
 
 bool Rest::debug_draw_gap() const { return configuration()->debugging_options().show_gap_rests; }
 
-//---------------------------------------------------------
-//   getPropertyStyle
-//---------------------------------------------------------
 Sid Rest::get_property_style(Pid pid) const { return ChordRest::get_property_style(pid); }
 } // namespace mu::engraving

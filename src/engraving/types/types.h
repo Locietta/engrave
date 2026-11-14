@@ -76,11 +76,9 @@ using string_idx_t = size_t;
 
 using semitone_t = int8_t;
 
-//-------------------------------------------------------------------
 ///   The value of this enum determines the "stacking order"
 ///   of elements on the canvas.
 ///   Note: keep in sync with array in TConv
-//-------------------------------------------------------------------
 enum class ElementType : unsigned char {
     INVALID = 0,
     BRACKET_ITEM,
@@ -370,7 +368,6 @@ const static std::unordered_set<ElementType> textbase_types{
 using ElementTypeSet = std::unordered_set<ElementType>;
 
 // ========================================
-// PropertyValue
 // ========================================
 // --- Common ---
 using String = muse::String;
@@ -852,11 +849,8 @@ constexpr void operator&=(ParenthesesMode &t1, const ParenthesesMode &t2) {
 
 enum RepeatPlayCountPreset : unsigned char { X_N, N_X, PLAY_N_TIMES, N_REPEATS };
 
-//-------------------------------------------------------------------
-// TextStyleType
 // Must be in sync with textStyles (in textstyle.cpp)
 // P_TYPE::TEXT_STYLE
-//-------------------------------------------------------------------
 enum class TextStyleType : unsigned char {
     DEFAULT,
 
@@ -951,10 +945,6 @@ enum class TextStyleType : unsigned char {
     TEXT_TYPES,   // used for user-defined types
     IGNORED_TYPES // used for types no longer relevant (mainly Figured bass text type)
 };
-
-//---------------------------------------------------------
-//   FontStyle
-//---------------------------------------------------------
 
 enum class FontStyle : signed char { UNDEFINED = -1, NORMAL = 0, BOLD = 1 << 0, ITALIC = 1 << 1, UNDERLINE = 1 << 2, STRIKE = 1 << 3 };
 
@@ -1258,10 +1248,6 @@ enum class TimeSigVSMargin : unsigned char {
 
 enum class NoteSpellingType : unsigned char { STANDARD = 0, GERMAN, GERMAN_PURE, SOLFEGGIO, FRENCH };
 
-//---------------------------------------------------------
-//   Key
-//---------------------------------------------------------
-
 enum class Key : signed char {
     C_B = -7,
     G_B,
@@ -1340,12 +1326,9 @@ struct MeasureBeat {
     int max_beat_index = 0;
 };
 
-//---------------------------------------------------------
-//   UpdateMode
 //    There is an implied order from least invasive update
 //    to most invasive update. LayoutAll is fallback and
 //    recreates all.
-//---------------------------------------------------------
 
 enum class UpdateMode : unsigned char {
     DO_NOTHING,
@@ -1354,9 +1337,7 @@ enum class UpdateMode : unsigned char {
     LAYOUT,     // do partial layout for tick range
 };
 
-//---------------------------------------------------------
 //   LayoutFlag bits
-//---------------------------------------------------------
 
 enum class LayoutFlag : unsigned char {
     NO_FLAGS = 0,

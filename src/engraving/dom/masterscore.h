@@ -178,8 +178,6 @@ public:
 
     void update() { update(true); }
 
-    void lock_updates(bool locked);
-
     int midi_port_count() const { return midi_port_count_; }
 
     void set_midi_port_count(int val) { midi_port_count_ = val; }
@@ -229,8 +227,6 @@ public:
     InstrChannel *playback_channel(const InstrChannel *c) { return midi_mapping_[c->channel()].articulation(); }
 
     const InstrChannel *playback_channel(const InstrChannel *c) const { return midi_mapping_[c->channel()].articulation(); }
-
-    MasterScore *unroll_repeats();
 
     MeasureBase *insert_measure(MeasureBase *before_measure = nullptr, const InsertMeasureOptions &options = InsertMeasureOptions());
 

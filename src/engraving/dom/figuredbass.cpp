@@ -45,17 +45,9 @@ static std::vector<FiguredBassFont> g_fb_fonts;
 
 const std::vector<FiguredBassFont> &FiguredBass::fb_fonts() { return g_fb_fonts; }
 
-//---------------------------------------------------------
-//   figuredBassStyle
-//---------------------------------------------------------
-
 static const ElementStyle figured_bass_style{
     {Sid::FIGURED_BASS_MIN_DISTANCE, Pid::MIN_DISTANCE},
 };
-
-//---------------------------------------------------------
-//   figuredBassTextStyle
-//---------------------------------------------------------
 
 static const ElementStyle figured_bass_text_style{
     {Sid::FIGURED_BASS_FONT_FACE, Pid::FONT_FACE},
@@ -63,9 +55,7 @@ static const ElementStyle figured_bass_text_style{
     {Sid::FIGURED_BASS_FONT_STYLE, Pid::FONT_STYLE},
 };
 
-//---------------------------------------------------------
 //   F I G U R E D   B A S S   I T E M
-//---------------------------------------------------------
 
 // used for indexed access to parenthesis chars
 // (these is no normAccidToChar[], as accidentals may use mult. chars in normalized display):
@@ -93,12 +83,10 @@ FiguredBassItem::FiguredBassItem(const FiguredBassItem &item) : EngravingItem(it
 
 FiguredBassItem::~FiguredBassItem() {}
 
-//---------------------------------------------------------
 //   FiguredBassItem parse()
 //
 // converts a string into a property-based representation, if possible;
 // return true on success | false if the string is non-conformant
-//---------------------------------------------------------
 
 bool FiguredBassItem::parse(String &str) {
     int ret_val;
@@ -167,7 +155,6 @@ bool FiguredBassItem::parse(String &str) {
     return true;
 }
 
-//---------------------------------------------------------
 //   FiguredBassItem parsePrefixSuffix()
 //
 //    scans str to extract prefix or suffix properties. Stops at the first char which cannot fit.
@@ -175,7 +162,6 @@ bool FiguredBassItem::parse(String &str) {
 //
 // returns the number of Chars read from str or -1 if prefix / suffix has an illegal format
 // (no prefix / suffix at all IS legal)
-//---------------------------------------------------------
 
 int FiguredBassItem::parse_prefix_suffix(String &str, bool b_prefix) {
     Modifier *dest = b_prefix ? &prefix_ : &suffix_;
@@ -248,7 +234,6 @@ int FiguredBassItem::parse_prefix_suffix(String &str, bool b_prefix) {
     return static_cast<int>(size - str.size()); // return how many chars we had read into prefix/suffix
 }
 
-//---------------------------------------------------------
 //   FiguredBassItem parseDigit()
 //
 //    scans str to extract digit properties. Stops at the first char which cannot belong to digit part.
@@ -256,7 +241,6 @@ int FiguredBassItem::parse_prefix_suffix(String &str, bool b_prefix) {
 //
 // returns the number of Chars read from str or -1 if no legal digit can be constructed
 // (no digit at all IS legal)
-//---------------------------------------------------------
 
 int FiguredBassItem::parse_digit(String &str) {
     size_t size = str.size();
@@ -282,14 +266,12 @@ int FiguredBassItem::parse_digit(String &str) {
     return static_cast<int>(size - str.size());
 }
 
-//---------------------------------------------------------
 //   FiguredBassItem parseParenthesis()
 //
 //    scans str to extract a (possible) parenthesis, stores its code into parenth[parenthIdx]
 //    and removes it from str. Only looks at first str char.
 //
 // returns the number of Chars read from str (actually 0 or 1).
-//---------------------------------------------------------
 
 int FiguredBassItem::parse_parenthesis(String &str, int parenth_idx) {
     if (str.empty()) {
@@ -313,12 +295,10 @@ int FiguredBassItem::parse_parenthesis(String &str, int parenth_idx) {
     return 0;
 }
 
-//---------------------------------------------------------
 //   FiguredBassItem normalizedText()
 //
 // returns a string with the normalized text, i.e. the text displayed while editing;
 // this is a standard textual representation of the item properties
-//---------------------------------------------------------
 
 String FiguredBassItem::normalized_text() const {
     String str;
@@ -382,9 +362,7 @@ String FiguredBassItem::normalized_text() const {
     return str;
 }
 
-//---------------------------------------------------------
 //   PROPERTY METHODS
-//---------------------------------------------------------
 
 PropertyValue FiguredBassItem::get_property(Pid property_id) const {
     switch (property_id) {
@@ -475,71 +453,6 @@ void FiguredBassItem::regenerate_display_text() {
     renderer()->layout_item(this);
 }
 
-//---------------------------------------------------------
-//   UNDOABLE PROPERTY SETTERS
-//---------------------------------------------------------
-
-void FiguredBassItem::undo_set_prefix(Modifier pref) {
-    if (pref <= Modifier::CROSS) {
-        undo_change_property(Pid::FBPREFIX, (int) pref);
-        // if setting some prefix and there is a suffix already, clear suffix
-        if (pref != Modifier::NONE && suffix_ != Modifier::NONE) {
-            undo_change_property(Pid::FBSUFFIX, int(Modifier::NONE));
-        }
-        regenerate_display_text();
-    }
-}
-
-void FiguredBassItem::undo_set_digit(int digit) {
-    if (digit >= 0 && digit <= 9) {
-        undo_change_property(Pid::FBDIGIT, digit);
-        regenerate_display_text();
-    }
-}
-
-void FiguredBassItem::undo_set_suffix(Modifier suff) {
-    undo_change_property(Pid::FBSUFFIX, int(suff));
-    // if setting some suffix and there is a prefix already, clear prefix
-    if (suff != Modifier::NONE && prefix_ != Modifier::NONE) {
-        undo_change_property(Pid::FBPREFIX, int(Modifier::NONE));
-    }
-    regenerate_display_text();
-}
-
-void FiguredBassItem::undo_set_cont_line(ContLine val) {
-    undo_change_property(Pid::FBCONTINUATIONLINE, int(val));
-    regenerate_display_text();
-}
-
-void FiguredBassItem::undo_set_parenth1(Parenthesis par) {
-    undo_change_property(Pid::FBPARENTHESIS1, int(par));
-    regenerate_display_text();
-}
-
-void FiguredBassItem::undo_set_parenth2(Parenthesis par) {
-    undo_change_property(Pid::FBPARENTHESIS2, int(par));
-    regenerate_display_text();
-}
-
-void FiguredBassItem::undo_set_parenth3(Parenthesis par) {
-    undo_change_property(Pid::FBPARENTHESIS3, int(par));
-    regenerate_display_text();
-}
-
-void FiguredBassItem::undo_set_parenth4(Parenthesis par) {
-    undo_change_property(Pid::FBPARENTHESIS4, int(par));
-    regenerate_display_text();
-}
-
-void FiguredBassItem::undo_set_parenth5(Parenthesis par) {
-    undo_change_property(Pid::FBPARENTHESIS5, int(par));
-    regenerate_display_text();
-}
-
-//---------------------------------------------------------
-//   startsWithParenthesis
-//---------------------------------------------------------
-
 bool FiguredBassItem::starts_with_parenthesis() const {
     if (prefix_ != Modifier::NONE) {
         return parenth_[0] != Parenthesis::NONE;
@@ -553,9 +466,7 @@ bool FiguredBassItem::starts_with_parenthesis() const {
     return false;
 }
 
-//---------------------------------------------------------
 //   F I G U R E D   B A S S
-//---------------------------------------------------------
 
 FiguredBass::FiguredBass(DummyParentOr<Segment> parent)
     : TextBase(ElementType::FIGURED_BASS, parent, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
@@ -593,10 +504,6 @@ FiguredBass::~FiguredBass() {
         delete item;
     }
 }
-
-//---------------------------------------------------------
-//   getPropertyStyle
-//---------------------------------------------------------
 
 Sid FiguredBass::get_property_style(Pid id) const {
     // do not use TextBase::getPropertyStyle
@@ -652,11 +559,9 @@ void FiguredBass::regenerate_text() {
     score()->end_cmd();
 }
 
-//---------------------------------------------------------
 //   setSelected /setVisible
 //
 //    forward flags to items
-//---------------------------------------------------------
 
 void FiguredBass::set_selected(bool flag) {
     EngravingItem::set_selected(flag);
@@ -672,13 +577,10 @@ void FiguredBass::set_visible(bool flag) {
     }
 }
 
-//---------------------------------------------------------
-//   nextFiguredBass
 //
 //    returns the next *contiguous* FiguredBass element if it exists,
 //    i.e. the FiguredBass element which starts where 'this' ends
 //    returns 0 if none
-//---------------------------------------------------------
 
 FiguredBass *FiguredBass::next_figured_bass() const {
     if (ticks_ <= Fraction(0, 1)) { // if _ticks unset, no clear idea of when 'this' ends
@@ -703,8 +605,6 @@ FiguredBass *FiguredBass::next_figured_bass() const {
     return 0;
 }
 
-//---------------------------------------------------------
-//   additionalContLineX
 //
 //    if there is a continuation line, without other text elements, at pagePosY, returns its X coord (in page coords)
 //    returns 0 if no cont.line there or if there are text elements before the cont.line
@@ -713,7 +613,6 @@ FiguredBass *FiguredBass::next_figured_bass() const {
 //
 //    Note: pagePosY is the Y coord of the FiguredBassItem containing the line, not of the line itself,
 //    as line position might depend on styles.
-//---------------------------------------------------------
 
 double FiguredBass::additional_cont_line_x(double page_pos_y) const {
     PointF pg_pos = page_pos();
@@ -730,9 +629,7 @@ double FiguredBass::additional_cont_line_x(double page_pos_y) const {
     return 0.0; // no suitable line
 }
 
-//---------------------------------------------------------
 //   PROPERTY METHODS
-//---------------------------------------------------------
 
 PropertyValue FiguredBass::get_property(Pid property_id) const { return TextBase::get_property(property_id); }
 
@@ -803,7 +700,6 @@ void FiguredBass::add_item_to_linked(FiguredBassItem *item) {
     }
 }
 
-//---------------------------------------------------------
 //   STATIC FUNCTION
 //    adding a new FiguredBass to a Segment;
 //    the main purpose of this function is to ensure that ONLY ONE F.b. element exists for each Segment/staff;
@@ -814,7 +710,6 @@ void FiguredBass::add_item_to_linked(FiguredBassItem *item) {
 //
 //    As the F.b. very concept requires the base chord to have ONLY ONE note,
 //    FiguredBass elements are created and looked for only in the first track of the staff.
-//---------------------------------------------------------
 
 FiguredBass *FiguredBass::add_figured_bass_to_segment(Segment *seg, track_idx_t track, const Fraction &ext_ticks, bool *p_new) {
     Fraction end_tick;                                   // where this FB is initially assumed to end
@@ -887,9 +782,7 @@ FiguredBass *FiguredBass::add_figured_bass_to_segment(Segment *seg, track_idx_t 
     return fb;
 }
 
-//---------------------------------------------------------
 //   STATIC FUNCTIONS FOR FONT CONFIGURATION MANAGEMENT
-//---------------------------------------------------------
 
 bool FiguredBassFont::read(XmlReader &e) {
     while (e.read_next_start_element()) {
@@ -972,12 +865,10 @@ bool FiguredBassFont::read(XmlReader &e) {
     return true;
 }
 
-//---------------------------------------------------------
 //   Read Configuration File
 //
 //    reads a configuration and appends read data to g_FBFonts
 //    resets everything and reads the built-in config file if fileName is null or empty
-//---------------------------------------------------------
 
 bool FiguredBass::read_config_file(const String &file_name) {
     String path;
@@ -1019,12 +910,10 @@ bool FiguredBass::read_config_file(const String &file_name) {
     return false;
 }
 
-//---------------------------------------------------------
 //   Get Font Names
 //
 //    returns a list of display names for the fonts  configured to work with Figured Bass;
 //    the index of a name in the list can be used to retrieve the font data with fontData()
-//---------------------------------------------------------
 
 std::vector<String> FiguredBass::font_names() {
     std::vector<String> names;
@@ -1035,13 +924,11 @@ std::vector<String> FiguredBass::font_names() {
     return names;
 }
 
-//---------------------------------------------------------
 //   Get Font Data
 //
 //    retrieves data about a Figured Bass font.
 //    returns: true if idx is valid | false if it is not
 // any of the pointer parameter can be null, if that datum is not needed
-//---------------------------------------------------------
 
 bool FiguredBass::font_data(int n_idx, String *p_family, String *p_display_name, double *p_size, double *p_line_height) {
     if (n_idx >= 0 && n_idx < static_cast<int>(g_fb_fonts.size())) {
@@ -1063,11 +950,8 @@ bool FiguredBass::font_data(int n_idx, String *p_family, String *p_display_name,
     return false;
 }
 
-//---------------------------------------------------------
-//   hasParentheses
 //
 //   return true if any FiguredBassItem starts with a parenthesis
-//---------------------------------------------------------
 
 bool FiguredBass::parentheses_mode() const {
     for (FiguredBassItem *item : items_) {
@@ -1078,10 +962,8 @@ bool FiguredBass::parentheses_mode() const {
     return false;
 }
 
-//---------------------------------------------------------
 //   Score::addFiguredBass
 //    called from Keyboard Accelerator & menus
-//---------------------------------------------------------
 
 FiguredBass *Score::add_figured_bass() {
     EngravingItem *el = selection().element();

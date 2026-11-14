@@ -68,20 +68,13 @@ struct System;
 struct TieMap;
 struct Transaction;
 
-//---------------------------------------------------------
-//   MeasureNumberMode
-//---------------------------------------------------------
-
 enum class MeasureNumberMode : char {
     AUTO, // show measure number depending on style
     SHOW, // always show measure number
     HIDE  // don’t show measure number
 };
 
-//---------------------------------------------------------
-//   MStaff
 ///   Per staff values of measure.
-//---------------------------------------------------------
 
 struct MStaff {
     MStaff() = default;
@@ -157,13 +150,10 @@ private:
     int measure_repeat_count_ = 0;
 };
 
-//---------------------------------------------------------
-//   @@ Measure
 ///    one measure in a system
 //
 //   @P firstSegment    Segment       the first segment of the measure (read-only)
 //   @P lastSegment     Segment       the last segment of the measure (read-only)
-//---------------------------------------------------------
 
 struct Measure final : MeasureBase {
 private:
@@ -360,7 +350,6 @@ public:
 
     Segment *get_segment(SegmentType st, const Fraction &f) { return get_segment_r(st, f - tick()); }
 
-    Segment *undo_get_chord_rest_or_time_tick_segment(const Fraction &f);
     Segment *get_chord_rest_or_time_tick_segment(const Fraction &f);
 
     void connect_tremolo();
@@ -369,7 +358,6 @@ public:
 
     void scan_elements(std::function<void(EngravingItem *)> func) override;
     void create_voice(int track);
-    void adjust_to_len(Fraction, bool append_rests_if_necessary = true);
 
     AccidentalVal find_accidental(const Note *) const;
     AccidentalVal find_accidental(const Segment *s, staff_idx_t staff_idx, int line, bool &error) const;
@@ -446,7 +434,6 @@ public:
     ChordRest *first_chord_rest(track_idx_t track) const;
 
     EngravingItem *next_element_staff(staff_idx_t staff, EngravingItem *from_item = nullptr);
-    EngravingItem *prev_element_staff(staff_idx_t staff, EngravingItem *from_item = nullptr);
 
     double first_note_rest_segment_x(bool leading = false) const;
     double ending_x_for_open_ended_lines() const;

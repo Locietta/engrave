@@ -36,10 +36,7 @@ using namespace muse::draw;
 using namespace mu::engraving;
 
 namespace mu::engraving {
-//-----------------------------------------------------------------------------
-//   Dyn
 //    see: http://en.wikipedia.org/wiki/File:Dynamic's_Note_Velocity.svg
-//-----------------------------------------------------------------------------
 
 // variant with ligatures, works for both emmentaler and bravura:
 const std::vector<Dyn> Dynamic::dyn_list = {
@@ -91,19 +88,11 @@ const std::vector<Dyn> Dynamic::dyn_list = {
     {DynamicType::Z, 80, 0, true, "<sym>dynamicZ</sym>"},
     {DynamicType::N, 49, -48, true, "<sym>dynamicNiente</sym>"}};
 
-//---------------------------------------------------------
-//   dynamicsStyle
-//---------------------------------------------------------
-
 static const ElementStyle dynamics_style{
     {Sid::DYNAMICS_MIN_DISTANCE, Pid::MIN_DISTANCE},
     {Sid::AVOID_BAR_LINES, Pid::AVOID_BARLINES},
     {Sid::CENTER_ON_NOTEHEAD, Pid::CENTER_ON_NOTEHEAD},
 };
-
-//---------------------------------------------------------
-//   Dynamic
-//---------------------------------------------------------
 
 Dynamic::Dynamic(DummyParentOr<Segment> parent)
     : TextBase(ElementType::DYNAMIC, parent, TextStyleType::DYNAMICS, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
@@ -123,23 +112,11 @@ Dynamic::Dynamic(const Dynamic &d) : TextBase(d) {
     center_on_notehead_value = d.center_on_notehead_value;
 }
 
-//---------------------------------------------------------
-//   velocity
-//---------------------------------------------------------
-
 int Dynamic::velocity() const { return velocity_ <= 0 ? ::mu::engraving::Dynamic::dyn_list[int(dynamic_type())].velocity : velocity_; }
-
-//---------------------------------------------------------
-//   changeInVelocity
-//---------------------------------------------------------
 
 int Dynamic::change_in_velocity() const {
     return change_in_velocity_ >= 128 ? ::mu::engraving::Dynamic::dyn_list[int(dynamic_type())].change_in_velocity : change_in_velocity_;
 }
-
-//---------------------------------------------------------
-//   setChangeInVelocity
-//---------------------------------------------------------
 
 void Dynamic::set_change_in_velocity(int val) {
     if (::mu::engraving::Dynamic::dyn_list[int(dynamic_type())].change_in_velocity == val) {
@@ -149,10 +126,7 @@ void Dynamic::set_change_in_velocity(int val) {
     }
 }
 
-//---------------------------------------------------------
-//   velocityChangeLength
 //    the time over which the velocity change occurs
-//---------------------------------------------------------
 
 Fraction Dynamic::velocity_change_length(BeatsPerSecond tempo) const {
     if (change_in_velocity() == 0) {
@@ -170,10 +144,6 @@ Fraction Dynamic::velocity_change_length(BeatsPerSecond tempo) const {
 
     return Fraction::from_ticks(int(ratio * (speed_mult * double(Constants::division))));
 }
-
-//---------------------------------------------------------
-//   isVelocityChangeAvailable
-//---------------------------------------------------------
 
 bool Dynamic::is_velocity_change_available() const {
     switch (dynamic_type()) {
@@ -195,10 +165,6 @@ bool Dynamic::is_velocity_change_available() const {
         default: return false;
     }
 }
-
-//---------------------------------------------------------
-//   setDynamicType
-//---------------------------------------------------------
 
 void Dynamic::set_dynamic_type(const String &tag) {
     const auto dynamic_info = parse_dynamic_text(tag);
@@ -281,10 +247,6 @@ TranslatableString Dynamic::subtype_user_name() const {
     }
 }
 
-//---------------------------------------------------------
-//   reset
-//---------------------------------------------------------
-
 void Dynamic::reset() {
     undo_reset_property(Pid::DIRECTION);
     undo_reset_property(Pid::CENTER_BETWEEN_STAVES);
@@ -294,10 +256,6 @@ void Dynamic::reset() {
         snapped_exp->reset();
     }
 }
-
-//---------------------------------------------------------
-//   getProperty
-//---------------------------------------------------------
 
 PropertyValue Dynamic::get_property(Pid property_id) const {
     switch (property_id) {
@@ -317,10 +275,6 @@ PropertyValue Dynamic::get_property(Pid property_id) const {
         default: return TextBase::get_property(property_id);
     }
 }
-
-//---------------------------------------------------------
-//   setProperty
-//---------------------------------------------------------
 
 bool Dynamic::set_property(Pid property_id, const PropertyValue &v) {
     switch (property_id) {
@@ -352,10 +306,6 @@ bool Dynamic::set_property(Pid property_id, const PropertyValue &v) {
     return true;
 }
 
-//---------------------------------------------------------
-//   propertyDefault
-//---------------------------------------------------------
-
 PropertyValue Dynamic::property_default(Pid id) const {
     switch (id) {
         case Pid::TEXT_STYLE: return TextStyleType::DYNAMICS;
@@ -380,15 +330,7 @@ Sid Dynamic::get_property_style(Pid pid) const {
     }
 }
 
-//---------------------------------------------------------
-//   screenReaderInfo
-//---------------------------------------------------------
-
 } // namespace mu::engraving
-
-//---------------------------------------------------------
-//   hasLeftHairpin
-//---------------------------------------------------------
 
 bool Dynamic::has_left_grip() const {
     if (segment()->tick().is_zero()) {
@@ -397,15 +339,7 @@ bool Dynamic::has_left_grip() const {
     return left_hairpin_ == nullptr;
 }
 
-//---------------------------------------------------------
-//   hasRightHairpin
-//---------------------------------------------------------
-
 bool Dynamic::has_right_grip() const { return right_hairpin_ == nullptr; }
-
-//---------------------------------------------------------
-//   findAdjacentHairpins
-//---------------------------------------------------------
 
 void Dynamic::find_adjacent_hairpins() {
     left_hairpin_ = nullptr;

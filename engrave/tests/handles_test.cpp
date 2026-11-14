@@ -1619,7 +1619,7 @@ TEST(SegmentOutput, ResizedMeasureRetiresOldBoundary) {
     const auto shorten = [](engrave::Document &document) {
         auto &score = master_of(document);
         auto *measure = score.first_measure()->next_measure();
-        apply_measure_length(measure, mu::engraving::Fraction(3, 4));
+        ASSERT_TRUE(document.edit({{engrave::SetProperty{engine_id(*measure), "timesigActual", engrave::Fraction{3, 4}}}}));
         for (auto *item : measure->first(SegmentType::CHORD_REST)->elist())
             if (item && item->is_chord_rest()) to_chord_rest(item)->set_ticks(mu::engraving::Fraction(3, 4));
         score.invalidate_layout(measure->tick(), measure->end_tick());

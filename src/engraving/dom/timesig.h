@@ -29,10 +29,6 @@ namespace mu::engraving {
 struct Segment;
 struct Transaction;
 
-//---------------------------------------------------------
-//   TimeSigType
-//---------------------------------------------------------
-
 enum class TimeSigType : unsigned char {
     NORMAL,     // use sz/sn text
     FOUR_FOUR,  // common time (4/4)
@@ -41,10 +37,7 @@ enum class TimeSigType : unsigned char {
     CUT_TRIPLE, // cut triple time (9/8)
 };
 
-//---------------------------------------------------------------------------------------
-//   @@ TimeSig
 ///    This class represents a time signature.
-//---------------------------------------------------------------------------------------
 
 struct TimeSig final : EngravingItem {
 private:
@@ -125,7 +118,6 @@ public:
     PointF staff_offset() const override;
 
     EngravingItem *next_segment_element() override;
-    EngravingItem *prev_segment_element() override;
 
     void init_element_style(const ElementStyle *) override;
     void style_changed() override;

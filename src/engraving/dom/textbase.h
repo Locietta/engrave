@@ -39,35 +39,13 @@ static constexpr double subscript_size = 0.6;
 static constexpr double subscript_offset = 0.5;    // of x-height
 static constexpr double superscript_offset = -0.9; // of x-height
 
-//---------------------------------------------------------
-//   FrameType
-//---------------------------------------------------------
-
 enum class FrameType : char { NO_FRAME, RECTANGLE, CIRCLE };
 
-//---------------------------------------------------------
-//   VerticalAlignment
-//---------------------------------------------------------
-
 enum class VerticalAlignment : signed char { ALIGN_UNDEFINED = -1, ALIGN_NORMAL, ALIGN_SUPER_SCRIPT, ALIGN_SUB_SCRIPT };
-
-//---------------------------------------------------------
-//   FormatId
-//---------------------------------------------------------
 
 enum class FormatId : char { BOLD, ITALIC, UNDERLINE, STRIKE, VALIGN, FONT_SIZE, FONT_FAMILY };
 
 using FormatValue = std::variant<std::monostate, bool, int, double, String>;
-
-//---------------------------------------------------------
-//   MultiClick
-//---------------------------------------------------------
-
-enum class SelectTextType : char { WORD, ALL };
-
-//---------------------------------------------------------
-//   CharFormat
-//---------------------------------------------------------
 
 struct CharFormat {
     CharFormat() {}
@@ -123,16 +101,10 @@ private:
     String font_family_;
 };
 
-//---------------------------------------------------------
-//   TextCursor
 //    Contains current position and start of selection
 //    during editing.
-//---------------------------------------------------------
 
 struct TextCursor {
-    enum class MoveOperation : unsigned char { START, UP, START_OF_LINE, LEFT, WORD_LEFT, END, DOWN, END_OF_LINE, NEXT_WORD, RIGHT };
-
-    enum class MoveMode : unsigned char { MOVE_ANCHOR, KEEP_ANCHOR };
 
     TextCursor(TextBase *t) : text_(t) {}
 
@@ -140,15 +112,10 @@ struct TextCursor {
 
     bool has_selection() const { return (select_line_ != row_) || (select_column_ != column_); }
 
+    void init();
     void clear_selection();
 
     bool editing() const { return editing_; }
-
-    bool visible() const { return visible_; }
-
-    void set_visible(bool val) { visible_ = val; }
-
-    void toggle_visible() { set_visible(!visible_); }
 
     CharFormat *format() { return &format_; }
 
@@ -168,49 +135,11 @@ struct TextCursor {
 
     void set_column(size_t val) { column_ = val; }
 
-    void set_select_line(size_t val) { select_line_ = val; }
-
-    void set_select_column(size_t val) { select_column_ = val; }
-
-    size_t columns() const;
-    void init();
-
-    struct Range {
-        int start_position = 0;
-        int end_position = 0;
-        String text;
-    };
-
-    std::pair<size_t, size_t> position_to_local_coord(int position) const;
-
-    int current_position() const;
-    Range selection_range() const;
-
-    const TextBlock &cur_line() const;
-    TextBlock &cur_line();
-
-    RectF cursor_rect() const;
-    RectF cursor_canvas_rect() const;
-    void select_word();
-
-    bool move_position(TextCursor::MoveOperation op, TextCursor::MoveMode mode = TextCursor::MoveMode::MOVE_ANCHOR, int count = 1);
-
-    void move_cursor_to_end() { move_position(TextCursor::MoveOperation::END); }
-
-    void move_cursor_to_start() { move_position(TextCursor::MoveOperation::START); }
-
-    Char current_character() const;
-    bool set(const PointF &p, TextCursor::MoveMode mode = TextCursor::MoveMode::MOVE_ANCHOR);
-    String selected_text(bool with_format = false) const;
-    String extract_text(int r1, int c1, int r2, int c2, bool with_format = false) const;
-    void update_cursor_format();
     void set_format(FormatId, FormatValue val);
     void change_selection_format(FormatId id, const FormatValue &val);
     const CharFormat selected_fragments_format() const;
 
 private:
-    Range range(int start, int end) const;
-    int position(int row, int column) const;
 
     TextBase *text_ = nullptr;
     CharFormat format_;
@@ -219,13 +148,9 @@ private:
     size_t select_line_ = 0; // start of selection
     size_t select_column_ = 0;
     bool editing_ = false;
-    bool visible_ = false;
 };
 
-//---------------------------------------------------------
-//   TextFragment
 //    contains a styled text
-//---------------------------------------------------------
 
 struct TextFragment {
 
@@ -253,10 +178,7 @@ private:
     void resolve_fallback(muse::draw::Font::Type font_type, const muse::draw::FontMetrics &fm, String &family) const;
 };
 
-//---------------------------------------------------------
-//   TextBlock
 //    represents a block of formatted text
-//---------------------------------------------------------
 
 struct TextBlock {
     TextBlock() = default;
@@ -282,10 +204,7 @@ struct TextBlock {
     void insert(TextCursor *, const String &);
     void insert_empty_fragment_if_needed(TextCursor *);
     void remove_empty_fragment();
-    String remove(int column, TextCursor *);
-    String remove(int start, int n, TextCursor *);
-    int column(double x, TextBase *) const;
-    TextBlock split(int column, TextCursor *cursor);
+
     double xpos(size_t col, const TextBase *) const;
     const CharFormat *format_at(int) const;
     const TextFragment *fragment(int col) const;
@@ -316,10 +235,6 @@ private:
     Shape shape_;
     bool eol_ = false;
 };
-
-//---------------------------------------------------------
-//   TextBase
-//---------------------------------------------------------
 
 struct TextBase : EngravingItem {
 private:
@@ -376,9 +291,6 @@ public:
     bool has_parent_segment() const { return ownership_parent() && parent()->is_segment(); }
 
     virtual bool allow_time_anchor() const override { return has_parent_segment(); }
-
-    void select_all();
-    void select(SelectTextType);
 
     bool is_primed() const { return primed_; }
 

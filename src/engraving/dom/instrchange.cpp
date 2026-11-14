@@ -39,18 +39,10 @@
 using namespace mu;
 
 namespace mu::engraving {
-//---------------------------------------------------------
-//   instrumentChangeStyle
-//---------------------------------------------------------
-
 static const ElementStyle instrument_change_style{
     {Sid::INSTRUMENT_CHANGE_PLACEMENT, Pid::PLACEMENT},
     {Sid::INSTRUMENT_CHANGE_MIN_DISTANCE, Pid::MIN_DISTANCE},
 };
-
-//---------------------------------------------------------
-//   InstrumentChange
-//---------------------------------------------------------
 
 InstrumentChange::InstrumentChange(EngravingObject *parent)
     : TextBase(ElementType::INSTRUMENT_CHANGE, parent, TextStyleType::INSTRUMENT_CHANGE, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
@@ -77,10 +69,6 @@ void InstrumentChange::set_instrument(const Instrument &i) {
     //_instrument = new Instrument(i);
 }
 
-//---------------------------------------------------------
-//   keySigs
-//---------------------------------------------------------
-
 std::vector<KeySig *> InstrumentChange::key_sigs(bool all) const {
     std::vector<KeySig *> keysigs;
     Segment *seg = segment()->prev1(SegmentType::KEY_SIG);
@@ -98,10 +86,6 @@ std::vector<KeySig *> InstrumentChange::key_sigs(bool all) const {
     return keysigs;
 }
 
-//---------------------------------------------------------
-//   clefs
-//---------------------------------------------------------
-
 std::vector<Clef *> InstrumentChange::clefs() const {
     std::vector<Clef *> clefs;
     Segment *seg = segment()->prev1(SegmentType::CLEF);
@@ -118,10 +102,6 @@ std::vector<Clef *> InstrumentChange::clefs() const {
     }
     return clefs;
 }
-
-//---------------------------------------------------------
-//   propertyDefault
-//---------------------------------------------------------
 
 engraving::PropertyValue InstrumentChange::property_default(Pid property_id) const {
     switch (property_id) {

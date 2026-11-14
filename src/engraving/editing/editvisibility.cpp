@@ -22,21 +22,11 @@
 
 #include "editvisibility.h"
 
-#include "../dom/accidental.h"
-#include "../dom/beam.h"
 #include "../dom/chord.h"
 #include "../dom/engravingitem.h"
 #include "../dom/masterscore.h"
-#include "../dom/note.h"
-#include "../dom/notedot.h"
-#include "../dom/ornament.h"
-#include "../dom/rest.h"
 #include "../dom/score.h"
-#include "../dom/select.h"
-#include "../dom/trill.h"
 #include "cmd.h"
-#include "global/containers.h"
-#include "transaction/transaction.h"
 
 using namespace mu::engraving;
 
@@ -71,5 +61,3 @@ void EditVisibility::change_dots_visible(EngravingItem *owner, int count, bool v
         }
     }
 }
-
-static void undo_change_ornament_visibility(Ornament *ornament, bool visible);

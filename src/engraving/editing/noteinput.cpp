@@ -22,66 +22,20 @@
 
 #include "noteinput.h"
 
-#include <algorithm>
-#include <iterator>
-#include <tuple>
-
 #include "../dom/accidental.h"
 #include "../dom/chord.h"
-#include "../dom/chordline.h"
-#include "../dom/drumset.h"
-#include "../dom/durationtype.h"
-#include "../dom/excerpt.h"
 #include "../dom/factory.h"
 #include "../dom/input.h"
-#include "../dom/masterscore.h"
-#include "../dom/measure.h"
-#include "../dom/measurerepeat.h"
 #include "../dom/note.h"
 #include "../dom/noteval.h"
-#include "../dom/part.h"
-#include "../dom/range.h"
-#include "../dom/rest.h"
+#include "../dom/pitchspelling.h"
 #include "../dom/score.h"
-#include "../dom/segment.h"
-#include "../dom/select.h"
-#include "../dom/slur.h"
 #include "../dom/staff.h"
-#include "../dom/stafftype.h"
-#include "../dom/stringdata.h"
-#include "../dom/tie.h"
-#include "../dom/tremolotwochord.h"
-#include "../dom/tuplet.h"
-#include "../dom/utils.h"
-#include "../infrastructure/messagebox.h"
-#include "editmeasures.h"
-#include "editnote.h"
-#include "inserttime.h"
-#include "log.h"
-#include "navigation.h"
-#include "transaction/transaction.h"
-#include "translation.h"
-#include "transpose.h"
+#include "../style/style.h"
 
 using namespace muse;
 using namespace mu;
 using namespace mu::engraving;
-
-//---------------------------------------------------------
-//   resolveNoteInputParams
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   noteVal
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   noteValForPosition
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   addNote from NoteVal
-//---------------------------------------------------------
 
 Note *NoteInput::add_note_to_chord(Score *score, Chord *chord, const NoteVal &note_val, bool force_accidental,
                                    const std::set<SymId> &articulation_ids) {
@@ -132,86 +86,3 @@ Note *NoteInput::add_note(Transaction &, Score *score, Chord *chord, const NoteV
     }
     return note;
 }
-
-//---------------------------------------------------------
-//   addPitch
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   addMidiPitch
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   addTiedMidiPitch
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   repitchReplaceNote
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   putNote
-//    mouse click in state NoteType::ENTRY
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   repitchNote
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   insertChordByInsertingTime
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   truncateChordRest
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   nextInputPos
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   addPitch
-///   insert note or add note to chord
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   addFret
-///   insert note with given fret on current string
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   noteValueChangeAllowed
-//    Note value changes are disallowed while a trill cue note is selected outside note entry mode.
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   durationTooShortForDots
-//    A duration cannot hold `dots` augmentation dots when it is one of the `dots` shortest
-//    representable durations (the shortest being V_1024TH).
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   setDuration
-//    Set the note input duration (and apply it to the selection).
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   toggleRest
-//    Toggle the note input rest flag (or turn the selection into rests).
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   toggleDots
-//    Toggle `dots` augmentation dots (1..4) on the note input duration and the selection.
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   applyToSelection
-//    Shared epilogue for setDuration/toggleRest/toggleDots: apply the (possibly changed) input state
-//    duration/dots to the current selection.
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   realtimeAdvance
-//---------------------------------------------------------

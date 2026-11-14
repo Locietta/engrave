@@ -32,7 +32,6 @@ struct Reset {
     static void reset_all_positions(Transaction &tx, Score *score);
 
     //! Not undoable
-    static void reset_all_styles(Transaction &tx, Score *score, const StyleIdSet &except_these_ones = {});
 
     // Removes system/page breaks and spacers
 };

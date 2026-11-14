@@ -30,7 +30,6 @@
 #include "../dom/measurerepeat.h"
 #include "../dom/score.h"
 #include "../dom/segment.h"
-#include "../dom/select.h"
 #include "../dom/staff.h"
 #include "../dom/utils.h"
 #include "../infrastructure/messagebox.h"
@@ -39,22 +38,9 @@
 using namespace mu;
 using namespace mu::engraving;
 
-//---------------------------------------------------------
-//   addMeasureRepeat
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   makeMeasureRepeatGroup
-///   clear measures, apply noBreak, set measureRepeatCount
-///   returns false if these measures won't work or user aborted
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   addMeasureRepeat
 //    create one MeasureRepeat at tick of subtype numMeasures
 //    create segment if necessary
 //    does NOT set measureRepeatCount or do anything else with measure(s)!
-//---------------------------------------------------------
 
 MeasureRepeat *EditMeasureRepeat::add_measure_repeat(Transaction &, Score *score, const Fraction &tick, track_idx_t track,
                                                      int num_measures) {

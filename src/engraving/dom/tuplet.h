@@ -32,15 +32,12 @@ namespace mu::engraving {
 struct Text;
 struct Spanner;
 
-//------------------------------------------------------------------------
-//   @@ Tuplet
 //!     Example of 1/8 triplet:
 //!       _baseLen     = 1/8  (tuplet is measured in eighth notes)
 //!       _ratio       = 3/2  (3 eighth tuplet notes played in the space of 2 regular eighth notes)
 //!
 //!    Entire tuplet has a duration of _baseLen * _ratio.denominator().
 //!    A single tuplet note has duration of _baseLen * _ratio.denominator() / _ratio.numerator().
-//------------------------------------------------------------------------
 
 struct Tuplet final : DurationElement {
     struct LayoutData : public DurationElement::LayoutData {
@@ -181,7 +178,6 @@ public:
     PointF bracket_r[3];
 
     EngravingItem *next_element() override;
-    EngravingItem *prev_element() override;
 
 private:
 

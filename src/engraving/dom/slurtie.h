@@ -26,10 +26,6 @@
 #include "spanner.h"
 
 namespace mu::engraving {
-//---------------------------------------------------------
-//   SlurPos
-//---------------------------------------------------------
-
 struct SlurTiePos {
     PointF p1;                 // start point of slur in system coordinates
     System *system1 = nullptr; // start system of slur
@@ -41,10 +37,6 @@ struct SlurOffsets {
     PointF o[4];
 };
 
-//---------------------------------------------------------
-//   UP
-//---------------------------------------------------------
-
 struct UP {
     PointF p;   // layout position relative to pos()
     PointF off; // user offset in point units
@@ -54,11 +46,8 @@ struct UP {
     bool operator!=(const UP &up) const { return p != up.p || off != up.off; }
 };
 
-//---------------------------------------------------------
-//   CubicBezier
 //    Helper class to optimize cubic Bezier curve points
 //    calculation.
-//---------------------------------------------------------
 
 struct CubicBezier {
 private:
@@ -81,10 +70,6 @@ public:
 };
 
 struct SlurTie;
-
-//---------------------------------------------------------
-//   SlurTieSegment
-//---------------------------------------------------------
 
 struct SlurTieSegment : SpannerSegment {
 
@@ -130,12 +115,9 @@ protected:
     struct UP ups_[int(Grip::GRIPS)];
 };
 
-//-------------------------------------------------------------------
-//   @@ SlurTie
 //   @P lineType       int  (0 - solid, 1 - dotted, 2 - dashed, 3 - wide dashed)
 //   @P slurDirection  enum (Direction.AUTO, Direction.DOWN, Direction.UP)
 //   @P maskSlurTie    enum (AutoOnOff.AUTO, AutoOnOff.ON, AutoOnOff.OFF)
-//-------------------------------------------------------------------
 
 struct SlurTie : Spanner {
 
@@ -161,8 +143,6 @@ public:
     DirectionV slur_direction() const { return slur_direction_; }
 
     void set_slur_direction(DirectionV d) { slur_direction_ = d; }
-
-    void undo_set_slur_direction(DirectionV d);
 
     virtual bool contains(const PointF &) const { return false; } // not selectable
 

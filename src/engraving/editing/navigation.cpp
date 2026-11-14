@@ -51,11 +51,8 @@ using namespace mu;
 namespace mu::engraving {
 using ElementPair = std::pair<EngravingItem *, int>; // element and its index as a child
 
-//---------------------------------------------------------
-//   isChild1beforeChild2
 //    compares if two children are order correctly
 //    from top-left to bottom-right
-//---------------------------------------------------------
 
 static bool is_child1before_child2(const ElementPair &child1, const ElementPair &child2) {
     assert(child1.first->parent() == child2.first->parent());
@@ -94,11 +91,8 @@ static bool is_child1before_child2(const ElementPair &child1, const ElementPair 
     return false;
 }
 
-//---------------------------------------------------------
-//   toChildPairsSet
 //    return a set of children ordered
 //    on the basis of position
-//---------------------------------------------------------
 
 static std::set<ElementPair, decltype(&is_child1before_child2)> to_child_pairs_set(const EngravingItem *element) {
     std::set<ElementPair, decltype(&is_child1before_child2)> children(&is_child1before_child2);
@@ -118,28 +112,7 @@ static std::set<ElementPair, decltype(&is_child1before_child2)> to_child_pairs_s
     return children;
 }
 
-static EngravingItem *next_element_for_spanner_segment(const SpannerSegment *spanner_segment) {
-    Spanner *spanner = spanner_segment->spanner();
-    EngravingItem *el_st = spanner->start_element();
-    IF_ASSERT_FAILED(el_st->is_note()) { return nullptr; }
-
-    Note *note = to_note(el_st);
-    return note->next_element();
-}
-
-static EngravingItem *prev_element_for_spanner_segment(const SpannerSegment *spanner_segment) {
-    Spanner *spanner = spanner_segment->spanner();
-    EngravingItem *el_st = spanner->start_element();
-    IF_ASSERT_FAILED(el_st->is_note()) { return nullptr; }
-
-    Note *note = to_note(el_st);
-    return note->prev_element();
-}
-
-//---------------------------------------------------------
-//   nextChordRest
 //    return next Chord or Rest
-//---------------------------------------------------------
 
 ChordRest *Navigation::next_chord_rest(const ChordRest *cr, const ChordRestNavigateOptions &options) {
     if (!cr) {
@@ -217,11 +190,8 @@ ChordRest *Navigation::next_chord_rest(const ChordRest *cr, const ChordRestNavig
     return nullptr;
 }
 
-//---------------------------------------------------------
-//   prevChordRest
 //    return previous Chord or Rest
 //    if grace is true, include grace notes
-//---------------------------------------------------------
 
 ChordRest *Navigation::prev_chord_rest(const ChordRest *cr, const ChordRestNavigateOptions &options) {
     if (!cr) {
@@ -295,33 +265,6 @@ ChordRest *Navigation::prev_chord_rest(const ChordRest *cr, const ChordRestNavig
     return nullptr;
 }
 
-//---------------------------------------------------------
-//   chordNoteAbove
-//    element: Note, Rest, MMRest, or MeasureRepeat
-//    return: Note, Rest, MMRest, or MeasureRepeat
-//
-//    return next higher pitched note in chord
-//    move to previous track if at top of chord
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   topNoteInChord
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   chordNoteBelow
-//    return next lower pitched note in chord
-//    move to next track if at bottom of chord
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   bottomNoteInChord
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   firstElement
-//---------------------------------------------------------
-
 EngravingItem *Navigation::first_element(Score *score, bool frame) {
     if (frame) {
         MeasureBase *mb = score->measures()->first();
@@ -332,10 +275,6 @@ EngravingItem *Navigation::first_element(Score *score, bool frame) {
     Segment *s = score->first_segment_mm(SegmentType::ALL);
     return s ? s->element(0) : nullptr;
 }
-
-//---------------------------------------------------------
-//   lastElement
-//---------------------------------------------------------
 
 EngravingItem *Navigation::last_element(Score *score, bool frame) {
     if (frame) {
@@ -369,53 +308,8 @@ EngravingItem *Navigation::last_element(Score *score, bool frame) {
     }
 }
 
-//---------------------------------------------------------
-//   upStaff
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   downStaff
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   topStaff
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   nextTrack
-//    returns note at or just before current (cr) position
-//    in next track for this measure
-//    that contains such an element
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   prevTrack
-//    returns ChordRest at or just before current (cr) position
-//    in previous track for this measure
-//    that contains such an element
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   nextMeasure
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   prevMeasure
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   nextElement
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   prevElement
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   prevLyrics
 //    - find the lyric (if any) before this one (not including lines)
 //    - currently used to determine the first lyric of a melisma
-//---------------------------------------------------------
 
 Lyrics *Navigation::last_lyrics_in_measure(const Segment *seg, const staff_idx_t staff_idx, const int no, const PlacementV &placement) {
     while (seg) {
@@ -472,13 +366,6 @@ Lyrics *Navigation::next_lyrics(const Lyrics *lyrics) {
     return nullptr;
 }
 
-//---------------------------------------------------------
-//   move
 //    move current selection
-//---------------------------------------------------------
-
-//---------------------------------------------------------
-//   selectMove
-//---------------------------------------------------------
 
 } // namespace mu::engraving

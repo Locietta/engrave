@@ -51,10 +51,6 @@ static void apply_remove_system_lock(const RangeLock *lock) {
     score->remove_system_lock(lock);
 }
 
-//---------------------------------------------------------
-//   EditSystemLocks
-//---------------------------------------------------------
-
 void EditSystemLocks::undo_add_system_lock(Transaction &tx, const RangeLock *lock) {
     update_layout_breaks_on_add_system_lock(tx, lock);
     apply_add_system_lock(lock);

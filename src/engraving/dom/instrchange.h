@@ -29,10 +29,6 @@
 namespace mu::engraving {
 struct Clef;
 
-//---------------------------------------------------------
-//   @@ InstrumentChange
-//---------------------------------------------------------
-
 struct InstrumentChange final : TextBase {
 private:
     DECLARE_CLASSOF(ElementType::INSTRUMENT_CHANGE)
