@@ -330,6 +330,12 @@ void EngravingObject::undo_reset_property(Pid id) {
     if (f == PropertyFlags::UNSTYLED) {
         f = PropertyFlags::STYLED;
     }
+    if (id == Pid::BEAM_POS && (is_beam() || type() == ElementType::TREMOLO_TWOCHORD)) {
+        // Erase the authored entry through the same propagation policy as an edit.
+        change_properties(this, id, property_default(id), f, true);
+        change_properties(this, Pid::GENERATED, false, PropertyFlags::NOSTYLE);
+        return;
+    }
     if (is_chord_line() && id == Pid::PATH) {
         if (to_chord_line(this)->has_default_path() && property_flags(id) == f) {
             return;

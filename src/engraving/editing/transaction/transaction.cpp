@@ -1,9 +1,11 @@
 #include "transaction.h"
 
+#include <algorithm>
 #include <limits>
 #include <stdexcept>
 #include <utility>
 
+#include "dom/beam.h"
 #include "dom/bracketitem.h"
 #include "dom/chord.h"
 #include "dom/chordline.h"
@@ -19,6 +21,7 @@
 #include "dom/stringtunings.h"
 #include "dom/textbase.h"
 #include "dom/textline.h"
+#include "dom/tremolotwochord.h"
 #include "editing/addremoveelement.h"
 #include "editing/editmeasures.h"
 #include "editing/editstaffbrackets.h"
@@ -55,9 +58,19 @@ std::vector<EngravingObject *> compound_objects(EngravingObject *object) {
 
 void apply_property(EngravingObject &object, Pid id, const PropertyValue &value, PropertyFlags flags, bool reset_path) {
 
-    if (reset_path && id == Pid::PATH &&
-        (object.is_chord_line() && (std::ranges::find(ChordLine::appearance_properties, id) != ChordLine::appearance_properties.end() ||
-                                    id == Pid::APPEARANCE_LINKED_TO_MASTER)))
+    if (reset_path && id == Pid::BEAM_POS && (object.is_beam() || object.type() == ElementType::TREMOLO_TWOCHORD)) {
+        auto &owner = static_cast<EngravingItem &>(object);
+        const auto direction =
+            object.is_beam() ? static_cast<Beam &>(object).direction_idx() : static_cast<TremoloTwoChord &>(object).direction_idx();
+        uint32_t ordinal = 0;
+        for (const auto &entry : authored_override_table(&owner)->entries)
+            if (entry.child.role == AuthoredChildRole::BEAM_FRAGMENT && entry.child.direction == direction && entry.pid == id)
+                ordinal = std::max(ordinal, entry.child.ordinal);
+        reset_child_override(owner, {AuthoredChildRole::BEAM_FRAGMENT, ordinal, uint8_t(direction)}, id);
+    } else if (reset_path && id == Pid::PATH &&
+               (object.is_chord_line() &&
+                (std::ranges::find(ChordLine::appearance_properties, id) != ChordLine::appearance_properties.end() ||
+                 id == Pid::APPEARANCE_LINKED_TO_MASTER)))
         object.reset_property(id);
     else
         object.set_property(id, value);
