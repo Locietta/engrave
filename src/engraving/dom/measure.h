@@ -288,8 +288,6 @@ public:
 
     Segment *rendered_last_enabled() const { return last_enabled(); }
 
-    Segment *rendered_first_active() const { return first_active(); }
-
     Segment *rendered_first(SegmentType type) const { return first(type); }
 
     Segment *rendered_last(SegmentType type) const { return last(type); }
@@ -309,6 +307,9 @@ public:
     void set_user_stretch(double v) { user_stretch_ = v; }
 
     void compute_ticks();
+
+    void compute_rendered_ticks() { compute_ticks(); }
+
     Fraction anacrusis_offset() const;
     Fraction max_ticks() const;
 
@@ -445,6 +446,14 @@ public:
     double ending_x_for_open_ended_lines() const;
 
     void style_changed() override;
+
+    const BarLine *rendered_end_bar_line() const { return end_bar_line(); }
+
+    const BarLine *rendered_end_bar_line(staff_idx_t staff, bool first = false) const { return end_bar_line(staff, first); }
+
+    const BarLine *rendered_start_bar_line() const { return start_bar_line(); }
+
+    const BarLine *rendered_start_bar_line(staff_idx_t staff, bool first = false) const { return start_bar_line(staff, first); }
 
     const BarLine *end_bar_line() const;
     const BarLine *end_bar_line(staff_idx_t staff_idx, bool first = false) const;

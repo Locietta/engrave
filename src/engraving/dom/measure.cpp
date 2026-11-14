@@ -467,7 +467,7 @@ AccidentalVal Measure::find_accidental(const Segment *s, staff_idx_t staff_idx, 
 double Measure::tick2pos(Fraction tck) const {
     tck -= ticks();
     if (is_mm_rest()) {
-        Segment *s = first(SegmentType::CHORD_REST);
+        Segment *s = rendered_first(SegmentType::CHORD_REST);
         double x1 = s->x();
         double w = width() - x1;
         return x1 + (tck.ticks() * w) / (ticks().ticks() * mm_rest_count());
@@ -478,7 +478,7 @@ double Measure::tick2pos(Fraction tck) const {
     double x2 = 0;
     Fraction tick1 = Fraction(0, 1);
     Fraction tick2 = Fraction(0, 1);
-    for (s = first(SegmentType::CHORD_REST); s; s = s->next(SegmentType::CHORD_REST)) {
+    for (s = rendered_first(SegmentType::CHORD_REST); s; s = s->rendered_next(SegmentType::CHORD_REST)) {
         x2 = s->x();
         tick2 = s->rtick();
         if (tck == tick2) {
@@ -1578,7 +1578,7 @@ void Measure::scan_elements(std::function<void(EngravingItem *)> func) {
         }
     }
 
-    for (Segment *s = first(); s; s = s->next()) {
+    for (Segment *s = rendered_first(); s; s = s->rendered_next()) {
         if (!s->enabled()) {
             continue;
         }
@@ -1879,20 +1879,20 @@ bool Measure::is_cutaway_clef(staff_idx_t staff_idx) const {
     }
     // find segment before EndBarLine
     Segment *s = nullptr;
-    for (Segment *ls = last(); ls; ls = ls->prev()) {
+    for (Segment *ls = rendered_last(); ls; ls = ls->rendered_prev()) {
         if (ls->segment_type() == SegmentType::END_BAR_LINE) {
-            s = ls->prev();
+            s = ls->rendered_prev();
             break;
         }
     }
     while (s && (s->is_time_tick_type() || s->is_breath_type())) {
-        s = s->prev();
+        s = s->rendered_prev();
     }
     if (!s) {
         return false;
     }
     for (track_idx_t track = strack; track < etrack; ++track) {
-        EngravingItem *e = s->element(track);
+        EngravingItem *e = s->effective_element(track);
         if (!e || !e->is_clef()) {
             continue;
         }
@@ -2630,7 +2630,7 @@ EngravingItem *Measure::prev_element_staff(staff_idx_t staff, EngravingItem *fro
 double Measure::first_note_rest_segment_x(bool leading) const {
     const System *sys = system();
     double margin = style().style_absolute(Sid::HEADER_TO_LINE_START_DISTANCE);
-    for (const Segment *seg = first(); seg; seg = seg->next()) {
+    for (const Segment *seg = rendered_first(); seg; seg = seg->rendered_next()) {
         if (seg->is_chord_rest_type()) {
             double note_rest_pos = seg->measure()->pos().x() + seg->pos().x();
             if (!leading) {
@@ -2638,9 +2638,9 @@ double Measure::first_note_rest_segment_x(bool leading) const {
             }
 
             // first CR found; back up to previous segment
-            seg = seg->prev_active();
+            seg = seg->rendered_prev_active();
             while (seg && (seg->all_elements_invisible() || seg->has_time_sig_above_staves())) {
-                seg = seg->prev_active();
+                seg = seg->rendered_prev_active();
             }
             if (seg) {
                 // find maximum width
@@ -2650,7 +2650,7 @@ double Measure::first_note_rest_segment_x(bool leading) const {
                     if (!sys->staff(i)->show()) {
                         continue;
                     }
-                    EngravingItem *e = seg->element(i * ::mu::engraving::voices);
+                    EngravingItem *e = seg->effective_element(i * ::mu::engraving::voices);
                     if (e && e->add_to_skyline()) {
                         width = std::max(width, e->pos().x() + e->ldata()->bbox().right());
                     }
@@ -2660,7 +2660,7 @@ double Measure::first_note_rest_segment_x(bool leading) const {
                 }
                 return std::min(seg->measure()->pos().x() + seg->pos().x() + width + margin, note_rest_pos);
             } else if (!is_first_in_system() && !is_first_in_section() && prev_measure()) {
-                const BarLine *end_bl = prev_measure()->end_bar_line();
+                const BarLine *end_bl = prev_measure()->rendered_end_bar_line();
                 const Segment *end_bl_seg = end_bl ? end_bl->segment() : nullptr;
 
                 if (!end_bl_seg) {
@@ -2689,9 +2689,9 @@ double Measure::ending_x_for_open_ended_lines() const {
     double margin = style().style_absolute(Sid::LINE_END_TO_BARLINE_DISTANCE);
     double system_end_x = sys->ldata()->bbox().width();
 
-    Segment *last_seg = last();
+    Segment *last_seg = rendered_last();
     while (last_seg && !last_seg->is_type(SegmentType::BAR_LINE_TYPES)) {
-        last_seg = last_seg->prev_enabled();
+        last_seg = last_seg->rendered_prev_enabled();
     }
     if (!last_seg) {
         return system_end_x - margin;
@@ -2862,7 +2862,7 @@ void Measure::set_end_bar_line_type(BarLineType val, track_idx_t track, bool vis
 //---------------------------------------------------------
 
 void Measure::check_header() {
-    for (Segment *seg = first(); seg; seg = seg->next()) {
+    for (Segment *seg = rendered_first(); seg; seg = seg->rendered_next()) {
         if (seg->enabled() && seg->header()) {
             set_header(seg->header());
             break;
@@ -2875,7 +2875,7 @@ void Measure::check_header() {
 //---------------------------------------------------------
 
 void Measure::check_trailer() {
-    for (Segment *seg = last(); seg != first(); seg = seg->prev()) {
+    for (Segment *seg = rendered_last(); seg != rendered_first(); seg = seg->rendered_prev()) {
         if (seg->enabled() && seg->trailer()) {
             set_trailer(seg->trailer());
             break;
@@ -2970,14 +2970,16 @@ Fraction Measure::max_ticks() const {
 void Measure::respace_segments() {
     double x = 0.0;
     // Find starting x position (i.e. position of first relevant segment)
-    for (Segment &s : segments_) {
+    for (Segment *rendered = rendered_first(); rendered; rendered = rendered->rendered_next()) {
+        Segment &s = *rendered;
         if (s.enabled() && s.visible() && !s.all_elements_invisible()) {
             x = s.x();
             break;
         }
     }
     // Start respacing segments
-    for (Segment &s : segments_) {
+    for (Segment *rendered = rendered_first(); rendered; rendered = rendered->rendered_next()) {
+        Segment &s = *rendered;
         if (s.is_time_tick_type()) {
             continue;
         }

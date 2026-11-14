@@ -196,6 +196,18 @@ public:
 
     Segment *rendered_prev_enabled() const { return prev_enabled(); }
 
+    Segment *rendered_next_in_staff(staff_idx_t staff, SegmentType type) const { return next_in_staff(staff, type); }
+
+    Segment *rendered_next1_with_elems_on_staff(staff_idx_t staff, SegmentType type) const {
+        return next1_with_elems_on_staff(staff, type);
+    }
+
+    bool has_effective_elements() const { return has_elements(); }
+
+    bool has_effective_elements(staff_idx_t staff) const { return has_elements(staff); }
+
+    bool has_effective_elements(track_idx_t first, track_idx_t last) const { return has_elements(first, last); }
+
     EngravingItem *effective_element(track_idx_t track) const { return element(track); }
 
     const std::vector<EngravingItem *> &effective_elements() const { return elist(); }

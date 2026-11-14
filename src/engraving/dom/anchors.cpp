@@ -146,7 +146,7 @@ TimeTickAnchor *EditTimeTickAnchors::create_time_tick_anchor(Measure *measure, F
 }
 
 void EditTimeTickAnchors::update_layout(Measure *measure) {
-    measure->compute_ticks();
+    measure->compute_rendered_ticks();
 
     Score *score = measure->score();
     LayoutContext ctx(score);

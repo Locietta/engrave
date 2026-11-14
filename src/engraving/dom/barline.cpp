@@ -156,7 +156,7 @@ static staff_idx_t prev_visible_spanned_staff(const BarLine *bl) {
     int staff_idx = static_cast<int>(bl->staff_idx());
     Segment *segment = bl->segment();
     for (int i = staff_idx - 1; i >= 0; --i) {
-        BarLine *nbl = to_bar_line(segment->element(i * ::mu::engraving::voices));
+        BarLine *nbl = to_bar_line(segment->effective_element(i * ::mu::engraving::voices));
         if (!nbl || !nbl->span_staff()) {
             break;
         }
@@ -197,7 +197,7 @@ static size_t next_visible_spanned_staff(const BarLine *bl) {
                 }
             }
         }
-        BarLine *nbl = to_bar_line(segment->element(i * ::mu::engraving::voices));
+        BarLine *nbl = to_bar_line(segment->effective_element(i * ::mu::engraving::voices));
         if (!nbl || !nbl->span_staff()) {
             break;
         }

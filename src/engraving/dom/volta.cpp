@@ -279,8 +279,8 @@ void Volta::set_channel() const {
 PointF Volta::line_pos(Grip grip, System **system) const {
     bool start = grip == Grip::START;
 
-    Segment *segment = score()->tick2left_segment(start ? tick() : tick2(), true,
-                                                  SegmentType::CHORD_REST | SegmentType::START_REPEAT_BAR_LINE | SegmentType::END_BAR_LINE);
+    Segment *segment = score()->find_rendered_left_segment(
+        start ? tick() : tick2(), true, SegmentType::CHORD_REST | SegmentType::START_REPEAT_BAR_LINE | SegmentType::END_BAR_LINE);
     if (!segment) {
         return PointF();
     }
@@ -294,7 +294,7 @@ PointF Volta::line_pos(Grip grip, System **system) const {
     if (search_for_prev_barline) {
         Segment *prev = segment;
         while (prev && !prev->is_type(barline_type) && prev->tick() == segment->tick()) {
-            prev = prev->prev1_m_menabled();
+            prev = prev->rendered_prev1_mm_enabled();
         }
 
         if (prev && prev->is_type(barline_type)) {
@@ -305,7 +305,7 @@ PointF Volta::line_pos(Grip grip, System **system) const {
     if (start && !segment->is_type(SegmentType::BAR_LINE_TYPES) && style().style_b(Sid::VOLTA_ALIGN_START_BEFORE_KEY_SIG)) {
         Segment *prev = segment;
         while (prev && !prev->is_type(SegmentType::KEY_SIG) && prev->tick() == segment->tick()) {
-            prev = prev->prev1_m_menabled();
+            prev = prev->rendered_prev1_mm_enabled();
         }
         if (prev && prev->is_type(SegmentType::KEY_SIG)) {
             segment = prev;
@@ -320,7 +320,7 @@ PointF Volta::line_pos(Grip grip, System **system) const {
         if (segment->is_chord_rest_type()) {
             x -= style().style_absolute(Sid::BAR_NOTE_DISTANCE);
         } else if (segment->is_key_sig_type()) {
-            KeySig *sig = to_key_sig(segment->element(track()));
+            KeySig *sig = to_key_sig(segment->effective_element(track()));
             if (sig && !sig->ldata()->key_symbols.empty()) {
                 KeySym key_sym = sig->ldata()->key_symbols.front();
                 PointF cutout_nw = score()->engraving_font()->smufl_anchor(key_sym.sym, SmuflAnchorId::CUT_OUT_NW, 1.0);
@@ -328,7 +328,7 @@ PointF Volta::line_pos(Grip grip, System **system) const {
             }
         } else if (segment->segment_type() & SegmentType::BAR_LINE_TYPES && !is_at_system_start) {
             x += segment->width();
-            const BarLine *barline = to_bar_line(segment->element(track()));
+            const BarLine *barline = to_bar_line(segment->effective_element(track()));
             align_left_of_repeat_bar_line =
                 barline && barline->bar_line_type() == BarLineType::END_REPEAT && style().style_b(Sid::VOLTA_ALIGN_END_LEFT_OF_BARLINE);
             if (align_left_of_repeat_bar_line) {
@@ -345,7 +345,7 @@ PointF Volta::line_pos(Grip grip, System **system) const {
             x += segment->staff_shape(si).right();
             x -= 0.5 * absolute_from_spatium(line_width());
         } else if (segment->segment_type() & SegmentType::BAR_LINE_TYPES) {
-            BarLine *bar_line = to_bar_line(segment->element(track()));
+            BarLine *bar_line = to_bar_line(segment->effective_element(track()));
             if (bar_line->bar_line_type() == BarLineType::END_REPEAT || bar_line->bar_line_type() == BarLineType::END_START_REPEAT) {
                 x += sym_width(SymId::REPEAT_DOT) + style().style_absolute(Sid::REPEAT_BARLINE_DOT_SEPARATION);
             }

@@ -1117,11 +1117,11 @@ double Segment::width_in_staff(staff_idx_t staff_idx, SegmentType next_seg_type)
     const double seg_x = x();
     double next_seg_x = seg_x;
 
-    Segment *next_seg = next_in_staff(staff_idx, next_seg_type);
+    Segment *next_seg = rendered_next_in_staff(staff_idx, next_seg_type);
     if (next_seg) {
         next_seg_x = next_seg->x();
     } else {
-        Segment *last_seg = measure()->last_enabled();
+        Segment *last_seg = measure()->rendered_last_enabled();
         if (last_seg->segment_type() & next_seg_type) {
             next_seg_x = last_seg->x() + last_seg->width();
         } else {
@@ -1271,7 +1271,7 @@ bool Segment::all_elements_invisible() const {
         }
         track_idx_t end_track = staff_idx * ::mu::engraving::voices + ::mu::engraving::voices;
         for (track_idx_t track = staff_idx * ::mu::engraving::voices; track < end_track; ++track) {
-            EngravingItem *e = elist_[track];
+            EngravingItem *e = effective_element(track);
             if (e && e->visible() && !muse::real_is_equal(e->width(), 0.0)) {
                 return false;
             }
@@ -1378,7 +1378,7 @@ void Segment::scan_elements(std::function<void(EngravingItem *)> func) {
                 continue;
             }
         }
-        EngravingItem *e = element(track);
+        EngravingItem *e = effective_element(track);
         if (e == 0) {
             continue;
         }
@@ -2414,7 +2414,7 @@ void Segment::create_shape(staff_idx_t staff_idx) {
 
     track_idx_t strack = staff_idx * ::mu::engraving::voices;
     track_idx_t etrack = strack + ::mu::engraving::voices;
-    for (EngravingItem *e : elist_) {
+    for (EngravingItem *e : effective_elements()) {
         if (!e) {
             continue;
         }
@@ -2426,7 +2426,7 @@ void Segment::create_shape(staff_idx_t staff_idx) {
                 // Unless the measure is made of *only* full rests
                 bool is_all_full_rests = true;
                 for (track_idx_t track = strack; track < etrack; ++track) {
-                    EngravingItem *element = elist_[track];
+                    EngravingItem *element = effective_element(track);
                     if (element && !(element->is_rest() && to_rest(element)->is_full_measure_rest())) {
                         is_all_full_rests = false;
                         break;
@@ -2634,7 +2634,7 @@ double Segment::elements_top_offset_from_skyline(staff_idx_t staff_index) const 
     SkylineLine north = staff_system->skyline().north();
     int top_offset = INT_MAX;
     for (const ShapeElement &element : north.elements()) {
-        Segment *seg = prev1enabled();
+        Segment *seg = rendered_prev1_enabled();
         if (!seg) {
             continue;
         }
@@ -2666,7 +2666,7 @@ double Segment::elements_bottom_offset_from_skyline(staff_idx_t staff_index) con
     SkylineLine south = staff_system->skyline().south();
     int bottom_offset = INT_MIN;
     for (const ShapeElement &element : south.elements()) {
-        Segment *seg = prev1enabled();
+        Segment *seg = rendered_prev1_enabled();
         if (!seg) {
             continue;
         }
@@ -2697,7 +2697,7 @@ double Segment::elements_bottom_offset_from_skyline(staff_idx_t staff_index) con
 Fraction Segment::shortest_chord_rest() const {
     Fraction shortest = measure()->ticks(); // Initializing at the highest possible value ( = time signature of the measure)
     Fraction cur = measure()->ticks();
-    for (auto elem : elist()) {
+    for (auto elem : effective_elements()) {
         if (!elem || !elem->staff()->show() || !elem->is_chord_rest() || (elem->is_rest() && to_rest(elem)->is_gap()) ||
             (!elem->visible() &&
              measure()->has_voices(elem->staff_idx(), measure()->tick(), measure()->ticks(), /*considerInvisible*/ true))) {
@@ -2716,7 +2716,7 @@ bool Segment::has_accidentals() const {
     if (!is_chord_rest_type()) {
         return false;
     }
-    for (EngravingItem *e : elist()) {
+    for (EngravingItem *e : effective_elements()) {
         if (!e || !e->is_chord() || (e->staff() && !e->staff()->show())) {
             continue;
         }

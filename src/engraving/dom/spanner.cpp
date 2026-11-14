@@ -955,10 +955,13 @@ Segment *Spanner::start_segment() const {
     track_idx_t track_idx = track();
     staff_idx_t staff_idx = track2staff(track_idx);
 
-    Segment *start_seg = score()->tick2segment(start_tick, true, SegmentType::CHORD_REST, mm_rest);
+    Segment *start_seg = (source_only ? score()->tick2segment(start_tick, true, SegmentType::CHORD_REST, mm_rest) :
+                                        score()->find_rendered_segment(start_tick, true, SegmentType::CHORD_REST, mm_rest));
 
-    if (!start_seg || !start_seg->has_elements(staff_idx) || (is_voice_specific() && !start_seg->element(track_idx))) {
-        start_seg = score()->tick2segment(start_tick, true, SegmentType::TIME_TICK, mm_rest);
+    if (!start_seg || !(source_only ? start_seg->has_elements(staff_idx) : start_seg->has_effective_elements(staff_idx)) ||
+        (is_voice_specific() && !(source_only ? start_seg->element(track_idx) : start_seg->effective_element(track_idx)))) {
+        start_seg = (source_only ? score()->tick2segment(start_tick, true, SegmentType::TIME_TICK, mm_rest) :
+                                   score()->find_rendered_segment(start_tick, true, SegmentType::TIME_TICK, mm_rest));
     }
 
     if (!start_seg && start_tick < score()->end_tick()) {
@@ -973,7 +976,8 @@ Segment *Spanner::start_segment() const {
     }
 
     if (!start_seg) {
-        start_seg = score()->tick2right_segment(start_tick, mm_rest);
+        start_seg =
+            (source_only ? score()->tick2right_segment(start_tick, mm_rest) : score()->find_rendered_right_segment(start_tick, mm_rest));
     }
 
     return start_seg;
@@ -993,10 +997,13 @@ Segment *Spanner::end_segment() const {
     track_idx_t track_idx = effective_track2();
     staff_idx_t staff_idx = track2staff(track_idx);
 
-    Segment *end_seg = score()->tick2segment(end_tick, true, SegmentType::CHORD_REST, mm_rest);
+    Segment *end_seg = (source_only ? score()->tick2segment(end_tick, true, SegmentType::CHORD_REST, mm_rest) :
+                                      score()->find_rendered_segment(end_tick, true, SegmentType::CHORD_REST, mm_rest));
 
-    if (!end_seg || !end_seg->has_elements(staff_idx) || (is_voice_specific() && !end_seg->element(track_idx))) {
-        end_seg = score()->tick2segment(end_tick, true, SegmentType::TIME_TICK, mm_rest);
+    if (!end_seg || !(source_only ? end_seg->has_elements(staff_idx) : end_seg->has_effective_elements(staff_idx)) ||
+        (is_voice_specific() && !(source_only ? end_seg->element(track_idx) : end_seg->effective_element(track_idx)))) {
+        end_seg = (source_only ? score()->tick2segment(end_tick, true, SegmentType::TIME_TICK, mm_rest) :
+                                 score()->find_rendered_segment(end_tick, true, SegmentType::TIME_TICK, mm_rest));
     }
 
     if (!end_seg && !end_tick.is_zero()) {
@@ -1010,7 +1017,7 @@ Segment *Spanner::end_segment() const {
     }
 
     if (!end_seg) {
-        end_seg = score()->tick2left_segment(end_tick, mm_rest);
+        end_seg = (source_only ? score()->tick2left_segment(end_tick, mm_rest) : score()->find_rendered_left_segment(end_tick, mm_rest));
     }
 
     return end_seg;
