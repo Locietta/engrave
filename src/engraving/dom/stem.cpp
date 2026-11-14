@@ -54,11 +54,6 @@ double Stem::line_width_mag() const { return absolute_from_spatium(line_width_) 
 //! In chord coordinates
 PointF Stem::flag_position() const { return pos() + PointF(ldata()->bbox().left(), up() ? -length() : length()); }
 
-void Stem::reset() {
-    undo_change_property(Pid::USER_LEN, 0.0_sp);
-    EngravingItem::reset();
-}
-
 PropertyValue Stem::get_property(Pid property_id) const {
     switch (property_id) {
         case Pid::LINE_WIDTH: return line_width();
