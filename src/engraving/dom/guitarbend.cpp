@@ -726,8 +726,6 @@ void GuitarBend::update_hold_line() {
         hold_line = new GuitarBendHold(this);
     }
 
-    set_layout_child_key(*hold_line, {AuthoredChildRole::HOLD_LINE});
-
     hold_line->set_start_element(start_of_hold);
     hold_line->set_end_element(end_of_hold);
     hold_line->set_tick(start_of_hold->tick());
@@ -736,6 +734,7 @@ void GuitarBend::update_hold_line() {
     hold_line->set_track2(track());
     hold_line->set_generated(true);
     hold_line->set_ownership_parent(this);
+    set_layout_child_key(*hold_line, {AuthoredChildRole::HOLD_LINE});
 }
 
 double GuitarBend::line_width() const {

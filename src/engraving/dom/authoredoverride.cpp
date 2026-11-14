@@ -636,10 +636,13 @@ void apply_authored_overrides(EngravingItem &item) {
             set_child_output_property(item, pid, output_default(item, pid), default_flags(item, pid));
     if (!nested_spanner_role(item.authored_child.role) || item.authored_child.subordinal != 0) {
         const auto *defaults_owner = item.is_spanner_segment() ? item.ownership_parent_item() : owner;
-        item.EngravingItem::set_color(item.authored_child.role == AuthoredChildRole::SEGMENT_TEXT ?
+        const auto role = item.authored_child.role;
+        const bool leaf_defaults = role == AuthoredChildRole::STEM || role == AuthoredChildRole::HOOK ||
+                                   role == AuthoredChildRole::STEM_SLASH || role == AuthoredChildRole::SEGMENT_TEXT;
+        item.EngravingItem::set_color(leaf_defaults || role == AuthoredChildRole::DOT ?
                                           item.property_default(Pid::COLOR).value<Color>() :
                                           defaults_owner->get_property(Pid::COLOR).value<Color>());
-        bool visible = item.authored_child.role == AuthoredChildRole::SEGMENT_TEXT ? true :
+        bool visible = leaf_defaults             ? true :
                        defaults_owner->is_note() ? static_cast<const Note *>(defaults_owner)->display_visible() :
                                                    defaults_owner->visible();
         if (item.is_parenthesis() && owner->is_chord() && item.authored_child.subordinal == 1) {
