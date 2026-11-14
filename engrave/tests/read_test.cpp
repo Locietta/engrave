@@ -6193,6 +6193,55 @@ TEST(Read, TremoloManualFragmentImportsBeforeLayoutAndSurvivesNativeReopen) {
     }
 }
 
+TEST(Read, PublicLinkedTremoloResetPropagatesFromMasterAndUnlinksFromPart) {
+    using namespace mu::engraving;
+    const auto fixture = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) /
+                         "src/engraving/tests/playback/playbackeventsrenderer_data/two_chords_tremolo/two_chords_tremolo.mscx";
+    const auto find_tremolo = [](Score &score) {
+        TremoloTwoChord *result = nullptr;
+        score.scan_elements([&](EngravingItem *item) {
+            if (item->type() == ElementType::TREMOLO_TWOCHORD) result = static_cast<TremoloTwoChord *>(item);
+        });
+        return result;
+    };
+    for (const bool from_part : {false, true}) {
+        auto opened = g_engine->open(fixture);
+        ASSERT_TRUE(opened);
+        auto &master = master_of(**opened);
+        const auto outline = (*opened)->outline();
+        ASSERT_TRUE(outline);
+        ASSERT_TRUE((*opened)->edit({{engrave::GenerateExcerpts{{outline->parts.front().id}}}}));
+        auto *source = find_tremolo(master);
+        auto *part = find_tremolo(*master.excerpts().front()->excerpt_score());
+        ASSERT_NE(source, nullptr);
+        ASSERT_NE(part, nullptr);
+        ASSERT_TRUE((*opened)->edit({{engrave::SetProperty{engrave::from_engine(source->eid()), "BEAM_POS", engrave::Point{5.25, 6.75}}}}));
+        EXPECT_EQ(part->beam_pos(), muse::PairF(5.25, 6.75));
+        ASSERT_TRUE(part->is_position_linked_to_master());
+        auto *target = from_part ? part : source;
+        ASSERT_TRUE((*opened)->edit({{engrave::ResetProperty{engrave::from_engine(target->eid()), "BEAM_POS"}}}));
+        EXPECT_EQ(source->beam_pos(), from_part ? muse::PairF(5.25, 6.75) : muse::PairF(0.0, 0.0));
+        EXPECT_EQ(part->beam_pos(), muse::PairF(0.0, 0.0));
+        EXPECT_EQ(part->is_position_linked_to_master(), !from_part);
+        EXPECT_EQ(target->authored_overrides.find({AuthoredChildRole::BEAM_FRAGMENT, 0, uint8_t(target->direction_idx())}, Pid::BEAM_POS),
+                  nullptr);
+        ASSERT_TRUE(
+            (*opened)->edit({{engrave::SetProperty{engrave::from_engine(source->eid()), "BEAM_POS", engrave::Point{-1.25, -2.5}}}}));
+        auto saved = (*opened)->export_score({.format = engrave::Format::MSCX});
+        ASSERT_TRUE(saved);
+        auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
+        ASSERT_TRUE(reopened);
+        auto &copy = master_of(**reopened);
+        auto *restored_source = find_tremolo(copy);
+        auto *restored_part = find_tremolo(*copy.excerpts().front()->excerpt_score());
+        ASSERT_NE(restored_source, nullptr);
+        ASSERT_NE(restored_part, nullptr);
+        EXPECT_EQ(restored_source->beam_pos(), muse::PairF(-1.25, -2.5));
+        EXPECT_EQ(restored_part->beam_pos(), from_part ? muse::PairF(0.0, 0.0) : muse::PairF(-1.25, -2.5));
+        EXPECT_EQ(restored_part->is_position_linked_to_master(), !from_part);
+    }
+}
+
 TEST(Read, TremoloManualFragmentOwnsBothDirectionsAndIgnoresDisplayWrites) {
     auto document = g_engine->open(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) /
                                    "src/engraving/tests/playback/playbackeventsrenderer_data/two_chords_tremolo/two_chords_tremolo.mscx");
