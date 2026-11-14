@@ -84,6 +84,7 @@
 #include "engraving/dom/measurenumber.h"
 #include "engraving/dom/measurerepeat.h"
 #include "engraving/dom/mmrest.h"
+#include "engraving/dom/mmrestrange.h"
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/note.h"
 #include "engraving/dom/notedot.h"
@@ -135,6 +136,8 @@
 #include "engraving/rendering/score/systemlayout.h"
 #include "engraving/rendering/score/tlayout.h"
 #include "engraving/rendering/score/tupletlayout.h"
+#include "engraving/rw/inoutdata.h"
+#include "engraving/rw/rwregister.h"
 #include "engraving/rw/write/twrite.h"
 #include "engraving/rw/write/writecontext.h"
 #include "engraving/rw/xmlwriter.h"
@@ -1311,6 +1314,55 @@ TEST(Read, MissingNativeDisplayIdentitiesAreFinalizedBeforeSaving) {
     EXPECT_EQ(mu::engraving::to_key_sig(key->element(0))->key(), mu::engraving::Key::A);
     EXPECT_EQ(restored.layout_state.whole_count + restored.layout_state.range_count, 0u);
     EXPECT_TRUE((*reopened)->checkpoint("mmr"));
+}
+
+TEST(Read, LegacyMmrLocksAndStaffTextRecoverAcrossEmbeddedExcerpt) {
+    using namespace mu::engraving;
+    const auto score = [](std::string_view first, std::string_view last, std::string_view display) {
+        return std::format(R"(<Score><Division>480</Division><Style><createMultiMeasureRests>1</createMultiMeasureRests></Style>
+<Part><Staff id="1"/><Instrument><trackName>Piano</trackName></Instrument></Part><Staff id="1">
+<Measure><eid>{0}</eid><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig><Rest><durationType>measure</durationType></Rest></voice></Measure>
+<Measure><multiMeasureRest>2</multiMeasureRest><eid>{2}</eid><mmRestLast>{1}</mmRestLast>
+<MeasureNumber><text>91</text></MeasureNumber><MMRestRange><text>bars</text></MMRestRange><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>
+<Measure><eid>{1}</eid><voice><Rest><durationType>measure</durationType></Rest></voice></Measure></Staff>
+<SystemLocks><systemLock><startMeasure>{2}</startMeasure><endMeasure>{1}</endMeasure></systemLock></SystemLocks></Score>)",
+                           first, last, display);
+    };
+    auto input = score("A_A", "B_B", "C_C");
+    input.insert(input.rfind("</Score>"), score("D_D", "E_E", "F_F"));
+    auto opened = g_engine->open(as_bytes("<museScore version=\"5.00\">" + input + "</museScore>"));
+    ASSERT_TRUE(opened) << opened.error().message;
+    auto &master = master_of(**opened);
+    ASSERT_EQ(master.excerpts().size(), 1u);
+    for (auto *source : master.score_list()) {
+        EXPECT_EQ(source->first_measure()->mm_rest(), nullptr);
+        const auto locks = source->system_locks()->all_locks();
+        ASSERT_EQ(locks.size(), 1u);
+        EXPECT_EQ(locks.front()->start_mb(), source->first_measure());
+        EXPECT_EQ(locks.front()->end_mb(), source->last_measure());
+        auto *row = source->first_measure()->mstaves().front();
+        ASSERT_NE(row->measure_number(), nullptr);
+        ASSERT_NE(row->mm_range_text(), nullptr);
+        EXPECT_EQ(row->measure_number()->xml_text(), u"91");
+        EXPECT_EQ(row->mm_range_text()->xml_text(), u"[bars]");
+    }
+    const auto write = [&] {
+        muse::io::Buffer buffer;
+        buffer.open(muse::io::IODevice::WRITE_ONLY);
+        rw::WriteInOutData inout(&master);
+        inout.ctx.set_inline_style(true);
+        inout.ctx.set_inline_excerpts(true);
+        EXPECT_TRUE(rw::RWRegister::writer()->write_score(&master, &buffer, &inout));
+        return std::string(reinterpret_cast<const char *>(buffer.data().const_data()), buffer.data().size());
+    };
+    const auto cold = write();
+    EXPECT_TRUE((*opened)->checkpoint("legacy-source"));
+    ASSERT_TRUE((*opened)->render({.format = engrave::RenderFormat::SVG}));
+    EXPECT_EQ(write(), cold);
+    for (auto *source : master.score_list()) {
+        source->layout_data_store()->clear();
+        EXPECT_EQ(source->system_locks()->all_locks().front()->start_mb(), source->first_measure());
+    }
 }
 
 TEST(Read, BoundedNativeWritePreservesDisabledAutoplace) {

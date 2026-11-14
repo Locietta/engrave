@@ -26,12 +26,14 @@
 #include "dom/layoutbreak.h"
 #include "dom/marker.h"
 #include "dom/measure.h"
+#include "dom/measurenumber.h"
 #include "dom/mmrest.h"
 #include "dom/mmrestrange.h"
 #include "dom/score.h"
 #include "dom/segment.h"
 #include "dom/staff.h"
 #include "editing/editmeasures.h"
+#include "layoutdatastore.h"
 #include "log.h"
 #include "measurelayout.h"
 #include "tlayout.h"
@@ -143,7 +145,6 @@ void MMRestLayout::create_mm_rest(LayoutContext &ctx, Measure *first_measure, Me
         reuse_existing_mm_rest(ctx, mmr_measure, len);
     } else {
         mmr_measure = Factory::create_measure(ctx.mut_dom().score());
-        mmr_measure->assign_new_eid();
         mmr_measure->set_ticks(len);
         mmr_measure->set_tick(first_measure->tick());
         apply_change_mmrest(first_measure, mmr_measure);
@@ -165,7 +166,6 @@ void MMRestLayout::create_mm_rest(LayoutContext &ctx, Measure *first_measure, Me
         EngravingItem *existing = chord_rest_seg->effective_element(track);
         if (!existing) {
             MMRest *mmr = Factory::create_mm_rest(chord_rest_seg);
-            mmr->assign_new_eid();
             mmr->set_duration_type(DurationType::V_MEASURE);
             mmr->set_ticks(mmr_measure->ticks());
             mmr->set_track(track);
@@ -196,6 +196,27 @@ void MMRestLayout::populate_display_copies(Measure *first_measure, Measure *last
     mmr_measure->set_line_break(last_measure->line_break());
     mmr_measure->set_section_break(last_measure->section_break());
     mmr_measure->set_no_break(last_measure->no_break());
+
+    for (staff_idx_t staff = 0; staff < first_measure->mstaves().size(); ++staff) {
+        const auto *source = first_measure->mstaves()[staff];
+        auto *target = mmr_measure->mstaves()[staff];
+        if (auto *number = source->measure_number(); number && !number->generated()) {
+            delete target->measure_number();
+            target->set_measure_number(nullptr);
+            mmr_measure->add(display_copy(*number, *mmr_measure));
+        }
+        if (auto *range = source->mm_range_text(); range && !range->generated()) {
+            delete target->mm_range_text();
+            target->set_mm_range_text(nullptr);
+            mmr_measure->add(display_copy(*range, *mmr_measure));
+        }
+    }
+    for (const auto type : {SegmentType::HEADER_CLEF, SegmentType::CLEF})
+        copy_elements(first_measure->find_segment_r(type, Fraction(0, 1)), mmr_measure, Fraction(0, 1), ctx, false);
+    if (auto *source = last_measure->find_segment_r(SegmentType::KEY_SIG, last_measure->ticks())) {
+        auto *target = copy_elements(source, mmr_measure, mmr_measure->ticks(), ctx, false);
+        target->set_end_of_measure_change(source->end_of_measure_change());
+    }
 
     // set mmrMeasure with same barline as last underlying measure
     Segment *last_measure_end_barline_seg = last_measure->find_rendered_segment_r(SegmentType::END_BAR_LINE, last_measure->ticks());
@@ -279,6 +300,7 @@ Segment *MMRestLayout::copy_elements(const Segment *source, Measure *measure, co
         if (!item || !item->visible() || (check_visibility && !ctx.dom().staff(staff)->show())) continue;
         if (auto *old = display->element(track)) {
             display->set_element(track, nullptr);
+            if (auto *store = display->score()->layout_data_store()) store->retire_layout_copy(*old);
             delete old;
         }
         display->set_element(track, display_copy(*item, *display));
@@ -635,7 +657,7 @@ void MMRestLayout::layout_mm_rest_range(Measure *m, LayoutContext &ctx) {
         for (unsigned staff_idx = 0; staff_idx < m->mstaves().size(); ++staff_idx) {
             const MStaff *ms = m->mstaves().at(staff_idx);
             MMRestRange *rr = ms->mm_range_text();
-            if (rr) {
+            if (rr && (m->is_mm_rest() || rr->generated())) {
                 ctx.mut_dom().do_undo_remove_element(rr);
             }
         }
