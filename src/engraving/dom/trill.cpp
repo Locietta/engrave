@@ -322,7 +322,7 @@ static const ElementStyle trill_segment_style{
 LineSegment *Trill::create_line_segment() {
     TrillSegment *seg = new TrillSegment(this);
     seg->set_track(track());
-    seg->set_color(line_color());
+    seg->EngravingItem::set_color(line_color());
     seg->init_element_style(&::trill_segment_style);
     return seg;
 }
