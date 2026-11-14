@@ -35,7 +35,7 @@ void EditVisibility::change_chord_child_visible(Chord *chord, AuthoredChildKey k
     if ((entry ? entry->value.to_bool() : true) == visible) return;
     if (note_change(chord, CommandType::CHANGE_PROPERTY))
         chord->master_score()->cmd_state().changes.changed_property_id_set.insert(Pid::VISIBLE);
-    chord->authored_overrides.set({key, Pid::VISIBLE, visible});
+    set_child_override(*chord, key, Pid::VISIBLE, visible, PropertyFlags::NOSTYLE);
     chord->trigger_layout();
 }
 
@@ -56,7 +56,7 @@ void EditVisibility::change_dots_visible(EngravingItem *owner, int count, bool v
                 const AuthoredChildKey ordinal{AuthoredChildRole::DOT, j};
                 if (!table.carrier(ordinal)) table.set_carrier({ordinal, ElementType::NOTEDOT});
             }
-            table.set({key, Pid::VISIBLE, visible});
+            set_child_override(*linked, key, Pid::VISIBLE, visible, PropertyFlags::NOSTYLE);
             linked->trigger_layout();
         }
     }

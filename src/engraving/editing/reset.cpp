@@ -43,10 +43,6 @@ using namespace mu;
 using namespace muse;
 using namespace mu::engraving;
 
-//    For use with Score::scanElements.
-//    Reset positions and autoplacement for the given
-//    element.
-
 static void reset_element_position(EngravingItem *e) {
     if (e->generated() || !source_object(*e)) {
         return;
@@ -60,7 +56,7 @@ static void reset_element_position(EngravingItem *e) {
     }
 }
 
-static void reset_spanner_positions(Score &score) {
+static void reset_child_positions(Score &score) {
     std::set<EngravingItem *> owners;
     for (auto *spanner : score.spanner_list()) owners.insert(spanner);
     const auto collect = [&](auto &&self, EngravingObject &object) -> void {
@@ -71,21 +67,20 @@ static void reset_spanner_positions(Score &score) {
     collect(collect, score);
     for (auto *owner : owners) {
         auto &table = *authored_override_table(owner);
-        const auto erased = std::erase_if(table.entries, [&](const auto &entry) {
-            const auto key = entry.child;
-            const bool segment = key.role == AuthoredChildRole::SPANNER_SEGMENT || key.role == AuthoredChildRole::SEGMENT_TEXT ||
-                                 (nested_spanner_role(key.role) && key.subordinal == 1);
-            if (!segment) return false;
+        std::vector<std::pair<AuthoredChildKey, Pid>> positions;
+        for (const auto &entry : table.entries) {
+            if (entry.child.role == AuthoredChildRole::BEAM_FRAGMENT) continue;
             const auto pid = entry.pid;
-            const bool position = (pid == Pid::AUTOPLACE || pid == Pid::OFFSET || pid == Pid::OFFSET2 || pid == Pid::LEADING_SPACE ||
-                                   pid == Pid::SLUR_UOFF1 || pid == Pid::SLUR_UOFF2 || pid == Pid::SLUR_UOFF3 || pid == Pid::SLUR_UOFF4 ||
-                                   pid == Pid::BEND_VERTEX_OFF);
-            if (!position) return false;
+            if (pid == Pid::AUTOPLACE || pid == Pid::OFFSET || pid == Pid::OFFSET2 || pid == Pid::LEADING_SPACE || pid == Pid::SLUR_UOFF1 ||
+                pid == Pid::SLUR_UOFF2 || pid == Pid::SLUR_UOFF3 || pid == Pid::SLUR_UOFF4 || pid == Pid::BEND_VERTEX_OFF)
+                positions.emplace_back(entry.child, pid);
+        }
+        for (auto [key, pid] : positions) {
             if (note_change(owner, CommandType::CHANGE_PROPERTY))
                 owner->master_score()->cmd_state().changes.changed_property_id_set.insert(pid);
-            return true;
-        });
-        if (!erased) continue;
+            reset_child_override(*owner, key, pid);
+        }
+        if (positions.empty()) continue;
         owner->trigger_layout();
         if (auto *store = score.layout_data_store()) store->erase(*owner);
     }
@@ -93,5 +88,5 @@ static void reset_spanner_positions(Score &score) {
 
 void Reset::reset_all_positions(Transaction &, Score *score) {
     score->scan_elements(reset_element_position);
-    reset_spanner_positions(*score);
+    reset_child_positions(*score);
 }

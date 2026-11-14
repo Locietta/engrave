@@ -373,7 +373,16 @@ void EngravingCompat::migrate_offset500(MasterScore *master_score) {
             sp->set_placement_based_on_voice_assignment(
                 sp->style().style_v(Sid::DYNAMICS_HAIRPIN_VOICE_BASED_PLACEMENT).value<DirectionV>());
             do_migrate_offset500(sp);
-            sp->for_each_authored_segment([](SpannerSegment &seg) { do_migrate_offset500(&seg); });
+            const auto entries = sp->authored_overrides.entries;
+            for (const auto &entry : entries) {
+                if (entry.child.role != AuthoredChildRole::SPANNER_SEGMENT || entry.pid != Pid::OFFSET) continue;
+                const auto value = child_override(*sp, entry.child, Pid::OFFSET)->value<PointF>();
+                if (value.is_null()) continue;
+                const auto adjusted = value - sp->default_pos();
+                set_child_override(*sp, entry.child, Pid::OFFSET, adjusted, entry.flags);
+                if (!muse::real_is_null(adjusted.y()))
+                    set_child_override(*sp, entry.child, Pid::CENTER_BETWEEN_STAVES, AutoOnOff::OFF, PropertyFlags::UNSTYLED);
+            }
         }
 
         score->scan_elements(do_migrate_offset500);
