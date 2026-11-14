@@ -20,6 +20,7 @@
 #include "engraving/dom/part.h"
 #include "engraving/dom/score.h"
 #include "engraving/dom/segment.h"
+#include "engraving/dom/spacer.h"
 #include "engraving/dom/spanner.h"
 #include "engraving/dom/staff.h"
 #include "engraving/dom/system.h"
@@ -72,18 +73,12 @@ std::optional<Fraction> address_tick(const mu::engraving::Fraction &value) {
     return Fraction{num < 0 ? -signed_num : signed_num, static_cast<std::int64_t>(reduced_den)};
 }
 
-// Every object of the document, each once: per score (the master first, then the
-// excerpts) the score, its parts, its staves, its spanners and its measures with
-// what they hold, then what Score::scanElements adds (the layout objects). A spanner
-// is kept in the score's spanner map rather than in the ownership tree and a measure
-// is not an element, hence the extra lists; an element that an undo command removed
-// is in no segment and no map any more, so it is not here.
 template <typename Function>
 void for_each_object(MasterScore &master, const Function &func) {
     if (object_walk_hook) object_walk_hook();
     ankerl::unordered_dense::set<const EngravingObject *> seen;
     const auto visit = [&func, &seen](EngravingObject *object) {
-        if (object && seen.insert(object).second) func(*object);
+        if (object && mu::engraving::source_object(*object) && seen.insert(object).second) func(*object);
     };
     for (Score *score : master.score_list()) {
         visit(score);
@@ -113,10 +108,17 @@ void for_each_object(MasterScore &master, const Function &func) {
         };
         for (mu::engraving::MeasureBase *mb = score->first(); mb; mb = mb->next()) {
             visit(mb);
-            if (!mb->is_measure()) continue;
+            if (!mb->is_measure()) {
+                visit_tree(mb);
+                continue;
+            }
             Measure *measure = mu::engraving::to_measure(mb);
-            if (measure->mm_rest()) visit(measure->mm_rest());
+
             for (EngravingItem *item : measure->el()) visit_tree(item);
+            for (auto *staff : measure->mstaves()) {
+                if (auto *spacer = staff->vspacer_up()) visit_tree(spacer);
+                if (auto *spacer = staff->vspacer_down()) visit_tree(spacer);
+            }
             for (Segment *segment = measure->first(); segment; segment = segment->next()) {
                 for (EngravingItem *item : segment->elist()) {
                     if (item) visit_tree(item);
@@ -124,7 +126,6 @@ void for_each_object(MasterScore &master, const Function &func) {
                 for (EngravingItem *item : segment->annotations()) visit_tree(item);
             }
         }
-        score->scan_elements(visit_item);
     }
 }
 

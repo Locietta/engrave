@@ -4640,11 +4640,7 @@ void Score::undo_remove_element(EngravingItem *element, bool remove_linked) {
 
     for (Segment *s : segments) {
         if (s->empty()) {
-            if (s->header() || s->trailer()) { // probably more segment types (system header)
-                s->set_enabled(false);
-            } else {
-                do_undo_remove_element(s);
-            }
+            do_undo_remove_element(s);
         }
     }
 }

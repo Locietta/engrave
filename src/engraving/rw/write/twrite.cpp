@@ -3369,9 +3369,6 @@ void TWrite::write_segments(XmlWriter &xml, WriteContext &ctx, track_idx_t strac
         bool key_sig_written = false;  // for forceTimeSig
 
         for (Segment *segment : segments) {
-            if (!segment->enabled()) {
-                continue;
-            }
             if (track == 0) {
                 ctx.written_segments.erase(segment);
             }

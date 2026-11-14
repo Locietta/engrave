@@ -169,56 +169,55 @@ public:
 
     ChordRest *next_chord_rest(track_idx_t track, bool backwards = false, bool stop_at_measure_boundary = false) const;
 
-    // Layout and drawing use this boundary; source traversal stays independent.
-    Segment *rendered_next() const { return next(); }
+    Segment *rendered_next() const;
+    Segment *rendered_next(SegmentType types) const;
+    Segment *rendered_prev() const;
+    Segment *rendered_prev(SegmentType types) const;
+    Segment *rendered_next1() const;
+    Segment *rendered_prev1() const;
+    Segment *rendered_prev1(SegmentType types) const;
+    Segment *rendered_prev1_mm() const;
+    bool rendered_is_before(const Segment *other) const;
+    Segment *rendered_next_cr(track_idx_t track, bool same_staff) const;
+    Segment *rendered_next1_enabled() const;
+    Segment *rendered_prev1_enabled() const;
+    Segment *rendered_prev1_mm_enabled() const;
+    Segment *rendered_next_active() const;
+    Segment *rendered_prev_active() const;
+    Segment *rendered_next_enabled() const;
+    Segment *rendered_prev_enabled() const;
+    Segment *rendered_next_in_staff(staff_idx_t staff, SegmentType type) const;
+    Segment *rendered_next1_with_elems_on_staff(staff_idx_t staff, SegmentType type) const;
 
-    Segment *rendered_next(SegmentType types) const { return next(types); }
+    bool has_effective_elements() const;
+    bool has_effective_elements(staff_idx_t staff) const;
+    bool has_effective_elements(track_idx_t first, track_idx_t last) const;
+    EngravingItem *effective_element(track_idx_t track) const;
+    std::vector<EngravingItem *> effective_elements() const;
+    void add_generated(EngravingItem *item);
+    void remove_generated(EngravingItem *item);
+    bool owns_generated(const EngravingItem *item) const;
 
-    Segment *rendered_prev() const { return prev(); }
+    bool enabled() const { return ldata()->enabled; }
 
-    Segment *rendered_prev(SegmentType types) const { return prev(types); }
+    void set_enabled(bool value) { mutldata()->enabled = value; }
 
-    Segment *rendered_next1() const { return next1(); }
+    bool header() const { return ldata()->header; }
 
-    Segment *rendered_prev1() const { return prev1(); }
+    void set_header(bool value) { mutldata()->header = value; }
 
-    Segment *rendered_prev1(SegmentType types) const { return prev1(types); }
+    bool trailer() const { return ldata()->trailer; }
 
-    Segment *rendered_prev1_mm() const { return prev1_mm(); }
+    void set_trailer(bool value) { mutldata()->trailer = value; }
 
-    bool rendered_is_before(const Segment *other) const { return is_before(other); }
-
-    Segment *rendered_next_cr(track_idx_t track, bool same_staff) const { return next_cr(track, same_staff); }
-
-    Segment *rendered_next1_enabled() const { return next1enabled(); }
-
-    Segment *rendered_prev1_enabled() const { return prev1enabled(); }
-
-    Segment *rendered_prev1_mm_enabled() const { return prev1_m_menabled(); }
-
-    Segment *rendered_next_active() const { return next_active(); }
-
-    Segment *rendered_prev_active() const { return prev_active(); }
-
-    Segment *rendered_next_enabled() const { return next_enabled(); }
-
-    Segment *rendered_prev_enabled() const { return prev_enabled(); }
-
-    Segment *rendered_next_in_staff(staff_idx_t staff, SegmentType type) const { return next_in_staff(staff, type); }
-
-    Segment *rendered_next1_with_elems_on_staff(staff_idx_t staff, SegmentType type) const {
-        return next1_with_elems_on_staff(staff, type);
-    }
-
-    bool has_effective_elements() const { return has_elements(); }
-
-    bool has_effective_elements(staff_idx_t staff) const { return has_elements(staff); }
-
-    bool has_effective_elements(track_idx_t first, track_idx_t last) const { return has_elements(first, last); }
-
-    EngravingItem *effective_element(track_idx_t track) const { return element(track); }
-
-    const std::vector<EngravingItem *> &effective_elements() const { return elist(); }
+    struct LayoutData : EngravingItem::LayoutData {
+        ~LayoutData() override;
+        std::vector<EngravingItem *> generated;
+        bool enabled = true;
+        bool header = false;
+        bool trailer = false;
+    };
+    DECLARE_LAYOUTDATA_METHODS(Segment)
 
     EngravingItem *element(track_idx_t track) const;
 

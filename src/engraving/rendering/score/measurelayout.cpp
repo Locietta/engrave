@@ -184,6 +184,7 @@ void MeasureLayout::layout_measure(MeasureBase *current_mb, LayoutContext &ctx) 
     }
     ModifyDom::create_stems(measure, ctx);
     if (measure->is_mm_rest()) ModifyDom::sort_measure_segments(measure, ctx);
+    measure->rebuild_rendered_segments();
     // --------------------
     //
     // calculate accidentals and note lines,
@@ -289,8 +290,9 @@ void MeasureLayout::layout_measure(MeasureBase *current_mb, LayoutContext &ctx) 
     Segment *seg = measure->find_rendered_segment_r(SegmentType::START_REPEAT_BAR_LINE, Fraction(0, 1));
     if (measure->repeat_start()) {
         if (!seg) {
-            seg = measure->get_segment_r(SegmentType::START_REPEAT_BAR_LINE, Fraction(0, 1));
+            seg = measure->get_rendered_segment_r(SegmentType::START_REPEAT_BAR_LINE, Fraction(0, 1));
         }
+        seg->set_enabled(true);
         bar_lines_set_span(seg, ctx); // this also creates necessary barlines
         for (size_t staff_idx = 0; staff_idx < ctx.dom().nstaves(); ++staff_idx) {
             BarLine *b = to_bar_line(seg->effective_element(staff_idx * ::mu::engraving::voices));
@@ -300,7 +302,7 @@ void MeasureLayout::layout_measure(MeasureBase *current_mb, LayoutContext &ctx) 
             }
         }
     } else if (seg) {
-        ctx.mut_dom().undo_remove_element(seg);
+        seg->set_enabled(false);
     }
 
     for (Segment *rendered = measure->rendered_first(); rendered; rendered = rendered->rendered_next()) {
@@ -826,7 +828,7 @@ void MeasureLayout::create_end_bar_lines(Measure *m, bool is_last_measure_in_sys
     } else {
         BarLineType bl_type = next_measure ? BarLineType::NORMAL : BarLineType::END;
         if (!barline_seg) {
-            barline_seg = m->get_segment_r(SegmentType::END_BAR_LINE, m->ticks());
+            barline_seg = m->get_rendered_segment_r(SegmentType::END_BAR_LINE, m->ticks());
         }
         barline_seg->set_enabled(true);
 
@@ -1014,8 +1016,7 @@ void MeasureLayout::set_courtesy_time_sig(Measure *m, const Fraction &ref_sig_ti
             }
 
             // Create a segment if one doesn't already exist
-            courtesy_sig_seg = Factory::create_segment(m, courtesy_seg_type, courtesy_sig_r_tick);
-            m->add(courtesy_sig_seg);
+            courtesy_sig_seg = m->get_rendered_segment_r(courtesy_seg_type, courtesy_sig_r_tick);
             m->set_trailer(m->trailer() || is_trailer);
         }
         if (!is_continuation_courtesy) {
@@ -1035,6 +1036,7 @@ void MeasureLayout::set_courtesy_time_sig(Measure *m, const Fraction &ref_sig_ti
         if (!show) {
             if (courtesy_time_sig) {
                 courtesy_sig_seg->remove(courtesy_time_sig);
+                courtesy_time_sig->delete_later();
             }
             continue;
         }
@@ -1044,7 +1046,7 @@ void MeasureLayout::set_courtesy_time_sig(Measure *m, const Fraction &ref_sig_ti
             courtesy_time_sig->set_track(track);
             courtesy_time_sig->set_generated(true);
             courtesy_time_sig->set_is_courtesy(true);
-            courtesy_sig_seg->add(courtesy_time_sig);
+            courtesy_sig_seg->add_generated(courtesy_time_sig);
         }
 
         // Layout & create shapes
@@ -1145,8 +1147,7 @@ void MeasureLayout::set_courtesy_key_sig(Measure *m, const Fraction &ref_sig_tic
             }
 
             // Create a segment if one doesn't already exist
-            courtesy_sig_seg = Factory::create_segment(m, courtesy_seg_type, courtesy_sig_r_tick);
-            m->add(courtesy_sig_seg);
+            courtesy_sig_seg = m->get_rendered_segment_r(courtesy_seg_type, courtesy_sig_r_tick);
             m->set_trailer(m->trailer() || is_trailer);
         }
         if (!is_continuation_courtesy) {
@@ -1166,6 +1167,7 @@ void MeasureLayout::set_courtesy_key_sig(Measure *m, const Fraction &ref_sig_tic
         if (!show) {
             if (courtesy_key_sig) {
                 courtesy_sig_seg->remove(courtesy_key_sig);
+                courtesy_key_sig->delete_later();
             }
             continue;
         }
@@ -1175,7 +1177,7 @@ void MeasureLayout::set_courtesy_key_sig(Measure *m, const Fraction &ref_sig_tic
             courtesy_key_sig->set_track(track);
             courtesy_key_sig->set_generated(true);
             courtesy_key_sig->set_is_courtesy(true);
-            courtesy_sig_seg->add(courtesy_key_sig);
+            courtesy_sig_seg->add_generated(courtesy_key_sig);
         }
         courtesy_key_sig->set_key_sig_event(ref_key);
 
@@ -1267,8 +1269,7 @@ void MeasureLayout::set_courtesy_clef(Measure *m, const Fraction &ref_clef_tick,
             }
 
             // Create a segment if one doesn't already exist
-            courtesy_clef_seg = Factory::create_segment(m, courtesy_seg_type, courtesy_clef_r_tick);
-            m->add(courtesy_clef_seg);
+            courtesy_clef_seg = m->get_rendered_segment_r(courtesy_seg_type, courtesy_clef_r_tick);
             courtesy_clef_seg->set_trailer(false);
         }
         if (!is_continuation_courtesy) {
@@ -1287,6 +1288,7 @@ void MeasureLayout::set_courtesy_clef(Measure *m, const Fraction &ref_clef_tick,
         if (!show) {
             if (courtesy_clef) {
                 courtesy_clef_seg->remove(courtesy_clef);
+                courtesy_clef->delete_later();
             }
             continue;
         }
@@ -1298,7 +1300,7 @@ void MeasureLayout::set_courtesy_clef(Measure *m, const Fraction &ref_clef_tick,
             courtesy_clef->set_small(true);
             courtesy_clef->set_clef_type(actual_clef->clef_type());
             courtesy_clef->set_is_courtesy(true);
-            courtesy_clef_seg->add(courtesy_clef);
+            courtesy_clef_seg->add_generated(courtesy_clef);
         }
 
         // Layout & create shapes
@@ -1721,8 +1723,7 @@ Segment *MeasureLayout::add_header_clef(Measure *m, bool is_first_clef, const St
     }
     if (staff->staff_type_for_element(m)->gen_clef() && (is_first_clef || !hide_clef)) {
         if (!c_segment) {
-            c_segment = Factory::create_segment(m, SegmentType::HEADER_CLEF, Fraction(0, 1));
-            m->add(c_segment);
+            c_segment = m->get_rendered_segment_r(SegmentType::HEADER_CLEF, Fraction(0, 1));
         }
         c_segment->set_header(true);
         if (!clef) {
@@ -1733,19 +1734,22 @@ Segment *MeasureLayout::add_header_clef(Measure *m, bool is_first_clef, const St
             clef->set_track(track);
             clef->set_generated(true);
             clef->set_show_courtesy(show_courtesy);
-            c_segment->add(clef);
+            c_segment->add_generated(clef);
         }
         if (clef->generated()) {
             clef->set_clef_type(cl);
         }
         clef->set_small(false);
+        clef->mutldata()->set_is_skip_draw(false);
         clef->mutldata()->reset();
         TLayout::layout_clef(clef, clef->mutldata(), ctx.conf());
         c_segment->set_enabled(true);
     } else if (clef) {
-        clef->ownership_parent_item()->remove(clef);
-        if (clef->generated()) {
-            delete clef;
+        if (c_segment->owns_generated(clef)) {
+            c_segment->remove_generated(clef);
+            clef->delete_later();
+        } else {
+            clef->mutldata()->set_is_skip_draw(true);
         }
     }
 
@@ -1788,8 +1792,7 @@ Segment *MeasureLayout::add_header_key_sig(Measure *m, bool is_first_keysig, con
     // keep key sigs in TABs: TABs themselves should hide them
     if ((is_first_keysig || ctx.conf().style_b(Sid::GEN_KEYSIG)) && is_pitched_staff) {
         if (!k_segment) {
-            k_segment = Factory::create_segment(m, SegmentType::KEY_SIG, Fraction(0, 1));
-            m->add(k_segment);
+            k_segment = m->get_rendered_segment_r(SegmentType::KEY_SIG, Fraction(0, 1));
         }
         k_segment->set_header(true);
         if (!keysig) {
@@ -1799,7 +1802,7 @@ Segment *MeasureLayout::add_header_key_sig(Measure *m, bool is_first_keysig, con
             keysig = Factory::create_key_sig(k_segment);
             keysig->set_track(track);
             keysig->set_generated(true);
-            k_segment->add(keysig);
+            k_segment->add_generated(keysig);
         }
         keysig->set_key_sig_event(key_idx);
         keysig->mutldata()->reset();
@@ -2009,8 +2012,7 @@ void MeasureLayout::create_system_begin_bar_line(Measure *m, LayoutContext &ctx)
     if ((n > 1 && ctx.conf().style_b(Sid::START_BARLINE_MULTIPLE)) ||
         (n == 1 && (ctx.conf().style_b(Sid::START_BARLINE_SINGLE) || m->system()->brackets().size()))) {
         if (!s) {
-            s = Factory::create_segment(m, SegmentType::BEGIN_BAR_LINE, Fraction(0, 1));
-            m->add(s);
+            s = m->get_rendered_segment_r(SegmentType::BEGIN_BAR_LINE, Fraction(0, 1));
         }
         for (track_idx_t track = 0; track < ctx.dom().ntracks(); track += ::mu::engraving::voices) {
             BarLine *bl = to_bar_line(s->effective_element(track));
@@ -2020,7 +2022,7 @@ void MeasureLayout::create_system_begin_bar_line(Measure *m, LayoutContext &ctx)
                 bl->set_generated(true);
                 bl->set_bar_line_type(BarLineType::NORMAL);
                 bl->set_span_staff(true);
-                s->add(bl);
+                s->add_generated(bl);
             }
 
             TLayout::layout_bar_line(bl, bl->mutldata(), ctx);

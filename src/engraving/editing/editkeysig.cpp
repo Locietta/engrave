@@ -43,9 +43,10 @@ void mu::engraving::apply_change_key_sig(KeySig *keysig, KeySigEvent ks, bool sh
     Staff *staff = keysig->staff();
 
     const bool cur_evt_in_staff = (staff->current_key_tick(tick) == tick);
-    const bool header = !evt_in_staff && segment->rtick() == Fraction(0, 1);
-    if (keysig->key_sig_event() == ks && keysig->show_courtesy() == show_courtesy && cur_evt_in_staff == evt_in_staff &&
-        (!evt_in_staff || staff->key_sig_event(tick) == ks) && segment->enabled() == evt_in_staff && segment->header() == header)
+    const bool authored = segment->element(keysig->track()) == keysig;
+    if (!evt_in_staff && !authored && !cur_evt_in_staff) return;
+    if (evt_in_staff && authored && cur_evt_in_staff && keysig->key_sig_event() == ks && keysig->show_courtesy() == show_courtesy &&
+        staff->key_sig_event(tick) == ks)
         return;
     note_change(keysig, CommandType::CHANGE_KEY_SIG);
 
@@ -58,11 +59,14 @@ void mu::engraving::apply_change_key_sig(KeySig *keysig, KeySigEvent ks, bool sh
     } else if (cur_evt_in_staff) {
         staff->remove_key(tick); // if nothing to add instead, just remove.
     }
-    // If no keysig event corresponds to the key signature then this keysig
-    // is probably generated. Otherwise it is probably added manually.
-    // Set segment flags according to this, layout will change it if needed.
-    segment->set_enabled(evt_in_staff);
-    segment->set_header(!evt_in_staff && segment->rtick() == Fraction(0, 1));
+    if (!evt_in_staff) {
+        segment->remove(keysig);
+        keysig->delete_later();
+        if (segment->empty()) {
+            segment->measure()->remove(segment);
+            segment->delete_later();
+        }
+    }
 
     keysig->trigger_layout();
     keysig->score()->set_layout(keysig->staff()->next_key_tick(tick), keysig->staff_idx());

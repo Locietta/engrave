@@ -100,7 +100,7 @@ bool EditMeasureRepeat::make_measure_repeat_group(Transaction &, Score *score, M
     bool empty = true;
     for (auto m : measures) {
         if (m != measures.back()) {
-            if (m->end_bar_line_type() != BarLineType::NORMAL) {
+            if (m->repeat_end() || m->end_bar_line_type() != BarLineType::NORMAL) {
                 empty = false;
                 break;
             }
@@ -146,8 +146,10 @@ bool EditMeasureRepeat::make_measure_repeat_group(Transaction &, Score *score, M
         if (m != measures.back()) {
             m->undo_set_no_break(true);
             Segment *seg = m->find_segment_r(SegmentType::END_BAR_LINE, m->ticks());
-            BarLine *end_bar_line = to_bar_line(seg->element(staff2track(staff_idx)));
-            score->delete_item(end_bar_line); // also takes care of Pid::REPEAT_END
+            if (seg) {
+                if (auto *barline = seg->element(staff2track(staff_idx))) score->delete_item(barline);
+            }
+            m->undo_change_property(Pid::REPEAT_END, false);
         }
     }
     score->cmd_delete_selection();

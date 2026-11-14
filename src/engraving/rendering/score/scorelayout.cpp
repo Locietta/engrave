@@ -22,8 +22,11 @@
 #include "scorelayout.h"
 
 #include "dom/masterscore.h"
+#include "dom/measure.h"
 #include "dom/page.h"
 #include "dom/score.h"
+#include "dom/segment.h"
+#include "dom/spanner.h"
 #include "dom/system.h"
 #include "dumplayoutdata.h"
 #include "editing/transaction/transaction.h"
@@ -76,6 +79,50 @@ void ScoreLayout::layout_range(Score *score, const Fraction &st, const Fraction 
         etick = score->last()->end_tick();
     }
 
+    // A source insertion can supersede output still borrowed by a reused
+    // system. Retire those views before deleting nodes, and rebuild that system.
+    const auto retire_collisions = [&](Measure *measure) {
+        bool collision = false;
+        for (auto *output : measure->ldata()->segments) {
+            collision |=
+                measure->find_segment_r(output->segment_type(), output->rtick()) != nullptr || output->elist().size() != score->ntracks();
+        }
+        for (auto *source = measure->first(); source; source = source->next()) {
+            const auto &generated = source->ldata()->generated;
+            collision |= !generated.empty() && generated.size() != score->ntracks();
+        }
+        if (!collision) return;
+        for (auto *spanner : score->spanner_list()) {
+            auto *start = spanner->start_element();
+            auto *end = spanner->end_element();
+            if (start && !source_object(*start) && start->find_measure() == measure) spanner->set_start_element(nullptr);
+            if (end && !source_object(*end) && end->find_measure() == measure) spanner->set_end_element(nullptr);
+        }
+        if (auto *system = measure->system()) {
+            if (auto *page = system->page()) page->invalidate_bsp_tree();
+            for (auto *staff : system->staves()) staff->skyline().clear();
+            for (auto *base : system->measures()) {
+                if (!base->is_measure()) continue;
+                auto *m = to_measure(base);
+                for (auto *source = m->first(); source; source = source->next()) source->clear_shapes();
+                for (auto *output : m->ldata()->segments) output->clear_shapes();
+            }
+            if (auto *first = system->first_measure()) stick = std::min(stick, first->tick());
+            if (auto *last = system->last_measure()) etick = std::max(etick, last->end_tick());
+        }
+    };
+    for (auto *m = score->first_measure(); m; m = m->next_measure()) {
+        retire_collisions(m);
+        if (auto *mmr = m->mm_rest()) retire_collisions(mmr);
+    }
+    for (auto *m = score->first_measure(); m; m = m->next_measure()) {
+        m->reconcile_output_segments();
+        if (auto *mmr = m->mm_rest()) mmr->reconcile_output_segments();
+    }
+    if (!is_layout_all) {
+        if (auto *m = score->tick2measure(stick); m && m->prev_measure()) stick = m->prev_measure()->tick();
+        if (auto *m = score->tick2measure(etick); m && m->next_measure()) etick = m->next_measure()->end_tick();
+    }
     ctx.mut_state().set_is_layout_all(is_layout_all);
 
     // Init context and layout
