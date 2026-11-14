@@ -134,21 +134,6 @@ void EditStaffBrackets::adjust_brackets_del(Score *score, size_t sidx, size_t ei
     }
 }
 
-void EditStaffBrackets::adjust_brackets_ins(Score *score, size_t sidx, size_t eidx) {
-    for (size_t staff_idx = 0; staff_idx < score->staves().size(); ++staff_idx) {
-        const std::vector<BracketItem *> &staff_brackets = score->brackets(staff_idx);
-        for (BracketItem *bi : staff_brackets) {
-            size_t span = bi->bracket_span();
-            if ((span == 0) || ((staff_idx + span) < sidx) || (staff_idx > eidx)) {
-                continue;
-            }
-            if ((sidx >= staff_idx) && (eidx <= (staff_idx + span))) {
-                bi->undo_change_property(Pid::BRACKET_SPAN, int(span + (eidx - sidx)));
-            }
-        }
-    }
-}
-
 void EditStaffBrackets::set_bracket_type(Score *score, staff_idx_t staff_idx, size_t idx, BracketType val) {
     std::vector<BracketItem *> &staff_brackets = score->brackets(staff_idx);
 

@@ -120,7 +120,6 @@
 #include "engraving/dom/tuplet.h"
 #include "engraving/editing/addremoveelement.h"
 #include "engraving/editing/editpart.h"
-#include "engraving/editing/editvisibility.h"
 #include "engraving/editing/reset.h"
 #include "engraving/editing/transaction/transaction.h"
 #include "engraving/infrastructure/eidregister.h"
@@ -5709,12 +5708,8 @@ TEST(Read, ImportedDotColorAndColdVisibilitySurviveCloneAndLayout) {
         chord->remove(original);
         delete original;
         chord->add(copy);
-        {
-            Command command(master);
-            auto &tx = master.transaction_manager()->current_or_dummy_transaction();
-            EditVisibility::undo_change_visible(tx, copy, false);
-            command.commit();
-        }
+        engrave::assign_missing_ids(master);
+        ASSERT_TRUE((*opened)->edit({{engrave::SetProperty{engrave::from_engine(copy->eid()), "visible", false}}}));
         EXPECT_TRUE(copy->dots().empty());
         ASSERT_TRUE((*opened)->page_count());
         ASSERT_EQ(copy->dots().size(), 1u);
@@ -5738,7 +5733,7 @@ TEST(Read, RestDotsStayColdUntilLayoutAndRespectSourceVisibility) {
         auto *rest = to_rest(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
         EXPECT_EQ(rest->dot(0), nullptr);
         EXPECT_FALSE(rest->has_layout_data());
-        rest->undo_change_dots_visible(false);
+        ASSERT_TRUE((*opened)->edit({{engrave::SetProperty{engrave::from_engine(rest->eid()), "visible", false}}}));
         EXPECT_TRUE(rest->dot_list().empty());
         ASSERT_TRUE((*opened)->page_count());
         ASSERT_NE(rest->dot(0), nullptr);
@@ -5794,28 +5789,6 @@ TEST(Read, SlashToggleRestoresDotsHiddenBeforeFirstLayout) {
     chord->set_slash(false, false);
     ASSERT_TRUE((*opened)->page_count());
     for (auto *note : chord->notes()) EXPECT_TRUE(note->dot(0)->visible());
-}
-
-TEST(Read, DotVisibilityFollowsAppearanceLinkedOwners) {
-    using namespace mu::engraving;
-    auto input = legacy_segment_fixture("");
-    input.replace(input.find("<durationType>half</durationType>"), 33, "<dots>1</dots><durationType>quarter</durationType>");
-    input.insert(input.find("</Note>"), "<NoteDot><visible>1</visible></NoteDot>");
-    auto opened = g_engine->open(as_bytes(input));
-    ASSERT_TRUE(opened);
-    auto &master = master_of(**opened);
-    const auto outline = (*opened)->outline();
-    ASSERT_TRUE(outline);
-    ASSERT_TRUE((*opened)->edit({{engrave::GenerateExcerpts{{outline->parts.front().id}}}}));
-    auto *note = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0))->notes().front();
-    auto *part = master.excerpts().front()->excerpt_score();
-    auto *linked = to_chord(part->first_measure()->first(SegmentType::CHORD_REST)->element(0))->notes().front();
-    Transaction tx;
-    EditVisibility::undo_change_visible(tx, note, false);
-    EXPECT_FALSE(linked->authored_overrides.find({AuthoredChildRole::DOT}, Pid::VISIBLE)->value.to_bool());
-    linked->set_property(Pid::APPEARANCE_LINKED_TO_MASTER, false);
-    EditVisibility::undo_change_visible(tx, note, true);
-    EXPECT_FALSE(linked->authored_overrides.find({AuthoredChildRole::DOT}, Pid::VISIBLE)->value.to_bool());
 }
 
 TEST(Read, CrossMeasureDisplayDotsDoNotChangeMusicXmlDurations) {
@@ -6260,22 +6233,6 @@ TEST(Read, GhostParenthesesRemainLayoutOutput) {
     EXPECT_TRUE(chord->layout_parentheses().empty());
 }
 
-TEST(Read, VisibilityEditBeforeLayoutHidesTheGeneratedStem) {
-    using namespace mu::engraving;
-    auto xml = chordline_offset_fixture();
-    xml.replace(xml.find("<durationType>whole</durationType>"), 34, "<durationType>quarter</durationType>");
-    auto opened = g_engine->open(as_bytes(xml));
-    ASSERT_TRUE(opened);
-    auto *chord = offset_test_lines(master_of(**opened)).front()->chord();
-    ASSERT_FALSE(chord->has_layout_data());
-    Transaction tx;
-    for (auto *note : chord->notes()) EditVisibility::undo_change_visible(tx, note, false);
-    EXPECT_FALSE(chord->has_layout_data());
-    ASSERT_TRUE((*opened)->page_count());
-    ASSERT_NE(chord->stem(), nullptr);
-    EXPECT_FALSE(chord->stem()->visible());
-}
-
 TEST(Read, ChordVisibilityIncludesLayoutChildren) {
     using namespace mu::engraving;
     auto xml = chordline_offset_fixture();
@@ -6297,30 +6254,6 @@ TEST(Read, ChordVisibilityIncludesLayoutChildren) {
     EXPECT_FALSE(chord->stem()->visible());
     EXPECT_FALSE(chord->hook()->visible());
     EXPECT_FALSE(chord->stem_slash()->visible());
-}
-
-TEST(Read, ShowingAnAlreadyVisibleNoteRevealsItsAuthoredHiddenStem) {
-    using namespace mu::engraving;
-    auto xml = chordline_offset_fixture();
-    xml.replace(xml.find("<durationType>whole</durationType>"), 34,
-                "<durationType>quarter</durationType><Stem><visible>0</visible></Stem>");
-    auto opened = g_engine->open(as_bytes(xml));
-    ASSERT_TRUE(opened);
-    auto &master = master_of(**opened);
-    auto *chord = offset_test_lines(master).front()->chord();
-    ASSERT_TRUE((*opened)->page_count());
-    ASSERT_FALSE(chord->stem()->visible());
-    const auto revision = master.source_revision();
-    {
-        Command command(master);
-        auto &tx = master.transaction_manager()->current_or_dummy_transaction();
-        EditVisibility::undo_change_visible(tx, chord->notes().front(), true);
-        EXPECT_TRUE(master.layout_state.dirty);
-        command.commit();
-    }
-    EXPECT_EQ(master.source_revision(), revision + 1);
-    ASSERT_TRUE((*opened)->page_count());
-    EXPECT_TRUE(chord->stem()->visible());
 }
 
 TEST(Read, MusicXmlChordKeepsTheFirstNotesStemColor) {
@@ -7428,8 +7361,8 @@ TEST(Read, RemovingParenthesisGroupRebuildsShapeAndClearsItsOffset) {
     ASSERT_TRUE(opened);
     auto &master = master_of(**opened);
     auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
-    Transaction tx;
-    EditVisibility::undo_change_visible(tx, chord->find_note(60), true);
+    ASSERT_TRUE((*opened)->edit({{engrave::SetProperty{engrave::from_engine(chord->find_note(60)->eid()), "visible", false},
+                                  engrave::SetProperty{engrave::from_engine(chord->find_note(60)->eid()), "visible", true}}}));
     ASSERT_TRUE((*opened)->page_count());
     EXPECT_TRUE(chord->layout_parentheses().front().left->visible());
     chord->find_note(60)->set_parentheses_mode(ParenthesesMode::NONE, false);

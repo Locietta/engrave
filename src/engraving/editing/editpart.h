@@ -36,26 +36,10 @@ enum class StaffTypes : signed char;
 
 struct EditPart {
 
-    static void set_part_visible(Score *score, Part *part, bool visible);
-    static void set_staff_visible(Score *score, Staff *staff, bool visible);
-    static void set_part_sharp_flat(Score *score, Part *part, PreferSharpFlat sharp_flat);
-
     static void remove_parts(Score *score, const std::vector<Part *> &parts);
     static void remove_staves(Score *score, const std::vector<Staff *> &staves);
-    static void move_parts(Score *score, const std::vector<Part *> &source_parts, Part *destination_part, bool insert_after);
-    static void move_staves(Score *score, const std::vector<Staff *> &source_staves, Staff *destination_staff, bool insert_after);
-
-    static void add_system_objects(Score *score, const std::vector<Staff *> &staves);
-    static void remove_system_objects(Score *score, const std::vector<Staff *> &staves);
-    static void move_system_objects(Score *score, Staff *source_staff, Staff *destination_staff);
 
     static Staff *append_staff(Score *score, Part *destination_part);
-    static Staff *append_linked_staff(Score *score, Staff *source_staff, Part *destination_part);
-
-    static bool set_voice_visible(Score *score, Staff *staff, int voice_index, bool visible);
-
-    static void insert_part(Score *score, const InstrumentTemplate *templ, size_t index);
-    static void replace_part(Score *score, Part *old_part, const InstrumentTemplate *templ);
 
 private:
     static void do_append_staff(Score *score, Staff *staff, Part *destination_part, bool create_rests = true);

@@ -36,7 +36,6 @@ struct EditStaffBrackets {
     static void clean_brackets(Score *score, staff_idx_t staff_idx);
 
     static void adjust_brackets_del(Score *score, size_t sidx, size_t eidx);
-    static void adjust_brackets_ins(Score *score, size_t sidx, size_t eidx);
 
     static void set_bracket_type(Score *score, staff_idx_t staff_idx, size_t idx, BracketType val);
     static void set_bracket_span(Score *score, staff_idx_t staff_idx, size_t idx, size_t val);

@@ -55,11 +55,6 @@ struct NoteInputParams {
 struct NoteInput {
     //! NOTE: Methods related to entering notes/rests into the score.
 
-    static bool resolve_note_input_params(const Score *score, int note, bool add_flag, NoteInputParams &out);
-
-    static NoteVal note_val(const Score *score, int pitch, staff_idx_t staff_idx, bool allow_transposition);
-    static NoteVal note_val_for_position(const Score *score, Position pos, AccidentalType at, bool &error);
-
     static Note *add_note_to_chord(Score *score, Chord *chord, const NoteVal &note_val, bool force_accidental = false,
                                    const std::set<SymId> &articulation_ids = {});
     static Note *add_note(Transaction &tx, Score *score, Chord *chord, const NoteVal &note_val, bool force_accidental = false,
@@ -67,40 +62,9 @@ struct NoteInput {
     static Note *add_note_to_tied_chord(Transaction &tx, Score *score, Chord *chord, const NoteVal &note_val, bool force_accidental = false,
                                         const std::set<SymId> &articulation_ids = {});
 
-    static Note *add_pitch(Transaction &tx, Score *score, NoteVal &nval, bool add_flag, InputState *external_input_state = nullptr);
-    static Note *add_pitch_to_chord(Transaction &tx, Score *score, NoteVal &nval, Chord *chord, InputState *external_input_state = nullptr,
-                                    bool force_accidental = false);
-
-    static Note *add_midi_pitch(Transaction &tx, Score *score, int pitch, bool add_flag, bool allow_transposition);
-    static Note *add_tied_midi_pitch(Transaction &tx, Score *score, int pitch, bool add_flag, Chord *prev_chord, bool allow_transposition);
-
-    static std::pair<Note *, Note *> repitch_replace_note(Transaction &tx, Score *score, Chord *chord, const NoteVal &nval,
-                                                          bool force_accidental = false);
-
-    static muse::Ret put_note(Transaction &tx, Score *score, const muse::PointF &pos, bool replace, bool insert);
-    static muse::Ret put_note(Transaction &tx, Score *score, const Position &pos, bool replace);
-    static muse::Ret repitch_note(Transaction &tx, Score *score, const Position &pos, bool replace);
-    static muse::Ret insert_chord_by_inserting_time(Transaction &tx, Score *score, const Position &pos);
-
-    static void truncate_chord_rest(Transaction &tx, Score *score, ChordRest *cr, const Fraction &tick, bool fill_with_rest);
-
-    static void next_input_pos(Transaction &tx, Score *score, const ChordRest *cr, bool do_select);
-
     // Command entry points
-    static void add_pitch(Transaction &tx, Score *score, const NoteInputParams &params, bool add_flag, bool insert);
-    static void add_pitch(Transaction &tx, Score *score, int step, bool add_flag, bool insert);
-    static void add_fret(Transaction &tx, Score *score, int fret);
-
-    static void set_duration(Transaction &tx, Score *score, DurationType duration);
-    static void toggle_rest(Transaction &tx, Score *score);
-    static void toggle_dots(Transaction &tx, Score *score, int dots, bool toggle_for_selection_only = false);
-    static void increase_duration(Transaction &tx, Score *score);
-    static void decrease_duration(Transaction &tx, Score *score);
 
 private:
     //! NOTE: Shared prologue/epilogue for the setDuration/toggleRest/toggleDots commands above.
-    static bool note_value_change_allowed(const Score *score);
-    static void apply_to_selection(Score *score, const TDuration &old_duration, bool old_rest, AccidentalType old_accidental_type,
-                                   bool toggle_for_selection_only, bool rest_toggle);
 };
 } // namespace mu::engraving

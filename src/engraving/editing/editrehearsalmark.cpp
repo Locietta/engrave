@@ -37,40 +37,6 @@ using namespace mu::engraving;
 ///   or, if nothing is selected, the entire score
 //---------------------------------------------------------
 
-void EditRehearsalMark::resequence_rehearsal_marks(Transaction &, Score *score) {
-    bool no_selection = !score->selection().is_range();
-
-    if (no_selection) {
-        score->cmd_select_all();
-    } else if (!score->selection().is_range()) {
-        return;
-    }
-
-    RehearsalMark *last = nullptr;
-    for (Segment *s = score->selection().start_segment(); s && s != score->selection().end_segment(); s = s->next1()) {
-        for (EngravingItem *e : s->annotations()) {
-            if (!e->is_rehearsal_mark()) {
-                continue;
-            }
-            RehearsalMark *rm = to_rehearsal_mark(e);
-            if (!rm->is_top_system_object()) {
-                continue;
-            }
-            if (last) {
-                String rm_text = next_rehearsal_mark_text(last, rm);
-                for (EngravingObject *le : rm->link_list()) {
-                    le->undo_change_property(Pid::TEXT, rm_text);
-                }
-            }
-            last = rm;
-        }
-    }
-
-    if (no_selection) {
-        score->deselect_all();
-    }
-}
-
 //---------------------------------------------------------
 //   createRehearsalMarkText
 //---------------------------------------------------------

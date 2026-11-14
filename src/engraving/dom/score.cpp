@@ -4026,21 +4026,6 @@ void Score::reset_style_value(Sid style_to_reset) {
     undo_change_style_val(style_to_reset, def_style.value(style_to_reset));
 }
 
-void Score::reset_style_values(const StyleIdSet &style_id_set) {
-    if (style_id_set.empty()) {
-        return;
-    }
-
-    std::unordered_map<Sid, PropertyValue> values;
-    const MStyle &def_style = DefaultStyle::default_style();
-
-    for (Sid sid : style_id_set) {
-        values.emplace(sid, def_style.value(sid));
-    }
-
-    undo_change_style_values(std::move(values));
-}
-
 //---------------------------------------------------------
 //   setStyle
 //---------------------------------------------------------

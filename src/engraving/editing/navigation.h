@@ -45,16 +45,7 @@ struct Navigation {
     static Lyrics *prev_lyrics(const Lyrics *lyrics);
     static Lyrics *next_lyrics(const Lyrics *lyrics);
 
-    static EngravingItem *chord_note_above(Score *score, EngravingItem *element);
-    static EngravingItem *chord_note_below(Score *score, EngravingItem *element);
-    static Note *top_note_in_chord(Note *note);
-    static Note *bottom_note_in_chord(Note *note);
     static EngravingItem *first_element(Score *score, bool frame = true);
     static EngravingItem *last_element(Score *score, bool frame = true);
-    static ChordRest *next_measure(Score *score, ChordRest *element, bool select_behavior = false, bool mm_rest = false);
-    static ChordRest *prev_measure(Score *score, ChordRest *element, bool mm_rest = false);
-    static ChordRest *up_staff(ChordRest *cr);
-    static ChordRest *down_staff(Score *score, ChordRest *cr);
-    static ChordRest *top_staff(Score *score, ChordRest *cr = nullptr);
 };
 } // namespace mu::engraving

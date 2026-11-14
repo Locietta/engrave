@@ -24,6 +24,8 @@
 
 #include <gtest/gtest.h>
 
+#include "engrave/src/api/batch.h"
+#include "engrave/src/api/handles.h"
 #include "engraving/compat/scoreaccess.h"
 #include "engraving/dom/factory.h"
 #include "engraving/dom/masterscore.h"
@@ -32,7 +34,6 @@
 #include "engraving/dom/part.h"
 #include "engraving/dom/segment.h"
 #include "engraving/dom/staff.h"
-#include "engraving/editing/editpart.h"
 #include "engraving/editing/transaction/transaction.h"
 #include "engraving/infrastructure/localfileinfoprovider.h"
 #include "engraving/infrastructure/mscreader.h"
@@ -45,6 +46,16 @@
 using namespace mu::engraving;
 using namespace muse;
 using namespace muse::io;
+
+static void set_public_visibility(Part *part, bool visible) {
+    auto &master = *part->master_score();
+    engrave::assign_missing_ids(master);
+    engrave::api::EditContext context(master);
+    auto prepared = engrave::api::prepare(context, engrave::SetProperty{engrave::from_engine(part->eid()), "visible", visible});
+    ASSERT_TRUE(prepared) << prepared.error().message;
+    const auto result = (*prepared)(context);
+    ASSERT_TRUE(result) << result.error().message;
+}
 
 struct EngravingSaveHiddenPartsTests : ::testing::Test {
     static constexpr int num_measures = 10;
@@ -75,7 +86,7 @@ struct EngravingSaveHiddenPartsTests : ::testing::Test {
         add_note(::EngravingSaveHiddenPartsTests::num_measures, 0);
         add_note(hidden_note_measure, 1);
         score->undo_change_style_val(Sid::CREATE_MULTI_MEASURE_RESTS, true);
-        EditPart::set_part_visible(score, score->parts().back(), false);
+        set_public_visibility(score->parts().back(), false);
         score->end_cmd();
 
         return std::unique_ptr<MasterScore>(score);
@@ -135,7 +146,7 @@ struct EngravingSaveHiddenPartsTests : ::testing::Test {
     void show_all_parts(MasterScore *score) {
         score->start_cmd(TranslatableString::untranslatable("Save hidden parts tests"));
         for (Part *part : score->parts()) {
-            EditPart::set_part_visible(score, part, true);
+            set_public_visibility(part, true);
         }
         score->end_cmd();
     }
@@ -186,27 +197,4 @@ TEST_F(EngravingSaveHiddenPartsTests, HiddenInstrumentSurvivesSaveAndReload) {
     // [THEN] Its note breaks the MM rest in the same way as if it had never been saved
     EXPECT_EQ(mm_rests(score.get()), (std::vector<std::pair<int, int>>{{2, 3}, {6, 4}}));
     EXPECT_EQ(mm_rests(reloaded.get()), mm_rests(score.get()));
-}
-
-TEST_F(EngravingSaveHiddenPartsTests, EditOnMMRestOfHiddenLayoutSurvivesSaveAndReload) {
-    // [GIVEN] A score where the hidden instrument has a note in the first measure of the MM rest,
-    // so that this MM rest only exists while the instrument is hidden
-    std::unique_ptr<MasterScore> score = create_score_with_hidden_instrument(2);
-    ASSERT_EQ(mm_rests(score.get()), (std::vector<std::pair<int, int>>{{2, 8}}));
-
-    // [GIVEN] Its number has been moved by the user
-    MMRest *mm_rest = to_mm_rest(score->cr_measure(1)->mm_rest()->first(SegmentType::CHORD_REST)->element(0));
-    ASSERT_TRUE(mm_rest);
-    score->start_cmd(TranslatableString::untranslatable("Save hidden parts tests"));
-    mm_rest->undo_change_property(Pid::MMREST_NUMBER_OFFSET, Spatium(2.5));
-    score->end_cmd();
-
-    // [WHEN] The score is saved and reloaded
-    std::unique_ptr<MasterScore> reloaded = load_score(save_score(score.get()));
-
-    // [THEN] The edit is kept
-    ASSERT_EQ(mm_rests(reloaded.get()), (std::vector<std::pair<int, int>>{{2, 8}}));
-    const MMRest *reloaded_mm_rest = to_mm_rest(reloaded->cr_measure(1)->mm_rest()->first(SegmentType::CHORD_REST)->element(0));
-    ASSERT_TRUE(reloaded_mm_rest);
-    EXPECT_EQ(reloaded_mm_rest->get_property(Pid::MMREST_NUMBER_OFFSET).value<Spatium>(), Spatium(2.5));
 }

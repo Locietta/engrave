@@ -35,9 +35,7 @@ struct Staff;
 struct Transaction;
 
 struct EditClef {
-    static bool can_insert_clef(const Score *score, ClefType type);
-    static void insert_clef(Transaction &tx, Score *score, ClefType type);
-    static void insert_clef(Transaction &tx, Score *score, Clef *clef, ChordRest *cr);
+
     static void undo_change_clef(Transaction &tx, Score *score, Staff *ostaff, EngravingItem *e, ClefType ct,
                                  bool for_instrument_change = false, Clef *clef_to_relink = nullptr);
 };

@@ -86,30 +86,10 @@ void mu::engraving::apply_change_clef_type(Clef *clef, ClefType concert_clef, Cl
 //   EditClef
 //---------------------------------------------------------
 
-bool EditClef::can_insert_clef(const Score *score, ClefType type) {
-    if (type == ClefType::INVALID) {
-        return false;
-    }
-
-    const Staff *staff = score->staff(score->input_state().track() / ::mu::engraving::voices);
-    const ChordRest *cr = score->input_state().cr();
-
-    return staff && cr;
-}
-
-void EditClef::insert_clef(Transaction &tx, Score *score, ClefType type) {
-    undo_change_clef(tx, score, score->staff(score->input_state().track() / ::mu::engraving::voices), score->input_state().cr(), type);
-}
-
 //---------------------------------------------------------
 //   insertClef
 //    insert clef before cr
 //---------------------------------------------------------
-
-void EditClef::insert_clef(Transaction &tx, Score *score, Clef *clef, ChordRest *cr) {
-    undo_change_clef(tx, score, cr->staff(), cr, clef->clef_type());
-    delete clef;
-}
 
 //---------------------------------------------------------
 //   undoChangeClef

@@ -168,19 +168,6 @@ void Transpose::transposition_changed(Transaction &tx, Score *score, Part *part,
     }
 }
 
-void Transpose::transposition_changed(Transaction &tx, Score *score, Part *part, const Fraction &instrument_tick,
-                                      Interval old_transposition) {
-    Fraction tick_start = instrument_tick;
-    Fraction tick_end = {-1, 1};
-
-    auto main_instrument_end_it = part->instruments().upper_bound(tick_start.ticks());
-    if (main_instrument_end_it != part->instruments().cend()) {
-        tick_end = Fraction::from_ticks(main_instrument_end_it->first);
-    }
-
-    transposition_changed(tx, score, part, old_transposition, tick_start, tick_end);
-}
-
 //---------------------------------------------------------
 //   transposeChord
 //---------------------------------------------------------

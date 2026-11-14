@@ -39,40 +39,6 @@ using namespace mu::engraving;
 //   EditSpanner
 //---------------------------------------------------------
 
-void EditSpanner::add_spanner(Transaction &, Score *score, Spanner *spanner, const PointF &pos, bool system_staves_only) {
-    staff_idx_t staff_idx = spanner->staff_idx();
-    Segment *segment;
-    Measure *measure = score->pos2measure(pos, &staff_idx, /*pitch*/ 0, &segment, /*offset*/ 0);
-    if (system_staves_only) {
-        staff_idx = 0;
-    }
-    // ignore if we do not have a measure
-    if (!measure) {
-        LOGD("addSpanner: cannot put object here");
-        delete spanner;
-        return;
-    }
-
-    // all spanners live in voice 0 (except slurs/ties)
-    track_idx_t track = staff_idx == muse::nidx ? muse::nidx : staff_idx * ::mu::engraving::voices;
-
-    spanner->set_track(track);
-    spanner->set_track2(track);
-
-    if (spanner->anchor() == Spanner::Anchor::SEGMENT) {
-        spanner->set_tick(segment->tick());
-        Fraction tick2 = std::min(segment->measure()->end_tick(), score->last_measure()->end_tick());
-        spanner->set_tick2(tick2);
-    } else { // Anchor::MEASURE, Anchor::CHORD, Anchor::NOTE
-        spanner->set_tick(measure->tick());
-        spanner->set_tick2(measure->end_tick());
-    }
-    spanner->erase_spanner_segments();
-
-    bool ctrl_modifier = is_system_text_line(spanner) && !system_staves_only;
-    score->undo_add_element(spanner, true /*addToLinkedStaves*/, ctrl_modifier);
-}
-
 void EditSpanner::add_spanner(Transaction &, Score *score, Spanner *spanner, staff_idx_t staff_idx, Segment *start_segment,
                               Segment *end_segment, bool ctrl_modifier) {
     track_idx_t track = staff_idx * ::mu::engraving::voices;

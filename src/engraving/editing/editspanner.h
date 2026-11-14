@@ -31,7 +31,7 @@ struct Segment;
 struct Transaction;
 
 struct EditSpanner {
-    static void add_spanner(Transaction &tx, Score *score, Spanner *spanner, const PointF &pos, bool system_staves_only = false);
+
     static void add_spanner(Transaction &tx, Score *score, Spanner *spanner, staff_idx_t staff_idx, Segment *start_segment,
                             Segment *end_segment, bool ctrl_modifier = false);
 };

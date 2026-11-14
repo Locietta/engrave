@@ -201,16 +201,6 @@ void CmdState::unset_element(const EngravingItem *e) {
 //   element
 //---------------------------------------------------------
 
-const EngravingItem *CmdState::element() const {
-    if (one_element_) {
-        return el_;
-    }
-    if (one_measure_base_) {
-        return mb_;
-    }
-    return nullptr;
-}
-
 //---------------------------------------------------------
 //   setUpdateMode
 //---------------------------------------------------------
@@ -276,12 +266,6 @@ void Score::end_cmd(bool failed) { master_score()->transaction_manager()->end_tr
 //   CmdState::dump
 //---------------------------------------------------------
 
-void CmdState::dump() {
-    LOGD("CmdState: mode %d %d-%d", int(update_mode_), start_tick_.ticks(), end_tick_.ticks());
-    // bool _excerptsChanged     { false };
-    // bool _instrumentsChanged  { false };
-}
-
 #endif
 
 //---------------------------------------------------------
@@ -320,8 +304,6 @@ void MasterScore::update(bool reset_cmd_state, NormalizeMode mode) {
         }
     }
 }
-
-void MasterScore::lock_updates(bool locked) { updates_locked_ = locked; }
 
 //---------------------------------------------------------
 //   expandVoice
@@ -394,151 +376,9 @@ void Score::expand_voice(Segment *s, track_idx_t track) {
     }
 }
 
-void Score::expand_voice() {
-    Segment *s = is_.segment();
-    track_idx_t track = is_.track();
-    expand_voice(s, track);
-}
-
 //---------------------------------------------------------
 //   addInterval
 //---------------------------------------------------------
-
-void Score::add_interval(int val, const std::vector<Note *> &nl) {
-    prepare_semantic_edit(*this);
-    // Prepare note selection in case there are not selected tied notes and sort them
-    std::vector<Note *> tmpnl;
-    std::vector<Note *> nl_value = nl;
-    bool sel_is_list = selection().is_list();
-    bool sel_is_single = sel_is_list && nl_value.size() == 1;
-    bool should_select_first_note = sel_is_single && nl_value.front()->tie_for();
-
-    std::sort(nl_value.begin(), nl_value.end(), [](const Note *a, const Note *b) -> bool { return a->tick() < b->tick(); });
-
-    for (Note *curr_note : nl_value) {
-        for (Note *n = curr_note; n && !muse::contains(tmpnl, n); n = n->tie_for() ? n->tie_for()->end_note() : nullptr) {
-            if (sel_is_list && n->selected()) {
-                deselect(n);
-            }
-            tmpnl.emplace_back(n);
-        }
-    }
-
-    Note *prev_tied = nullptr;
-    std::vector<EngravingItem *> notes_to_select;
-    int delta_line = val < 0 ? val + 1 : val - 1;
-    bool accidental = is_.note_entry_mode() && is_.accidental_type() != AccidentalType::NONE;
-    bool use_octave_rule = (delta_line % ::mu::engraving::step_delta_octave == 0) && !accidental; // Both octaves and unison
-
-    for (Note *on : tmpnl) {
-        Chord *chord = on->chord();
-        Fraction tick = chord->tick();
-        NoteVal nval;
-        bool force_accidental = false;
-        bool note_valid = false;
-        if (on->staff() && on->staff()->is_drum_staff(tick)) {
-            // For drum staves: Don't calculate the new note based on pitch, but choose one using lines
-            const Drumset *ds = on->staff()->part()->instrument(tick)->drumset();
-            nval.pitch = ds->default_pitch_for_line(on->line() - delta_line);
-            nval.head_group = ds->note_head(nval.pitch);
-            note_valid = ds->is_valid(nval.pitch) && nval.head_group != NoteHeadGroup::HEAD_INVALID;
-        } else {
-            if (use_octave_rule) {
-                int octaves = delta_line / ::mu::engraving::step_delta_octave;
-                nval.pitch = on->pitch() + octaves * ::mu::engraving::pitch_delta_octave;
-                nval.tpc1 = on->tpc1();
-                nval.tpc2 = on->tpc2();
-            } else {
-                int line = on->line() - delta_line;
-                Staff *estaff = staff(chord->v_staff_idx());
-                ClefType clef = estaff->clef(tick);
-                Key key = estaff->key(tick);
-                int ntpc;
-                if (accidental) {
-                    AccidentalVal acci = Accidental::subtype2value(is_.accidental_type());
-                    int step = abs_step(line, clef);
-                    int octave = step / 7;
-                    nval.pitch = step2pitch(step) + octave * ::mu::engraving::pitch_delta_octave + int(acci);
-                    force_accidental = (nval.pitch == line2pitch(line, clef, key));
-                    ntpc = step2tpc(step % ::mu::engraving::step_delta_octave, acci);
-                } else {
-                    nval.pitch = line2pitch(line, clef, key);
-                    ntpc = pitch2tpc(nval.pitch, key, Prefer::NEAREST);
-                }
-
-                Interval v = estaff->transpose(tick);
-                if (v.is_zero()) {
-                    nval.tpc1 = nval.tpc2 = ntpc;
-                } else {
-                    if (style().style_b(Sid::CONCERT_PITCH)) {
-                        v.flip();
-                        nval.tpc1 = ntpc;
-                        nval.tpc2 = Transpose::transpose_tpc(ntpc, v, true);
-                    } else {
-                        nval.pitch += v.chromatic;
-                        nval.tpc2 = ntpc;
-                        nval.tpc1 = Transpose::transpose_tpc(ntpc, v, true);
-                    }
-                }
-            }
-            note_valid = pitch_is_valid(nval.pitch);
-        }
-
-        if (!note_valid) {
-            notes_to_select.push_back(to_engraving_item(on));
-            continue;
-        }
-
-        Note *note = Factory::create_note(chord);
-        note->set_track(chord->track());
-        note->set_nval(nval, tick);
-        undo_add_element(note);
-
-        if (force_accidental) {
-            Accidental *a = Factory::create_accidental(note);
-            a->set_accidental_type(is_.accidental_type());
-            a->set_role(AccidentalRole::USER);
-            undo_add_element(a);
-        }
-        if (on->tie_back() && prev_tied) {
-            Tie *tie = prev_tied->tie_for();
-            tie->set_end_note(note);
-            tie->set_tick2(note->tick());
-            note->set_tie_back(tie);
-            undo_add_element(tie);
-            prev_tied = nullptr;
-        }
-
-        Tie *tie_for = on->tie_for();
-        if (tie_for) {
-            Tie *tie = tie_for->is_laissez_vib() ? Factory::create_laissez_vib(note) : Factory::create_tie(note);
-            tie->set_start_note(note);
-            tie->set_tick(note->tick());
-            tie->set_track(note->track());
-            note->set_tie_for(tie);
-            prev_tied = note;
-        }
-
-        set_play_note(true);
-        if (sel_is_list && note) {
-            notes_to_select.push_back(to_engraving_item(note));
-        }
-    }
-    if (is_.note_entry_mode()) {
-        is_.set_accidental_type(AccidentalType::NONE);
-    }
-    if (notes_to_select.empty()) {
-        return;
-    }
-    if (should_select_first_note) {
-        select(notes_to_select.front(), SelectType::SINGLE, 0);
-    } else {
-        select(notes_to_select, SelectType::ADD, 0);
-    }
-    if (is_.cr() == to_chord_rest(nl_value.front()->chord()) && sel_is_single) {
-        is_.move_to_next_input_pos();
-    }
-}
 
 //---------------------------------------------------------
 //   setGraceNote
@@ -739,38 +579,6 @@ GuitarBend *Score::add_guitar_bend(GuitarBendType type, Note *note, Note *end_no
 //    cr    prototype CR
 //    tick  start position in measure
 //---------------------------------------------------------
-
-void Score::create_cr_sequence(const Fraction &f, ChordRest *cr, const Fraction &t) {
-    Fraction tick(t);
-    Measure *measure = cr->measure();
-    ChordRest *ocr = 0;
-    for (TDuration d : to_duration_list(f, true)) {
-        ChordRest *ncr = to_chord_rest(cr->clone());
-        ncr->set_duration_type(d);
-        ncr->set_ticks(d.fraction());
-        undo_add_cr(ncr, measure, measure->tick() + tick);
-        if (cr->is_chord() && ocr) {
-            Chord *nc = to_chord(ncr);
-            Chord *oc = to_chord(ocr);
-            for (unsigned int i = 0; i < oc->notes().size(); ++i) {
-                Note *on = oc->notes()[i];
-                Note *nn = nc->notes()[i];
-                Tie *tie = Factory::create_tie(on);
-                tie->set_start_note(on);
-                tie->set_end_note(nn);
-                tie->set_tick(tie->start_note()->tick());
-                tie->set_tick2(tie->end_note()->tick());
-                tie->set_track(cr->track());
-                on->set_tie_for(tie);
-                nn->set_tie_back(tie);
-                undo_add_element(tie);
-            }
-        }
-
-        tick += ncr->actual_ticks();
-        ocr = ncr;
-    }
-}
 
 //---------------------------------------------------------
 //   setNoteRest
@@ -1185,116 +993,6 @@ Fraction Score::make_gap(Segment *segment, track_idx_t track, const Fraction &in
     return accumulated;
 }
 
-bool Score::make_gap_voice(Segment *seg, track_idx_t track, Fraction len, const Fraction &tick, bool delete_annotations) {
-    ChordRest *cr = 0;
-    cr = to_chord_rest(seg->element(track));
-    if (!cr) {
-        // check if we are in the middle of a chord/rest
-        Segment *seg1 = seg->prev(SegmentType::CHORD_REST);
-        for (;;) {
-            if (seg1 == 0) {
-                if (!(track % ::mu::engraving::voices)) {
-                    LOGD("no segment before tick %d", tick.ticks());
-                }
-                // this happens only for voices other than voice 1
-                expand_voice(seg, track);
-                return make_gap_voice(seg, track, len, tick, delete_annotations);
-            }
-            if (seg1->element(track)) {
-                break;
-            }
-            seg1 = seg1->prev(SegmentType::CHORD_REST);
-        }
-        ChordRest *cr1 = to_chord_rest(seg1->element(track));
-        Fraction src_f = cr1->ticks();
-        Fraction dst_f = (tick - cr1->tick()) * cr1->staff()->time_stretch(cr1->tick());
-        std::vector<TDuration> d_list = to_duration_list(dst_f, true);
-        if (d_list.empty()) {
-            LOGD("Could not make durations for: %d/%d", dst_f.numerator(), dst_f.denominator());
-            return false;
-        }
-        size_t n = d_list.size();
-        undo_change_chord_rest_len(cr1, TDuration(d_list[0]));
-        if (n > 1) {
-            Fraction crtick = cr1->end_tick();
-            Measure *measure = tick2measure(crtick);
-            if (cr1->is_chord()) {
-                // split Chord
-                Chord *c = to_chord(cr1);
-                for (size_t i = 1; i < n; ++i) {
-                    TDuration d = d_list[i];
-                    Chord *c2 = add_chord(crtick, d, c, true, c->tuplet());
-                    c = c2;
-                    seg1 = c->segment();
-                    crtick += c->actual_ticks();
-                }
-            } else {
-                // split Rest
-                Rest *r = to_rest(cr1);
-                for (size_t i = 1; i < n; ++i) {
-                    TDuration d = d_list[i];
-                    Rest *r2 = to_rest(r->clone());
-                    r2->set_ticks(d.fraction());
-                    r2->set_duration_type(d);
-                    undo_add_cr(r2, measure, crtick);
-                    seg1 = r2->segment();
-                    crtick += r2->actual_ticks();
-                }
-            }
-        }
-        set_rest(tick, track, src_f - dst_f, true, 0);
-        for (;;) {
-            seg1 = seg1->next1(SegmentType::CHORD_REST);
-            if (seg1 == 0) {
-                LOGD("no segment");
-                return false;
-            }
-            if (seg1->element(track)) {
-                cr = to_chord_rest(seg1->element(track));
-                break;
-            }
-        }
-    }
-
-    for (;;) {
-        if (!cr) {
-            LOGD("cannot make gap");
-            return false;
-        }
-        Fraction l = make_gap(cr->segment(), cr->track(), len, nullptr, /*keepChord*/ false, delete_annotations);
-        if (l.is_zero()) {
-            LOGD("returns zero gap");
-            return false;
-        }
-        len -= l;
-        if (len.is_zero()) {
-            break;
-        }
-        // go to next cr
-        Measure *m = cr->measure()->next_measure();
-        if (!m) {
-            LOGD("EOS reached");
-            InsertMeasureOptions options;
-            options.create_measure_rests = false;
-            insert_measure(ElementType::MEASURE, nullptr, options);
-            m = cr->measure()->next_measure();
-            if (!m) {
-                LOGD("===EOS reached");
-                return true;
-            }
-        }
-        // first segment in measure was removed, have to recreate it
-        Segment *s = m->undo_get_segment(SegmentType::CHORD_REST, m->tick());
-        track_idx_t t = cr->track();
-        cr = to_chord_rest(s->element(t));
-        if (!cr) {
-            add_rest(s, t, TDuration(DurationType::V_MEASURE), 0);
-            cr = to_chord_rest(s->element(t));
-        }
-    }
-    return true;
-}
-
 //---------------------------------------------------------
 //   splitGapToMeasureBoundaries
 //    cr  - start of gap
@@ -1522,255 +1220,33 @@ void Score::change_c_rlen(ChordRest *cr, const Fraction &dst_f, bool fill_with_r
 //   cmdMoveRest
 //---------------------------------------------------------
 
-void Score::cmd_move_rest(Rest *rest, DirectionV dir) {
-    PointF pos(rest->offset());
-    if (dir == DirectionV::UP) {
-        pos.ry() -= rest->spatium() * rest->staff_type()->line_distance().val();
-    } else if (dir == DirectionV::DOWN) {
-        pos.ry() += rest->spatium() * rest->staff_type()->line_distance().val();
-    }
-    rest->undo_change_property(Pid::OFFSET, pos);
-}
-
 //---------------------------------------------------------
 //   cmdMoveLyrics
 //---------------------------------------------------------
-
-void Score::cmd_move_lyrics(Lyrics *lyrics, DirectionV dir) {
-    int verse = lyrics->verse() + (dir == DirectionV::UP ? -1 : 1);
-    if (verse < 0) {
-        return;
-    }
-    lyrics->undo_change_property(Pid::VERSE, verse);
-}
 
 //---------------------------------------------------------
 //   cmdAddGrace
 ///   adds grace note of specified type to selected notes
 //---------------------------------------------------------
 
-void Score::cmd_add_grace(NoteType grace_type, int duration) {
-    const std::vector<EngravingItem *> copy_of_elements = selection().elements();
-    for (EngravingItem *e : copy_of_elements) {
-        if (e->is_note()) {
-            Note *n = to_note(e);
-            Note *grace_note = set_grace_note(n->chord(), n->pitch(), grace_type, duration);
-            select(grace_note, SelectType::SINGLE, 0);
-        }
-    }
-}
-
 //---------------------------------------------------------
 //   cmdRemoveEmptyTrailingMeasures
 //---------------------------------------------------------
-
-void Score::cmd_remove_empty_trailing_measures() {
-    Score *m_score = master_score();
-    auto begin_measure = m_score->first_trailing_measure();
-    if (begin_measure) {
-        m_score->delete_measures(begin_measure, m_score->last_measure());
-    }
-}
 
 //---------------------------------------------------------
 //   cmdToggleLayoutBreak
 //---------------------------------------------------------
 
-void Score::cmd_toggle_layout_break(LayoutBreakType type) {
-    // find measure(s)
-    std::vector<MeasureBase *> mbl;
-    bool all_no_breaks = true; // NOBREAK is not removed unless every measure in selection already has one
-    if (selection().is_range()) {
-        MeasureBase *start_measure_base = nullptr;
-        MeasureBase *end_measure_base = nullptr;
-        if (!selection().measure_base_range(&start_measure_base, &end_measure_base)) {
-            return;
-        }
-        if (!start_measure_base || !end_measure_base) {
-            return;
-        }
-        if (type == LayoutBreakType::NOBREAK) {
-            // add throughout the selection
-            // or remove if already on every measure
-            if (start_measure_base == end_measure_base) {
-                mbl.push_back(start_measure_base);
-                all_no_breaks = start_measure_base->no_break();
-            } else {
-                for (MeasureBase *m = start_measure_base; m; m = m->next_mm()) {
-                    if (m == end_measure_base) {
-                        break;
-                    }
-                    mbl.push_back(m);
-                    if (!to_measure_base(m)->no_break()) {
-                        all_no_breaks = false;
-                    }
-                }
-            }
-        } else {
-            // toggle break on the last measure of the range
-            mbl.push_back(end_measure_base);
-            // if more than one measure selected,
-            // also toggle break *before* the range (to try to fit selection on a single line)
-            if (start_measure_base != end_measure_base && start_measure_base->prev()) {
-                mbl.push_back(start_measure_base->prev());
-            }
-        }
-    } else {
-        MeasureBase *mb = nullptr;
-        for (EngravingItem *el : selection().elements()) {
-            switch (el->type()) {
-                case ElementType::HBOX:
-                case ElementType::VBOX:
-                case ElementType::TBOX:
-                case ElementType::FBOX: mb = to_measure_base(el); break;
-                default: {
-                    // find measure
-                    mb = to_measure(el->find_measure());
-                    // for start repeat, attach break to previous measure
-                    if (mb && el->is_bar_line()) {
-                        BarLine *bl = to_bar_line(el);
-                        if (bl->bar_line_type() == BarLineType::START_REPEAT) {
-                            mb = mb->prev_measure();
-                        }
-                    }
-
-                    if (mb) {
-                        all_no_breaks = mb->no_break();
-                    }
-                }
-            }
-        }
-        if (mb) {
-            mbl.push_back(mb);
-        }
-    }
-
-    if (type == LayoutBreakType::NOBREAK && !all_no_breaks) {
-        for (MeasureBase *mb : mbl) {
-            if (mb->system_lock()) {
-                return;
-            }
-        }
-    }
-
-    // toggle the breaks
-    Transaction &tx = transaction_manager()->current_or_dummy_transaction();
-    for (MeasureBase *mb : mbl) {
-        bool val = false;
-        switch (type) {
-            case LayoutBreakType::LINE:
-                if (mb->is_v_box_base()) {
-                    break;
-                }
-                val = !mb->line_break();
-                if (val) {
-                    EditSystemLocks::remove_system_locks_on_add_layout_break(tx, this, type, mb);
-                    EditPageLocks::remove_page_locks_on_add_layout_break(tx, this, type, mb);
-                }
-                mb->undo_set_break(val, type);
-                // remove page break if appropriate
-                if (val && mb->page_break()) {
-                    mb->undo_set_break(false, LayoutBreakType::PAGE);
-                }
-                break;
-            case LayoutBreakType::PAGE:
-                val = !mb->page_break();
-                if (val) {
-                    EditSystemLocks::remove_system_locks_on_add_layout_break(tx, this, type, mb);
-                    EditPageLocks::remove_page_locks_on_add_layout_break(tx, this, type, mb);
-                }
-                mb->undo_set_break(val, type);
-                // remove line break if appropriate
-                if (val && mb->line_break()) {
-                    mb->undo_set_break(false, LayoutBreakType::LINE);
-                }
-                break;
-            case LayoutBreakType::SECTION:
-                val = !mb->section_break();
-                if (val) {
-                    EditSystemLocks::remove_system_locks_on_add_layout_break(tx, this, type, mb);
-                    EditPageLocks::remove_page_locks_on_add_layout_break(tx, this, type, mb);
-                }
-                mb->undo_set_break(val, type);
-                break;
-            case LayoutBreakType::NOBREAK:
-                mb->undo_set_break(!all_no_breaks, type);
-                // remove other breaks if appropriate
-                if (!mb->no_break()) {
-                    if (mb->page_break()) {
-                        mb->undo_set_break(false, LayoutBreakType::PAGE);
-                    } else if (mb->line_break()) {
-                        mb->undo_set_break(false, LayoutBreakType::LINE);
-                    } else if (mb->section_break()) {
-                        mb->undo_set_break(false, LayoutBreakType::SECTION);
-                    }
-                }
-                break;
-            default: break;
-        }
-    }
-}
-
 //---------------------------------------------------------
 //   cmdToggleMmrest
 //---------------------------------------------------------
-
-void Score::cmd_toggle_mmrest() {
-    bool val = !style().style_b(Sid::CREATE_MULTI_MEASURE_RESTS);
-    deselect_all();
-    undo_change_style_val(Sid::CREATE_MULTI_MEASURE_RESTS, val);
-}
 
 //---------------------------------------------------------
 //   cmdToggleHideEmpty
 //---------------------------------------------------------
 
-void Score::cmd_toggle_hide_empty() {
-    bool val = !style().style_b(Sid::HIDE_EMPTY_STAVES);
-    deselect_all();
-    undo_change_style_val(Sid::HIDE_EMPTY_STAVES, val);
-}
-
-void Score::cmd_set_hide_staff_if_empty_override(staff_idx_t staff_idx, System *system, engraving::AutoOnOff value) {
-    for (MeasureBase *mb : system->measures()) {
-        if (!mb->is_measure()) {
-            continue;
-        }
-        apply_staff_hide(engraving::to_measure(mb), staff_idx, value);
-    }
-}
-
 //---------------------------------------------------------
 //   cmdToggleAutoplace
 //---------------------------------------------------------
 
-void Score::cmd_toggle_autoplace(bool all) {
-    if (all) {
-        bool val = !style().style_b(Sid::AUTOPLACE_ENABLED);
-        undo_change_style_val(Sid::AUTOPLACE_ENABLED, val);
-        set_layout_all();
-    } else {
-        std::set<EngravingItem *> spanners;
-        for (EngravingItem *e : selection().elements()) {
-            if (e->is_spanner_segment()) {
-                if (EngravingObject *ee = e->property_delegate(Pid::AUTOPLACE)) {
-                    e = to_engraving_item(ee);
-                }
-                // spanner segments may each have their own autoplace setting
-                // but if they delegate to spanner, only toggle once
-                if (e->is_spanner()) {
-                    if (muse::contains(spanners, e)) {
-                        continue;
-                    }
-                    spanners.insert(e);
-                }
-            }
-            PropertyFlags pf = e->property_flags(Pid::AUTOPLACE);
-            if (pf == PropertyFlags::STYLED) {
-                pf = PropertyFlags::UNSTYLED;
-            }
-            e->undo_change_property(Pid::AUTOPLACE, !e->get_property(Pid::AUTOPLACE).to_bool(), pf);
-        }
-    }
-}
 } // namespace mu::engraving

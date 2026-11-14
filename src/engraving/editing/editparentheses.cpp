@@ -90,25 +90,6 @@ static std::map<Chord *, std::set<Note *, NoteComparator>> get_notes_by_chord(co
 }
 } // namespace
 
-void EditParentheses::toggle_parentheses_on_notes(Transaction &tx, Score *score) {
-    std::vector<Note *> notes = score->selection().unique_notes(muse::nidx, false);
-
-    bool add = false;
-
-    for (Note *note : notes) {
-        if (note->get_property(Pid::HAS_PARENTHESES).value<ParenthesesMode>() == ParenthesesMode::NONE) {
-            add = true;
-            break;
-        }
-    }
-
-    if (add) {
-        add_parentheses_to_notes(tx, notes);
-    } else {
-        remove_parentheses_from_notes(tx, notes);
-    }
-}
-
 void EditParentheses::add_parentheses_to_notes(Transaction &, const std::vector<Note *> &notes) {
     std::map<Chord *, std::set<Note *, NoteComparator>> notes_by_chord = get_notes_by_chord(notes);
 
@@ -123,54 +104,5 @@ void EditParentheses::add_parentheses_to_notes(Transaction &, const std::vector<
 
         EditChord::remove_chord_parentheses(chord, note_vec);
         EditChord::add_chord_parentheses(chord, std::move(note_vec));
-    }
-}
-
-void EditParentheses::add_parentheses_to_notes(Transaction &tx, Score *score) {
-    add_parentheses_to_notes(tx, score->selection().unique_notes(muse::nidx, false));
-}
-
-void EditParentheses::remove_parentheses_from_notes(Transaction &, const std::vector<Note *> &notes) {
-    std::map<Chord *, std::set<Note *, NoteComparator>> notes_by_chord = get_notes_by_chord(notes);
-
-    for (auto &[chord, note_set] : notes_by_chord) {
-        std::vector<Note *> note_vec(note_set.begin(), note_set.end());
-
-        for (Note *note : note_vec) {
-            note->undo_change_property(Pid::HAS_PARENTHESES, ParenthesesMode::NONE);
-
-            // User has overriden generated parentheses
-            note->undo_change_property(Pid::HIDE_GENERATED_PARENTHESES, true);
-        }
-
-        EditChord::remove_chord_parentheses(chord, std::move(note_vec));
-    }
-}
-
-void EditParentheses::remove_parentheses_from_notes(Transaction &tx, Score *score) {
-    remove_parentheses_from_notes(tx, score->selection().unique_notes(muse::nidx, false));
-}
-
-void EditParentheses::toggle_parentheses(Transaction &tx, Score *score) {
-    toggle_parentheses_on_notes(tx, score);
-
-    for (EngravingItem *el : score->selection().elements()) {
-        if (el->is_note()) {
-            continue;
-        }
-        toggle_parentheses_on_item(tx, el);
-    }
-}
-
-void EditParentheses::toggle_parentheses_on_item(Transaction &, EngravingItem *el) {
-    if (el->is_accidental()) {
-        Accidental *acc = to_accidental(el);
-        acc->undo_change_property(Pid::ACCIDENTAL_BRACKET, int(AccidentalBracket::PARENTHESIS));
-    } else if (el->type() == ElementType::TIMESIG) {
-        TimeSig *ts = to_time_sig(el);
-        ts->set_large_parentheses(true);
-    } else {
-        ParenthesesMode p = el->left_paren() || el->right_paren() ? ParenthesesMode::NONE : ParenthesesMode::BOTH;
-        el->undo_change_property(Pid::HAS_PARENTHESES, p);
     }
 }

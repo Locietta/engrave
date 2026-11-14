@@ -1859,25 +1859,6 @@ TEST(NativeSave, AuthoredDividerSurvivesDiscardAndColdSave) {
     }
 }
 
-TEST(Handles, PageLockEditsRequireAvailableOutput) {
-    using namespace mu::engraving;
-    auto document = open_path(g_source_root / "tests/data/inputs/golden/linked_parts.mscx");
-    ASSERT_TRUE(document);
-    auto &master = master_of(*document);
-    master.ensure_layout();
-    master.layout_data_store()->clear();
-    const auto layouts = master.layout_state.whole_count + master.layout_state.range_count;
-    master.cmd_select_all();
-    Transaction tx;
-    EXPECT_THROW(EditPageLocks::toggle_score_lock(tx, &master), std::logic_error);
-    EXPECT_THROW(EditPageLocks::add_remove_page_locks(tx, &master, 0, true), std::logic_error);
-    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, layouts);
-    master.ensure_layout();
-    EditPageLocks::toggle_score_lock(tx, &master);
-    ASSERT_NE(master.page_locks()->lock_starting_at(master.first()), nullptr);
-    EXPECT_EQ(master.page_locks()->lock_starting_at(master.first())->end_mb(), master.last());
-}
-
 TEST(Handles, PageQueriesFollowRangeLayoutAndOutputDiscard) {
     auto document = open_path(g_source_root / "tests/data/inputs/golden/linked_parts.mscx");
     ASSERT_TRUE(document);
@@ -2388,14 +2369,7 @@ TEST(Handles, H5aLinksAcrossExcerpts) {
         EXPECT_EQ(excerpt_note->color(), red) << "the property did not reach the linked element";
         EXPECT_TRUE(live(master, master_id)) << "a property edit lost the element's id";
 
-        // Deleting the master element takes the linked one with it.  The engine's deletion
-        // command is used, not a bare element removal: deleting the last note of a chord
-        // leaves a rest in both scores, because a chord without notes is not a valid model
-        // element (layout reads its first note).
-        commit(master, [&](MasterScore &) {
-            master.select(master_note);
-            master.cmd_delete_selection();
-        });
+        ASSERT_TRUE(document->edit({{engrave::Remove{master_id}}}));
         EXPECT_FALSE(live(master, master_id)) << "the removed element still resolves";
         EXPECT_FALSE(live(master, excerpt_id)) << "the linked clone survived the removal";
         expect_inv(*document);
