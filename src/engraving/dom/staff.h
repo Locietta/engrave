@@ -107,6 +107,8 @@ public:
 
     KeyList *key_list() { return &keys_; }
 
+    const KeyList *key_list() const { return &keys_; }
+
     Key key(const Fraction &tick) const { return key_sig_event(tick).key(); }
 
     Key concert_key(const Fraction &tick) const { return key_sig_event(tick).concert_key(); }

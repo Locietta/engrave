@@ -29,6 +29,7 @@
 #include "clef.h"
 #include "cleflist.h"
 #include "containers.h"
+#include "editing/transpose.h"
 #include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
 #include "excerpt.h"
 #include "factory.h"
@@ -605,7 +606,16 @@ Interval Staff::transpose(const Fraction &tick) const {
 //    locates the key sig currently in effect at tick
 //---------------------------------------------------------
 
-KeySigEvent Staff::key_sig_event(const Fraction &tick) const { return keys_.key(tick.ticks()); }
+KeySigEvent Staff::key_sig_event(const Fraction &tick) const {
+    auto event = keys_.key(tick.ticks());
+    if (keys_.upper_bound(tick.ticks()) == keys_.begin() && part() && part()->instrument(tick) &&
+        !score()->style().style_b(Sid::CONCERT_PITCH)) {
+        auto interval = part()->instrument(tick)->transpose();
+        interval.flip();
+        event.set_key(Transpose::transpose_key(Key::C, interval, part()->prefer_sharp_flat()));
+    }
+    return event;
+}
 
 //---------------------------------------------------------
 //   setKey

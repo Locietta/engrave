@@ -872,6 +872,7 @@ void MeasureLayout::create_end_bar_lines(Measure *m, bool is_last_measure_in_sys
                 bar_line->set_bar_line_type(bl_type);
                 ctx.mut_dom().add_element(bar_line);
             } else {
+                bar_line->mutldata()->bar_line_type.reset();
                 // do not change bar line type if bar line is user modified
                 // and its not a repeat start/end barline (forced)
 
@@ -880,9 +881,8 @@ void MeasureLayout::create_end_bar_lines(Measure *m, bool is_last_measure_in_sys
                     bar_line->set_span_from(staff->bar_line_from());
                     bar_line->set_span_to(staff->bar_line_to());
                     bar_line->set_bar_line_type(bl_type);
-                } else if (bar_line->bar_line_type() != bl_type && force) {
-                    bar_line->set_bar_line_type(bl_type);
-                    bar_line->set_generated(true);
+                } else if (bar_line->display_bar_line_type() != bl_type && force) {
+                    bar_line->mutldata()->bar_line_type = bl_type;
                 }
             }
 
@@ -1035,8 +1035,12 @@ void MeasureLayout::set_courtesy_time_sig(Measure *m, const Fraction &ref_sig_ti
         // this time sig shouldn't be shown, remove from segment
         if (!show) {
             if (courtesy_time_sig) {
-                courtesy_sig_seg->remove(courtesy_time_sig);
-                courtesy_time_sig->delete_later();
+                if (courtesy_sig_seg->owns_generated(courtesy_time_sig)) {
+                    courtesy_sig_seg->remove_generated(courtesy_time_sig);
+                    courtesy_time_sig->delete_later();
+                } else {
+                    courtesy_time_sig->mutldata()->set_is_skip_draw(true);
+                }
             }
             continue;
         }
@@ -1050,8 +1054,9 @@ void MeasureLayout::set_courtesy_time_sig(Measure *m, const Fraction &ref_sig_ti
         }
 
         // Layout & create shapes
-        courtesy_time_sig->set_from(actual_time_sig);
-        if (courtesy_time_sig->is_styled(Pid::SCALE)) {
+        courtesy_time_sig->mutldata()->set_is_skip_draw(false);
+        if (courtesy_sig_seg->owns_generated(courtesy_time_sig)) courtesy_time_sig->set_from(actual_time_sig);
+        if (courtesy_sig_seg->owns_generated(courtesy_time_sig) && courtesy_time_sig->is_styled(Pid::SCALE)) {
             // If this courtesyTimeSig was previously disabled its scale style may have not been updated
             courtesy_time_sig->set_scale(courtesy_time_sig->property_default(Pid::SCALE).value<ScaleF>());
         }
@@ -1166,8 +1171,12 @@ void MeasureLayout::set_courtesy_key_sig(Measure *m, const Fraction &ref_sig_tic
         // this key sig shouldn't be shown, remove from segment
         if (!show) {
             if (courtesy_key_sig) {
-                courtesy_sig_seg->remove(courtesy_key_sig);
-                courtesy_key_sig->delete_later();
+                if (courtesy_sig_seg->owns_generated(courtesy_key_sig)) {
+                    courtesy_sig_seg->remove_generated(courtesy_key_sig);
+                    courtesy_key_sig->delete_later();
+                } else {
+                    courtesy_key_sig->mutldata()->set_is_skip_draw(true);
+                }
             }
             continue;
         }
@@ -1179,7 +1188,8 @@ void MeasureLayout::set_courtesy_key_sig(Measure *m, const Fraction &ref_sig_tic
             courtesy_key_sig->set_is_courtesy(true);
             courtesy_sig_seg->add_generated(courtesy_key_sig);
         }
-        courtesy_key_sig->set_key_sig_event(ref_key);
+        courtesy_key_sig->mutldata()->set_is_skip_draw(false);
+        if (courtesy_sig_seg->owns_generated(courtesy_key_sig)) courtesy_key_sig->set_key_sig_event(ref_key);
 
         // Layout & create shapes
         TLayout::layout_key_sig(courtesy_key_sig, courtesy_key_sig->mutldata(), ctx.conf());
@@ -1287,8 +1297,12 @@ void MeasureLayout::set_courtesy_clef(Measure *m, const Fraction &ref_clef_tick,
         // this clef shouldn't be shown, remove from segment
         if (!show) {
             if (courtesy_clef) {
-                courtesy_clef_seg->remove(courtesy_clef);
-                courtesy_clef->delete_later();
+                if (courtesy_clef_seg->owns_generated(courtesy_clef)) {
+                    courtesy_clef_seg->remove_generated(courtesy_clef);
+                    courtesy_clef->delete_later();
+                } else {
+                    courtesy_clef->mutldata()->set_is_skip_draw(true);
+                }
             }
             continue;
         }
@@ -1304,6 +1318,7 @@ void MeasureLayout::set_courtesy_clef(Measure *m, const Fraction &ref_clef_tick,
         }
 
         // Layout & create shapes
+        courtesy_clef->mutldata()->set_is_skip_draw(false);
         TLayout::layout_clef(courtesy_clef, courtesy_clef->mutldata(), ctx.conf());
     }
 
@@ -1804,7 +1819,7 @@ Segment *MeasureLayout::add_header_key_sig(Measure *m, bool is_first_keysig, con
             keysig->set_generated(true);
             k_segment->add_generated(keysig);
         }
-        keysig->set_key_sig_event(key_idx);
+        if (k_segment->owns_generated(keysig)) keysig->set_key_sig_event(key_idx);
         keysig->mutldata()->reset();
         TLayout::layout_key_sig(keysig, keysig->mutldata(), ctx.conf());
         k_segment->set_enabled(true);

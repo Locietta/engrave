@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include "engravingitem.h"
 
 namespace mu::engraving {
@@ -110,6 +112,8 @@ public:
 
     BarLineType bar_line_type() const { return bar_line_type_; }
 
+    BarLineType display_bar_line_type() const { return ldata()->bar_line_type.value_or(bar_line_type_); }
+
     bool is_top() const;
     bool is_bottom() const;
 
@@ -142,6 +146,7 @@ public:
     void calc_y();
 
     struct LayoutData : public EngravingItem::LayoutData {
+        std::optional<BarLineType> bar_line_type;
         double y1 = 0.0;
         double y2 = 0.0;
     };

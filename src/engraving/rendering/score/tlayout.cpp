@@ -863,7 +863,7 @@ void TLayout::fill_articulation_shape(const Articulation *item, Articulation::La
 
 static double bar_line_width(const BarLine *item, const MStyle &style, double dot_width) {
     double w = 0.0;
-    switch (item->bar_line_type()) {
+    switch (item->display_bar_line_type()) {
         case BarLineType::DOUBLE:
             w = style.style_absolute(Sid::DOUBLE_BAR_WIDTH) * 2.0 + style.style_absolute(Sid::DOUBLE_BAR_DISTANCE);
             break;
@@ -946,7 +946,7 @@ void TLayout::layout_bar_line(const BarLine *item, BarLine::LayoutData *ldata, c
     RectF r(0.0, ldata->y1, w, ldata->y2 - ldata->y1);
 
     if (ctx.conf().style_b(Sid::REPEAT_BAR_TIPS)) {
-        switch (item->bar_line_type()) {
+        switch (item->display_bar_line_type()) {
             case BarLineType::START_REPEAT: {
                 r.unite(font->bbox(SymId::BRACKET_TOP, mag_s).translated(0, ldata->y1));
             } break;
@@ -1029,7 +1029,7 @@ void TLayout::update_barline_shape(const BarLine *item, BarLine::LayoutData *lda
         double y = sp * s_from * 0.5;
         double h = sp * (span + (s_to - s_from) * 0.5);
         if (ctx.conf().style_b(Sid::REPEAT_BAR_TIPS)) {
-            switch (item->bar_line_type()) {
+            switch (item->display_bar_line_type()) {
                 case BarLineType::START_REPEAT:
                 case BarLineType::END_REPEAT:
                 case BarLineType::END_START_REPEAT: {
@@ -1071,7 +1071,7 @@ void TLayout::layout_bar_line2(BarLine *item, LayoutContext &ctx) {
     bbox.set_bottom(ldata->y2);
 
     if (ctx.conf().style_b(Sid::REPEAT_BAR_TIPS)) {
-        switch (item->bar_line_type()) {
+        switch (item->display_bar_line_type()) {
             case BarLineType::START_REPEAT:
                 bbox.unite(item->sym_bbox(SymId::BRACKET_TOP).translated(0, ldata->y1));
                 bbox.unite(item->sym_bbox(SymId::BRACKET_BOTTOM).translated(0, ldata->y2));
