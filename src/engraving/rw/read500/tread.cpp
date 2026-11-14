@@ -427,10 +427,17 @@ bool TRead::read_item_properties(EngravingItem *item, XmlReader &e, ReadContext 
         read_child_property(*item, Pid::COLOR, color, PropertyFlags::NOSTYLE, ctx);
     } else if (tag == "visible") {
         const auto visible = PropertyValue(bool(e.read_int()));
+        // A later owner tag must not overwrite an already parsed source child's value.
+        auto *left = item->left_paren();
+        auto *right = item->right_paren();
+        const bool left_visible = left && left->visible();
+        const bool right_visible = right && right->visible();
         if (read_child_owner(*item, ctx) && read_child_key(*item, ctx).role != AuthoredChildRole::NONE)
             item->EngravingItem::set_visible(visible.to_bool());
         else
             item->set_visible(visible.to_bool());
+        if (left) left->set_visible(left_visible);
+        if (right) right->set_visible(right_visible);
         read_child_property(*item, Pid::VISIBLE, visible, PropertyFlags::NOSTYLE, ctx);
     } else if (tag == "linkedTo") {
         read_item_link(item, e, ctx);
@@ -452,7 +459,6 @@ bool TRead::read_item_properties(EngravingItem *item, XmlReader &e, ReadContext 
     } else if (TRead::read_property(item, tag, e, ctx, Pid::HAS_PARENTHESES)) {
     } else if (tag == "Parenthesis") {
         Parenthesis *p = Factory::create_parenthesis(item);
-        p->set_visible(item->visible());
         TRead::read(p, e, ctx);
         p->set_track(ctx.track());
         const bool visible = p->visible();

@@ -7715,6 +7715,41 @@ TEST(Read, GenericRestParenthesesKeepAuthoredColorWithoutTableCarriers) {
     }
 }
 
+TEST(Read, GenericParenthesisVisibilityIsIndependentOfOwnerTagOrder) {
+    using namespace mu::engraving;
+    for (const std::string version : {"4.60", "5.00"}) {
+        for (const bool child_visible : {false, true}) {
+            for (const bool owner_first : {false, true}) {
+                const auto owner = std::string("<visible>") + (child_visible ? "0" : "1") + "</visible>";
+                const auto child = std::string("<Parenthesis><visible>") + (child_visible ? "1" : "0") + "</visible></Parenthesis>";
+                const auto xml = std::string("<museScore version=\"") + version + R"("><Score><Division>480</Division>
+<Part><Staff><StaffType group="pitched"/></Staff><Instrument id="piano"><Channel><program value="0"/></Channel></Instrument></Part>
+<Staff id="1"><Measure><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
+<Rest><durationType>whole</durationType>)" +
+                                 (owner_first ? owner + child : child + owner) + "</Rest></voice></Measure></Staff></Score></museScore>";
+                auto opened = g_engine->open(as_bytes(xml));
+                ASSERT_TRUE(opened);
+                const auto check = [&](MasterScore &score) {
+                    const auto *rest = to_rest(score.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+                    EXPECT_EQ(rest->visible(), !child_visible);
+                    EXPECT_EQ(rest->parentheses_mode(), ParenthesesMode::LEFT);
+                    ASSERT_NE(rest->left_paren(), nullptr);
+                    EXPECT_EQ(rest->left_paren()->visible(), child_visible);
+                    EXPECT_FALSE(rest->authored_overrides.has_entries({AuthoredChildRole::PAREN_LEFT}));
+                };
+                check(master_of(**opened));
+                auto saved = (*opened)->export_score({.format = engrave::Format::MSCX});
+                ASSERT_TRUE(saved);
+                auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
+                ASSERT_TRUE(reopened);
+                check(master_of(**reopened));
+                ASSERT_TRUE((*reopened)->render({.format = engrave::RenderFormat::SVG}));
+                check(master_of(**reopened));
+            }
+        }
+    }
+}
+
 TEST(Read, LinkedRestParenthesesSaveAfterPublicMasterAndPartEdits) {
     using namespace mu::engraving;
     const std::string fixture = R"(<museScore version="5.00"><Score><Division>480</Division>
