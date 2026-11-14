@@ -68,6 +68,9 @@ public:
     // Authored beams follow source membership; automatic beams belong to the output store.
     System *system() const;
     EngravingItem *layout_parent() const override;
+    staff_idx_t v_staff_idx() const override;
+    Staff *visual_staff() const;
+    double visual_spatium() const;
 
     const std::vector<ChordRest *> &elements() const { return elements_; }
 
@@ -178,6 +181,7 @@ public:
         ~LayoutData() override;
         std::vector<BeamFragment *> fragments;
         std::optional<std::vector<ChordRest *>> members;
+        std::optional<staff_idx_t> visual_staff_idx;
     };
     DECLARE_LAYOUTDATA_METHODS(Beam)
 

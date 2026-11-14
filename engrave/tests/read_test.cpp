@@ -5970,6 +5970,40 @@ TEST(Read, S14DormantBeamDirectionUsesAuthoredMembers) {
     }
 }
 
+TEST(Read, S14MovedBeamRenderingPreservesSourceTrackAndRevision) {
+    using namespace mu::engraving;
+    auto xml = legacy_segment_fixture("");
+    xml.insert(xml.find("</Part>"), "<Staff><StaffType group=\"pitched\"/></Staff>");
+    xml.insert(xml.find("<SpannerMap>"),
+               "<Staff id=\"2\"><Measure><voice><Rest><durationType>whole</durationType></Rest></voice></Measure></Staff>");
+    for (size_t at; (at = xml.find("<durationType>half</durationType>")) != std::string::npos;)
+        xml.replace(at, 33, "<durationType>eighth</durationType><staffMove>1</staffMove>");
+    xml.insert(xml.find("<Chord>"), "<Beam><eid>F_F</eid></Beam>");
+    auto opened = g_engine->open(as_bytes(xml));
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    auto *beam = chord->authored_beam();
+    ASSERT_NE(beam, nullptr);
+    const auto id = engrave::from_engine(beam->eid());
+    const auto revision = document.revision();
+    for (int pass = 0; pass != 3; ++pass) {
+        const auto track = document.get(id, {"TRACK"});
+        ASSERT_TRUE(track);
+        EXPECT_EQ(std::get<int64_t>(track->front().value), 0);
+        const auto found = document.query({.types = {"Beam"}, .staves = {0}});
+        ASSERT_TRUE(found);
+        ASSERT_EQ(found->elements.size(), 1u);
+        EXPECT_EQ(found->elements.front().id, id);
+        EXPECT_EQ(found->elements.front().staff, 0);
+        EXPECT_EQ(document.revision(), revision);
+        ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+        EXPECT_EQ(beam->v_staff_idx(), 1u);
+        if (pass == 1) engrave::DocumentAccess::impl(document).discard_layout_output(master);
+    }
+}
+
 TEST(Read, S14BeamCrossStaffValidationUsesCurrentSourceMoves) {
     using namespace mu::engraving;
     auto xml = legacy_segment_fixture("");

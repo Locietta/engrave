@@ -75,13 +75,14 @@ void BeamTremoloLayout::setup_l_data(const BeamBase *item, BeamBase::LayoutData 
         is_grace = ldata->trem->chord1()->is_grace();
     }
 
-    ldata->spatium = item->spatium();
+    ldata->spatium = item->is_beam() ? item_cast<const Beam *>(item)->visual_spatium() : item->spatium();
     ldata->tick = item->tick();
     ldata->beam_spacing = ctx.conf().style_b(Sid::USE_WIDE_BEAMS) ? 4 : 3;
     ldata->beam_dist =
         (ldata->beam_spacing / 4.0) * ldata->spatium * ldata->mag() * (is_grace ? ctx.conf().style_d(Sid::GRACE_NOTE_MAG) : 1.);
     ldata->beam_width = (ctx.conf().style_s(Sid::BEAM_WIDTH).val() * ldata->spatium) * ldata->mag();
-    const StaffType *staff_type = item->staff_type();
+    const Staff *staff = item->is_beam() ? item_cast<const Beam *>(item)->visual_staff() : item->staff();
+    const StaffType *staff_type = staff ? staff->staff_type_for_element(item) : nullptr;
     ldata->tab = (staff_type && staff_type->is_tab_staff()) ? staff_type : nullptr;
     ldata->is_beside_tab_staff = ldata->tab && !ldata->tab->stemless() && !ldata->tab->stem_through();
 }
@@ -664,7 +665,7 @@ bool BeamTremoloLayout::calculate_anchors(const BeamBase *item, BeamBase::Layout
         ldata->cross_staff_beam_pos == BeamBase::CrossStaffBeamPosition::ABOVE ? item->min_cr_move() : item->max_cr_move();
     const staff_idx_t closest_staff_to_beam = ldata->cross_staff_beam_pos == BeamBase::CrossStaffBeamPosition::ABOVE ||
                                                       ldata->cross_staff_beam_pos == BeamBase::CrossStaffBeamPosition::BELOW ?
-                                                  item->staff_idx() + closest_move :
+                                                  item->v_staff_idx() + closest_move :
                                                   start_chord->v_staff_idx();
 
     std::vector<Chord *> chords_closest_to_beam;
@@ -704,7 +705,7 @@ bool BeamTremoloLayout::calculate_anchors(const BeamBase *item, BeamBase::Layout
     const int staff_lines = ctx.dom().staff(closest_staff_to_beam)->lines(ldata->tick);
     // This is the middle of the stave if the notes are normal size or the second line from the bottom if notes are small
     const int target_line =
-        get_target_staff_line(ldata, ctx, start_chord, end_chord, staff_lines, closest_staff_to_beam, item->staff_idx());
+        get_target_staff_line(ldata, ctx, start_chord, end_chord, staff_lines, closest_staff_to_beam, item->v_staff_idx());
 
     int slant = compute_desired_slant(item, ldata, start_pos, end_pos, chords_closest_to_beam, target_line, dictator, pointer);
     bool is_flat = slant == 0;
