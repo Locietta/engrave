@@ -5597,6 +5597,86 @@ TEST(Read, NestedSegmentEditNotifiesAndSelectsItsSourceOwner) {
     master.end_cmd();
 }
 
+TEST(Read, ColdSpannerOwnerNavigationContinuesInBothDirections) {
+    using namespace mu::engraving;
+    auto xml = legacy_segment_fixture(R"(<HairPin><eid>F_F</eid><track>0</track><subtype>0</subtype>
+<startTick>0/1</startTick><ticks>1/1</ticks><track2>0</track2></HairPin>
+<HairPin><eid>G_G</eid><track>0</track><subtype>1</subtype>
+<startTick>0/1</startTick><ticks>1/1</ticks><track2>0</track2></HairPin>)");
+    auto opened = g_engine->open(as_bytes(xml));
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto first = engrave::resolve(master, *engrave::element_id_from_string("F_F"));
+    auto second = engrave::resolve(master, *engrave::element_id_from_string("G_G"));
+    ASSERT_TRUE(first && second);
+    master.selection().add(to_engraving_item(first->object));
+    EXPECT_EQ(master.next_element(), second->object);
+    master.selection().clear();
+    master.selection().add(to_engraving_item(second->object));
+    EXPECT_EQ(master.prev_element(), first->object);
+    EXPECT_TRUE(master.pages().empty());
+}
+
+TEST(Read, BulkPositionResetRemovesColdSparseSegmentOffsetsAndGrips) {
+    using namespace mu::engraving;
+    auto xml = legacy_segment_fixture(R"(<HairPin><eid>F_F</eid><track>0</track><subtype>0</subtype>
+<startTick>0/1</startTick><ticks>1/1</ticks><track2>0</track2>
+<Segment no="0"><offset x="0.25" y="0.5"/><off2 x="-0.75" y="1"/></Segment>
+<Segment no="2"><offset x="1.25" y="-0.5"/></Segment></HairPin>
+<Slur><eid>G_G</eid><track>0</track><startElement>B_B</startElement><endElement>C_C</endElement>
+<SlurSegment no="0"><o1 x="0.5" y="-1"/><o4 x="-1" y="0.25"/></SlurSegment></Slur>)");
+    for (const bool warm : {false, true}) {
+        auto opened = g_engine->open(as_bytes(xml));
+        ASSERT_TRUE(opened);
+        auto &master = master_of(**opened);
+        if (warm) master.ensure_layout();
+        Reset::reset_all_positions(master.transaction_manager()->current_or_dummy_transaction(), &master);
+        auto saved = (*opened)->export_score({.format = engrave::Format::MSCX});
+        ASSERT_TRUE(saved);
+        auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
+        ASSERT_TRUE(reopened);
+        for (auto *owner : master_of(**reopened).spanner_list()) {
+            for (const auto &entry : owner->authored_overrides.entries) {
+                if (entry.pid == Pid::OFFSET || entry.pid == Pid::OFFSET2 || entry.pid == Pid::SLUR_UOFF1 || entry.pid == Pid::SLUR_UOFF4)
+                    EXPECT_EQ(entry.value, PropertyValue(PointF()));
+            }
+            EXPECT_TRUE(owner->segments_empty());
+        }
+        auto line = engrave::resolve(master_of(**reopened), *engrave::element_id_from_string("F_F"));
+        ASSERT_TRUE(line);
+        const auto &table = to_spanner(line->object)->authored_overrides;
+        ASSERT_NE(table.carrier({AuthoredChildRole::SPANNER_SEGMENT, 2}), nullptr);
+        EXPECT_EQ(table.find({AuthoredChildRole::SPANNER_SEGMENT, 2}, Pid::OFFSET)->value, PropertyValue(PointF()));
+    }
+}
+
+TEST(Read, BulkTextResetPreservesColdSegmentTextAndClearsItsStyleOverrides) {
+    using namespace mu::engraving;
+    auto xml = legacy_segment_fixture(R"(<HammerOnPullOff><eid>F_F</eid><track>0</track>
+<startElement>B_B</startElement><endElement>C_C</endElement><HammerOnPullOffSegment no="0">
+<HammerOnPullOffText idx="0"><family>Leland</family><size>17</size><bold>1</bold><offset x="0.5" y="-0.25"/>
+<text>custom</text></HammerOnPullOffText></HammerOnPullOffSegment></HammerOnPullOff>)");
+    auto opened = g_engine->open(as_bytes(xml));
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto *owner = master.spanner_list().front();
+    const AuthoredChildKey key{AuthoredChildRole::SEGMENT_TEXT};
+    ASSERT_NE(owner->authored_overrides.find(key, Pid::FONT_SIZE), nullptr);
+    EXPECT_DOUBLE_EQ(owner->authored_overrides.find(key, Pid::FONT_SIZE)->value.to_double(), 17);
+    Reset::reset_text_style_overrides(&master);
+    auto saved = (*opened)->export_score({.format = engrave::Format::MSCX});
+    ASSERT_TRUE(saved);
+    auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
+    ASSERT_TRUE(reopened);
+    auto *restored = master_of(**reopened).spanner_list().front();
+    EXPECT_EQ(restored->authored_overrides.find(key, Pid::FONT_SIZE), nullptr);
+    EXPECT_EQ(restored->authored_overrides.find(key, Pid::FONT_FACE), nullptr);
+    ASSERT_NE(restored->authored_overrides.find(key, Pid::TEXT), nullptr);
+    EXPECT_EQ(restored->authored_overrides.find(key, Pid::TEXT)->value, PropertyValue(muse::String(u"custom")));
+    EXPECT_EQ(restored->authored_overrides.find(key, Pid::OFFSET)->value, PropertyValue(PointF(0.5, -0.25)));
+    EXPECT_TRUE(restored->segments_empty());
+}
+
 TEST(Read, LegacySlurGripOrdinalGapsBaselineBeforeLayout) {
     const auto xml = legacy_segment_fixture(R"(<Slur><eid>F_F</eid><track>0</track>
 <startElement>B_B</startElement><endElement>C_C</endElement>
