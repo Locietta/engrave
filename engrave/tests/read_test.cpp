@@ -7715,6 +7715,53 @@ TEST(Read, GenericRestParenthesesKeepAuthoredColorWithoutTableCarriers) {
     }
 }
 
+TEST(Read, GenericParenthesisPositionsResetColdAndWarmWithoutClearingAppearance) {
+    using namespace mu::engraving;
+    const std::string fixture = R"(<museScore version="5.00"><Score><Division>480</Division>
+<Part><Staff><StaffType group="pitched"/></Staff><Instrument id="piano"><Channel><program value="0"/></Channel></Instrument></Part>
+<Staff id="1"><Measure><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
+<Rest><durationType>whole</durationType>
+<Parenthesis><color r="24" g="80" b="120" a="255"/><offset x="0.5" y="-0.25"/><autoplace>0</autoplace></Parenthesis>
+<Parenthesis><horizontalDirection>right</horizontalDirection><offset x="-1.25" y="0.75"/></Parenthesis>
+</Rest></voice></Measure></Staff></Score></museScore>)";
+    for (const std::string version : {"4.60", "5.00"}) {
+        for (const bool warm : {false, true}) {
+            auto xml = fixture;
+            xml.replace(xml.find("5.00"), 4, version);
+            auto opened = g_engine->open(as_bytes(xml));
+            ASSERT_TRUE(opened);
+            auto &master = master_of(**opened);
+            auto *rest = to_rest(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+            ASSERT_NE(rest->left_paren(), nullptr);
+            ASSERT_NE(rest->right_paren(), nullptr);
+            EXPECT_EQ(rest->left_paren()->offset() / master.style().spatium(), PointF(0.5, -0.25));
+            EXPECT_EQ(rest->right_paren()->offset() / master.style().spatium(), PointF(-1.25, 0.75));
+            EXPECT_FALSE(rest->left_paren()->autoplace());
+            if (warm) ASSERT_TRUE((*opened)->render({.format = engrave::RenderFormat::SVG}));
+            Reset::reset_all_positions(master.transaction_manager()->current_or_dummy_transaction(), &master);
+            auto saved = (*opened)->export_score({.format = engrave::Format::MSCX});
+            ASSERT_TRUE(saved);
+            auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
+            ASSERT_TRUE(reopened);
+            auto &copy = master_of(**reopened);
+            auto *restored = to_rest(copy.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+            for (int pass = 0; pass != 2; ++pass) {
+                EXPECT_EQ(restored->parentheses_mode(), ParenthesesMode::BOTH);
+                ASSERT_NE(restored->left_paren(), nullptr);
+                ASSERT_NE(restored->right_paren(), nullptr);
+                EXPECT_EQ(restored->left_paren()->offset(), PointF());
+                EXPECT_EQ(restored->right_paren()->offset(), PointF());
+                EXPECT_TRUE(restored->left_paren()->autoplace());
+                EXPECT_EQ(restored->left_paren()->color(), muse::draw::Color(24, 80, 120));
+                EXPECT_FALSE(restored->authored_overrides.has_entries({AuthoredChildRole::PAREN_LEFT}));
+                EXPECT_FALSE(restored->authored_overrides.has_entries({AuthoredChildRole::PAREN_RIGHT}));
+                ASSERT_TRUE((*reopened)->render({.format = engrave::RenderFormat::SVG}));
+                engrave::DocumentAccess::impl(**reopened).discard_layout_output(copy);
+            }
+        }
+    }
+}
+
 TEST(Read, GenericParenthesisVisibilityIsIndependentOfOwnerTagOrder) {
     using namespace mu::engraving;
     for (const std::string version : {"4.60", "5.00"}) {
