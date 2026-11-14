@@ -16,6 +16,7 @@
 #include "stemslash.h"
 #include "style/style.h"
 #include "style/textstyle.h"
+#include "tapping.h"
 #include "text.h"
 #include "textlinebase.h"
 #include "tremolotwochord.h"
@@ -44,14 +45,14 @@ bool supported_property(AuthoredChildRole role, Pid pid) {
         case Pid::TRACK:
         case Pid::VOICE:
         case Pid::TICK:
-        case Pid::STEM_DIRECTION:
+        case Pid::STEM_DIRECTION: return false;
         case Pid::SLUR_DIRECTION:
         case Pid::SLUR_STYLE_TYPE:
-        case Pid::MASK_SLURTIE:
+        case Pid::MASK_SLURTIE: return nested_spanner_role(role);
         case Pid::SPANNER_TICK:
         case Pid::SPANNER_TICKS:
-        case Pid::SPANNER_TRACK2:
-        case Pid::PLAY:
+        case Pid::SPANNER_TRACK2: return false;
+        case Pid::PLAY: return nested_spanner_role(role);
         case Pid::EXCLUDE_FROM_OTHER_PARTS: return false;
         case Pid::USER_LEN: return role != AuthoredChildRole::STEM; // existing typed owner field
         default: return true;
@@ -91,10 +92,15 @@ AuthoredChildKey inferred_key(const EngravingItem &item) {
         if (item.type() == ElementType::STEM_SLASH && static_cast<const EngravingObject *>(chord->stem_slash()) == &item)
             return {AuthoredChildRole::STEM_SLASH};
     }
+    if (item.is_guitar_bend_hold() || item.is_tapping_half_slur()) return item.authored_child;
     if (parent->is_spanner() && item.is_spanner_segment()) {
         const auto &segments = static_cast<const Spanner *>(parent)->spanner_segments();
         for (size_t i = 0; i < segments.size(); ++i)
-            if (segments[i] == &item) return {AuthoredChildRole::SPANNER_SEGMENT, static_cast<uint32_t>(i)};
+            if (segments[i] == &item) {
+                const auto key = static_cast<const EngravingItem *>(parent)->authored_child;
+                return nested_spanner_role(key.role) ? AuthoredChildKey{key.role, static_cast<uint32_t>(i), 0, 1} :
+                                                       AuthoredChildKey{AuthoredChildRole::SPANNER_SEGMENT, static_cast<uint32_t>(i)};
+            }
     }
     if (parent->is_spanner_segment() && item.is_text_base()) {
         const auto &segment = static_cast<const SpannerSegment &>(*parent);
@@ -223,7 +229,12 @@ void mirror_property(EngravingItem &item, Pid pid, const PropertyValue &value, P
     AuthoredOverrideMirror scope(item);
     if (value.is_valid() && pid != Pid::SUBTYPE) {
         switch (pid) {
-            case Pid::COLOR: item.EngravingItem::set_color(value.value<Color>()); break;
+            case Pid::COLOR:
+                if (item.is_spanner())
+                    item.set_property(pid, value);
+                else
+                    item.EngravingItem::set_color(value.value<Color>());
+                break;
             case Pid::VISIBLE: item.EngravingItem::set_visible(value.to_bool()); break;
             case Pid::Z: item.set_z(value.to_int()); break;
             case Pid::OFFSET: item.set_offset(value.value<PointF>()); break;
@@ -245,6 +256,9 @@ void mirror_property(EngravingItem &item, Pid pid, const PropertyValue &value, P
 
 void prepare_carrier(EngravingItem &item, AuthoredOverrideTable &table) {
     if (table.carrier(item.authored_child)) return;
+    if (nested_spanner_role(item.authored_child.role) && item.is_spanner_segment()) {
+        prepare_carrier(*item.ownership_parent_item(), table);
+    }
     if (item.authored_child.role == AuthoredChildRole::SEGMENT_TEXT) {
         auto *segment = static_cast<SpannerSegment *>(item.ownership_parent());
         if (segment->authored_child.role == AuthoredChildRole::NONE)
@@ -266,12 +280,17 @@ void prepare_carrier(EngravingItem &item, AuthoredOverrideTable &table) {
     auto eid = item.eid();
     if (!eid.is_valid()) eid = item.master_score()->eid_register()->new_eid(false);
     table.set_carrier({item.authored_child, item.type(), eid, muse::nidx});
-    if (item.authored_child.role == AuthoredChildRole::SPANNER_SEGMENT) {
+    if (item.is_spanner_segment()) {
         const auto subtype = static_cast<const SpannerSegment &>(item).spanner_segment_type();
         table.set({item.authored_child, Pid::SUBTYPE, int(subtype), PropertyFlags::NOSTYLE});
     }
 }
 } // namespace
+
+bool nested_spanner_role(AuthoredChildRole role) {
+    return role == AuthoredChildRole::HOLD_LINE || role == AuthoredChildRole::TAPPING_SLUR_ABOVE ||
+           role == AuthoredChildRole::TAPPING_SLUR_BELOW;
+}
 
 const AuthoredOverrideEntry *AuthoredOverrideTable::find(AuthoredChildKey child, Pid pid) const {
     const auto it = entry_position(entries, child, pid);
@@ -317,6 +336,7 @@ bool AuthoredOverrideTable::has_entries(AuthoredChildKey child) const {
 AuthoredOverrideTable *authored_override_table(EngravingItem *owner) {
     if (!owner) return nullptr;
     switch (owner->type()) {
+        case ElementType::TAPPING: return &static_cast<Tapping *>(owner)->authored_overrides;
         case ElementType::CHORD: return &static_cast<Chord *>(owner)->authored_overrides;
         case ElementType::NOTE: return &static_cast<Note *>(owner)->authored_overrides;
         case ElementType::MMREST:
@@ -337,7 +357,9 @@ EngravingItem *authored_override_owner(const EngravingItem &item) {
     auto *parent = item.ownership_parent();
     if (!parent || !parent->is_engraving_item()) return nullptr;
     auto *owner = static_cast<EngravingItem *>(parent);
-    if (item.authored_child.role == AuthoredChildRole::SEGMENT_TEXT && owner->is_spanner_segment()) {
+    if (item.is_spanner_segment() && nested_spanner_role(owner->authored_child.role)) {
+        owner = owner->ownership_parent_item();
+    } else if (item.authored_child.role == AuthoredChildRole::SEGMENT_TEXT && owner->is_spanner_segment()) {
         owner = static_cast<SpannerSegment *>(owner)->spanner();
     }
     return authored_override_table(owner) ? owner : nullptr;
@@ -436,6 +458,10 @@ bool set_authored_override_flags(EngravingObject &object, Pid pid, PropertyFlags
 }
 
 void bind_authored_child(EngravingItem &item, AuthoredChildKey key) {
+    if (item.is_spanner_segment()) {
+        const auto inferred = inferred_key(item);
+        if (nested_spanner_role(inferred.role)) key = inferred;
+    }
     if (item.authored_child.role != AuthoredChildRole::NONE && item.authored_child != key) {
         if (const auto *table = authored_override_table(authored_override_owner(item))) {
             for (const auto &entry : table->entries) {

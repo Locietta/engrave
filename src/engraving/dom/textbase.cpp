@@ -322,7 +322,7 @@ const CharFormat TextCursor::selected_fragments_format() const {
 
     // Formatting belongs to logical source runs, not measured/wrapped lines.
     TextBase::LayoutData source;
-    const TextBase::LayoutData *ldata = text_->ldata();
+    const TextBase::LayoutData *ldata = editing() ? text_->ldata() : &source;
     if (!editing()) {
         text_->create_blocks(&source, true);
         ldata = &source;

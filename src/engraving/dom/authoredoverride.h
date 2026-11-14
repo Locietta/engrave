@@ -26,7 +26,11 @@ enum class AuthoredChildRole : uint8_t {
     TUPLET_NUMBER,
     BEAM_FRAGMENT,
     SPANNER_SEGMENT,
-    SEGMENT_TEXT
+    SEGMENT_TEXT,
+    // Nested spanners use subordinal 0 for the parent, 1 for segment ordinals.
+    HOLD_LINE,
+    TAPPING_SLUR_ABOVE,
+    TAPPING_SLUR_BELOW
 };
 
 // Direction qualifies the legacy fragment ordinal; it is not a system/page key.
@@ -80,6 +84,7 @@ struct AuthoredOverrideTable {
     bool has_entries(AuthoredChildKey child) const;
 };
 
+bool nested_spanner_role(AuthoredChildRole role);
 AuthoredOverrideTable *authored_override_table(EngravingItem *owner);
 const AuthoredOverrideTable *authored_override_table(const EngravingItem *owner);
 EngravingItem *authored_override_owner(const EngravingItem &item);

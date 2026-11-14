@@ -100,7 +100,7 @@ void for_each_object(MasterScore &master, const Function &func) {
             EngravingObject *parent = item->parent();
             if (parent && parent->is_chord_rest()) visit(parent);
             // A beam is referred to by the chords it joins, not held by a measure.
-            if (item->is_chord_rest()) visit(mu::engraving::to_chord_rest(item)->beam());
+            if (item->is_chord_rest()) visit(mu::engraving::to_chord_rest(item)->authored_beam());
         };
         const auto visit_tree = [&visit_item](EngravingItem *item) {
             visit_item(item);
@@ -216,6 +216,8 @@ IdClass id_class(const EngravingObject &object) {
         // Layout builds these from what is written (a chord builds its stem, a system its
         // brackets), so an id on one is not in the file and does not survive the next layout
         // pass.  RootItem and DummyParent belong to the score itself.
+        case ElementType::GUITAR_BEND_HOLD:
+        case ElementType::TAPPING_HALF_SLUR:
         case ElementType::SYSTEM:
         case ElementType::PAGE:
         case ElementType::BRACKET:

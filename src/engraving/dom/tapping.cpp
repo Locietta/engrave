@@ -22,6 +22,8 @@
 
 #include "tapping.h"
 
+#include "infrastructure/eidregister.h"
+#include "masterscore.h"
 #include "stafftype.h"
 #include "style/style.h"
 #include "text.h"
@@ -30,17 +32,25 @@
 namespace mu::engraving {
 Tapping::Tapping(DummyParentOr<ChordRest> parent) : Articulation(parent, ElementType::TAPPING) {}
 
-Tapping::Tapping(const Tapping &other) : Articulation(other) { hand_ = other.hand_; }
+Tapping::Tapping(const Tapping &other) : Articulation(other) {
+    hand_ = other.hand_;
+    clone_authored_overrides(authored_overrides, other.authored_overrides, *master_score()->eid_register());
+}
+
+Tapping::LayoutData::~LayoutData() {
+    delete half_slur_above;
+    delete half_slur_below;
+}
 
 void Tapping::set_selected(bool f) {
     if (text_) {
         text_->set_selected(f);
     }
-    if (half_slur_above_) {
-        half_slur_above_->set_selected(f);
+    if (half_slur_above()) {
+        half_slur_above()->set_selected(f);
     }
-    if (half_slur_below_) {
-        half_slur_below_->set_selected(f);
+    if (half_slur_below()) {
+        half_slur_below()->set_selected(f);
     }
 
     EngravingItem::set_selected(f);

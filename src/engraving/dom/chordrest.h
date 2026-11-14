@@ -75,6 +75,8 @@ public:
 
     virtual Beam *beam() const final;
 
+    Beam *authored_beam() const { return beam_; }
+
     int beams() const { return duration_type_.hooks(); }
 
     virtual double up_pos() const = 0;
