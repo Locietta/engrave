@@ -314,7 +314,7 @@ void PageLayout::collect_page(LayoutContext &ctx) {
             }
 
             for (size_t track = 0; track < ctx.dom().ntracks(); ++track) {
-                for (Segment *segment = m->first(); segment; segment = segment->next()) {
+                for (Segment *segment = m->rendered_first(); segment; segment = segment->rendered_next()) {
                     EngravingItem *e2 = segment->effective_element(track);
                     if (!e2) {
                         continue;

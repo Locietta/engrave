@@ -376,7 +376,7 @@ PointF SLine::line_pos(Grip grip, System **system) const {
             if (!start) {
                 Fraction cur_tick = segment->tick();
                 while (true) {
-                    Segment *prev_seg = mm_rest ? segment->prev1_mm() : segment->prev1();
+                    Segment *prev_seg = mm_rest ? segment->rendered_prev1_mm() : segment->rendered_prev1();
                     if (prev_seg && prev_seg->tick() == cur_tick) {
                         segment = prev_seg;
                     } else {

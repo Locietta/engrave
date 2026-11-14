@@ -268,7 +268,8 @@ void MeasureLayout::layout_measure(MeasureBase *current_mb, LayoutContext &ctx) 
         }
     }
 
-    for (Segment &segment : measure->segments()) {
+    for (Segment *rendered = measure->rendered_first(); rendered; rendered = rendered->rendered_next()) {
+        Segment &segment = *rendered;
         if (segment.is_breath_type()) {
             for (EngravingItem *e : segment.effective_elements()) {
                 if (e && e->is_breath()) {
@@ -1110,8 +1111,14 @@ void MeasureLayout::set_courtesy_key_sig(Measure *m, const Fraction &ref_sig_tic
         const Fraction ref_sig_element_tick = staff->current_key_tick(ref_sig_tick);
         const Measure *ref_measure = ctx.dom().tick2measure_mm(ref_sig_element_tick);
         const Segment *actual_key_sig_seg =
-            ref_measure ? ref_measure->find_segment_r(SegmentType::KEY_SIG, ref_sig_element_tick - ref_measure->tick()) : nullptr;
-        const EngravingItem *el = actual_key_sig_seg ? actual_key_sig_seg->element(track) : nullptr;
+            ref_measure ? (ref_measure->is_mm_rest() ?
+                               ref_measure->find_rendered_segment_r(SegmentType::KEY_SIG, ref_sig_element_tick - ref_measure->tick()) :
+                               ref_measure->find_segment_r(SegmentType::KEY_SIG, ref_sig_element_tick - ref_measure->tick())) :
+                          nullptr;
+        const EngravingItem *el = actual_key_sig_seg ?
+                                      (actual_key_sig_seg->measure()->is_mm_rest() ? actual_key_sig_seg->effective_element(track) :
+                                                                                     actual_key_sig_seg->element(track)) :
+                                      nullptr;
         const KeySig *actual_key_sig = el ? to_key_sig(el) : nullptr;
 
         const KeySigEvent ref_key = staff->key_sig_event(ref_sig_tick);
@@ -1221,16 +1228,24 @@ void MeasureLayout::set_courtesy_clef(Measure *m, const Fraction &ref_clef_tick,
         const Staff *staff = ctx.dom().staff(track2staff(track));
         const Fraction ref_clef_element_tick = staff->current_clef_tick(ref_clef_tick);
         const Measure *ref_measure = ctx.dom().tick2measure_mm(ref_clef_element_tick);
-        const Segment *actual_clef_seg = ref_measure ? ref_measure->find_segment_r(SegmentType::CLEF | SegmentType::HEADER_CLEF,
-                                                                                   ref_clef_element_tick - ref_measure->tick()) :
-                                                       nullptr;
+        const Segment *actual_clef_seg =
+            ref_measure ? (ref_measure->is_mm_rest() ? ref_measure->find_rendered_segment_r(SegmentType::CLEF | SegmentType::HEADER_CLEF,
+                                                                                            ref_clef_element_tick - ref_measure->tick()) :
+                                                       ref_measure->find_segment_r(SegmentType::CLEF | SegmentType::HEADER_CLEF,
+                                                                                   ref_clef_element_tick - ref_measure->tick())) :
+                          nullptr;
         if (!actual_clef_seg && ref_measure && ref_measure->prev_measure_mm()) {
             // Check previous measure
             Measure *ref_prev_measure = ref_measure->prev_measure_mm();
-            actual_clef_seg = ref_prev_measure->find_segment_r(SegmentType::CLEF | SegmentType::HEADER_CLEF,
-                                                               ref_clef_element_tick - ref_prev_measure->tick());
+            actual_clef_seg = (ref_prev_measure->is_mm_rest() ?
+                                   ref_prev_measure->find_rendered_segment_r(SegmentType::CLEF | SegmentType::HEADER_CLEF,
+                                                                             ref_clef_element_tick - ref_prev_measure->tick()) :
+                                   ref_prev_measure->find_segment_r(SegmentType::CLEF | SegmentType::HEADER_CLEF,
+                                                                    ref_clef_element_tick - ref_prev_measure->tick()));
         }
-        const EngravingItem *el = actual_clef_seg ? actual_clef_seg->element(track) : nullptr;
+        const EngravingItem *el = actual_clef_seg ? (actual_clef_seg->measure()->is_mm_rest() ? actual_clef_seg->effective_element(track) :
+                                                                                                actual_clef_seg->element(track)) :
+                                                    nullptr;
         const Clef *actual_clef = el ? to_clef(el) : nullptr;
 
         const ClefType ref_clef = staff->clef(ref_clef_tick);

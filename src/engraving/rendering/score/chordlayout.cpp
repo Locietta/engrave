@@ -182,7 +182,7 @@ void ChordLayout::layout_pitched(Chord *item, LayoutContext &ctx) {
 
     // If item has an arpeggio: mark chords which are part of the arpeggio
     if (item->arpeggio()) {
-        item->arpeggio()->find_and_attach_to_chords();
+        item->arpeggio()->find_and_attach_to_rendered_chords();
         item->arpeggio()->mutldata()->max_chord_pad = 0.0;
         item->arpeggio()->mutldata()->min_chord_x = DBL_MAX;
         TLayout::layout_item(item->arpeggio(), ctx);
@@ -573,7 +573,7 @@ void ChordLayout::layout_tablature(Chord *item, LayoutContext &ctx) {
     } // end of if(duration_symbols)
 
     if (item->arpeggio()) {
-        item->arpeggio()->find_and_attach_to_chords();
+        item->arpeggio()->find_and_attach_to_rendered_chords();
         double y = upnote->pos().y() - upnote->head_height() * .5;
         TLayout::layout_arpeggio(item->arpeggio(), item->arpeggio()->mutldata(), ctx.conf());
         lll += item->arpeggio()->width() + spatium_value * .5;

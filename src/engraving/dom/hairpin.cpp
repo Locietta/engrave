@@ -544,7 +544,7 @@ PointF Hairpin::line_pos(Grip grip, System **system) const {
 
     if (!start) {
         Fraction cur_tick = segment->tick();
-        Segment *prev_seg = segment->prev1(SegmentType::END_BAR_LINE);
+        Segment *prev_seg = segment->rendered_prev1(SegmentType::END_BAR_LINE);
         if (prev_seg && prev_seg->tick() == cur_tick) {
             segment = prev_seg;
         }

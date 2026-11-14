@@ -263,7 +263,7 @@ PointF Pedal::line_pos(Grip grip, System **sys) const {
     }
 
     if (end_seg->rtick() == Fraction(0, 1)) {
-        Segment *prev_seg = end_seg->prev1(SegmentType::END_BAR_LINE);
+        Segment *prev_seg = end_seg->rendered_prev1(SegmentType::END_BAR_LINE);
         if (prev_seg) {
             end_seg = prev_seg;
         }

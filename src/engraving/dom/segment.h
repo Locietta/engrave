@@ -182,6 +182,14 @@ public:
 
     Segment *rendered_prev1() const { return prev1(); }
 
+    Segment *rendered_prev1(SegmentType types) const { return prev1(types); }
+
+    Segment *rendered_prev1_mm() const { return prev1_mm(); }
+
+    bool rendered_is_before(const Segment *other) const { return is_before(other); }
+
+    Segment *rendered_next_cr(track_idx_t track, bool same_staff) const { return next_cr(track, same_staff); }
+
     Segment *rendered_next1_enabled() const { return next1enabled(); }
 
     Segment *rendered_prev1_enabled() const { return prev1enabled(); }
