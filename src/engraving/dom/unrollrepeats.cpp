@@ -24,7 +24,6 @@
  File handling: loading and saving.
  */
 
-#include "../editing/editexcerpt.h"
 #include "../editing/transaction/transaction.h"
 #include "barline.h"
 #include "engravingitem.h"
@@ -114,55 +113,4 @@ static void create_excerpts(MasterScore *cs, const std::vector<Excerpt *> &excer
 //    unroll all the repeats
 //---------------------------------------------------------
 
-MasterScore *MasterScore::unroll_repeats() {
-    MasterScore *original = this;
-
-    // create a copy of the original score to play with
-    MasterScore *score = original->clone();
-
-    // if no repeats, just return the score as-is
-    const RepeatList &expanded_repeats = original->expanded_repeat_list();
-    if (expanded_repeats.size() == 1) {
-        return score;
-    }
-
-    // remove excerpts for now (they are re-created after unrolling master score)
-    std::vector<Excerpt *> excerpts;
-    excerpts.reserve(score->excerpts().size());
-    for (Excerpt *e : score->excerpts()) {
-        excerpts.push_back(new Excerpt(*e, false));
-        score->master_score()->delete_excerpt(e);
-    }
-
-    // follow along with the repeatList
-    bool first = true;
-    for (const RepeatSegment *rs : expanded_repeats) {
-        Fraction start_tick = Fraction::from_ticks(rs->tick);
-        Fraction end_tick = Fraction::from_ticks(rs->end_tick());
-
-        // first segment left from clone, everything past that removed
-        if (first) {
-            if (end_tick <= score->last_measure()->tick()) { // check if we actually need to remove any measures
-                score->delete_measures(score->tick2measure(end_tick), score->last_measure());
-            }
-            first = false;
-        } else { // just append this section from the original to the new score
-            score->append_measures_from_score(original, start_tick, end_tick);
-        }
-    }
-
-    remove_repeat_markings(score);
-
-    score->update_ticks_and_time_sig_map();
-
-    score->set_layout_all();
-    score->do_layout();
-
-    // re-create excerpt parts
-    if (!excerpts.empty()) {
-        create_excerpts(score, excerpts);
-    }
-
-    return score;
-}
 } // namespace mu::engraving

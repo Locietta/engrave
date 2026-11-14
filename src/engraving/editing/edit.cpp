@@ -106,7 +106,6 @@
 #include "editpagelocks.h"
 #include "editpart.h"
 #include "editrehearsalmark.h"
-#include "editscoreproperties.h"
 #include "editspanner.h"
 #include "editstaffbrackets.h"
 #include "editstyle.h"
@@ -116,7 +115,6 @@
 #include "inserttime.h"
 #include "log.h"
 #include "navigation.h"
-#include "splitjoinmeasure.h"
 #include "transaction/transaction.h"
 #include "transpose.h"
 
@@ -2949,102 +2947,6 @@ bool Score::check_time_delete(Segment *start_segment, Segment *end_segment) {
 ///    delete time by decreasing measure length if partial measures are selected
 //---------------------------------------------------------
 
-void Score::cmd_time_delete() {
-    Transaction &tx = transaction_manager()->current_or_dummy_transaction();
-
-    EngravingItem *e = selection().element();
-
-    if (e && e->is_bar_line() && to_bar_line(e)->segment()->is_end_bar_line_type()) {
-        const Measure *m = to_bar_line(e)->segment()->measure();
-        const Measure *next = m->next_measure();
-        if (next) {
-            SplitJoinMeasure::join_measures(tx, master_score_, m->tick(), next->tick());
-        }
-        return;
-    }
-
-    Segment *start_segment = nullptr;
-    Segment *end_segment = nullptr;
-
-    if (selection().state() != SelState::RANGE) {
-        if (!e) {
-            return;
-        }
-
-        ChordRest *cr = nullptr;
-        if (e->is_note()) {
-            cr = to_note(e)->chord();
-        } else if (e->is_chord_rest()) {
-            cr = to_chord_rest(e);
-        } else {
-            return;
-        }
-
-        start_segment = cr->segment();
-        Fraction end_tick = cr->end_tick();
-        end_segment = tick2measure(end_tick)->find_segment(SegmentType::CHORD_REST, end_tick);
-    } else {
-        start_segment = selection().start_segment();
-        end_segment = selection().end_segment();
-    }
-
-    if (!is_master() && master_score()) {
-        Fraction start_tick = start_segment->tick();
-        Measure *master_start_meas = master_score()->tick2measure(start_tick);
-        Segment *master_start_seg = master_start_meas->find_segment(start_segment->segment_type(), start_segment->tick());
-        Segment *master_end_seg = nullptr;
-
-        if (end_segment) {
-            Fraction end_tick = end_segment->tick();
-            Measure *master_end_meas = master_score()->tick2measure(end_tick);
-            if (end_segment->is_end_bar_line_type()) {
-                Measure *prev_master_end_measure = master_end_meas->prev_measure();
-                master_end_meas = prev_master_end_measure ? prev_master_end_measure : master_end_meas;
-            }
-            master_end_seg = master_end_meas->find_segment(end_segment->segment_type(), end_segment->tick());
-        }
-
-        master_score()->do_time_delete(master_start_seg, master_end_seg);
-    } else {
-        do_time_delete(start_segment, end_segment);
-    }
-
-    if (note_entry_mode()) {
-        Segment *current_segment = end_segment;
-        ChordRest *cr = nullptr;
-        if (!current_segment && last_measure_mm()) {
-            // deleted to end of score - get last cr on current track
-            current_segment = last_measure_mm()->last();
-            if (current_segment) {
-                cr = current_segment->next_chord_rest(is_.track(), true);
-                if (cr) {
-                    current_segment = cr->segment();
-                }
-            }
-        }
-        if (!current_segment) {
-            // no cr found - append a new measure
-            append_measures(1);
-            current_segment = last_measure_mm()->first(SegmentType::CHORD_REST);
-        }
-        is_.set_segment(current_segment);
-        cr = is_.cr();
-        if (cr) {
-            if (cr->is_chord()) {
-                select(to_chord(cr)->up_note(), SelectType::SINGLE);
-            } else {
-                select(cr, SelectType::SINGLE);
-            }
-        } else {
-            // could not find cr to select,
-            // may be that there is a "hole" in the current track
-            deselect_all();
-        }
-    } else {
-        deselect_all();
-    }
-}
-
 void Score::do_time_delete(Segment *start_segment, Segment *end_segment) {
     if (!check_time_delete(start_segment, end_segment)) {
         return;
@@ -3277,8 +3179,6 @@ void Score::undo_change_style_values(std::unordered_map<Sid, PropertyValue> valu
     for (auto &value : values) requested.push_back({value.first, std::move(value.second)});
     master_score()->transaction_manager()->current_or_dummy_transaction().change_style_values(*this, requested);
 }
-
-void Score::undo_change_page_number_offset(int po) { apply_change_page_number_offset(this, po); }
 
 void Score::undo_change_parent(EngravingItem *element, EngravingItem *parent, staff_idx_t staff_idx, bool change_links_parents) {
     if (!element || !parent) {

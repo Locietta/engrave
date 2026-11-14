@@ -295,9 +295,6 @@ public:
     void cmd_move_rest(Rest *, DirectionV);
     void cmd_move_lyrics(Lyrics *, DirectionV);
 
-    bool append_measures_from_score(Score *score, const Fraction &start_tick, const Fraction &end_tick);
-    bool append_score(Score *, bool add_page_break = false, bool add_section_break = true);
-
     const std::vector<Staff *> &staves() const { return staves_; }
 
     size_t nstaves() const { return staves_.size(); }
@@ -377,7 +374,7 @@ public:
     void apply_measure_repeat_count(Measure *measure, int count, staff_idx_t staff);
     void undo_change_style_val(Sid idx, const PropertyValue &v);
     void undo_change_style_values(std::unordered_map<Sid, PropertyValue> values);
-    void undo_change_page_number_offset(int po);
+
     void undo_change_parent(EngravingItem *element, EngravingItem *parent, staff_idx_t input_staff, bool change_links_parents = true);
     void undo_reset_play_count_text_settings(BarLine *bl);
     void undo_update_play_count_text(Measure *m);
@@ -942,7 +939,6 @@ public:
     /// For Scores: returns the excerpt name
     virtual String name() const;
 
-    void cmd_time_delete();
     bool check_time_delete(Segment *start_segment, Segment *end_segment);
     void do_time_delete(Segment *start_segment, Segment *end_segment);
     void do_time_delete_for_measure(Measure *, Segment *, const Fraction &);

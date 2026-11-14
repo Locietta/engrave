@@ -165,11 +165,6 @@ public:
     void clear();
     bool is_clear() const;
 
-    void undo_set_fret_dot(int input_string, int input_fret, bool input_add = false, FretDotType input_dtype = FretDotType::NORMAL);
-    void undo_set_fret_marker(int input_string, FretMarkerType input_mtype);
-    void undo_set_fret_barre(int input_string, int input_fret, bool input_add = false);
-    void undo_fret_clear();
-
     int fret_offset() const { return fret_offset_; }
 
     void set_fret_offset(int val) { fret_offset_ = val; }

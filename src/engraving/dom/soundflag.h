@@ -62,8 +62,6 @@ public:
 
     bool should_hide(bool is_printing) const;
 
-    void undo_change_sound_flag(const PresetCodes &presets, const PlayingTechniqueCode &technique);
-
     char16_t icon_code() const;
     muse::draw::Font icon_font() const;
     Color icon_background_color() const;

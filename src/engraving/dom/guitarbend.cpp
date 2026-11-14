@@ -22,7 +22,6 @@
 
 #include "guitarbend.h"
 
-#include "../editing/editdata.h"
 #include "../editing/editnote.h"
 #include "../editing/navigation.h"
 #include "../editing/noteinput.h"

@@ -121,7 +121,6 @@
 #include "engraving/editing/addremoveelement.h"
 #include "engraving/editing/editpart.h"
 #include "engraving/editing/editvisibility.h"
-#include "engraving/editing/flip.h"
 #include "engraving/editing/reset.h"
 #include "engraving/editing/transaction/transaction.h"
 #include "engraving/infrastructure/eidregister.h"
@@ -792,56 +791,6 @@ TEST(Read, PlacedArticulationUsesTheBelowGlyphBounds) {
     EXPECT_EQ(artic->ldata()->bbox(), artic->sym_bbox(SymId::ARTIC_MARCATO_BELOW));
 }
 
-TEST(Read, DirtyFlipHonoursExplicitDynamicDirection) {
-    using namespace mu::engraving;
-    auto source = read_text(write470_fixture());
-    source.insert(source.find("<voice>") + 7, "<Dynamic><subtype>f</subtype><direction>down</direction></Dynamic>");
-    auto opened = g_engine->open(as_bytes(source), {.format = engrave::Format::MSCX});
-    ASSERT_TRUE(opened);
-    auto &master = master_of(**opened);
-    Dynamic *dynamic = nullptr;
-    for (auto *object : engrave::document_objects(master))
-        if (object->is_dynamic()) {
-            dynamic = to_dynamic(object);
-            break;
-        }
-    ASSERT_NE(dynamic, nullptr);
-    master.ensure_layout();
-    ASSERT_TRUE(dynamic->set_property(Pid::DIRECTION, DirectionV::UP));
-    master.select(dynamic, SelectType::SINGLE);
-    master.start_cmd(muse::TranslatableString::untranslatable("flip direction"));
-    Flip::flip(master.transaction_manager()->current_or_dummy_transaction(), &master);
-    master.end_cmd(false);
-    EXPECT_EQ(dynamic->get_property(Pid::DIRECTION).value<DirectionV>(), DirectionV::DOWN);
-    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 1u);
-}
-
-TEST(Read, DirtyBendFlipHonoursAnExplicitDirection) {
-    using namespace mu::engraving;
-    auto opened = g_engine->open(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "tests/data/inputs/golden/tab_grace_prebend.mscx");
-    ASSERT_TRUE(opened);
-    auto &master = master_of(**opened);
-    GuitarBend *bend = nullptr;
-    for (auto *object : engrave::document_objects(master))
-        if (object->is_guitar_bend()) {
-            bend = to_guitar_bend(object);
-            break;
-        }
-    ASSERT_NE(bend, nullptr);
-    ASSERT_TRUE(bend->set_property(Pid::DIRECTION, DirectionV::DOWN));
-    master.ensure_layout();
-    ASSERT_FALSE(bend->ldata()->up());
-    ASSERT_FALSE(bend->spanner_segments().empty());
-    auto *segment = bend->spanner_segments().front();
-    ASSERT_TRUE(bend->set_property(Pid::DIRECTION, DirectionV::UP));
-    master.select(segment, SelectType::SINGLE);
-    master.start_cmd(muse::TranslatableString::untranslatable("flip bend"));
-    Flip::flip(master.transaction_manager()->current_or_dummy_transaction(), &master);
-    master.end_cmd(false);
-    EXPECT_EQ(bend->direction(), DirectionV::DOWN);
-    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 1u);
-}
-
 TEST(Read, DirtyBeamDirectionReadFallsBackToAutoDefault) {
     using namespace mu::engraving;
     auto source = read_text(write470_fixture());
@@ -884,22 +833,6 @@ TEST(Read, DerivedClefAndTimeSigFlagsRejectPropertyEdits) {
         EXPECT_EQ(edit.error().code, engrave::ErrorCode::INVALID_ARGUMENT);
     }
     EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
-}
-
-TEST(Read, ColdAutoFlipUsesDefaultWithoutLayout) {
-    using namespace mu::engraving;
-    auto opened = g_engine->open(write470_fixture());
-    ASSERT_TRUE(opened);
-    auto &master = master_of(**opened);
-    auto *note = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0))->notes().front();
-    master.select(note, SelectType::SINGLE);
-    master.start_cmd(muse::TranslatableString::untranslatable("inferred flip"));
-    Flip::flip(master.transaction_manager()->current_or_dummy_transaction(), &master);
-    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
-    master.end_cmd(false);
-    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
-    EXPECT_TRUE(master.layout_state.dirty);
-    EXPECT_EQ(note->chord()->stem_direction(), DirectionV::DOWN);
 }
 
 TEST(Read, DeletingSnappedItemDisconnectsTheSurvivingItem) {

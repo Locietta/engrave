@@ -59,7 +59,6 @@
 #include "inserttime.h"
 #include "log.h"
 #include "navigation.h"
-#include "regroup.h"
 #include "transaction/transaction.h"
 #include "translation.h"
 #include "transpose.h"
@@ -1673,38 +1672,3 @@ void NoteInput::decrease_duration(Transaction &tx, Score *score) {
 //---------------------------------------------------------
 //   realtimeAdvance
 //---------------------------------------------------------
-
-void NoteInput::realtime_advance(Transaction &tx, Score *score, bool allow_transposition, const std::vector<int> &active_midi_pitches) {
-    InputState &is = score->input_state();
-    if (!is.note_entry_mode()) {
-        return;
-    }
-
-    Fraction ticks2measure_end = is.segment()->measure()->ticks() - is.segment()->rtick();
-    if (!is.cr() || (is.cr()->ticks() != is.duration().fraction() && is.duration() < ticks2measure_end)) {
-        score->set_note_rest(is.segment(), is.track(), NoteVal(), is.duration().fraction(), DirectionV::AUTO);
-    }
-
-    ChordRest *prev_cr_value = to_chord_rest(is.cr());
-    if (is.beyond_score()) {
-        score->append_measures(1);
-    }
-
-    is.move_to_next_input_pos();
-
-    if (active_midi_pitches.empty()) {
-        score->set_note_rest(is.segment(), is.track(), NoteVal(), is.duration().fraction(), DirectionV::AUTO);
-    } else {
-        Chord *prev_chord = prev_cr_value->is_chord() ? to_chord(prev_cr_value) : 0;
-        bool part_of_chord = false;
-        for (int pitch : active_midi_pitches) {
-            NoteInput::add_tied_midi_pitch(tx, score, pitch, part_of_chord, prev_chord, allow_transposition);
-            part_of_chord = true;
-        }
-    }
-
-    if (prev_cr_value->measure() != is.segment()->measure()) {
-        // just advanced across barline. Now simplify tied notes.
-        Regroup::regroup_notes_and_rests(tx, score, prev_cr_value->measure()->tick(), is.segment()->measure()->tick(), is.track());
-    }
-}
