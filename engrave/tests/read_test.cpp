@@ -5718,27 +5718,89 @@ TEST(Read, ImportedDotColorAndColdVisibilitySurviveCloneAndLayout) {
     }
 }
 
+TEST(Read, DeleteLinkedRestsRemovesEmptySegments) {
+    using namespace mu::engraving;
+    const auto fixture = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "src/engraving/tests/parts_data/delete-linked-rests.mscx";
+    for (bool from_part : {false, true}) {
+        SCOPED_TRACE(from_part);
+        auto opened = g_engine->open(fixture);
+        ASSERT_TRUE(opened) << opened.error().message;
+        auto &master = master_of(**opened);
+        const auto outline = (*opened)->outline();
+        ASSERT_TRUE(outline);
+        ASSERT_TRUE((*opened)->edit({{engrave::GenerateExcerpts{{outline->parts.front().id}}}}));
+        const auto check = [](MasterScore &score, size_t expected) {
+            ASSERT_EQ(score.excerpts().size(), 1u);
+            for (auto *part : {static_cast<Score *>(&score), score.excerpts().front()->excerpt_score()}) {
+                size_t count = 0;
+                for (auto *segment = part->first_measure()->first(SegmentType::CHORD_REST); segment;
+                     segment = segment->next(SegmentType::CHORD_REST)) {
+                    EXPECT_FALSE(segment->empty());
+                    auto *item = segment->element(0);
+                    ASSERT_NE(item, nullptr);
+                    ASSERT_TRUE(item->is_rest());
+                    EXPECT_EQ(to_rest(item)->ticks(), expected == 1 ? Fraction(1, 1) : Fraction(1, 4));
+                    ++count;
+                }
+                EXPECT_EQ(count, expected);
+            }
+        };
+        check(master, 4);
+        auto *part = master.excerpts().front()->excerpt_score();
+        const auto layouts = master.layout_state.whole_count + master.layout_state.range_count;
+        const auto part_layouts = part->layout_state.whole_count + part->layout_state.range_count;
+        EXPECT_EQ(part_layouts, 0u);
+        auto *owner = from_part ? part : &master;
+        auto *first = owner->first_measure()->first(SegmentType::CHORD_REST)->element(0);
+        ASSERT_TRUE((*opened)->edit({{engrave::SetDuration{engrave::from_engine(first->eid()), engrave::Fraction{1, 1}}}}));
+        check(master, 1);
+        EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, layouts);
+        EXPECT_EQ(part->layout_state.whole_count + part->layout_state.range_count, part_layouts);
+        const auto saved = (*opened)->export_score({.format = engrave::Format::MSCX});
+        ASSERT_TRUE(saved);
+        auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
+        ASSERT_TRUE(reopened);
+        check(master_of(**reopened), 1);
+    }
+}
+
 TEST(Read, RestDotsStayColdUntilLayoutAndRespectSourceVisibility) {
     using namespace mu::engraving;
     for (const std::string version : {"4.60", "5.00"}) {
-        auto input = legacy_segment_fixture("");
-        input.replace(input.find("5.00"), 4, version);
-        const auto start = input.find("<Chord>");
-        input.replace(start, input.find("</Chord>", start) + 8 - start,
-                      "<Rest><dots>1</dots><durationType>quarter</durationType>"
-                      "<NoteDot><color r=\"30\" g=\"20\" b=\"10\" a=\"255\"/></NoteDot></Rest>");
-        auto opened = g_engine->open(as_bytes(input));
-        ASSERT_TRUE(opened) << opened.error().message;
-        auto &master = master_of(**opened);
-        auto *rest = to_rest(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
-        EXPECT_EQ(rest->dot(0), nullptr);
-        EXPECT_FALSE(rest->has_layout_data());
-        ASSERT_TRUE((*opened)->edit({{engrave::SetProperty{engrave::from_engine(rest->eid()), "visible", false}}}));
-        EXPECT_TRUE(rest->dot_list().empty());
-        ASSERT_TRUE((*opened)->page_count());
-        ASSERT_NE(rest->dot(0), nullptr);
-        EXPECT_EQ(rest->dot(0)->color(), muse::draw::Color(30, 20, 10));
-        EXPECT_FALSE(rest->dot(0)->visible());
+        for (bool authored_hidden_dot : {false, true}) {
+            SCOPED_TRACE(version);
+            SCOPED_TRACE(authored_hidden_dot);
+            auto input = legacy_segment_fixture("");
+            input.replace(input.find("5.00"), 4, version);
+            const auto start = input.find("<Chord>");
+            const std::string dot = authored_hidden_dot ? "<visible>0</visible>" : "";
+            input.replace(start, input.find("</Chord>", start) + 8 - start,
+                          "<Rest><dots>1</dots><durationType>quarter</durationType>"
+                          "<NoteDot>" +
+                              dot + "<color r=\"30\" g=\"20\" b=\"10\" a=\"255\"/></NoteDot></Rest>");
+            auto opened = g_engine->open(as_bytes(input));
+            ASSERT_TRUE(opened) << opened.error().message;
+            auto &master = master_of(**opened);
+            auto *rest = to_rest(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+            if (!authored_hidden_dot)
+                ASSERT_TRUE((*opened)->edit({{engrave::SetProperty{engrave::from_engine(rest->eid()), "visible", false}}}));
+            const auto saved = (*opened)->export_score({.format = engrave::Format::MSCX, .native_version = "5.00"});
+            ASSERT_TRUE(saved) << saved.error().message;
+            auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
+            ASSERT_TRUE(reopened) << reopened.error().message;
+            for (auto *document : {opened->get(), reopened->get()}) {
+                auto &score = master_of(*document);
+                auto *item = to_rest(score.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+                EXPECT_EQ(item->visible(), authored_hidden_dot);
+                EXPECT_EQ(item->dot(0), nullptr);
+                EXPECT_FALSE(item->has_layout_data());
+                EXPECT_TRUE(item->dot_list().empty());
+                ASSERT_TRUE(document->page_count());
+                ASSERT_NE(item->dot(0), nullptr);
+                EXPECT_EQ(item->dot(0)->color(), muse::draw::Color(30, 20, 10));
+                EXPECT_FALSE(item->dot(0)->visible());
+            }
+        }
     }
 }
 
