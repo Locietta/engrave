@@ -590,6 +590,44 @@ TEST(NativeSave, S13EmptyHarmonyCreationIsRejectedBeforePublication) {
     }
 }
 
+TEST(StaveSharingOutput, S13NashvilleUsesMappedOriginSourceKey) {
+    using namespace mu::engraving;
+    auto xml = read_text(g_source_root / "tests/data/inputs/stave-sharing.mscx");
+    for (int staff : {3, 4}) {
+        const auto start = xml.find(std::format("<Staff id=\"{}\">", staff));
+        const auto at = xml.find("<voice>", start) + std::string("<voice>").size();
+        xml.insert(at, "<KeySig><concertKey>2</concertKey></KeySig>");
+    }
+    const auto origin = xml.find("<Staff id=\"3\">");
+    const auto at = xml.find("<Chord>", origin);
+    xml.insert(at, "<Harmony><harmonyType>2</harmonyType><harmonyInfo><root>16</root></harmonyInfo></Harmony>");
+    auto document = open_text(xml);
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    EXPECT_EQ(master.staff(0)->key(Fraction(0, 1)), Key::C);
+    EXPECT_EQ(master.staff(2)->key(Fraction(0, 1)), Key::D);
+    Harmony *source = nullptr;
+    auto *segment = master.first_measure()->first(SegmentType::CHORD_REST);
+    for (auto *item : segment->annotations())
+        if (item->is_harmony() && item->staff_idx() == 2) source = to_harmony(item);
+    ASSERT_NE(source, nullptr);
+    EXPECT_EQ(source->display_name(), u"1");
+    const auto cold = native_captures(*document);
+    expect_no_layout(master);
+    ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+    Harmony *display = nullptr;
+    for (auto *item : segment->rendered_annotations())
+        if (item->is_harmony() && item->is_layout_copy() && item->staff_idx() == 0) display = to_harmony(item);
+    ASSERT_NE(display, nullptr);
+    String rendered;
+    for (const auto *item : display->ldata()->render_item_list())
+        if (const auto *text = dynamic_cast<const TextSegment *>(item)) rendered += text->text();
+    EXPECT_EQ(rendered, u"1");
+    EXPECT_EQ(display->display_text(), u"1");
+    EXPECT_EQ(source->display_name(), u"1");
+    EXPECT_EQ(native_captures(*document), cold);
+}
+
 TEST(NativeSave, FBoxS13SynchronizesColdAndSurvivesRender) {
     using namespace mu::engraving;
     auto document = open_path(g_source_root / "tests/data/inputs/fbox.mscx");

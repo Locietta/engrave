@@ -30,6 +30,7 @@
 #include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
 #include "engraving/rendering/score/scorerenderer.h"
 #include "fret.h"
+#include "harmonydisplay.h"
 #include "linkedobjects.h"
 #include "log.h"
 #include "measure.h"
@@ -159,7 +160,10 @@ ParsedChord *HarmonyInfo::get_parsed_chord() {
 
 bool HarmonyInfo::has_modifiers() const { return parsed_chord_ ? parsed_chord_->modifiers().size() > 0 : false; }
 
-String Harmony::display_text() const { return display_name(); }
+String Harmony::display_text() const {
+    const Staff *display_staff = staff();
+    return is_layout_copy() && display_staff ? harmony_display_name(*this, display_staff->rendered_key(tick())) : display_name();
+}
 
 //---------------------------------------------------------
 //   harmonyName
