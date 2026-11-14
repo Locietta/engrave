@@ -2631,6 +2631,7 @@ void Score::undo_add_element(EngravingItem *element, bool add_to_linked_staves, 
             ne->set_score(e->score());
             ne->set_selected(false);
             ne->set_ownership_parent(e);
+            if (ne->is_parenthesis() && !ne->generated() && !ne->eid().is_valid()) ne->assign_new_eid();
             do_undo_add_element(ne);
         }
         return;
