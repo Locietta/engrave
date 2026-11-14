@@ -375,6 +375,7 @@ TEST(NativeSave, ColdEqualsWarm) {
         if (written_by_engine(entry.path()) || entry.path().filename() == "created.json") inputs.push_back(entry.path());
     }
     inputs.push_back(g_source_root / "tests/data/inputs/evening.musicxml");
+    inputs.push_back(g_source_root / "tests/data/inputs/mmr-boundary.mscx");
     std::ranges::sort(inputs);
     for (const auto &path : inputs) {
         SCOPED_TRACE(path.filename().string());
@@ -420,6 +421,127 @@ TEST(NativeSave, ColdEqualsWarm) {
         const auto warm = write();
         EXPECT_EQ(cold, warm);
     }
+}
+
+TEST(MmrOutput, DestinationSignatureSegmentWinsWithoutMergingTracks) {
+    using namespace mu::engraving;
+    auto document = open_path(g_source_root / "tests/data/inputs/mmr-conflict.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *second = master.first_measure()->next_measure();
+    auto *third = second->next_measure();
+    auto *key = third->find_segment_r(SegmentType::KEY_SIG, Fraction(0, 1));
+    auto *time = third->find_segment_r(SegmentType::TIME_SIG, Fraction(0, 1));
+    ASSERT_NE(key, nullptr);
+    ASSERT_NE(time, nullptr);
+    EXPECT_EQ(to_key_sig(key->element(0))->key(), Key::D);
+    EXPECT_EQ(key->element(4), nullptr);
+    EXPECT_EQ(time->element(4), nullptr);
+    EXPECT_EQ(second->find_segment_r(SegmentType::KEY_SIG, second->ticks()), nullptr);
+    EXPECT_EQ(second->find_segment_r(SegmentType::TIME_SIG, second->ticks()), nullptr);
+    ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+    ASSERT_NE(third->mm_rest(), nullptr);
+    auto *shown_key = third->mm_rest()->find_rendered_segment_r(SegmentType::KEY_SIG, Fraction(0, 1));
+    auto *shown_time = third->mm_rest()->find_rendered_segment_r(SegmentType::TIME_SIG, Fraction(0, 1));
+    ASSERT_NE(shown_key, nullptr);
+    ASSERT_NE(shown_time, nullptr);
+    EXPECT_EQ(to_key_sig(shown_key->effective_element(0))->key(), Key::D);
+    EXPECT_EQ(shown_key->effective_element(4), nullptr);
+    EXPECT_EQ(shown_time->effective_element(4), nullptr);
+}
+
+TEST(MmrOutput, BoundaryRenderDiscardAndTogglePreserveSource) {
+    using namespace mu::engraving;
+    auto document = open_path(g_source_root / "tests/data/inputs/mmr-boundary.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *first = master.first_measure();
+    auto *second = first->next_measure();
+    auto *third = second->next_measure();
+    auto *last = third->next_measure();
+    ASSERT_NE(last, nullptr);
+    EXPECT_EQ(first->mm_rest(), nullptr);
+    EXPECT_EQ(last->next(), nullptr);
+    auto *key = third->find_segment_r(SegmentType::KEY_SIG, Fraction(0, 1));
+    auto *time = third->find_segment_r(SegmentType::TIME_SIG, Fraction(0, 1));
+    auto *clef = second->find_segment_r(SegmentType::CLEF, second->ticks());
+    ASSERT_NE(key, nullptr);
+    ASSERT_NE(time, nullptr);
+    ASSERT_NE(clef, nullptr);
+    EXPECT_EQ(to_key_sig(key->element(0))->key(), Key::D);
+    EXPECT_EQ(to_clef(clef->element(0))->clef_type(), ClefType::F);
+    const auto objects = engrave::document_objects(master);
+    std::vector<Segment *> segments;
+    for (auto *m = first; m; m = m->next_measure())
+        for (auto *segment = m->first(); segment; segment = segment->next()) segments.push_back(segment);
+    const auto write = [&] {
+        muse::io::Buffer buffer;
+        buffer.open(muse::io::IODevice::WRITE_ONLY);
+        rw::WriteInOutData inout(&master);
+        inout.ctx.set_inline_style(true);
+        EXPECT_TRUE(rw::RWRegister::writer()->write_score(&master, &buffer, &inout));
+        return std::string(reinterpret_cast<const char *>(buffer.data().const_data()), buffer.data().size());
+    };
+    const auto cold = write();
+    for (const auto *tag : {"<multiMeasureRest", "<mmRestLast", "<MMRest", "<MMRestRange"}) EXPECT_EQ(cold.find(tag), std::string::npos);
+    std::vector<std::vector<std::byte>> baseline;
+    for (int cycle = 0; cycle < 2; ++cycle) {
+        auto svg = document->render({.format = engrave::RenderFormat::SVG});
+        ASSERT_TRUE(svg) << svg.error().message;
+        ASSERT_FALSE(svg->pages.empty());
+        auto *display = first->mm_rest();
+        ASSERT_NE(display, nullptr);
+        EXPECT_EQ(display->mm_rest_count(), 2);
+        EXPECT_EQ(display->mm_rest_first(), first);
+        EXPECT_EQ(display->mm_rest_last(), second);
+        EXPECT_EQ(first->next(), second);
+        EXPECT_EQ(second->prev(), first);
+        EXPECT_EQ(second->next(), third);
+        EXPECT_EQ(third->prev(), second);
+        EXPECT_FALSE(source_object(*display));
+        auto *rest = display->first(SegmentType::CHORD_REST)->effective_element(0);
+        ASSERT_NE(rest, nullptr);
+        EXPECT_TRUE(rest->is_mm_rest());
+        EXPECT_GT(rest->width(), 0.0);
+        const auto *shown_clef = master.layout_copy(*clef->element(0));
+        ASSERT_NE(shown_clef, nullptr);
+        EXPECT_EQ(shown_clef->find_measure(), display);
+        EXPECT_EQ(shown_clef->tick(), display->end_tick());
+        EXPECT_GT(shown_clef->width(), 0.0);
+        for (auto *signature : {key->element(0), time->element(0)}) {
+            auto *copy = master.layout_copy(*signature);
+            ASSERT_NE(copy, nullptr);
+            EXPECT_EQ(copy->find_measure(), third->mm_rest());
+            EXPECT_GT(copy->width(), 0.0);
+        }
+        EXPECT_EQ(write(), cold);
+        EXPECT_EQ(engrave::document_objects(master), objects);
+        std::vector<Segment *> current;
+        for (auto *m = first; m; m = m->next_measure())
+            for (auto *segment = m->first(); segment; segment = segment->next()) current.push_back(segment);
+        EXPECT_EQ(current, segments);
+        if (cycle == 0)
+            baseline = svg->pages;
+        else
+            EXPECT_EQ(svg->pages, baseline);
+        master.layout_data_store()->clear();
+        EXPECT_EQ(first->mm_rest(), nullptr);
+        EXPECT_EQ(master.layout_copy(*clef->element(0)), nullptr);
+        EXPECT_EQ(write(), cold);
+    }
+    master.style().set(Sid::CREATE_MULTI_MEASURE_RESTS, false);
+    master.invalidate_layout(third->tick(), third->end_tick());
+    ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+    EXPECT_EQ(first->mm_rest(), nullptr);
+    master.style().set(Sid::CREATE_MULTI_MEASURE_RESTS, true);
+    master.invalidate_layout(third->tick(), third->end_tick());
+    auto ranged = document->render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(ranged);
+    master.layout_data_store()->clear();
+    auto full = document->render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(full);
+    EXPECT_EQ(ranged->pages, full->pages);
+    EXPECT_EQ(full->pages, baseline);
 }
 
 TEST(SegmentOutput, MixedBarlineKeepsAuthoredContentAndSourceIdentity) {

@@ -1,0 +1,9 @@
+<museScore version="4.70"><Score><Division>480</Division><Style><createMultiMeasureRests>1</createMultiMeasureRests><changesBeforeBarlineRepeats>0</changesBeforeBarlineRepeats></Style>
+<Part><Staff id="1"/><Staff id="2"/><Instrument><trackName>Piano</trackName></Instrument></Part>
+<Staff id="1"><Measure><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig><Rest><durationType>measure</durationType></Rest></voice></Measure>
+<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>
+<Measure len="3/4"><voice><KeySig><concertKey>2</concertKey><actualKey>2</actualKey></KeySig><TimeSig><sigN>3</sigN><sigD>4</sigD></TimeSig><Rest><durationType>measure</durationType></Rest></voice></Measure>
+<Measure len="3/4"><voice><Rest><durationType>measure</durationType></Rest></voice></Measure></Staff>
+<Staff id="2"><Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>
+<Measure><voice><Rest><durationType>measure</durationType></Rest><KeySig><concertKey>3</concertKey><actualKey>3</actualKey></KeySig><TimeSig><sigN>6</sigN><sigD>8</sigD></TimeSig></voice></Measure>
+<Measure len="3/4"><voice><Rest><durationType>measure</durationType></Rest></voice></Measure><Measure len="3/4"><voice><Rest><durationType>measure</durationType></Rest></voice></Measure></Staff></Score></museScore>

@@ -1,0 +1,8 @@
+<museScore version="4.70"><Score><Division>480</Division>
+<Style><createMultiMeasureRests>1</createMultiMeasureRests><placeClefsBeforeRepeats>1</placeClefsBeforeRepeats><changesBeforeBarlineRepeats>0</changesBeforeBarlineRepeats><mmRestShowMeasureNumberRange>1</mmRestShowMeasureNumberRange></Style>
+<Part><Staff id="1"/><Instrument><trackName>Piano</trackName></Instrument></Part>
+<Staff id="1"><Measure><startRepeat/><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig><Rest><durationType>measure</durationType></Rest></voice></Measure>
+<Measure><endRepeat>2</endRepeat><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>
+<Measure len="3/4"><voice><KeySig><concertKey>2</concertKey><actualKey>2</actualKey></KeySig><TimeSig><sigN>3</sigN><sigD>4</sigD></TimeSig><Clef><clefToBarlinePos>1</clefToBarlinePos><concertClefType>F</concertClefType><transposingClefType>F</transposingClefType></Clef><Rest><durationType>measure</durationType></Rest></voice></Measure>
+<Measure len="3/4"><voice><Rest><durationType>measure</durationType></Rest></voice></Measure></Staff>
+</Score></museScore>

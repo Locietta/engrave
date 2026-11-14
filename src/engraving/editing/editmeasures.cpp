@@ -368,12 +368,7 @@ void mu::engraving::apply_measure_length(Measure *measure, Fraction len) {
     measure->score()->invalidate_repeat_list();
 }
 
-void mu::engraving::apply_change_mmrest(Measure *m, Measure *mmrest) {
-    note_change(m, CommandType::CHANGE_MM_REST);
-    note_change(mmrest, CommandType::CHANGE_MM_REST);
-
-    m->set_mm_rest(mmrest);
-}
+void mu::engraving::apply_change_mmrest(Measure *m, Measure *mmrest) { m->set_mm_rest(mmrest); }
 
 //---------------------------------------------------------
 //   ChangeMeasureRepeatCount
@@ -384,16 +379,12 @@ void mu::engraving::apply_measure_repeat_count(Measure *measure, int count, staf
 }
 
 void mu::engraving::apply_change_mmrest_next(Measure *mmrest_, MeasureBase *next_) {
-    note_change(mmrest_, CommandType::UNKNOWN);
-
     assert(mmrest_->is_mm_rest());
 
     mmrest_->set_next(next_);
 }
 
 void mu::engraving::apply_change_mmrest_prev(Measure *mmrest_, MeasureBase *prev_) {
-    note_change(mmrest_, CommandType::UNKNOWN);
-
     assert(mmrest_->is_mm_rest());
 
     mmrest_->set_prev(prev_);

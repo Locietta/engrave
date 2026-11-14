@@ -21,7 +21,8 @@
  */
 
 #pragma once
-
+#include <map>
+#include <memory>
 #include <vector>
 
 #include "../types/types.h"
@@ -127,6 +128,8 @@ struct ReadContext {
     void add_part_audio_setting_compat(PartAudioSettingsCompat part_audio_setting);
 
     const SettingsCompat &setting_compat() { return settings_compat; }
+
+    std::map<Measure *, std::unique_ptr<Measure>> legacy_mmrests;
 
     Fraction time_sig_for_next_measure() { return time_sig_for_next_measure_; }
 

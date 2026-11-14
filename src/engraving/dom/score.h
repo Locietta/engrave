@@ -1112,7 +1112,6 @@ private:
 
     PaddingTables padding_tables_;
     double minimum_padding_unit_ = 0.0;
-    std::vector<std::pair<const EngravingItem *, EngravingItem *>> layout_copies_;
 };
 
 static inline Score *to_score(EngravingObject *e) {

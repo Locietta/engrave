@@ -2,11 +2,11 @@
 #pragma once
 
 namespace mu::engraving {
-struct Score;
+struct Measure;
 
 namespace rw {
 // Older native files store authored elements inside display MMRs. Restore source
 // ownership once during loading, before timeline/repeat/tie finalization.
-void restore_mm_rest_sources(Score &score);
+void restore_mm_rest_sources(Measure &source, Measure &legacy);
 } // namespace rw
 } // namespace mu::engraving

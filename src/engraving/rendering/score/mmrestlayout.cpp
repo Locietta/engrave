@@ -128,10 +128,8 @@ void MMRestLayout::create_mm_rest(LayoutContext &ctx, Measure *first_measure, Me
     if (first_measure != last_measure) {
         for (Measure *m = first_measure->next_measure(); m; m = m->next_measure()) {
             ++num_measures_in_mm_rest;
-            m->set_mm_rest_count(0);
-            if (Measure *old_mm_rest = m->mm_rest()) {
+            if (m->mm_rest()) {
                 apply_change_mmrest(m, nullptr);
-                clear_display_copies(old_mm_rest);
             }
             if (m == last_measure) {
                 break;
@@ -156,7 +154,7 @@ void MMRestLayout::create_mm_rest(LayoutContext &ctx, Measure *first_measure, Me
     mmr_measure->set_mm_rest_count(num_measures_in_mm_rest);
     mmr_measure->set_measure_number(first_measure->measure_number());
 
-    ctx.mut_dom().update_locks_on_create_mm_rest(first_measure, last_measure);
+    mmr_measure->mutldata()->mm_rest_last = last_measure;
 
     mmr_measure->set_repeat_start(first_measure->repeat_start() || last_measure->repeat_start());
     mmr_measure->set_repeat_end(first_measure->repeat_end() || last_measure->repeat_end());
@@ -619,7 +617,7 @@ void MMRestLayout::create_multi_measure_rests_if_need(Measure *first_measure, La
             ctx.mut_state().set_measure_number(mn);
         }
     } else if (first_measure->mm_rest()) {
-        remove_mm_rest_elements(first_measure->mm_rest(), ctx);
+        apply_change_mmrest(first_measure, nullptr);
 
         if (first_measure->mm_rest_count() > 0) {
             LOGD("mmrest: measureNumber %d += %d", ctx.state().measure_number(), first_measure->mm_rest_count());

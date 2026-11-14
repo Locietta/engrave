@@ -243,9 +243,6 @@ Score::~Score() {
     if (layout_data_store_) renderer()->release_layout_data_store(*this);
     for (MeasureBase *m = measures_.first(); m;) {
         MeasureBase *nm = m->next();
-        if (m->is_measure() && to_measure(m)->mm_rest()) {
-            delete to_measure(m)->mm_rest();
-        }
         delete m;
         m = nm;
     }
@@ -344,29 +341,15 @@ static void on_bracket_item_destruction(Score *score, const BracketItem *item) {
 //---------------------------------------------------------
 
 void Score::register_layout_copy(const EngravingItem &source, EngravingItem &display) {
-    display.set_layout_copy(true);
-    std::erase_if(layout_copies_, [&](const auto &entry) { return entry.first == &source; });
-    layout_copies_.emplace_back(&source, &display);
-    // Composite annotations (e.g. a fret diagram's harmony) keep their own IDs.
-    // Pair the clone's source children in the order maintained by clone().
-    const auto &source_children = source.children();
-    const auto &display_children = display.children();
-    auto next = display_children.begin();
-    for (const auto *child : source_children) {
-        if (!child->is_engraving_item()) continue;
-        while (next != display_children.end() && (*next)->type() != child->type()) ++next;
-        if (next == display_children.end()) break;
-        register_layout_copy(*to_engraving_item(child), *to_engraving_item(*next++));
-    }
+    renderer()->layout_data_store(*this).register_layout_copy(source, display);
 }
 
 const EngravingItem *Score::layout_copy(const EngravingItem &source) const {
-    const auto found = std::ranges::find_if(layout_copies_, [&](const auto &entry) { return entry.first == &source; });
-    return found != layout_copies_.end() ? found->second : nullptr;
+    return layout_data_store_ ? layout_data_store_->layout_copy(source) : nullptr;
 }
 
 void Score::clear_layout_copies(const Measure &display) {
-    std::erase_if(layout_copies_, [&](const auto &entry) { return entry.second->find_measure() == &display; });
+    if (layout_data_store_) layout_data_store_->clear_layout_copies(display);
 }
 
 void Score::on_element_destruction(EngravingItem *e) {
@@ -391,7 +374,7 @@ void Score::on_element_destruction(EngravingItem *e) {
 
     // Keys are only compared, never dereferenced. A removed source can outlive
     // its display copy until the next layout; neither may leave a stale mapping.
-    std::erase_if(score->layout_copies_, [e](const auto &entry) { return entry.first == e || entry.second == e; });
+    if (auto *store = score->layout_data_store()) store->retire_layout_copy(*e);
 
     if (e->is_bracket_item()) {
         on_bracket_item_destruction(score, to_bracket_item(e));

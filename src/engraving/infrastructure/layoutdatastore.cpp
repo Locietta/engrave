@@ -32,6 +32,36 @@ LayoutDataStore::LayoutDataStore(Score &score) : records_(std::make_unique<Recor
 
 LayoutDataStore::~LayoutDataStore() { detach_score(); }
 
+void LayoutDataStore::register_layout_copy(const EngravingItem &source, EngravingItem &display) {
+    display.set_layout_copy(true);
+    std::erase_if(layout_copies_, [&](const auto &entry) { return entry.first == &source; });
+    layout_copies_.emplace_back(&source, &display);
+    // Composite annotations (e.g. a fret diagram's harmony) keep their own IDs.
+    // Pair the clone's source children in the order maintained by clone().
+    const auto &source_children = source.children();
+    const auto &display_children = display.children();
+    auto next = display_children.begin();
+    for (const auto *child : source_children) {
+        if (!child->is_engraving_item()) continue;
+        while (next != display_children.end() && (*next)->type() != child->type()) ++next;
+        if (next == display_children.end()) break;
+        register_layout_copy(*to_engraving_item(child), *to_engraving_item(*next++));
+    }
+}
+
+const EngravingItem *LayoutDataStore::layout_copy(const EngravingItem &source) const {
+    const auto found = std::ranges::find_if(layout_copies_, [&](const auto &entry) { return entry.first == &source; });
+    return found != layout_copies_.end() ? found->second : nullptr;
+}
+
+void LayoutDataStore::clear_layout_copies(const Measure &display) {
+    std::erase_if(layout_copies_, [&](const auto &entry) { return entry.second->find_measure() == &display; });
+}
+
+void LayoutDataStore::retire_layout_copy(const EngravingItem &item) {
+    std::erase_if(layout_copies_, [&](const auto &entry) { return entry.first == &item || entry.second == &item; });
+}
+
 size_t LayoutDataStore::size() const { return records_->items.size(); }
 
 const EngravingItem::LayoutData *LayoutDataStore::find(const EngravingItem &item) const {
@@ -147,6 +177,7 @@ void LayoutDataStore::discard_score_output() {
             if (record.second.item->is_segment()) to_segment(record.second.item)->clear_shapes();
         }
     }
+    layout_copies_.clear();
     // Systems unlink their borrowers while pages and source owners are alive.
     muse::delete_all(output_.systems);
     output_.systems.clear();

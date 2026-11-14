@@ -100,10 +100,31 @@ const char *Segment::sub_type_name(SegmentType t) {
 //   setElement
 //---------------------------------------------------------
 
-Segment::LayoutData::~LayoutData() { muse::delete_all(generated); }
+Segment::LayoutData::~LayoutData() {
+    for (auto *copy : display_copies)
+        if (copy && copy->score()->layout_data_store()) copy->score()->layout_data_store()->retire_layout_copy(*copy);
+    muse::delete_all(display_copies);
+    muse::delete_all(generated);
+}
+
+void Segment::add_display_copy(const EngravingItem &source) {
+    auto &copies = mutldata()->display_copies;
+    copies.resize(score()->ntracks());
+    auto *copy = source.clone();
+    copy->set_ownership_parent(this);
+    if (auto *old = copies[source.track()]) {
+        if (auto *store = score()->layout_data_store()) store->retire_layout_copy(*old);
+        delete old;
+    }
+    copies[source.track()] = copy;
+    score()->register_layout_copy(source, *copy);
+}
 
 EngravingItem *Segment::effective_element(track_idx_t track) const {
+    if (ldata()->suppressed) return nullptr;
     if (auto *authored = element(track)) return authored;
+    const auto &copies = ldata()->display_copies;
+    if (track < copies.size() && copies[track]) return copies[track];
     const auto &generated = ldata()->generated;
     return track < generated.size() ? generated[track] : nullptr;
 }
@@ -2956,7 +2977,7 @@ bool Segment::goes_before(const Segment *next_segment, bool rendered) const {
     bool next_is_header =
         next_segment->is_header_clef_type() || (next_segment->rtick() == Fraction(0, 1) && first_system_measure && !next_is_clef);
 
-    bool this_is_end_of_measure = end_of_measure_change();
+    bool this_is_end_of_measure = rendered && !ldata()->display_copies.empty() ? rtick() == meas->ticks() : end_of_measure_change();
 
     // Place segments in correct place when "Place all changes before the barline" is enabled
     if (this_is_end_of_measure && next_segment->tick() != meas->end_tick()) {

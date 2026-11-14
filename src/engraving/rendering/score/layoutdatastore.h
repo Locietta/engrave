@@ -28,6 +28,10 @@ struct LayoutDataStore {
 
     ScoreOutput &score_output() { return output_; }
 
+    void register_layout_copy(const EngravingItem &source, EngravingItem &display);
+    const EngravingItem *layout_copy(const EngravingItem &source) const;
+    void clear_layout_copies(const Measure &display);
+    void retire_layout_copy(const EngravingItem &item);
     void discard_score_output();
     void retire_measure_borrowers(Measure &measure);
 
@@ -48,5 +52,6 @@ private:
     std::unique_ptr<Records> records_;
     Score *score_;
     ScoreOutput output_;
+    std::vector<std::pair<const EngravingItem *, EngravingItem *>> layout_copies_;
 };
 } // namespace mu::engraving::rendering::score

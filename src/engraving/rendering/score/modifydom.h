@@ -34,8 +34,6 @@ struct ModifyDom {
 
     static void create_stems(const Measure *measure, LayoutContext &ctx);
     static void sort_measure_segments(Measure *measure, LayoutContext &ctx);
-private:
-    static void remove_and_add_begin_segments(Measure *measure);
 };
 } // namespace mu::engraving::rendering::score
 
