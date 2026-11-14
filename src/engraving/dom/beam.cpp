@@ -306,9 +306,75 @@ void Beam::calc_beam_breaks(const ChordRest *cr, const ChordRest *prev_cr, int l
 
 void Beam::spatium_changed(double, double) {}
 
+bool Beam::can_continue_across_measure(const ChordRest *prev, const ChordRest *next) {
+    const auto mode = next->beam_mode();
+    const auto prev_mode = prev->beam_mode();
+    const auto *measure = prev->measure();
+    return (mode == BeamMode::MID || mode == BeamMode::END || mode == BeamMode::BEGIN16 || mode == BeamMode::BEGIN32) &&
+           prev_mode != BeamMode::END && prev_mode != BeamMode::NONE && prev_mode != BeamMode::INVALID && !measure->line_break() &&
+           !measure->page_break() && !measure->section_break() && measure->next() == next->measure() &&
+           measure->end_tick() == next->measure()->tick() && !(prev->is_chord() && prev->duration_type().type() <= DurationType::V_QUARTER);
+}
+
+std::vector<ChordRest *> Beam::source_elements() const {
+    // Native files attach the beam only to its anchor; BeamMode carries the rest of the group.
+    auto members = elements_;
+    const auto append = [&](ChordRest *cr) {
+        if (std::find(members.begin(), members.end(), cr) == members.end()) members.push_back(cr);
+    };
+    for (auto *anchor : elements_) {
+        const auto accepts = [&](ChordRest *cr, ChordRest *prev, bool grace) {
+            if (cr->authored_beam() && cr->authored_beam() != this) return false;
+            const auto mode = grace ? Groups::base_beam_mode(cr) : Groups::actual_beam_mode(cr, prev);
+            if ((cr->duration_type().type() <= DurationType::V_QUARTER && (grace || !cr->is_rest())) || mode == BeamMode::NONE ||
+                mode == BeamMode::BEGIN)
+                return false;
+            append(cr);
+            return mode != BeamMode::END;
+        };
+        if (anchor->is_grace()) {
+            auto *main = to_chord(anchor->ownership_parent());
+            for (const auto &notes : {main->grace_notes_before(), main->grace_notes_after()}) {
+                auto it = std::find(notes.begin(), notes.end(), anchor);
+                if (it == notes.end() || Groups::base_beam_mode(anchor) == BeamMode::END ||
+                    Groups::base_beam_mode(anchor) == BeamMode::NONE || anchor->duration_type().type() <= DurationType::V_QUARTER)
+                    continue;
+                for (++it; it != notes.end(); ++it)
+                    if (!accepts(*it, nullptr, true)) break;
+            }
+            continue;
+        }
+        if (!anchor->segment() || anchor->beam_mode() == BeamMode::END || anchor->beam_mode() == BeamMode::NONE ||
+            (anchor->is_chord() && anchor->duration_type().type() <= DurationType::V_QUARTER))
+            continue;
+        auto *measure = anchor->measure();
+        auto *segment = anchor->segment()->next(SegmentType::CHORD_REST);
+        auto *prev = anchor;
+        while (measure) {
+            for (; segment; segment = segment->next(SegmentType::CHORD_REST)) {
+                auto *cr = to_chord_rest(segment->element(anchor->track()));
+                if (!cr) continue;
+                if (!accepts(cr, prev, false)) break;
+                prev = cr;
+            }
+            if (segment) break;
+            auto *next_measure = measure->next_measure();
+            if (!next_measure) break;
+            segment = next_measure->first(SegmentType::CHORD_REST);
+            while (segment && !segment->element(anchor->track())) segment = segment->next(SegmentType::CHORD_REST);
+            if (!segment) break;
+            auto *next = to_chord_rest(segment->element(anchor->track()));
+            if (!can_continue_across_measure(prev, next)) break;
+            measure = next_measure;
+            prev = nullptr; // Contextual grouping restarts at each measure, as in create_beams.
+        }
+    }
+    return members;
+}
+
 std::pair<int, int> Beam::source_staff_move_bounds() const {
     std::optional<std::pair<int, int>> bounds;
-    for (const auto *member : elements_) {
+    for (const auto *member : source_elements()) {
         if (!member->is_chord()) continue;
         const int move = member->staff_move();
         if (!bounds)
@@ -329,7 +395,7 @@ void Beam::set_direction(DirectionV d) {
 
     do_set_direction(d);
 
-    const auto members = elements_;
+    const auto members = source_elements();
     for (ChordRest *e : members) {
         if (e->is_chord()) {
             to_chord(e)->undo_change_property(Pid::STEM_DIRECTION, d);
