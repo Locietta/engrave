@@ -7665,3 +7665,33 @@ TEST(Read, GenericRestParenthesesKeepAuthoredColorWithoutTableCarriers) {
         }
     }
 }
+
+TEST(Read, OwnerColorKeepsGeneratedStemAndDotDefaultsAfterColdSave) {
+    using namespace mu::engraving;
+    auto xml = legacy_segment_fixture("");
+    const auto at = xml.find("<durationType>half</durationType>");
+    xml.replace(at, 33, "<durationType>quarter</durationType><dots>1</dots>");
+    auto opened = g_engine->open(as_bytes(xml));
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    ASSERT_TRUE((*opened)->edit({{engrave::SetProperty{engrave::from_engine(chord->eid()), "color", engrave::Color{24, 80, 120}}}}));
+    auto saved = (*opened)->export_score({.format = engrave::Format::MSCX});
+    ASSERT_TRUE(saved);
+    auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
+    ASSERT_TRUE(reopened);
+    auto &copy = master_of(**reopened);
+    auto *restored = to_chord(copy.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    EXPECT_EQ(restored->notes().front()->color(), muse::draw::Color(24, 80, 120));
+    for (int cycle = 0; cycle != 2; ++cycle) {
+        ASSERT_TRUE((*reopened)->render({.format = engrave::RenderFormat::SVG}));
+        ASSERT_NE(restored->stem(), nullptr);
+        EXPECT_EQ(restored->stem()->color(), muse::draw::Color(0, 0, 0));
+        auto *note = restored->notes().front();
+        ASSERT_NE(note->dot(0), nullptr);
+        EXPECT_EQ(note->dot(0)->color(), muse::draw::Color(0, 0, 0));
+        EXPECT_EQ(note->authored_overrides.find({AuthoredChildRole::DOT}, Pid::COLOR), nullptr);
+        EXPECT_EQ(restored->authored_overrides.find({AuthoredChildRole::STEM}, Pid::COLOR), nullptr);
+        engrave::DocumentAccess::impl(**reopened).discard_layout_output(copy);
+    }
+}
