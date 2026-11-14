@@ -25,6 +25,7 @@
 #include <algorithm>
 #include <cmath>
 
+#include "beamgrouping.h"
 #include "chord.h"
 #include "containers.h"
 #include "groups.h"
@@ -317,82 +318,74 @@ bool Beam::can_continue_across_measure(const ChordRest *prev, const ChordRest *n
 }
 
 std::vector<ChordRest *> Beam::source_elements() const {
-    // Native files attach the beam only to its anchor; BeamMode carries the rest of the group.
-    auto members = elements_;
+    std::vector<ChordRest *> members;
     const auto append = [&](ChordRest *cr) {
-        if (std::find(members.begin(), members.end(), cr) == members.end()) members.push_back(cr);
+        if (!muse::contains(members, cr)) members.push_back(cr);
     };
     for (auto *anchor : elements_) {
-        const auto accepts = [&](ChordRest *cr, ChordRest *prev) {
-            if (cr->authored_beam() && cr->authored_beam() != this) return false;
-            const auto mode = Groups::actual_beam_mode(cr, prev);
-            if ((cr->duration_type().type() <= DurationType::V_QUARTER && !cr->is_rest()) || mode == BeamMode::NONE ||
-                mode == BeamMode::BEGIN)
-                return false;
-            append(cr);
-            return mode != BeamMode::END;
+        ChordRest *pending = nullptr;
+        std::vector<ChordRest *> group;
+        bool found = false;
+        const auto finish = [&] {
+            const auto at = std::find(group.begin(), group.end(), anchor);
+            if (at != group.end()) {
+                // A dormant authored beam must not edit a different authored beam's
+                // chords, even when rendering subsumes both into one automatic group.
+                auto first = at;
+                while (first != group.begin()) {
+                    auto *owner = (*(first - 1))->authored_beam();
+                    if (owner && owner != this) break;
+                    --first;
+                }
+                auto last = at + 1;
+                while (last != group.end() && (!(*last)->authored_beam() || (*last)->authored_beam() == this)) ++last;
+                for (; first != last; ++first) append(*first);
+                found = true;
+            }
+            group.clear();
+        };
+        const auto consume = [&](ChordRest *cr, BeamMode mode, bool grace) {
+            const auto step = beam_group_step(pending, !group.empty(), cr, mode, grace);
+            if (step.finish_before) finish();
+            if (step.first) group.push_back(step.first);
+            if (step.append) group.push_back(cr);
+            if (step.finish_after) finish();
+            pending = step.pending;
         };
         if (anchor->is_grace()) {
             auto *main = to_chord(anchor->ownership_parent());
             for (const auto &notes : {main->grace_notes_before(), main->grace_notes_after()}) {
                 if (std::find(notes.begin(), notes.end(), anchor) == notes.end()) continue;
-                std::vector<ChordRest *> group;
-                bool beamed = false;
-                const auto finish = [&] {
-                    if (beamed && std::find(group.begin(), group.end(), anchor) != group.end())
-                        for (auto *cr : group) append(cr);
-                    group.clear();
-                    beamed = false;
-                };
-                for (auto *cr : notes) {
-                    const auto mode = Groups::grace_beam_mode(cr);
-                    if (mode == BeamMode::NONE) {
-                        finish();
-                        continue;
-                    }
-                    if (mode == BeamMode::BEGIN) finish();
-                    group.push_back(cr);
-                    // Layout handles END only on an established beam, after the initial pair.
-                    if (beamed && mode == BeamMode::END)
-                        finish();
-                    else if (group.size() == 2)
-                        beamed = true;
-                }
+                for (auto *cr : notes) consume(cr, Groups::grace_beam_mode(cr), true);
                 finish();
             }
-            continue;
-        }
-        if (!anchor->segment()) continue;
-        const ChordRest *previous = nullptr;
-        for (auto *segment = anchor->segment()->prev(SegmentType::CHORD_REST); segment; segment = segment->prev(SegmentType::CHORD_REST)) {
-            previous = to_chord_rest(segment->element(anchor->track()));
-            if (previous) break;
-        }
-        const auto anchor_mode = Groups::actual_beam_mode(anchor, previous);
-        if (anchor_mode == BeamMode::END || anchor_mode == BeamMode::NONE ||
-            (anchor->is_chord() && anchor->duration_type().type() <= DurationType::V_QUARTER))
-            continue;
-        auto *measure = anchor->measure();
-        auto *segment = anchor->segment()->next(SegmentType::CHORD_REST);
-        auto *prev = anchor;
-        while (measure) {
-            for (; segment; segment = segment->next(SegmentType::CHORD_REST)) {
-                auto *cr = to_chord_rest(segment->element(anchor->track()));
-                if (!cr) continue;
-                if (!accepts(cr, prev)) break;
-                prev = cr;
+        } else if (anchor->segment()) {
+            ChordRest *previous_measure_last = nullptr;
+            for (auto *measure = score()->first_measure(); measure && !found; measure = measure->next_measure()) {
+                const ChordRest *prev = nullptr;
+                bool first = true;
+                for (auto *segment = measure->first(SegmentType::CHORD_REST); segment; segment = segment->next(SegmentType::CHORD_REST)) {
+                    auto *cr = to_chord_rest(segment->element(anchor->track()));
+                    if (!cr) continue;
+                    if (first && (!previous_measure_last || !can_continue_across_measure(previous_measure_last, cr))) {
+                        finish();
+                        pending = nullptr;
+                    }
+                    first = false;
+                    consume(cr, Groups::actual_beam_mode(cr, prev), false);
+                    prev = cr;
+                    previous_measure_last = cr;
+                }
+                if (first) {
+                    finish();
+                    pending = nullptr;
+                    previous_measure_last = nullptr;
+                }
             }
-            if (segment) break;
-            auto *next_measure = measure->next_measure();
-            if (!next_measure) break;
-            segment = next_measure->first(SegmentType::CHORD_REST);
-            while (segment && !segment->element(anchor->track())) segment = segment->next(SegmentType::CHORD_REST);
-            if (!segment) break;
-            auto *next = to_chord_rest(segment->element(anchor->track()));
-            if (!can_continue_across_measure(prev, next)) break;
-            measure = next_measure;
-            prev = nullptr; // Contextual grouping restarts at each measure, as in create_beams.
+            finish();
         }
+        // An authored beam can remain editable while its only chord is unbeamed.
+        if (!found) append(anchor);
     }
     return members;
 }

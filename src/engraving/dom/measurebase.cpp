@@ -404,64 +404,28 @@ void MeasureBase::sync_break_flags(bool section_changed) {
 }
 
 void MeasureBase::undo_set_break(bool v, LayoutBreakType type) {
-    switch (type) {
-        case LayoutBreakType::LINE:
-            if (line_break() == v) {
-                return;
-            }
-            note_change(this, CommandType::UNKNOWN);
-            set_line_break(v);
-            break;
-        case LayoutBreakType::PAGE:
-            if (page_break() == v) {
-                return;
-            }
-            note_change(this, CommandType::UNKNOWN);
-            if (v && line_break()) {
-                set_line_break(false);
-            }
-            set_page_break(v);
-            break;
-        case LayoutBreakType::SECTION:
-            if (section_break() == v) {
-                return;
-            }
-            note_change(this, CommandType::UNKNOWN);
-            if (v && line_break()) {
-                set_line_break(false);
-            }
-            set_section_break(v);
-            break;
-        case LayoutBreakType::NOBREAK:
-            if (no_break() == v) {
-                return;
-            }
-            note_change(this, CommandType::UNKNOWN);
-            if (v) {
-                set_line_break(false);
-                set_page_break(false);
-                set_section_break(false);
-            }
-            set_no_break(v);
-            break;
+    MeasureBase *mb = (is_measure() && to_measure(this)->is_mm_rest()) ? to_measure(this)->mm_rest_last() : this;
+    std::vector<EngravingItem *> remove;
+    bool present = false;
+    for (auto *item : mb->el()) {
+        if (!item->is_layout_break()) continue;
+        const auto existing = to_layout_break(item)->layout_break_type();
+        present |= existing == type;
+        // Page and section breaks may coexist; every other pair is exclusive.
+        const bool compatible = (type == LayoutBreakType::PAGE && existing == LayoutBreakType::SECTION) ||
+                                (type == LayoutBreakType::SECTION && existing == LayoutBreakType::PAGE);
+        if ((!v && existing == type) || (v && existing != type && !compatible)) remove.push_back(item);
     }
-
-    if (v) {
-        MeasureBase *mb = (is_measure() && to_measure(this)->is_mm_rest()) ? to_measure(this)->mm_rest_last() : this;
-        LayoutBreak *lb = Factory::create_layout_break(mb);
+    for (auto *item : remove) score()->undo_remove_element(item);
+    if (v && !present) {
+        auto *lb = Factory::create_layout_break(mb);
         lb->set_layout_break_type(type);
         lb->set_track(0);
         score()->undo_add_element(lb);
     }
-    cleanup_layout_breaks(true);
 }
 
-//---------------------------------------------------------
-//   cleanupLayoutBreaks
-//---------------------------------------------------------
-
 void MeasureBase::cleanup_layout_breaks(bool undo) {
-    // remove unneeded layout breaks
     std::vector<EngravingItem *> to_delete;
     for (EngravingItem *e : el()) {
         if (e->is_layout_break()) {
@@ -493,7 +457,8 @@ void MeasureBase::cleanup_layout_breaks(bool undo) {
         if (undo) {
             score()->undo_remove_element(e);
         } else {
-            el_.remove(e);
+            remove(e);
+            delete e;
         }
     }
 }

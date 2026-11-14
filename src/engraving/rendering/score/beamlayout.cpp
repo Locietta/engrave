@@ -28,6 +28,7 @@
 #include "chordlayout.h"
 #include "containers.h"
 #include "dom/beam.h"
+#include "dom/beamgrouping.h"
 #include "dom/chord.h"
 #include "dom/drumset.h"
 #include "dom/factory.h"
@@ -571,69 +572,38 @@ void BeamLayout::break_cross_measure_beams(Measure *measure, LayoutContext &ctx)
 
 #define beamModeMid(a) (a == BeamMode::MID || a == BeamMode::BEGIN16 || a == BeamMode::BEGIN32)
 
-//---------------------------------------------------------
-//   beamGraceNotes
-//---------------------------------------------------------
-
 void BeamLayout::beam_grace_notes(LayoutContext &ctx, Chord *main_note, bool after) {
     ChordRest *a1 = 0; // start of (potential) beam
     Beam *beam = 0;    // current beam
     BeamMode bm = BeamMode::AUTO;
     std::vector<Chord *> grace_notes = after ? main_note->grace_notes_after() : main_note->grace_notes_before();
 
-    if (beam) {
-        beam->set_is_grace(true);
-    }
-
     for (ChordRest *cr : grace_notes) {
         bm = Groups::grace_beam_mode(cr);
-        if (bm == BeamMode::NONE) {
-            if (beam) {
-                beam->set_is_grace(true);
-                layout1(beam, ctx);
-                beam = 0;
-            }
-            if (a1) {
-                detach_beam_for_layout(a1, false);
-                a1 = 0;
-            }
-            detach_beam_for_layout(cr, false);
-            continue;
+        const auto step = beam_group_step(a1, beam != nullptr, cr, bm, true);
+        if (step.finish_before) {
+            beam->set_is_grace(true);
+            layout1(beam, ctx);
+            beam = nullptr;
         }
-        if (beam) {
-            bool beam_end = bm == BeamMode::BEGIN;
-            if (!beam_end) {
-                replace_beam_for_layout(cr, beam);
-                cr = 0;
-                beam_end = (bm == BeamMode::END);
-            }
-            if (beam_end) {
-                beam->set_is_grace(true);
-                layout1(beam, ctx);
-                beam = 0;
+        if (step.discard) detach_beam_for_layout(step.discard, false);
+        if (step.detach) detach_beam_for_layout(cr, false);
+        if (step.first) {
+            beam = step.first->beam();
+            if (!beam || beam->rendered_elements().empty() || beam->rendered_elements().front() != step.first) {
+                beam = ctx.mut_dom().score()->renderer()->layout_data_store(*ctx.mut_dom().score()).create_beam();
+                beam->set_generated(true);
+                beam->set_track(main_note->track());
+                replace_beam_for_layout(step.first, beam);
             }
         }
-        if (!cr) {
-            continue;
+        if (step.append) replace_beam_for_layout(cr, beam);
+        if (step.finish_after) {
+            beam->set_is_grace(true);
+            layout1(beam, ctx);
+            beam = nullptr;
         }
-        if (a1 == 0) {
-            a1 = cr;
-        } else {
-            if (!beamModeMid(bm) && (bm == BeamMode::BEGIN)) {
-                detach_beam_for_layout(a1, false);
-                a1 = cr;
-            } else {
-                beam = a1->beam();
-                if (beam == 0 || beam->rendered_elements().empty() || beam->rendered_elements().front() != a1) {
-                    beam = ctx.mut_dom().score()->renderer()->layout_data_store(*ctx.mut_dom().score()).create_beam();
-                    beam->set_generated(true);
-                    beam->set_track(main_note->track());
-                    replace_beam_for_layout(a1, beam);
-                }
-                replace_beam_for_layout(cr, beam);
-                a1 = 0;
-            }
-        }
+        a1 = step.pending;
     }
     if (beam) {
         beam->set_is_grace(true);
@@ -759,60 +729,30 @@ void BeamLayout::create_beams(LayoutContext &ctx, Measure *measure) {
 
             prev = cr;
 
-            // Rests of any duration can be beamed over, if required
-            bool can_be_beamed = cr->duration_type().type() > DurationType::V_QUARTER || cr->is_rest();
-            if (!can_be_beamed || (bm == BeamMode::NONE)) {
-                bool remove_beam = true;
-                if (beam) {
-                    layout1(beam, ctx);
-                    remove_beam = (beam->rendered_elements().size() <= 1 || beam->has_all_rests());
-                    beam = 0;
-                }
-                if (a1) {
-                    if (remove_beam) {
-                        detach_beam_for_layout(a1, false);
-                    }
-                    a1 = 0;
-                }
-                detach_beam_for_layout(cr, false);
-                continue;
+            const auto step = beam_group_step(a1, beam != nullptr, cr, bm, false);
+            bool remove_pending = true;
+            if (step.finish_before) {
+                layout1(beam, ctx);
+                if (step.detach) remove_pending = beam->rendered_elements().size() <= 1 || beam->has_all_rests();
+                beam = nullptr;
             }
-
-            if (beam) {
-                bool beam_end = (bm == BeamMode::BEGIN);
-                if (!beam_end) {
-                    replace_beam_for_layout(cr, beam);
-                    cr = 0;
-                    beam_end = (bm == BeamMode::END);
-                }
-                if (beam_end) {
-                    layout1(beam, ctx);
-                    beam = 0;
+            if (step.discard && remove_pending) detach_beam_for_layout(step.discard, false);
+            if (step.detach) detach_beam_for_layout(cr, false);
+            if (step.first) {
+                beam = step.first->beam();
+                if (!beam || beam->rendered_elements().empty() || beam->rendered_elements().front() != step.first) {
+                    beam = ctx.mut_dom().score()->renderer()->layout_data_store(*ctx.mut_dom().score()).create_beam();
+                    beam->set_generated(true);
+                    beam->set_track(track);
+                    replace_beam_for_layout(step.first, beam);
                 }
             }
-            if (!cr) {
-                continue;
+            if (step.append) replace_beam_for_layout(cr, beam);
+            if (step.finish_after) {
+                layout1(beam, ctx);
+                beam = nullptr;
             }
-
-            if (a1 == 0) {
-                a1 = cr;
-            } else {
-                if (!beamModeMid(bm) && (bm == BeamMode::BEGIN || (a1->segment()->segment_type() != cr->segment()->segment_type()) ||
-                                         (a1->end_tick() < cr->tick()))) {
-                    detach_beam_for_layout(a1, false);
-                    a1 = cr;
-                } else {
-                    beam = a1->beam();
-                    if (beam == 0 || beam->rendered_elements().empty() || beam->rendered_elements().front() != a1) {
-                        beam = ctx.mut_dom().score()->renderer()->layout_data_store(*ctx.mut_dom().score()).create_beam();
-                        beam->set_generated(true);
-                        beam->set_track(track);
-                        replace_beam_for_layout(a1, beam);
-                    }
-                    replace_beam_for_layout(cr, beam);
-                    a1 = 0;
-                }
-            }
+            a1 = step.pending;
         }
         if (beam) {
             layout1(beam, ctx);
