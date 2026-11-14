@@ -229,7 +229,7 @@ PointF Trill::trill_line_pos(const SLine *line, Grip grip, System **system) {
     Segment *clef_seg = segment->is_clef_type() ? segment : nullptr;
     Fraction cur_tick = segment->tick();
     while (true) {
-        Segment *prev_seg = mm_rest ? segment->prev1_mm() : segment->prev1();
+        Segment *prev_seg = mm_rest ? segment->rendered_prev1_mm() : segment->rendered_prev1();
         if (prev_seg && prev_seg->tick() == cur_tick) {
             clef_seg = prev_seg->is_clef_type() ? prev_seg : clef_seg;
             segment = prev_seg;
@@ -240,7 +240,7 @@ PointF Trill::trill_line_pos(const SLine *line, Grip grip, System **system) {
 
     // Stop line before clefs
     if (clef_seg) {
-        EngravingItem *clef_item = clef_seg->element(line->track2());
+        EngravingItem *clef_item = clef_seg->effective_element(line->track2());
         if (clef_item && clef_item->is_clef()) {
             Clef *clef = to_clef(clef_item);
             SymId clef_sym = ClefInfo::sym_id(clef->clef_type());

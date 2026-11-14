@@ -357,7 +357,7 @@ double SlurTieLayout::ending_x_for_open_ended_slur_tie(const Measure *measure, s
                 break;
             }
         }
-        end_segment = end_segment->next();
+        end_segment = end_segment->rendered_next();
     }
 
     if (!end_segment || !end_item) {
@@ -1169,14 +1169,14 @@ Shape SlurTieLayout::get_segment_shapes(SlurSegment *slur_seg, ChordRest *start_
             end_seg = end_cr->segment(); // last of the slur
         }
     } else {
-        end_seg = slur_seg->system()->last_measure()->last(); // last of the system
+        end_seg = slur_seg->system()->last_measure()->rendered_last(); // last of the system
     }
 
     if (!start_seg || !end_seg) {
         return seg_shapes;
     }
 
-    for (Segment *seg = start_seg; seg && (seg->is_before(end_seg) || seg == end_seg); seg = seg->rendered_next1_enabled()) {
+    for (Segment *seg = start_seg; seg && (seg->rendered_is_before(end_seg) || seg == end_seg); seg = seg->rendered_next1_enabled()) {
         if (seg->is_type(SegmentType::BAR_LINE_TYPES) || seg->is_breath_type() || seg->has_time_sig_above_staves() ||
             seg->is_time_tick_type()) {
             continue;

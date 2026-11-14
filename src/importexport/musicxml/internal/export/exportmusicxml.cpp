@@ -1946,15 +1946,15 @@ void ExportMusicXml::barline_right(const Measure *const m, const track_idx_t str
     const Measure *mm_r1 = m->covering_mm_rest_or_this();                      // the multi measure rest this measure is covered by
     const Measure *mm_r_lst = mm_r1->is_mm_rest() ? mm_r1->mm_rest_last() : 0; // last measure of replaced sequence of empty measures
     // note: use barlinetype as found in multi measure rest for last measure of replaced sequence
-    BarLineType bst = m == mm_r_lst ? mm_r1->end_bar_line_type() : m->end_bar_line_type();
-    const bool visible = m->end_bar_line_visible();
+    BarLineType bst = m == mm_r_lst ? mm_r1->rendered_end_bar_line_type() : m->rendered_end_bar_line_type();
+    const bool visible = m->rendered_end_bar_line_visible();
     String color;
 
     bool need_bar_style = (bst != BarLineType::NORMAL && bst != BarLineType::START_REPEAT) || !visible;
     Volta *volta = find_volta(m, false, strack);
     // detect short and tick barlines
     String special;
-    const BarLine *bl = m->end_bar_line();
+    const BarLine *bl = m->rendered_end_bar_line();
     if (bl) {
         color = color2xml(bl);
         if (bst == BarLineType::NORMAL && !bl->span_staff()) {
@@ -1977,7 +1977,7 @@ void ExportMusicXml::barline_right(const Measure *const m, const track_idx_t str
 
     // check fermata
     // no need to take mmrest into account, MS does not create mmrests for measure with fermatas
-    const bool has_fermata = barline_has_fermata(m->end_bar_line(), strack, etrack);
+    const bool has_fermata = barline_has_fermata(m->rendered_end_bar_line(), strack, etrack);
 
     if (!need_bar_style && !volta && special.is_empty() && !has_fermata && color.is_empty()) {
         return;
@@ -2009,7 +2009,7 @@ void ExportMusicXml::barline_right(const Measure *const m, const track_idx_t str
         xml_.tag_raw(tag_name, "regular");
     }
 
-    write_barline_fermata(m->end_bar_line(), xml_, strack, etrack);
+    write_barline_fermata(m->rendered_end_bar_line(), xml_, strack, etrack);
 
     if (volta) {
         ending(xml_, volta, false);
@@ -6051,7 +6051,7 @@ static track_idx_t find_track_for_annotations(track_idx_t track, Segment *seg) {
     track_idx_t etrack = strack + ::mu::engraving::voices; // end track of staff containing track + 1
 
     for (track_idx_t i = strack; i < etrack; i++) {
-        if (seg->element(i)) {
+        if ((seg->measure()->is_mm_rest() ? seg->effective_element(i) : seg->element(i))) {
             return i;
         }
     }
@@ -6069,7 +6069,8 @@ void ExportMusicXml::repeat_at_measure_start(Attributes &attr, const Measure *co
     for (EngravingItem *e : m->el()) {
         track_idx_t wtrack = muse::nidx; // track to write jump
         if (strack <= e->track() && e->track() < etrack) {
-            wtrack = find_track_for_annotations(e->track(), m->first(SegmentType::CHORD_REST));
+            wtrack = find_track_for_annotations(
+                e->track(), (m->is_mm_rest() ? m->rendered_first(SegmentType::CHORD_REST) : m->first(SegmentType::CHORD_REST)));
         }
         if (track != wtrack) {
             continue;
@@ -6681,12 +6682,13 @@ void ExportMusicXml::keysig_timesig(const Measure *m, const Part *p) {
     // search all staves for non-generated time and key signatures
     std::map<staff_idx_t, KeySig *> keysigs;   // map staff to key signature
     std::map<staff_idx_t, TimeSig *> timesigs; // map staff to time signature
-    for (Segment *seg = m->first(); seg; seg = seg->next()) {
+    for (Segment *seg = m->is_mm_rest() ? m->rendered_first() : m->first(); seg;
+         seg = m->is_mm_rest() ? seg->rendered_next() : seg->next()) {
         if (seg->tick() > m->tick()) {
             break;
         }
         for (track_idx_t t = track_range.start_track; t < track_range.end_track; t += ::mu::engraving::voices) {
-            EngravingItem *el = seg->element(t);
+            EngravingItem *el = (m->is_mm_rest() ? seg->effective_element(t) : seg->element(t));
             if (!el) {
                 continue;
             }
@@ -7782,7 +7784,8 @@ void ExportMusicXml::write_instrument_details(const Instrument *instrument, cons
  */
 
 static void annotations_without_note(ExportMusicXml *exp, const track_idx_t strack, const int staves, const Measure *const measure) {
-    for (Segment *segment = measure->first(); segment; segment = segment->next()) {
+    for (Segment *segment = measure->is_mm_rest() ? measure->rendered_first() : measure->first(); segment;
+         segment = measure->is_mm_rest() ? segment->rendered_next() : segment->next()) {
         if (segment->segment_type() == SegmentType::CHORD_REST) {
             for (const EngravingItem *element : segment->annotations()) {
                 if (!element->is_figured_bass() && !element->is_harmony()) { // handled elsewhere
@@ -8233,7 +8236,7 @@ void ExportMusicXml::write_measure(const Measure *const m, const int part_index,
     if (start_measure->is_mm_rest()) {
         // Write annotations on first chordrest
         // rehearsal marks etc.
-        Segment *annotation_seg = start_measure->find_segment_r(SegmentType::CHORD_REST, Fraction(0, 1));
+        Segment *annotation_seg = start_measure->find_rendered_segment_r(SegmentType::CHORD_REST, Fraction(0, 1));
         if (annotation_seg) {
             for (track_idx_t track = strack; track < etrack; ++track) {
                 const staff_idx_t xml_staff = staves > 1 ? (track2staff(track) - track2staff(strack) + 1) : 0;

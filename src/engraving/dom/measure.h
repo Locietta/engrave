@@ -447,6 +447,10 @@ public:
 
     void style_changed() override;
 
+    BarLineType rendered_end_bar_line_type() const { return end_bar_line_type(); }
+
+    bool rendered_end_bar_line_visible() const { return end_bar_line_visible(); }
+
     const BarLine *rendered_end_bar_line() const { return end_bar_line(); }
 
     const BarLine *rendered_end_bar_line(staff_idx_t staff, bool first = false) const { return end_bar_line(staff, first); }

@@ -68,6 +68,9 @@ public:
     bool cross_staff() const;
     staff_idx_t v_staff_idx() const override;
     void find_and_attach_to_chords();
+
+    void find_and_attach_to_rendered_chords() { find_and_attach_to_chords(); }
+
     void detach_from_chords(track_idx_t strack, track_idx_t etrack);
     void rebase_start_anchor(AnchorRebaseDirection direction);
     void rebase_end_anchor(AnchorRebaseDirection direction);

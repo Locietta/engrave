@@ -337,7 +337,7 @@ TempoText *GradualTempoChangeSegment::find_element_to_snap_after() const {
         return nullptr;
     }
 
-    for (Segment *segment = measure->last(); segment; segment = segment->prev1()) {
+    for (Segment *segment = measure->rendered_last(); segment; segment = segment->rendered_prev1()) {
         if (segment->system() != sys) {
             continue;
         }

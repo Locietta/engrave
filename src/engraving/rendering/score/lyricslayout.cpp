@@ -381,16 +381,16 @@ static Fraction lyrics_line_duration(const Lyrics &item) {
     const Segment *start = item.segment();
     const Fraction target = item.ticks() == Lyrics::temp_melisma_ticks ? start->tick() : item.end_tick();
     const Segment *end = start;
-    while (end && end->tick() < target) end = end->next_cr(item.track(), true);
+    while (end && end->tick() < target) end = end->rendered_next_cr(item.track(), true);
     if (!end) return Fraction(0, 1);
     const EngravingItem *element = end->effective_element(item.track());
     if (end->tick() != target || !element || !element->is_chord()) return Fraction(0, 1);
     const Chord *chord = to_chord(element);
     const Segment *last_chord = end;
-    end = last_chord->next_cr(item.track(), false);
+    end = last_chord->rendered_next_cr(item.track(), false);
     if (!end || end->tick() > chord->end_tick()) {
         end = last_chord;
-        while (end && end->tick() < chord->end_tick()) end = end->next_cr(muse::nidx, true);
+        while (end && end->tick() < chord->end_tick()) end = end->rendered_next_cr(muse::nidx, true);
     }
     return (end ? end->tick() : item.score()->end_tick()) - start->tick();
 }
