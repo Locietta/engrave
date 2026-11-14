@@ -946,7 +946,7 @@ Segment *Spanner::start_segment() const {
     assert(score() != nullptr);
 
     // Normalization resolves real source anchors without preparing their geometry.
-    const bool source_only = score()->normalize_state.running;
+    const bool source_only = score()->normalize_state.running || (!score()->cmd_state().locked() && !is_layout_data_current());
     bool mm_rest = !source_only && style().style_b(Sid::CREATE_MULTI_MEASURE_RESTS);
     Fraction start_tick = tick();
     track_idx_t track_idx = track();
@@ -989,7 +989,7 @@ Segment *Spanner::end_segment() const {
     assert(score() != nullptr);
 
     // Normalization resolves real source anchors without preparing their geometry.
-    const bool source_only = score()->normalize_state.running;
+    const bool source_only = score()->normalize_state.running || (!score()->cmd_state().locked() && !is_layout_data_current());
     bool mm_rest = !source_only && style().style_b(Sid::CREATE_MULTI_MEASURE_RESTS);
     Fraction end_tick = tick2();
     track_idx_t track_idx = effective_track2();
@@ -1361,9 +1361,9 @@ void Spanner::for_each_authored_segment(const std::function<void(SpannerSegment 
 void Spanner::fixup_segments(unsigned int target_number, std::function<SpannerSegment *()> create_segment) {
     auto &segments = mutldata()->segments;
     if (segments.size() > target_number) {
-        if (auto *store = score()->layout_data_store()) store->retire_spanner_borrowers();
         while (segments.size() > target_number) {
             auto *segment = segments.back();
+            if (auto *store = score()->layout_data_store()) store->retire_spanner_borrowers(*segment);
             segments.pop_back();
             segment->move_to_system(nullptr);
             delete segment;
@@ -1384,19 +1384,38 @@ bool Spanner::is_user_modified() const {
 
 Spanner::LayoutData::~LayoutData() {
     if (!segments.empty()) {
-        if (auto *store = segments.front()->score()->layout_data_store()) store->retire_spanner_borrowers();
-        for (auto *segment : segments) segment->move_to_system(nullptr);
+        for (auto *segment : segments) {
+            if (auto *store = segment->score()->layout_data_store()) store->retire_spanner_borrowers(*segment);
+            segment->move_to_system(nullptr);
+        }
         muse::delete_all(segments);
     }
 }
 
 void Spanner::erase_spanner_segments() {
     if (!has_layout_data()) return;
-    if (auto *store = score()->layout_data_store()) store->retire_spanner_borrowers();
     auto &segments = mutldata()->segments;
-    for (auto *segment : segments) segment->move_to_system(nullptr);
+    for (auto *segment : segments) {
+        if (auto *store = score()->layout_data_store()) store->retire_spanner_borrowers(*segment);
+        segment->move_to_system(nullptr);
+    }
     muse::delete_all(segments);
     segments.clear();
+}
+
+void Spanner::erase_detached_segments() {
+    if (!has_layout_data()) return;
+    auto &segments = mutldata()->segments;
+    for (size_t i = 0; i < segments.size();) {
+        auto *segment = segments[i];
+        if (segment->system()) {
+            ++i;
+            continue;
+        }
+        if (auto *store = score()->layout_data_store()) store->retire_spanner_borrowers(*segment);
+        segments.erase(segments.begin() + i);
+        delete segment;
+    }
 }
 
 String SpannerSegment::format_bars_and_beats() const {

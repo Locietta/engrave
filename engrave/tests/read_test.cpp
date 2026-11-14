@@ -122,6 +122,7 @@
 #include "engraving/editing/editpart.h"
 #include "engraving/editing/editvisibility.h"
 #include "engraving/editing/flip.h"
+#include "engraving/editing/reset.h"
 #include "engraving/editing/transaction/transaction.h"
 #include "engraving/infrastructure/eidregister.h"
 #include "engraving/normalization/normalize.h"
@@ -5485,6 +5486,115 @@ TEST(Read, LaterSystemsPreserveTheBeginSegmentVisibilityOverride) {
     EXPECT_FALSE(line->front_segment()->visible());
     EXPECT_TRUE(line->back_segment()->visible());
     EXPECT_TRUE(line->visible());
+}
+
+TEST(Read, ShrinkRetiresTailBorrowersWithoutClearingOtherCollisions) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(as_bytes(split_spanner_fixture()));
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    break_first_measure(master);
+    master.ensure_layout();
+    auto *line = to_s_line(master.spanner_list().front());
+    ASSERT_EQ(line->nsegments(), 2u);
+    auto *retired = line->back_segment();
+    auto *tail = retired->system();
+    auto *head = line->front_segment()->system();
+    auto *note = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0))->notes().front();
+    const RectF keep(100, 200, 3, 4);
+    const RectF remove(110, 210, 5, 6);
+    for (auto *system : {head, tail}) {
+        for (auto *edge : {&system->staves().front()->skyline().north(), &system->staves().front()->skyline().south()}) {
+            edge->elements().emplace_back(keep, note);
+            edge->elements().emplace_back(remove, retired);
+        }
+    }
+    auto *source = master.first_measure()->first(SegmentType::CHORD_REST);
+    source->staff_shape(0).add(keep, note);
+    source->staff_shape(0).add(remove, retired);
+    master.systems().pop_back();
+    master.cmd_state().lock();
+    line->fixup_segments(1, [line] { return line->create_line_segment(); });
+    master.cmd_state().unlock();
+    master.systems().push_back(tail);
+    for (auto *system : {head, tail}) {
+        const auto &skyline = system->staves().front()->skyline();
+        for (const auto *edge : {&skyline.north(), &skyline.south()}) {
+            EXPECT_FALSE(std::ranges::any_of(edge->elements(), [&](const auto &e) { return e.item() == retired; }));
+        }
+        EXPECT_TRUE(std::ranges::any_of(skyline.north().elements(), [&](const auto &e) { return e.item() == note && e == keep; }));
+    }
+    EXPECT_TRUE(std::ranges::any_of(source->staff_shape(0).elements(), [&](const auto &e) { return e.item() == note && e == keep; }));
+    EXPECT_FALSE(std::ranges::any_of(source->staff_shape(0).elements(), [&](const auto &e) { return e.item() == retired; }));
+}
+
+TEST(Read, ShorterRangeLayoutDropsDetachedLineSegmentsAndMatchesFullLayout) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(as_bytes(split_spanner_fixture()));
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    break_first_measure(master);
+    master.ensure_layout();
+    auto *line = master.spanner_list().front();
+    ASSERT_EQ(line->nsegments(), 2u);
+    line->set_property(Pid::SPANNER_TICKS, Fraction(1, 2));
+    master.do_layout_range(Fraction(0, 1), Fraction(2, 1));
+    ASSERT_EQ(line->nsegments(), 1u);
+    EXPECT_EQ(line->back_segment()->system(), master.first_measure()->system());
+    const auto range = document.render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(range);
+    master.do_layout();
+    const auto full = document.render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(full);
+    EXPECT_EQ(range->pages, full->pages);
+}
+
+TEST(Read, FlipUsesASelectionSnapshotDuringSpannerInvalidation) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(as_bytes(split_spanner_fixture()));
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    break_first_measure(master);
+    auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    chord->set_stem_direction(DirectionV::UP);
+    master.spanner_list().front()->set_property(Pid::DIRECTION, DirectionV::DOWN);
+    master.ensure_layout();
+    auto *line = master.spanner_list().front();
+    ASSERT_EQ(line->nsegments(), 2u);
+    master.selection().add(line->front_segment());
+    master.selection().add(chord->notes().front());
+    master.selection().add(line->back_segment());
+    master.start_cmd(muse::TranslatableString::untranslatable("mixed flip"));
+    Flip::flip(master.transaction_manager()->current_or_dummy_transaction(), &master);
+    master.end_cmd();
+    EXPECT_EQ(chord->stem_direction(), DirectionV::DOWN);
+    EXPECT_EQ(line->get_property(Pid::DIRECTION).value<DirectionV>(), DirectionV::UP);
+}
+
+TEST(Read, NestedSegmentEditNotifiesAndSelectsItsSourceOwner) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "tests/data/inputs/native-save-overrides.mscx");
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    master.ensure_layout();
+    auto resolved = engrave::resolve(master, *engrave::element_id_from_string("H_H"));
+    ASSERT_TRUE(resolved);
+    auto *bend = to_guitar_bend(resolved->object);
+    ASSERT_NE(bend->hold_line(), nullptr);
+    auto *segment = bend->hold_line()->front_segment();
+    ASSERT_NE(segment, nullptr);
+    master.selection().add(segment);
+    master.start_cmd(muse::TranslatableString::untranslatable("hold offset"));
+    segment->undo_change_property(Pid::OFFSET2, PointF(2, 0.25) * master.style().spatium());
+    EXPECT_TRUE(master.cmd_state().changes.changed_objects.contains(bend));
+    master.layout_data_store()->clear();
+    EXPECT_TRUE(master.cmd_state().changes.changed_objects.contains(bend));
+    EXPECT_EQ(master.selection().element(), bend);
+    const auto *offset = bend->authored_overrides.find({AuthoredChildRole::HOLD_LINE, 0, 0, 1}, Pid::OFFSET2);
+    ASSERT_NE(offset, nullptr);
+    EXPECT_EQ(offset->value, PropertyValue(PointF(2, 0.25)));
+    master.end_cmd();
 }
 
 TEST(Read, LegacySlurGripOrdinalGapsBaselineBeforeLayout) {
