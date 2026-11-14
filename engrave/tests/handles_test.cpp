@@ -35,6 +35,7 @@
 #include "engrave/src/score/export_options.h"
 #include "engrave/src/score/json.h"
 #include "engrave/src/score/score_excerpts.h"
+#include "engraving/dom/barline.h"
 #include "engraving/dom/beam.h"
 #include "engraving/dom/box.h"
 #include "engraving/dom/chord.h"
@@ -45,6 +46,7 @@
 #include "engraving/dom/factory.h"
 #include "engraving/dom/guitarbend.h"
 #include "engraving/dom/instrtemplate.h"
+#include "engraving/dom/keysig.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
 #include "engraving/dom/measurebase.h"
@@ -66,6 +68,7 @@
 #include "engraving/dom/tie.h"
 #include "engraving/dom/tremolotwochord.h"
 #include "engraving/editing/addremoveelement.h"
+#include "engraving/editing/editkeysig.h"
 #include "engraving/editing/editpagelocks.h"
 #include "engraving/editing/edittremolo.h"
 #include "engraving/editing/transaction/transaction.h"
@@ -414,6 +417,118 @@ TEST(NativeSave, ColdEqualsWarm) {
         const auto warm = write();
         EXPECT_EQ(cold, warm);
     }
+}
+
+TEST(SegmentOutput, MixedBarlineKeepsAuthoredContentAndSourceIdentity) {
+    using namespace mu::engraving;
+    auto document = open_path(g_source_root / "tests/data/inputs/segment-purity.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *measure = master.first_measure();
+    auto *end = measure->find_segment_r(SegmentType::END_BAR_LINE, measure->ticks());
+    ASSERT_NE(end, nullptr);
+    ASSERT_NE(end->element(0), nullptr);
+    ASSERT_EQ(end->annotations().size(), 1u);
+    EXPECT_TRUE(end->annotations().front()->is_fermata());
+    EXPECT_EQ(to_bar_line(end->element(0))->bar_line_type(), BarLineType::DOUBLE);
+    EXPECT_EQ(to_bar_line(end->element(0))->span_from(), 1);
+    EXPECT_EQ(to_bar_line(end->element(0))->span_to(), 2);
+    EXPECT_EQ(end->element(4), nullptr);
+    std::vector<Segment *> source;
+    for (auto *m = master.first_measure(); m; m = m->next_measure())
+        for (auto *s = m->first(); s; s = s->next()) source.push_back(s);
+    const auto objects = engrave::document_objects(master);
+    auto authored_query = document->query({.types = {"BarLine", "Fermata"}});
+    ASSERT_TRUE(authored_query);
+    ASSERT_EQ(authored_query->elements.size(), 2u);
+    const auto write = [&] {
+        muse::io::Buffer buffer;
+        buffer.open(muse::io::IODevice::WRITE_ONLY);
+        rw::WriteInOutData inout(&master);
+        inout.ctx.set_inline_style(true);
+        EXPECT_TRUE(rw::RWRegister::writer()->write_score(&master, &buffer, &inout));
+        return std::string(reinterpret_cast<const char *>(buffer.data().const_data()), buffer.data().size());
+    };
+    const auto cold = write();
+    EXPECT_NE(cold.find("<subtype>double</subtype>"), std::string::npos);
+    EXPECT_NE(cold.find("<Fermata>"), std::string::npos);
+    for (int cycle = 0; cycle < 2; ++cycle) {
+        auto rendered = document->render({.format = engrave::RenderFormat::SVG});
+        ASSERT_TRUE(rendered) << rendered.error().message;
+        ASSERT_NE(end->effective_element(4), nullptr);
+        EXPECT_TRUE(end->effective_element(4)->generated());
+        EXPECT_GT(end->effective_element(4)->width(), 0.0);
+        EXPECT_EQ(end->element(4), nullptr);
+        EXPECT_FALSE(source_object(*end->effective_element(4)));
+        EXPECT_EQ(write(), cold);
+        std::vector<Segment *> current;
+        for (auto *m = master.first_measure(); m; m = m->next_measure())
+            for (auto *s = m->first(); s; s = s->next()) current.push_back(s);
+        EXPECT_EQ(current, source);
+        EXPECT_EQ(engrave::document_objects(master), objects);
+        auto query = document->query({.types = {"BarLine", "Fermata"}});
+        ASSERT_TRUE(query);
+        ASSERT_EQ(query->elements.size(), 2u);
+        for (size_t i = 0; i < query->elements.size(); ++i) EXPECT_EQ(query->elements[i].id, authored_query->elements[i].id);
+        master.layout_data_store()->clear();
+        EXPECT_EQ(write(), cold);
+        EXPECT_EQ(engrave::document_objects(master), objects);
+    }
+}
+
+TEST(SegmentOutput, AuthoredKeyAtOutputNodeMatchesFullLayout) {
+    using namespace mu::engraving;
+    auto ranged = open_path(g_source_root / "tests/data/inputs/segment-range.mscx");
+    auto full = open_path(g_source_root / "tests/data/inputs/segment-range.mscx");
+    ASSERT_TRUE(ranged);
+    ASSERT_TRUE(full);
+    auto &range_master = master_of(*ranged);
+    range_master.ensure_layout();
+    auto *target = range_master.first_measure()->next_measure()->next_measure()->next_measure();
+    ASSERT_NE(target->find_rendered_segment_r(SegmentType::KEY_SIG, Fraction(0, 1)), nullptr);
+    EXPECT_EQ(target->find_segment_r(SegmentType::KEY_SIG, Fraction(0, 1)), nullptr);
+    const auto add_key = [](engrave::Document &document) {
+        auto &master = master_of(document);
+        auto *m = master.first_measure()->next_measure()->next_measure()->next_measure();
+        const auto changed =
+            document.edit({{engrave::SetKeySig{.measure = engine_id(*m), .key = 2, .staff = engine_id(*master.staff(0))}}});
+        ASSERT_TRUE(changed) << changed.error().message;
+    };
+    add_key(*ranged);
+    add_key(*full);
+    const auto before = range_master.layout_state.range_count;
+    auto a = ranged->render({.format = engrave::RenderFormat::SVG});
+    auto b = full->render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(a) << a.error().message;
+    ASSERT_TRUE(b) << b.error().message;
+    EXPECT_GT(range_master.layout_state.range_count, before);
+    ASSERT_EQ(a->pages.size(), b->pages.size());
+    for (size_t page = 0; page < a->pages.size(); ++page) EXPECT_EQ(a->pages[page], b->pages[page]);
+    auto *source = target->find_segment_r(SegmentType::KEY_SIG, Fraction(0, 1));
+    EXPECT_EQ(target->find_rendered_segment_r(SegmentType::KEY_SIG, Fraction(0, 1)), source);
+    EXPECT_FALSE(target->owns_output_segment(source));
+    EXPECT_EQ(to_key_sig(source->element(0))->key(), Key::D);
+}
+
+TEST(SegmentOutput, RemovingKeyEventRemovesAuthoredSignature) {
+    using namespace mu::engraving;
+    auto document = open_path(g_source_root / "tests/data/inputs/segment-purity.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *measure = master.first_measure()->next_measure();
+    auto *segment = measure->get_segment_r(SegmentType::KEY_SIG, Fraction(0, 1));
+    auto *key = Factory::create_key_sig(segment);
+    key->set_track(0);
+    key->set_key(Key::D);
+    segment->add(key);
+    apply_change_key_sig(key, key->key_sig_event(), key->show_courtesy(), false);
+    EXPECT_EQ(measure->find_segment_r(SegmentType::KEY_SIG, Fraction(0, 1)), nullptr);
+    EXPECT_EQ(master.staff(0)->key(measure->tick()), Key::C);
+    master.ensure_layout();
+    EXPECT_EQ(measure->find_segment_r(SegmentType::KEY_SIG, Fraction(0, 1)), nullptr);
+    auto *header = measure->find_rendered_segment_r(SegmentType::KEY_SIG, Fraction(0, 1));
+    ASSERT_NE(header, nullptr);
+    EXPECT_EQ(to_key_sig(header->effective_element(0))->key(), Key::C);
 }
 
 TEST(NativeSave, GeneratedGhostParenthesesStayInDisplayOutput) {
