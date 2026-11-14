@@ -685,29 +685,27 @@ bool AccidentalsLayout::find_and_insert_octave(Accidental *acc, std::vector<Acci
 }
 
 void AccidentalsLayout::apply_ordering_offsets(std::vector<Accidental *> &accidentals) {
-    // Set default stacking number
     int stacking_number = 0;
     for (Accidental *acc : accidentals) {
         acc->mutldata()->stacking_number = stacking_number;
+        acc->mutldata()->stacking_order_offset = acc->stacking_order_offset();
         ++stacking_number;
     }
 
-    // Limit stacking offsets within boundaries
     for (Accidental *acc : accidentals) {
         int actual_stacking_order = acc->stacking_order();
         if (actual_stacking_order < 0) {
-            acc->set_stacking_order_offset(acc->stacking_order_offset() - actual_stacking_order);
+            acc->mutldata()->stacking_order_offset -= actual_stacking_order;
         } else if (actual_stacking_order >= stacking_number) {
             int diff = actual_stacking_order - stacking_number;
-            acc->set_stacking_order_offset(acc->stacking_order_offset() - diff - 1);
+            acc->mutldata()->stacking_order_offset -= diff + 1;
         }
     }
 
-    // Sort vector
     std::sort(accidentals.begin(), accidentals.end(), [](const Accidental *acc1, const Accidental *acc2) {
         int stacking_order1 = acc1->stacking_order();
         int stacking_order2 = acc2->stacking_order();
-        return stacking_order1 == stacking_order2 ? acc1->stacking_order_offset() < acc2->stacking_order_offset() :
+        return stacking_order1 == stacking_order2 ? acc1->ldata()->stacking_order_offset < acc2->ldata()->stacking_order_offset :
                                                     stacking_order1 < stacking_order2;
     });
 }

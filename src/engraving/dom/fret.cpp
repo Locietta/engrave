@@ -644,7 +644,7 @@ Font FretDiagram::fingering_font() const {
 
 String FretDiagram::harmony_plain_text() const { return harmony_ ? harmony_->plain_text() : String(); }
 
-String FretDiagram::harmony_display_text() const { return harmony_ ? harmony_->display_text() : String(); }
+String FretDiagram::harmony_display_text() const { return harmony_ ? harmony_->display_name() : String(); }
 
 ///   if this is being done by the user, use undoSetHarmony instead
 

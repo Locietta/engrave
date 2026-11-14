@@ -642,7 +642,6 @@ Note::Note(const Note &n, bool link) : EngravingItem(n, link) {
     cent_offset_ = n.cent_offset_;
     tpc_[0] = n.tpc_[0];
     tpc_[1] = n.tpc_[1];
-    dots_hidden_ = n.dots_hidden_;
     hidden_ = n.hidden_;
     play_ = n.play_;
     tuning_ = n.tuning_;
@@ -1036,7 +1035,7 @@ double Note::tab_head_width(const StaffType *tab) const {
     if (tab && tab->is_tab_staff() && fret_ != ::mu::engraving::invalid_fret_index && string_ != ::mu::engraving::invalid_string_index) {
         Font f = tab->fret_font();
         f.set_point_size_f(tab->fret_font_size());
-        val = FontMetrics::width(f, fret_string_) * mag_s();
+        val = FontMetrics::width(f, ldata()->fret_string) * mag_s();
     } else {
         val = head_width();
     }
@@ -2625,7 +2624,7 @@ void Note::add_line_attach_point(PointF point, EngravingItem *line, bool start) 
     // IMPORTANT: the point is expected in *staff* coordinates
     // We transform into note coordinates by subtracting the note position in staff coordinates
     point -= pos_in_staff_coordinates();
-    line_attach_points_.push_back(LineAttachPoint(line, point.x(), point.y(), start));
+    mutldata()->line_attach_points.push_back(LineAttachPoint(line, point.x(), point.y(), start));
 }
 
 bool Note::negative_fret_used() const {

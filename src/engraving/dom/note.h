@@ -263,9 +263,7 @@ public:
 
     void set_display_fret(DisplayFretOption val) { display_fret_ = val; }
 
-    String fret_string() const { return fret_string_; }
-
-    void set_fret_string(const String &s) { fret_string_ = s; }
+    String fret_string() const { return ldata()->fret_string; }
 
     bool negative_fret_used() const;
 
@@ -340,9 +338,7 @@ public:
 
     void set_hidden(bool val) { hidden_ = val; }
 
-    bool dots_hidden() const { return dots_hidden_; }
-
-    void set_dots_hidden(bool val) { dots_hidden_ = val; }
+    bool dots_hidden() const { return ldata()->dots_hidden; }
 
     NoteType note_type() const;
     String note_type_user_name() const;
@@ -363,9 +359,7 @@ public:
 
     void set_user_dot_position(DirectionV d) { user_dot_position_ = d; }
 
-    DirectionV dot_position() const { return dot_position_; }
-
-    void set_dot_position(DirectionV d) { dot_position_ = d; }
+    DirectionV dot_position() const { return ldata()->dot_position; }
 
     bool dot_is_up() const; // actual dot position
 
@@ -474,9 +468,9 @@ public:
 
     bool has_another_straight_above_or_below(bool above) const;
 
-    std::vector<LineAttachPoint> &line_attach_points() { return line_attach_points_; }
+    std::vector<LineAttachPoint> &line_attach_points() { return mutldata()->line_attach_points; }
 
-    const std::vector<LineAttachPoint> &line_attach_points() const { return line_attach_points_; }
+    const std::vector<LineAttachPoint> &line_attach_points() const { return ldata()->line_attach_points; }
 
     void add_start_line_attach_point(PointF point, EngravingItem *line) { add_line_attach_point(point, line, true); }
 
@@ -514,6 +508,10 @@ public:
     bool is_exact_unison(Note *other);
 
     struct LayoutData : public EngravingItem::LayoutData {
+        bool dots_hidden = false;
+        String fret_string;
+        std::vector<LineAttachPoint> line_attach_points;
+        DirectionV dot_position = DirectionV::AUTO;
         ~LayoutData() override;
         std::vector<NoteDot *> dots;
         std::optional<bool> visible;
@@ -552,8 +550,6 @@ private:
     bool hidden_ = false;        // marks this note as the hidden one if there are
                                  // overlapping notes; hidden notes are not played
                                  // and heads + accidentals are not shown
-    bool dots_hidden_ = false;   // dots of hidden notes are hidden too
-                                 // except if only one note is dotted
     bool fret_conflict_ = false; // used by TAB staves to mark a fretting conflict:
                                  // two or more notes on the same string
     bool is_small_ = false;
@@ -570,7 +566,6 @@ private:
 
     DirectionH user_mirror_ = DirectionH::AUTO;       ///< user override of mirror
     DirectionV user_dot_position_ = DirectionV::AUTO; ///< user override of dot position
-    DirectionV dot_position_ = DirectionV::AUTO;      // used as an intermediate step when resolving dot conflicts
 
     NoteHeadScheme head_scheme_ = NoteHeadScheme::HEAD_AUTO;
     NoteHeadGroup head_group_ = NoteHeadGroup::HEAD_NORMAL;
@@ -610,9 +605,6 @@ private:
     std::vector<Spanner *> spanner_for_;
     std::vector<Spanner *> spanner_back_;
 
-    String fret_string_;
-
-    std::vector<LineAttachPoint> line_attach_points_;
     TieJumpPointList jump_points_{this};
 };
 } // namespace mu::engraving

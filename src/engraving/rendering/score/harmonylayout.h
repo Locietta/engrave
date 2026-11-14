@@ -44,13 +44,9 @@ private:
 
         // Reset every single chord
         bool h_align = true;
-        HarmonyInfo *info = nullptr;
 
         // Reset every render() call
         std::stack<PointF> stack;
-        int tpc = Tpc::TPC_INVALID;
-        NoteSpellingType note_spelling = NoteSpellingType::STANDARD;
-        NoteCaseType note_case = NoteCaseType::AUTO;
         double scale = 1.0;
 
         double x() const { return pos.x(); }
@@ -70,29 +66,14 @@ private:
     static void layout_modifier_parentheses(const Harmony *item, const LayoutContext &ctx);
 
     static void render(Harmony *item, Harmony::LayoutData *ldata, const LayoutContext &ctx);
-    static void do_render_single_harmony(Harmony *item, Harmony::LayoutData *ldata, HarmonyRenderCtx &harmony_ctx, int root_tpc,
-                                         int bass_tpc, const LayoutContext &ctx);
-    static void render_single_harmony(Harmony *item, Harmony::LayoutData *ldata, HarmonyRenderCtx &harmony_ctx, const LayoutContext &ctx);
-    static void render_roman_numeral(Harmony *item, Harmony::LayoutData *ldata);
-    static void render(Harmony *item, Harmony::LayoutData *ldata, const String &str, HarmonyRenderCtx &harmony_ctx);
-    static void render(Harmony *item, Harmony::LayoutData *ldata, SymId sym, HarmonyRenderCtx &harmony_ctx, const LayoutContext &ctx);
-    static void render(Harmony *item, Harmony::LayoutData *ldata, const std::vector<RenderActionPtr> &render_list,
-                       HarmonyRenderCtx &harmony_ctx, const LayoutContext &ctx, int tpc,
-                       NoteSpellingType note_spelling = NoteSpellingType::STANDARD, NoteCaseType note_case = NoteCaseType::AUTO,
-                       double note_mag = 1.0);
-
-    static void render_action(Harmony *item, Harmony::LayoutData *ldata, const RenderActionPtr &a, HarmonyRenderCtx &harmony_ctx,
-                              const LayoutContext &ctx);
-    static void render_action_set(Harmony *item, Harmony::LayoutData *ldata, const RenderActionSetPtr &a, HarmonyRenderCtx &harmony_ctx,
-                                  const LayoutContext &ctx);
+    static void render_display_action(Harmony *item, Harmony::LayoutData *ldata, const Harmony::DisplayAction &action,
+                                      HarmonyRenderCtx &harmony_ctx, const LayoutContext &ctx);
+    static void render_action_set(Harmony *item, Harmony::LayoutData *ldata, const Harmony::DisplayAction &action,
+                                  HarmonyRenderCtx &harmony_ctx, const LayoutContext &ctx);
     static void render_action_move(Harmony *item, const RenderActionMovePtr &a, HarmonyRenderCtx &harmony_ctx);
     static void render_action_move_x_height(Harmony *item, const RenderActionMoveXHeightPtr &a, HarmonyRenderCtx &harmony_ctx);
     static void render_action_push(HarmonyRenderCtx &harmony_ctx);
     static void render_action_pop(const RenderActionPopPtr &a, HarmonyRenderCtx &harmony_ctx);
-    static void render_action_note(Harmony *item, Harmony::LayoutData *ldata, HarmonyRenderCtx &harmony_ctx);
-    static void render_action_acc(Harmony *item, Harmony::LayoutData *ldata, HarmonyRenderCtx &harmony_ctx, const LayoutContext &ctx);
-    static void render_action_align(HarmonyRenderCtx &harmony_ctx);
-    static void render_action_scale(const RenderActionScalePtr &a, HarmonyRenderCtx &harmony_ctx);
     static void render_action_paren(Harmony *item, const RenderActionParenPtr &a, HarmonyRenderCtx &harmony_ctx);
 
     static void kern_characters(const Harmony *item, const String &text, HarmonyRenderCtx &harmony_ctx, const LayoutContext &ctx);

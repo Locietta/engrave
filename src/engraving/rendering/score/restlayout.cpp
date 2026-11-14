@@ -95,7 +95,7 @@ void RestLayout::layout_rest(const Rest *item, Rest::LayoutData *ldata, const La
             }
             // symbol needed; if not exist, create, if exists, update duration
             if (!item->tab_dur()) {
-                const_cast<Rest *>(item)->set_tab_dur(new TabDurationSymbol(const_cast<Rest *>(item), stt, type, dots));
+                ldata->tab_dur = new TabDurationSymbol(const_cast<Rest *>(item), stt, type, dots);
             } else {
                 item->tab_dur()->set_duration(type, dots, stt);
             }
@@ -110,11 +110,11 @@ void RestLayout::layout_rest(const Rest *item, Rest::LayoutData *ldata, const La
         // Rest::draw() will skip their drawing, if not needed
         if (item->tab_dur()) {
             delete item->tab_dur();
-            const_cast<Rest *>(item)->set_tab_dur(nullptr);
+            ldata->tab_dur = nullptr;
         }
     }
 
-    const_cast<Rest *>(item)->set_dot_line(Rest::get_dotline(item->duration_type().type()));
+    ldata->dotline = Rest::get_dotline(item->duration_type().type());
 
     double y_off = item->offset().y();
     const Staff *stf = item->staff();

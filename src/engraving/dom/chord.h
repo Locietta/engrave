@@ -224,9 +224,7 @@ public:
 
     void resize_ledger_lines_to(size_t new_size);
 
-    double default_stem_length() const { return default_stem_length_; }
-
-    void set_default_stem_length(double l) { default_stem_length_ = l; }
+    double default_stem_length() const { return ldata()->default_stem_length; }
 
     void set_beam_extension(double extension);
 
@@ -354,21 +352,15 @@ public:
 
     void set_track(track_idx_t val) override;
 
-    double dot_pos_x() const { return dot_pos_x_; }
-
-    void set_dot_pos_x(double x) { dot_pos_x_ = x; }
+    double dot_pos_x() const { return ldata()->dot_pos_x; }
 
     bool no_stem() const { return no_stem_; }
 
     void set_no_stem(bool val) { no_stem_ = val; }
 
-    double space_lw() { return space_lw_; }
+    double space_lw() { return ldata()->space_lw; }
 
-    void set_space_lw(double lw) { space_lw_ = lw; }
-
-    double space_rw() { return space_rw_; }
-
-    void set_space_rw(double rw) { space_rw_ = rw; }
+    double space_rw() { return ldata()->space_rw; }
 
     AutoOnOff combine_voice() const { return combine_voice_; }
 
@@ -428,9 +420,9 @@ public:
 
     void style_changed() override;
 
-    bool allow_kerning_above() const { return allow_kerning_above_; }
+    bool allow_kerning_above() const { return ldata()->allow_kerning_above; }
 
-    bool allow_kerning_below() const { return allow_kerning_below_; }
+    bool allow_kerning_below() const { return ldata()->allow_kerning_below; }
 
     void compute_kerning_exceptions();
 
@@ -468,7 +460,7 @@ public:
         }
     };
 
-    StartEndSlurs &start_end_slurs() { return start_end_slurs_; }
+    StartEndSlurs &start_end_slurs() { return mutldata()->start_end_slurs; }
 
     bool all_notes_tied_to_next() const;
     bool all_elements_invisible() const;
@@ -484,6 +476,13 @@ public:
     const ParenthesisGroup *layout_parenthesis_group(const Parenthesis *paren) const;
 
     struct LayoutData : ChordRest::LayoutData {
+        double space_lw = 0.0;
+        double space_rw = 0.0;
+        double default_stem_length = 0.0;
+        bool allow_kerning_above = true;
+        bool allow_kerning_below = true;
+        StartEndSlurs start_end_slurs;
+        double dot_pos_x = 0.0;
         std::vector<ParenthesisGroup> parentheses;
         Stem *stem = nullptr;
         Hook *hook = nullptr;
@@ -530,22 +529,10 @@ private:
     bool no_stem_ = false;
     PlayEventType play_event_type_ = PlayEventType::AUTO; // play events were modified by user
 
-    double space_lw_ = 0.0;
-    double space_rw_ = 0.0;
-
-    double default_stem_length_ = 0.0;
-
     bool is_ui_item_ = false;
-
-    double dot_pos_x_ = 0.0;
-
-    StartEndSlurs start_end_slurs_;
 
     std::set<Spanner *> starting_spanners_; // spanners starting on this item
     std::set<Spanner *> ending_spanners_;   // spanners ending on this item
-
-    bool allow_kerning_above_ = true;
-    bool allow_kerning_below_ = true;
 
     AutoOnOff combine_voice_ = AutoOnOff::AUTO;
 

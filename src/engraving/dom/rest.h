@@ -94,9 +94,7 @@ public:
     NoteDot *dot(int n) const;
     const std::vector<NoteDot *> &dot_list() const;
 
-    int dot_line() const { return dotline_; }
-
-    void set_dot_line(int l) { dotline_ = l; }
+    int dot_line() const { return ldata()->dotline; }
 
     static int get_dotline(DurationType duration_type);
     bool accent();
@@ -125,9 +123,11 @@ public:
     bool should_not_be_drawn() const;
     bool debug_draw_gap() const;
 
-    RestVerticalClearance &vertical_clearance() { return vertical_clearance_; }
+    RestVerticalClearance &vertical_clearance() { return mutldata()->vertical_clearance; }
 
     struct LayoutData : public ChordRest::LayoutData {
+        int dotline = -1;
+        RestVerticalClearance vertical_clearance;
         ~LayoutData() override;
         std::vector<NoteDot *> dots;
         std::vector<Rest *> merged_rests; // Rests from other voices that may be merged with this
@@ -159,11 +159,8 @@ private:
 
     // values calculated by layout:
 
-    int dotline_ = -1; // depends on rest symbol
     bool gap_ = false; // invisible and not selectable for user
     DeadSlapped *dead_slapped_ = nullptr;
-
-    RestVerticalClearance vertical_clearance_;
 
     bool align_with_other_rests_ = true;
 };

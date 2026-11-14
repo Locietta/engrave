@@ -82,12 +82,6 @@ void ChordLayout::layout(Chord *item, LayoutContext &ctx) {
     if (item->notes().empty()) {
         return;
     }
-    int gi = 0;
-    for (Chord *c : item->grace_notes()) {
-        // HACK: graceIndex is not well-maintained on add & remove
-        // so rebuild now
-        c->set_grace_index(gi++);
-    }
 
     if (item->on_tab_staff()) {
         layout_tablature(item, ctx);
@@ -127,7 +121,7 @@ void ChordLayout::layout_pitched(Chord *item, LayoutContext &ctx) {
     Note *left_note = nullptr;
 
     delete item->tab_dur(); // no TAB? no duration symbol! (may happen when converting a TAB into PITCHED)
-    item->set_tab_dur(nullptr);
+    item->mutldata()->tab_dur = nullptr;
 
     //-----------------------------------------
     //  process notes
@@ -295,8 +289,8 @@ void ChordLayout::layout_pitched(Chord *item, LayoutContext &ctx) {
         }
     }
 
-    item->set_space_lw(lll);
-    item->set_space_rw(rrr);
+    item->mutldata()->space_lw = lll;
+    item->mutldata()->space_rw = rrr;
 
     for (Note *note : item->notes()) {
         layout_note2(note, ctx);
@@ -314,10 +308,10 @@ void ChordLayout::layout_pitched(Chord *item, LayoutContext &ctx) {
             double lx = tbbox.left() + chord_x;
             double rx = tbbox.right() + chord_x;
             if (-lx > item->space_lw()) {
-                item->set_space_lw(item->space_lw() - lx);
+                item->mutldata()->space_lw = item->space_lw() - lx;
             }
             if (rx > item->space_rw()) {
-                item->set_space_rw(rx);
+                item->mutldata()->space_rw = rx;
             }
         }
     }
@@ -474,7 +468,7 @@ void ChordLayout::layout_tablature(Chord *item, LayoutContext &ctx) {
         rrr = stem_x + half_head_width;
     }
     // align dots to the widest fret mark (not needed in all TAB styles, but harmless anyway)
-    item->set_dot_pos_x(head_width);
+    item->mutldata()->dot_pos_x = head_width;
 
     if (item->should_have_stem()) {
         // if stem is required but missing, add it;
@@ -520,7 +514,7 @@ void ChordLayout::layout_tablature(Chord *item, LayoutContext &ctx) {
             && item->beam_mode() == BeamMode::AUTO)) { // and beammode == AUTO
         //
         delete item->tab_dur(); // delete an existing duration symbol
-        item->set_tab_dur(nullptr);
+        item->mutldata()->tab_dur = nullptr;
     } else {
         //
         // tab duration symbols
@@ -554,7 +548,7 @@ void ChordLayout::layout_tablature(Chord *item, LayoutContext &ctx) {
         if (need_tab_dur) {
             // symbol needed; if not exist, create; if exists, update duration
             if (!item->tab_dur()) {
-                item->set_tab_dur(new TabDurationSymbol(item, tab, item->duration_type().type(), item->dots()));
+                item->mutldata()->tab_dur = new TabDurationSymbol(item, tab, item->duration_type().type(), item->dots());
             } else {
                 item->tab_dur()->set_duration(item->duration_type().type(), item->dots(), tab);
             }
@@ -568,7 +562,7 @@ void ChordLayout::layout_tablature(Chord *item, LayoutContext &ctx) {
             }
         } else { // symbol not needed: if exists, delete
             delete item->tab_dur();
-            item->set_tab_dur(nullptr);
+            item->mutldata()->tab_dur = nullptr;
         }
     } // end of if(duration_symbols)
 
@@ -619,7 +613,7 @@ void ChordLayout::layout_tablature(Chord *item, LayoutContext &ctx) {
             else {
                 x = ::stafftype_tab_defaultdotdist_x.to_absolute(spatium_value);
             }
-            item->set_dot_pos_x(x);
+            item->mutldata()->dot_pos_x = x;
         }
         // if stems are through staff, use dot position computed above on fret mark widths
         else {
@@ -630,8 +624,8 @@ void ChordLayout::layout_tablature(Chord *item, LayoutContext &ctx) {
         rrr = std::max(rrr, x);
     }
 
-    item->set_space_lw(lll);
-    item->set_space_rw(rrr);
+    item->mutldata()->space_lw = lll;
+    item->mutldata()->space_rw = rrr;
 
     double grace_mag = ctx.conf().style_d(Sid::GRACE_NOTE_MAG);
 
@@ -646,7 +640,7 @@ void ChordLayout::layout_tablature(Chord *item, LayoutContext &ctx) {
             xl -= c->space_lw() + min_note_distance * grace_mag;
         }
         if (-xl > item->space_lw()) {
-            item->set_space_lw(item->space_lw() - xl);
+            item->mutldata()->space_lw = item->space_lw() - xl;
         }
     }
     std::vector<Chord *> gna = item->grace_notes_after();
@@ -672,7 +666,7 @@ void ChordLayout::layout_tablature(Chord *item, LayoutContext &ctx) {
             xr += c->space_rw() + min_note_distance * grace_mag;
         }
         if (xr > item->space_rw()) {
-            item->set_space_rw(xr);
+            item->mutldata()->space_rw = xr;
         }
     }
     for (EngravingItem *e : item->el()) {
@@ -682,10 +676,10 @@ void ChordLayout::layout_tablature(Chord *item, LayoutContext &ctx) {
             double lx = tbbox.left();
             double rx = tbbox.right();
             if (-lx > item->space_lw()) {
-                item->set_space_lw(item->space_lw() - lx);
+                item->mutldata()->space_lw = item->space_lw() - lx;
             }
             if (rx > item->space_rw()) {
-                item->set_space_rw(rx);
+                item->mutldata()->space_rw = rx;
             }
         }
     }
@@ -1235,7 +1229,7 @@ void ChordLayout::layout_stem(Chord *item, const LayoutContext &ctx) {
 
     // we should calculate default stem length for this chord even if it doesn't have a stem
     // because this length is used for tremolos or other things that attach to where the stem WOULD be
-    item->set_default_stem_length(StemLayout::calc_default_stem_length(item, ctx));
+    item->mutldata()->default_stem_length = StemLayout::calc_default_stem_length(item, ctx);
 
     if (!item->stem()) {
         return;
@@ -2047,22 +2041,22 @@ void ChordLayout::calculate_chord_offsets(Segment *segment, staff_idx_t staff_id
                     // Hide the small augmentation dot if present
                     bool on_line = !(previous_note->line() & 1);
                     if (prev_chord_small) {
-                        previous_note->set_dots_hidden(true);
+                        previous_note->mutldata()->dots_hidden = true;
                     } else if (n_chord_small) {
-                        n->set_dots_hidden(true);
+                        n->mutldata()->dots_hidden = true;
                     } else if (on_line) {
                         // hide dots for lower voice
                         if (previous_note->voice() & 1) {
-                            previous_note->set_dots_hidden(true);
+                            previous_note->mutldata()->dots_hidden = true;
                         } else {
-                            n->set_dots_hidden(true);
+                            n->mutldata()->dots_hidden = true;
                         }
                     } else {
                         // hide dots for upper voice
                         if (!(previous_note->voice() & 1)) {
-                            previous_note->set_dots_hidden(true);
+                            previous_note->mutldata()->dots_hidden = true;
                         } else {
-                            n->set_dots_hidden(true);
+                            n->mutldata()->dots_hidden = true;
                         }
                     }
                 }
@@ -2353,8 +2347,7 @@ double ChordLayout::layout_chords2(std::vector<Note *> &notes, bool up, LayoutCo
 
         // by default, notes and dots are not hidden
         // this may be changed later to allow unisons to share noteheads
-        note->set_hidden(false);
-        note->set_dots_hidden(false);
+        note->mutldata()->dots_hidden = false;
 
         // be sure chord position is initialized
         // chord may be moved to the right later
@@ -2620,29 +2613,29 @@ void ChordLayout::set_dot_x(const std::vector<Chord *> &chords, const std::array
             // There are conflicts
             if (muse::contains(combine_chord_conflicts, chord->track())) {
                 // In this voice
-                chord->set_dot_pos_x(max_pos_x);
+                chord->mutldata()->dot_pos_x = max_pos_x;
             } else {
                 // Elsewhere
                 // If combining voices, set to max pos, if separating set to own dot pos
-                chord->set_dot_pos_x(combine_voices ? max_pos_x : dot_pos.at(idx));
+                chord->mutldata()->dot_pos_x = combine_voices ? max_pos_x : dot_pos.at(idx);
             }
         } else {
             // There are no conflicts
             if (combine_voices) {
                 if (muse::contains(separate_chord_conflicts, chord->track())) {
                     // Set to own dot pos if this is conflicting with a chord set to lay out independently
-                    chord->set_dot_pos_x(dot_pos.at(idx));
+                    chord->mutldata()->dot_pos_x = dot_pos.at(idx);
                 } else {
                     // Combine with other voices
                     if (chord->up()) {
-                        chord->set_dot_pos_x(up_dot_pos_x);
+                        chord->mutldata()->dot_pos_x = up_dot_pos_x;
                     } else {
-                        chord->set_dot_pos_x(down_dot_pos_x);
+                        chord->mutldata()->dot_pos_x = down_dot_pos_x;
                     }
                 }
             } else {
                 // Separate
-                chord->set_dot_pos_x(dot_pos.at(idx));
+                chord->mutldata()->dot_pos_x = dot_pos.at(idx);
             }
         }
     }
@@ -2706,7 +2699,7 @@ void ChordLayout::layout_chords3(const std::vector<Chord *> &chords, const std::
                             dot_position = DirectionV::UP; // space, doesn't matter
                         } else {
                             if (!(above->voice() & 1)) {
-                                above->set_dot_position(DirectionV::UP);
+                                above->mutldata()->dot_position = DirectionV::UP;
                             } else {
                                 dot_position = DirectionV::DOWN;
                             }
@@ -2718,7 +2711,7 @@ void ChordLayout::layout_chords3(const std::vector<Chord *> &chords, const std::
         if (dot_position == DirectionV::AUTO) {
             dot_position = note->voice() & 1 ? DirectionV::DOWN : DirectionV::UP;
         }
-        note->set_dot_position(dot_position);
+        note->mutldata()->dot_position = dot_position;
     }
 
     // Now, we can resolve note conflicts as a superchord
@@ -2788,7 +2781,7 @@ void ChordLayout::layout_chords3(const std::vector<Chord *> &chords, const std::
 
         if (chord->dots()) {
             if (chord_has_dots_all_invisible(chord)) {
-                chord->set_dot_pos_x(min_dot_pos_x);
+                chord->mutldata()->dot_pos_x = min_dot_pos_x;
             } else if (chord->up()) {
                 up_dot_pos_x = std::max(up_dot_pos_x, min_dot_pos_x);
             } else {
@@ -3125,7 +3118,7 @@ void ChordLayout::layout_note2(Note *item, LayoutContext &ctx) {
     int dots = chord->dots();
     if (dots && !item->dots().empty()) {
         if (chord->slash() && !item->visible()) {
-            item->set_dots_hidden(true);
+            item->mutldata()->dots_hidden = true;
         }
         // if chords have notes with different mag, dots must still  align
         double correct_mag = chord->notes().size() > 1 ? chord->mag() : item->mag();

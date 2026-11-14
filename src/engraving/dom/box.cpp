@@ -370,7 +370,7 @@ void FBox::init() {
                 continue;
             }
 
-            String harmony_name = item->is_harmony()      ? to_harmony(item)->display_text() :
+            String harmony_name = item->is_harmony()      ? to_harmony(item)->display_name() :
                                   item->is_fret_diagram() ? to_fret_diagram(item)->harmony_display_text() :
                                                             String();
             if (harmony_name.empty() || muse::contains(diagrams_names_in_score, harmony_name)) {

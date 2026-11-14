@@ -3,10 +3,13 @@
 
 #include <algorithm>
 
+#include "dom/box.h"
 #include "dom/chord.h"
 #include "dom/clef.h"
+#include "dom/fret.h"
 #include "dom/glissando.h"
 #include "dom/guitarbend.h"
+#include "dom/harmony.h"
 #include "dom/keysig.h"
 #include "dom/layoutbreak.h"
 #include "dom/lyrics.h"
@@ -104,7 +107,9 @@ static void normalize_grace_tracks(Measure *measure, const Score &dom) {
 
                 if (cr->is_chord()) {
                     Chord *chord = to_chord(cr);
+                    size_t grace_index = 0;
                     for (Chord *c : chord->grace_notes()) {
+                        c->set_grace_index(grace_index++);
                         c->set_track(t);
                     }
                 }
@@ -587,7 +592,32 @@ static void normalize_tab_fretting(Chord &chord) {
     }
 }
 
+static void normalize_fret_boxes(Score &score) {
+    const auto descriptions = [](Harmony *harmony) {
+        if (harmony && harmony->harmony_type() != HarmonyType::ROMAN)
+            for (auto *info : harmony->chords()) info->get_description();
+    };
+    for (Measure *measure = score.first_measure(); measure; measure = measure->next_measure()) {
+        for (const Segment &segment : measure->segments()) {
+            for (auto *item : segment.annotations()) {
+                if (item->is_harmony())
+                    descriptions(to_harmony(item));
+                else if (item->is_fret_diagram())
+                    descriptions(to_fret_diagram(item)->harmony());
+            }
+        }
+    }
+    for (MeasureBase *base = score.first(); base; base = base->next()) {
+        if (!base->is_f_box()) continue;
+        FBox *box = to_f_box(base);
+        for (auto *child : box->el()) descriptions(to_fret_diagram(child)->harmony());
+        box->init();
+        box->set_needs_rebuild(false);
+    }
+}
+
 static void normalize_content(Score &score, const NormalizeOptions &options) {
+    normalize_fret_boxes(score);
     if (options.include_hidden_staves || !score.all_staves_invisible()) {
         for (Measure *measure = score.first_measure(); measure; measure = measure->next_measure()) {
             for (const Segment &segment : measure->segments()) {

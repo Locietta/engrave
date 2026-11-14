@@ -149,50 +149,6 @@ void BoxLayout::layout_v_box(const VBox *item, VBox::LayoutData *ldata, const La
 }
 
 void BoxLayout::layout_f_box(const FBox *item, FBox::LayoutData *ldata, const LayoutContext &ctx) {
-    Score *score = item->score();
-
-    if (item->needs_rebuild()) {
-        for (EngravingItem *element : item->el()) {
-            if (!element || !element->is_fret_diagram()) {
-                continue;
-            }
-
-            FretDiagram *diagram = to_fret_diagram(element);
-            //! NOTE: We need to layout the diagrams to get the harmony names to show in the UI
-            TLayout::layout_item(diagram, const_cast<LayoutContext &>(ctx));
-            if (!diagram->visible()) {
-                //! but we don't need to draw them, so let's add a skip
-                diagram->mutldata()->set_is_skip_draw(true);
-                diagram->harmony()->mutldata()->set_is_skip_draw(true);
-                continue;
-            }
-        }
-
-        /// FBox::init requires all chord symbols in the score have valid ldata
-        /// Perform layout
-        for (mu::engraving::Segment *segment = score->first_segment(mu::engraving::SegmentType::CHORD_REST); segment;
-             segment = segment->next1(mu::engraving::SegmentType::CHORD_REST)) {
-            for (EngravingItem *seg_item : segment->rendered_annotations()) {
-                if (!seg_item || !seg_item->part()) {
-                    continue;
-                }
-                if (!(seg_item->is_harmony() || seg_item->is_fret_diagram())) {
-                    continue;
-                }
-
-                Harmony *harmony = seg_item->is_harmony() ? to_harmony(seg_item) : to_fret_diagram(seg_item)->harmony();
-                if (!harmony || harmony->harmony_type() != HarmonyType::STANDARD || harmony->ldata()->is_valid()) {
-                    continue;
-                }
-
-                TLayout::layout_harmony(harmony, harmony->mutldata(), ctx);
-            }
-        }
-
-        const_cast<FBox *>(item)->init();
-        const_cast<FBox *>(item)->set_needs_rebuild(false);
-    }
-
     const System *parent_system = item->system();
     LD_CONDITION(parent_system->ldata()->is_set_bbox());
 
@@ -221,7 +177,6 @@ void BoxLayout::layout_f_box(const FBox *item, FBox::LayoutData *ldata, const La
 
         TLayout::layout_item(fret_diagram, const_cast<LayoutContext &>(ctx));
 
-        //! reset the skip which was added above
         fret_diagram->mutldata()->set_is_skip_draw(false);
         harmony->mutldata()->set_is_skip_draw(false);
 

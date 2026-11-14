@@ -2871,10 +2871,10 @@ void TDraw::draw(const Tuplet *item, Painter *painter, const PaintOptions &opt) 
         pen.set_cap_style(PenCapStyle::FLAT_CAP);
         painter->set_pen(pen);
         if (!item->number()) {
-            painter->draw_polyline(item->bracket_l, 4);
+            painter->draw_polyline(item->ldata()->bracket_l, 4);
         } else {
-            painter->draw_polyline(item->bracket_l, 3);
-            painter->draw_polyline(item->bracket_r, 3);
+            painter->draw_polyline(item->ldata()->bracket_l, 3);
+            painter->draw_polyline(item->ldata()->bracket_r, 3);
         }
     }
 }

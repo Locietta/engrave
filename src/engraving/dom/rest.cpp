@@ -71,7 +71,6 @@ Rest::Rest(const Rest &r, bool link) : ChordRest(r, link) {
         set_autoplace(true);
     }
     gap_ = r.gap_;
-    dotline_ = r.dotline_;
 
     if (r.dead_slapped_) {
         DeadSlapped *ndc = Factory::copy_dead_slapped(*r.dead_slapped_);

@@ -42,6 +42,11 @@ struct Spanner;
 struct Tuplet final : DurationElement {
     struct LayoutData : public DurationElement::LayoutData {
         std::optional<bool> up;
+        bool has_bracket = false;
+        bool is_small = true;
+        PointF p1, p2;
+        PointF bracket_l[4];
+        PointF bracket_r[3];
         ~LayoutData() override;
         Text *number = nullptr;
     };
@@ -84,9 +89,7 @@ public:
 
     void set_bracket_type(TupletBracketType val) { bracket_type_ = val; }
 
-    bool has_bracket() const { return has_bracket_; }
-
-    void set_has_bracket(bool b) { has_bracket_ = b; }
+    bool has_bracket() const { return ldata()->has_bracket; }
 
     Spatium bracket_width() const { return bracket_width_; }
 
@@ -127,11 +130,7 @@ public:
         return is_layout_data_current() ? ld->up.value_or(direction_ != DirectionV::DOWN) : direction_ != DirectionV::DOWN;
     }
 
-    void set_is_up(bool val) { mutldata()->up = val; }
-
-    bool is_small() const { return is_small_; }
-
-    void set_is_small(bool val) { is_small_ = val; }
+    bool is_small() const { return ldata()->is_small; }
 
     Fraction tick() const override { return tick_; }
 
@@ -144,17 +143,9 @@ public:
     bool cross() const;
     staff_idx_t v_staff_idx() const override;
 
-    const PointF &p1() const { return p1_; }
+    const PointF &p1() const { return ldata()->p1; }
 
-    PointF &p1() { return p1_; }
-
-    void set_p1(const PointF &p) { p1_ = p; }
-
-    const PointF &p2() const { return p2_; }
-
-    PointF &p2() { return p2_; }
-
-    void set_p2(const PointF &p) { p2_ = p; }
+    const PointF &p2() const { return ldata()->p2; }
 
     const PointF &user_p1() const { return user_p1_; }
 
@@ -173,9 +164,6 @@ public:
     bool calc_has_bracket(const DurationElement *cr1, const DurationElement *cr2) const;
 
     static int compute_tuplet_denominator(int numerator, Fraction total_duration);
-
-    PointF bracket_l[4];
-    PointF bracket_r[3];
 
     EngravingItem *next_element() override;
 
@@ -201,15 +189,11 @@ private:
     TupletBracketType bracket_type_ = TupletBracketType::AUTO_BRACKET;
     Spatium bracket_width_;
 
-    bool has_bracket_ = false;
     Fraction ratio_;
     TDuration base_len_; // 1/8 for a triplet of 1/8
 
-    bool is_small_ = true;
-
     Fraction tick_;
 
-    PointF p1_, p2_;
     PointF user_p1_, user_p2_; // user offset
 
     struct NumberStyle {

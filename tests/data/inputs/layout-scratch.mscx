@@ -1,0 +1,10 @@
+<museScore version="5.00"><Score><Division>480</Division>
+<Part><Staff id="1"/><Instrument><trackName>Piano</trackName></Instrument></Part><Staff id="1"><Measure><voice>
+<TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
+<Chord><durationType>eighth</durationType><acciaccatura/><Note><pitch>60</pitch><tpc>14</tpc></Note></Chord>
+<Chord><durationType>eighth</durationType><acciaccatura/><Note><pitch>64</pitch><tpc>18</tpc></Note></Chord>
+<Chord><durationType>eighth</durationType><acciaccatura/><Note><pitch>67</pitch><tpc>15</tpc></Note></Chord>
+<Chord><durationType>half</durationType><dots>1</dots><Note><pitch>61</pitch><tpc>21</tpc><dotPosition>down</dotPosition>
+<Accidental><subtype>accidentalSharp</subtype><stackingOrderOffset>20</stackingOrderOffset></Accidental></Note></Chord>
+<Rest><durationType>quarter</durationType></Rest>
+</voice></Measure></Staff></Score></museScore>

@@ -29,7 +29,7 @@ struct AddText {
 // props use the descriptions' names (Engine::describe), so a tempo text is "Tempo"
 // and a dynamic's kind is "DYNAMIC_TYPE".  The (anchor type, child type) pairs this
 // may create are the table in src/api/ops/text.cpp: an articulation on a chord, and a
-// fermata, dynamic, staff text or tempo text on a ChordRest segment.  Every other
+// fermata, dynamic, staff text, tempo text or harmony on a ChordRest segment.  Every other
 // pair, and every other type, is an InvalidArgument.  props are set as SetProperty
 // sets them; an articulation needs its "symbol" and a text its "text".
 struct Add {
