@@ -569,8 +569,6 @@ void BeamLayout::break_cross_measure_beams(Measure *measure, LayoutContext &ctx)
     }
 }
 
-static bool beam_no_continue(BeamMode mode) { return mode == BeamMode::END || mode == BeamMode::NONE || mode == BeamMode::INVALID; }
-
 #define beamModeMid(a) (a == BeamMode::MID || a == BeamMode::BEGIN16 || a == BeamMode::BEGIN32)
 
 //---------------------------------------------------------
@@ -721,10 +719,7 @@ void BeamLayout::create_beams(LayoutContext &ctx, Measure *measure) {
                     ChordRest *prev_cr = ctx.mut_dom().find_cr(measure->tick() - Fraction::eps(), track);
                     if (prev_cr) {
                         Beam *prev_beam = prev_cr->beam();
-                        const Measure *pm = prev_cr->measure();
-                        if (!beam_no_continue(prev_cr->beam_mode()) && !pm->line_break() && !pm->page_break() && !pm->section_break() &&
-                            ctx.state().prev_measure() &&
-                            !(prev_cr->is_chord() && prev_cr->duration_type().type() <= DurationType::V_QUARTER)) {
+                        if (ctx.state().prev_measure() && Beam::can_continue_across_measure(prev_cr, cr)) {
                             beam = prev_beam;
                             if (prev_cr->is_chord()) {
                                 if (Hook *hook = to_chord(prev_cr)->hook()) {

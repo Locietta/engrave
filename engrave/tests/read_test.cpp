@@ -5945,6 +5945,68 @@ TEST(Read, PublicStemSlashEditReachesTheRenderedGraceBeam) {
     for (auto *grace : restored->grace_notes()) EXPECT_FALSE(grace->show_stem_slash());
 }
 
+TEST(Read, NativeBeamDirectionRespectsCrossMeasureBoundaries) {
+    using namespace mu::engraving;
+    for (const std::string boundary : {"", "line", "page", "section", "frame", "other-beam", "end-mode"}) {
+        for (bool warm : {false, true}) {
+            SCOPED_TRACE(boundary);
+            SCOPED_TRACE(warm);
+            std::string xml = R"(<museScore version="5.00"><Score><Division>480</Division>
+<Part><Staff><StaffType group="pitched"/></Staff><Instrument id="piano"><Channel/></Instrument></Part>
+<Staff id="1"><Measure len="1/8"><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
+<Beam><eid>F_F</eid></Beam><Chord><durationType>eighth</durationType>)";
+            if (boundary == "end-mode") xml += "<BeamMode>end</BeamMode>";
+            xml += "<Note><pitch>60</pitch><tpc>14</tpc></Note></Chord></voice>";
+            if (boundary == "line" || boundary == "page" || boundary == "section")
+                xml += "<LayoutBreak><subtype>" + boundary + "</subtype></LayoutBreak>";
+            xml += "</Measure>";
+            if (boundary == "frame") xml += "<VBox><height>4</height></VBox>";
+            xml += "<Measure len=\"1/8\"><voice>";
+            if (boundary == "other-beam") xml += "<Beam><eid>G_G</eid></Beam>";
+            xml += "<Chord><durationType>eighth</durationType><BeamMode>mid</BeamMode>"
+                   "<Note><pitch>62</pitch><tpc>16</tpc></Note></Chord></voice></Measure></Staff></Score></museScore>";
+            auto opened = g_engine->open(as_bytes(xml));
+            ASSERT_TRUE(opened);
+            auto &document = **opened;
+            auto &master = master_of(document);
+            auto *first = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+            auto *second = to_chord(master.last_measure()->first(SegmentType::CHORD_REST)->element(0));
+            ASSERT_NE(first->authored_beam(), nullptr);
+            if (warm) ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+            const auto layouts = layout_count(master);
+            ASSERT_TRUE(document.edit(
+                {{engrave::SetProperty{engrave::from_engine(first->authored_beam()->eid()), "StemDirection", engrave::Enum{"down"}}}}));
+            EXPECT_EQ(first->stem_direction(), DirectionV::DOWN);
+            EXPECT_EQ(second->stem_direction(), boundary.empty() ? DirectionV::DOWN : DirectionV::AUTO);
+            EXPECT_EQ(layout_count(master), layouts);
+        }
+    }
+}
+
+TEST(Read, NativeGraceBeamDirectionFollowsSourceGraceList) {
+    using namespace mu::engraving;
+    for (bool warm : {false, true}) {
+        auto xml = legacy_segment_fixture("");
+        xml.insert(xml.find("<Chord>"), R"(<Beam><eid>F_F</eid></Beam>
+<Chord><acciaccatura/><durationType>eighth</durationType><Note><pitch>65</pitch><tpc>13</tpc></Note></Chord>
+<Chord><acciaccatura/><durationType>eighth</durationType><Note><pitch>67</pitch><tpc>15</tpc></Note></Chord>)");
+        auto opened = g_engine->open(as_bytes(xml));
+        ASSERT_TRUE(opened);
+        auto &document = **opened;
+        auto &master = master_of(document);
+        auto *main = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+        ASSERT_EQ(main->grace_notes().size(), 2u);
+        auto *beam = main->grace_notes().front()->authored_beam();
+        ASSERT_NE(beam, nullptr);
+        if (warm) ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+        const auto layouts = layout_count(master);
+        ASSERT_TRUE(document.edit({{engrave::SetProperty{engrave::from_engine(beam->eid()), "StemDirection", engrave::Enum{"down"}}}}));
+        for (const auto *grace : main->grace_notes()) EXPECT_EQ(grace->stem_direction(), DirectionV::DOWN);
+        EXPECT_EQ(main->stem_direction(), DirectionV::AUTO);
+        EXPECT_EQ(layout_count(master), layouts);
+    }
+}
+
 TEST(Read, S14DormantBeamDirectionUsesAuthoredMembers) {
     using namespace mu::engraving;
     for (bool warm : {false, true}) {
@@ -6065,8 +6127,7 @@ TEST(Read, S14BeamCrossStaffValidationUsesCurrentSourceMoves) {
         auto *second = to_chord(first->segment()->next(SegmentType::CHORD_REST)->element(0));
         auto *beam = first->authored_beam();
         ASSERT_NE(beam, nullptr);
-        beam->add(second);
-        second->set_staff_move(1);
+        ASSERT_TRUE(document.edit({{engrave::SetProperty{engrave::from_engine(second->eid()), "staffMove", int64_t{1}}}}));
         if (warm) ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
         const auto layouts = layout_count(master);
         const auto id = engrave::from_engine(beam->eid());
@@ -6126,17 +6187,17 @@ TEST(Read, AuthoredBeamPositionSurvivesRegroupingAndFullLayout) {
     ASSERT_TRUE(document.edit({{engrave::SetProperty{engrave::from_engine(first->eid()), "color", engrave::Color{20, 40, 60}},
                                 engrave::SetProperty{engrave::from_engine(authored->eid()), "StemDirection", engrave::Enum{"down"}}}}));
     EXPECT_EQ(first->stem_direction(), DirectionV::DOWN);
-    EXPECT_EQ(second->stem_direction(), DirectionV::AUTO);
+    EXPECT_EQ(second->stem_direction(), DirectionV::DOWN);
     ASSERT_TRUE(document.edit({{engrave::SetProperty{engrave::from_engine(second->eid()), "BeamMode", engrave::Enum{"no"}}}}));
     ASSERT_TRUE(document.page_count());
-    EXPECT_EQ(second->stem_direction(), DirectionV::AUTO);
+    EXPECT_EQ(second->stem_direction(), DirectionV::DOWN);
     const auto saved = document.export_score({.format = engrave::Format::MSCX});
     ASSERT_TRUE(saved);
     auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
     ASSERT_TRUE(reopened);
     const auto restored = engrave::resolve(master_of(**reopened), engrave::from_engine(second->eid()));
     ASSERT_TRUE(restored);
-    EXPECT_EQ(to_chord(restored->object)->stem_direction(), DirectionV::AUTO);
+    EXPECT_EQ(to_chord(restored->object)->stem_direction(), DirectionV::DOWN);
 }
 
 TEST(Read, IndividualTabStemSuppressionOnlyDetachesRenderedBeams) {
