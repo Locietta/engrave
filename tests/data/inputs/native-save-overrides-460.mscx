@@ -3,12 +3,12 @@
 <Instrument id="guitar-acoustic"><trackName>Guitar</trackName><instrumentId>pluck.guitar.acoustic</instrumentId></Instrument></Part>
 <Staff id="1"><Measure><eid>M_M</eid><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
 <Chord><eid>C_C</eid><durationType>quarter</durationType><Tapping><eid>T_T</eid><hand>left</hand>
-<TappingHalfSlur><eid>U_U</eid><color r="20" g="40" b="160" a="255"/><up>down</up>
+<TappingHalfSlur><eid>U_U</eid><play>0</play><color r="20" g="40" b="160" a="255"/><up>down</up>
 <SlurSegment no="0"><o2 x="1.25" y="-0.5"/><minDistance>0</minDistance></SlurSegment><isHalfSlurAbove>1</isHalfSlurAbove></TappingHalfSlur>
-<TappingHalfSlur><eid>V_V</eid><color r="120" g="30" b="40" a="255"/><isHalfSlurAbove>0</isHalfSlurAbove></TappingHalfSlur>
+<TappingHalfSlur><eid>V_V</eid><play>1</play><color r="120" g="30" b="40" a="255"/><isHalfSlurAbove>0</isHalfSlurAbove></TappingHalfSlur>
 </Tapping><Note><eid>N_N</eid><Spanner type="GuitarBend"><GuitarBend><eid>H_H</eid><track>0</track><track2>0</track2>
 <guitarBendType>bend</guitarBendType><bendShowHoldLine>1</bendShowHoldLine>
-<GuitarBendHold><eid>J_J</eid><color r="100" g="50" b="25" a="255"/><lineWidth>0.35</lineWidth>
+<GuitarBendHold><eid>J_J</eid><play>0</play><color r="100" g="50" b="25" a="255"/><lineWidth>0.35</lineWidth>
 <Segment no="0"><offset x="2" y="-1"/><off2 x="1" y="0.5"/><minDistance>2.25</minDistance></Segment></GuitarBendHold>
 </GuitarBend><next><location><fractions>1/4</fractions></location></next></Spanner><pitch>64</pitch><tpc>18</tpc><fret>0</fret><string>0</string></Note></Chord>
 <Chord><durationType>quarter</durationType><Note><eid>O_O</eid><Spanner type="GuitarBend"><prev><location><fractions>-1/4</fractions></location></prev></Spanner><pitch>66</pitch><tpc>20</tpc><fret>2</fret><string>0</string></Note></Chord>

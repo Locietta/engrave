@@ -3746,8 +3746,15 @@ void TRead::read_note_paren_group(Chord *ch, XmlReader &e, ReadContext &ctx) {
 
 bool TRead::read_properties(Spanner *s, XmlReader &e, ReadContext &ctx) {
     const AsciiStringView tag(e.name());
+    if (nested_spanner_role(s->authored_child.role) && (tag == "startElement" || tag == "endElement")) {
+        // Display endpoints come from the owner; this read-time carrier will be destroyed.
+        e.skip_current_element();
+        return true;
+    }
     if (tag == "play") {
-        s->set_play_spanner(e.read_bool());
+        const bool play = e.read_bool();
+        s->set_play_spanner(play);
+        remember_authored_property(*s, Pid::PLAY, play, PropertyFlags::NOSTYLE);
         return true;
     } else if (tag == "track2") {
         track_idx_t track2 = e.read_int();

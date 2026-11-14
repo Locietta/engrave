@@ -49,6 +49,7 @@
 #include "engraving/dom/fingering.h"
 #include "engraving/dom/guitarbend.h"
 #include "engraving/dom/hairpin.h"
+#include "engraving/dom/image.h"
 #include "engraving/dom/instrtemplate.h"
 #include "engraving/dom/instrument.h"
 #include "engraving/dom/keysig.h"
@@ -70,6 +71,7 @@
 #include "engraving/dom/slur.h"
 #include "engraving/dom/spacer.h"
 #include "engraving/dom/staff.h"
+#include "engraving/dom/stafftype.h"
 #include "engraving/dom/system.h"
 #include "engraving/dom/systemdivider.h"
 #include "engraving/dom/tapping.h"
@@ -540,6 +542,9 @@ TEST(NativeSave, NestedSpannersAndStemlessBeamSurviveColdSaveAndDiscard) {
             auto beam = engrave::resolve(master, *engrave::element_id_from_string("Z_Z"));
             ASSERT_TRUE(bend && tapping && beam);
             const auto &holds = to_guitar_bend(bend->object)->authored_overrides;
+            const auto *play = holds.find({AuthoredChildRole::HOLD_LINE}, Pid::PLAY);
+            ASSERT_NE(play, nullptr);
+            EXPECT_FALSE(play->value.to_bool());
             const auto *width = holds.find({AuthoredChildRole::HOLD_LINE}, Pid::LINE_WIDTH);
             ASSERT_NE(width, nullptr);
             EXPECT_DOUBLE_EQ(width->value.value<Spatium>().val(), 0.35);
@@ -548,6 +553,9 @@ TEST(NativeSave, NestedSpannersAndStemlessBeamSurviveColdSaveAndDiscard) {
             EXPECT_EQ(offset->value.value<PointF>(), PointF(1, 0.5));
             const auto &slurs = to_tapping(tapping->object)->authored_overrides;
             for (auto role : {AuthoredChildRole::TAPPING_SLUR_ABOVE, AuthoredChildRole::TAPPING_SLUR_BELOW}) {
+                const auto *play = slurs.find({role}, Pid::PLAY);
+                ASSERT_NE(play, nullptr);
+                EXPECT_EQ(play->value.to_bool(), role == AuthoredChildRole::TAPPING_SLUR_BELOW);
                 const auto *color = slurs.find({role}, Pid::COLOR);
                 ASSERT_NE(color, nullptr);
                 EXPECT_EQ(color->value.value<muse::draw::Color>(),
@@ -614,12 +622,46 @@ TEST(NativeSave, NestedSpannersAndStemlessBeamSurviveColdSaveAndDiscard) {
     }
 }
 
+TEST(NativeSave, AuthoredHoldWidthReachesDrawingAfterRecreation) {
+    using namespace mu::engraving;
+    for (const auto &[width, stroke] : {std::pair{"0.35", "28.937008"}, std::pair{"2.0", "165.354331"}}) {
+        auto input = read_text(g_source_root / "tests/data/inputs/native-save-overrides.mscx");
+        input.replace(input.find("<lineWidth>0.35</lineWidth>"), 27, std::string("<lineWidth>") + width + "</lineWidth>");
+        size_t pos = 0;
+        while ((pos = input.find("<play>0</play>", pos)) != std::string::npos) input.replace(pos, 14, "<play>1</play>");
+        auto document = open_text(input);
+        ASSERT_TRUE(document);
+        auto &master = master_of(*document);
+        const auto cold = native_captures(*document);
+        auto reopened = open_text(cold.begin()->second);
+        ASSERT_TRUE(reopened);
+        const auto bend = engrave::resolve(master_of(*reopened), *engrave::element_id_from_string("H_H"));
+        ASSERT_TRUE(bend);
+        const auto *play = to_guitar_bend(bend->object)->authored_overrides.find({AuthoredChildRole::HOLD_LINE}, Pid::PLAY);
+        ASSERT_NE(play, nullptr);
+        EXPECT_TRUE(play->value.to_bool());
+        for (int cycle = 0; cycle < 2; ++cycle) {
+            const auto rendered = document->render({.format = engrave::RenderFormat::SVG});
+            ASSERT_TRUE(rendered);
+            const auto svg = text_of(rendered->pages.front());
+            const auto color = svg.find("stroke=\"rgb(39.215686%, 19.607843%, 9.803922%)\"");
+            ASSERT_NE(color, std::string::npos);
+            const auto path = svg.rfind("<path", color);
+            ASSERT_NE(path, std::string::npos);
+            EXPECT_NE(svg.substr(path, color - path).find(std::string("stroke-width=\"") + stroke + "\""), std::string::npos);
+            EXPECT_EQ(cold, native_captures(*document));
+            master.layout_data_store()->clear();
+        }
+    }
+}
+
 TEST(NativeSave, EmptyTupletChordWritesRestWithoutCreatingSourceObjects) {
     using namespace mu::engraving;
     auto document = open_text(R"(<museScore version="5.00"><Score><Division>480</Division>
 <Part><Staff id="1"/><Instrument><trackName>Piano</trackName></Instrument></Part>
 <Staff id="1"><Measure><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
 <Tuplet><eid>T_T</eid><normalNotes>2</normalNotes><actualNotes>3</actualNotes><baseNote>eighth</baseNote></Tuplet>
+<Beam><eid>B_B</eid><Fragment><y1>-3.25</y1><y2>-2.5</y2></Fragment></Beam>
 <Chord><eid>C_C</eid><durationType>eighth</durationType></Chord>
 <Chord><durationType>eighth</durationType><Note><pitch>60</pitch><tpc>14</tpc></Note></Chord>
 <Chord><durationType>eighth</durationType><Note><pitch>62</pitch><tpc>16</tpc></Note></Chord><endTuplet/>
@@ -644,6 +686,12 @@ TEST(NativeSave, EmptyTupletChordWritesRestWithoutCreatingSourceObjects) {
     auto rest = engrave::resolve(master_of(**reopened), *engrave::element_id_from_string("C_C"));
     ASSERT_TRUE(rest && rest->object->is_rest());
     EXPECT_EQ(to_rest(rest->object)->ticks(), Fraction(1, 8));
+    const auto beam = engrave::resolve(master_of(**reopened), *engrave::element_id_from_string("B_B"));
+    ASSERT_TRUE(beam && beam->object->is_beam());
+    EXPECT_EQ(to_rest(rest->object)->authored_beam(), beam->object);
+    const auto *fragment = to_beam(beam->object)->authored_overrides.find({AuthoredChildRole::BEAM_FRAGMENT}, Pid::BEAM_POS);
+    ASSERT_NE(fragment, nullptr);
+    EXPECT_EQ(fragment->value.value<PairF>(), PairF(-3.25, -2.5));
 }
 
 TEST(NativeSave, PropertyUnitsNeverAskForLayoutParent) {
@@ -669,6 +717,48 @@ TEST(NativeSave, PropertyUnitsNeverAskForLayoutParent) {
     mu::engraving::write::TWrite::write_property(&probe, xml, Pid::VISIBLE);
     xml.flush();
     EXPECT_NE(std::string(buffer.data().const_char(), buffer.data().size()).find("<visible>0</visible>"), std::string::npos);
+}
+
+TEST(NativeSave, ImageSizeInFrameUsesSourceStaffUnits) {
+    using namespace mu::engraving;
+    auto document = open_path(g_source_root / "tests/data/inputs/segment-purity.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+
+    struct Frame : VBox {
+        explicit Frame(Score *score) : VBox(score) {}
+
+        bool guard = false;
+
+        EngravingItem *layout_parent() const override {
+            if (guard) ADD_FAILURE() << "image serialization reads frame layout";
+            return VBox::layout_parent();
+        }
+    };
+
+    auto *frame = new Frame(&master);
+    auto *image = new Image(frame);
+    const std::string svg = R"(<svg xmlns="http://www.w3.org/2000/svg" width="100" height="50"><rect width="100" height="50"/></svg>)";
+    ASSERT_TRUE(image->load_from_data("source.svg", muse::ByteArray(svg.data(), svg.size())));
+    image->set_track(0);
+    image->set_size(SizeF(2, 1));
+    auto staff_type = *master.staff(0)->staff_type(Fraction(0, 1));
+    staff_type.set_small(true);
+    master.staff(0)->set_staff_type(Fraction(1, 1), staff_type);
+    commit(master, [&](auto &score) {
+        score.insert_box(frame, score.first());
+        frame->add(image);
+    });
+    expect_no_layout(master);
+    frame->guard = true;
+    const auto cold = native_captures(*document);
+    frame->guard = false;
+    expect_no_layout(master);
+    EXPECT_NE(cold.begin()->second.find("<size w=\"2\" h=\"1\""), std::string::npos);
+    ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+    frame->guard = true;
+    EXPECT_EQ(cold, native_captures(*document));
+    frame->guard = false;
 }
 
 TEST(NativeSave, LegacyAndBoundedExportsReopenPinnedLinkedNotesWithoutLayout) {
@@ -743,12 +833,29 @@ TEST(NativeSave, EditsAndMmrTogglesSaveBeforeRendering) {
                 const auto edited = engrave::resolve(reloaded, *engrave::element_id_from_string("NB_NB"));
                 ASSERT_TRUE(edited && edited->object->is_note());
                 EXPECT_EQ(to_note(edited->object)->color(), muse::draw::Color(200, 10, 20, 255));
+                EXPECT_FALSE(to_note(edited->object)->is_appearance_linked_to_master());
                 if (selected->is_master()) {
                     const auto peer = engrave::resolve(reloaded, *engrave::element_id_from_string("I_I"));
                     ASSERT_TRUE(peer && peer->object->is_note());
                     EXPECT_EQ(to_note(peer->object)->color(), muse::draw::Color(0, 0, 0, 255));
                     EXPECT_EQ(to_note(peer->object)->pitch(), 71);
                     EXPECT_TRUE(std::ranges::contains(edited->object->link_list(), peer->object));
+                    ASSERT_TRUE(
+                        (*copy)->edit({{engrave::SetProperty{engine_id(*peer->object), "color", engrave::Color{10, 80, 150, 255}}}}));
+                    EXPECT_EQ(to_note(peer->object)->color(), muse::draw::Color(10, 80, 150, 255));
+                    EXPECT_EQ(to_note(edited->object)->color(), muse::draw::Color(200, 10, 20, 255));
+                } else {
+                    EXPECT_FALSE(engrave::resolve(reloaded, *engrave::element_id_from_string("I_I")));
+                    std::set<ElementId> links;
+                    for (const auto *linked : edited->object->link_list()) {
+                        EXPECT_EQ(linked->score(), &reloaded);
+                        const auto resolved = engrave::resolve(reloaded, engine_id(*linked));
+                        ASSERT_TRUE(resolved);
+                        EXPECT_EQ(resolved->object, linked);
+                        links.insert(engine_id(*linked));
+                    }
+                    EXPECT_EQ(links,
+                              (std::set<ElementId>{*engrave::element_id_from_string("4_4"), *engrave::element_id_from_string("NB_NB")}));
                 }
             }
         }
