@@ -39,11 +39,13 @@
 #include "engraving/dom/beam.h"
 #include "engraving/dom/box.h"
 #include "engraving/dom/chord.h"
+#include "engraving/dom/chordbracket.h"
 #include "engraving/dom/clef.h"
 #include "engraving/dom/dummyparent.h"
 #include "engraving/dom/engravingitem.h"
 #include "engraving/dom/excerpt.h"
 #include "engraving/dom/factory.h"
+#include "engraving/dom/fingering.h"
 #include "engraving/dom/guitarbend.h"
 #include "engraving/dom/hairpin.h"
 #include "engraving/dom/instrtemplate.h"
@@ -56,6 +58,7 @@
 #include "engraving/dom/note.h"
 #include "engraving/dom/page.h"
 #include "engraving/dom/part.h"
+#include "engraving/dom/partialtie.h"
 #include "engraving/dom/playcounttext.h"
 #include "engraving/dom/property.h"
 #include "engraving/dom/rangelock.h"
@@ -71,6 +74,7 @@
 #include "engraving/dom/textbase.h"
 #include "engraving/dom/textline.h"
 #include "engraving/dom/tie.h"
+#include "engraving/dom/tiejumppointlist.h"
 #include "engraving/dom/tremolotwochord.h"
 #include "engraving/editing/addremoveelement.h"
 #include "engraving/editing/editkeysig.h"
@@ -535,6 +539,117 @@ TEST(StaveSharingOutput, TiesAndSlursRemainOutsideSourceSpannerMembership) {
         EXPECT_EQ(source_native(master), cold);
         master.layout_data_store()->clear();
     }
+}
+
+TEST(StaveSharingOutput, UnmatchedAuthoredRestsStayInSourceAfterSuppression) {
+    using namespace mu::engraving;
+    auto xml = read_text(g_source_root / "tests/data/inputs/stave-sharing.mscx");
+    const std::string rest = "<Rest><durationType>measure</durationType></Rest>";
+    xml.replace(xml.find(rest), rest.size(),
+                "<Rest><durationType>quarter</durationType></Rest><Rest><durationType>quarter</durationType></"
+                "Rest><Rest><durationType>half</durationType></Rest>");
+    auto opened = g_engine->open(as_bytes(xml));
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    const auto objects = engrave::document_objects(master);
+    const auto cold = source_native(master);
+    ASSERT_TRUE((*opened)->render({.format = engrave::RenderFormat::SVG}));
+    auto *quarter = master.first_measure()->find_segment_r(SegmentType::CHORD_REST, Fraction(1, 4));
+    ASSERT_NE(quarter, nullptr);
+    ASSERT_TRUE(quarter->element(0)->is_rest());
+    EXPECT_EQ(quarter->effective_element(0), nullptr);
+    EXPECT_EQ(engrave::document_objects(master), objects);
+    EXPECT_EQ(source_native(master), cold);
+}
+
+TEST(StaveSharingOutput, PartialTiesAndBracketClonesKeepSourceLinksAndJumpPoints) {
+    using namespace mu::engraving;
+    auto document = open_path(g_source_root / "tests/data/inputs/stave-sharing.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *first = master.first_measure()->first(SegmentType::CHORD_REST);
+    auto *second = first->next(SegmentType::CHORD_REST);
+    std::vector<std::pair<Note *, TieJumpPoint *>> points;
+    std::vector<ChordBracket *> brackets;
+    std::vector<Fingering *> fingerings;
+    for (track_idx_t track : {8u, 12u}) {
+        auto *chord = to_chord(first->element(track));
+        auto *start = chord->up_note();
+        auto *end = to_chord(second->element(track))->up_note();
+        auto *outgoing = Factory::create_partial_tie(start);
+        outgoing->set_start_note(start);
+        master.add_element(outgoing);
+        outgoing->assign_new_eid();
+        auto *incoming = Factory::create_partial_tie(end);
+        incoming->set_end_note(end);
+        master.add_element(incoming);
+        incoming->assign_new_eid();
+        auto *point = new TieJumpPoint(end, false, 0, true);
+        start->tie_jump_points()->add(point);
+        points.emplace_back(start, point);
+        auto *bracket = Factory::create_chord_bracket(chord);
+        master.add_element(bracket);
+        bracket->assign_new_eid();
+        brackets.push_back(bracket);
+        auto *finger = Factory::create_fingering(start);
+        finger->set_xml_text(u"2");
+        master.add_element(finger);
+        finger->assign_new_eid();
+        fingerings.push_back(finger);
+    }
+    const auto objects = engrave::document_objects(master);
+    const auto cold = source_native(master);
+    for (int cycle = 0; cycle < 2; ++cycle) {
+        ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+        const auto &spans = master.layout_data_store()->score_output().shared_spanners;
+        EXPECT_EQ(std::ranges::count_if(spans, [](auto *sp) { return sp->is_partial_tie(); }), 2);
+        for (auto *span : spans) {
+            auto *partial = to_partial_tie(span);
+            EXPECT_TRUE(partial->is_layout_copy());
+            EXPECT_NE(partial->note(), nullptr);
+        }
+        for (const auto &[note, point] : points) {
+            ASSERT_EQ(note->tie_jump_points()->size(), 1u);
+            EXPECT_EQ(*note->tie_jump_points()->begin(), point);
+        }
+        for (auto *bracket : brackets) EXPECT_EQ(bracket->links(), nullptr);
+        for (auto *finger : fingerings) {
+            const auto *display = master.layout_copy(*finger);
+            ASSERT_NE(display, nullptr);
+            EXPECT_FALSE(source_object(*display));
+            EXPECT_GT(display->width(), 0.0);
+        }
+        EXPECT_EQ(engrave::document_objects(master), objects);
+        EXPECT_EQ(source_native(master), cold);
+        master.layout_data_store()->clear();
+    }
+    for (const auto &[note, point] : points) note->tie_jump_points()->clear();
+}
+
+TEST(StaveSharingOutput, AuxiliaryRetirementInvalidatesEveryBorrowingPage) {
+    using namespace mu::engraving;
+    auto xml = read_text(g_source_root / "tests/data/inputs/stave-sharing.mscx");
+    xml.insert(xml.find("<Measure>") + 9, "<LayoutBreak><subtype>page</subtype></LayoutBreak>");
+    auto opened = g_engine->open(as_bytes(xml));
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    for (auto *measure = master.first_measure(); measure; measure = measure->next_measure()) {
+        for (track_idx_t track : {8u, 12u}) {
+            auto *slur = Factory::create_slur(master.dummy());
+            slur->set_track(track);
+            slur->set_track2(track);
+            slur->set_tick(measure->tick());
+            slur->set_tick2(measure->tick() + Fraction(1, 2));
+            master.add_element(slur);
+            slur->assign_new_eid();
+        }
+    }
+    ASSERT_TRUE((*opened)->render({.format = engrave::RenderFormat::SVG}));
+    ASSERT_EQ(master.pages().size(), 2u);
+    for (auto *page : master.pages()) EXPECT_FALSE(page->items(muse::RectF(0, 0, 10000, 10000)).empty());
+    master.layout_data_store()->retire_measure_borrowers(*master.first_measure());
+    for (auto *page : master.pages()) EXPECT_TRUE(page->items(muse::RectF(0, 0, 10000, 10000)).empty());
+    EXPECT_TRUE(master.layout_data_store()->score_output().shared_spanners.empty());
 }
 
 TEST(StaveSharingOutput, EditedUnisonRangeMatchesFullLayout) {

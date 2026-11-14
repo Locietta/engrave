@@ -354,7 +354,7 @@ Chord::Chord(const Chord &c, bool link) : ChordRest(c, link) {
 
     for (EngravingItem *e : c.el()) {
         if (e->is_chord_bracket()) {
-            EngravingItem *cloned_chord_bracket = e->linked_clone();
+            EngravingItem *cloned_chord_bracket = link ? e->linked_clone() : e->clone();
             add(cloned_chord_bracket);
         }
     }
@@ -589,7 +589,7 @@ void Chord::add(EngravingItem *e) {
                 notes_.push_back(note);
             }
             note->connect_tied_notes();
-            if (voice() && measure() && note->visible()) {
+            if (source_object(*this) && voice() && measure() && note->visible()) {
                 measure()->set_has_voices(staff_idx(), true);
             }
         } break;
@@ -662,7 +662,7 @@ void Chord::remove(EngravingItem *e) {
             } else {
                 LOGD("Chord::remove() note %p not found!", e);
             }
-            if (voice() && measure() && note->visible()) {
+            if (source_object(*this) && voice() && measure() && note->visible()) {
                 measure()->check_multi_voices(staff_idx());
             }
         } break;

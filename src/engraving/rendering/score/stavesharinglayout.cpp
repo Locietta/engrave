@@ -32,6 +32,7 @@
 #include "dom/measure.h"
 #include "dom/note.h"
 #include "dom/part.h"
+#include "dom/partialtie.h"
 #include "dom/rest.h"
 #include "dom/score.h"
 #include "dom/staff.h"
@@ -57,6 +58,10 @@ void add_shared_output(EngravingItem *item) {
             auto *note = to_note(copy);
             if (auto *tie = note->tie_for()) {
                 note->set_tie_for(nullptr);
+                delete tie;
+            }
+            if (auto *tie = note->incoming_partial_tie()) {
+                note->set_tie_back(nullptr);
                 delete tie;
             }
         }
@@ -98,7 +103,7 @@ void remove_shared_output(EngravingItem *item) {
     }
     if (item->is_spanner()) {
         auto *span = to_spanner(item);
-        if (auto *start = span->start_element(); start && start->is_note()) to_note(start)->remove(span);
+        if (auto *parent = span->ownership_parent_item(); parent && parent->is_note()) parent->remove(span);
 
         std::erase(store.score_output().shared_spanners, span);
     } else if (item->is_tuplet()) {
@@ -1758,9 +1763,8 @@ void StaveSharingLayout::cleanup(StaveSharingContext &ctx) {
                 if (bar_rest_on_first_voice) {
                     continue;
                 }
-                if (cr->origin_items().empty()) {
-                    remove_shared_output(cr);
-                }
+                if (cr->origin_items().empty()) remove_shared_output(cr);
+                continue;
             }
 
             if (cr->is_chord()) {

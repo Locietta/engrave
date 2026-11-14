@@ -39,21 +39,30 @@ void LayoutDataStore::register_layout_copy(const EngravingItem &source, Engravin
     std::erase_if(layout_copies_, [&](const auto &entry) { return entry.first == &source; });
     layout_copies_.emplace_back(&source, &display);
     // Composite annotations (e.g. a fret diagram's harmony) keep their own IDs.
-    // Pair the clone's source children in the order maintained by clone().
+    // Reconnected ties can move relative to other types; order within a type is stable.
     const auto &source_children = source.children();
     const auto &display_children = display.children();
-    auto next = display_children.begin();
+    std::map<ElementType, size_t> ordinals;
     for (const auto *child : source_children) {
         if (!child->is_engraving_item()) continue;
-        while (next != display_children.end() && (*next)->type() != child->type()) ++next;
-        if (next == display_children.end()) break;
-        register_layout_copy(*to_engraving_item(child), *to_engraving_item(*next++));
+        size_t ordinal = ordinals[child->type()]++;
+        const auto match = std::find_if(display_children.begin(), display_children.end(), [&](const auto *copy) {
+            if (copy->type() != child->type()) return false;
+            return ordinal-- == 0;
+        });
+        if (match != display_children.end()) register_layout_copy(*to_engraving_item(child), *to_engraving_item(*match));
     }
 }
 
 const EngravingItem *LayoutDataStore::layout_copy(const EngravingItem &source) const {
-    const auto found = std::ranges::find_if(layout_copies_, [&](const auto &entry) { return entry.first == &source; });
-    return found != layout_copies_.end() ? found->second : nullptr;
+    const EngravingItem *current = &source;
+    const EngravingItem *display = nullptr;
+    for (size_t depth = 0; depth < layout_copies_.size(); ++depth) {
+        const auto found = std::ranges::find_if(layout_copies_, [&](const auto &entry) { return entry.first == current; });
+        if (found == layout_copies_.end()) break;
+        display = current = found->second;
+    }
+    return display;
 }
 
 void LayoutDataStore::clear_layout_copies(const Measure &display) {
@@ -160,9 +169,17 @@ void LayoutDataStore::retire_measure_borrowers(Measure &measure) {
 }
 
 void LayoutDataStore::retire_shared_auxiliary_output() {
+    if (!output_.shared_spanners.empty() || !output_.shared_tuplets.empty()) {
+        // Auxiliary output may span systems beyond the edited measure.
+        for (auto *page : output_.pages) page->invalidate_bsp_tree();
+        for (auto *system : output_.systems)
+            for (auto *staff : system->staves()) staff->skyline().clear();
+        for (auto &record : records_->items.values())
+            if (record.second.item->is_segment()) to_segment(record.second.item)->clear_shapes();
+    }
     // Note borrowers must be detached while the display notes are still alive.
     for (auto *spanner : output_.shared_spanners) {
-        if (auto *start = spanner->start_element(); start && start->is_note()) to_note(start)->remove(spanner);
+        if (auto *parent = spanner->ownership_parent_item(); parent && parent->is_note()) parent->remove(spanner);
     }
     muse::delete_all(output_.shared_spanners);
     output_.shared_spanners.clear();
