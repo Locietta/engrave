@@ -1639,7 +1639,7 @@ TEST(Read, ExcerptClonesSourceAfterRenderedMmrBoundaryBecomesStale) {
     EXPECT_EQ(part_score->layout_state.whole_count + part_score->layout_state.range_count, 0u);
 }
 
-TEST(Read, NativeMasterExportPreparesUnrenderedExcerpts) {
+TEST(Read, NativeMasterExportLeavesGeneratedExcerptsCold) {
     for (const auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
         auto opened = g_engine->open(write470_fixture());
         ASSERT_TRUE(opened);
@@ -1654,12 +1654,13 @@ TEST(Read, NativeMasterExportPreparesUnrenderedExcerpts) {
         EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
         EXPECT_EQ(part->layout_state.whole_count + part->layout_state.range_count, 0u);
         ASSERT_TRUE(document.export_score({.format = format}));
-        EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 1u);
-        EXPECT_EQ(part->layout_state.whole_count + part->layout_state.range_count, 1u);
-        EXPECT_GT(part->npages(), 0);
+        EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+        EXPECT_EQ(part->layout_state.whole_count + part->layout_state.range_count, 0u);
+        EXPECT_TRUE(master.pages().empty());
+        EXPECT_TRUE(part->pages().empty());
         ASSERT_TRUE(document.export_score({.format = format}));
-        EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 1u);
-        EXPECT_EQ(part->layout_state.whole_count + part->layout_state.range_count, 1u);
+        EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+        EXPECT_EQ(part->layout_state.whole_count + part->layout_state.range_count, 0u);
     }
 }
 
