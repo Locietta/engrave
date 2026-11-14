@@ -168,42 +168,12 @@ void MeasureBase::add(EngravingItem *e) {
         e->set_ownership_parent(this);
     }
 
-    if (e->is_layout_break()) {
-        LayoutBreak *b = to_layout_break(e);
-        switch (b->layout_break_type()) {
-            case LayoutBreakType::PAGE:
-                set_page_break(true);
-                set_line_break(false);
-                set_no_break(false);
-                break;
-            case LayoutBreakType::LINE:
-                set_page_break(false);
-                set_line_break(true);
-                set_section_break(false);
-                set_no_break(false);
-                break;
-            case LayoutBreakType::SECTION:
-                set_line_break(false);
-                set_section_break(true);
-                set_no_break(false);
-                if (b->start_with_measure_one()) {
-                    trigger_layout_to_end();
-                }
-                break;
-            case LayoutBreakType::NOBREAK:
-                set_page_break(false);
-                set_line_break(false);
-                set_section_break(false);
-                set_no_break(true);
-                break;
-        }
-        if (next()) {
-            next()->trigger_layout();
-        }
-    }
-    trigger_layout();
     el_.push_back(e);
     source_child_added(*this, e);
+    if (e->is_layout_break())
+        sync_break_flags(to_layout_break(e)->is_section_break());
+    else
+        trigger_layout();
     e->added();
 }
 
@@ -213,21 +183,6 @@ void MeasureBase::add(EngravingItem *e) {
 //---------------------------------------------------------
 
 void MeasureBase::remove(EngravingItem *el) {
-    if (el->is_layout_break()) {
-        LayoutBreak *lb = to_layout_break(el);
-        switch (lb->layout_break_type()) {
-            case LayoutBreakType::PAGE: set_page_break(false); break;
-            case LayoutBreakType::LINE: set_line_break(false); break;
-            case LayoutBreakType::SECTION:
-                set_section_break(false);
-                if (lb->start_with_measure_one()) {
-                    trigger_layout_to_end();
-                }
-                break;
-            case LayoutBreakType::NOBREAK: set_no_break(false); break;
-        }
-    }
-
     if (!el_.remove(el)) {
         LOGD("MeasureBase(%p)::remove(%s,%p) not found", this, el->type_name(), el);
     } else {
@@ -235,9 +190,11 @@ void MeasureBase::remove(EngravingItem *el) {
         el->removed();
     }
 
-    trigger_layout();
-    if (next()) {
-        next()->trigger_layout();
+    if (el->is_layout_break()) {
+        sync_break_flags(to_layout_break(el)->is_section_break());
+    } else {
+        trigger_layout();
+        if (next()) next()->trigger_layout();
     }
 }
 
@@ -420,7 +377,7 @@ MeasureBase *Score::first() const { return measures_.first(); }
 
 MeasureBase *Score::last() const { return measures_.last(); }
 
-void MeasureBase::sync_break_flags() {
+void MeasureBase::sync_break_flags(bool section_changed) {
     const bool was_section = section_break();
     bool line = false;
     bool page = false;
@@ -438,7 +395,7 @@ void MeasureBase::sync_break_flags() {
     set_page_break(page);
     set_section_break(section);
     set_no_break(no_break);
-    if (section != was_section) {
+    if (section_changed || section != was_section) {
         score()->invalidate_repeat_list();
         trigger_layout_to_end();
     }

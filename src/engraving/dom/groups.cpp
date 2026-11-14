@@ -115,6 +115,10 @@ static std::vector<NoteGroup> note_groups{
 //    based on time signature properties but respecting manual settings
 //---------------------------------------------------------
 
+BeamMode Groups::grace_beam_mode(const ChordRest *cr) {
+    return cr->duration_type().type() <= DurationType::V_QUARTER ? BeamMode::NONE : base_beam_mode(cr);
+}
+
 BeamMode Groups::base_beam_mode(const ChordRest *cr, const ChordRest *prev) { return base_beam_mode(cr, prev, cr->duration_type()); }
 
 BeamMode Groups::base_beam_mode(const ChordRest *cr, const ChordRest *prev, TDuration cr_duration) {

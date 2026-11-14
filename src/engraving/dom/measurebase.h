@@ -112,7 +112,7 @@ public:
     const MeasureBase *mb_with_preceding_section_break() const;
     LayoutBreak *section_break_element() const;
 
-    void sync_break_flags();
+    void sync_break_flags(bool section_changed = false);
     void undo_set_break(bool v, LayoutBreakType type);
 
     void undo_set_no_break(bool v) { undo_set_break(v, LayoutBreakType::NOBREAK); }

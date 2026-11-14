@@ -586,8 +586,8 @@ void BeamLayout::beam_grace_notes(LayoutContext &ctx, Chord *main_note, bool aft
     }
 
     for (ChordRest *cr : grace_notes) {
-        bm = Groups::base_beam_mode(cr);
-        if ((cr->duration_type().type() <= DurationType::V_QUARTER) || (bm == BeamMode::NONE)) {
+        bm = Groups::grace_beam_mode(cr);
+        if (bm == BeamMode::NONE) {
             if (beam) {
                 beam->set_is_grace(true);
                 layout1(beam, ctx);
