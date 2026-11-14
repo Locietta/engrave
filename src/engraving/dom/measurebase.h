@@ -113,6 +113,7 @@ public:
     LayoutBreak *section_break_element() const;
 
     void sync_break_flags(bool section_changed = false);
+    // Change elements through undo so every intermediate flag state follows el().
     void undo_set_break(bool v, LayoutBreakType type);
 
     void undo_set_no_break(bool v) { undo_set_break(v, LayoutBreakType::NOBREAK); }

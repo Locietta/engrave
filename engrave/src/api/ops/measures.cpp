@@ -259,8 +259,6 @@ Result<Step> prepare(EditContext &context, const SetLayoutBreak &op) {
         if (!(*object)->is_measure_base()) {
             return invalid(std::format("a {} is not a measure or a frame", (*object)->type_name()));
         }
-        // The engine's own switch: it sets the flag, adds or removes the break element
-        // through undo, and drops the break that the new one replaces.
         mu::engraving::to_measure_base(*object)->undo_set_break(on, kind);
         return {};
     };
