@@ -94,12 +94,13 @@ void MMRestLayout::clear_display_copies(Measure *measure) {
         measure->el().remove(item);
         delete item;
     }
-    for (Segment &segment : measure->segments()) {
+    for (Segment *rendered = measure->rendered_first(); rendered; rendered = rendered->rendered_next()) {
+        Segment &segment = *rendered;
         const auto annotations = segment.annotations();
         for (auto *item : annotations) {
             if (item->is_layout_copy()) segment.remove_layout_copy(item);
         }
-        const auto elements = segment.elist();
+        const auto elements = segment.effective_elements();
         for (auto *item : elements) {
             if (item && item->is_layout_copy()) segment.remove_layout_copy(item);
         }
@@ -110,7 +111,7 @@ void MMRestLayout::reuse_existing_mm_rest(LayoutContext &ctx, Measure *measure, 
     const Fraction old_len = measure->ticks();
     if (old_len != len) {
         for (const auto type : {SegmentType::END_BAR_LINE, SegmentType::CLEF, SegmentType::BREATH}) {
-            if (Segment *segment = measure->find_segment_r(type, old_len)) segment->set_rtick(len);
+            if (Segment *segment = measure->find_rendered_segment_r(type, old_len)) segment->set_rtick(len);
         }
         measure->set_ticks(len);
     }
@@ -164,7 +165,7 @@ void MMRestLayout::create_mm_rest(LayoutContext &ctx, Measure *first_measure, Me
     Segment *chord_rest_seg = mmr_measure->undo_get_segment_r(SegmentType::CHORD_REST, Fraction(0, 1));
     for (size_t staff_idx = 0; staff_idx < ctx.dom().nstaves(); ++staff_idx) {
         track_idx_t track = staff_idx * ::mu::engraving::voices;
-        EngravingItem *existing = chord_rest_seg->element(track);
+        EngravingItem *existing = chord_rest_seg->effective_element(track);
         if (!existing) {
             MMRest *mmr = Factory::create_mm_rest(chord_rest_seg);
             mmr->assign_new_eid();
@@ -200,7 +201,7 @@ void MMRestLayout::populate_display_copies(Measure *first_measure, Measure *last
     mmr_measure->set_no_break(last_measure->no_break());
 
     // set mmrMeasure with same barline as last underlying measure
-    Segment *last_measure_end_barline_seg = last_measure->find_segment_r(SegmentType::END_BAR_LINE, last_measure->ticks());
+    Segment *last_measure_end_barline_seg = last_measure->find_rendered_segment_r(SegmentType::END_BAR_LINE, last_measure->ticks());
     copy_elements(last_measure_end_barline_seg, mmr_measure, mmr_measure->ticks(), ctx, false);
 
     // if last underlying measure ends with clef change, show same at end of mmrest
@@ -279,7 +280,7 @@ Segment *MMRestLayout::copy_elements(const Segment *source, Measure *measure, co
         const auto track = staff2track(staff);
         const EngravingItem *item = source->element(track);
         if (!item || !item->visible() || (check_visibility && !ctx.dom().staff(staff)->show())) continue;
-        if (auto *old = display->element(track)) {
+        if (auto *old = display->effective_element(track)) {
             display->set_element(track, nullptr);
             delete old;
         }

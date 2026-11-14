@@ -702,7 +702,7 @@ void TDraw::draw(const BarLine *item, Painter *painter, const PaintOptions &opt)
             if (!prev_measure) {
                 return;
             }
-            if (const BarLine *prev_end_bl = prev_measure->end_bar_line(item->staff_idx())) {
+            if (const BarLine *prev_end_bl = prev_measure->rendered_end_bar_line(item->staff_idx())) {
                 if (prev_end_bl->segment() && prev_end_bl->segment()->enabled()) {
                     return;
                 }

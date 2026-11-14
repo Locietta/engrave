@@ -732,7 +732,7 @@ static Shape prepare_chords_shape(const ChordBracket *item) {
     const track_idx_t end_track = start_track + ::mu::engraving::voices;
 
     for (track_idx_t track = start_track; track < end_track; ++track) {
-        EngravingItem *e = owner->segment()->element(track);
+        EngravingItem *e = owner->segment()->effective_element(track);
         if (track == owner->track()) {
             continue;
         }
@@ -1710,7 +1710,7 @@ void TLayout::layout_expression(const Expression *item, Expression::LayoutData *
         track_idx_t start_track = track2staff(item->staff_idx());
         track_idx_t end_track = start_track + ::mu::engraving::voices;
         for (track_idx_t track = start_track; track < end_track; ++track) {
-            EngravingItem *e = segment->element(track);
+            EngravingItem *e = segment->effective_element(track);
             if (e && e->is_chord()) {
                 chord_to_align = to_chord(e);
                 break;
@@ -1780,7 +1780,7 @@ void TLayout::layout_fermata(const Fermata *item, Fermata::LayoutData *ldata) {
     const Segment *s = item->segment();
     const track_idx_t layout_parent_track =
         s->is_type(SegmentType::BAR_LINE_TYPES) ? item->staff_idx() * ::mu::engraving::voices : item->track();
-    const EngravingItem *e = s->element(layout_parent_track);
+    const EngravingItem *e = s->effective_element(layout_parent_track);
 
     if (e) {
         LD_CONDITION(e->ldata()->is_set_bbox()); // e->shape()
@@ -1977,7 +1977,7 @@ static void layout_lines(const FiguredBass *item, FiguredBass::LayoutData *ldata
     const Measure *m = ctx.dom().tick2measure(next_tick - Fraction::eps());
     if (m) {
         // locate the first segment (of ANY type) right after this' last tick
-        for (next_segm = m->first(SegmentType::ALL); next_segm; next_segm = next_segm->next()) {
+        for (next_segm = m->rendered_first(SegmentType::ALL); next_segm; next_segm = next_segm->rendered_next()) {
             if (next_segm->tick() >= next_tick) {
                 break;
             }
@@ -1986,9 +1986,9 @@ static void layout_lines(const FiguredBass *item, FiguredBass::LayoutData *ldata
         if (next_segm) {
             track_idx_t start_track = track_zero_voice(item->track());
             track_idx_t end_track = start_track + ::mu::engraving::voices;
-            for (const Segment *seg = next_segm->prev1(); seg; seg = seg->prev1()) {
+            for (const Segment *seg = next_segm->rendered_prev1(); seg; seg = seg->rendered_prev1()) {
                 for (track_idx_t t = start_track; t < end_track; ++t) {
-                    EngravingItem *el = seg->element(t);
+                    EngravingItem *el = seg->effective_element(t);
                     if (el && el->is_chord_rest()) {
                         last_cr = to_chord_rest(el);
                         break;
@@ -2028,10 +2028,10 @@ static void layout_lines(const FiguredBass *item, FiguredBass::LayoutData *ldata
         // full wrap-around.
         sys_idx1 = 0;
         sys_idx2 = 0;
-        next_segm = item->segment()->next1();
+        next_segm = item->segment()->rendered_next1();
     } else if (sys_idx2 == muse::nidx || sys_idx2 < sys_idx1) {
         sys_idx2 = sys_idx1;
-        next_segm = item->segment()->next1();
+        next_segm = item->segment()->rendered_next1();
         // TODO
         // During layout of figured bass next systems' numbers may be still
         // undefined (then sysIdx2 == muse::nidx) or change in the future.
@@ -2910,7 +2910,7 @@ void TLayout::layout_hammer_on_pull_off_segment(HammerOnPullOffSegment *item, La
             end_x = end_chord->system_pos().x();
         } else {
             // The last endChord of this segment is in next system. Use end barline instead.
-            Segment *end_seg = system->last_measure()->last(SegmentType::BAR_LINE_TYPES);
+            Segment *end_seg = system->last_measure()->rendered_last(SegmentType::BAR_LINE_TYPES);
             end_x = end_seg ? end_seg->system_pos().x() : end_x;
         }
         if (start_chord->stem() && end_chord->stem() && start_chord->up() == above && end_chord->up() == above) {
@@ -3078,7 +3078,7 @@ void TLayout::layout_jump(const Jump *item, Jump::LayoutData *ldata) {
 
     // ignore courtesy keysig, timesig, but fall back if needed
     Measure *measure = to_measure(item->parent());
-    const BarLine *bl = measure->end_bar_line();
+    const BarLine *bl = measure->rendered_end_bar_line();
     double x_adj = bl ? bl->segment()->x() + bl->ldata()->bbox().width() : measure->width();
 
     bool avoid_barline = item->staff_idx() != 0 && position != AlignH::HCENTER;
@@ -3091,12 +3091,13 @@ void TLayout::layout_jump(const Jump *item, Jump::LayoutData *ldata) {
         double padding = (start_repeat || end_repeat) ? 0.0 : 0.5 * item->spatium() * font_size_scale_factor;
 
         if (position == AlignH::LEFT) {
-            const BarLine *bl_above = start_repeat || !measure->prev_measure() ? measure->start_bar_line(bl_above_idx) :
-                                                                                 measure->prev_measure()->end_bar_line(bl_above_idx);
+            const BarLine *bl_above = start_repeat || !measure->prev_measure() ?
+                                          measure->rendered_start_bar_line(bl_above_idx) :
+                                          measure->prev_measure()->rendered_end_bar_line(bl_above_idx);
             double bl_width = (start_repeat && bl_above) ? bl_above->width() : 0.0;
             x_adj += padding + bl_width;
         } else if (position == AlignH::RIGHT) {
-            const BarLine *bl_above = measure->end_bar_line(bl_above_idx);
+            const BarLine *bl_above = measure->rendered_end_bar_line(bl_above_idx);
             double bl_width = bl_above ? bl_above->width() : 0.0;
             x_adj -= bl_width + padding;
         }
@@ -3173,11 +3174,11 @@ void TLayout::layout_key_sig(const KeySig *item, KeySig::LayoutData *ldata, cons
         // Look for a clef before the key signature at the same tick
         Clef *c = nullptr;
         if (s) {
-            for (Segment *seg = s->prev1(); !c && seg && seg->tick() == item->tick(); seg = seg->prev1()) {
+            for (Segment *seg = s->rendered_prev1(); !c && seg && seg->tick() == item->tick(); seg = seg->rendered_prev1()) {
                 const bool is_clef_seg = seg->is_clef_type() || seg->is_header_clef_type() ||
                                          (seg->is_clef_repeat_announce_type() && s->is_key_sig_repeat_announce_type());
                 if (seg->enabled() && is_clef_seg) {
-                    c = to_clef(seg->element(track));
+                    c = to_clef(seg->effective_element(track));
                 }
             }
         }
@@ -3282,9 +3283,9 @@ void TLayout::layout_key_sig(const KeySig *item, KeySig::LayoutData *ldata, cons
 
             // Handle naturals in continuation courtesy
             if (pm && s && s->is_type(SegmentType::KEY_SIG_START_REPEAT_ANNOUNCE)) {
-                Segment *prev_courtesy_seg = pm->find_segment_r(SegmentType::KEY_SIG_REPEAT_ANNOUNCE, pm->ticks());
-                if (prev_courtesy_seg && prev_courtesy_seg->element(track)) {
-                    t2 = int(to_key_sig(prev_courtesy_seg->element(track))->key());
+                Segment *prev_courtesy_seg = pm->find_rendered_segment_r(SegmentType::KEY_SIG_REPEAT_ANNOUNCE, pm->ticks());
+                if (prev_courtesy_seg && prev_courtesy_seg->effective_element(track)) {
+                    t2 = int(to_key_sig(prev_courtesy_seg->effective_element(track))->key());
                 }
             }
             // Don't show naturals when going from sharps to flats, if style says so
@@ -3972,7 +3973,7 @@ void TLayout::layout_ornament_cue_note(Ornament *item, LayoutContext &ctx) {
     staff_idx_t start_staff = staff2track(parent_chord->staff_idx());
     for (staff_idx_t staff = start_staff; staff < start_staff + ::mu::engraving::voices; ++staff) {
         Segment *segment = parent_chord->segment();
-        ChordRest *cr = segment->element(staff) ? to_chord_rest(segment->element(staff)) : nullptr;
+        ChordRest *cr = segment->effective_element(staff) ? to_chord_rest(segment->effective_element(staff)) : nullptr;
         if (cr) {
             min_dist = std::max(min_dist, HorizontalSpacing::min_horizontal_distance(cr->shape(), note_shape, cr->spatium()));
         }
@@ -4118,7 +4119,7 @@ void TLayout::layout_play_count_text(PlayCountText *item, TextBase::LayoutData *
 
     // Avoid incoming barlines from above
     double x_adj = 0.0;
-    BarLine *bl_above = item->staff_idx() != 0 ? to_bar_line(seg->element(staff2track(item->staff_idx() - 1))) : nullptr;
+    BarLine *bl_above = item->staff_idx() != 0 ? to_bar_line(seg->effective_element(staff2track(item->staff_idx() - 1))) : nullptr;
     if (bl_above && bl_above->span_staff()) {
         x_adj = bl_above->width();
     }
@@ -4138,8 +4139,8 @@ void TLayout::layout_play_tech_annotation(const PlayTechAnnotation *item, PlayTe
         track_idx_t s_track = staff2track(item->staff_idx());
         track_idx_t e_track = s_track + ::mu::engraving::voices;
         for (track_idx_t track = s_track; track < e_track; ++track) {
-            if (seg->element(track) && seg->element(track)->is_chord()) {
-                chord = to_chord(seg->element(track));
+            if (seg->effective_element(track) && seg->effective_element(track)->is_chord()) {
+                chord = to_chord(seg->effective_element(track));
                 break;
             }
         }
@@ -4195,12 +4196,12 @@ void TLayout::layout_rehearsal_mark(const RehearsalMark *item, RehearsalMark::La
     // first CR of measure, alignment is hcenter or right (the usual cases)
     // align with barline, point just after header, or start of measure depending on context
     const Measure *m = s->measure();
-    const Segment *header = s->prev(); // possibly just a start repeat
+    const Segment *header = s->rendered_prev(); // possibly just a start repeat
     while (header && header->is_type(SegmentType::DURATION)) {
-        header = header->prev();
+        header = header->rendered_prev();
     }
     double measure_x = -s->x();
-    const Segment *repeat = m->find_segment_r(SegmentType::START_REPEAT_BAR_LINE, Fraction(0, 1));
+    const Segment *repeat = m->find_rendered_segment_r(SegmentType::START_REPEAT_BAR_LINE, Fraction(0, 1));
 
     if (repeat) {
         LD_CONDITION(repeat->ldata()->is_set_pos());
@@ -4219,7 +4220,7 @@ void TLayout::layout_rehearsal_mark(const RehearsalMark *item, RehearsalMark::La
 
     // header at start of system
     // align to a point just after the header
-    EngravingItem *e = header->element(item->track());
+    EngravingItem *e = header->effective_element(item->track());
 
     if (e) {
         LD_CONDITION(e->ldata()->is_set_bbox());
@@ -4246,11 +4247,11 @@ void TLayout::check_rehearsal_mark_vs_big_time_sig(const RehearsalMark *item, Te
 
     const Segment *s = item->segment();
     TimeSig *big_time_sig = nullptr;
-    for (const Segment *segment = s; segment && segment->tick() == s->tick(); segment = segment->prev_active()) {
+    for (const Segment *segment = s; segment && segment->tick() == s->tick(); segment = segment->rendered_prev_active()) {
         if (!segment->is_type(SegmentType::TIME_SIG_TYPES)) {
             continue;
         }
-        TimeSig *time_sig = to_time_sig(segment->element(item->track()));
+        TimeSig *time_sig = to_time_sig(segment->effective_element(item->track()));
         if (time_sig && time_sig->visible()) {
             big_time_sig = time_sig;
             break;
@@ -5172,10 +5173,10 @@ void TLayout::layout_tempo_text(const TempoText *item, TempoText::LayoutData *ld
     RectF this_bbox = ldata->bbox().translated(item->pos());
 
     if (s->rtick().is_zero()) {
-        Segment *p = item->segment()->prev(SegmentType::TIME_SIG);
+        Segment *p = item->segment()->rendered_prev(SegmentType::TIME_SIG);
         if (p && !p->all_elements_invisible()) {
             ldata->move_x(-(s->x() - p->x()));
-            EngravingItem *e = p->element(item->staff_idx() * ::mu::engraving::voices);
+            EngravingItem *e = p->effective_element(item->staff_idx() * ::mu::engraving::voices);
             if (e) {
                 ldata->move_x(p->has_time_sig_above_staves() ? e->x() + e->width() + e->spatium() : e->x());
             }
@@ -6233,8 +6234,8 @@ double TLayout::volta_mid_end_segment_start_x(Volta *volta, System *system, Layo
         return 0.0;
     }
 
-    Segment *ref_seg = first_measure->repeat_start() ? first_measure->first(SegmentType::START_REPEAT_BAR_LINE) :
-                       ctx.conf().style_b(Sid::VOLTA_ALIGN_START_BEFORE_KEY_SIG) ? first_measure->first(SegmentType::KEY_SIG) :
+    Segment *ref_seg = first_measure->repeat_start() ? first_measure->rendered_first(SegmentType::START_REPEAT_BAR_LINE) :
+                       ctx.conf().style_b(Sid::VOLTA_ALIGN_START_BEFORE_KEY_SIG) ? first_measure->rendered_first(SegmentType::KEY_SIG) :
                                                                                    nullptr;
 
     if (!ref_seg) {
@@ -6245,7 +6246,7 @@ double TLayout::volta_mid_end_segment_start_x(Volta *volta, System *system, Layo
         return ref_seg->x() + first_measure->x();
     }
 
-    KeySig *key_sig = to_key_sig(ref_seg->element(volta->track()));
+    KeySig *key_sig = to_key_sig(ref_seg->effective_element(volta->track()));
     if (!key_sig || key_sig->ldata()->key_symbols.empty()) {
         return 0.0;
     }

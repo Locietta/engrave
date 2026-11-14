@@ -299,7 +299,8 @@ System *SystemLayout::collect_system(LayoutContext &ctx) {
                 prev_measure_state.measure = to_measure(nmb);
                 prev_measure_state.measure_pos = nmb->x();
                 prev_measure_state.measure_width = nmb->width();
-                for (Segment &seg : to_measure(nmb)->segments()) {
+                for (Segment *rendered = to_measure(nmb)->rendered_first(); rendered; rendered = rendered->rendered_next()) {
+                    Segment &seg = *rendered;
                     prev_measure_state.element_positions.emplace(&seg, seg.ldata()->pos());
                     prev_measure_state.element_widths.emplace(&seg, seg.width());
                     for (EngravingItem *item : seg.annotations()) {
@@ -346,7 +347,7 @@ System *SystemLayout::collect_system(LayoutContext &ctx) {
                 // we may have previously processed first measure(s) of next system
                 // so now we must restore to original state
                 if (m->repeat_start()) {
-                    Segment *s = m->find_segment_r(SegmentType::START_REPEAT_BAR_LINE, Fraction(0, 1));
+                    Segment *s = m->find_rendered_segment_r(SegmentType::START_REPEAT_BAR_LINE, Fraction(0, 1));
                     if (!s->enabled()) {
                         s->set_enabled(true);
                     }
@@ -409,7 +410,8 @@ System *SystemLayout::collect_system(LayoutContext &ctx) {
     // (and for potential forgotten shape updates, for example in MeasureLayout::setRepeatCourtesiesAndParens)
     for (MeasureBase *mb : system->measures()) {
         if (mb->is_measure()) {
-            for (Segment &seg : to_measure(mb)->segments()) {
+            for (Segment *rendered = to_measure(mb)->rendered_first(); rendered; rendered = rendered->rendered_next()) {
+                Segment &seg = *rendered;
                 seg.create_shapes();
             }
         }
@@ -675,7 +677,7 @@ static bool compute_show_sys_staff(const System *system, const Staff *staff, con
 
                 for (Segment *s = m->first(SegmentType::CHORD_REST); s; s = s->next(SegmentType::CHORD_REST)) {
                     for (voice_idx_t voice = 0; voice < ::mu::engraving::voices; ++voice) {
-                        ChordRest *cr = s->cr(st * ::mu::engraving::voices + voice);
+                        ChordRest *cr = to_chord_rest(s->effective_element(st * ::mu::engraving::voices + voice));
                         int staff_move = cr ? cr->staff_move() : 0;
                         if (!cr || cr->is_rest() || cr->staff_move() == 0) {
                             // The case staffMove == 0 has already been checked by measure->isEmpty()
@@ -801,14 +803,15 @@ void SystemLayout::update_time_sig_above_staves_x_pos(System *system, LayoutCont
             continue;
         }
         Measure *measure = to_measure(mb);
-        for (Segment &seg : measure->segments()) {
+        for (Segment *rendered = measure->rendered_first(); rendered; rendered = rendered->rendered_next()) {
+            Segment &seg = *rendered;
             if (!seg.is_type(SegmentType::TIME_SIG_TYPES)) {
                 continue;
             }
 
             std::set<TimeSig *> time_sig_to_keep;
             for (staff_idx_t staff_idx = 0; staff_idx < nstaves; ++staff_idx) {
-                TimeSig *time_sig = to_time_sig(seg.element(staff2track(staff_idx)));
+                TimeSig *time_sig = to_time_sig(seg.effective_element(staff2track(staff_idx)));
                 if (!time_sig || !time_sig->show_on_this_staff()) {
                     continue;
                 }
@@ -823,7 +826,7 @@ void SystemLayout::update_time_sig_above_staves_x_pos(System *system, LayoutCont
                     continue;
                 }
 
-                TimeSig *next_vis_time_sig = to_time_sig(seg.element(staff2track(next_vis_staff)));
+                TimeSig *next_vis_time_sig = to_time_sig(seg.effective_element(staff2track(next_vis_staff)));
                 if (next_vis_time_sig) {
                     time_sig_to_keep.insert(next_vis_time_sig);
                 }
@@ -832,7 +835,8 @@ void SystemLayout::update_time_sig_above_staves_x_pos(System *system, LayoutCont
             Segment *prev_barline_seg = nullptr;
             Segment *prev_repeat_announce_time_sig_seg = nullptr;
             if (center_on_barline) {
-                for (Segment *prev_seg = seg.prev1(); prev_seg && prev_seg->tick() == seg.tick(); prev_seg = prev_seg->prev1()) {
+                for (Segment *prev_seg = seg.rendered_prev1(); prev_seg && prev_seg->tick() == seg.tick();
+                     prev_seg = prev_seg->rendered_prev1()) {
                     if (prev_seg->is_end_bar_line_type()) {
                         prev_barline_seg = prev_seg;
                     } else if (prev_seg->is_time_sig_repeat_announce_type()) {
@@ -842,7 +846,7 @@ void SystemLayout::update_time_sig_above_staves_x_pos(System *system, LayoutCont
             }
 
             for (staff_idx_t staff_idx = 0; staff_idx < nstaves; ++staff_idx) {
-                TimeSig *time_sig = to_time_sig(seg.element(staff2track(staff_idx)));
+                TimeSig *time_sig = to_time_sig(seg.effective_element(staff2track(staff_idx)));
                 if (!time_sig) {
                     continue;
                 }
@@ -903,12 +907,13 @@ void SystemLayout::clear_big_time_sig_not_shown(System *system, LayoutContext &c
         if (!mb->is_measure()) {
             continue;
         }
-        for (Segment &seg : to_measure(mb)->segments()) {
+        for (Segment *rendered = to_measure(mb)->rendered_first(); rendered; rendered = rendered->rendered_next()) {
+            Segment &seg = *rendered;
             if (!seg.is_type(SegmentType::TIME_SIG_TYPES)) {
                 continue;
             }
             for (staff_idx_t staff_idx = 0; staff_idx < ctx.dom().nstaves(); ++staff_idx) {
-                TimeSig *ts = to_time_sig(seg.element(staff2track(staff_idx)));
+                TimeSig *ts = to_time_sig(seg.effective_element(staff2track(staff_idx)));
                 if (!ts) {
                     continue;
                 }
@@ -1035,7 +1040,7 @@ void SystemLayout::layout_parenthesis_and_big_time_sigs(const ElementsToLayout &
     for (Parenthesis *e : elements_to_layout.parenthesis) {
         Segment *s = e->segment();
         if (s->is_type(SegmentType::TIME_SIG_TYPES)) {
-            EngravingItem *el = s->element(e->track());
+            EngravingItem *el = s->effective_element(e->track());
             TimeSig *time_sig = el ? to_time_sig(el) : nullptr;
             if (!time_sig) {
                 continue;
@@ -1436,14 +1441,14 @@ void SystemLayout::collect_elements_to_layout(Measure *measure, ElementsToLayout
     }
 
     track_idx_t n_tracks = ctx.dom().ntracks();
-    for (Segment *s = measure->first(); s; s = s->next()) {
+    for (Segment *s = measure->rendered_first(); s; s = s->rendered_next()) {
         if (s->is_chord_rest_type() || !s->annotations().empty()) {
             elements.segments.push_back(s);
         }
 
         for (track_idx_t track = 0; track < n_tracks; /* intentionally empty*/) {
             if (s->has_time_sig_above_staves()) {
-                TimeSig *time_sig = to_time_sig(s->element(track));
+                TimeSig *time_sig = to_time_sig(s->effective_element(track));
                 if (time_sig && time_sig->show_on_this_staff()) {
                     elements.time_sig_above_staves.push_back(time_sig);
                 }
@@ -1457,7 +1462,7 @@ void SystemLayout::collect_elements_to_layout(Measure *measure, ElementsToLayout
             }
 
             if (s->is_type(SegmentType::BAR_LINE_TYPES)) {
-                if (BarLine *bl = to_bar_line(s->element(track))) {
+                if (BarLine *bl = to_bar_line(s->effective_element(track))) {
                     elements.barlines.push_back(bl);
                 }
                 track += ::mu::engraving::voices;
@@ -1465,7 +1470,7 @@ void SystemLayout::collect_elements_to_layout(Measure *measure, ElementsToLayout
             }
 
             if (s->is_chord_rest_type()) {
-                if (ChordRest *cr = to_chord_rest(s->element(track))) {
+                if (ChordRest *cr = to_chord_rest(s->effective_element(track))) {
                     elements.chord_rests.push_back(cr);
                     if (cr->is_chord()) {
                         elements.chords.push_back(to_chord(cr));
@@ -1614,18 +1619,19 @@ void SystemLayout::create_skylines(const ElementsToLayout &elements_to_layout, L
             if (m->staff_lines(staff_idx)->add_to_skyline()) {
                 ss->skyline().add(m->staff_lines(staff_idx)->ldata()->bbox().translated(m->pos()), m->staff_lines(staff_idx));
             }
-            for (Segment &s : m->segments()) {
+            for (Segment *rendered = m->rendered_first(); rendered; rendered = rendered->rendered_next()) {
+                Segment &s = *rendered;
                 if (!s.enabled()) {
                     continue;
                 }
                 PointF p(s.pos() + m->pos());
                 if (s.is_type(SegmentType::BAR_LINE_TYPES)) {
-                    BarLine *bl = to_bar_line(s.element(staff_idx * ::mu::engraving::voices));
+                    BarLine *bl = to_bar_line(s.effective_element(staff_idx * ::mu::engraving::voices));
                     if (bl && bl->add_to_skyline()) {
                         skyline.add(bl->shape().translated(bl->pos() + p + bl->staff_offset()));
                     }
                 } else if (s.is_type(SegmentType::TIME_SIG_TYPES)) {
-                    TimeSig *ts = to_time_sig(s.element(staff_idx * ::mu::engraving::voices));
+                    TimeSig *ts = to_time_sig(s.effective_element(staff_idx * ::mu::engraving::voices));
                     if (ts && ts->add_to_skyline() && ts->show_on_this_staff()) {
                         TimeSigPlacement time_sig_placement = ts->style().style_v(Sid::TIME_SIG_PLACEMENT).value<TimeSigPlacement>();
                         if (time_sig_placement != TimeSigPlacement::ACROSS_STAVES) {
@@ -1635,7 +1641,7 @@ void SystemLayout::create_skylines(const ElementsToLayout &elements_to_layout, L
                 } else {
                     track_idx_t strack = staff_idx * ::mu::engraving::voices;
                     track_idx_t etrack = strack + ::mu::engraving::voices;
-                    for (EngravingItem *e : s.elist()) {
+                    for (EngravingItem *e : s.effective_elements()) {
                         if (!e) {
                             continue;
                         }
@@ -1724,7 +1730,7 @@ void SystemLayout::do_layout_ties(System *system, const std::vector<Segment *> &
                                   [[maybe_unused]] const Fraction &etick, LayoutContext &ctx) {
 
     for (Segment *s : sl) {
-        for (EngravingItem *e : s->elist()) {
+        for (EngravingItem *e : s->effective_elements()) {
             if (!e || !e->is_chord()) {
                 continue;
             }
@@ -1796,7 +1802,7 @@ void SystemLayout::do_layout_note_spanners_linear(System *system, LayoutContext 
             if (!segment->is_chord_rest_type()) {
                 continue;
             }
-            for (EngravingItem *e : segment->elist()) {
+            for (EngravingItem *e : segment->effective_elements()) {
                 if (!e || !e->is_chord()) {
                     continue;
                 }
@@ -1935,7 +1941,7 @@ bool SystemLayout::measure_has_cross_stuff_or_modified_beams(const Measure *meas
         if (!seg.is_chord_rest_type()) {
             continue;
         }
-        for (const EngravingItem *e : seg.elist()) {
+        for (const EngravingItem *e : seg.effective_elements()) {
             if (!e || !e->is_chord_rest()) {
                 continue;
             }
@@ -1978,7 +1984,7 @@ void SystemLayout::update_cross_beams(System *system, LayoutContext &ctx) {
             if (!seg.is_chord_rest_type()) {
                 continue;
             }
-            for (EngravingItem *e : seg.elist()) {
+            for (EngravingItem *e : seg.effective_elements()) {
                 if (!e || !e->is_chord()) {
                     continue;
                 }
@@ -2001,7 +2007,7 @@ void SystemLayout::update_cross_beams(System *system, LayoutContext &ctx) {
             if (!seg.is_chord_rest_type()) {
                 continue;
             }
-            for (EngravingItem *e : seg.elist()) {
+            for (EngravingItem *e : seg.effective_elements()) {
                 if (!e || !e->is_chord()) {
                     continue;
                 }
@@ -2244,7 +2250,7 @@ double SystemLayout::min_vert_space_for_cross_staff_beams(System *system, staff_
                 continue;
             }
             for (track_idx_t track = start_track; track < end_track; ++track) {
-                EngravingItem *item = segment.element(track);
+                EngravingItem *item = segment.effective_element(track);
                 if (!item || !item->is_chord()) {
                     continue;
                 }
@@ -2590,9 +2596,10 @@ void SystemLayout::collect_centerable_items(const System *system, std::vector<Ga
         if (!mb->is_measure()) {
             continue;
         }
-        for (const Segment &seg : to_measure(mb)->segments()) {
+        for (const Segment *rendered = to_measure(mb)->rendered_first(); rendered; rendered = rendered->rendered_next()) {
+            const Segment &seg = *rendered;
             if (seg.is_chord_rest_type()) {
-                for (EngravingItem *item : seg.elist()) {
+                for (EngravingItem *item : seg.effective_elements()) {
                     if (!item) {
                         continue;
                     }
@@ -2641,12 +2648,13 @@ void SystemLayout::center_big_time_sigs_across_staves(const System *system) {
         if (!mb->is_measure()) {
             continue;
         }
-        for (Segment &segment : to_measure(mb)->segments()) {
+        for (Segment *rendered = to_measure(mb)->rendered_first(); rendered; rendered = rendered->rendered_next()) {
+            Segment &segment = *rendered;
             if (!segment.is_type(SegmentType::TIME_SIG_TYPES)) {
                 continue;
             }
             for (staff_idx_t staff_idx = 0; staff_idx < nstaves; ++staff_idx) {
-                TimeSig *time_sig = to_time_sig(segment.element(staff2track(staff_idx)));
+                TimeSig *time_sig = to_time_sig(segment.effective_element(staff2track(staff_idx)));
                 if (!time_sig || !time_sig->show_on_this_staff()) {
                     continue;
                 }
@@ -2656,7 +2664,7 @@ void SystemLayout::center_big_time_sigs_across_staves(const System *system) {
                 }
                 staff_idx_t next_staff_idx = this_staff_idx;
                 for (staff_idx_t idx = this_staff_idx + 1; idx < nstaves; ++idx) {
-                    TimeSig *next_time_sig = to_time_sig(segment.element(staff2track(idx)));
+                    TimeSig *next_time_sig = to_time_sig(segment.effective_element(staff2track(idx)));
                     if (next_time_sig && next_time_sig->show_on_this_staff()) {
                         staff_idx_t next_time_sig_stave = next_time_sig->effective_staff_idx();
                         if (next_time_sig_stave != muse::nidx) {

@@ -201,7 +201,7 @@ void ChordLayout::layout_pitched(Chord *item, LayoutContext &ctx) {
         Arpeggio::LayoutData *arpldata = span_arp->mutldata();
 
         const Segment *seg = span_arp->chord()->segment();
-        const EngravingItem *end_item = seg->element(span_arp->end_track());
+        const EngravingItem *end_item = seg->effective_element(span_arp->end_track());
         const Chord *end_chord = item;
         if (end_item && end_item->is_chord()) {
             end_chord = to_chord(end_item);
@@ -1626,7 +1626,7 @@ int ChordLayout::compute_auto_stem_direction(const std::vector<int> &note_distan
 static void layout_segment_elements(Segment *segment, track_idx_t start_track, track_idx_t end_track, staff_idx_t staff_idx,
                                     LayoutContext &ctx) {
     for (track_idx_t track = start_track; track < end_track; ++track) {
-        if (EngravingItem *e = segment->element(track)) {
+        if (EngravingItem *e = segment->effective_element(track)) {
             if (e->v_staff_idx() == staff_idx) {
                 TLayout::layout_item(e, ctx);
             }
@@ -1636,7 +1636,7 @@ static void layout_segment_elements(Segment *segment, track_idx_t start_track, t
 
 void ChordLayout::skip_accidentals(Segment *segment, track_idx_t start_track, track_idx_t end_track) {
     for (track_idx_t track = start_track; track < end_track; ++track) {
-        EngravingItem *item = segment->element(track);
+        EngravingItem *item = segment->effective_element(track);
         if (item && item->is_chord()) {
             for (Note *note : to_chord(item)->notes()) {
                 Accidental *acc = note->accidental();
@@ -1655,7 +1655,7 @@ ChordPosInfo ChordLayout::calculate_chord_pos_info(Segment *segment, staff_idx_t
     ChordPosInfo pos_info = ChordPosInfo();
 
     for (track_idx_t track = part_start_track; track < part_end_track; ++track) {
-        EngravingItem *e = segment->element(track);
+        EngravingItem *e = segment->effective_element(track);
         const bool calc_chord_pos = e && e->is_chord() && to_chord(e)->v_staff_idx() == staff_idx;
         if (!calc_chord_pos) {
             continue;
@@ -1732,7 +1732,7 @@ void ChordLayout::apply_chord_offsets(Segment *segment, staff_idx_t staff_idx, t
 
     // apply chord offsets
     for (track_idx_t track = part_start_track; track < part_end_track; ++track) {
-        EngravingItem *e = segment->element(track);
+        EngravingItem *e = segment->effective_element(track);
         const bool layout_chord = e && e->is_chord() && to_chord(e)->v_staff_idx() == staff_idx;
         if (!layout_chord) {
             continue;
@@ -2227,7 +2227,7 @@ void ChordLayout::layout_chords1(LayoutContext &ctx, Segment *segment, staff_idx
     if (staff && staff->is_tab_staff(tick) && is_simple_tab) {
         // Positions of notes should be reset in case we are changing from common or full tab with offsets to simple which should have none
         for (track_idx_t track = part_start_track; track < part_end_track; ++track) {
-            EngravingItem *e = segment->element(track);
+            EngravingItem *e = segment->effective_element(track);
             if (e && e->is_chord() && to_chord(e)->v_staff_idx() == staff_idx) {
                 Chord *chord = to_chord(e);
                 Chord::LayoutData *chord_ldata = chord->mutldata();
@@ -2945,9 +2945,10 @@ Segment *ChordLayout::grace_notes_after_segment(const Chord *chord) {
     }
     Measure *measure = chord->measure();
     staff_idx_t staff_idx = chord->staff_idx();
-    Segment *segment = measure->tick2segment(chord->end_tick(), SegmentType::ALL);
-    while (segment && (!segment->has_elements(staff2track(staff_idx), staff2track(staff_idx + 1) - 1) || segment->is_time_tick_type())) {
-        segment = segment->next();
+    Segment *segment = measure->find_rendered_segment(SegmentType::ALL, chord->end_tick());
+    while (segment &&
+           (!segment->has_effective_elements(staff2track(staff_idx), staff2track(staff_idx + 1) - 1) || segment->is_time_tick_type())) {
+        segment = segment->rendered_next();
     }
     return segment;
 }
@@ -2975,7 +2976,7 @@ void ChordLayout::clear_line_attach_points(Measure *measure) {
         if (!s.is_chord_rest_type()) {
             continue;
         }
-        for (EngravingItem *e : s.elist()) {
+        for (EngravingItem *e : s.effective_elements()) {
             if (!e || !e->is_chord()) {
                 continue;
             }

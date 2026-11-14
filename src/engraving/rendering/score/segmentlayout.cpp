@@ -36,32 +36,32 @@ void SegmentLayout::layout_measure_independent_elements(const Segment &segment, 
     LAYOUT_CALL() << segment.type_name() << "(" << segment.eid() << ")";
 
     if (segment.is_just_type(SegmentType::KEY_SIG)) {
-        KeySig *ks = to_key_sig(segment.element(track));
+        KeySig *ks = to_key_sig(segment.effective_element(track));
         if (ks) {
             TLayout::layout_key_sig(ks, ks->mutldata(), ctx.conf()); // LD_INDEPENDENT
         }
     } else if (segment.is_just_type(SegmentType::CLEF)) {
-        Clef *cl = item_cast<Clef *>(segment.element(track));
+        Clef *cl = item_cast<Clef *>(segment.effective_element(track));
         if (cl) {
             TLayout::layout_clef(cl, cl->mutldata(), ctx.conf()); // LD_INDEPENDENT
         }
     } else if (segment.is_type(SegmentType::HEADER_CLEF)) {
-        Clef *cl = item_cast<Clef *>(segment.element(track));
+        Clef *cl = item_cast<Clef *>(segment.effective_element(track));
         if (cl) {
             TLayout::layout_clef(cl, cl->mutldata(), ctx.conf()); // LD_INDEPENDENT
         }
     } else if (segment.is_type(SegmentType::TIME_SIG)) {
-        TimeSig *ts = item_cast<TimeSig *>(segment.element(track));
+        TimeSig *ts = item_cast<TimeSig *>(segment.effective_element(track));
         if (ts) {
             TLayout::layout_time_sig(ts, ts->mutldata(), ctx); // LD_INDEPENDENT
         }
     } else if (segment.is_type(SegmentType::AMBITUS)) {
-        Ambitus *am = item_cast<Ambitus *>(segment.element(track));
+        Ambitus *am = item_cast<Ambitus *>(segment.effective_element(track));
         if (am) {
             TLayout::layout_ambitus(am, am->mutldata(), ctx); // LD_INDEPENDENT
         }
     } else if (segment.is_type(SegmentType::BAR_LINE)) {
-        BarLine *bl = to_bar_line(segment.element(track));
+        BarLine *bl = to_bar_line(segment.effective_element(track));
         if (bl) {
             // check conditions (see TLayout::layoutBarLine)
             {
@@ -87,7 +87,7 @@ void SegmentLayout::set_chord_mag(const Staff *staff, const Segment &segment, tr
     const double grace_note_mag = conf.style_d(Sid::GRACE_NOTE_MAG);
 
     for (track_idx_t t = start_track; t < end_track; ++t) {
-        ChordRest *cr = segment.cr(t);
+        ChordRest *cr = to_chord_rest(segment.effective_element(t));
         if (!cr) {
             continue;
         }
@@ -114,7 +114,7 @@ void SegmentLayout::check_staff_move_validity(const Segment &segment, track_idx_
     IF_ASSERT_FAILED(segment.is_just_type(SegmentType::CHORD_REST)) { return; }
 
     for (track_idx_t t = start_track; t < end_track; ++t) {
-        ChordRest *cr = to_chord_rest(segment.element(t));
+        ChordRest *cr = to_chord_rest(segment.effective_element(t));
         if (cr) {
             // Check if requested cross-staff is possible
             if (cr->staff_move() || cr->stored_staff_move()) {
@@ -158,7 +158,7 @@ void SegmentLayout::layout_chord_drumset(const Staff *staff, const Segment &segm
 
     double spatium = conf.spatium();
     for (track_idx_t t = start_track; t < end_track; ++t) {
-        Chord *chord = item_cast<Chord *>(segment.element(t), CastMode::MAYBE_BAD); // maybe Rest
+        Chord *chord = item_cast<Chord *>(segment.effective_element(t), CastMode::MAYBE_BAD); // maybe Rest
         if (!chord) {
             continue;
         }
@@ -175,7 +175,7 @@ void SegmentLayout::compute_chords_up(const Segment &segment, track_idx_t start_
     IF_ASSERT_FAILED(segment.is_just_type(SegmentType::CHORD_REST)) { return; }
 
     for (track_idx_t t = start_track; t < end_track; ++t) {
-        ChordRest *cr = segment.cr(t);
+        ChordRest *cr = to_chord_rest(segment.effective_element(t));
         if (!cr) {
             continue;
         }
@@ -196,7 +196,7 @@ void SegmentLayout::layout_chords_stem(const Segment &segment, track_idx_t start
     IF_ASSERT_FAILED(segment.is_just_type(SegmentType::CHORD_REST)) { return; }
 
     for (track_idx_t t = start_track; t < end_track; ++t) {
-        ChordRest *cr = segment.cr(t);
+        ChordRest *cr = to_chord_rest(segment.effective_element(t));
         if (!cr) {
             continue;
         }

@@ -127,7 +127,7 @@ void MeasureLayout::layout2(Measure *item, LayoutContext &ctx) {
             continue;
         }
         for (Segment *seg = item->first(st); seg; seg = seg->next(st)) {
-            EngravingItem *element = seg->element(track);
+            EngravingItem *element = seg->effective_element(track);
             if (!element || !element->is_chord()) {
                 continue;
             }
@@ -178,7 +178,7 @@ void MeasureLayout::layout_measure(MeasureBase *current_mb, LayoutContext &ctx) 
 
     // Semantic repairs have run at the score layout boundary.
     for (const Segment &segment : measure->segments()) {
-        for (EngravingItem *item : segment.elist()) {
+        for (EngravingItem *item : segment.effective_elements()) {
             if (item && item->is_chord() && item->staff()->show()) ChordLayout::layout_note_lines(to_chord(item));
         }
     }
@@ -199,7 +199,8 @@ void MeasureLayout::layout_measure(MeasureBase *current_mb, LayoutContext &ctx) 
         track_idx_t start_track = staff_idx * ::mu::engraving::voices;
         track_idx_t end_track = start_track + ::mu::engraving::voices;
 
-        for (const Segment &segment : measure->segments()) {
+        for (const Segment *rendered = measure->rendered_first(); rendered; rendered = rendered->rendered_next()) {
+            const Segment &segment = *rendered;
             if (!staff->show() && !segment.is_type(SegmentType::TIME_SIG_TYPES)) {
                 continue;
             }
@@ -233,7 +234,7 @@ void MeasureLayout::layout_measure(MeasureBase *current_mb, LayoutContext &ctx) 
         if (!s.is_chord_rest_type()) {
             continue;
         }
-        for (EngravingItem *item : s.elist()) {
+        for (EngravingItem *item : s.effective_elements()) {
             if (!item || !item->is_chord_rest()) {
                 continue;
             }
@@ -254,7 +255,7 @@ void MeasureLayout::layout_measure(MeasureBase *current_mb, LayoutContext &ctx) 
                 ChordLayout::layout_chords1(ctx, &segment, staff_idx);
                 RestLayout::resolve_vertical_rest_conflicts(ctx, &segment, staff_idx);
                 for (voice_idx_t voice = 0; voice < ::mu::engraving::voices; ++voice) {
-                    ChordRest *cr = segment.cr(staff_idx * ::mu::engraving::voices + voice);
+                    ChordRest *cr = to_chord_rest(segment.effective_element(staff_idx * ::mu::engraving::voices + voice));
                     if (cr) {
                         for (Lyrics *l : cr->lyrics()) {
                             if (l) {
@@ -269,7 +270,7 @@ void MeasureLayout::layout_measure(MeasureBase *current_mb, LayoutContext &ctx) 
 
     for (Segment &segment : measure->segments()) {
         if (segment.is_breath_type()) {
-            for (EngravingItem *e : segment.elist()) {
+            for (EngravingItem *e : segment.effective_elements()) {
                 if (e && e->is_breath()) {
                     TLayout::layout_item(e, ctx);
                 }
@@ -284,14 +285,14 @@ void MeasureLayout::layout_measure(MeasureBase *current_mb, LayoutContext &ctx) 
         }
     }
 
-    Segment *seg = measure->find_segment_r(SegmentType::START_REPEAT_BAR_LINE, Fraction(0, 1));
+    Segment *seg = measure->find_rendered_segment_r(SegmentType::START_REPEAT_BAR_LINE, Fraction(0, 1));
     if (measure->repeat_start()) {
         if (!seg) {
             seg = measure->get_segment_r(SegmentType::START_REPEAT_BAR_LINE, Fraction(0, 1));
         }
         bar_lines_set_span(seg, ctx); // this also creates necessary barlines
         for (size_t staff_idx = 0; staff_idx < ctx.dom().nstaves(); ++staff_idx) {
-            BarLine *b = to_bar_line(seg->element(staff_idx * ::mu::engraving::voices));
+            BarLine *b = to_bar_line(seg->effective_element(staff_idx * ::mu::engraving::voices));
             if (b) {
                 b->set_bar_line_type(BarLineType::START_REPEAT);
                 TLayout::layout_bar_line(b, b->mutldata(), ctx);
@@ -301,21 +302,23 @@ void MeasureLayout::layout_measure(MeasureBase *current_mb, LayoutContext &ctx) 
         ctx.mut_dom().undo_remove_element(seg);
     }
 
-    for (Segment &s : measure->segments()) {
+    for (Segment *rendered = measure->rendered_first(); rendered; rendered = rendered->rendered_next()) {
+        Segment &s = *rendered;
         if (s.is_end_bar_line_type()) {
             continue;
         }
         s.create_shapes();
     }
 
-    measure->compute_ticks(); // Must be called *after* Segment::createShapes() because it relies on the
+    measure->compute_rendered_ticks(); // Must be called *after* Segment::createShapes() because it relies on the
     // Segment::visible() property, which is determined by Segment::createShapes().
 }
 
 void MeasureLayout::update_grace_notes(Measure *measure, LayoutContext &ctx) {
     // Attachments are pass-local, but staff shapes survive the context. Rebuild
     // base shapes even when a previous pass has already cleared its borrows.
-    for (Segment &segment : measure->segments()) {
+    for (Segment *rendered = measure->rendered_first(); rendered; rendered = rendered->rendered_next()) {
+        Segment &segment = *rendered;
         for (track_idx_t track = 0; track < ctx.dom().ntracks(); ++track) {
             EngravingItem *item = segment.pre_appended_item(track);
             if (item && item->is_grace_notes_group()) {
@@ -330,7 +333,7 @@ void MeasureLayout::update_grace_notes(Measure *measure, LayoutContext &ctx) {
         if (!s.is_chord_rest_type()) {
             continue;
         }
-        for (auto el : s.elist()) {
+        for (auto el : s.effective_elements()) {
             if (el && el->is_chord() && !to_chord(el)->grace_notes().empty()) {
                 ChordLayout::append_grace_notes(to_chord(el), ctx);
             }
@@ -338,7 +341,8 @@ void MeasureLayout::update_grace_notes(Measure *measure, LayoutContext &ctx) {
     }
 
     // Layout grace note groups
-    for (Segment &s : measure->segments()) {
+    for (Segment *rendered = measure->rendered_first(); rendered; rendered = rendered->rendered_next()) {
+        Segment &s = *rendered;
         for (track_idx_t track = 0; track < ctx.dom().ntracks(); ++track) {
             EngravingItem *e = s.pre_appended_item(track);
             if (e && e->is_grace_notes_group()) {
@@ -417,7 +421,7 @@ void MeasureLayout::compute_pre_spacing_items(Measure *m, LayoutContext &ctx) {
         if (!seg.is_chord_rest_type()) {
             continue;
         }
-        for (EngravingItem *e : seg.elist()) {
+        for (EngravingItem *e : seg.effective_elements()) {
             if (!e || !e->is_chord()) {
                 continue;
             }
@@ -458,7 +462,7 @@ void MeasureLayout::layout_staff_lines(Measure *m, LayoutContext &ctx) {
     for (const MStaff *ms : m->mstaves()) {
         if (m->is_cutaway_clef(staff_idx) && (ctx.dom().staff(staff_idx)->cutaway() || !m->visible(staff_idx))) {
             // draw short staff lines for a courtesy clef on a hidden measure
-            Segment *clef_seg = m->find_segment_r(SegmentType::CLEF, m->ticks());
+            Segment *clef_seg = m->find_rendered_segment_r(SegmentType::CLEF, m->ticks());
             double staff_mag = ctx.dom().staff(staff_idx)->staff_mag(m->tick());
             double partial_width = clef_seg ? m->width() - clef_seg->x() + clef_seg->min_left() +
                                                   ctx.conf().style_absolute(Sid::CLEF_LEFT_MARGIN) * staff_mag :
@@ -486,7 +490,7 @@ void MeasureLayout::layout_play_count_text(Measure *m, LayoutContext &ctx) {
         }
         track_idx_t track = staff2track(staff_idx);
 
-        Segment *end_bar_seg = m->last(SegmentType::BAR_LINE_TYPES);
+        Segment *end_bar_seg = m->rendered_last(SegmentType::BAR_LINE_TYPES);
         PlayCountText *play_count =
             end_bar_seg ? to_play_count_text(end_bar_seg->find_annotation(ElementType::PLAY_COUNT_TEXT, track, track)) : nullptr;
         if (!play_count) {
@@ -553,18 +557,19 @@ MeasureLayout::MeasureStartEndPos MeasureLayout::get_measure_start_end_pos(const
     }
 
     Segment *s1;
-    for (s1 = first_cr_seg->prev_active(); s1 && s1->all_elements_invisible(); s1 = s1->prev_active()) {}
+    for (s1 = first_cr_seg->rendered_prev_active(); s1 && s1->all_elements_invisible(); s1 = s1->rendered_prev_active()) {}
     Segment *s2;
 
-    for (s2 = first_cr_seg->next_active(); s2; s2 = s2->next_active()) {
-        if (modern_mm_rest && !s2->is_chord_rest_type() && !s2->is_breath_type() && s2->element(staff_idx * ::mu::engraving::voices)) {
+    for (s2 = first_cr_seg->rendered_next_active(); s2; s2 = s2->rendered_next_active()) {
+        if (modern_mm_rest && !s2->is_chord_rest_type() && !s2->is_breath_type() &&
+            s2->effective_element(staff_idx * ::mu::engraving::voices)) {
             break;
         }
 
         if (!modern_mm_rest &&
             (s2->is_clef_repeat_announce_type() || (s2->is_time_sig_repeat_announce_type() && !s2->has_time_sig_above_staves()) ||
              s2->is_key_sig_repeat_announce_type() || s2->is_end_bar_line_type()) &&
-            s2->element(staff_idx * ::mu::engraving::voices)) {
+            s2->effective_element(staff_idx * ::mu::engraving::voices)) {
             break;
         }
     }
@@ -577,13 +582,13 @@ MeasureLayout::MeasureStartEndPos MeasureLayout::get_measure_start_end_pos(const
                 break;
             }
         }
-        s1 = s1->prev_active();
+        s1 = s1->rendered_prev_active();
     }
 
     double x2 = s2 ? s2->x() - s2->min_left() : measure->width();
 
-    bool header_exception =
-        measure->header() && first_cr_seg->prev() && !first_cr_seg->prev()->is_start_repeat_bar_line_type() && needs_header_exception;
+    bool header_exception = measure->header() && first_cr_seg->rendered_prev() &&
+                            !first_cr_seg->rendered_prev()->is_start_repeat_bar_line_type() && needs_header_exception;
     if (header_exception) { //needs this exception on header bar
         // Set x1 to the imaginary barline located the minimum barline->note distance to the left of the rest's segment
         x1 = first_cr_seg->x() - ctx.conf().style_absolute(Sid::BAR_NOTE_DISTANCE);
@@ -605,7 +610,8 @@ void MeasureLayout::layout_measure_elements(Measure *m, LayoutContext &ctx) {
     //    layout individual elements
     //---------------------------------------------------
 
-    for (Segment &s : m->segments()) {
+    for (Segment *rendered = m->rendered_first(); rendered; rendered = rendered->rendered_next()) {
+        Segment &s = *rendered;
         if (!s.enabled()) {
             continue;
         }
@@ -613,7 +619,7 @@ void MeasureLayout::layout_measure_elements(Measure *m, LayoutContext &ctx) {
         // After the rest of the spacing is calculated we position grace-notes-after.
         ChordLayout::reposition_grace_notes_after(&s, ctx.dom().ntracks());
 
-        for (EngravingItem *e : s.elist()) {
+        for (EngravingItem *e : s.effective_elements()) {
             if (!e) {
                 continue;
             }
@@ -709,7 +715,7 @@ void MeasureLayout::layout_measure_elements(Measure *m, LayoutContext &ctx) {
 void MeasureLayout::bar_lines_set_span(Segment *seg, LayoutContext &ctx) {
     int track = 0;
     for (Staff *staff : ctx.dom().staves()) {
-        BarLine *bl = to_bar_line(seg->element(track)); // get existing bar line for this staff, if any
+        BarLine *bl = to_bar_line(seg->effective_element(track)); // get existing bar line for this staff, if any
         if (bl) {
             if (bl->generated()) {
                 bl->set_span_staff(staff->bar_line_span());
@@ -738,7 +744,7 @@ void MeasureLayout::bar_lines_set_span(Segment *seg, LayoutContext &ctx) {
 
 void MeasureLayout::create_end_bar_lines(Measure *m, bool is_last_measure_in_system, LayoutContext &ctx) {
     const size_t nstaves = ctx.dom().nstaves();
-    Segment *barline_seg = m->find_segment_r(SegmentType::END_BAR_LINE, m->ticks());
+    Segment *barline_seg = m->find_rendered_segment_r(SegmentType::END_BAR_LINE, m->ticks());
     const Measure *next_measure = m->next_measure();
     double barline_width = 0.0;
     bool section_break_hide_courtesy = false;
@@ -851,7 +857,7 @@ void MeasureLayout::create_end_bar_lines(Measure *m, bool is_last_measure_in_sys
 
         for (staff_idx_t staff_idx = 0; staff_idx < nstaves; ++staff_idx) {
             track_idx_t track = staff_idx * ::mu::engraving::voices;
-            BarLine *bar_line = to_bar_line(barline_seg->element(track));
+            BarLine *bar_line = to_bar_line(barline_seg->effective_element(track));
             const Staff *staff = ctx.dom().staff(staff_idx);
             if (!bar_line) {
                 bar_line = Factory::create_bar_line(barline_seg);
@@ -883,7 +889,7 @@ void MeasureLayout::create_end_bar_lines(Measure *m, bool is_last_measure_in_sys
         // right align within segment
         for (staff_idx_t staff_idx = 0; staff_idx < nstaves; ++staff_idx) {
             track_idx_t track = staff_idx * ::mu::engraving::voices;
-            BarLine *bar_line = to_bar_line(barline_seg->element(track));
+            BarLine *bar_line = to_bar_line(barline_seg->effective_element(track));
             if (!bar_line) {
                 continue;
             }
@@ -903,9 +909,9 @@ void MeasureLayout::set_clef_seg_visibility(Measure *m, bool is_last_measure_in_
     }
     const Measure *next_measure = m->next_measure();
 
-    Segment *clef_seg = m->find_segment_r(SegmentType::CLEF, m->ticks());
+    Segment *clef_seg = m->find_rendered_segment_r(SegmentType::CLEF, m->ticks());
     if (!clef_seg && next_measure) {
-        clef_seg = next_measure->find_segment_r(SegmentType::CLEF, Fraction(0, 1));
+        clef_seg = next_measure->find_rendered_segment_r(SegmentType::CLEF, Fraction(0, 1));
     }
 
     if (!clef_seg) {
@@ -920,7 +926,7 @@ void MeasureLayout::set_clef_seg_visibility(Measure *m, bool is_last_measure_in_
         }
 
         const track_idx_t track = staff_idx * ::mu::engraving::voices;
-        Clef *clef = to_clef(clef_seg->element(track));
+        Clef *clef = to_clef(clef_seg->effective_element(track));
         if (!clef) {
             continue;
         }
@@ -965,7 +971,7 @@ void MeasureLayout::set_courtesy_time_sig(Measure *m, const Fraction &ref_sig_ti
     const bool is_continuation_courtesy = courtesy_seg_type == SegmentType::TIME_SIG_START_REPEAT_ANNOUNCE;
 
     const Segment *prev_courtesy_segment =
-        prev_measure ? prev_measure->find_segment_r(SegmentType::TIME_SIG_REPEAT_ANNOUNCE, prev_measure->ticks()) : nullptr;
+        prev_measure ? prev_measure->find_rendered_segment_r(SegmentType::TIME_SIG_REPEAT_ANNOUNCE, prev_measure->ticks()) : nullptr;
 
     // Cont. courtesies - check for sig at the start of the measure OR end of previous measure if changesBeforeBarline... is on
     const bool check_prev_measure = is_continuation_courtesy && prev_measure &&
@@ -977,7 +983,7 @@ void MeasureLayout::set_courtesy_time_sig(Measure *m, const Fraction &ref_sig_ti
                                   ts_seg_at_courtesy_tick;
     const bool should_show_cont_courtesy = prev_measure && prev_measure->has_courtesy_time_sig();
 
-    Segment *courtesy_sig_seg = m->find_segment_r(courtesy_seg_type, courtesy_sig_r_tick);
+    Segment *courtesy_sig_seg = m->find_rendered_segment_r(courtesy_seg_type, courtesy_sig_r_tick);
     for (track_idx_t track = 0; track < nstaves * ::mu::engraving::voices; track += ::mu::engraving::voices) {
         const Staff *staff = ctx.dom().staff(track2staff(track));
         const TimeSig *actual_time_sig = staff->time_sig(ref_sig_tick);
@@ -990,10 +996,10 @@ void MeasureLayout::set_courtesy_time_sig(Measure *m, const Fraction &ref_sig_ti
         // Show continuation courtesy if there's a repeat courtesy before it
         // Show trailer courtesy only when there's a time sig element in the next bar
         const bool sigs_different = actual_time_sig->sig() != cur_time_sig->sig();
-        const bool needs_courtesy = is_continuation_courtesy ?
-                                        should_show_cont_courtesy && prev_courtesy_segment && prev_courtesy_segment->element(track) :
-                                    is_trailer ? actual_time_sig->tick() == m->end_tick() :
-                                                 sigs_different;
+        const bool needs_courtesy = is_continuation_courtesy ? should_show_cont_courtesy && prev_courtesy_segment &&
+                                                                   prev_courtesy_segment->effective_element(track) :
+                                    is_trailer               ? actual_time_sig->tick() == m->end_tick() :
+                                                               sigs_different;
         // If there is a real key sig at this tick (in this bar or the previous), don't create a courtesy
         const bool has_sig_at_tick =
             ts_seg_at_courtesy_tick && ts_seg_at_courtesy_tick->enabled() && ts_seg_at_courtesy_tick->element(track);
@@ -1019,7 +1025,7 @@ void MeasureLayout::set_courtesy_time_sig(Measure *m, const Fraction &ref_sig_ti
 
         // Find courtesy element or create if it doesn't exist
         TimeSig *courtesy_time_sig = nullptr;
-        EngravingItem *time_sig_elem = courtesy_sig_seg->element(track);
+        EngravingItem *time_sig_elem = courtesy_sig_seg->effective_element(track);
         if (time_sig_elem && time_sig_elem->is_time_sig()) {
             courtesy_time_sig = to_time_sig(time_sig_elem);
         }
@@ -1062,7 +1068,7 @@ void MeasureLayout::set_courtesy_time_sig(Measure *m, const Fraction &ref_sig_ti
     }
 
     if (courtesy_sig_seg && courtesy_sig_seg->enabled()) {
-        if (courtesy_sig_seg->has_elements()) {
+        if (courtesy_sig_seg->has_effective_elements()) {
             courtesy_sig_seg->create_shapes();
         } else {
             courtesy_sig_seg->set_enabled(false);
@@ -1084,7 +1090,7 @@ void MeasureLayout::set_courtesy_key_sig(Measure *m, const Fraction &ref_sig_tic
     const bool is_continuation_courtesy = courtesy_seg_type == SegmentType::KEY_SIG_START_REPEAT_ANNOUNCE;
 
     const Segment *prev_courtesy_segment =
-        prev_measure ? prev_measure->find_segment_r(SegmentType::KEY_SIG_REPEAT_ANNOUNCE, prev_measure->ticks()) : nullptr;
+        prev_measure ? prev_measure->find_rendered_segment_r(SegmentType::KEY_SIG_REPEAT_ANNOUNCE, prev_measure->ticks()) : nullptr;
 
     // Cont. courtesies - check for sig at the start of the measure OR end of previous measure if changesBeforeBarline... is on
     const bool check_prev_measure = is_continuation_courtesy && prev_measure &&
@@ -1097,7 +1103,7 @@ void MeasureLayout::set_courtesy_key_sig(Measure *m, const Fraction &ref_sig_tic
 
     const bool should_show_cont_courtesy = prev_measure && prev_measure->has_courtesy_key_sig();
 
-    Segment *courtesy_sig_seg = m->find_segment_r(courtesy_seg_type, courtesy_sig_r_tick);
+    Segment *courtesy_sig_seg = m->find_rendered_segment_r(courtesy_seg_type, courtesy_sig_r_tick);
     for (track_idx_t track = 0; track < nstaves * ::mu::engraving::voices; track += ::mu::engraving::voices) {
         // Find reference signature
         const Staff *staff = ctx.dom().staff(track2staff(track));
@@ -1112,9 +1118,9 @@ void MeasureLayout::set_courtesy_key_sig(Measure *m, const Fraction &ref_sig_tic
         // Get info from correct tick for repeats
         // For trailers and pre-repeat courtesies, signatures should be different
         const bool sigs_different = staff->key(m->end_tick() - Fraction::eps()) != ref_key.key();
-        const bool needs_courtesy = is_continuation_courtesy ?
-                                        should_show_cont_courtesy && prev_courtesy_segment && prev_courtesy_segment->element(track) :
-                                        sigs_different;
+        const bool needs_courtesy = is_continuation_courtesy ? should_show_cont_courtesy && prev_courtesy_segment &&
+                                                                   prev_courtesy_segment->effective_element(track) :
+                                                               sigs_different;
         // Only show key sig changes on pitched staves
         const bool staff_is_pitched_at_next_meas =
             ctx.dom().last_measure_mm() == m || (m->next_measure_mm() && staff->is_pitched_staff(m->next_measure_mm()->tick()));
@@ -1144,7 +1150,7 @@ void MeasureLayout::set_courtesy_key_sig(Measure *m, const Fraction &ref_sig_tic
 
         // Find courtesy element or create if it doesn't exist
         KeySig *courtesy_key_sig = nullptr;
-        EngravingItem *key_sig_elem = courtesy_sig_seg->element(track);
+        EngravingItem *key_sig_elem = courtesy_sig_seg->effective_element(track);
         if (key_sig_elem && key_sig_elem->is_key_sig()) {
             courtesy_key_sig = to_key_sig(key_sig_elem);
         }
@@ -1181,7 +1187,7 @@ void MeasureLayout::set_courtesy_key_sig(Measure *m, const Fraction &ref_sig_tic
     }
 
     if (courtesy_sig_seg && courtesy_sig_seg->enabled()) {
-        if (courtesy_sig_seg->has_elements()) {
+        if (courtesy_sig_seg->has_effective_elements()) {
             courtesy_sig_seg->create_shapes();
         } else {
             courtesy_sig_seg->set_enabled(false);
@@ -1202,7 +1208,7 @@ void MeasureLayout::set_courtesy_clef(Measure *m, const Fraction &ref_clef_tick,
     const bool is_continuation_courtesy = courtesy_seg_type == SegmentType::CLEF_START_REPEAT_ANNOUNCE;
 
     const Segment *prev_courtesy_segment =
-        prev_measure ? prev_measure->find_segment_r(SegmentType::CLEF_REPEAT_ANNOUNCE, prev_measure->ticks()) : nullptr;
+        prev_measure ? prev_measure->find_rendered_segment_r(SegmentType::CLEF_REPEAT_ANNOUNCE, prev_measure->ticks()) : nullptr;
     const Segment *clef_seg_at_courtesy_tick = m->find_segment_r(SegmentType::CLEF | SegmentType::HEADER_CLEF, courtesy_clef_r_tick);
     clef_seg_at_courtesy_tick = !clef_seg_at_courtesy_tick && prev_measure ?
                                     prev_measure->find_segment_r(SegmentType::KEY_SIG, courtesy_clef_tick - prev_measure->tick()) :
@@ -1210,7 +1216,7 @@ void MeasureLayout::set_courtesy_clef(Measure *m, const Fraction &ref_clef_tick,
 
     bool should_show_cont_courtesy = prev_measure && prev_measure->has_courtesy_clef();
 
-    Segment *courtesy_clef_seg = m->find_segment_r(courtesy_seg_type, courtesy_clef_r_tick);
+    Segment *courtesy_clef_seg = m->find_rendered_segment_r(courtesy_seg_type, courtesy_clef_r_tick);
     for (track_idx_t track = 0; track < nstaves * ::mu::engraving::voices; track += ::mu::engraving::voices) {
         const Staff *staff = ctx.dom().staff(track2staff(track));
         const Fraction ref_clef_element_tick = staff->current_clef_tick(ref_clef_tick);
@@ -1230,9 +1236,9 @@ void MeasureLayout::set_courtesy_clef(Measure *m, const Fraction &ref_clef_tick,
         const ClefType ref_clef = staff->clef(ref_clef_tick);
         // For trailers and pre-repeat courtesies, clefs should be different
         const bool clefs_different = staff->clef(m->end_tick() - Fraction::eps()) != ref_clef;
-        const bool needs_courtesy = is_continuation_courtesy ?
-                                        should_show_cont_courtesy && prev_courtesy_segment && prev_courtesy_segment->element(track) :
-                                        clefs_different;
+        const bool needs_courtesy = is_continuation_courtesy ? should_show_cont_courtesy && prev_courtesy_segment &&
+                                                                   prev_courtesy_segment->effective_element(track) :
+                                                               clefs_different;
         // If there is a real clef at this tick (in this bar or the previous), don't create a courtesy
         const bool has_clef_at_tick =
             clef_seg_at_courtesy_tick && clef_seg_at_courtesy_tick->enabled() && clef_seg_at_courtesy_tick->element(track);
@@ -1257,7 +1263,7 @@ void MeasureLayout::set_courtesy_clef(Measure *m, const Fraction &ref_clef_tick,
 
         // Find courtesy element or create if it doesn't exist
         Clef *courtesy_clef = nullptr;
-        EngravingItem *clef_elem = courtesy_clef_seg->element(track);
+        EngravingItem *clef_elem = courtesy_clef_seg->effective_element(track);
         if (clef_elem && clef_elem->is_clef()) {
             courtesy_clef = to_clef(clef_elem);
         }
@@ -1295,7 +1301,7 @@ void MeasureLayout::set_courtesy_clef(Measure *m, const Fraction &ref_clef_tick,
     }
 
     if (courtesy_clef_seg && courtesy_clef_seg->enabled()) {
-        if (courtesy_clef_seg->has_elements()) {
+        if (courtesy_clef_seg->has_effective_elements()) {
             courtesy_clef_seg->create_shapes();
         } else {
             courtesy_clef_seg->set_enabled(false);
@@ -1347,7 +1353,7 @@ void MeasureLayout::add_repeat_courtesy_parentheses(Measure *m, const bool conti
             return false;
         }
 
-        const EngravingItem *el = seg->element(track);
+        const EngravingItem *el = seg->effective_element(track);
         return el && el->visible();
     };
 
@@ -1356,7 +1362,7 @@ void MeasureLayout::add_repeat_courtesy_parentheses(Measure *m, const bool conti
             return false;
         }
 
-        const EngravingItem *el = seg ? seg->element(track) : nullptr;
+        const EngravingItem *el = seg ? seg->effective_element(track) : nullptr;
         if (!el || !el->is_time_sig()) {
             return false;
         }
@@ -1367,8 +1373,8 @@ void MeasureLayout::add_repeat_courtesy_parentheses(Measure *m, const bool conti
     auto create_parentheses_for_segments = [&](Segment *left_seg, Segment *right_seg, track_idx_t track) -> void {
         double top = DBL_MAX;
         double bottom = -DBL_MAX;
-        EngravingItem *left_item = left_seg ? left_seg->element(track) : nullptr;
-        EngravingItem *right_item = right_seg ? right_seg->element(track) : nullptr;
+        EngravingItem *left_item = left_seg ? left_seg->effective_element(track) : nullptr;
+        EngravingItem *right_item = right_seg ? right_seg->effective_element(track) : nullptr;
         Parenthesis *left_paren = nullptr;
         if (left_item) {
             left_item->set_parentheses_mode(left_item->right_paren() ? ParenthesesMode::BOTH : ParenthesesMode::LEFT, true, true);
@@ -1431,9 +1437,9 @@ void MeasureLayout::add_repeat_courtesy_parentheses(Measure *m, const bool conti
     };
 
     for (track_idx_t track = 0; track <= ctx.dom().nstaves() * ::mu::engraving::voices; track += ::mu::engraving::voices) {
-        Segment *clef_seg = m->find_segment_r(clef_seg_type, sig_tick);
-        Segment *ks_seg = m->find_segment_r(ks_seg_type, sig_tick);
-        Segment *ts_seg = m->find_segment_r(ts_seg_type, sig_tick);
+        Segment *clef_seg = m->find_rendered_segment_r(clef_seg_type, sig_tick);
+        Segment *ks_seg = m->find_rendered_segment_r(ks_seg_type, sig_tick);
+        Segment *ts_seg = m->find_rendered_segment_r(ts_seg_type, sig_tick);
         bool separate_ts_parens = time_sig_should_have_own_parentheses(ts_seg, track);
 
         Segment *left_most_seg = clef_seg;
@@ -1452,10 +1458,10 @@ void MeasureLayout::add_repeat_courtesy_parentheses(Measure *m, const bool conti
 
         // Remove stale parentheses
         for (Segment *seg : {clef_seg, ks_seg, ts_seg}) {
-            if (seg == left_most_seg || !seg || (seg == ts_seg && separate_ts_parens) || !seg->element(track)) {
+            if (seg == left_most_seg || !seg || (seg == ts_seg && separate_ts_parens) || !seg->effective_element(track)) {
                 continue;
             }
-            EngravingItem *item = seg->element(track);
+            EngravingItem *item = seg->effective_element(track);
             remove_repeat_courtesy_parenthesis(item, DirectionH::LEFT);
         }
 
@@ -1475,10 +1481,10 @@ void MeasureLayout::add_repeat_courtesy_parentheses(Measure *m, const bool conti
 
         // Remove stale parentheses
         for (Segment *seg : {clef_seg, ks_seg, ts_seg}) {
-            if (seg == right_most_seg || !seg || (seg == ts_seg && separate_ts_parens) || !seg->element(track)) {
+            if (seg == right_most_seg || !seg || (seg == ts_seg && separate_ts_parens) || !seg->effective_element(track)) {
                 continue;
             }
-            EngravingItem *item = seg->element(track);
+            EngravingItem *item = seg->effective_element(track);
             remove_repeat_courtesy_parenthesis(item, DirectionH::RIGHT);
         }
 
@@ -1497,16 +1503,16 @@ void MeasureLayout::remove_repeat_courtesy_parentheses_measure(Measure *m, const
 
     const Fraction sig_tick = continuation ? Fraction(0, 1) : m->ticks();
 
-    Segment *clef_seg = m->find_segment_r(clef_seg_type, sig_tick);
-    Segment *ks_seg = m->find_segment_r(ks_seg_type, sig_tick);
-    Segment *ts_seg = m->find_segment_r(ts_seg_type, sig_tick);
+    Segment *clef_seg = m->find_rendered_segment_r(clef_seg_type, sig_tick);
+    Segment *ks_seg = m->find_rendered_segment_r(ks_seg_type, sig_tick);
+    Segment *ts_seg = m->find_rendered_segment_r(ts_seg_type, sig_tick);
 
     for (Segment *seg : {clef_seg, ks_seg, ts_seg}) {
         if (!seg) {
             continue;
         }
         for (track_idx_t track = 0; track <= ctx.dom().nstaves() * ::mu::engraving::voices; track += ::mu::engraving::voices) {
-            EngravingItem *item = seg->element(track);
+            EngravingItem *item = seg->effective_element(track);
             if (!item) {
                 continue;
             }
@@ -1624,7 +1630,7 @@ void MeasureLayout::add_repeat_courtesies(Measure *m, LayoutContext &ctx) {
 }
 
 void MeasureLayout::remove_repeat_courtesies(Measure *m) {
-    for (Segment *seg = m->last(); seg != m->first(); seg = seg->prev()) {
+    for (Segment *seg = m->rendered_last(); seg != m->rendered_first(); seg = seg->rendered_prev()) {
         if (seg->is_chord_rest_type()) {
             break;
         }
@@ -1650,7 +1656,7 @@ void MeasureLayout::add_repeat_continuation_courtesies(Measure *m, LayoutContext
 }
 
 void MeasureLayout::remove_repeat_continuation_courtesies(Measure *m) {
-    for (Segment *seg = m->first(); seg != m->last(); seg = seg->next()) {
+    for (Segment *seg = m->rendered_first(); seg != m->rendered_last(); seg = seg->rendered_next()) {
         if (seg->is_chord_rest_type()) {
             break;
         }
@@ -1670,7 +1676,7 @@ void MeasureLayout::remove_repeat_continuation_courtesies(Measure *m) {
 Segment *MeasureLayout::add_header_clef(Measure *m, bool is_first_clef, const Staff *staff, LayoutContext &ctx) {
     const staff_idx_t staff_idx = staff->idx();
     const track_idx_t track = staff_idx * ::mu::engraving::voices;
-    Segment *c_segment = m->find_first_r(SegmentType::HEADER_CLEF, Fraction(0, 1));
+    Segment *c_segment = m->find_rendered_first_r(SegmentType::HEADER_CLEF, Fraction(0, 1));
     const StaffType *staff_type = staff->staff_type(m->tick());
 
     const bool hide_clef =
@@ -1682,13 +1688,13 @@ Segment *MeasureLayout::add_header_clef(Measure *m, bool is_first_clef, const St
     Segment *s = nullptr;
     if (m->prev_measure()) {
         // look for a clef change at the end of the previous measure
-        s = m->prev_measure()->find_segment(SegmentType::CLEF, m->tick());
+        s = m->prev_measure()->find_rendered_segment(SegmentType::CLEF, m->tick());
     } else if (m->is_mm_rest()) {
         // look for a header clef at the beginning of the first underlying measure
-        s = m->mm_rest_first()->find_first_r(SegmentType::HEADER_CLEF, Fraction(0, 1));
+        s = m->mm_rest_first()->find_rendered_first_r(SegmentType::HEADER_CLEF, Fraction(0, 1));
     }
     if (s) {
-        Clef *c = to_clef(s->element(track));
+        Clef *c = to_clef(s->effective_element(track));
         if (c) {
             cl = c->clef_type_list();
             show_courtesy = c->show_courtesy();
@@ -1696,7 +1702,7 @@ Segment *MeasureLayout::add_header_clef(Measure *m, bool is_first_clef, const St
     }
     Clef *clef = nullptr;
     if (c_segment) {
-        clef = to_clef(c_segment->element(track));
+        clef = to_clef(c_segment->effective_element(track));
     }
     if (staff->staff_type_for_element(m)->gen_clef() && (is_first_clef || !hide_clef)) {
         if (!c_segment) {
@@ -1734,7 +1740,7 @@ Segment *MeasureLayout::add_header_clef(Measure *m, bool is_first_clef, const St
 Segment *MeasureLayout::add_header_key_sig(Measure *m, bool is_first_keysig, const Staff *staff, LayoutContext &ctx) {
     const staff_idx_t staff_idx = staff->idx();
     const track_idx_t track = staff_idx * ::mu::engraving::voices;
-    Segment *k_segment = m->find_first_r(SegmentType::KEY_SIG, Fraction(0, 1));
+    Segment *k_segment = m->find_rendered_first_r(SegmentType::KEY_SIG, Fraction(0, 1));
     // If we need a Key::C KeySig (which would be invisible) and there is
     // a courtesy key sig, don’t create it and switch generated flags.
     // This avoids creating an invisible KeySig which can distort layout.
@@ -1744,9 +1750,9 @@ Segment *MeasureLayout::add_header_key_sig(Measure *m, bool is_first_keysig, con
     if ((is_first_keysig || ctx.conf().style_b(Sid::GEN_KEYSIG)) && (key_idx.key() == Key::C)) {
         Measure *pm = m->prev_measure_mm();
         if (pm && pm->has_courtesy_key_sig()) {
-            Segment *ks = pm->first(SegmentType::KEY_SIG_ANNOUNCE);
+            Segment *ks = pm->rendered_first(SegmentType::KEY_SIG_ANNOUNCE);
             if (ks) {
-                ks_announce = to_key_sig(ks->element(track));
+                ks_announce = to_key_sig(ks->effective_element(track));
                 if (ks_announce) {
                     is_first_keysig = false;
                     //                                    if (keysig) {
@@ -1762,7 +1768,7 @@ Segment *MeasureLayout::add_header_key_sig(Measure *m, bool is_first_keysig, con
 
     KeySig *keysig = nullptr;
     if (k_segment) {
-        keysig = to_key_sig(k_segment->element(track));
+        keysig = to_key_sig(k_segment->effective_element(track));
     }
     // keep key sigs in TABs: TABs themselves should hide them
     if ((is_first_keysig || ctx.conf().style_b(Sid::GEN_KEYSIG)) && is_pitched_staff) {
@@ -1787,7 +1793,7 @@ Segment *MeasureLayout::add_header_key_sig(Measure *m, bool is_first_keysig, con
     } else if (keysig && is_pitched_staff) {
         // do not remove user modified keysigs
         bool remove = true;
-        EngravingItem *e = k_segment->element(staff_idx * ::mu::engraving::voices);
+        EngravingItem *e = k_segment->effective_element(staff_idx * ::mu::engraving::voices);
         Key key = staff->key(m->tick());
         if ((e && !e->generated()) || (key != key_idx.key())) {
             remove = false;
@@ -1835,22 +1841,22 @@ void MeasureLayout::add_system_header(Measure *m, bool is_first_system, LayoutCo
                 const System *sys = search_measure->system();
                 if (is_first_clef && search_measure->tick() >= clef_tick) {
                     // Need to check previous measure for clef change if one not found in this measure
-                    Segment *clef_seg = search_measure->find_first_r(SegmentType::CLEF | SegmentType::HEADER_CLEF, Fraction(0, 1));
+                    Segment *clef_seg = search_measure->find_rendered_first_r(SegmentType::CLEF | SegmentType::HEADER_CLEF, Fraction(0, 1));
                     Measure *prev_meas = search_measure->prev_measure();
                     if (prev_meas && !clef_seg) {
-                        clef_seg = prev_meas->find_segment(SegmentType::CLEF, m->tick());
+                        clef_seg = prev_meas->find_rendered_segment(SegmentType::CLEF, m->tick());
                     }
                     if (clef_seg && clef_seg->enabled()) {
-                        const Clef *c = to_clef(clef_seg->element(track));
+                        const Clef *c = to_clef(clef_seg->effective_element(track));
                         if (c && sys && sys->staff(staff_idx)->show()) {
                             is_first_clef = false;
                         }
                     }
                 }
                 if (is_first_key_sig && search_measure->tick() >= key_sig_tick) {
-                    const Segment *ks_seg = search_measure->find_segment(SegmentType::KEY_SIG, search_measure->tick());
+                    const Segment *ks_seg = search_measure->find_rendered_segment(SegmentType::KEY_SIG, search_measure->tick());
                     if (ks_seg && ks_seg->enabled()) {
-                        const KeySig *ks = to_key_sig(ks_seg->element(track));
+                        const KeySig *ks = to_key_sig(ks_seg->effective_element(track));
                         if (ks && sys && sys->staff(staff_idx)->show()) {
                             is_first_key_sig = false;
                         }
@@ -1882,7 +1888,7 @@ void MeasureLayout::remove_system_header(Measure *m) {
     if (!m->header()) {
         return;
     }
-    for (Segment *seg = m->first(); seg; seg = seg->next()) {
+    for (Segment *seg = m->rendered_first(); seg; seg = seg->rendered_next()) {
         if (seg->is_key_sig_type()) {
             bool key_sig_change_happens_here = false;
             for (Staff *staff : m->score()->staves()) {
@@ -1923,12 +1929,12 @@ void MeasureLayout::add_system_trailer(Measure *m, Measure *nm, LayoutContext &c
         set_courtesy_key_sig(m, nm->tick(), m->end_tick(), SegmentType::KEY_SIG_ANNOUNCE, ctx);
     }
 
-    Segment *courtesy_clef_seg = m->find_segment_r(SegmentType::CLEF, m->ticks());
+    Segment *courtesy_clef_seg = m->find_rendered_segment_r(SegmentType::CLEF, m->ticks());
     if (courtesy_clef_seg) {
         for (staff_idx_t staff_idx = 0; staff_idx < nstaves; ++staff_idx) {
             const track_idx_t track = staff_idx * ::mu::engraving::voices;
 
-            Clef *courtesy_clef = to_clef(courtesy_clef_seg->element(track));
+            Clef *courtesy_clef = to_clef(courtesy_clef_seg->effective_element(track));
             if (courtesy_clef) {
                 courtesy_clef->set_small(true);
                 courtesy_clef->set_is_trailer(true);
@@ -1943,13 +1949,13 @@ void MeasureLayout::add_system_trailer(Measure *m, Measure *nm, LayoutContext &c
 }
 
 void MeasureLayout::remove_system_trailer(Measure *m, LayoutContext &ctx) {
-    for (Segment *seg = m->last(); seg != m->first(); seg = seg->prev()) {
+    for (Segment *seg = m->rendered_last(); seg != m->rendered_first(); seg = seg->rendered_prev()) {
         if (seg->is_chord_rest_type()) {
             break;
         }
 
         if (seg->is_clef_type()) {
-            for (EngravingItem *el : seg->elist()) {
+            for (EngravingItem *el : seg->effective_elements()) {
                 if (!el) {
                     continue;
                 }
@@ -1976,7 +1982,7 @@ void MeasureLayout::create_system_begin_bar_line(Measure *m, LayoutContext &ctx)
     if (!m->system()) {
         return;
     }
-    Segment *s = m->find_segment(SegmentType::BEGIN_BAR_LINE, m->tick());
+    Segment *s = m->find_rendered_segment(SegmentType::BEGIN_BAR_LINE, m->tick());
     size_t n = 0;
     if (m->system()) {
         for (SysStaff *sys_staff : m->system()->staves()) {
@@ -1992,7 +1998,7 @@ void MeasureLayout::create_system_begin_bar_line(Measure *m, LayoutContext &ctx)
             m->add(s);
         }
         for (track_idx_t track = 0; track < ctx.dom().ntracks(); track += ::mu::engraving::voices) {
-            BarLine *bl = to_bar_line(s->element(track));
+            BarLine *bl = to_bar_line(s->effective_element(track));
             if (!bl) {
                 bl = Factory::create_bar_line(s);
                 bl->set_track(track);
@@ -2023,12 +2029,13 @@ void MeasureLayout::stretch_measure_in_practice_mode(Measure *m, double target_w
 
     std::multimap<double, Segment *> springs;
 
-    Segment *seg = m->first();
+    Segment *seg = m->rendered_first();
     while (seg && !seg->enabled()) {
-        seg = seg->next();
+        seg = seg->rendered_next();
     }
     double minimum_width = seg ? seg->x() : 0.0;
-    for (Segment &s : m->segments()) {
+    for (Segment *rendered = m->rendered_first(); rendered; rendered = rendered->rendered_next()) {
+        Segment &s = *rendered;
         s.set_stretch(1);
 
         //        if (!s.enabled() || !s.visible())
@@ -2064,9 +2071,9 @@ void MeasureLayout::stretch_measure_in_practice_mode(Measure *m, double target_w
         //    move segments to final position
         //---------------------------------------------------
 
-        Segment *s = m->first();
+        Segment *s = m->rendered_first();
         while (s && !s->enabled()) {
-            s = s->next();
+            s = s->rendered_next();
         }
 
         double x = s ? s->pos().x() : 0.0;
@@ -2082,7 +2089,7 @@ void MeasureLayout::stretch_measure_in_practice_mode(Measure *m, double target_w
             x += spacing * (muse::real_is_null(segment_stretch) ? 1 : segment_stretch);
             s->mutldata()->set_pos_x(x);
             x += width_without_spacing * (muse::real_is_null(segment_stretch) ? 1 : segment_stretch);
-            s = s->next_enabled();
+            s = s->rendered_next_enabled();
         }
     }
 
@@ -2090,13 +2097,14 @@ void MeasureLayout::stretch_measure_in_practice_mode(Measure *m, double target_w
     //    layout individual elements
     //---------------------------------------------------
 
-    for (Segment &s : m->segments()) {
+    for (Segment *rendered = m->rendered_first(); rendered; rendered = rendered->rendered_next()) {
+        Segment &s = *rendered;
         if (!s.enabled()) {
             continue;
         }
         // After the rest of the spacing is calculated we position grace-notes-after.
         ChordLayout::reposition_grace_notes_after(&s, ctx.dom().ntracks());
-        for (EngravingItem *e : s.elist()) {
+        for (EngravingItem *e : s.effective_elements()) {
             if (!e) {
                 continue;
             }
@@ -2109,10 +2117,10 @@ void MeasureLayout::stretch_measure_in_practice_mode(Measure *m, double target_w
                 //    x2 - right measure position of free space
 
                 Segment *s1;
-                for (s1 = s.prev(); s1 && !s1->enabled(); s1 = s1->prev()) {}
+                for (s1 = s.rendered_prev(); s1 && !s1->enabled(); s1 = s1->rendered_prev()) {}
                 Segment *s2;
-                for (s2 = s.next(); s2; s2 = s2->next()) {
-                    if (s2->enabled() && !s2->is_chord_rest_type() && s2->element(staff_idx * ::mu::engraving::voices)) {
+                for (s2 = s.rendered_next(); s2; s2 = s2->rendered_next()) {
+                    if (s2->enabled() && !s2->is_chord_rest_type() && s2->effective_element(staff_idx * ::mu::engraving::voices)) {
                         break;
                     }
                 }
@@ -2165,16 +2173,17 @@ void MeasureLayout::stretch_measure_in_practice_mode(Measure *m, double target_w
 
 void MeasureLayout::layout_time_tick_anchors(Measure *m, LayoutContext &ctx) {
     bool darker = true;
-    for (Segment &segment : m->segments()) {
+    for (Segment *rendered = m->rendered_first(); rendered; rendered = rendered->rendered_next()) {
+        Segment &segment = *rendered;
         if (!segment.is_time_tick_type()) {
             continue;
         }
 
         Segment *ref_cr_seg = m->find_segment_r(SegmentType::CHORD_REST, segment.rtick());
         if (!(ref_cr_seg && ref_cr_seg->is_active())) {
-            ref_cr_seg = segment.prev_active();
+            ref_cr_seg = segment.rendered_prev_active();
             while (ref_cr_seg && !ref_cr_seg->is_chord_rest_type()) {
-                ref_cr_seg = ref_cr_seg->prev_active();
+                ref_cr_seg = ref_cr_seg->rendered_prev_active();
             }
         }
 
@@ -2188,7 +2197,7 @@ void MeasureLayout::layout_time_tick_anchors(Measure *m, LayoutContext &ctx) {
 
         Segment *next_seg = m->find_segment_r(SegmentType::CHORD_REST, ref_cr_seg->rtick() + ref_cr_seg->ticks());
         if (!(next_seg && next_seg->is_active())) {
-            next_seg = m->find_segment_r(SegmentType::BAR_LINE_TYPES, ref_cr_seg->rtick() + ref_cr_seg->ticks());
+            next_seg = m->find_rendered_segment_r(SegmentType::BAR_LINE_TYPES, ref_cr_seg->rtick() + ref_cr_seg->ticks());
         }
         double width = next_seg ? next_seg->x() - ref_cr_seg->x() : ref_cr_seg->width();
 
@@ -2198,7 +2207,7 @@ void MeasureLayout::layout_time_tick_anchors(Measure *m, LayoutContext &ctx) {
         segment.mutldata()->set_pos_x(ref_cr_seg->x() + relative_x);
         segment.set_width(relative_width);
 
-        for (EngravingItem *item : segment.elist()) {
+        for (EngravingItem *item : segment.effective_elements()) {
             if (item) {
                 TLayout::layout_item(item, ctx);
                 to_time_tick_anchor(item)->mutldata()->set_darker(darker);
@@ -2261,12 +2270,13 @@ void MeasureLayout::update_key_signatures(const Measure *measure, LayoutContext 
     if (!prev_measure || !prev_measure->repeat_end()) {
         return;
     }
-    for (const Segment &seg : measure->segments()) {
+    for (const Segment *rendered = measure->rendered_first(); rendered; rendered = rendered->rendered_next()) {
+        const Segment &seg = *rendered;
         if (!seg.is_type(SegmentType::KEY_SIG_TYPES)) {
             continue;
         }
 
-        for (EngravingItem *el : seg.elist()) {
+        for (EngravingItem *el : seg.effective_elements()) {
             if (!el) {
                 continue;
             }

@@ -116,7 +116,7 @@ void ArpeggioLayout::clear_accidentals(Arpeggio *item, LayoutContext &ctx) {
     }
 
     const Segment *seg = item->chord()->segment();
-    const EngravingItem *end_el = seg->element(item->end_track());
+    const EngravingItem *end_el = seg->effective_element(item->end_track());
     const Chord *end_chord = end_el && end_el->is_chord() ? to_chord(end_el) : item->chord();
 
     const Part *part = item->part();
@@ -131,7 +131,7 @@ void ArpeggioLayout::clear_accidentals(Arpeggio *item, LayoutContext &ctx) {
     double largest_overlap = 0.0;
 
     for (track_idx_t track = track_range.start_track; track < track_range.end_track; ++track) {
-        EngravingItem *e = seg->element(track);
+        EngravingItem *e = seg->effective_element(track);
         if (!e || !e->is_chord()) {
             continue;
         }
@@ -244,7 +244,7 @@ double ArpeggioLayout::inset_distance(const Arpeggio *item, const LayoutContext 
     const Segment *seg = item->chord()->segment();
     Chord *end_chord = item->chord();
     const PaddingTable &padding_table = item->score()->padding_tables().horizontal_padding_table();
-    if (EngravingItem *e = seg->element(item->end_track())) {
+    if (EngravingItem *e = seg->effective_element(item->end_track())) {
         end_chord = e->is_chord() ? to_chord(e) : end_chord;
     }
     bool arp_start_stave = chord->v_staff_idx() == item->v_staff_idx();
@@ -303,7 +303,7 @@ double ArpeggioLayout::compute_height(const Arpeggio *item) {
     double y = chord->up_note()->page_pos().y() - chord->up_note()->head_height() * .5;
 
     Note *down_note = chord->down_note();
-    EngravingItem *e = chord->segment()->element(item->track() + item->span() - 1);
+    EngravingItem *e = chord->segment()->effective_element(item->track() + item->span() - 1);
     if (e && e->is_chord()) {
         down_note = to_chord(e)->down_note();
     }

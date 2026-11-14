@@ -654,7 +654,7 @@ bool TupletLayout::is_symmetric(Tuplet *item, const ChordRest *cr1, const ChordR
     std::vector<Segment *> tuplet_segments;
     tuplet_segments.reserve(item->elements().size());
 
-    for (Segment *segment = cr1->segment(); segment && segment->tick() < end_tick; segment = segment->next_active()) {
+    for (Segment *segment = cr1->segment(); segment && segment->tick() < end_tick; segment = segment->rendered_next_active()) {
         tuplet_segments.push_back(segment);
     }
 
@@ -682,7 +682,7 @@ double TupletLayout::compute_rhythmic_center(Tuplet *item, const ChordRest *end_
     const ChordRest *ref_cr = nullptr;
     for (Segment *seg = end_chord->segment(); seg; seg = seg->prev(SegmentType::CHORD_REST)) {
         ref_seg = seg;
-        ref_cr = to_chord_rest(seg->element(track));
+        ref_cr = to_chord_rest(seg->effective_element(track));
         if (!ref_cr) {
             continue;
         }
@@ -757,14 +757,14 @@ void TupletLayout::extend_to_end_of_duration(Tuplet *item, const ChordRest *end_
 
     const double padding = 0.6 * item->spatium();
 
-    Segment *next_seg = ref_segment->next1_with_elems_on_staff(end_cr->v_staff_idx(), ~SegmentType::TIME_TICK);
+    Segment *next_seg = ref_segment->rendered_next1_with_elems_on_staff(end_cr->v_staff_idx(), ~SegmentType::TIME_TICK);
     x_result = std::min(x_result, next_seg->page_pos().x() - padding);
 
     track_idx_t start_track = staff2track(end_cr->v_staff_idx());
     track_idx_t end_track = start_track + ::mu::engraving::voices;
     if (next_seg->is_chord_rest_type()) {
         for (track_idx_t track = start_track; track < end_track; ++track) {
-            if (ChordRest *chord_rest = to_chord_rest(next_seg->element(track))) {
+            if (ChordRest *chord_rest = to_chord_rest(next_seg->effective_element(track))) {
                 if (Tuplet *next_tuplet = chord_rest->tuplet()) {
                     if (next_tuplet->elements().front() == chord_rest && next_tuplet->is_up() == item->is_up()) {
                         double x_start_of_next_tuplet = next_tuplet->page_pos().x() + next_tuplet->p1().x();

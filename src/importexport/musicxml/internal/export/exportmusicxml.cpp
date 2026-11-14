@@ -7184,7 +7184,7 @@ void ExportMusicXml::export_default_clef(const Part *const part, const Measure *
     const size_t staves = part->nstaves();
 
     if (m->tick() == Fraction(0, 1)) {
-        const Segment *clef_seg = m->find_segment(SegmentType::HEADER_CLEF, Fraction(0, 1));
+        const Segment *clef_seg = m->find_rendered_segment(SegmentType::HEADER_CLEF, Fraction(0, 1));
 
         if (clef_seg) {
             const track_idx_t part_start_track = part->track_range().start_track;
@@ -7197,7 +7197,7 @@ void ExportMusicXml::export_default_clef(const Part *const part, const Measure *
                 size_t sstaff = (staves > 1) ? i + 1 : 0;
                 track_idx_t track = part_start_track + ::mu::engraving::voices * i;
 
-                if (clef_seg->element(track) == nullptr) {
+                if (clef_seg->effective_element(track) == nullptr) {
                     ClefType ct{ClefType::G};
                     String stafftype;
                     switch (part->staff(i)->staff_type(Fraction(0, 1))->group()) {
@@ -7235,20 +7235,20 @@ void ExportMusicXml::find_and_export_clef(const Measure *const m, const int stav
     Measure *mm_r = m->mm_rest(); // the replacing measure in a multi-measure rest
     Fraction tick = m->tick();
     Segment *cs1;
-    Segment *cs2 = m->find_segment(SegmentType::CLEF, tick);
+    Segment *cs2 = m->find_rendered_segment(SegmentType::CLEF, tick);
     Segment *cs3;
     Segment *seg = 0;
 
     if (prev_measure) {
-        cs1 = prev_measure->find_segment(SegmentType::CLEF, tick);
+        cs1 = prev_measure->find_rendered_segment(SegmentType::CLEF, tick);
     } else {
-        cs1 = m->find_segment(SegmentType::HEADER_CLEF, tick);
+        cs1 = m->find_rendered_segment(SegmentType::HEADER_CLEF, tick);
     }
 
     if (mm_r) {
-        cs3 = mm_r->find_segment(SegmentType::HEADER_CLEF, tick);
+        cs3 = mm_r->find_rendered_segment(SegmentType::HEADER_CLEF, tick);
         if (!cs3) {
-            cs3 = mm_r->find_segment(SegmentType::CLEF, tick);
+            cs3 = mm_r->find_rendered_segment(SegmentType::CLEF, tick);
         }
     } else {
         cs3 = 0;
@@ -7280,7 +7280,7 @@ void ExportMusicXml::find_and_export_clef(const Measure *const m, const int stav
             staff_idx_t sstaff = (staves > 1) ? st - strack + ::mu::engraving::voices : 0;
             sstaff /= ::mu::engraving::voices;
 
-            Clef *cle = to_clef(seg->element(st));
+            Clef *cle = to_clef(seg->effective_element(st));
             if (cle) {
                 clefDebug("exportxml: clef at start measure ti=%d ct=%d gen=%d", tick, int(cle->clef_type()), cle->generated());
                 // output only clef changes, not generated clefs at line beginning

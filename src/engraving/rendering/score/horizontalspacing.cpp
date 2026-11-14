@@ -191,7 +191,8 @@ void HorizontalSpacing::justify_system(System *system, double cur_sys_width, dou
         if (!mb->is_measure()) {
             continue;
         }
-        for (Segment &s : to_measure(mb)->segments()) {
+        for (Segment *rendered = to_measure(mb)->rendered_first(); rendered; rendered = rendered->rendered_next()) {
+            Segment &s = *rendered;
             if (s.is_chord_rest_type() && s.ticks() > Fraction(0, 1) && s.visible() && s.enabled() && !s.all_elements_invisible()) {
                 double spring_const = 1 / s.stretch();
                 double width = s.width() - s.width_offset();
@@ -228,7 +229,8 @@ void HorizontalSpacing::space_measure_group(const std::vector<Measure *> &measur
         if (measure == ctx.start_meas) {
             start_seg_idx = int(seg_list.size());
         }
-        for (Segment &segment : measure->segments()) {
+        for (Segment *rendered = measure->rendered_first(); rendered; rendered = rendered->rendered_next()) {
+            Segment &segment = *rendered;
             seg_list.push_back(&segment);
         }
     }
@@ -555,7 +557,7 @@ double HorizontalSpacing::space_lyrics_against_barlines(Segment *first_seg, Segm
             continue;
         }
 
-        BarLine *barline = to_bar_line(barline_segment->element(staff2track(staff_idx)));
+        BarLine *barline = to_bar_line(barline_segment->effective_element(staff2track(staff_idx)));
         if (!barline || !barline->span_staff()) {
             continue;
         }
@@ -565,7 +567,7 @@ double HorizontalSpacing::space_lyrics_against_barlines(Segment *first_seg, Segm
         track_idx_t start_track = staff2track(staff_idx);
         track_idx_t end_track = staff2track(next_staff) + ::mu::engraving::voices;
         for (track_idx_t track = start_track; track < end_track; ++track) {
-            ChordRest *chord_rest = to_chord_rest(cr_segment->element(track));
+            ChordRest *chord_rest = to_chord_rest(cr_segment->effective_element(track));
             if (!chord_rest) {
                 continue;
             }
@@ -674,7 +676,7 @@ void HorizontalSpacing::check_collisions_with_cross_staff_stems(const Segment *t
     std::vector<ChordRest *> items_to_check;
     items_to_check.reserve(::mu::engraving::voices);
 
-    for (EngravingItem *el : next_seg->elist()) {
+    for (EngravingItem *el : next_seg->effective_elements()) {
         if (el && el->v_staff_idx() == staff_idx) {
             ChordRest *cr = to_chord_rest(el);
             if (cr->beam() && cr->beam()->cross()) {
@@ -800,7 +802,7 @@ bool HorizontalSpacing::needs_cue_size_spacing(const Segment *segment) {
     IF_ASSERT_FAILED(segment->is_chord_rest_type()) { return false; }
 
     bool has_cue_sized_cr = false;
-    for (EngravingItem *item : segment->elist()) {
+    for (EngravingItem *item : segment->effective_elements()) {
         if (!item) {
             continue;
         }
@@ -856,7 +858,7 @@ double HorizontalSpacing::min_stem_dist_on_non_adjacent_cross(const Segment *thi
     // (which causes them to escape the previous cross-staff spacing checks) c) stemmed up->down (see #27786)
     const PaddingTable &padding_table = this_seg->score()->padding_tables().horizontal_padding_table();
     double dist = -DBL_MAX;
-    for (EngravingItem *item : next_seg->elist()) {
+    for (EngravingItem *item : next_seg->effective_elements()) {
         if (!item || !item->is_chord()) {
             continue;
         }
@@ -901,13 +903,13 @@ HorizontalSpacing::CrossBeamSpacing HorizontalSpacing::compute_cross_beam_spacin
 
     bool prevent_cross_staff_kerning = false;
     bool ensure_min_stem_distance = false;
-    for (EngravingItem *e : this_seg->elist()) {
+    for (EngravingItem *e : this_seg->effective_elements()) {
         if (!e || !e->is_chord() || !e->visible() || !e->staff()->visible()) {
             continue;
         }
 
         Chord *this_chord = to_chord(e);
-        ChordRest *next_cr = to_chord_rest(next_seg->element(this_chord->track()));
+        ChordRest *next_cr = to_chord_rest(next_seg->effective_element(this_chord->track()));
         Chord *next_chord = next_cr && next_cr->is_chord() ? to_chord(next_cr) : nullptr;
         if (!next_chord) {
             continue;
@@ -934,7 +936,7 @@ HorizontalSpacing::CrossBeamSpacing HorizontalSpacing::compute_cross_beam_spacin
 
     // Spacing can be adjusted for cross-beam cases only if there aren't
     // chords in other voices in this or next segment.
-    for (EngravingItem *e : this_seg->elist()) {
+    for (EngravingItem *e : this_seg->effective_elements()) {
         if (!e || !e->is_chord_rest() || !e->staff()->visible()) {
             continue;
         }
@@ -949,7 +951,7 @@ HorizontalSpacing::CrossBeamSpacing HorizontalSpacing::compute_cross_beam_spacin
         if (!beam || (beam->elements().size() == 2 && this_cr->up())) {
             continue;
         }
-        for (EngravingItem *ee : next_seg->elist()) {
+        for (EngravingItem *ee : next_seg->effective_elements()) {
             if (!ee || !ee->is_chord_rest() || !ee->staff()->visible()) {
                 continue;
             }
@@ -1008,7 +1010,7 @@ double HorizontalSpacing::compute_min_measure_width(Measure *m) {
     if (!first_cr_segment) {
         return min_width;
     }
-    if (first_cr_segment == m->first_enabled()) {
+    if (first_cr_segment == m->rendered_first_enabled()) {
         return min_width;
     }
 
@@ -1046,7 +1048,8 @@ void HorizontalSpacing::stretch_measure_to_target_width(Measure *m, double targe
     IF_ASSERT_FAILED(target_width > m->width()) { return; }
 
     std::vector<Spring> springs;
-    for (Segment &s : m->segments()) {
+    for (Segment *rendered = m->rendered_first(); rendered; rendered = rendered->rendered_next()) {
+        Segment &s = *rendered;
         if (s.is_chord_rest_type() && s.visible() && s.enabled() && !s.all_elements_invisible()) {
             double spring_const = 1 / s.stretch();
             double width = s.width() - s.width_offset();
@@ -1261,7 +1264,7 @@ double HorizontalSpacing::min_horizontal_distance(const Segment *f, const Segmen
     }
 
     if (f->is_header_clef_type() && ns->has_time_sig_above_staves()) {
-        Segment *possible_key_sig = f->next_active();
+        Segment *possible_key_sig = f->rendered_next_active();
         if (possible_key_sig && possible_key_sig->is_key_sig_type() && !ignore_segment_for_spacing(possible_key_sig)) {
             return 0.0;
         }
