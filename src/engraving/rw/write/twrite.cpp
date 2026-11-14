@@ -327,6 +327,19 @@ void write_property_value(XmlWriter &xml, Pid pid, PropertyValue p, PropertyValu
     xml.tag_property(pid, p, d);
 }
 
+double source_spatium(const EngravingItem &item) {
+    const auto *parent = item.ownership_parent_item();
+    if (item.system_flag() || (parent && parent->system_flag())) return item.style().spatium();
+    const auto *staff = item.staff();
+    if (!staff) return item.style().spatium();
+    const EngravingItem *at = &item;
+    if (item.is_beam() && !to_beam(&item)->elements().empty()) at = to_beam(&item)->elements().front();
+    for (const auto *node = at; node; node = node->ownership_parent_item()) {
+        if (node->is_measure()) return staff->spatium(to_measure(node)->tick());
+    }
+    return staff->spatium(at->tick());
+}
+
 void write_authored_property(const EngravingItem *owner, AuthoredChildKey child, XmlWriter &xml, Pid pid) {
     const auto *table = authored_override_table(owner);
     const auto *entry = table ? table->find(child, pid) : nullptr;
@@ -353,7 +366,7 @@ void write_authored_property(const EngravingItem *owner, AuthoredChildKey child,
         return;
     }
     const double point_unit = entry->unit == AuthoredOverrideUnit::MILLIMETRE ? ::mu::engraving::dpmm : owner->style().spatium();
-    write_property_value(xml, pid, value, d, owner->spatium(), point_unit);
+    write_property_value(xml, pid, value, d, source_spatium(*owner), point_unit);
 }
 
 bool legacy_grip_property(Pid pid) {
@@ -460,9 +473,9 @@ void write_authored_child(const EngravingItem *owner, AuthoredChildKey child, co
     xml.end_element();
 }
 
-void write_authored_segment_text(const Spanner *owner, const AuthoredOverrideCarrier &carrier, XmlWriter &xml, WriteContext &ctx) {
+void write_authored_segment_text(const EngravingItem *owner, const AuthoredOverrideCarrier &carrier, XmlWriter &xml, WriteContext &ctx) {
     const auto key = carrier.child;
-    const auto &table = owner->authored_overrides;
+    const auto &table = *authored_override_table(owner);
     const auto tag = TConv::to_xml(carrier.type);
     if (carrier.type == ElementType::HAMMER_ON_PULL_OFF_TEXT)
         xml.start_element(tag, {{"idx", key.subordinal}});
@@ -490,12 +503,13 @@ void write_authored_segment_text(const Spanner *owner, const AuthoredOverrideCar
     xml.end_element();
 }
 
-void write_authored_segments(const Spanner *owner, bool slur, XmlWriter &xml, WriteContext &ctx) {
-    const auto &table = owner->authored_overrides;
+void write_authored_segments(const EngravingItem *owner, bool slur, XmlWriter &xml, WriteContext &ctx,
+                             AuthoredChildRole role = AuthoredChildRole::SPANNER_SEGMENT) {
+    const auto &table = *authored_override_table(owner);
     uint32_t next = 0;
     for (const auto &carrier : table.carriers) {
         const auto key = carrier.child;
-        if (key.role != AuthoredChildRole::SPANNER_SEGMENT) continue;
+        if (key.role != role || (nested_spanner_role(role) && key.subordinal != 1)) continue;
         if (slur)
             xml.start_element(TConv::to_xml(carrier.type), {{"no", key.ordinal}});
         else if (key.ordinal != next)
@@ -513,14 +527,15 @@ void write_authored_segments(const Spanner *owner, bool slur, XmlWriter &xml, Wr
                 if (muse::TextStream::round_trip_doubles) point *= owner->style().spatium();
                 xml.tag_point(pid == Pid::OFFSET ? "offset" : "off2", point);
             }
-            write_authored_property(owner, key, xml, Pid::MIN_DISTANCE);
             write_authored_property(owner, key, xml, Pid::BEND_VERTEX_OFF);
         } else {
             for (auto pid : {Pid::SLUR_UOFF1, Pid::SLUR_UOFF2, Pid::SLUR_UOFF3, Pid::SLUR_UOFF4})
                 write_authored_property(owner, key, xml, pid);
         }
+        write_authored_property(owner, key, xml, Pid::MIN_DISTANCE);
         for (const auto &text : table.carriers)
-            if (text.child.role == AuthoredChildRole::SEGMENT_TEXT && text.child.ordinal == key.ordinal)
+            if (role == AuthoredChildRole::SPANNER_SEGMENT && text.child.role == AuthoredChildRole::SEGMENT_TEXT &&
+                text.child.ordinal == key.ordinal)
                 write_authored_segment_text(owner, text, xml, ctx);
         write_authored_common(owner, key, xml, ctx);
         for (const auto &entry : table.entries) {
@@ -531,6 +546,21 @@ void write_authored_segments(const Spanner *owner, bool slur, XmlWriter &xml, Wr
         }
         xml.end_element();
     }
+}
+
+void write_authored_spanner(const EngravingItem *owner, AuthoredChildRole role, const char *tag, bool slur, XmlWriter &xml,
+                            WriteContext &ctx) {
+    const auto &table = *authored_override_table(owner);
+    const AuthoredChildKey key{role};
+    if (!table.carrier(key)) return;
+    xml.start_element(tag);
+    if (slur) xml.tag("isHalfSlurAbove", role == AuthoredChildRole::TAPPING_SLUR_ABOVE);
+    write_authored_common(owner, key, xml, ctx);
+    for (const auto &entry : table.entries) {
+        if (entry.child == key && !common_authored_property(entry.pid)) write_authored_property(owner, key, xml, entry.pid);
+    }
+    write_authored_segments(owner, slur, xml, ctx, role);
+    xml.end_element();
 }
 } // namespace
 
@@ -547,7 +577,7 @@ void TWrite::write_property(const EngravingItem *item, XmlWriter &xml, Pid pid, 
     }
     PropertyValue d = force ? PropertyValue() : item->property_default(pid);
 
-    write_property_value(xml, pid, p, d, item->spatium(),
+    write_property_value(xml, pid, p, d, source_spatium(*item),
                          item->offset_is_spatium_dependent() ? item->style().spatium() : ::mu::engraving::dpmm);
 }
 
@@ -824,10 +854,10 @@ void TWrite::write(const ChordBracket *item, XmlWriter &xml, WriteContext &ctx) 
 void TWrite::write_properties(const Arpeggio *item, XmlWriter &xml, WriteContext &ctx) {
     write_item_properties(item, xml, ctx);
     if (!real_is_null(item->user_len1())) {
-        xml.tag("userLen1", item->user_len1() / item->spatium());
+        xml.tag("userLen1", item->user_len1() / source_spatium(*item));
     }
     if (!real_is_null(item->user_len2())) {
-        xml.tag("userLen2", item->user_len2() / item->spatium());
+        xml.tag("userLen2", item->user_len2() / source_spatium(*item));
     }
     if (item->span() != 1) {
         xml.tag("span", item->span());
@@ -1063,14 +1093,9 @@ void TWrite::write(const Breath *item, XmlWriter &xml, WriteContext &ctx) {
 void TWrite::write(const Chord *item, XmlWriter &xml, WriteContext &ctx) {
     if (item->notes().empty()) {
         if (item->tuplet()) {
-            // HACK: See PR #30178 - chords without notes still not fully handled in tuplets...
-            Rest *dummy_rest = Factory::create_rest(item->segment());
-            dummy_rest->set_duration_type(item->duration_type());
-            dummy_rest->set_tuplet(item->tuplet());
-            dummy_rest->set_ticks(item->ticks());
-            dummy_rest->set_track(item->track());
-            write(dummy_rest, xml, ctx);
-            dummy_rest->delete_later();
+            xml.start_element("Rest");
+            write_properties(to_chord_rest(item), xml, ctx);
+            xml.end_element();
         } else {
             // No notes found, write a Location instead (skip this chord)...
 
@@ -1179,7 +1204,7 @@ void TWrite::write(const Chord *item, XmlWriter &xml, WriteContext &ctx) {
 }
 
 void TWrite::write_chord_rest_beam(const ChordRest *item, XmlWriter &xml, WriteContext &ctx) {
-    Beam *b = item->beam();
+    Beam *b = item->authored_beam();
     if (b && !b->generated() && !b->elements().empty() && b->elements().front() == item) {
         write(b, xml, ctx);
     }
@@ -1548,12 +1573,7 @@ void TWrite::write(const GuitarBend *item, XmlWriter &xml, WriteContext &ctx) {
 
     write_properties(static_cast<const SLine *>(item), xml, ctx);
 
-    GuitarBendHold *hold = item->hold_line();
-    if (hold && !hold->generated()) {
-        xml.start_element(hold);
-        write_properties(static_cast<const SLine *>(hold), xml, ctx);
-        xml.end_element();
-    }
+    write_authored_spanner(item, AuthoredChildRole::HOLD_LINE, "GuitarBendHold", false, xml, ctx);
 
     xml.end_element();
 }
@@ -2165,8 +2185,8 @@ void TWrite::write(const LayoutBreak *item, XmlWriter &xml, WriteContext &ctx) {
 
 void TWrite::write(const LedgerLine *item, XmlWriter &xml, WriteContext &) {
     xml.start_element(item);
-    xml.tag("lineWidth", item->width() / item->spatium());
-    xml.tag("lineLen", item->len() / item->spatium());
+    xml.tag("lineWidth", item->width() / source_spatium(*item));
+    xml.tag("lineLen", item->len() / source_spatium(*item));
     if (!item->vertical()) {
         xml.tag("vertical", item->vertical());
     }
@@ -2945,12 +2965,8 @@ void TWrite::write(const Tapping *item, XmlWriter &xml, WriteContext &ctx) {
 
     xml.tag("hand", TConv::to_xml(item->hand()));
 
-    if (item->half_slur_above() && item->half_slur_above()->is_user_modified()) {
-        write(item->half_slur_above(), xml, ctx);
-    }
-    if (item->half_slur_below() && item->half_slur_below()->is_user_modified()) {
-        write(item->half_slur_below(), xml, ctx);
-    }
+    write_authored_spanner(item, AuthoredChildRole::TAPPING_SLUR_ABOVE, "TappingHalfSlur", true, xml, ctx);
+    write_authored_spanner(item, AuthoredChildRole::TAPPING_SLUR_BELOW, "TappingHalfSlur", true, xml, ctx);
 
     write_properties(to_articulation(item), xml, ctx);
     xml.end_element();

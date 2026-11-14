@@ -53,11 +53,9 @@ GuitarBend::GuitarBend(const GuitarBend &g) : SLine(g) {
     bend_amount_in_quarter_tones_value = g.bend_amount_in_quarter_tones();
 }
 
-GuitarBend::~GuitarBend() {
-    if (hold_line_) {
-        delete hold_line_;
-    }
-}
+GuitarBend::~GuitarBend() = default;
+
+GuitarBend::LayoutData::~LayoutData() { delete hold_line; }
 
 LineSegment *GuitarBend::create_line_segment() {
     GuitarBendSegment *seg = new GuitarBendSegment(this);
@@ -655,6 +653,7 @@ WhammyBar *GuitarBend::find_overlapping_whammy_bar(Fraction start_tick, Fraction
 }
 
 void GuitarBend::update_hold_line() {
+    auto *&hold_line = mutldata()->hold_line;
     Note *start_of_hold = nullptr;
     Note *end_of_hold = nullptr;
 
@@ -702,12 +701,12 @@ void GuitarBend::update_hold_line() {
     }
 
     if (!needs_hold_line) {
-        if (hold_line_) {
-            if (!hold_line_->segments_empty()) {
-                hold_line_->erase_spanner_segments();
+        if (hold_line) {
+            if (!hold_line->segments_empty()) {
+                hold_line->erase_spanner_segments();
             }
-            delete hold_line_;
-            hold_line_ = nullptr;
+            delete hold_line;
+            hold_line = nullptr;
         }
         return;
     }
@@ -724,18 +723,20 @@ void GuitarBend::update_hold_line() {
         }
     }
 
-    if (!hold_line_) {
-        hold_line_ = new GuitarBendHold(this);
+    if (!hold_line) {
+        hold_line = new GuitarBendHold(this);
     }
 
-    hold_line_->set_start_element(start_of_hold);
-    hold_line_->set_end_element(end_of_hold);
-    hold_line_->set_tick(start_of_hold->tick());
-    hold_line_->set_tick2(end_of_hold->tick());
-    hold_line_->set_track(track());
-    hold_line_->set_track2(track());
-    hold_line_->set_generated(true);
-    hold_line_->set_ownership_parent(this);
+    bind_authored_child(*hold_line, {AuthoredChildRole::HOLD_LINE});
+    AuthoredOverrideMirror mirror(*hold_line);
+    hold_line->set_start_element(start_of_hold);
+    hold_line->set_end_element(end_of_hold);
+    hold_line->set_tick(start_of_hold->tick());
+    hold_line->set_tick2(end_of_hold->tick());
+    hold_line->set_track(track());
+    hold_line->set_track2(track());
+    hold_line->set_generated(true);
+    hold_line->set_ownership_parent(this);
 }
 
 double GuitarBend::line_width() const {

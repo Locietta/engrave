@@ -1783,13 +1783,24 @@ void TRead::read(Tapping *t, XmlReader &xml, ReadContext &ctx) {
         if (tag == "hand") {
             t->set_hand(TConv::from_xml(xml.read_ascii_text(), TappingHand::INVALID));
         } else if (tag == TConv::to_xml(ElementType::TAPPING_HALF_SLUR)) {
-            TappingHalfSlur *tapping_half_slur = new TappingHalfSlur(t);
-            read(tapping_half_slur, xml, ctx);
-            if (tapping_half_slur->is_half_slur_above()) {
-                t->set_half_slur_above(tapping_half_slur);
-            } else {
-                t->set_half_slur_below(tapping_half_slur);
+            // Legacy XML can put the above/below discriminator after the properties.
+            auto saved = std::move(t->authored_overrides);
+            t->authored_overrides = {};
+            TappingHalfSlur half_slur(t);
+            bind_authored_child(half_slur, {AuthoredChildRole::TAPPING_SLUR_ABOVE});
+            read(&half_slur, xml, ctx);
+            finish_authored_read(half_slur);
+            const auto role =
+                half_slur.is_half_slur_above() ? AuthoredChildRole::TAPPING_SLUR_ABOVE : AuthoredChildRole::TAPPING_SLUR_BELOW;
+            for (auto entry : t->authored_overrides.entries) {
+                entry.child.role = role;
+                saved.set(std::move(entry));
             }
+            for (auto carrier : t->authored_overrides.carriers) {
+                carrier.child.role = role;
+                saved.set_carrier(carrier);
+            }
+            t->authored_overrides = std::move(saved);
         } else if (!read_properties(to_articulation(t), xml, ctx)) {
             xml.unknown();
         }
@@ -2712,8 +2723,10 @@ void TRead::read(GuitarBend *g, XmlReader &e, ReadContext &ctx) {
             g->set_bend_type(TConv::from_xml(e.read_ascii_text(), GuitarBendType::BEND));
         } else if (tag == "GuitarBendHold") {
             GuitarBendHold *hold = new GuitarBendHold(g);
+            bind_authored_child(*hold, {AuthoredChildRole::HOLD_LINE});
             TRead::read(hold, e, ctx);
-            g->set_hold_line(hold);
+            finish_authored_read(*hold);
+            delete hold;
         } else if (TRead::read_property(g, tag, e, ctx, Pid::DIRECTION)) {
         } else if (TRead::read_property(g, tag, e, ctx, Pid::BEND_SHOW_HOLD_LINE)) {
         } else if (TRead::read_property(g, tag, e, ctx, Pid::BEND_START_TIME_FACTOR)) {
@@ -3567,7 +3580,9 @@ bool TRead::read_properties(SLine *l, XmlReader &e, ReadContext &ctx) {
     } else if (TRead::read_property(l, tag, e, ctx, Pid::DASH_LINE_LEN)) {
     } else if (TRead::read_property(l, tag, e, ctx, Pid::DASH_GAP_LEN)) {
     } else if (tag == "lineColor" || tag == "color") {
-        l->set_line_color(e.read_color());
+        const auto color = e.read_color();
+        l->set_line_color(color);
+        remember_authored_property(*l, Pid::COLOR, color, PropertyFlags::NOSTYLE);
     } else if (!read_properties(to_spanner(l), e, ctx)) {
         return false;
     }
@@ -3607,6 +3622,7 @@ bool TRead::read_properties(SlurTie *s, XmlReader &e, ReadContext &ctx) {
     } else if (TRead::read_property(s, tag, e, ctx, Pid::MASK_SLURTIE)) {
     } else if (tag == "lineType") {
         s->set_style_type(static_cast<SlurStyleType>(e.read_int()));
+        remember_authored_property(*s, Pid::SLUR_STYLE_TYPE, PropertyValue::from_value(s->style_type()), PropertyFlags::NOSTYLE);
     } else if (tag == "SlurSegment" || tag == "TieSegment" || tag == "LaissezVibSegment" || tag == "PartialTieSegment" ||
                tag == "HammerOnPullOffSegment" || tag == "TappingHalfSlurSegment") {
         const int idx = e.int_attribute("no", 0);

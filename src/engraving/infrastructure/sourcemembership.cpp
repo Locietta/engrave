@@ -28,6 +28,8 @@ bool source_object(const EngravingObject &item) {
     // Automatic beam ownership is still handled by the separate beam slice.
     for (const EngravingObject *node = &item; node; node = node->ownership_parent()) {
         switch (node->type()) {
+            case ElementType::GUITAR_BEND_HOLD:
+            case ElementType::TAPPING_HALF_SLUR:
             case ElementType::SYSTEM:
             case ElementType::PAGE:
             case ElementType::BRACKET:
@@ -127,7 +129,7 @@ static void for_each_source_child(EngravingObject &item, const Function &adopt, 
         if (auto *measure = rest.measure(); live && measure) {
             for (auto *tuplet = rest.tuplet(); tuplet; tuplet = tuplet->tuplet()) source_child_added(*measure, tuplet);
         }
-        if (live && rest.beam()) source_child_added(*rest.score(), rest.beam());
+        if (live && rest.authored_beam()) source_child_added(*rest.score(), rest.authored_beam());
         if (item.is_chord()) {
             auto &chord = *to_chord(&item);
             for (auto *note : chord.notes()) adopt(note);
@@ -171,7 +173,7 @@ static void for_each_source_child(EngravingObject &item, const Function &adopt, 
 static void set_subtree_live(EIDRegister &registry, EngravingObject &item, bool live, bool detaching_score) {
     detaching_score |= !live && item.is_score();
     if (detaching_score && item.is_chord_rest()) {
-        if (auto *beam = to_chord_rest(&item)->beam()) registry.set_live(*beam, false);
+        if (auto *beam = to_chord_rest(&item)->authored_beam()) registry.set_live(*beam, false);
     }
     registry.set_live(item, live);
     for_each_source_child(
@@ -208,7 +210,7 @@ void touch_source_subtree(EngravingObject &item) {
     if (!registry || !registry->tracking_ids()) return;
     registry->touch(item);
     if (item.is_chord_rest()) {
-        if (auto *beam = to_chord_rest(&item)->beam()) registry->touch(*beam);
+        if (auto *beam = to_chord_rest(&item)->authored_beam()) registry->touch(*beam);
     }
     for_each_source_child(
         item,

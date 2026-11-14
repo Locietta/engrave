@@ -112,9 +112,7 @@ public:
 
     void update_hold_line();
 
-    void set_hold_line(GuitarBendHold *hold) { hold_line_ = hold; }
-
-    GuitarBendHold *hold_line() const { return hold_line_; }
+    GuitarBendHold *hold_line() const { return ldata()->hold_line; }
 
     double line_width() const;
 
@@ -146,6 +144,9 @@ public:
 
     struct LayoutData : public SLine::LayoutData {
     public:
+        GuitarBendHold *hold_line = nullptr;
+        ~LayoutData();
+
         bool up() const { return up_; }
 
         void set_up(bool v) { up_ = v; }
@@ -182,7 +183,6 @@ protected:
 
 private:
     GuitarBendType bend_type_ = GuitarBendType::BEND;
-    GuitarBendHold *hold_line_ = nullptr;
     bool is_invalid_ = false;
     bool is_borderline_unplayable_ = false;
     DirectionV dive_tab_pos_ = DirectionV::AUTO;

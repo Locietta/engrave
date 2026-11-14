@@ -512,7 +512,7 @@ void BeamLayout::break_cross_measure_beams(Measure *measure, LayoutContext &ctx)
         const Staff *stf = ctx.dom().staff(track2staff(track));
 
         // don’t compute beams for invisible staves and tablature without stems
-        if (!stf->show() || (stf->is_tab_staff(measure->tick()) && stf->staff_type(measure->tick())->stemless())) {
+        if (!stf->show() || measure->stemless(track2staff(track))) {
             continue;
         }
 
@@ -645,7 +645,7 @@ void BeamLayout::create_beams(LayoutContext &ctx, Measure *measure) {
         const Staff *stf = ctx.dom().staff(track2staff(track));
 
         // don’t compute beams for invisible staves and tablature without stems
-        if (!stf->show() || (stf->is_tab_staff(measure->tick()) && stf->staff_type(measure->tick())->stemless())) {
+        if (!stf->show() || measure->stemless(track2staff(track))) {
             continue;
         }
 

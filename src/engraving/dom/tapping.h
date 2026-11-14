@@ -39,7 +39,15 @@ public:
 
     Tapping *clone() const override { return new Tapping(*this); }
 
-    struct LayoutData : public Articulation::LayoutData {};
+    AuthoredOverrideTable authored_overrides;
+
+    bool is_user_modified() const override { return !authored_overrides.entries.empty(); }
+
+    struct LayoutData : public Articulation::LayoutData {
+        TappingHalfSlur *half_slur_above = nullptr;
+        TappingHalfSlur *half_slur_below = nullptr;
+        ~LayoutData();
+    };
     DECLARE_LAYOUTDATA_METHODS(Tapping)
 
     TappingHand hand() const { return hand_; }
@@ -52,13 +60,13 @@ public:
 
     void set_selected(bool f) override;
 
-    TappingHalfSlur *half_slur_above() const { return half_slur_above_; }
+    TappingHalfSlur *half_slur_above() const { return ldata()->half_slur_above; }
 
-    void set_half_slur_above(TappingHalfSlur *s) { half_slur_above_ = s; }
+    void set_half_slur_above(TappingHalfSlur *s) { mutldata()->half_slur_above = s; }
 
-    TappingHalfSlur *half_slur_below() const { return half_slur_below_; }
+    TappingHalfSlur *half_slur_below() const { return ldata()->half_slur_below; }
 
-    void set_half_slur_below(TappingHalfSlur *s) { half_slur_below_ = s; }
+    void set_half_slur_below(TappingHalfSlur *s) { mutldata()->half_slur_below = s; }
 
     LHTappingShowItems lh_show_items() const;
 
@@ -78,8 +86,6 @@ protected:
 private:
     TappingHand hand_ = TappingHand::INVALID;
     TappingText *text_ = nullptr;
-    TappingHalfSlur *half_slur_above_ = nullptr;
-    TappingHalfSlur *half_slur_below_ = nullptr;
 };
 
 struct TappingHalfSlurSegment : SlurSegment {
@@ -99,6 +105,7 @@ struct TappingHalfSlur : Slur {
 private:
     DECLARE_CLASSOF(ElementType::TAPPING_HALF_SLUR)
 
+public:
     bool is_half_slur_above() const { return is_half_slur_above_; }
 
     void set_is_half_slur_above(bool v) { is_half_slur_above_ = v; }

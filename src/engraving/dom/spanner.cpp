@@ -571,6 +571,7 @@ PropertyValue Spanner::get_property(Pid property_id) const {
 //---------------------------------------------------------
 
 bool Spanner::set_property(Pid property_id, const PropertyValue &v) {
+    if (set_authored_override(*this, property_id, v)) return true;
     switch (property_id) {
         case Pid::PLAY: set_play_spanner(v.to_bool()); break;
         case Pid::SPANNER_TICK:
@@ -1444,12 +1445,14 @@ void Spanner::fixup_segments(unsigned int target_number, std::function<SpannerSe
 }
 
 bool Spanner::is_user_modified() const {
-    for (SpannerSegment *seg : segments_) {
-        if (seg->is_user_modified()) {
-            return true;
-        }
+    if (nested_spanner_role(authored_child.role)) {
+        const auto *table = authored_override_table(authored_override_owner(*this));
+        return table && std::ranges::any_of(table->entries, [&](const auto &entry) { return entry.child.role == authored_child.role; });
     }
-
+    if (is_guitar_bend()) return !authored_overrides.entries.empty();
+    for (const auto *segment : segments_) {
+        if (segment->is_user_modified()) return true;
+    }
     return false;
 }
 

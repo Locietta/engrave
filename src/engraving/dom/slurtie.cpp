@@ -229,6 +229,7 @@ PropertyValue SlurTie::get_property(Pid property_id) const {
 //---------------------------------------------------------
 
 bool SlurTie::set_property(Pid property_id, const PropertyValue &v) {
+    if (set_authored_override(*this, property_id, v)) return true;
     switch (property_id) {
         case Pid::SLUR_STYLE_TYPE: set_style_type(v.value<SlurStyleType>()); break;
         case Pid::SLUR_DIRECTION: set_slur_direction(v.value<DirectionV>()); break;
