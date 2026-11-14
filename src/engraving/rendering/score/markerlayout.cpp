@@ -81,11 +81,11 @@ void MarkerLayout::do_layout_marker(Marker *item, TextBase::LayoutData *ldata, L
             bl_width = item->absolute_from_spatium(ctx.conf().style_s(Sid::END_BAR_WIDTH));
         } else if ((measure->is_first_in_system() || (measure->prev() && !measure->prev()->is_measure())) && !right_marker) {
             // Start of score
-            const BarLine *bl = measure->start_bar_line();
+            const BarLine *bl = measure->rendered_start_bar_line();
             bl_width = bl ? -bl->width() : 0.0;
         } else {
             Measure *bl_measure = right_marker ? measure : measure->prev_measure();
-            const BarLine *bl = bl_measure ? bl_measure->end_bar_line() : nullptr;
+            const BarLine *bl = bl_measure ? bl_measure->rendered_end_bar_line() : nullptr;
             bl_width = bl ? bl->width() : 0.0;
         }
 
@@ -101,10 +101,10 @@ void MarkerLayout::do_layout_marker(Marker *item, TextBase::LayoutData *ldata, L
         const BarLine *bl = nullptr;
         if (start_repeat) {
             Measure *bl_measure = right_marker ? measure->next_measure() : measure;
-            bl = bl_measure ? bl_measure->start_bar_line(bl_idx) : nullptr;
+            bl = bl_measure ? bl_measure->rendered_start_bar_line(bl_idx) : nullptr;
         } else {
             Measure *bl_measure = right_marker ? measure : measure->prev_measure();
-            bl = bl_measure ? bl_measure->end_bar_line(bl_idx) : nullptr;
+            bl = bl_measure ? bl_measure->rendered_end_bar_line(bl_idx) : nullptr;
         }
 
         double bl_padding = 0.0;

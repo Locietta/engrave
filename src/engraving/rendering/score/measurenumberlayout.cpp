@@ -47,7 +47,7 @@ void MeasureNumberLayout::layout_measure_number(MeasureNumber *item, MeasureNumb
     bool align_to_barline = ctx.conf().style_b(Sid::MEASURE_NUMBER_ALIGN_TO_BARLINE);
     AlignH h_placement = ctx.conf().style_v(Sid::MEASURE_NUMBER_H_PLACEMENT).value<AlignH>();
     const Segment *barline_seg = ref_barline_segment(item, align_to_barline, h_placement);
-    const BarLine *ref_barline = barline_seg ? to_bar_line(barline_seg->element(item->track())) : nullptr;
+    const BarLine *ref_barline = barline_seg ? to_bar_line(barline_seg->effective_element(item->track())) : nullptr;
 
     const Measure *measure = item->measure();
 
@@ -160,8 +160,8 @@ const Segment *MeasureNumberLayout::ref_barline_segment(const MeasureNumber *ite
     Segment *barline_seg = nullptr;
     Measure *measure = item->measure();
     if (align_to_barline || h_placement == AlignH::LEFT) {
-        for (Segment *seg = measure->first(); seg && seg->tick() == measure->tick() && seg->system() == measure->system();
-             seg = seg->prev1_m_menabled()) {
+        for (Segment *seg = measure->rendered_first(); seg && seg->tick() == measure->tick() && seg->system() == measure->system();
+             seg = seg->rendered_prev1_mm_enabled()) {
             if (seg->is_type(SegmentType::BAR_LINE_TYPES) && seg->is_active()) {
                 barline_seg = seg;
                 break;
@@ -169,7 +169,7 @@ const Segment *MeasureNumberLayout::ref_barline_segment(const MeasureNumber *ite
         }
     } else {
         for (Segment *seg = measure->first(SegmentType::CHORD_REST);
-             seg && seg->tick() <= measure->end_tick() && seg->system() == measure->system(); seg = seg->next1enabled()) {
+             seg && seg->tick() <= measure->end_tick() && seg->system() == measure->system(); seg = seg->rendered_next1_enabled()) {
             if (seg->is_type(SegmentType::BAR_LINE_TYPES) && seg->is_active()) {
                 barline_seg = seg;
                 break;
@@ -205,7 +205,7 @@ void MeasureNumberLayout::check_barline_collisions(const MeasureNumber *item, co
         return;
     }
 
-    BarLine *barline = to_bar_line(barline_seg->element(staff2track(barline_staff)));
+    BarLine *barline = to_bar_line(barline_seg->effective_element(staff2track(barline_staff)));
     if (!barline) {
         return;
     }

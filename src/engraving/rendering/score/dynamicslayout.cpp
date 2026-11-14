@@ -134,11 +134,11 @@ void DynamicsLayout::layout_dynamic_to_end_of_previous(const Dynamic *item, Text
     Segment *left_most_segment = cur_segment;
     Segment *prev_seg = cur_segment;
     while (true) {
-        prev_seg = prev_seg->prev1enabled();
+        prev_seg = prev_seg->rendered_prev1_enabled();
         if (!prev_seg || prev_seg->tick() != cur_segment->tick()) {
             break;
         }
-        if (prev_seg->is_active() && prev_seg->has_elements(item->staff_idx())) {
+        if (prev_seg->is_active() && prev_seg->has_effective_elements(item->staff_idx())) {
             left_most_segment = prev_seg;
             break;
         }
@@ -195,7 +195,7 @@ void DynamicsLayout::manage_barline_collisions(const Dynamic *item, TextBase::La
 
     // Check barlines to the right
     Segment *right_bar_line_segment = nullptr;
-    for (Segment *segment = this_segment; segment && segment->measure()->system() == system; segment = segment->next1enabled()) {
+    for (Segment *segment = this_segment; segment && segment->measure()->system() == system; segment = segment->rendered_next1_enabled()) {
         if (segment->segment_type() & SegmentType::BAR_LINE_TYPES) {
             right_bar_line_segment = segment;
             break;
@@ -203,7 +203,7 @@ void DynamicsLayout::manage_barline_collisions(const Dynamic *item, TextBase::La
     }
 
     if (right_bar_line_segment) {
-        EngravingItem *e = right_bar_line_segment->element(bar_line_staff * ::mu::engraving::voices);
+        EngravingItem *e = right_bar_line_segment->effective_element(bar_line_staff * ::mu::engraving::voices);
         if (e) {
             double right_margin = e->ldata()->bbox().translated(e->page_pos()).left() -
                                   reference_b_box.translated(item->page_pos() - item->offset()).right() - min_bar_line_distance;
@@ -215,14 +215,14 @@ void DynamicsLayout::manage_barline_collisions(const Dynamic *item, TextBase::La
 
     // Check barlines to the left
     Segment *left_bar_line_segment = nullptr;
-    for (Segment *segment = this_segment; segment && segment->measure()->system() == system; segment = segment->prev1enabled()) {
+    for (Segment *segment = this_segment; segment && segment->measure()->system() == system; segment = segment->rendered_prev1_enabled()) {
         if (segment->segment_type() & SegmentType::BAR_LINE_TYPES) {
             left_bar_line_segment = segment;
             break;
         }
     }
     if (left_bar_line_segment) {
-        EngravingItem *e = left_bar_line_segment->element(bar_line_staff * ::mu::engraving::voices);
+        EngravingItem *e = left_bar_line_segment->effective_element(bar_line_staff * ::mu::engraving::voices);
         if (e) {
             double left_margin = reference_b_box.translated(item->page_pos() - item->offset()).left() -
                                  e->ldata()->bbox().translated(e->page_pos()).right() - min_bar_line_distance;

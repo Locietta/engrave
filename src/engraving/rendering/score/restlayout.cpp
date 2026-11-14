@@ -474,7 +474,7 @@ RestGroups RestLayout::compute_rest_groups(const System *system, LayoutContext &
                         interruption_points_on_this_voice.pop_front();
                     }
 
-                    EngravingItem *item = segment->element(track);
+                    EngravingItem *item = segment->effective_element(track);
                     if (!(item && item->is_rest() && item->visible())) {
                         continue;
                     }
@@ -500,7 +500,7 @@ InterruptionPoints RestLayout::compute_interruption_points(const Measure *measur
     // Compute all-voices interruptions
     for (const Segment *segment = measure->first(SegmentType::CHORD_REST); segment; segment = segment->next(SegmentType::CHORD_REST)) {
         for (track_idx_t track = s_track; track < e_track; ++track) {
-            EngravingItem *item = segment->element(track);
+            EngravingItem *item = segment->effective_element(track);
             if (!item) {
                 continue;
             }
@@ -550,10 +550,10 @@ InterruptionPoints RestLayout::compute_interruption_points(const Measure *measur
     for (voice_idx_t voice = 0; voice < ::mu::engraving::voices; ++voice) {
         track_idx_t track = s_track + voice;
         for (const Segment *segment = measure->first(SegmentType::CHORD_REST); segment; segment = segment->next(SegmentType::CHORD_REST)) {
-            if (ChordRest *this_cr = to_chord_rest(segment->element(track))) {
+            if (ChordRest *this_cr = to_chord_rest(segment->effective_element(track))) {
                 if (this_cr->is_rest()) {
                     const Segment *prev_segment = segment->prev_with_elements_on_track(track);
-                    bool has_adjacent_rest = prev_segment && prev_segment->element(track)->is_rest();
+                    bool has_adjacent_rest = prev_segment && prev_segment->effective_element(track)->is_rest();
                     if (has_adjacent_rest) {
                         continue;
                     }
@@ -590,7 +590,7 @@ void RestLayout::check_full_measure_rest_collisions(const System *system, Layout
             track_idx_t start_track = staff2track(staff_idx);
             track_idx_t end_track = start_track + ::mu::engraving::voices;
             for (track_idx_t track = start_track; track < end_track; ++track) {
-                EngravingItem *item = first_cr_seg->element(track);
+                EngravingItem *item = first_cr_seg->effective_element(track);
                 if (item && item->is_rest() && to_rest(item)->is_full_measure_rest()) {
                     full_measure_rest = to_rest(item);
                     break;
@@ -605,7 +605,8 @@ void RestLayout::check_full_measure_rest_collisions(const System *system, Layout
             Shape rest_shape = full_measure_rest->shape().translate(PointF(x_rest, full_measure_rest->ldata()->pos().y()));
 
             Shape measure_shape;
-            for (const Segment &segment : measure->segments()) {
+            for (const Segment *rendered = measure->rendered_first(); rendered; rendered = rendered->rendered_next()) {
+                const Segment &segment = *rendered;
                 if (!segment.is_active()) {
                     continue;
                 }
@@ -688,7 +689,7 @@ int RestLayout::compute_voice_offset(const Rest *item, Rest::LayoutData *ldata) 
     bool offset_voices = s && measure && (item->voice() > 0 || measure->has_voices(item->staff_idx(), item->tick(), item->actual_ticks()));
     if (offset_voices && item->voice() == 0) {
         // do not offset voice 1 rest if there exists a matching invisible rest in voice 2;
-        EngravingItem *e = s->element(item->track() + 1);
+        EngravingItem *e = s->effective_element(item->track() + 1);
         if (e && e->is_rest() && !e->visible() && !to_rest(e)->is_gap()) {
             Rest *r = to_rest(e);
             if (r->global_ticks() == item->global_ticks()) {
@@ -702,7 +703,7 @@ int RestLayout::compute_voice_offset(const Rest *item, Rest::LayoutData *ldata) 
         // if the staff contains slash notation then only offset rests in voices 3 and 4
         track_idx_t base_track = item->staff_idx() * ::mu::engraving::voices;
         for (voice_idx_t v = 0; v < ::mu::engraving::voices; ++v) {
-            EngravingItem *e = s->element(base_track + v);
+            EngravingItem *e = s->effective_element(base_track + v);
             if (e && e->is_chord() && to_chord(e)->slash()) {
                 offset_voices = false;
                 break;
@@ -720,7 +721,7 @@ int RestLayout::compute_voice_offset(const Rest *item, Rest::LayoutData *ldata) 
             if (v == item->voice()) {
                 continue;
             }
-            EngravingItem *e = s->element(base_track + v);
+            EngravingItem *e = s->effective_element(base_track + v);
             // try to find match in any other voice
             if (e) {
                 if (e->is_rest()) {

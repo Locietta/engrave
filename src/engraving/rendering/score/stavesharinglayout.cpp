@@ -232,7 +232,7 @@ SharedTrackMap StaveSharingLayout::compute_track_map(StaveSharingContext &ctx) {
 
 bool StaveSharingLayout::is_empty(track_idx_t track, StaveSharingContext &ctx) {
     for (Segment *seg : ctx.cr_segments) {
-        ChordRest *cr = to_chord_rest(seg->element(track));
+        ChordRest *cr = to_chord_rest(seg->effective_element(track));
         if (cr && !(cr->is_rest() && to_rest(cr)->is_full_measure_rest())) {
             return false;
         }
@@ -263,8 +263,8 @@ bool StaveSharingLayout::is_unison(track_idx_t prev_track, track_idx_t next_trac
             return false;
         }
 
-        ChordRest *cr1 = to_chord_rest(segment->element(prev_track));
-        ChordRest *cr2 = to_chord_rest(segment->element(next_track));
+        ChordRest *cr1 = to_chord_rest(segment->effective_element(prev_track));
+        ChordRest *cr2 = to_chord_rest(segment->effective_element(next_track));
         if (bool(cr1) != bool(cr2)) {
             return false;
         }
@@ -356,8 +356,8 @@ bool StaveSharingLayout::can_go_to_same_voice(track_idx_t prev_track, track_idx_
         if (!same_instrument(prev_track, next_track, segment->tick(), ctx)) {
             return false;
         }
-        ChordRest *cr1 = to_chord_rest(segment->element(prev_track));
-        ChordRest *cr2 = to_chord_rest(segment->element(next_track));
+        ChordRest *cr1 = to_chord_rest(segment->effective_element(prev_track));
+        ChordRest *cr2 = to_chord_rest(segment->effective_element(next_track));
         if (bool(cr1) != bool(cr2)) {
             return false;
         }
@@ -416,7 +416,7 @@ bool StaveSharingLayout::can_go_to_same_voice(track_idx_t prev_track, track_idx_
                     if (track == prev_track) {
                         continue;
                     }
-                    if (ChordRest *cr = to_chord_rest(segment->element(track)); cr && cr->is_chord()) {
+                    if (ChordRest *cr = to_chord_rest(segment->effective_element(track)); cr && cr->is_chord()) {
                         for (Note *n : to_chord(cr)->notes()) {
                             if (!n2->is_exact_unison(n)) {
                                 return false;
@@ -528,7 +528,7 @@ bool StaveSharingLayout::seg_has_local_key_sig(const Segment *segment, const Sha
                 continue;
             }
 
-            const EngravingItem *item = segment->element(staff->idx() * ::mu::engraving::voices);
+            const EngravingItem *item = segment->effective_element(staff->idx() * ::mu::engraving::voices);
             if (!item || !item->is_key_sig()) {
                 return true;
             }
@@ -600,8 +600,8 @@ bool StaveSharingLayout::check_segment_annotations_for_same_voice(Segment *segme
 
 bool StaveSharingLayout::check_items_for_same_voice(Segment *segment, track_idx_t prev_track, track_idx_t next_track,
                                                     const std::function<bool(const EngravingItem *, const EngravingItem *)> &is_equal) {
-    EngravingItem *item1 = segment->element(prev_track);
-    EngravingItem *item2 = segment->element(next_track);
+    EngravingItem *item1 = segment->effective_element(prev_track);
+    EngravingItem *item2 = segment->effective_element(next_track);
 
     if (bool(item1) != bool(item2)) {
         return false;
@@ -750,8 +750,8 @@ bool StaveSharingLayout::can_go_to_same_stave(track_idx_t prev_track, track_idx_
         if (!segment->is_chord_rest_type() || allow_voice_crossing) {
             continue;
         }
-        ChordRest *cr1 = to_chord_rest(segment->element(prev_track));
-        ChordRest *cr2 = to_chord_rest(segment->element(next_track));
+        ChordRest *cr1 = to_chord_rest(segment->effective_element(prev_track));
+        ChordRest *cr2 = to_chord_rest(segment->effective_element(next_track));
         if (cr1 && cr2 && cr1->is_chord() && cr2->is_chord()) {
             Chord *c1 = to_chord(cr1);
             Chord *c2 = to_chord(cr2);
@@ -786,7 +786,8 @@ void StaveSharingLayout::compute_segments_to_update(StaveSharingContext &ctx) {
     }
 
     Measure *last_measure = ctx.cr_segments.back()->measure();
-    for (Segment &seg : last_measure->segments()) {
+    for (Segment *rendered = last_measure->rendered_first(); rendered; rendered = rendered->rendered_next()) {
+        Segment &seg = *rendered;
         ctx.segments_to_update.push_back(&seg);
         if (seg.is_chord_rest_type()) {
             ctx.cr_segments_to_update.push_back(&seg);
@@ -819,7 +820,7 @@ void StaveSharingLayout::disconnect_all(StaveSharingContext &ctx) {
 
         if (seg->is_type(SegmentType::BREATH | SegmentType::CLEF | SegmentType::TIME_SIG | SegmentType::KEY_SIG)) {
             for (track_idx_t track = range.start_track; track < range.end_track; ++track) {
-                EngravingItem *item = seg->element(track);
+                EngravingItem *item = seg->effective_element(track);
                 if (!item || (item->is_time_sig() && !to_time_sig(item)->is_local())) {
                     continue;
                 }
@@ -833,7 +834,7 @@ void StaveSharingLayout::disconnect_all(StaveSharingContext &ctx) {
         }
 
         for (track_idx_t track = range.start_track; track < range.end_track; ++track) {
-            ChordRest *cr = to_chord_rest(seg->element(track));
+            ChordRest *cr = to_chord_rest(seg->effective_element(track));
             if (!cr) {
                 continue;
             }
@@ -964,9 +965,9 @@ void StaveSharingLayout::make_shared_clef_key_time_sigs(StaveSharingContext &ctx
             }
 
             if (seg->is_clef_type()) {
-                Clef *origin_clef = to_clef(seg->element(origin_track));
+                Clef *origin_clef = to_clef(seg->effective_element(origin_track));
                 if (origin_clef) {
-                    make_shared_item(origin_clef, seg->element(shared_track), shared_track, seg,
+                    make_shared_item(origin_clef, seg->effective_element(shared_track), shared_track, seg,
                                      [](const EngravingItem *origin, const EngravingItem *shared) {
                                          return to_clef(shared)->clef_type() == to_clef(origin)->clef_type();
                                      });
@@ -974,9 +975,9 @@ void StaveSharingLayout::make_shared_clef_key_time_sigs(StaveSharingContext &ctx
             }
 
             if (seg->is_time_sig_type()) {
-                TimeSig *origin_time_sig = to_time_sig(seg->element(origin_track));
+                TimeSig *origin_time_sig = to_time_sig(seg->effective_element(origin_track));
                 if (origin_time_sig && origin_time_sig->is_local()) {
-                    make_shared_item(origin_time_sig, seg->element(shared_track), shared_track, seg,
+                    make_shared_item(origin_time_sig, seg->effective_element(shared_track), shared_track, seg,
                                      [](const EngravingItem *origin, const EngravingItem *shared) {
                                          IF_ASSERT_FAILED(origin->is_time_sig() && shared->is_time_sig()) { return false; }
                                          return *to_time_sig(shared) == *to_time_sig(origin);
@@ -985,9 +986,9 @@ void StaveSharingLayout::make_shared_clef_key_time_sigs(StaveSharingContext &ctx
             }
 
             if (seg->is_key_sig_type()) {
-                KeySig *origin_key_sig = to_key_sig(seg->element(origin_track));
+                KeySig *origin_key_sig = to_key_sig(seg->effective_element(origin_track));
                 if (origin_key_sig) {
-                    make_shared_item(origin_key_sig, seg->element(shared_track), shared_track, seg,
+                    make_shared_item(origin_key_sig, seg->effective_element(shared_track), shared_track, seg,
                                      [](const EngravingItem *origin, const EngravingItem *shared) {
                                          IF_ASSERT_FAILED(origin->is_key_sig() && shared->is_key_sig()) { return false; }
                                          return *to_key_sig(shared) == *to_key_sig(origin);
@@ -1005,12 +1006,12 @@ void StaveSharingLayout::make_shared_chord_rests(StaveSharingContext &ctx) {
 
     for (Segment *seg : ctx.cr_segments_to_update) {
         for (const auto &[origin_track, shared_track] : ctx.cur_track_map) {
-            ChordRest *origin_cr = to_chord_rest(seg->element(origin_track));
+            ChordRest *origin_cr = to_chord_rest(seg->effective_element(origin_track));
             if (!origin_cr) {
                 continue;
             }
 
-            ChordRest *shared_cr = to_chord_rest(seg->element(shared_track));
+            ChordRest *shared_cr = to_chord_rest(seg->effective_element(shared_track));
             if (shared_cr) {
                 bool same_type = shared_cr->type() == origin_cr->type();
                 bool same_duration =
@@ -1139,12 +1140,12 @@ void StaveSharingLayout::make_shared_breaths(StaveSharingContext &ctx) {
         }
 
         for (const auto &[origin_track, shared_track] : track_map) {
-            Breath *origin_breath = to_breath(seg->element(origin_track));
+            Breath *origin_breath = to_breath(seg->effective_element(origin_track));
             if (!origin_breath) {
                 continue;
             }
 
-            EngravingItem *shared_breath = make_shared_item(origin_breath, seg->element(shared_track), shared_track, seg,
+            EngravingItem *shared_breath = make_shared_item(origin_breath, seg->effective_element(shared_track), shared_track, seg,
                                                             [](const EngravingItem *origin, const EngravingItem *shared) {
                                                                 return to_breath(shared)->sym_id() == to_breath(origin)->sym_id();
                                                             });
@@ -1280,7 +1281,7 @@ void StaveSharingLayout::make_shared_annotations(StaveSharingContext &ctx) {
             IF_ASSERT_FAILED(muse::contains(track_map, origin_track)) { continue; }
 
             if (origin_item->is_fermata()) {
-                EngravingItem *fermata_origin_base_item = seg->element(origin_track);
+                EngravingItem *fermata_origin_base_item = seg->effective_element(origin_track);
                 if (fermata_origin_base_item && fermata_origin_base_item->is_chord()) {
                     fermata_origin_base_item = to_chord(fermata_origin_base_item)->up_note();
                 }
@@ -1437,7 +1438,7 @@ bool StaveSharingLayout::unison_note_needs_label(Note *unison_note, bool &needs_
     track_idx_t cur_track = unison_note->track();
     Segment *cur_segment = unison_note->chord()->segment();
     for (Segment *seg = cur_segment->prev1(SegmentType::CHORD_REST); seg; seg = seg->prev1(SegmentType::CHORD_REST)) {
-        if (EngravingItem *el = seg->element(cur_track); el && el->is_chord()) {
+        if (EngravingItem *el = seg->effective_element(cur_track); el && el->is_chord()) {
             for (Note *note : to_chord(el)->notes()) {
                 if (!note->origin_items().empty()) {
                     prev_note = note;
@@ -1638,7 +1639,7 @@ void StaveSharingLayout::cleanup(StaveSharingContext &ctx) {
         if (seg->is_type(SegmentType::BREATH | SegmentType::CLEF | SegmentType::TIME_SIG) ||
             (seg->is_key_sig_type() && seg_has_local_key_sig(seg, p))) {
             for (track_idx_t track = range.start_track; track < range.end_track; ++track) {
-                EngravingItem *item = seg->element(track);
+                EngravingItem *item = seg->effective_element(track);
                 if (!item || !item->origin_items().empty() || (item->is_time_sig() && !to_time_sig(item)->is_local())) {
                     continue;
                 }
@@ -1652,7 +1653,7 @@ void StaveSharingLayout::cleanup(StaveSharingContext &ctx) {
         }
 
         for (track_idx_t track = range.start_track; track < range.end_track; ++track) {
-            ChordRest *cr = to_chord_rest(seg->element(track));
+            ChordRest *cr = to_chord_rest(seg->effective_element(track));
             if (!cr) {
                 continue;
             }
@@ -1770,7 +1771,8 @@ StaveSharingLayout::StaveSharingContext::StaveSharingContext(MeasureBase *first,
             continue;
         }
 
-        for (Segment &seg : to_measure(mb)->segments()) {
+        for (Segment *rendered = to_measure(mb)->rendered_first(); rendered; rendered = rendered->rendered_next()) {
+            Segment &seg = *rendered;
             all_segments.push_back(&seg);
             if (seg.is_chord_rest_type()) {
                 cr_segments.push_back(&seg);

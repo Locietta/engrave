@@ -197,7 +197,7 @@ void DebugPaint::paint_page_debug(Painter &painter, const Page *page, const std:
 
                 const Measure *m = to_measure(mb);
 
-                for (const Segment *s = m->first(); s; s = s->next()) {
+                for (const Segment *s = m->rendered_first(); s; s = s->rendered_next()) {
                     if (!s->enabled()) {
                         continue;
                     }
@@ -235,7 +235,7 @@ void DebugPaint::paint_page_debug(Painter &painter, const Page *page, const std:
 
                 const Measure *m = to_measure(mb);
 
-                for (const Segment *s = m->first(); s; s = s->next()) {
+                for (const Segment *s = m->rendered_first(); s; s = s->rendered_next()) {
                     pen.set_style(s->enabled() ? PenStyle::SOLID_LINE : PenStyle::DOT_LINE);
                     painter.set_pen(pen);
 

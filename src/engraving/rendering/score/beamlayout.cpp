@@ -453,7 +453,7 @@ bool BeamLayout::is_start_of_cross_beam(ChordRest *cr) {
 
 void BeamLayout::restore_beams(Measure *m, LayoutContext &ctx) {
     for (Segment *s = m->first(SegmentType::CHORD_REST); s; s = s->next(SegmentType::CHORD_REST)) {
-        for (EngravingItem *e : s->elist()) {
+        for (EngravingItem *e : s->effective_elements()) {
             if (e && e->is_chord_rest()) {
                 ChordRest *cr = to_chord_rest(e);
                 Beam *b = cr->beam();
@@ -478,7 +478,7 @@ bool BeamLayout::measure_may_have_beams_joined_into_next(const Measure *measure)
         return false;
     }
 
-    for (const EngravingItem *item : first_cr_seg->elist()) {
+    for (const EngravingItem *item : first_cr_seg->effective_elements()) {
         if (!item) {
             continue;
         }
@@ -516,7 +516,7 @@ void BeamLayout::break_cross_measure_beams(Measure *measure, LayoutContext &ctx)
             continue;
         }
 
-        EngravingItem *e = fst_seg->element(static_cast<int>(track));
+        EngravingItem *e = fst_seg->effective_element(static_cast<int>(track));
         if (!e || !e->is_chord_rest()) {
             continue;
         }
@@ -665,7 +665,7 @@ void BeamLayout::create_beams(LayoutContext &ctx, Measure *measure) {
         if (ts && ts->denominator() == 4) {
             Fraction stretch = ts->stretch();
             for (Segment *s = measure->first(st); s; s = s->next(st)) {
-                ChordRest *mcr = to_chord_rest(s->element(track));
+                ChordRest *mcr = to_chord_rest(s->effective_element(track));
                 if (mcr == 0) {
                     continue;
                 }
@@ -679,7 +679,7 @@ void BeamLayout::create_beams(LayoutContext &ctx, Measure *measure) {
         }
 
         for (Segment *segment = measure->first(st); segment; segment = segment->next(st)) {
-            ChordRest *cr = segment->cr(track);
+            ChordRest *cr = to_chord_rest(segment->effective_element(track));
             if (!cr) {
                 continue;
             }

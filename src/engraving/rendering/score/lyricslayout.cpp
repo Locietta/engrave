@@ -183,7 +183,7 @@ void LyricsLayout::layout(LyricsLine *item) {
 
         const ChordRest *end_cr = nullptr;
         if (end_cr_seg && !end_cr_seg->empty()) {
-            for (EngravingItem *cr : end_cr_seg->elist()) {
+            for (EngravingItem *cr : end_cr_seg->effective_elements()) {
                 if (cr && cr->is_chord_rest()) {
                     end_cr = to_chord_rest(cr);
                     break;
@@ -360,10 +360,10 @@ Lyrics *LyricsLayout::find_next_lyrics(const ChordRest *end_chord_rest, int vers
     }
     for (Segment *segment = end_chord_rest->segment()->next1(SegmentType::CHORD_REST); segment;
          segment = segment->next1(SegmentType::CHORD_REST)) {
-        if (!segment->element(end_chord_rest->track())) {
+        if (!segment->effective_element(end_chord_rest->track())) {
             continue;
         }
-        ChordRest *next_cr = to_chord_rest(segment->element(end_chord_rest->track()));
+        ChordRest *next_cr = to_chord_rest(segment->effective_element(end_chord_rest->track()));
         for (Lyrics *lyr : next_cr->lyrics()) {
             if (lyr->verse() == verse_number && (!placement || lyr->placement() == placement)) {
                 return lyr;
@@ -383,7 +383,7 @@ static Fraction lyrics_line_duration(const Lyrics &item) {
     const Segment *end = start;
     while (end && end->tick() < target) end = end->next_cr(item.track(), true);
     if (!end) return Fraction(0, 1);
-    const EngravingItem *element = end->element(item.track());
+    const EngravingItem *element = end->effective_element(item.track());
     if (end->tick() != target || !element || !element->is_chord()) return Fraction(0, 1);
     const Chord *chord = to_chord(element);
     const Segment *last_chord = end;
@@ -465,7 +465,7 @@ void LyricsLayout::collect_lyrics_verses(staff_idx_t staff_idx, System *system, 
                 continue;
             }
             for (track_idx_t track = start_track; track < end_track; ++track) {
-                EngravingItem *element = segment.element(track);
+                EngravingItem *element = segment.effective_element(track);
                 if (!element) {
                     continue;
                 }

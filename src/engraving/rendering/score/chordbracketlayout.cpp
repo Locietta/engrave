@@ -50,7 +50,7 @@ std::vector<ChordBracket *> ChordBracketLayout::chord_brackets_in_segment(const 
         return result;
     }
 
-    for (EngravingItem *item : segment->elist()) {
+    for (EngravingItem *item : segment->effective_elements()) {
         if (!item || !item->is_chord()) {
             continue;
         }
@@ -71,7 +71,7 @@ std::vector<ChordBracket *> ChordBracketLayout::chord_brackets_in_segment(const 
 
 ChordBracketLayout::BracketVisualSpan ChordBracketLayout::bracket_visual_span(const ChordBracket *bracket) {
     const Chord *start_chord = bracket->chord();
-    EngravingItem *end_item = start_chord->segment()->element(bracket->end_track());
+    EngravingItem *end_item = start_chord->segment()->effective_element(bracket->end_track());
     const Chord *end_chord = end_item && end_item->is_chord() ? to_chord(end_item) : start_chord;
 
     const auto top_y = [](const Chord *chord) {
@@ -173,7 +173,7 @@ void ChordBracketLayout::layout_horizontal(ChordBracket *bracket) {
     const double base_x = owner->pos().x() + bracket->offset().x();
 
     for (track_idx_t track = range.start_track; track < range.end_track; ++track) {
-        EngravingItem *item = segment->element(track);
+        EngravingItem *item = segment->effective_element(track);
         if (!item || !item->is_chord()) {
             continue;
         }

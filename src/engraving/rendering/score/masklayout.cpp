@@ -59,7 +59,8 @@ void MaskLayout::compute_masks(LayoutContext &ctx, Page *page) {
             Measure *measure = to_measure(mb);
 
             if (mask_barlines) {
-                for (const Segment &seg : measure->segments()) {
+                for (const Segment *rendered = measure->rendered_first(); rendered; rendered = rendered->rendered_next()) {
+                    const Segment &seg = *rendered;
                     if (seg.is_type(SegmentType::BAR_LINE_TYPES)) {
                         compute_barline_masks(&seg, system, all_system_text, ctx);
                     }
@@ -100,7 +101,7 @@ void MaskLayout::compute_masks(LayoutContext &ctx, Page *page) {
 
 void MaskLayout::compute_barline_masks(const Segment *barline_sement, const System *system, const std::vector<TextBase *> &all_system_text,
                                        LayoutContext &ctx) {
-    if (barline_sement->measure()->is_last_in_system() && barline_sement == barline_sement->measure()->last_enabled()) {
+    if (barline_sement->measure()->is_last_in_system() && barline_sement == barline_sement->measure()->rendered_last_enabled()) {
         return;
     }
 
@@ -113,7 +114,7 @@ void MaskLayout::compute_barline_masks(const Segment *barline_sement, const Syst
         if (!system->staff(staff_idx)->show()) {
             continue;
         }
-        BarLine *barline = to_bar_line(barline_sement->element(staff2track(staff_idx)));
+        BarLine *barline = to_bar_line(barline_sement->effective_element(staff2track(staff_idx)));
         if (!barline || !barline->span_staff()) {
             continue;
         }
@@ -242,7 +243,7 @@ std::vector<TextBase *> MaskLayout::collect_all_system_text(const System *system
             if (!s.is_chord_rest_type()) {
                 continue;
             }
-            for (EngravingItem *chord_rest : s.elist()) {
+            for (EngravingItem *chord_rest : s.effective_elements()) {
                 if (!chord_rest || !system->staff(chord_rest->staff_idx())->show()) {
                     continue;
                 }
@@ -343,7 +344,7 @@ void MaskLayout::mask_tab_string_lines_for_frets(StaffLines *staff_lines, const 
     const Measure *measure = staff_lines->measure();
     for (Segment *seg = measure->first(SegmentType::CHORD_REST); seg; seg = seg->next(SegmentType::CHORD_REST)) {
         for (track_idx_t track = start_track; track < end_track; ++track) {
-            EngravingItem *el = seg->element(track);
+            EngravingItem *el = seg->effective_element(track);
             if (!el || !el->is_chord()) {
                 continue;
             }
@@ -373,13 +374,13 @@ void MaskLayout::compute_slur_tie_masks(SlurTieSegment *slur_tie_segment) {
     }
 
     std::vector<const EngravingItem *> items_to_mask_over;
-    for (const Segment *seg = start_seg; seg && seg != end_seg; seg = seg->next1()) {
+    for (const Segment *seg = start_seg; seg && seg != end_seg; seg = seg->rendered_next1()) {
         if (!seg->enabled() || !seg->is_type(SegmentType::KEY_SIG_TYPES | SegmentType::TIME_SIG_TYPES | SegmentType::CLEF_TYPES) ||
             seg->system() != slur_tie_segment->system()) {
             continue;
         }
         for (staff_idx_t staff_idx = start_staff_idx; staff_idx <= end_staff_idx; ++staff_idx) {
-            if (EngravingItem *item = seg->element(
+            if (EngravingItem *item = seg->effective_element(
                     staff_idx * ::mu::engraving::voices)) { // Key/Time/Clef-type segments never have elements in any voice other than 0
                 items_to_mask_over.push_back(item);
             }

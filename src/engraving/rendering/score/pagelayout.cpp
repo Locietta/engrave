@@ -315,7 +315,7 @@ void PageLayout::collect_page(LayoutContext &ctx) {
 
             for (size_t track = 0; track < ctx.dom().ntracks(); ++track) {
                 for (Segment *segment = m->first(); segment; segment = segment->next()) {
-                    EngravingItem *e2 = segment->element(track);
+                    EngravingItem *e2 = segment->effective_element(track);
                     if (!e2) {
                         continue;
                     }
@@ -398,11 +398,12 @@ void PageLayout::collect_page(LayoutContext &ctx) {
     MeasureBase *last_of_this_page = ctx.mut_state().page()->systems().back()->measures().back();
     MeasureBase *first_of_next_page = last_of_this_page ? last_of_this_page->next() : nullptr;
     if (first_of_next_page && first_of_next_page->is_measure() && first_of_next_page->tick() > ctx.state().end_tick()) {
-        for (Segment &segment : to_measure(first_of_next_page)->segments()) {
+        for (Segment *rendered = to_measure(first_of_next_page)->rendered_first(); rendered; rendered = rendered->rendered_next()) {
+            Segment &segment = *rendered;
             if (!segment.is_type(SegmentType::BAR_LINE_TYPES)) {
                 continue;
             }
-            for (EngravingItem *item : segment.elist()) {
+            for (EngravingItem *item : segment.effective_elements()) {
                 if (item && item->is_bar_line()) {
                     TLayout::layout_bar_line2(to_bar_line(item), ctx);
                 }
@@ -493,7 +494,7 @@ void PageLayout::layout_artic_and_fingering_on_cross_staff_beams(LayoutContext &
             if (!segment.is_chord_rest_type()) {
                 continue;
             }
-            for (EngravingItem *item : segment.elist()) {
+            for (EngravingItem *item : segment.effective_elements()) {
                 if (!item || !item->is_chord()) {
                     continue;
                 }

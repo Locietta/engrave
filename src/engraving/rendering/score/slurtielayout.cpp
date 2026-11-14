@@ -348,11 +348,11 @@ double SlurTieLayout::ending_x_for_open_ended_slur_tie(const Measure *measure, s
     const SegmentType segment_types_to_avoid = SegmentType::TIME_SIG_TYPES | SegmentType::KEY_SIG_TYPES | SegmentType::CLEF_TYPES;
 
     // Find the first segment at the end of the measure which meets the criteria for the SlurTie to stop before it:
-    const Segment *end_segment = measure->find_segment_r(segment_types_to_avoid, measure->ticks());
+    const Segment *end_segment = measure->find_rendered_segment_r(segment_types_to_avoid, measure->ticks());
     const EngravingItem *end_item = nullptr;
     while (end_segment) {
         if (end_segment->is_type(segment_types_to_avoid) && end_segment->enabled()) {
-            end_item = end_segment->element(staff2track(staff_idx));
+            end_item = end_segment->effective_element(staff2track(staff_idx));
             if (end_item && end_item->visible() && end_item->add_to_skyline()) {
                 break;
             }
@@ -1176,7 +1176,7 @@ Shape SlurTieLayout::get_segment_shapes(SlurSegment *slur_seg, ChordRest *start_
         return seg_shapes;
     }
 
-    for (Segment *seg = start_seg; seg && (seg->is_before(end_seg) || seg == end_seg); seg = seg->next1enabled()) {
+    for (Segment *seg = start_seg; seg && (seg->is_before(end_seg) || seg == end_seg); seg = seg->rendered_next1_enabled()) {
         if (seg->is_type(SegmentType::BAR_LINE_TYPES) || seg->is_breath_type() || seg->has_time_sig_above_staves() ||
             seg->is_time_tick_type()) {
             continue;
@@ -1207,7 +1207,7 @@ Shape SlurTieLayout::get_segment_shape(SlurSegment *slur_seg, Segment *seg, Chor
     }
 
     for (track_idx_t track = staff2track(start_staff_idx); track < staff2track(end_staff_idx, ::mu::engraving::voices); ++track) {
-        EngravingItem *e = seg->element(track);
+        EngravingItem *e = seg->effective_element(track);
         if (!e || !e->is_chord_rest()) {
             continue;
         }
@@ -1442,10 +1442,10 @@ bool SlurTieLayout::is_over_beams(Slur *slur) {
     size_t track = start_cr->track();
     Segment *seg = start_cr->segment();
     while (seg && seg->tick() <= end_cr->tick()) {
-        if (!seg->is_chord_rest_type() || !seg->elist().at(track) || !seg->elist().at(track)->is_chord_rest()) {
+        if (!seg->is_chord_rest_type() || !seg->effective_elements().at(track) || !seg->effective_elements().at(track)->is_chord_rest()) {
             return false;
         }
-        ChordRest *cr = to_chord_rest(seg->elist().at(track));
+        ChordRest *cr = to_chord_rest(seg->effective_elements().at(track));
         bool has_beam = cr->beam() && cr->up() == slur->up();
         bool has_trem = false;
         if (cr->is_chord()) {
@@ -1455,10 +1455,10 @@ bool SlurTieLayout::is_over_beams(Slur *slur) {
         if (!(has_beam || has_trem)) {
             return false;
         }
-        if ((!seg->next() || seg->next()->is_end_bar_line_type()) && seg->measure()->next_measure()) {
-            seg = seg->measure()->next_measure()->first();
+        if ((!seg->rendered_next() || seg->rendered_next()->is_end_bar_line_type()) && seg->measure()->next_measure()) {
+            seg = seg->measure()->next_measure()->rendered_first();
         } else {
-            seg = seg->next();
+            seg = seg->rendered_next();
         }
     }
     return true;
@@ -1994,19 +1994,19 @@ void SlurTieLayout::set_partial_tie_end_pos(PartialTie *item, SlurTiePos &s_pos)
 
     auto should_skip_segment = [](const Segment *adj_seg, staff_idx_t staff) {
         bool inactive_or_invisible =
-            !adj_seg->is_active() || !adj_seg->enabled() || adj_seg->all_elements_invisible() || !adj_seg->has_elements(staff);
+            !adj_seg->is_active() || !adj_seg->enabled() || adj_seg->all_elements_invisible() || !adj_seg->has_effective_elements(staff);
         bool is_above_staff = adj_seg->is_breath_type() || adj_seg->has_time_sig_above_staves();
         return inactive_or_invisible || is_above_staff;
     };
 
-    const Segment *adj_seg = outgoing ? seg->next1() : seg->prev1();
+    const Segment *adj_seg = outgoing ? seg->rendered_next1() : seg->rendered_prev1();
     while (adj_seg && should_skip_segment(adj_seg, item->v_staff_idx())) {
-        adj_seg = outgoing ? adj_seg->next1() : adj_seg->prev1();
+        adj_seg = outgoing ? adj_seg->rendered_next1() : adj_seg->rendered_prev1();
     }
 
     double width_to_segment = 0.0;
     if (adj_seg) {
-        EngravingItem *element = adj_seg->element(staff2track(item->v_staff_idx()));
+        EngravingItem *element = adj_seg->effective_element(staff2track(item->v_staff_idx()));
         double el_pos = 0.0;
         double element_width = 0.0;
         if (element) {
@@ -2879,7 +2879,7 @@ bool SlurTieLayout::is_direction_mixture(const Chord *c1, const Chord *c2, Layou
             // if slur ends at a grace-note-before, we don't need to look at the main note
             return false;
         }
-        EngravingItem *e = seg->element(track);
+        EngravingItem *e = seg->effective_element(track);
         if (!e || !e->is_chord()) {
             continue;
         }
