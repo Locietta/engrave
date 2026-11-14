@@ -72,7 +72,6 @@ void Flip::flip(Transaction &, Score *score) {
     };
 
     for (EngravingItem *e : el) {
-        if (e->is_spanner_segment() && e->has_voice_assignment_properties()) e = to_spanner_segment(e)->spanner();
         if (e->has_voice_assignment_properties()) {
             flip_once(e, [e, direction]() {
                 e->undo_change_property(Pid::DIRECTION, direction(e->get_property(Pid::DIRECTION).value<DirectionV>(), e->place_above(),
@@ -243,15 +242,14 @@ void Flip::flip(Transaction &, Score *score) {
                 double new_default_y = ee->property_default(Pid::OFFSET).value<PointF>().y();
                 if (ee->is_spanner()) {
                     Spanner *spanner = to_spanner(ee);
-                    spanner->for_each_authored_segment([&](SpannerSegment &segment) {
-                        auto *ss = &segment;
+                    for (SpannerSegment *ss : spanner->spanner_segments()) {
                         if (!ss->offset().is_null()) {
                             PointF off = ss->get_property(Pid::OFFSET).value<PointF>();
                             double old_y = off.y() - old_default_y;
                             off.ry() = new_default_y - old_y;
                             ss->undo_change_property(Pid::OFFSET, off);
                         }
-                    });
+                    }
                 } else if (!ee->offset().is_null()) {
                     PointF off = ee->get_property(Pid::OFFSET).value<PointF>();
                     double old_y = off.y() - old_default_y;

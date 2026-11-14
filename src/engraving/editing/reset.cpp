@@ -50,10 +50,6 @@ using namespace mu::engraving;
 //    element.
 //---------------------------------------------------------
 
-static const std::vector<Pid> text_style_to_reset{
-    Pid::FONT_FACE,      Pid::FONT_SIZE,      Pid::FONT_STYLE,  Pid::SIZE_SPATIUM_DEPENDENT, Pid::FRAME_TYPE,  Pid::TEXT_LINE_SPACING,
-    Pid::FRAME_FG_COLOR, Pid::FRAME_BG_COLOR, Pid::FRAME_WIDTH, Pid::FRAME_PADDING,          Pid::FRAME_ROUND, Pid::ALIGN};
-
 static void reset_element_position(EngravingItem *e) {
     if (e->generated() || !source_object(*e)) {
         return;
@@ -62,47 +58,24 @@ static void reset_element_position(EngravingItem *e) {
     e->undo_reset_property(Pid::AUTOPLACE);
     e->undo_reset_property(Pid::OFFSET);
     e->undo_reset_property(Pid::LEADING_SPACE);
+    if (e->is_spanner()) {
+        e->undo_reset_property(Pid::OFFSET2);
+    }
 }
 
 static void reset_text_properties(EngravingItem *e) {
-    if (e->generated() || !source_object(*e) || !e->is_text_base()) {
+    if (e->generated() || !e->is_text_base()) {
         return;
     }
 
-    for (Pid pid : text_style_to_reset) {
-        e->reset_property(pid);
-    }
-}
+    static const std::vector<Pid> text_style_to_reset{
+        Pid::FONT_FACE,      Pid::FONT_SIZE,      Pid::FONT_STYLE,  Pid::SIZE_SPATIUM_DEPENDENT, Pid::FRAME_TYPE,  Pid::TEXT_LINE_SPACING,
+        Pid::FRAME_FG_COLOR, Pid::FRAME_BG_COLOR, Pid::FRAME_WIDTH, Pid::FRAME_PADDING,          Pid::FRAME_ROUND, Pid::ALIGN};
 
-static void reset_spanner_overrides(Score &score, bool positions, bool text) {
-    std::set<EngravingItem *> owners;
-    for (auto *spanner : score.spanner_list()) owners.insert(spanner);
-    const auto collect = [&](auto &&self, EngravingObject &object) -> void {
-        if (!source_object(object)) return;
-        if (object.is_engraving_item() && authored_override_table(to_engraving_item(&object))) owners.insert(to_engraving_item(&object));
-        for (auto *child : object.children()) self(self, *child);
-    };
-    collect(collect, score);
-    for (auto *owner : owners) {
-        auto &table = *authored_override_table(owner);
-        const auto erased = std::erase_if(table.entries, [&](const auto &entry) {
-            const auto key = entry.child;
-            const bool segment = key.role == AuthoredChildRole::SPANNER_SEGMENT || key.role == AuthoredChildRole::SEGMENT_TEXT ||
-                                 (nested_spanner_role(key.role) && key.subordinal == 1);
-            if (!segment) return false;
-            const auto pid = entry.pid;
-            const bool position = positions && (pid == Pid::AUTOPLACE || pid == Pid::OFFSET || pid == Pid::OFFSET2 ||
-                                                pid == Pid::LEADING_SPACE || pid == Pid::SLUR_UOFF1 || pid == Pid::SLUR_UOFF2 ||
-                                                pid == Pid::SLUR_UOFF3 || pid == Pid::SLUR_UOFF4 || pid == Pid::BEND_VERTEX_OFF);
-            const bool text_style = text && muse::contains(text_style_to_reset, pid);
-            if (!position && !text_style) return false;
-            if (note_change(owner, CommandType::CHANGE_PROPERTY))
-                owner->master_score()->cmd_state().changes.changed_property_id_set.insert(pid);
-            return true;
-        });
-        if (!erased) continue;
-        owner->trigger_layout();
-        if (auto *store = score.layout_data_store()) store->erase(*owner);
+    for (Pid pid : text_style_to_reset) {
+        // TODO: use undoResetProperty: https://github.com/musescore/MuseScore/issues/16516
+        // But for now, we'll use resetPropety since undoResetProperty leads to various problems
+        e->reset_property(pid);
     }
 }
 
@@ -233,15 +206,11 @@ void Reset::reset_to_default_layout(Transaction &tx, Score *score) {
 
     reset_measures_layout(tx, score);
     score->scan_elements(reset_position_and_text_properties);
-    reset_spanner_overrides(*score, true, true);
     reset_all_styles(tx, score, dont_reset_these_styles);
     EditSystemLocks::undo_remove_all_locks(tx, score);
 }
 
-void Reset::reset_text_style_overrides(Score *score) {
-    score->scan_elements(reset_text_properties);
-    reset_spanner_overrides(*score, false, true);
-}
+void Reset::reset_text_style_overrides(Score *score) { score->scan_elements(reset_text_properties); }
 
 void Reset::reset_all_styles(Transaction &, Score *score, const StyleIdSet &except_these_ones) {
 
@@ -300,7 +269,38 @@ void Reset::reset_measures_layout(Transaction &, Score *score) {
     }
 }
 
+static void reset_spanner_positions(Score &score) {
+    std::set<EngravingItem *> owners;
+    for (auto *spanner : score.spanner_list()) owners.insert(spanner);
+    const auto collect = [&](auto &&self, EngravingObject &object) -> void {
+        if (!source_object(object)) return;
+        if (object.is_engraving_item() && authored_override_table(to_engraving_item(&object))) owners.insert(to_engraving_item(&object));
+        for (auto *child : object.children()) self(self, *child);
+    };
+    collect(collect, score);
+    for (auto *owner : owners) {
+        auto &table = *authored_override_table(owner);
+        const auto erased = std::erase_if(table.entries, [&](const auto &entry) {
+            const auto key = entry.child;
+            const bool segment = key.role == AuthoredChildRole::SPANNER_SEGMENT || key.role == AuthoredChildRole::SEGMENT_TEXT ||
+                                 (nested_spanner_role(key.role) && key.subordinal == 1);
+            if (!segment) return false;
+            const auto pid = entry.pid;
+            const bool position = (pid == Pid::AUTOPLACE || pid == Pid::OFFSET || pid == Pid::OFFSET2 || pid == Pid::LEADING_SPACE ||
+                                   pid == Pid::SLUR_UOFF1 || pid == Pid::SLUR_UOFF2 || pid == Pid::SLUR_UOFF3 || pid == Pid::SLUR_UOFF4 ||
+                                   pid == Pid::BEND_VERTEX_OFF);
+            if (!position) return false;
+            if (note_change(owner, CommandType::CHANGE_PROPERTY))
+                owner->master_score()->cmd_state().changes.changed_property_id_set.insert(pid);
+            return true;
+        });
+        if (!erased) continue;
+        owner->trigger_layout();
+        if (auto *store = score.layout_data_store()) store->erase(*owner);
+    }
+}
+
 void Reset::reset_all_positions(Transaction &, Score *score) {
     score->scan_elements(reset_element_position);
-    reset_spanner_overrides(*score, true, false);
+    reset_spanner_positions(*score);
 }

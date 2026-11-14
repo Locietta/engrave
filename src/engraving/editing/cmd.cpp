@@ -964,7 +964,7 @@ Segment *Score::set_note_rest(Segment *segment, track_idx_t track, NoteVal nval,
             // the end grip of the front slur segment was given an x-offset of 3.0 * spatium().
             // Now that the slur is about to be given a new end element, this should be reset.
             if (is.slur()->end_element() == is.slur()->start_element()) {
-                is.slur()->authored_segment(0)->reset();
+                is.slur()->front_segment()->reset();
             }
             //
             // extend slur

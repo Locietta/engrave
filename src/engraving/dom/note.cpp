@@ -2476,7 +2476,7 @@ EngravingItem *Note::prev_in_el(EngravingItem *e) {
     return *(i - 1);
 }
 
-static bool tie_valid(Tie *tie) { return tie != nullptr; }
+static bool tie_valid(Tie *tie) { return tie && !tie->segments_empty(); }
 
 //---------------------------------------------------------
 //   nextElement
@@ -2500,37 +2500,31 @@ EngravingItem *Note::next_element() {
             if (next) {
                 return next;
             } else if (tie_valid(tie_for_)) {
-                return tie_for_->segments_empty() ? static_cast<EngravingItem *>(tie_for_) : tie_for_->front_segment();
+                return tie_for_->front_segment();
             } else if (!spanner_for_.empty()) {
                 for (auto i : spanner_for_) {
                     if (i->is_glissando()) {
-                        return i->segments_empty() ? static_cast<EngravingItem *>(const_cast<Spanner *>(i)) : i->spanner_segments().front();
+                        return i->spanner_segments().front();
                     }
                 }
             }
             return nullptr;
         }
 
-        case ElementType::TIE:
         case ElementType::TIE_SEGMENT:
-        case ElementType::LAISSEZ_VIB:
         case ElementType::LAISSEZ_VIB_SEGMENT:
-        case ElementType::PARTIAL_TIE:
         case ElementType::PARTIAL_TIE_SEGMENT:
             if (!spanner_for_.empty()) {
                 for (auto i : spanner_for_) {
                     if (i->is_glissando()) {
-                        return i->segments_empty() ? static_cast<EngravingItem *>(const_cast<Spanner *>(i)) : i->spanner_segments().front();
+                        return i->spanner_segments().front();
                     }
                 }
             }
             return chord()->next_element();
 
-        case ElementType::NOTELINE:
         case ElementType::NOTELINE_SEGMENT:
-        case ElementType::GLISSANDO:
         case ElementType::GLISSANDO_SEGMENT:
-        case ElementType::GUITAR_BEND:
         case ElementType::GUITAR_BEND_SEGMENT: return chord()->next_element();
 
         case ElementType::ACCIDENTAL:
@@ -2538,12 +2532,12 @@ EngravingItem *Note::next_element() {
                 return el_[0];
             }
             if (tie_valid(tie_for_)) {
-                return tie_for_->segments_empty() ? static_cast<EngravingItem *>(tie_for_) : tie_for_->front_segment();
+                return tie_for_->front_segment();
             }
             if (!spanner_for_.empty()) {
                 for (auto i : spanner_for_) {
                     if (i->is_glissando()) {
-                        return i->segments_empty() ? static_cast<EngravingItem *>(const_cast<Spanner *>(i)) : i->spanner_segments().front();
+                        return i->spanner_segments().front();
                     }
                 }
             }
@@ -2551,7 +2545,7 @@ EngravingItem *Note::next_element() {
 
         case ElementType::NOTE: {
             if (is_pre_bend_or_dive_start() || is_grace_bend_start()) {
-                return bend_for()->segments_empty() ? static_cast<EngravingItem *>(bend_for()) : bend_for()->front_segment();
+                return bend_for()->front_segment();
             }
 
             const auto grace_notes_after = chord()->grace_notes_after();
@@ -2566,12 +2560,12 @@ EngravingItem *Note::next_element() {
                 return el_[0];
             }
             if (tie_valid(tie_for_)) {
-                return tie_for_->segments_empty() ? static_cast<EngravingItem *>(tie_for_) : tie_for_->front_segment();
+                return tie_for_->front_segment();
             }
             if (!spanner_for_.empty()) {
                 for (auto i : spanner_for_) {
                     if (i->is_glissando() || i->is_guitar_bend()) {
-                        return i->segments_empty() ? static_cast<EngravingItem *>(const_cast<Spanner *>(i)) : i->spanner_segments().front();
+                        return i->spanner_segments().front();
                     }
                 }
             }
@@ -2605,24 +2599,18 @@ EngravingItem *Note::prev_element() {
             }
         }
             return this;
-        case ElementType::TIE:
         case ElementType::TIE_SEGMENT:
-        case ElementType::PARTIAL_TIE:
         case ElementType::PARTIAL_TIE_SEGMENT:
-        case ElementType::LAISSEZ_VIB:
         case ElementType::LAISSEZ_VIB_SEGMENT:
             if (!el_.empty()) {
                 return el_.back();
             }
             return this;
-        case ElementType::NOTELINE:
         case ElementType::NOTELINE_SEGMENT:
-        case ElementType::GLISSANDO:
         case ElementType::GLISSANDO_SEGMENT:
-        case ElementType::GUITAR_BEND:
         case ElementType::GUITAR_BEND_SEGMENT:
             if (tie_valid(tie_for_)) {
-                return tie_for_->segments_empty() ? static_cast<EngravingItem *>(tie_for_) : tie_for_->front_segment();
+                return tie_for_->front_segment();
             } else if (!el_.empty()) {
                 return el_.back();
             }
@@ -2640,12 +2628,12 @@ EngravingItem *Note::last_element_before_segment() {
     if (!spanner_for_.empty()) {
         for (auto i : spanner_for_) {
             if (i->is_glissando() || i->is_guitar_bend() || i->is_note_line()) {
-                return i->segments_empty() ? static_cast<EngravingItem *>(const_cast<Spanner *>(i)) : i->spanner_segments().front();
+                return i->spanner_segments().front();
             }
         }
     }
     if (tie_valid(tie_for_)) {
-        return tie_for_->segments_empty() ? static_cast<EngravingItem *>(tie_for_) : tie_for_->front_segment();
+        return tie_for_->front_segment();
     }
     if (!el_.empty()) {
         return el_.back();

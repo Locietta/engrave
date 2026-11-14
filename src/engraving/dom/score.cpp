@@ -4545,7 +4545,6 @@ void Score::invalidate_layout(const Fraction &start, const Fraction &end) {
         layout_state.start = std::min(layout_state.start, start);
         layout_state.end = (layout_state.end < Fraction(0, 1) || end < Fraction(0, 1)) ? Fraction(-1, 1) : std::max(layout_state.end, end);
     }
-    selection_.retire_spanner_segments();
     layout_state.dirty = true;
 }
 

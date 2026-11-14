@@ -121,7 +121,7 @@ struct Selection {
 
     const String &lock_reason() const { return lock_reason_; }
 
-    std::vector<EngravingItem *> elements() const { return el_; }
+    const std::vector<EngravingItem *> &elements() const { return el_; }
 
     std::vector<EngravingItem *> elements(ElementType type) const;
     std::vector<Note *> note_list(track_idx_t track = muse::nidx) const;
@@ -135,7 +135,6 @@ struct Selection {
     void deselect_all();
     void remove(EngravingItem *);
     void clear();
-    void retire_spanner_segments();
     EngravingItem *element() const;
     ChordRest *cr() const;
     ChordRest *first_chord_rest(track_idx_t track = muse::nidx) const;

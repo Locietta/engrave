@@ -118,17 +118,19 @@ static std::set<ElementPair, decltype(&is_child1before_child2)> to_child_pairs_s
     return children;
 }
 
-static EngravingItem *next_element_for_spanner(Spanner *spanner) {
+static EngravingItem *next_element_for_spanner_segment(const SpannerSegment *spanner_segment) {
+    Spanner *spanner = spanner_segment->spanner();
     EngravingItem *el_st = spanner->start_element();
-    IF_ASSERT_FAILED(el_st && el_st->is_note()) { return nullptr; }
+    IF_ASSERT_FAILED(el_st->is_note()) { return nullptr; }
 
     Note *note = to_note(el_st);
     return note->next_element();
 }
 
-static EngravingItem *prev_element_for_spanner(Spanner *spanner) {
+static EngravingItem *prev_element_for_spanner_segment(const SpannerSegment *spanner_segment) {
+    Spanner *spanner = spanner_segment->spanner();
     EngravingItem *el_st = spanner->start_element();
-    IF_ASSERT_FAILED(el_st && el_st->is_note()) { return nullptr; }
+    IF_ASSERT_FAILED(el_st->is_note()) { return nullptr; }
 
     Note *note = to_note(el_st);
     return note->prev_element();
@@ -765,41 +767,26 @@ EngravingItem *Score::next_element() {
                 }
                 [[fallthrough]];
             }
-            case ElementType::VOLTA:
             case ElementType::VOLTA_SEGMENT:
-            case ElementType::SLUR:
             case ElementType::SLUR_SEGMENT:
-            case ElementType::TEXTLINE:
             case ElementType::TEXTLINE_SEGMENT:
-            case ElementType::HAIRPIN:
             case ElementType::HAIRPIN_SEGMENT:
-            case ElementType::OTTAVA:
             case ElementType::OTTAVA_SEGMENT:
-            case ElementType::TRILL:
             case ElementType::TRILL_SEGMENT:
-            case ElementType::VIBRATO:
             case ElementType::VIBRATO_SEGMENT:
-            case ElementType::LET_RING:
             case ElementType::LET_RING_SEGMENT:
-            case ElementType::GRADUAL_TEMPO_CHANGE:
             case ElementType::GRADUAL_TEMPO_CHANGE_SEGMENT:
-            case ElementType::PALM_MUTE:
             case ElementType::PALM_MUTE_SEGMENT:
-            case ElementType::WHAMMY_BAR:
             case ElementType::WHAMMY_BAR_SEGMENT:
-            case ElementType::RASGUEADO:
             case ElementType::RASGUEADO_SEGMENT:
-            case ElementType::HARMONIC_MARK:
             case ElementType::HARMONIC_MARK_SEGMENT:
-            case ElementType::PICK_SCRAPE:
             case ElementType::PICK_SCRAPE_SEGMENT:
-            case ElementType::PEDAL:
             case ElementType::PEDAL_SEGMENT: {
-                Spanner *sp = e->is_spanner() ? to_spanner(e) : to_spanner_segment(e)->spanner();
+                SpannerSegment *s = to_spanner_segment(e);
+                Spanner *sp = s->spanner();
                 Spanner *next_sp = sp->next_spanner(sp, staff_id);
                 if (next_sp) {
-                    return next_sp->segments_empty() ? static_cast<EngravingItem *>(const_cast<Spanner *>(next_sp)) :
-                                                       next_sp->spanner_segments().front();
+                    return next_sp->spanner_segments().front();
                 }
 
                 Segment *seg = tick2segment(sp->tick());
@@ -811,8 +798,7 @@ EngravingItem *Score::next_element() {
                                 return annotation;
                             }
                             if (Spanner *spanner = next_segment->first_spanner(staff_id)) {
-                                return spanner->segments_empty() ? static_cast<EngravingItem *>(const_cast<Spanner *>(spanner)) :
-                                                                   spanner->spanner_segments().front();
+                                return spanner->spanner_segments().front();
                             }
                         } else if (EngravingItem *next_el = next_segment->first_element_of_segment(staff_id)) {
                             return next_el;
@@ -822,16 +808,14 @@ EngravingItem *Score::next_element() {
                 }
                 break;
             }
-            case ElementType::GUITAR_BEND:
             case ElementType::GUITAR_BEND_SEGMENT:
             case ElementType::GUITAR_BEND_HOLD_SEGMENT: {
-                GuitarBend *bend = e->is_guitar_bend()         ? to_guitar_bend(e) :
-                                   e->is_guitar_bend_segment() ? to_guitar_bend_segment(e)->guitar_bend() :
+                GuitarBend *bend = e->is_guitar_bend_segment() ? to_guitar_bend_segment(e)->guitar_bend() :
                                                                  to_guitar_bend_hold_segment(e)->guitar_bend_hold()->guitar_bend();
                 if (bend->bend_type() != GuitarBendType::SLIGHT_BEND) {
                     return bend->end_note();
                 } else {
-                    EngravingItem *next = next_element_for_spanner(e->is_spanner() ? to_spanner(e) : to_spanner_segment(e)->spanner());
+                    EngravingItem *next = next_element_for_spanner_segment(to_spanner_segment(e));
                     if (next) {
                         return next;
                     }
@@ -839,17 +823,12 @@ EngravingItem *Score::next_element() {
 
                 break;
             }
-            case ElementType::GLISSANDO:
             case ElementType::GLISSANDO_SEGMENT:
-            case ElementType::NOTELINE:
             case ElementType::NOTELINE_SEGMENT:
-            case ElementType::LAISSEZ_VIB:
             case ElementType::LAISSEZ_VIB_SEGMENT:
-            case ElementType::PARTIAL_TIE:
             case ElementType::PARTIAL_TIE_SEGMENT:
-            case ElementType::TIE:
             case ElementType::TIE_SEGMENT: {
-                EngravingItem *next = next_element_for_spanner(e->is_spanner() ? to_spanner(e) : to_spanner_segment(e)->spanner());
+                EngravingItem *next = next_element_for_spanner_segment(to_spanner_segment(e));
                 if (next) {
                     return next;
                 } else {
@@ -1038,32 +1017,23 @@ EngravingItem *Score::prev_element() {
                     return tapping;
                 }
             }
-            case ElementType::VOLTA:
             case ElementType::VOLTA_SEGMENT:
-            case ElementType::SLUR:
             case ElementType::SLUR_SEGMENT:
             case ElementType::HAMMER_ON_PULL_OFF_SEGMENT:
-            case ElementType::TEXTLINE:
             case ElementType::TEXTLINE_SEGMENT:
-            case ElementType::HAIRPIN:
             case ElementType::HAIRPIN_SEGMENT:
-            case ElementType::OTTAVA:
             case ElementType::OTTAVA_SEGMENT:
-            case ElementType::TRILL:
             case ElementType::TRILL_SEGMENT:
-            case ElementType::VIBRATO:
             case ElementType::VIBRATO_SEGMENT:
-            case ElementType::PEDAL:
             case ElementType::PEDAL_SEGMENT: {
-                Spanner *sp = e->is_spanner() ? to_spanner(e) : to_spanner_segment(e)->spanner();
+                SpannerSegment *s = to_spanner_segment(e);
+                Spanner *sp = s->spanner();
                 EngravingItem *st_el = sp->start_element();
                 Spanner *prev_sp = sp->prev_spanner(sp, staff_id);
                 if (prev_sp) {
-                    return prev_sp->segments_empty() ? static_cast<EngravingItem *>(const_cast<Spanner *>(prev_sp)) :
-                                                       prev_sp->spanner_segments().front();
+                    return prev_sp->spanner_segments().front();
                 } else {
                     Segment *start_seg = sp->start_segment();
-                    if (!start_seg) return nullptr;
                     if (EngravingItem *annotation = start_seg->last_annotation(staff_id)) {
                         return annotation;
                     }
@@ -1071,8 +1041,7 @@ EngravingItem *Score::prev_element() {
                         start_seg = start_seg->prev1_m_menabled();
                         for (; start_seg && start_seg->is_time_tick_type(); start_seg = start_seg->prev1_m_menabled()) {
                             if (Spanner *spanner = start_seg->last_spanner(staff_id)) {
-                                return spanner->segments_empty() ? static_cast<EngravingItem *>(const_cast<Spanner *>(spanner)) :
-                                                                   spanner->spanner_segments().front();
+                                return spanner->spanner_segments().front();
                             }
                             if (EngravingItem *annotation = start_seg->last_annotation(staff_id)) {
                                 return annotation;
@@ -1083,15 +1052,14 @@ EngravingItem *Score::prev_element() {
                         }
                         // Also check first non-timeTick segment encountered.
                         if (Spanner *spanner = start_seg->last_spanner(staff_id)) {
-                            return spanner->segments_empty() ? static_cast<EngravingItem *>(const_cast<Spanner *>(spanner)) :
-                                                               spanner->spanner_segments().front();
+                            return spanner->spanner_segments().front();
                         }
                         if (EngravingItem *annotation = start_seg->last_annotation(staff_id)) {
                             return annotation;
                         }
                     }
                     EngravingItem *el = start_seg->last_element_of_segment(staff_id);
-                    if (st_el && (st_el->is_chord_rest() || st_el->is_note())) {
+                    if (st_el->is_chord_rest() || st_el->is_note()) {
                         ChordRest *cr = start_seg->cr(st_el->track());
                         if (cr) {
                             EngravingItem *el_cr = cr->last_element_before_segment();
@@ -1110,25 +1078,18 @@ EngravingItem *Score::prev_element() {
                     }
                 }
             }
-            case ElementType::GUITAR_BEND:
             case ElementType::GUITAR_BEND_SEGMENT:
             case ElementType::GUITAR_BEND_HOLD_SEGMENT: {
-                GuitarBend *bend = e->is_guitar_bend()         ? to_guitar_bend(e) :
-                                   e->is_guitar_bend_segment() ? to_guitar_bend_segment(e)->guitar_bend() :
+                GuitarBend *bend = e->is_guitar_bend_segment() ? to_guitar_bend_segment(e)->guitar_bend() :
                                                                  to_guitar_bend_hold_segment(e)->guitar_bend_hold()->guitar_bend();
                 return bend->start_note();
             }
-            case ElementType::GLISSANDO:
             case ElementType::GLISSANDO_SEGMENT:
-            case ElementType::NOTELINE:
             case ElementType::NOTELINE_SEGMENT:
-            case ElementType::LAISSEZ_VIB:
             case ElementType::LAISSEZ_VIB_SEGMENT:
-            case ElementType::PARTIAL_TIE:
             case ElementType::PARTIAL_TIE_SEGMENT:
-            case ElementType::TIE:
             case ElementType::TIE_SEGMENT: {
-                EngravingItem *prev = prev_element_for_spanner(e->is_spanner() ? to_spanner(e) : to_spanner_segment(e)->spanner());
+                EngravingItem *prev = prev_element_for_spanner_segment(to_spanner_segment(e));
                 if (prev) {
                     return prev;
                 }
