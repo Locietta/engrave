@@ -4,8 +4,6 @@
 #include <algorithm>
 #include <compare>
 #include <cstdint>
-#include <list>
-#include <memory>
 #include <optional>
 #include <vector>
 
@@ -84,14 +82,6 @@ struct AuthoredOverrideTable {
     void set_carrier(AuthoredOverrideCarrier carrier);
     void erase_carrier(AuthoredChildKey child);
     bool has_entries(AuthoredChildKey child) const;
-};
-
-// Segment property peers are source adapters scoped to a single edit.
-struct AuthoredPropertyLinks {
-    std::vector<std::unique_ptr<EngravingItem>> carriers;
-    std::list<EngravingObject *> objects;
-    explicit AuthoredPropertyLinks(EngravingObject &object);
-    ~AuthoredPropertyLinks();
 };
 
 bool nested_spanner_role(AuthoredChildRole role);

@@ -1403,8 +1403,7 @@ PlacementV EngravingItem::placement_based_on_voice_assignment(DirectionV styled_
 void EngravingItem::relink_properties_to_master(PropertyGroup prop_group) {
     assert(!score()->is_master());
 
-    AuthoredPropertyLinks peers(*this);
-    const auto &linked_elements = peers.objects;
+    const auto linked_elements = link_list_for_property_propagation();
     EngravingObject *master_element = nullptr;
     for (EngravingObject *element : linked_elements) {
         if (element->score()->is_master()) {
@@ -1436,8 +1435,7 @@ void EngravingItem::relink_properties_to_master(PropertyGroup prop_group) {
 void EngravingItem::relink_property_to_master(Pid property_id) {
     assert(!score()->is_master());
 
-    AuthoredPropertyLinks peers(*this);
-    const auto &linked_elements = peers.objects;
+    const auto linked_elements = link_list_for_property_propagation();
     EngravingObject *master_element = nullptr;
     for (EngravingObject *element : linked_elements) {
         if (element->score()->is_master()) {

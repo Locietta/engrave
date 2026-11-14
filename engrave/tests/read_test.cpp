@@ -5516,6 +5516,132 @@ TEST(Read, BulkPositionResetRemovesColdSparseSegmentOffsetsAndGrips) {
     }
 }
 
+TEST(Read, PartSpannerRelinkClearsLocalPiecesWithoutCopyingMasterOverrides) {
+    using namespace mu::engraving;
+    const auto fixture = [](bool overrides, bool bend) {
+        const auto score = [](bool part, bool local) {
+            return std::string(R"(<Score><Division>480</Division><Style><spatium>1.75</spatium>
+<hairpinPosAbove x="0" y="0"/><hairpinPosBelow x="0" y="0"/></Style><Part><Staff>)") +
+                   (part ? "<linkedTo>S_S</linkedTo>" : "<eid>S_S</eid>") + R"(<StaffType group="pitched"/></Staff>
+<Instrument id="piano"><Channel><program value="0"/></Channel></Instrument></Part><Staff id="1"><Measure><voice>
+<TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig><Rest><durationType>whole</durationType></Rest></voice></Measure></Staff>
+<SpannerMap><HairPin><eid>)" +
+                   (part ? "G_G</eid><linkedTo>F_F</linkedTo>" : "F_F</eid>") + R"(<track>0</track><subtype>0</subtype>
+<color r="0" g="0" b="0" a="255"/><startTick>0/1</startTick><ticks>1/1</ticks><track2>0</track2><Segment no="0"><eid>)" +
+                   (part ? "K_K</eid>" : "J_J</eid>") +
+                   (local ? (part ? R"(<offset x="0.75" y="-1"/><color r="10" g="80" b="160" a="255"/>)" :
+                                    R"(<offset x="1.25" y="-0.5"/><color r="120" g="40" b="10" a="255"/>)") :
+                            "") +
+                   "</Segment></HairPin></SpannerMap>";
+        };
+        auto xml = "<museScore version=\"5.00\">" + score(false, overrides) + score(true, overrides) + "</Score></Score></museScore>";
+        if (bend) {
+            for (const bool part : {false, true}) {
+                const auto notes = std::string("<Chord><durationType>half</durationType><Note><eid>") + (part ? "N_N" : "B_B") +
+                                   "</eid><pitch>60</pitch><tpc>14</tpc></Note></Chord>" +
+                                   "<Chord><durationType>half</durationType><Note><eid>" + (part ? "O_O" : "C_C") +
+                                   "</eid><pitch>62</pitch><tpc>16</tpc></Note></Chord>";
+                const auto rest = xml.find("<Rest>");
+                xml.replace(rest, xml.find("</Rest>", rest) + 7 - rest, notes);
+            }
+            size_t from = 0;
+            for (const bool part : {false, true}) {
+                const auto at = xml.find("<ticks>1/1</ticks>", from);
+                const auto anchors = std::string("<startElement>") + (part ? "N_N" : "B_B") + "</startElement><endElement>" +
+                                     (part ? "O_O" : "C_C") + "</endElement><ticks>1/2</ticks>";
+                xml.replace(at, 18, anchors);
+                from = at + anchors.size();
+            }
+            for (size_t at; (at = xml.find("HairPin")) != std::string::npos;) xml.replace(at, 7, "GuitarBend");
+            if (overrides) {
+                const std::string text = R"(<GuitarBendText><sizeIsSpatiumDependent>0</sizeIsSpatiumDependent>
+<offset x="0.5" y="-0.25"/><text>full</text></GuitarBendText>)";
+                for (size_t from = 0, at; (at = xml.find("</Segment>", from)) != std::string::npos; from = at + text.size() + 10)
+                    xml.insert(at, text);
+            }
+        }
+        if (bend) {
+            size_t from = 0;
+            for (const auto end_id : {"C_C", "O_O"}) {
+                const auto begin = xml.find("<GuitarBend>", xml.find("<SpannerMap>", from));
+                const auto end = xml.find("</GuitarBend>", begin) + 13;
+                const auto spanner = xml.substr(begin, end - begin);
+                xml.erase(begin, end - begin);
+                xml.insert(xml.find("</Note>", xml.find(std::string("<eid>") + end_id)), spanner);
+                from = end;
+            }
+        }
+        return xml;
+    };
+    const auto find_spanner = [](MasterScore &master, std::string_view eid) {
+        auto *object = master.eid_register()->item_from_eid(EID::from_std_string(eid));
+        return object && object->is_spanner() ? static_cast<Spanner *>(object) : nullptr;
+    };
+    const AuthoredChildKey key{AuthoredChildRole::SPANNER_SEGMENT};
+    for (const bool bend : {false, true}) {
+        for (const auto property : {"positionLinkedToMaster", "appearanceLinkedToMaster"}) {
+            const bool position = std::string_view(property) == "positionLinkedToMaster";
+            for (const bool overrides : {false, true}) {
+                SCOPED_TRACE(bend);
+                SCOPED_TRACE(property);
+                SCOPED_TRACE(overrides);
+                auto opened = g_engine->open(as_bytes(fixture(overrides, bend)));
+                ASSERT_TRUE(opened) << opened.error().message;
+                auto &document = **opened;
+                auto &master = master_of(document);
+                ASSERT_FALSE(master.excerpts().empty());
+                auto *part = master.excerpts().front()->excerpt_score();
+                auto *piece_owner = find_spanner(master, "G_G");
+                ASSERT_NE(piece_owner, nullptr);
+                if (overrides) {
+                    ASSERT_TRUE(document.edit({{engrave::SetProperty{engrave::from_engine(piece_owner->eid()), property, false}}}));
+                    EXPECT_EQ(piece_owner->authored_overrides.find(key, Pid::OFFSET)->value, PropertyValue(PointF(0.75, -1)));
+                    EXPECT_EQ(piece_owner->authored_overrides.find(key, Pid::COLOR)->value.value<muse::draw::Color>(),
+                              muse::draw::Color(10, 80, 160));
+                    ASSERT_TRUE(document.edit({{engrave::SetProperty{engrave::from_engine(piece_owner->eid()), property, true}}}));
+                    EXPECT_EQ(piece_owner->authored_overrides.find(key, position ? Pid::OFFSET : Pid::SUBTYPE), nullptr);
+                    SCOPED_TRACE(legacy_override_write(piece_owner));
+                    auto bytes = document.export_score({.format = engrave::Format::MSCZ});
+                    ASSERT_TRUE(bytes);
+                    opened = g_engine->open(*bytes, {.format = engrave::Format::MSCZ});
+                    ASSERT_TRUE(opened) << opened.error().message;
+                    auto &restored = master_of(**opened);
+                    part = restored.excerpts().front()->excerpt_score();
+                    piece_owner = find_spanner(restored, "G_G");
+                    ASSERT_NE(piece_owner, nullptr);
+                    SCOPED_TRACE(legacy_override_write(piece_owner));
+                    const auto &source = find_spanner(restored, "F_F")->authored_overrides;
+                    EXPECT_EQ(source.find(key, Pid::OFFSET)->value, PropertyValue(PointF(1.25, -0.5)));
+                    EXPECT_EQ(source.find(key, Pid::COLOR)->value.value<muse::draw::Color>(), muse::draw::Color(120, 40, 10));
+                    EXPECT_EQ(piece_owner->authored_overrides.find(key, position ? Pid::OFFSET : Pid::COLOR), nullptr);
+                    EXPECT_EQ(piece_owner->authored_overrides.find(key, position ? Pid::OFFSET2 : Pid::SUBTYPE), nullptr);
+                    if (bend) {
+                        const AuthoredChildKey text{AuthoredChildRole::SEGMENT_TEXT};
+                        EXPECT_EQ(piece_owner->authored_overrides.find(text, position ? Pid::OFFSET : Pid::SIZE_SPATIUM_DEPENDENT),
+                                  nullptr);
+                        if (!position) {
+                            const auto *offset = piece_owner->authored_overrides.find(text, Pid::OFFSET);
+                            ASSERT_NE(offset, nullptr);
+                            EXPECT_NEAR(offset->value.value<PointF>().x(), 2.0 / 7.0, 1e-6);
+                            EXPECT_NEAR(offset->value.value<PointF>().y(), -1.0 / 7.0, 1e-6);
+                        }
+                    }
+                    EXPECT_EQ(piece_owner->authored_overrides.carrier(key)->legacy_eid.to_std_string(), "K_K");
+                    EXPECT_TRUE(part->pages().empty());
+                    EXPECT_TRUE(restored.pages().empty());
+                }
+                if (bend) continue;
+                part->ensure_layout();
+                ASSERT_NE(piece_owner->front_segment(), nullptr);
+                if (position)
+                    EXPECT_EQ(piece_owner->front_segment()->offset(), PointF());
+                else
+                    EXPECT_EQ(piece_owner->front_segment()->color(), muse::draw::Color(0, 0, 0));
+            }
+        }
+    }
+}
+
 TEST(Read, LegacySlurGripOrdinalGapsBaselineBeforeLayout) {
     const auto xml = legacy_segment_fixture(R"(<Slur><eid>F_F</eid><track>0</track>
 <startElement>B_B</startElement><endElement>C_C</endElement>
