@@ -48,7 +48,6 @@ using mu::engraving::System;
 
 // No position: an object that is not in a measure at a track.
 constexpr int no_position = -1;
-ObjectWalkHook object_walk_hook = nullptr;
 
 std::unexpected<Error> fail(ErrorCode code, std::string message) { return std::unexpected(Error{code, std::move(message)}); }
 
@@ -75,7 +74,6 @@ std::optional<Fraction> address_tick(const mu::engraving::Fraction &value) {
 
 template <typename Function>
 void for_each_object(MasterScore &master, const Function &func) {
-    if (object_walk_hook) object_walk_hook();
     ankerl::unordered_dense::set<const EngravingObject *> seen;
     const auto visit = [&func, &seen](EngravingObject *object) {
         if (object && mu::engraving::source_object(*object) && seen.insert(object).second) func(*object);
@@ -130,8 +128,6 @@ void for_each_object(MasterScore &master, const Function &func) {
 }
 
 } // namespace
-
-void set_object_walk_hook(ObjectWalkHook hook) { object_walk_hook = hook; }
 
 bool in_score(MasterScore &master, const EngravingObject *object) {
     const EngravingObject *top = object;
