@@ -38,9 +38,14 @@ def main():
             if rejected:
                 assert len(warnings) == 1
                 assert warnings[0]["code"] == "B470_INVALID_TIE"
-                assert warnings[0]["object"] == (
-                    {"kind": "tie", "id": "H_H"} if case == "hidden" else {"kind": "note", "id": "G_G"}
-                )
+                if case == "hidden":
+                    assert warnings[0]["object"] == {"kind": "tie", "id": "H_H"}
+                else:
+                    # The fixture's <eid>H_H</eid> was stripped, but loading mints an id for
+                    # every tie, so the gap must name the tie itself (not its parent note G_G)
+                    # under some id other than the stripped one.
+                    obj = warnings[0]["object"]
+                    assert obj["kind"] == "tie" and obj["id"] and obj["id"] != "H_H"
             elif case == "four-flutes":
                 assert len(warnings) == 4
                 assert {w["object"]["id"] for w in warnings} == {"P_P", "Q_Q", "R_R", "S_S"}
