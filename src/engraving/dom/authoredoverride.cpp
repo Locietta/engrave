@@ -622,7 +622,8 @@ void apply_authored_overrides(EngravingItem &item) {
             set_child_output_property(item, pid, output_default(item, pid), default_flags(item, pid));
     if (item.is_text_base()) {
         auto &text = static_cast<TextBase &>(item);
-        const auto style = output_default(item, Pid::TEXT_STYLE);
+        const auto *style_entry = table->find(item.authored_child, Pid::TEXT_STYLE);
+        const auto style = style_entry ? effective_value(item, *style_entry) : output_default(item, Pid::TEXT_STYLE);
         set_child_output_property(item, Pid::TEXT_STYLE, style, PropertyFlags::NOSTYLE);
         for (const auto &property : *text_style(text.text_style_type())) {
             if (property.pid == Pid::TEXT || property.pid == Pid::TEXT_STYLE) continue;

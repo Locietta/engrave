@@ -7695,3 +7695,36 @@ TEST(Read, OwnerColorKeepsGeneratedStemAndDotDefaultsAfterColdSave) {
         engrave::DocumentAccess::impl(**reopened).discard_layout_output(copy);
     }
 }
+
+TEST(Read, SegmentTextUsesTheAuthoredTextStyleDefaultsAfterRecreation) {
+    using namespace mu::engraving;
+    auto xml = legacy_segment_fixture("");
+    xml.insert(xml.find("<Note>") + 6, "<eid>N_N</eid>");
+    xml.insert(xml.rfind("<Note>") + 6, "<eid>O_O</eid>");
+    xml.insert(xml.rfind("</Note>"), R"(<GuitarBend><eid>F_F</eid><track>0</track>
+<startElement>N_N</startElement><endElement>O_O</endElement><Segment/></GuitarBend>)");
+    auto opened = g_engine->open(as_bytes(xml));
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto *bend = static_cast<GuitarBend *>(master.eid_register()->item_from_eid(EID::from_std_string(std::string_view("F_F"))));
+    ASSERT_NE(bend, nullptr);
+    ASSERT_TRUE((*opened)->edit({{engrave::SetStyle{{}, "titleFontSize", 23.0}, engrave::SetStyle{{}, "bendFontSize", 11.0}}}));
+    const AuthoredChildKey text{AuthoredChildRole::SEGMENT_TEXT};
+    ASSERT_TRUE(set_child_override(*bend, text, Pid::TEXT_STYLE, PropertyValue::from_value(TextStyleType::TITLE), PropertyFlags::NOSTYLE));
+    auto saved = (*opened)->export_score({.format = engrave::Format::MSCX});
+    ASSERT_TRUE(saved);
+    auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
+    ASSERT_TRUE(reopened);
+    auto &copy = master_of(**reopened);
+    auto *restored = static_cast<GuitarBend *>(copy.eid_register()->item_from_eid(EID::from_std_string(std::string_view("F_F"))));
+    ASSERT_NE(restored, nullptr);
+    EXPECT_EQ(restored->authored_overrides.find(text, Pid::FONT_SIZE), nullptr);
+    for (int pass = 0; pass != 2; ++pass) {
+        ASSERT_TRUE((*reopened)->render({.format = engrave::RenderFormat::SVG}));
+        ASSERT_NE(restored->front_segment(), nullptr);
+        const auto *label = to_guitar_bend_segment(restored->front_segment())->bend_text();
+        EXPECT_EQ(label->text_style_type(), TextStyleType::TITLE);
+        EXPECT_DOUBLE_EQ(label->size(), 23.0);
+        engrave::DocumentAccess::impl(**reopened).discard_layout_output(copy);
+    }
+}
