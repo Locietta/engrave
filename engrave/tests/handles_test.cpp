@@ -58,6 +58,7 @@
 #include "engraving/dom/part.h"
 #include "engraving/dom/playcounttext.h"
 #include "engraving/dom/property.h"
+#include "engraving/dom/rangelock.h"
 #include "engraving/dom/score.h"
 #include "engraving/dom/segment.h"
 #include "engraving/dom/spacer.h"
@@ -423,6 +424,124 @@ TEST(NativeSave, ColdEqualsWarm) {
     }
 }
 
+TEST(MmrOutput, InternalLockKeepsSourceIdentityWithoutAnInternalDisplayBoundary) {
+    using namespace mu::engraving;
+    auto document = open_path(g_source_root / "tests/data/inputs/mmr-boundary.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *second = master.first_measure()->next_measure();
+    auto *last = master.last_measure();
+    auto *lock = new RangeLock(second, last);
+    master.add_system_lock(lock);
+    EXPECT_TRUE(second->is_start_of_system_lock());
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+    ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+    ASSERT_NE(master.first_measure()->mm_rest(), nullptr);
+    EXPECT_EQ(master.first_measure()->mm_rest()->system_lock(), nullptr);
+    EXPECT_EQ(last->covering_mm_rest_or_this()->system_lock(), nullptr);
+    EXPECT_EQ(lock->start_mb(), second);
+    EXPECT_EQ(lock->end_mb(), last);
+    master.layout_data_store()->clear();
+    EXPECT_EQ(master.system_locks()->all_locks().front(), lock);
+    EXPECT_EQ(lock->start_mb(), second);
+}
+
+TEST(MmrOutput, AuthoredStartClefIsCopiedAtTheDisplayStart) {
+    using namespace mu::engraving;
+    auto xml = read_text(g_source_root / "tests/data/inputs/mmr-boundary.mscx");
+    const auto position = xml.find("<clefToBarlinePos>1</clefToBarlinePos>");
+    ASSERT_NE(position, std::string::npos);
+    xml.replace(position, std::string("<clefToBarlinePos>1</clefToBarlinePos>").size(), "<clefToBarlinePos>2</clefToBarlinePos>");
+    auto opened = g_engine->open(as_bytes(xml));
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto *third = master.first_measure()->next_measure()->next_measure();
+    auto *source = third->find_segment_r(SegmentType::CLEF, Fraction(0, 1));
+    ASSERT_NE(source, nullptr);
+    ASSERT_TRUE((*opened)->render({.format = engrave::RenderFormat::SVG}));
+    auto *copy = master.layout_copy(*source->element(0));
+    ASSERT_NE(copy, nullptr);
+    EXPECT_EQ(copy->find_measure(), third->mm_rest());
+    EXPECT_EQ(copy->tick(), third->tick());
+    EXPECT_EQ(to_clef(copy)->clef_type(), ClefType::F);
+    EXPECT_GT(copy->width(), 0.0);
+}
+
+TEST(MmrOutput, AuthoredEndKeyRemainsAtTheDisplayEnd) {
+    using namespace mu::engraving;
+    const auto rest = "<Rest><durationType>measure</durationType></Rest>";
+    const auto key = [](int value) {
+        return std::format("<KeySig><concertKey>{0}</concertKey><actualKey>{0}</actualKey></KeySig>", value);
+    };
+    auto xml = std::string(
+        R"(<museScore version="5.00"><Score><Division>480</Division><Style><createMultiMeasureRests>1</createMultiMeasureRests><changesBeforeBarlineRepeats>1</changesBeforeBarlineRepeats></Style><Part><Staff id="1"/><Instrument><trackName>Piano</trackName></Instrument></Part><Staff id="1">)");
+    xml += "<Measure><startRepeat/><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>" + key(2) + rest + "</voice></Measure>";
+    xml += "<Measure><voice>" + key(0) + rest + "</voice></Measure>";
+    xml += std::string("<Measure><voice>") + rest + "</voice></Measure>";
+    xml += std::string("<Measure><endRepeat>2</endRepeat><voice>") + rest + key(2) + "</voice></Measure>";
+    xml += std::string("<Measure><voice>") + rest + "</voice></Measure></Staff></Score></museScore>";
+    auto opened = g_engine->open(as_bytes(xml));
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto *first = master.first_measure()->next_measure();
+    auto *last = first->next_measure()->next_measure();
+    auto *source = last->find_segment_r(SegmentType::KEY_SIG, last->ticks());
+    ASSERT_NE(source, nullptr);
+    EXPECT_TRUE(source->end_of_measure_change());
+    ASSERT_TRUE((*opened)->render({.format = engrave::RenderFormat::SVG}));
+    ASSERT_NE(first->mm_rest(), nullptr);
+    EXPECT_EQ(first->mm_rest()->mm_rest_count(), 2);
+    ASSERT_NE(last->mm_rest(), nullptr);
+    EXPECT_EQ(last->mm_rest()->mm_rest_count(), 1);
+    auto *copy = master.layout_copy(*source->element(0));
+    ASSERT_NE(copy, nullptr);
+    EXPECT_EQ(copy->find_measure(), last->mm_rest());
+    EXPECT_EQ(copy->tick(), first->tick() + Fraction(3, 1));
+    EXPECT_EQ(source->measure(), last);
+    EXPECT_EQ(source->rtick(), Fraction(1, 1));
+    EXPECT_EQ(to_key_sig(copy)->key(), Key::D);
+    EXPECT_GT(copy->width(), 0.0);
+}
+
+TEST(MmrOutput, SourceLocksAndBorrowedAnchorsSurviveRangeDissolution) {
+    using namespace mu::engraving;
+    auto document = open_path(g_source_root / "tests/data/inputs/mmr-boundary.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *first = master.first_measure();
+    auto *last = master.last_measure();
+    master.ensure_layout();
+    auto *display = first->mm_rest();
+    ASSERT_NE(display, nullptr);
+    auto *lock = new RangeLock(display, last->covering_mm_rest_or_this());
+    master.add_system_lock(lock);
+    EXPECT_EQ(lock->start_mb(), first);
+    EXPECT_EQ(lock->end_mb(), last);
+    master.invalidate_layout(first->tick(), last->end_tick());
+    master.ensure_layout();
+    ASSERT_NE(first->mm_rest(), nullptr);
+    EXPECT_TRUE(first->mm_rest()->is_start_of_system_lock());
+    EXPECT_EQ(first->mm_rest()->system(), last->covering_mm_rest_or_this()->system());
+    auto *line = Factory::create_text_line(master.dummy());
+    line->set_track(0);
+    line->set_tick(Fraction(0, 1));
+    line->set_tick2(last->end_tick());
+    line->set_start_element(first->mm_rest()->first(SegmentType::CHORD_REST)->effective_element(0));
+    master.add_element(line);
+    engrave::assign_missing_ids(master);
+    master.style().set(Sid::CREATE_MULTI_MEASURE_RESTS, false);
+    master.invalidate_layout(first->tick(), last->end_tick());
+    ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+    EXPECT_EQ(first->mm_rest(), nullptr);
+    if (line->start_element()) EXPECT_TRUE(source_object(*line->start_element()));
+    master.layout_data_store()->clear();
+    EXPECT_EQ(lock->start_mb(), first);
+    EXPECT_EQ(lock->end_mb(), last);
+    const auto saved = export_mscx(*document);
+    EXPECT_NE(saved.find(first->eid().to_std_string()), std::string::npos);
+    EXPECT_EQ(saved.find("<multiMeasureRest>"), std::string::npos);
+}
+
 TEST(MmrOutput, DestinationSignatureSegmentWinsWithoutMergingTracks) {
     using namespace mu::engraving;
     auto document = open_path(g_source_root / "tests/data/inputs/mmr-conflict.mscx");
@@ -499,6 +618,7 @@ TEST(MmrOutput, BoundaryRenderDiscardAndTogglePreserveSource) {
         EXPECT_EQ(second->next(), third);
         EXPECT_EQ(third->prev(), second);
         EXPECT_FALSE(source_object(*display));
+        EXPECT_EQ(engrave::id_class(*display->first(SegmentType::CHORD_REST)), IdClass::LAYOUT);
         auto *rest = display->first(SegmentType::CHORD_REST)->effective_element(0);
         ASSERT_NE(rest, nullptr);
         EXPECT_TRUE(rest->is_mm_rest());

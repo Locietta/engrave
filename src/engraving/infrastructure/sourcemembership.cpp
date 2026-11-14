@@ -33,6 +33,7 @@ bool source_object(const EngravingObject &item) {
             case ElementType::BRACKET:
             case ElementType::BRACKET_ITEM:
             case ElementType::INSTRUMENT_NAME:
+            case ElementType::MMREST_RANGE:
             case ElementType::MEASURE_NUMBER:
             case ElementType::STAFF_LINES:
             case ElementType::LEDGER_LINE:

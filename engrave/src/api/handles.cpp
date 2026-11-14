@@ -202,8 +202,17 @@ Result<Resolved> resolve_at(const std::vector<T *> &items, std::int32_t index, s
 } // namespace
 
 IdClass id_class(const EngravingObject &object) {
+    if (object.is_engraving_item() && static_cast<const EngravingItem &>(object).is_layout_copy()) return IdClass::LAYOUT;
     switch (object.type()) {
-        case ElementType::SEGMENT: return IdClass::ADDRESS;
+        case ElementType::SEGMENT: {
+            const auto &segment = static_cast<const Segment &>(object);
+            const auto *parent = segment.ownership_parent();
+            if (parent && parent->is_measure()) {
+                const auto *measure = mu::engraving::to_measure(parent);
+                if (measure->is_mm_rest() || measure->owns_output_segment(&segment)) return IdClass::LAYOUT;
+            }
+            return IdClass::ADDRESS;
+        }
         // Layout builds these from what is written (a chord builds its stem, a system its
         // brackets), so an id on one is not in the file and does not survive the next layout
         // pass.  RootItem and DummyParent belong to the score itself.
@@ -212,6 +221,7 @@ IdClass id_class(const EngravingObject &object) {
         case ElementType::BRACKET:
         case ElementType::BRACKET_ITEM:
         case ElementType::INSTRUMENT_NAME:
+        case ElementType::MMREST_RANGE:
         case ElementType::MEASURE_NUMBER:
         case ElementType::STAFF_LINES:
         case ElementType::LEDGER_LINE:
