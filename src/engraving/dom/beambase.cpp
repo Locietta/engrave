@@ -28,10 +28,6 @@ using namespace mu::engraving;
 BeamBase::BeamBase(const ElementType &type, EngravingObject *parent, ElementFlags flags) : EngravingItem(type, parent, flags) {}
 
 BeamBase::BeamBase(const BeamBase &b) : EngravingItem(b) {
-    beam_segments_.reserve(b.beam_segments_.size());
-    for (const BeamSegment *bs : b.beam_segments_) {
-        beam_segments_.push_back(new BeamSegment(*bs));
-    }
     cross_staff_move_value = b.cross_staff_move_value;
     direction_ = b.direction_;
     user_modified_[0] = b.user_modified_[0];
@@ -136,6 +132,9 @@ void BeamBase::set_user_modified(bool val) {
 }
 
 void BeamBase::clear_beam_segments() {
-    muse::delete_all(beam_segments_);
-    beam_segments_.clear();
+    if (!has_layout_data()) return;
+    muse::delete_all(mutldata()->beam_segments);
+    mutldata()->beam_segments.clear();
 }
+
+BeamBase::LayoutData::~LayoutData() { muse::delete_all(beam_segments); }

@@ -382,7 +382,10 @@ void Segment::remove_element(track_idx_t track) {
     EngravingItem *el = element(track);
     if (el && el->is_chord_rest()) {
         ChordRest *cr = (ChordRest *) el;
-        Beam *beam = cr->beam();
+        if (cr->has_layout_data()) {
+            if (auto *rendered = cr->ldata()->rendered_beam.value_or(cr->authored_beam())) rendered->remove_rendered(cr);
+        }
+        Beam *beam = cr->authored_beam();
         if (beam) {
             beam->remove(cr);
         }

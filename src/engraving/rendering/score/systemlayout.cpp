@@ -1986,7 +1986,7 @@ void SystemLayout::update_cross_beams(System *system, LayoutContext &ctx) {
                 }
                 for (Chord *grace : to_chord(e)->grace_notes()) {
                     if (grace->beam() && (grace->beam()->cross() || grace->beam()->user_modified()) &&
-                        grace->beam()->elements().front() == grace) {
+                        grace->beam()->rendered_elements().front() == grace) {
                         BeamLayout::layout(grace->beam(), ctx);
                     }
                 }
@@ -2009,7 +2009,7 @@ void SystemLayout::update_cross_beams(System *system, LayoutContext &ctx) {
                 }
                 Chord *chord = to_chord(e);
                 if (chord->beam() && (chord->beam()->cross() || chord->beam()->user_modified()) &&
-                    chord->beam()->elements().front() == chord) {
+                    chord->beam()->rendered_elements().front() == chord) {
                     bool prev_up = chord->up();
                     Stem *stem = chord->stem();
                     double prev_stem_length = stem ? stem->length() : 0.0;
@@ -2251,7 +2251,7 @@ double SystemLayout::min_vert_space_for_cross_staff_beams(System *system, staff_
                     continue;
                 }
                 Beam *beam = to_chord(item)->beam();
-                if (!beam || !beam->autoplace() || beam->elements().front() != item) {
+                if (!beam || !beam->autoplace() || beam->rendered_elements().front() != item) {
                     continue;
                 }
                 if (beam->ldata()->cross_staff_beam_pos != BeamBase::CrossStaffBeamPosition::BETWEEN) {
@@ -2261,7 +2261,7 @@ double SystemLayout::min_vert_space_for_cross_staff_beams(System *system, staff_
                 const Chord *limiting_chord_below = nullptr;
                 double limit_from_above = -DBL_MAX;
                 double limit_from_below = DBL_MAX;
-                for (const ChordRest *cr : beam->elements()) {
+                for (const ChordRest *cr : beam->rendered_elements()) {
                     if (!cr->is_chord()) {
                         continue;
                     }

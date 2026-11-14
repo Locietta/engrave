@@ -7,6 +7,8 @@
 
 #include <ankerl/unordered_dense.h>
 
+#include "dom/beam.h"
+#include "dom/factory.h"
 #include "dom/masterscore.h"
 #include "dom/measure.h"
 #include "dom/measurebase.h"
@@ -144,6 +146,51 @@ static void clear_output_anchors(Score &score, const Measure *measure = nullptr)
     }
 }
 
+Beam *LayoutDataStore::create_beam() {
+    auto beam = std::unique_ptr<Beam>(Factory::create_beam(score_));
+    beam->set_layout_copy(true);
+    beam->set_generated(true);
+    output_.beams.push_back(beam.get());
+    return beam.release();
+}
+
+void LayoutDataStore::retire_beam_borrowers(const BeamBase &beam) {
+    for (auto *page : output_.pages) page->invalidate_bsp_tree();
+    const auto borrows_beam = [&](const ShapeElement &element) {
+        for (auto *item = element.item(); item; item = item->ownership_parent_item())
+            if (item == &beam) return true;
+        return false;
+    };
+    // Reusable tail systems live outside ScoreOutput during a range pass.
+    // Records include them and the completed systems whose collisions must stay.
+    for (auto &record : records_->items.values()) {
+        auto *item = record.second.item;
+        auto &data = *record.second.data;
+        if (data.is_set_shape()) data.mut_shape().remove_if(borrows_beam);
+        if (data.mask_.has_value()) data.mask_.mut_value().remove_if(borrows_beam);
+        if (item->is_beam() || item->type() == ElementType::TREMOLO_TWOCHORD) {
+            auto *beam_data = static_cast<BeamBase::LayoutData *>(&data);
+            if (beam_data->beam == &beam) beam_data->beam = nullptr;
+        }
+        if (item->is_chord_rest()) {
+            auto *cr = to_chord_rest(item);
+            auto *ld = static_cast<ChordRest::LayoutData *>(&data);
+            if (ld->rendered_beam == &beam) ld->rendered_beam = nullptr;
+            if (ld->beamlet && ld->beamlet->parent_element == &beam) cr->set_beamlet(nullptr);
+        }
+        if (item->is_system()) {
+            for (auto *staff : to_system(item)->staves()) {
+                std::erase_if(staff->skyline().north().elements(), borrows_beam);
+                std::erase_if(staff->skyline().south().elements(), borrows_beam);
+            }
+        } else if (item->is_segment()) {
+            auto *owner = to_segment(item);
+            const auto size = static_cast<const Segment *>(owner)->shapes().size();
+            for (size_t i = 0; i < size; ++i) owner->staff_shape(i).remove_if(borrows_beam);
+        }
+    }
+}
+
 void LayoutDataStore::retire_spanner_borrowers(const SpannerSegment &segment) {
     for (auto *page : output_.pages) page->invalidate_bsp_tree();
     const auto borrows_segment = [&](const ShapeElement &element) {
@@ -176,6 +223,11 @@ void LayoutDataStore::prune_spanner_segments() {
     for (auto &record : records_->items.values())
         if (record.second.item->is_spanner()) spanners.push_back(to_spanner(record.second.item));
     for (auto *spanner : spanners) spanner->erase_detached_segments();
+    std::erase_if(output_.beams, [](Beam *beam) {
+        if (!beam->rendered_elements().empty()) return false;
+        delete beam;
+        return true;
+    });
 }
 
 void LayoutDataStore::retire_measure_borrowers(Measure &measure) {
@@ -256,12 +308,21 @@ void LayoutDataStore::discard_score_output() {
             if (record.second.item->is_segment()) to_segment(record.second.item)->clear_shapes();
         }
     }
+    for (auto &record : records_->items.values()) {
+        if (record.second.item->is_chord_rest()) {
+            auto *data = static_cast<ChordRest::LayoutData *>(record.second.data.get());
+            data->beamlet = nullptr;
+            data->rendered_beam.reset();
+        }
+    }
     layout_copies_.clear();
     output_.shared_track_maps.clear();
     output_.suppressed_shared_spanners.clear();
     // Systems unlink their borrowers while pages and source owners are alive.
     muse::delete_all(output_.systems);
     output_.systems.clear();
+    muse::delete_all(output_.beams);
+    output_.beams.clear();
     retire_shared_auxiliary_output();
     muse::delete_all(output_.pages);
     output_.pages.clear();

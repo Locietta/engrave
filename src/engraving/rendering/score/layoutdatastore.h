@@ -9,6 +9,10 @@
 #include "dom/engravingitem.h"
 #include "dom/sharedpart.h"
 
+namespace mu::engraving {
+struct BeamBase;
+} // namespace mu::engraving
+
 namespace mu::engraving::rendering::score {
 // Item addresses are lifetime-qualified by explicit erase before destruction/address reuse.
 struct LayoutDataStore {
@@ -19,6 +23,7 @@ struct LayoutDataStore {
 
     struct ScoreOutput {
         // LayoutState temporarily borrows a raw tail during range reuse.
+        std::vector<Beam *> beams;
         std::vector<Page *> pages;
         std::vector<System *> systems;
         std::vector<Spanner *> shared_spanners;
@@ -41,6 +46,8 @@ struct LayoutDataStore {
     void retire_shared_auxiliary_output();
     std::vector<Spanner *> rendered_spanners(int first_tick, int last_tick) const;
     void retire_measure_borrowers(Measure &measure);
+    Beam *create_beam();
+    void retire_beam_borrowers(const BeamBase &beam);
     void retire_spanner_borrowers(const SpannerSegment &segment);
     void prune_spanner_segments();
 

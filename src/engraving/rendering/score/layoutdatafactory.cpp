@@ -8,7 +8,7 @@
 #include "dom/articulation.h"
 #include "dom/bagpembell.h"
 #include "dom/barline.h"
-#include "dom/beambase.h"
+#include "dom/beam.h"
 #include "dom/bend.h"
 #include "dom/bracket.h"
 #include "dom/chord.h"
@@ -51,6 +51,7 @@
 #include "dom/tie.h"
 #include "dom/timesig.h"
 #include "dom/tremolobar.h"
+#include "dom/tremolotwochord.h"
 #include "dom/tuplet.h"
 
 namespace mu::engraving::rendering::score {
@@ -66,8 +67,8 @@ decltype(auto) dispatch_layout_data(ElementType type, Action &&action) {
         case ElementType::ORNAMENT: return action.template operator()<Articulation::LayoutData>();
         case ElementType::BAGPIPE_EMBELLISHMENT: return action.template operator()<BagpipeEmbellishment::LayoutData>();
         case ElementType::BAR_LINE: return action.template operator()<BarLine::LayoutData>();
-        case ElementType::BEAM:
-        case ElementType::TREMOLO_TWOCHORD: return action.template operator()<BeamBase::LayoutData>();
+        case ElementType::BEAM: return action.template operator()<Beam::LayoutData>();
+        case ElementType::TREMOLO_TWOCHORD: return action.template operator()<TremoloTwoChord::LayoutData>();
         case ElementType::BEND: return action.template operator()<Bend::LayoutData>();
         case ElementType::BRACKET: return action.template operator()<Bracket::LayoutData>();
         case ElementType::DYNAMIC: return action.template operator()<Dynamic::LayoutData>();

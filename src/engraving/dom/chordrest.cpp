@@ -120,6 +120,9 @@ void ChordRest::undo_unlink() {
 //---------------------------------------------------------
 
 ChordRest::~ChordRest() {
+    if (has_layout_data()) {
+        if (auto *b = ldata()->rendered_beam.value_or(beam_)) b->remove_rendered(this);
+    }
     muse::delete_all(lyrics_);
     muse::delete_all(el_);
     delete tab_dur_;
@@ -128,17 +131,16 @@ ChordRest::~ChordRest() {
         muse::remove(beam_->elements(), this);
         beam_ = nullptr;
     }
-
-    if (beamlet_) {
-        beamlet_ = nullptr;
-    }
 }
 
 //---------------------------------------------------------
 //   beam
 //---------------------------------------------------------
 
-Beam *ChordRest::beam() const { return !(measure() && measure()->stemless(staff_idx())) ? beam_ : nullptr; }
+Beam *ChordRest::beam() const {
+    if (measure() && measure()->stemless(staff_idx())) return nullptr;
+    return is_layout_data_current() ? ldata()->rendered_beam.value_or(beam_) : beam_;
+}
 
 //---------------------------------------------------------
 //   setBeam
@@ -146,7 +148,9 @@ Beam *ChordRest::beam() const { return !(measure() && measure()->stemless(staff_
 
 void ChordRest::set_beam(Beam *b) { beam_ = b; }
 
-void ChordRest::set_beamlet(BeamSegment *b) { beamlet_ = b; }
+void ChordRest::set_beamlet(BeamSegment *b) {
+    if (b || has_layout_data()) mutldata()->beamlet = b;
+}
 
 //---------------------------------------------------------
 //   setDurationType
@@ -662,8 +666,10 @@ EngravingItem *ChordRest::next_segment_element() { return segment()->first_in_ne
 //---------------------------------------------------------
 
 void ChordRest::scan_elements(std::function<void(EngravingItem *)> func) {
-    if (beam_ && (beam_->elements().front() == this) && !measure()->stemless(staff_idx())) {
-        beam_->scan_elements(func);
+    auto *b = beam();
+    const Beam *view = b;
+    if (view && !view->rendered_elements().empty() && view->rendered_elements().front() == this) {
+        b->scan_elements(func);
     }
     for (Lyrics *l : lyrics_) {
         l->scan_elements(func);

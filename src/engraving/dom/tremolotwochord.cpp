@@ -27,6 +27,7 @@
 #include "log.h"
 #include "masterscore.h"
 #include "rendering/score/beamtremololayout.h"
+#include "rendering/score/layoutdatastore.h"
 #include "stafftype.h"
 #include "stem.h"
 #include "style/style.h"
@@ -61,6 +62,7 @@ TremoloTwoChord::TremoloTwoChord(const TremoloTwoChord &t) : BeamBase(t) {
 }
 
 TremoloTwoChord::~TremoloTwoChord() {
+    if (auto *store = score()->layout_data_store()) store->retire_beam_borrowers(*this);
     //
     // delete all references from chords
     //
@@ -70,8 +72,6 @@ TremoloTwoChord::~TremoloTwoChord() {
     if (chord2_ && chord2_->tremolo_two_chord() == this) {
         chord2_->set_tremolo_two_chord(nullptr);
     }
-
-    clear_beam_segments();
 }
 
 //---------------------------------------------------------
@@ -203,14 +203,11 @@ void TremoloTwoChord::set_beam_pos(const PairF &bp) {
                             Pid::BEAM_POS,
                             PropertyValue::from_value(bp),
                             PropertyFlags::NOSTYLE});
-    beam_fragment_.py1[idx] = bp.first * spatium();
-    beam_fragment_.py2[idx] = bp.second * spatium();
 }
 
 void TremoloTwoChord::set_beam_fragment(const BeamFragment &bf) {
     const int idx = direction_idx();
     set_beam_pos(PairF(bf.py1[idx] / spatium(), bf.py2[idx] / spatium()));
-    beam_fragment_ = bf;
 }
 
 PairF TremoloTwoChord::beam_pos() const {
@@ -312,7 +309,7 @@ void TremoloTwoChord::clear_beam_segments() {
     BeamSegment *chord2_segment = chord2_ ? chord2_->beamlet() : nullptr;
 
     if (chord1_segment || chord2_segment) {
-        for (BeamSegment *segment : beam_segments_) {
+        for (BeamSegment *segment : beam_segments()) {
             if (chord1_segment && chord1_segment == segment) {
                 chord1_->set_beamlet(nullptr);
             } else if (chord2_segment && chord2_segment == segment) {

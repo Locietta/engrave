@@ -950,8 +950,8 @@ static MeasureBase *clone_measure(MeasureBase *mb, Score *score, const Score *os
                             ChordRest *ocr = to_chord_rest(oe);
                             ChordRest *ncr = to_chord_rest(ne);
 
-                            if (ocr->beam() && !ocr->beam()->empty() && ocr->beam()->elements().front() == ocr) {
-                                Beam *nb = ocr->beam()->clone();
+                            if (ocr->authored_beam() && !ocr->authored_beam()->empty() && ocr->authored_beam()->elements().front() == ocr) {
+                                Beam *nb = ocr->authored_beam()->clone();
                                 nb->clear();
                                 nb->set_track(track);
                                 nb->set_score(score);

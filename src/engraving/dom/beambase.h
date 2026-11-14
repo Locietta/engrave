@@ -38,8 +38,8 @@ enum class BeamType : unsigned char { INVALID, BEAM, TREMOLO };
 //---------------------------------------------------------
 
 struct BeamFragment {
-    double py1[2];
-    double py2[2];
+    double py1[2]{};
+    double py2[2]{};
 };
 
 enum class ChordBeamAnchorType : unsigned char { START, END, MIDDLE };
@@ -97,9 +97,9 @@ public:
 
     inline int direction_idx() const { return (direction_ == DirectionV::AUTO || direction_ == DirectionV::DOWN) ? 0 : 1; }
 
-    const std::vector<BeamSegment *> &beam_segments() const { return beam_segments_; }
+    const std::vector<BeamSegment *> &beam_segments() const { return ldata()->beam_segments; }
 
-    std::vector<BeamSegment *> &beam_segments() { return beam_segments_; }
+    std::vector<BeamSegment *> &beam_segments() { return mutldata()->beam_segments; }
 
     virtual void clear_beam_segments();
 
@@ -143,6 +143,8 @@ public:
     enum class CrossStaffBeamPosition : signed char { INVALID, BETWEEN, ABOVE, BELOW };
 
     struct LayoutData : public EngravingItem::LayoutData {
+        ~LayoutData() override;
+        std::vector<BeamSegment *> beam_segments;
         BeamType beam_type = BeamType::INVALID;
         const Beam *beam = nullptr;
         const TremoloTwoChord *trem = nullptr;
@@ -178,7 +180,6 @@ public:
 protected:
     BeamBase(const ElementType &type, EngravingObject *parent, ElementFlags flags = ElementFlag::ON_STAFF);
     BeamBase(const BeamBase &);
-    std::vector<BeamSegment *> beam_segments_;
     PointF start_anchor_;
     PointF end_anchor_;
 

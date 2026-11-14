@@ -65,9 +65,7 @@ public:
 
     void reset() override;
 
-    //! A beam has no owner: its lifetime is managed by the chord/rests it beams,
-    //! which drop it through ChordRest::removeDeleteBeam() once it runs empty.
-    //! The system it is drawn on is that of its first chord/rest.
+    // Authored beams follow source membership; automatic beams belong to the output store.
     System *system() const;
     EngravingItem *layout_parent() const override;
 
@@ -78,6 +76,11 @@ public:
     void clear() { elements_.clear(); }
 
     bool empty() const { return elements_.empty(); }
+
+    const std::vector<ChordRest *> &rendered_elements() const;
+    std::vector<ChordRest *> &rendered_elements();
+    void add_rendered(ChordRest *cr);
+    void remove_rendered(ChordRest *cr);
 
     bool contains(const ChordRest *cr) const { return std::find(elements_.begin(), elements_.end(), cr) != elements_.end(); }
 
@@ -164,11 +167,18 @@ public:
 
     std::vector<TremAnchor> &trem_anchors() { return trem_anchors_; }
 
-    const std::vector<BeamFragment *> &beam_fragments() const { return fragments_; }
+    const std::vector<BeamFragment *> &beam_fragments() const { return ldata()->fragments; }
 
-    std::vector<BeamFragment *> &beam_fragments() { return fragments_; }
+    std::vector<BeamFragment *> &beam_fragments() { return mutldata()->fragments; }
 
-    void add_beam_fragment(BeamFragment *f) { fragments_.push_back(f); }
+    void add_beam_fragment(BeamFragment *f) { mutldata()->fragments.push_back(f); }
+
+    struct LayoutData : BeamBase::LayoutData {
+        ~LayoutData() override;
+        std::vector<BeamFragment *> fragments;
+        std::optional<std::vector<ChordRest *>> members;
+    };
+    DECLARE_LAYOUTDATA_METHODS(Beam)
 
     void clear_beam_segments() override;
 
@@ -215,8 +225,6 @@ private:
     // for tabs
     bool is_beside_tab_staff_ = false;
     const StaffType *tab_ = nullptr;
-
-    std::vector<BeamFragment *> fragments_; // beam splits across systems
 
     int min_cr_move_ = 0; // set in layout1()
     int max_cr_move_ = 0;

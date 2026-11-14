@@ -71,7 +71,7 @@ public:
     void set_beam(Beam *b);
     void set_beamlet(BeamSegment *b);
 
-    BeamSegment *beamlet() const { return beamlet_; }
+    BeamSegment *beamlet() const { return is_layout_data_current() ? ldata()->beamlet : nullptr; }
 
     virtual Beam *beam() const final;
 
@@ -200,6 +200,8 @@ public:
     bool has_preceding_jump_item() const;
 
     struct LayoutData : public DurationElement::LayoutData {
+        std::optional<Beam *> rendered_beam;
+        BeamSegment *beamlet = nullptr;
         ld_field<bool> up = {"[ChordRest] up", true}; // actual stem direction
     };
     DECLARE_LAYOUTDATA_METHODS(ChordRest)
@@ -230,7 +232,6 @@ protected:
     TabDurationSymbol *tab_dur_ = nullptr; // stores a duration symbol in tablature staves
 
     Beam *beam_ = nullptr;
-    BeamSegment *beamlet_ = nullptr;
     BeamMode beam_mode_ = BeamMode::INVALID;
     bool is_small_ = false;
     bool melisma_end_ = false;

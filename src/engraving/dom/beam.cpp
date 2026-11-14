@@ -32,6 +32,7 @@
 #include "masterscore.h"
 #include "measure.h"
 #include "realfn.h"
+#include "rendering/score/layoutdatastore.h"
 #include "rootitem.h"
 #include "score.h"
 #include "segment.h"
@@ -59,10 +60,10 @@ Beam::Beam(Score *parent) : BeamBase(ElementType::BEAM, parent->dummy()) {
 }
 
 System *Beam::system() const {
-    if (elements_.empty()) {
+    if (rendered_elements().empty()) {
         return nullptr;
     }
-    Measure *measure = elements_.front()->measure();
+    Measure *measure = rendered_elements().front()->measure();
     return measure ? measure->system() : nullptr;
 }
 
@@ -78,10 +79,6 @@ Beam::Beam(const Beam &b) : BeamBase(b) {
     grow_left_ = b.grow_left_;
     grow_right_ = b.grow_right_;
     beam_dist_ = b.beam_dist_;
-    fragments_.reserve(b.fragments_.size());
-    for (const BeamFragment *f : b.fragments_) {
-        fragments_.push_back(new BeamFragment(*f));
-    }
     min_cr_move_ = b.min_cr_move_;
     max_cr_move_ = b.max_cr_move_;
     is_grace_ = b.is_grace_;
@@ -95,17 +92,33 @@ Beam::Beam(const Beam &b) : BeamBase(b) {
 //---------------------------------------------------------
 
 Beam::~Beam() {
-    //
-    // delete all references from chords
-    //
+    if (auto *store = score()->layout_data_store()) store->retire_beam_borrowers(*this);
     for (ChordRest *cr : elements_) {
-        cr->set_beam(nullptr);
+        if (cr->authored_beam() == this) cr->set_beam(nullptr);
     }
+}
 
-    clear_beam_segments();
+const std::vector<ChordRest *> &Beam::rendered_elements() const {
+    const auto &members = ldata()->members;
+    return members ? *members : elements_;
+}
 
-    muse::delete_all(fragments_);
-    fragments_.clear();
+std::vector<ChordRest *> &Beam::rendered_elements() {
+    auto *data = mutldata();
+    if (!data->members) data->members = elements_;
+    return *data->members;
+}
+
+void Beam::add_rendered(ChordRest *cr) {
+    auto &members = rendered_elements();
+    if (!muse::contains(members, cr)) members.push_back(cr);
+    cr->mutldata()->rendered_beam = this;
+}
+
+void Beam::remove_rendered(ChordRest *cr) {
+    muse::remove(rendered_elements(), cr);
+    cr->mutldata()->rendered_beam = nullptr;
+    cr->set_beamlet(nullptr);
 }
 
 //---------------------------------------------------------
@@ -161,6 +174,7 @@ void Beam::add_chord_rest(ChordRest *a) {
 //---------------------------------------------------------
 
 void Beam::remove_chord_rest(ChordRest *a) {
+    if (has_layout_data()) remove_rendered(a);
     if (!muse::remove(elements_, a)) {
         LOGD("Beam::remove(): cannot find ChordRest");
     }
@@ -169,7 +183,7 @@ void Beam::remove_chord_rest(ChordRest *a) {
 }
 
 const Chord *Beam::find_chord_with_custom_stem_direction() const {
-    for (const ChordRest *rest : elements()) {
+    for (const ChordRest *rest : rendered_elements()) {
         if (!rest->is_chord()) {
             continue;
         }
@@ -213,7 +227,7 @@ const BeamSegment *Beam::top_level_segment_for_element(const ChordRest *element)
 
 void Beam::move(const PointF &offset) {
     EngravingItem::move(offset);
-    for (BeamSegment *bs : beam_segments_) {
+    for (BeamSegment *bs : beam_segments()) {
         bs->line.translate(offset);
     }
 }
@@ -277,16 +291,7 @@ void Beam::calc_beam_breaks(const ChordRest *cr, const ChordRest *prev_cr, int l
 //   spatiumChanged
 //---------------------------------------------------------
 
-void Beam::spatium_changed(double old_value, double new_value) {
-    int idx = direction_idx();
-    if (user_modified()) {
-        double diff = new_value / old_value;
-        for (BeamFragment *f : fragments_) {
-            f->py1[idx] = f->py1[idx] * diff;
-            f->py2[idx] = f->py2[idx] * diff;
-        }
-    }
-}
+void Beam::spatium_changed(double, double) {}
 
 //---------------------------------------------------------
 //   setBeamDirection
@@ -366,7 +371,8 @@ PairF Beam::beam_pos() const {
 //---------------------------------------------------------
 
 void Beam::set_beam_pos(const PairF &bp) {
-    uint32_t ordinal = fragments_.empty() ? 0 : static_cast<uint32_t>(fragments_.size() - 1);
+    const auto &fragments = ldata()->fragments;
+    uint32_t ordinal = fragments.empty() ? 0 : static_cast<uint32_t>(fragments.size() - 1);
     bool found = false;
     for (const auto &entry : authored_overrides.entries) {
         if (entry.child.role == AuthoredChildRole::BEAM_FRAGMENT && entry.child.direction == direction_idx() &&
@@ -380,10 +386,6 @@ void Beam::set_beam_pos(const PairF &bp) {
                             Pid::BEAM_POS,
                             PropertyValue::from_value(value),
                             PropertyFlags::NOSTYLE});
-    if (ordinal < fragments_.size()) {
-        fragments_[ordinal]->py1[direction_idx()] = value.first * spatium();
-        fragments_[ordinal]->py2[direction_idx()] = value.second * spatium();
-    }
 }
 
 void Beam::set_no_slope(bool b) {
@@ -479,25 +481,31 @@ PropertyValue Beam::property_default(Pid id) const {
 //---------------------------------------------------------
 
 void Beam::add_skyline(Skyline &sk) {
-    if (beam_segments_.empty() || !add_to_skyline()) {
+    if (beam_segments().empty() || !add_to_skyline()) {
         return;
     }
 
     // Only add the outer segment, no need to add the inner one
-    sk.add(beam_segments_.front()->shape());
+    sk.add(beam_segments().front()->shape());
 }
 
 //---------------------------------------------------------
 //   tick
 //---------------------------------------------------------
 
-Fraction Beam::tick() const { return elements_.empty() ? Fraction(0, 1) : elements_.front()->segment()->tick(); }
+Fraction Beam::tick() const {
+    const auto &members = is_layout_copy() ? rendered_elements() : elements_;
+    return members.empty() ? Fraction(0, 1) : members.front()->segment()->tick();
+}
 
 //---------------------------------------------------------
 //   rtick
 //---------------------------------------------------------
 
-Fraction Beam::rtick() const { return elements_.empty() ? Fraction(0, 1) : elements_.front()->segment()->rtick(); }
+Fraction Beam::rtick() const {
+    const auto &members = is_layout_copy() ? rendered_elements() : elements_;
+    return members.empty() ? Fraction(0, 1) : members.front()->segment()->rtick();
+}
 
 //---------------------------------------------------------
 //   ticks
@@ -506,7 +514,7 @@ Fraction Beam::rtick() const { return elements_.empty() ? Fraction(0, 1) : eleme
 
 Fraction Beam::ticks() const {
     Fraction ticks = Fraction(0, 1);
-    for (ChordRest *cr : elements_) {
+    for (ChordRest *cr : rendered_elements()) {
         ticks += cr->actual_ticks();
     }
     return ticks;
@@ -543,7 +551,7 @@ bool Beam::is_movable() const { return true; }
 //   containsChord
 //---------------------------------------------------------
 bool Beam::has_all_rests() {
-    for (ChordRest *cr : elements_) {
+    for (ChordRest *cr : rendered_elements()) {
         if (cr && cr->is_chord()) {
             return false;
         }
@@ -552,7 +560,7 @@ bool Beam::has_all_rests() {
 }
 
 void Beam::clear_beam_segments() {
-    for (ChordRest *chord_rest : elements_) {
+    for (ChordRest *chord_rest : rendered_elements()) {
         chord_rest->set_beamlet(nullptr);
     }
 
@@ -605,3 +613,5 @@ Shape BeamSegment::shape() const {
     }
     return shape;
 }
+
+Beam::LayoutData::~LayoutData() { muse::delete_all(fragments); }

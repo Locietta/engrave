@@ -558,7 +558,7 @@ void SlurTieLayout::slur_pos(Slur *item, SlurTiePos *sp, LayoutContext &ctx) {
             }
             // don't allow overlap with beam
             double yadj;
-            if (ec->beam() && ec->beam()->elements().front() != ec) {
+            if (ec->beam() && ec->beam()->rendered_elements().front() != ec) {
                 yadj = 0.75;
             } else if (ec->tremolo_two_chord() && ec->tremolo_two_chord()->chord2() == ec) {
                 yadj = 0.75;
@@ -601,7 +601,7 @@ void SlurTieLayout::slur_pos(Slur *item, SlurTiePos *sp, LayoutContext &ctx) {
         TremoloTwoChord *trem = sc ? sc->tremolo_two_chord() : nullptr;
         if (stem1 || trem) { //sc not null
             Beam *beam1 = sc->beam();
-            if (stem1 && beam1 && (beam1->elements().back() != sc) && (sc->up() == item->up())) {
+            if (stem1 && beam1 && (beam1->rendered_elements().back() != sc) && (sc->up() == item->up())) {
                 TLayout::layout_beam(beam1, ctx);
                 // start chord is beamed but not the last chord of beam group
                 // and slur direction is same as start chord (stem side)
@@ -739,8 +739,8 @@ void SlurTieLayout::slur_pos(Slur *item, SlurTiePos *sp, LayoutContext &ctx) {
             if (stem2 || trem2) { //ec can't be null
                 Beam *beam2 = ec->beam();
                 if ((stem_pos && (scr->up() == ec->up())) ||
-                    (beam2 && (!beam2->elements().empty()) && (beam2->elements().front() != ec) && (ec->up() == item->up()) && sc &&
-                     (sc->note_type() == NoteType::NORMAL)) ||
+                    (beam2 && (!beam2->rendered_elements().empty()) && (beam2->rendered_elements().front() != ec) &&
+                     (ec->up() == item->up()) && sc && (sc->note_type() == NoteType::NORMAL)) ||
                     (trem2 && ec->up() == item->up())) {
                     if (beam2) {
                         TLayout::layout_beam(beam2, ctx);
@@ -1410,9 +1410,9 @@ bool SlurTieLayout::stem_side_for_beam(Slur *slur, bool start) {
     Chord *c = to_chord(cr);
     bool adjust_for_beam = cr && cr->beam() && cr->up() == slur->up();
     if (start) {
-        adjust_for_beam = adjust_for_beam && cr->beam()->elements().back() != cr;
+        adjust_for_beam = adjust_for_beam && cr->beam()->rendered_elements().back() != cr;
     } else {
-        adjust_for_beam = adjust_for_beam && cr->beam()->elements().front() != cr;
+        adjust_for_beam = adjust_for_beam && cr->beam()->rendered_elements().front() != cr;
     }
     if (adjust_for_beam) {
         return true;

@@ -3430,7 +3430,7 @@ static String beam_fan_attribute(const Beam *const b) {
 //    <beam number="1">forward hook</beam>
 
 static void write_beam(XmlWriter &xml, ChordRest *const cr, Beam *const b) {
-    const auto &elements = b->elements();
+    const auto &elements = b->rendered_elements();
     const size_t idx = muse::index_of(elements, cr);
     if (idx == muse::nidx) {
         LOGD("writeBeam: cannot find ChordRest");
