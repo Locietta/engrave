@@ -375,7 +375,10 @@ public:
     AccidentalVal find_accidental(const Segment *s, staff_idx_t staff_idx, int line, bool &error) const;
     void check_multi_voices(staff_idx_t staff_idx);
     bool has_voice(track_idx_t track) const;
-    bool is_empty(staff_idx_t staff_idx) const;
+    bool is_empty(staff_idx_t staff_idx, bool rendered = false) const;
+
+    bool is_rendered_empty(staff_idx_t staff_idx) const { return is_empty(staff_idx, true); }
+
     bool is_cutaway_clef(staff_idx_t staff_idx) const;
     bool is_full_measure_rest() const;
     bool visible(staff_idx_t staff_idx) const;
