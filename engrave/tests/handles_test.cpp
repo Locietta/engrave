@@ -387,6 +387,7 @@ TEST(NativeSave, ColdEqualsWarm) {
     inputs.push_back(g_source_root / "tests/data/inputs/mmr-boundary.mscx");
     inputs.push_back(g_source_root / "tests/data/inputs/stave-sharing.mscx");
     inputs.push_back(g_source_root / "tests/data/inputs/stave-sharing-voices.mscx");
+    inputs.push_back(g_source_root / "tests/data/inputs/stave-sharing-mmr.mscx");
     std::ranges::sort(inputs);
     for (const auto &path : inputs) {
         SCOPED_TRACE(path.filename().string());
@@ -697,6 +698,7 @@ TEST(StaveSharingOutput, LocalSignatureProjectionLeavesSourceQueriesColdAndWarmI
     ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
     EXPECT_EQ(master.staff(0)->time_sig(Fraction(0, 1)), global);
     EXPECT_EQ(master.staff(0)->rendered_time_sig(Fraction(0, 1)), local);
+    EXPECT_TRUE(master.systems().front()->staff(1)->show());
     EXPECT_EQ(master.staff(0)->clef(Fraction(0, 1)), clef);
     EXPECT_EQ(master.staff(0)->key(Fraction(0, 1)), key);
     EXPECT_EQ(source_native(master), cold);
@@ -745,6 +747,31 @@ TEST(StaveSharingOutput, SharedHairpinsSnapToOutputAndSuppressAuthoredSharedTrac
     EXPECT_EQ(before, master.layout_copy(*dynamics.front()));
     EXPECT_EQ(to_hairpin_segment(shared.back()->front_segment())->find_element_to_snap_before(false), shared.front()->back_segment());
     EXPECT_EQ(master.spanner_list(), source_spans);
+    EXPECT_EQ(source_native(master), cold);
+}
+
+TEST(StaveSharingOutput, MmrAnnotationGeometryResolvesToTheVisibleSharedCopy) {
+    using namespace mu::engraving;
+    auto document = open_path(g_source_root / "tests/data/inputs/stave-sharing-mmr.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    std::vector<Dynamic *> originals;
+    for (auto *object : engrave::document_objects(master))
+        if (object->is_dynamic()) originals.push_back(to_dynamic(object));
+    ASSERT_EQ(originals.size(), 2u);
+    const auto cold = source_native(master);
+    ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+    auto *display = master.first_measure()->mm_rest();
+    ASSERT_NE(display, nullptr);
+    EXPECT_EQ(display->mm_rest_count(), 2);
+    for (auto *dynamic : originals) {
+        const auto *copy = master.layout_copy(*dynamic);
+        ASSERT_NE(copy, nullptr);
+        EXPECT_EQ(copy->track(), 0u);
+        EXPECT_EQ(copy->find_measure(), display);
+        EXPECT_FALSE(source_object(*copy));
+        EXPECT_GT(copy->width(), 0.0);
+    }
     EXPECT_EQ(source_native(master), cold);
 }
 

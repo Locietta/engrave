@@ -650,7 +650,7 @@ static bool compute_show_sys_staff(const System *system, const Staff *staff, con
             continue;
         }
         const Measure *measure = to_measure(m);
-        if (!measure->is_empty(staff_idx)) {
+        if (!measure->is_rendered_empty(staff_idx)) {
             return true;
         }
     }
@@ -669,7 +669,7 @@ static bool compute_show_sys_staff(const System *system, const Staff *staff, con
                 }
 
                 const Measure *m = to_measure(mb);
-                bool empty = m->is_empty(st);
+                bool empty = m->is_rendered_empty(st);
                 if (hide_mode == StaffHideMode::HIDE_WHEN_INSTRUMENT_EMPTY && !empty) {
                     return true;
                 } else if (empty) {

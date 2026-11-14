@@ -1944,7 +1944,8 @@ bool Measure::has_voice(track_idx_t track) const {
 ///   If staff is -1, then check for all staves.
 //-------------------------------------------------------------------
 
-bool Measure::is_empty(staff_idx_t staff_idx) const {
+bool Measure::is_empty(staff_idx_t staff_idx, bool rendered) const {
+    rendered = rendered && staff_idx != muse::nidx && score()->staff(staff_idx)->part()->is_shared_part();
     if (is_mm_rest()) {
         return true;
     }
@@ -1960,9 +1961,11 @@ bool Measure::is_empty(staff_idx_t staff_idx) const {
     if (is_measure_repeat_group(staff_idx)) {
         return false;
     }
-    for (Segment *s = first(SegmentType::CHORD_REST); s; s = s->next(SegmentType::CHORD_REST)) {
+    for (Segment *s = rendered ? rendered_first() : first(SegmentType::CHORD_REST); s;
+         s = rendered ? s->rendered_next() : s->next(SegmentType::CHORD_REST)) {
+        if (!s->is_chord_rest_type()) continue;
         for (track_idx_t track = strack; track < etrack; ++track) {
-            EngravingItem *e = s->element(track);
+            EngravingItem *e = (rendered ? s->effective_element(track) : s->element(track));
             if (e && !e->is_rest()) {
                 return false;
             }
@@ -1970,20 +1973,20 @@ bool Measure::is_empty(staff_idx_t staff_idx) const {
             bool has_staves = score()->staff(track / ::mu::engraving::voices)->part()->staves().size() > 1;
             if (has_staves) {
                 if (strack >= ::mu::engraving::voices) {
-                    e = s->element(track - ::mu::engraving::voices);
+                    e = (rendered ? s->effective_element(track - ::mu::engraving::voices) : s->element(track - ::mu::engraving::voices));
                     if (e && !e->is_rest() && e->v_staff_idx() == staff_idx) {
                         return false;
                     }
                 }
                 if (etrack < score()->nstaves() * ::mu::engraving::voices) {
-                    e = s->element(track + ::mu::engraving::voices);
+                    e = (rendered ? s->effective_element(track + ::mu::engraving::voices) : s->element(track + ::mu::engraving::voices));
                     if (e && !e->is_rest() && e->v_staff_idx() == staff_idx) {
                         return false;
                     }
                 }
             }
         }
-        for (EngravingItem *a : s->annotations()) {
+        for (EngravingItem *a : (rendered ? s->rendered_annotations() : s->annotations())) {
             if (a && staff_idx == muse::nidx) {
                 return false;
             }

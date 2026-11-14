@@ -1855,7 +1855,7 @@ void StaveSharingLayout::add_measure_rests_if_need(StaveSharingContext &ctx) {
 
     for (Measure *measure = start_meas; measure && measure->is_before_or_equal(end_meas); measure = measure->next_measure()) {
         for (staff_idx_t staff_idx = start_staff; staff_idx < end_staff; ++staff_idx) {
-            if (!measure->is_empty(staff_idx)) {
+            if (!measure->is_rendered_empty(staff_idx)) {
                 continue;
             }
             if (ChordRest *first_cr = measure->first_chord_rest(staff_idx * ::mu::engraving::voices);
