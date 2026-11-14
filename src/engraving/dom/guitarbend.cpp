@@ -726,8 +726,8 @@ void GuitarBend::update_hold_line() {
         hold_line = new GuitarBendHold(this);
     }
 
-    bind_authored_child(*hold_line, {AuthoredChildRole::HOLD_LINE});
-    AuthoredOverrideMirror mirror(*hold_line);
+    set_layout_child_key(*hold_line, {AuthoredChildRole::HOLD_LINE});
+
     hold_line->set_start_element(start_of_hold);
     hold_line->set_end_element(end_of_hold);
     hold_line->set_tick(start_of_hold->tick());
@@ -765,7 +765,6 @@ GuitarBendSegment::GuitarBendSegment(const GuitarBendSegment &s) : LineSegment(s
 GuitarBendSegment::~GuitarBendSegment() { delete text_; }
 
 PropertyValue GuitarBendSegment::get_property(Pid id) const {
-    if (auto value = authored_override_value(*this, id)) return *value;
     switch (id) {
         case Pid::BEND_VERTEX_OFF: return vertex_point_off();
         default: return LineSegment::get_property(id);
@@ -773,7 +772,6 @@ PropertyValue GuitarBendSegment::get_property(Pid id) const {
 }
 
 bool GuitarBendSegment::set_property(Pid property_id, const PropertyValue &v) {
-    if (set_authored_override(*this, property_id, v)) return true;
     switch (property_id) {
         case Pid::BEND_VERTEX_OFF: set_vertex_point_off(v.value<PointF>()); break;
         default: return LineSegment::set_property(property_id, v);
@@ -922,6 +920,10 @@ LineSegment *GuitarBendHold::create_line_segment() {
 PropertyValue GuitarBendHold::property_default(Pid id) const {
     switch (id) {
         case Pid::LINE_STYLE: return LineType::DASHED;
+        case Pid::LINE_WIDTH:
+            return Spatium::from_absolute(
+                style().style_absolute(guitar_bend()->is_dive() ? Sid::GUITAR_DIVE_LINE_WIDTH_TAB : Sid::GUITAR_BEND_LINE_WIDTH_TAB),
+                spatium());
         default: return SLine::property_default(id);
     }
 }
@@ -938,11 +940,7 @@ Note *GuitarBendHold::end_note() const {
     return to_note(end_el);
 }
 
-double GuitarBendHold::line_width() const {
-    if (has_authored_override(*this, Pid::LINE_WIDTH)) return SLine::line_width().to_absolute(spatium());
-    return style().style_absolute(parent() && to_guitar_bend(parent())->is_dive() ? Sid::GUITAR_DIVE_LINE_WIDTH_TAB :
-                                                                                    Sid::GUITAR_BEND_LINE_WIDTH_TAB);
-}
+double GuitarBendHold::line_width() const { return SLine::line_width().to_absolute(spatium()); }
 
 /****************************************
  *         GuitarBendHoldSegment

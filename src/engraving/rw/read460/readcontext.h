@@ -27,6 +27,7 @@
 
 #include "../types/types.h"
 #include "connectorinforeader.h"
+#include "dom/authoredoverride.h"
 #include "dom/connector.h"
 #include "dom/interval.h"
 #include "dom/location.h"
@@ -52,6 +53,7 @@ struct TextStyleMap {
 };
 
 struct ReadContext {
+    std::map<const EngravingItem *, AuthoredChildKey> child_keys;
 
     ReadContext() = default;
     ReadContext(Score *score);

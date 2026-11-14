@@ -395,7 +395,7 @@ void Beam::set_beam_pos(const PairF &bp) {
 
 void Beam::set_no_slope(bool b) {
     no_slope_ = b;
-    if (b && user_modified() && !authored_mirror) set_beam_pos(beam_pos());
+    if (b && user_modified()) set_beam_pos(beam_pos());
 }
 
 void Beam::compute_and_set_slope() {

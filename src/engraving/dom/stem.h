@@ -58,8 +58,6 @@ public:
 
     Spatium user_length() const;
 
-    void set_user_length(Spatium user_length);
-
     Spatium line_width() const { return line_width_; }
 
     double line_width_mag() const;

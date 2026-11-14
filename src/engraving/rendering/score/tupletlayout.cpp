@@ -160,13 +160,13 @@ void TupletLayout::create_number(Tuplet *item, LayoutContext &ctx) {
 
     if (!item->number()) {
         Text *number = Factory::create_text(item, TextStyleType::TUPLET);
-        AuthoredOverrideMirror mirror(*number);
+
         number->set_composition(true);
         item->mutldata()->number = number;
     }
 
-    bind_authored_child(*item->number(), {AuthoredChildRole::TUPLET_NUMBER});
-    AuthoredOverrideMirror mirror(*item->number());
+    set_layout_child_key(*item->number(), {AuthoredChildRole::TUPLET_NUMBER});
+
     item->number()->set_track(item->track());
     item->number()->set_selected(item->selected());
     item->number()->set_visible(item->visible());

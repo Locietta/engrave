@@ -27,6 +27,7 @@
 
 #include "../editing/addremoveelement.h"
 #include "../editing/transaction/transaction.h"
+#include "beam.h"
 #include "bracketitem.h"
 #include "chord.h"
 #include "chordline.h"
@@ -38,6 +39,7 @@
 #include "score.h"
 #include "staff.h"
 #include "style/textstyle.h"
+#include "tremolotwochord.h"
 #include "types/typesconv.h"
 
 using namespace mu;
@@ -307,10 +309,6 @@ void EngravingObject::init_element_style(const ElementStyle *ss) {
 //---------------------------------------------------------
 
 void EngravingObject::reset_property(Pid pid) {
-    if (authored_override_handles(*this, pid)) {
-        reset_authored_override(*to_engraving_item(this), pid);
-        return;
-    }
     PropertyValue v = property_default(pid);
     if (v.is_valid()) {
         set_property(pid, v);
@@ -328,10 +326,6 @@ void EngravingObject::reset_property(Pid pid) {
 static void change_properties(EngravingObject *, Pid, const PropertyValue &, PropertyFlags, bool reset_path = false);
 
 void EngravingObject::undo_reset_property(Pid id) {
-    if (authored_override_handles(*this, id)) {
-        change_properties(this, id, property_default(id), is_styled(id) ? PropertyFlags::STYLED : PropertyFlags::NOSTYLE, true);
-        return;
-    }
     PropertyFlags f = property_flags(id);
     if (f == PropertyFlags::UNSTYLED) {
         f = PropertyFlags::STYLED;
@@ -361,13 +355,23 @@ bool EngravingObject::is_styled(Pid pid) const {
 //   changeProperty
 //---------------------------------------------------------
 
+static bool missing_beam_position_override(const EngravingObject &object, Pid pid) {
+    if (pid != Pid::BEAM_POS || (!object.is_beam() && object.type() != ElementType::TREMOLO_TWOCHORD)) return false;
+    const auto &item = static_cast<const EngravingItem &>(object);
+    const auto direction =
+        object.is_beam() ? static_cast<const Beam &>(item).direction_idx() : static_cast<const TremoloTwoChord &>(item).direction_idx();
+    return std::ranges::none_of(authored_override_table(&item)->entries, [direction](const auto &entry) {
+        return entry.child.role == AuthoredChildRole::BEAM_FRAGMENT && entry.child.direction == direction && entry.pid == Pid::BEAM_POS;
+    });
+}
+
 static bool requests_spanner_relink(const EngravingObject &object, Pid id, const PropertyValue &value) {
     return object.is_spanner() && !object.score()->is_master() &&
            (id == Pid::POSITION_LINKED_TO_MASTER || id == Pid::APPEARANCE_LINKED_TO_MASTER) && value.to_bool();
 }
 
 static void change_property(EngravingObject *e, Pid t, const PropertyValue &st, PropertyFlags ps, bool reset_path = false) {
-    const bool new_authored_entry = authored_override_handles(*e, t) && !has_authored_override(*to_engraving_item(e), t);
+    const bool new_authored_entry = missing_beam_position_override(*e, t);
     if (reset_path || new_authored_entry || requests_spanner_relink(*e, t, st) ||
         (e->is_chord_line() && t == Pid::PATH && to_chord_line(e)->has_source_offsets()) || e->get_property(t) != st ||
         e->property_flags(t) != ps) {
@@ -386,43 +390,6 @@ static void change_property(EngravingObject *e, Pid t, const PropertyValue &st, 
 
 static void change_properties(EngravingObject *object, Pid property_id, const PropertyValue &property_value, PropertyFlags property_flag,
                               bool reset_path) {
-    if (object->is_parenthesis() && authored_override_handles(*object, property_id)) {
-        auto *item = to_engraving_item(object);
-        auto *owner = authored_override_owner(*item);
-        const auto key = item->authored_child;
-        if (owner && owner->is_chord() && key.subordinal == 1 && key.ordinal < to_chord(owner)->note_parentheses().size()) {
-            auto *chord = to_chord(owner);
-            const auto group = *chord->note_parentheses()[key.ordinal];
-            change_property(object, property_id, property_value, property_flag, reset_path);
-            owner->notify_property_change(property_id);
-            for (auto *peer : owner->link_list_for_property_propagation()) {
-                if (peer == owner || !peer->is_chord()) continue;
-                auto *linked = to_chord(peer);
-                const auto *match = linked->matching_parenthesis_group(group);
-                if (!match) continue;
-                const auto propagation = owner->property_propagation(linked, property_id);
-                const auto flag = property_group(property_id) == PropertyGroup::POSITION ? Pid::POSITION_LINKED_TO_MASTER :
-                                                                                           Pid::APPEARANCE_LINKED_TO_MASTER;
-                if (propagation == PropertyPropagation::UNLINK) {
-                    change_property(object, flag, false, PropertyFlags::NOSTYLE);
-                    continue;
-                }
-                const AuthoredChildKey target{key.role, static_cast<uint32_t>(linked->parenthesis_group_index(match)), 0, 1};
-                const auto *linked_flag = linked->authored_overrides.find(target, flag);
-                if (propagation != PropertyPropagation::PROPAGATE || (linked_flag && !linked_flag->value.to_bool())) continue;
-                if (const auto *entry = chord->authored_overrides.find(key, property_id)) {
-                    auto copied = *entry;
-                    copied.child = target;
-                    linked->authored_overrides.set(std::move(copied));
-                } else {
-                    linked->authored_overrides.erase(target, property_id);
-                }
-                linked->notify_property_change(property_id);
-                linked->trigger_layout();
-            }
-            return;
-        }
-    }
     const auto link_list = object->link_list_for_property_propagation();
     for (EngravingObject *linked_object : link_list) {
         if (linked_object == object) {
@@ -470,7 +437,7 @@ void EngravingObject::undo_change_property(Pid id, const PropertyValue &v) { und
 
 void EngravingObject::undo_change_property(Pid id, const PropertyValue &v, PropertyFlags ps) {
     const bool changes_chord_line_path_source = is_chord_line() && id == Pid::PATH && to_chord_line(this)->has_source_offsets();
-    const bool new_authored_entry = authored_override_handles(*this, id) && !has_authored_override(*to_engraving_item(this), id);
+    const bool new_authored_entry = missing_beam_position_override(*this, id);
     if ((get_property(id) == v) && (property_flags(id) == ps) && !changes_chord_line_path_source && !new_authored_entry &&
         !requests_spanner_relink(*this, id, v)) {
         return;
@@ -637,7 +604,6 @@ int EngravingObject::get_property_flags_idx(Pid id) const {
 //---------------------------------------------------------
 
 PropertyFlags EngravingObject::property_flags(Pid id) const {
-    if (auto flags = authored_override_flags(*this, id)) return *flags;
     if (EngravingObject *e = property_delegate(id)) {
         return e->property_flags(id);
     }
@@ -656,7 +622,6 @@ PropertyFlags EngravingObject::property_flags(Pid id) const {
 //---------------------------------------------------------
 
 void EngravingObject::set_property_flags(Pid id, PropertyFlags f) {
-    if (set_authored_override_flags(*this, id, f)) return;
     if (EngravingObject *e = property_delegate(id)) {
         e->set_property_flags(id, f);
         return;
@@ -687,12 +652,6 @@ Sid EngravingObject::get_property_style(Pid id) const {
 //---------------------------------------------------------
 
 void EngravingObject::style_changed() {
-    std::optional<AuthoredOverrideMirror> mirror;
-    if (is_engraving_item()) {
-        auto *item = to_engraving_item(this);
-        apply_authored_overrides(*item);
-        mirror.emplace(*item);
-    }
     for (const StyledProperty &spp : *element_style_) {
         PropertyFlags f = property_flags(spp.pid);
         if (f == PropertyFlags::STYLED) {

@@ -144,6 +144,7 @@
 #include "../../types/typesconv.h"
 #include "../compat/compatutils.h"
 #include "../compat/tremolocompat.h"
+#include "../readchild.h"
 #include "../xmlreader.h"
 #include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
 #include "log.h"
@@ -345,14 +346,6 @@ bool TRead::read_property(EngravingItem *item, const AsciiStringView &tag, XmlRe
     return false;
 }
 
-namespace {
-void read_child_property(EngravingItem &carrier, Pid pid, const PropertyValue &value, PropertyFlags flags) {
-    auto *owner = authored_override_owner(carrier);
-    if (!owner || carrier.authored_child.role == AuthoredChildRole::NONE) return;
-    set_child_override(*owner, carrier.authored_child, pid, value, flags);
-}
-} // namespace
-
 void TRead::read_property(EngravingItem *item, XmlReader &xml, ReadContext &ctx, Pid pid) {
     double spatium = ctx.score() ? ctx.spatium() : item->spatium();
     PropertyValue v = read_property_value(pid, xml, ctx);
@@ -387,12 +380,12 @@ void TRead::read_property(EngravingItem *item, XmlReader &xml, ReadContext &ctx,
             item->set_position_linked_to_master(v.to_bool());
         else if (item->is_spanner() && pid == Pid::APPEARANCE_LINKED_TO_MASTER)
             item->set_appearance_linked_to_master(v.to_bool());
-        else
+        else if (read_child_key(*item, ctx).role != AuthoredChildRole::STEM || pid != Pid::USER_LEN)
             item->set_property(pid, v);
         if (item->is_styled(pid)) {
             item->set_property_flags(pid, PropertyFlags::UNSTYLED);
         }
-        read_child_property(*item, pid, v, item->property_flags(pid));
+        read_child_property(*item, pid, v, item->property_flags(pid), ctx);
     }
 }
 
@@ -416,29 +409,29 @@ bool TRead::read_item_properties(EngravingItem *item, XmlReader &e, ReadContext 
     } else if (TRead::read_property(item, tag, e, ctx, Pid::AUTOPLACE)) {
     } else if (tag == "track") {
         item->set_track(e.read_int() + ctx.track_offset());
-        if (item->authored_child.role != AuthoredChildRole::NONE) {
-            if (auto *table = authored_override_table(authored_override_owner(*item))) {
-                finish_authored_read(*item);
-                auto carrier = *table->carrier(item->authored_child);
-                const auto *owner = authored_override_owner(*item);
+        if (read_child_key(*item, ctx).role != AuthoredChildRole::NONE) {
+            if (auto *table = authored_override_table(read_child_owner(*item, ctx))) {
+                finish_child_read(*item, ctx, false);
+                auto carrier = *table->carrier(read_child_key(*item, ctx));
+                const auto *owner = read_child_owner(*item, ctx);
                 carrier.track = owner && item->track() == owner->track() ? muse::nidx : item->track();
                 table->set_carrier(carrier);
             }
         }
     } else if (tag == "color") {
         const auto color = PropertyValue::from_value(e.read_color());
-        if (authored_override_owner(*item) && item->authored_child.role != AuthoredChildRole::NONE)
+        if (read_child_owner(*item, ctx) && read_child_key(*item, ctx).role != AuthoredChildRole::NONE)
             item->EngravingItem::set_color(color.value<Color>());
         else
             item->set_color(color.value<Color>());
-        read_child_property(*item, Pid::COLOR, color, PropertyFlags::NOSTYLE);
+        read_child_property(*item, Pid::COLOR, color, PropertyFlags::NOSTYLE, ctx);
     } else if (tag == "visible") {
         const auto visible = PropertyValue(bool(e.read_int()));
-        if (authored_override_owner(*item) && item->authored_child.role != AuthoredChildRole::NONE)
+        if (read_child_owner(*item, ctx) && read_child_key(*item, ctx).role != AuthoredChildRole::NONE)
             item->EngravingItem::set_visible(visible.to_bool());
         else
             item->set_visible(visible.to_bool());
-        read_child_property(*item, Pid::VISIBLE, visible, PropertyFlags::NOSTYLE);
+        read_child_property(*item, Pid::VISIBLE, visible, PropertyFlags::NOSTYLE, ctx);
     } else if (tag == "linkedTo") {
         read_item_link(item, e, ctx);
     } else if (TRead::read_property(item, tag, e, ctx, Pid::POSITION_LINKED_TO_MASTER)) {
@@ -451,17 +444,20 @@ bool TRead::read_item_properties(EngravingItem *item, XmlReader &e, ReadContext 
     } else if (TRead::read_property(item, tag, e, ctx, Pid::PLACEMENT)) {
     } else if (tag == "z") {
         const auto z = PropertyValue(e.read_int());
-        if (authored_override_owner(*item) && item->authored_child.role != AuthoredChildRole::NONE)
+        if (read_child_owner(*item, ctx) && read_child_key(*item, ctx).role != AuthoredChildRole::NONE)
             item->EngravingItem::set_z(z.to_int());
         else
             item->set_z(z.to_int());
-        read_child_property(*item, Pid::Z, z, PropertyFlags::NOSTYLE);
+        read_child_property(*item, Pid::Z, z, PropertyFlags::NOSTYLE, ctx);
     } else if (TRead::read_property(item, tag, e, ctx, Pid::HAS_PARENTHESES)) {
     } else if (tag == "Parenthesis") {
         Parenthesis *p = Factory::create_parenthesis(item);
+        p->set_visible(item->visible());
         TRead::read(p, e, ctx);
         p->set_track(ctx.track());
+        const bool visible = p->visible();
         item->add(p);
+        p->set_visible(visible);
     } else {
         return false;
     }
@@ -538,7 +534,7 @@ void TRead::read_item_link(EngravingItem *item, XmlReader &xml, ReadContext &ctx
     AsciiStringView s = xml.read_ascii_text();
     EID eid = EID::from_std_string(s);
     DO_ASSERT(eid.is_valid());
-    if (item->authored_child.role != AuthoredChildRole::NONE) return;
+    if (read_child_key(*item, ctx).role != AuthoredChildRole::NONE) return;
     EIDRegister *eid_register = ctx.score()->master_score()->eid_register();
     EngravingObject *main_element = eid_register->item_from_eid(eid);
     IF_ASSERT_FAILED(main_element) {
@@ -599,6 +595,7 @@ void TRead::read(TempoText *t, XmlReader &e, ReadContext &ctx) {
 
     if (symbol_size.has_value()) {
         t->set_property(Pid::MUSIC_SYMBOL_SIZE, symbol_size.value());
+        read_child_property(*t, Pid::MUSIC_SYMBOL_SIZE, symbol_size.value(), t->property_flags(Pid::MUSIC_SYMBOL_SIZE), ctx);
         if (t->is_styled(Pid::MUSIC_SYMBOL_SIZE)) {
             t->set_property_flags(Pid::MUSIC_SYMBOL_SIZE, PropertyFlags::UNSTYLED);
         }
@@ -645,6 +642,7 @@ void TRead::read(StaffTextBase *t, XmlReader &xml, ReadContext &ctx) {
 
     if (symbol_size.has_value()) {
         t->set_property(Pid::MUSIC_SYMBOL_SIZE, symbol_size.value());
+        read_child_property(*t, Pid::MUSIC_SYMBOL_SIZE, symbol_size.value(), t->property_flags(Pid::MUSIC_SYMBOL_SIZE), ctx);
         if (t->is_styled(Pid::MUSIC_SYMBOL_SIZE)) {
             t->set_property_flags(Pid::MUSIC_SYMBOL_SIZE, PropertyFlags::UNSTYLED);
         }
@@ -1481,9 +1479,9 @@ void TRead::read(Tuplet *t, XmlReader &e, ReadContext &ctx) {
             const AuthoredChildKey key{AuthoredChildRole::TUPLET_NUMBER};
             // Anonymous numbers must stay anonymous across checkpoint reloads.
             if (!t->authored_overrides.carrier(key)) t->authored_overrides.set_carrier({key, ElementType::TEXT});
-            bind_authored_child(*number, key);
+            begin_child_read(*number, key, ctx);
             TRead::read(number, e, ctx);
-            finish_authored_read(*number);
+            finish_child_read(*number, ctx);
             t->read_number_style(*number);
             // move property flags from _number back to tuplet
             for (auto p : {Pid::FONT_FACE, Pid::FONT_SIZE, Pid::FONT_STYLE, Pid::ALIGN, Pid::POSITION}) {
@@ -1497,7 +1495,7 @@ void TRead::read(Tuplet *t, XmlReader &e, ReadContext &ctx) {
     t->set_base_len(base_len);
     t->set_ratio(ratio);
     if (number) {
-        finish_authored_read(*number);
+        finish_child_read(*number, ctx);
         delete number;
     }
 
@@ -1813,9 +1811,9 @@ void TRead::read(Tapping *t, XmlReader &xml, ReadContext &ctx) {
             auto saved = std::move(t->authored_overrides);
             t->authored_overrides = {};
             TappingHalfSlur half_slur(t);
-            bind_authored_child(half_slur, {AuthoredChildRole::TAPPING_SLUR_ABOVE});
+            begin_child_read(half_slur, {AuthoredChildRole::TAPPING_SLUR_ABOVE}, ctx);
             read(&half_slur, xml, ctx);
-            finish_authored_read(half_slur);
+            finish_child_read(half_slur, ctx);
             const auto role =
                 half_slur.is_half_slur_above() ? AuthoredChildRole::TAPPING_SLUR_ABOVE : AuthoredChildRole::TAPPING_SLUR_BELOW;
             for (auto entry : t->authored_overrides.entries) {
@@ -2188,7 +2186,7 @@ void TRead::read(Symbol *sym, XmlReader &e, ReadContext &ctx) {
                 }
             }
             sym->set_sym(sym_id);
-            read_child_property(*sym, Pid::SYMBOL, PropertyValue::from_value(sym_id), PropertyFlags::NOSTYLE);
+            read_child_property(*sym, Pid::SYMBOL, PropertyValue::from_value(sym_id), PropertyFlags::NOSTYLE, ctx);
             if (sym->is_system_divider()) to_system_divider(sym)->set_authored_sym(sym_id);
         } else if (tag == "font") {
             read_property(sym, e, ctx, Pid::SCORE_FONT);
@@ -2747,9 +2745,9 @@ void TRead::read(GuitarBend *g, XmlReader &e, ReadContext &ctx) {
             g->set_bend_type(TConv::from_xml(e.read_ascii_text(), GuitarBendType::BEND));
         } else if (tag == "GuitarBendHold") {
             GuitarBendHold *hold = new GuitarBendHold(g);
-            bind_authored_child(*hold, {AuthoredChildRole::HOLD_LINE});
+            begin_child_read(*hold, {AuthoredChildRole::HOLD_LINE}, ctx);
             TRead::read(hold, e, ctx);
-            finish_authored_read(*hold);
+            finish_child_read(*hold, ctx);
             delete hold;
         } else if (TRead::read_property(g, tag, e, ctx, Pid::DIRECTION)) {
         } else if (TRead::read_property(g, tag, e, ctx, Pid::BEND_SHOW_HOLD_LINE)) {
@@ -2777,12 +2775,14 @@ void TRead::read(GuitarBendHold *h, XmlReader &xml, ReadContext &ctx) {
 
 bool TRead::read_properties(GuitarBendSegment *g, const AsciiStringView &tag, XmlReader &xml, ReadContext &ctx) {
     if (tag == "bendVertexOffset") {
-        g->set_property(Pid::BEND_VERTEX_OFF, xml.read_point() * (ctx.transaction_snapshot ? 1.0 : g->style().spatium()));
+        const auto value = xml.read_point() * (ctx.transaction_snapshot ? 1.0 : g->style().spatium());
+        g->set_vertex_point_off(value);
+        read_child_property(*g, Pid::BEND_VERTEX_OFF, value, PropertyFlags::NOSTYLE, ctx);
     } else if (tag == "GuitarBendText") {
         GuitarBendText *bend_text = new GuitarBendText(g);
-        bind_authored_child(*bend_text, {AuthoredChildRole::SEGMENT_TEXT, g->authored_child.ordinal});
+        begin_child_read(*bend_text, {AuthoredChildRole::SEGMENT_TEXT, read_child_key(*g, ctx).ordinal}, ctx);
         read(to_text_base(bend_text), xml, ctx);
-        finish_authored_read(*bend_text);
+        finish_child_read(*bend_text, ctx);
         g->set_bend_text(bend_text);
     } else {
         return false;
@@ -2927,9 +2927,9 @@ void TRead::read(HarpPedalDiagram *h, XmlReader &xml, ReadContext &ctx) {
 }
 
 void TRead::read(Hook *h, XmlReader &xml, ReadContext &ctx) {
-    bind_authored_child(*h, {AuthoredChildRole::HOOK});
+    begin_child_read(*h, {AuthoredChildRole::HOOK}, ctx);
     TRead::read(static_cast<Symbol *>(h), xml, ctx);
-    finish_authored_read(*h);
+    finish_child_read(*h, ctx);
 }
 
 void TRead::read(LayoutBreak *b, XmlReader &e, ReadContext &ctx) {
@@ -3042,9 +3042,11 @@ bool TRead::read_properties(LineSegment *l, XmlReader &e, ReadContext &ctx) {
     if (tag == "subtype") {
         const int subtype = e.read_int();
         l->set_spanner_segment_type(SpannerSegmentType(subtype));
-        read_child_property(*l, Pid::SUBTYPE, subtype, PropertyFlags::NOSTYLE);
+        read_child_property(*l, Pid::SUBTYPE, subtype, PropertyFlags::NOSTYLE, ctx);
     } else if (tag == "off2") {
-        l->set_property(Pid::OFFSET2, e.read_point() * (ctx.transaction_snapshot ? 1.0 : l->style().spatium()));
+        const auto value = e.read_point() * (ctx.transaction_snapshot ? 1.0 : l->style().spatium());
+        l->set_user_off2(value);
+        read_child_property(*l, Pid::OFFSET2, value, PropertyFlags::NOSTYLE, ctx);
     } else if (l->is_guitar_bend_segment() && read_properties(static_cast<GuitarBendSegment *>(l), tag, e, ctx)) {
     } else if (!read_item_properties(l, e, ctx)) {
         return false;
@@ -3301,13 +3303,13 @@ void TRead::read(NoteDot *d, XmlReader &e, ReadContext &ctx) {
     const auto *table = authored_override_table(static_cast<EngravingItem *>(parent));
     uint32_t ordinal = 0;
     while (table->carrier({AuthoredChildRole::DOT, ordinal})) ++ordinal;
-    bind_authored_child(*d, {AuthoredChildRole::DOT, static_cast<uint32_t>(ordinal)});
+    begin_child_read(*d, {AuthoredChildRole::DOT, static_cast<uint32_t>(ordinal)}, ctx);
     while (e.read_next_start_element()) {
         if (!read_item_properties(d, e, ctx)) {
             e.unknown();
         }
     }
-    finish_authored_read(*d);
+    finish_child_read(*d, ctx);
 }
 
 void TRead::read(NoteHead *h, XmlReader &xml, ReadContext &ctx) { read(static_cast<Symbol *>(h), xml, ctx); }
@@ -3374,10 +3376,11 @@ void TRead::read(PalmMute *p, XmlReader &e, ReadContext &ctx) {
 }
 
 void TRead::read(Parenthesis *p, XmlReader &xml, ReadContext &ctx) {
-    const auto context = p->authored_child;
-    auto *table = authored_override_table(authored_override_owner(*p));
+    const auto context = read_child_key(*p, ctx);
+    auto *table =
+        context.subordinal == 1 && p->ownership_parent()->is_chord() ? authored_override_table(read_child_owner(*p, ctx)) : nullptr;
     const AuthoredChildKey pending{AuthoredChildRole::PAREN_LEFT, UINT32_MAX, 0, context.subordinal};
-    if (table) bind_authored_child(*p, pending);
+    if (table) begin_child_read(*p, pending, ctx);
     while (xml.read_next_start_element()) {
         const AsciiStringView tag(xml.name());
         if (TRead::read_property(p, tag, xml, ctx, Pid::HORIZONTAL_DIRECTION)) {
@@ -3386,7 +3389,7 @@ void TRead::read(Parenthesis *p, XmlReader &xml, ReadContext &ctx) {
         }
     }
     if (table) {
-        finish_authored_read(*p);
+        finish_child_read(*p, ctx);
         const AuthoredChildKey key{p->direction() == DirectionH::LEFT ? AuthoredChildRole::PAREN_LEFT : AuthoredChildRole::PAREN_RIGHT,
                                    context.ordinal, 0, context.subordinal};
         std::vector<AuthoredOverrideEntry> entries;
@@ -3401,8 +3404,8 @@ void TRead::read(Parenthesis *p, XmlReader &xml, ReadContext &ctx) {
         table->erase_carrier(pending);
         carrier.child = key;
         table->set_carrier(carrier);
-        p->authored_child = key;
-        apply_authored_overrides(*p);
+    } else if (!p->eid().is_valid()) {
+        p->set_eid(p->master_score()->eid_register()->new_eid(false));
     }
 }
 
@@ -3587,17 +3590,18 @@ bool TRead::read_properties(SLine *l, XmlReader &e, ReadContext &ctx) {
         auto *ls = carrier.get();
         ls->set_track(l->track()); // needed in read to get the right staff mag
         uint32_t next = 0;
-        const auto role = nested_spanner_role(l->authored_child.role) ? l->authored_child.role : AuthoredChildRole::SPANNER_SEGMENT;
-        if (const auto *table = authored_override_table(nested_spanner_role(role) ? authored_override_owner(*l) : l))
+        const auto role =
+            nested_spanner_role(read_child_key(*l, ctx).role) ? read_child_key(*l, ctx).role : AuthoredChildRole::SPANNER_SEGMENT;
+        if (const auto *table = authored_override_table(nested_spanner_role(role) ? read_child_owner(*l, ctx) : l))
             for (const auto &entry : table->carriers)
                 if (entry.child.role == role && (!nested_spanner_role(role) || entry.child.subordinal == 1))
                     next = std::max(next, entry.child.ordinal + 1);
         const auto ordinal = static_cast<uint32_t>(e.int_attribute("no", static_cast<int>(next)));
-        bind_authored_child(*ls, {AuthoredChildRole::SPANNER_SEGMENT, ordinal});
+        begin_child_read(*ls, {AuthoredChildRole::SPANNER_SEGMENT, ordinal}, ctx);
         TRead::read(ls, e, ctx);
-        finish_authored_read(*ls);
+        finish_child_read(*ls, ctx);
         ls->set_visible(l->visible());
-        apply_authored_overrides(*ls);
+
     } else if (TRead::read_styled_property(l, tag, e, ctx)) {
     } else if (TRead::read_property(l, tag, e, ctx, Pid::DIAGONAL)) {
     } else if (TRead::read_property(l, tag, e, ctx, Pid::LINE_WIDTH)) {
@@ -3607,7 +3611,7 @@ bool TRead::read_properties(SLine *l, XmlReader &e, ReadContext &ctx) {
     } else if (tag == "lineColor" || tag == "color") {
         const auto color = e.read_color();
         l->set_line_color(color);
-        read_child_property(*l, Pid::COLOR, color, PropertyFlags::NOSTYLE);
+        read_child_property(*l, Pid::COLOR, color, PropertyFlags::NOSTYLE, ctx);
     } else if (!read_properties(to_spanner(l), e, ctx)) {
         return false;
     }
@@ -3647,15 +3651,15 @@ bool TRead::read_properties(SlurTie *s, XmlReader &e, ReadContext &ctx) {
     } else if (TRead::read_property(s, tag, e, ctx, Pid::MASK_SLURTIE)) {
     } else if (tag == "lineType") {
         s->set_style_type(static_cast<SlurStyleType>(e.read_int()));
-        read_child_property(*s, Pid::SLUR_STYLE_TYPE, PropertyValue::from_value(s->style_type()), PropertyFlags::NOSTYLE);
+        read_child_property(*s, Pid::SLUR_STYLE_TYPE, PropertyValue::from_value(s->style_type()), PropertyFlags::NOSTYLE, ctx);
     } else if (tag == "SlurSegment" || tag == "TieSegment" || tag == "LaissezVibSegment" || tag == "PartialTieSegment" ||
                tag == "HammerOnPullOffSegment" || tag == "TappingHalfSlurSegment") {
         const int idx = e.int_attribute("no", 0);
         auto carrier = std::unique_ptr<SlurTieSegment>(s->new_slur_tie_segment());
         auto *sts = carrier.get();
-        bind_authored_child(*sts, {AuthoredChildRole::SPANNER_SEGMENT, static_cast<uint32_t>(idx)});
+        begin_child_read(*sts, {AuthoredChildRole::SPANNER_SEGMENT, static_cast<uint32_t>(idx)}, ctx);
         TRead::read(sts, e, ctx);
-        finish_authored_read(*sts);
+        finish_child_read(*sts, ctx);
     } else if (!read_properties(to_spanner(s), e, ctx)) {
         return false;
     }
@@ -3669,19 +3673,19 @@ void TRead::read(SlurTieSegment *s, XmlReader &e, ReadContext &ctx) {
         if (tag == "o1") {
             const auto value = e.read_point() * spatium_value;
             s->set_property(Pid::SLUR_UOFF1, value);
-            read_child_property(*s, Pid::SLUR_UOFF1, value, PropertyFlags::NOSTYLE);
+            read_child_property(*s, Pid::SLUR_UOFF1, value, PropertyFlags::NOSTYLE, ctx);
         } else if (tag == "o2") {
             const auto value = e.read_point() * spatium_value;
             s->set_property(Pid::SLUR_UOFF2, value);
-            read_child_property(*s, Pid::SLUR_UOFF2, value, PropertyFlags::NOSTYLE);
+            read_child_property(*s, Pid::SLUR_UOFF2, value, PropertyFlags::NOSTYLE, ctx);
         } else if (tag == "o3") {
             const auto value = e.read_point() * spatium_value;
             s->set_property(Pid::SLUR_UOFF3, value);
-            read_child_property(*s, Pid::SLUR_UOFF3, value, PropertyFlags::NOSTYLE);
+            read_child_property(*s, Pid::SLUR_UOFF3, value, PropertyFlags::NOSTYLE, ctx);
         } else if (tag == "o4") {
             const auto value = e.read_point() * spatium_value;
             s->set_property(Pid::SLUR_UOFF4, value);
-            read_child_property(*s, Pid::SLUR_UOFF4, value, PropertyFlags::NOSTYLE);
+            read_child_property(*s, Pid::SLUR_UOFF4, value, PropertyFlags::NOSTYLE, ctx);
         } else if (tag == "HammerOnPullOffText") {
             DO_ASSERT(s->is_hammer_on_pull_off_segment());
             read_hopo_text(to_hammer_on_pull_off_segment(s), e, ctx, e.int_attribute("idx"));
@@ -3698,14 +3702,15 @@ void TRead::read_hopo_text(HammerOnPullOffSegment *hopo_seg, XmlReader &xml, Rea
     }
 
     HammerOnPullOffText *hopo_text = new HammerOnPullOffText(hopo_seg);
-    bind_authored_child(*hopo_text, {AuthoredChildRole::SEGMENT_TEXT, hopo_seg->authored_child.ordinal, 0, static_cast<uint32_t>(idx)});
+    begin_child_read(*hopo_text, {AuthoredChildRole::SEGMENT_TEXT, read_child_key(*hopo_seg, ctx).ordinal, 0, static_cast<uint32_t>(idx)},
+                     ctx);
     while (xml.read_next_start_element()) {
         if (!read_properties(to_text_base(hopo_text), xml, ctx)) {
             xml.unknown();
         }
     }
 
-    finish_authored_read(*hopo_text);
+    finish_child_read(*hopo_text, ctx);
     hopo_seg->add_hopo_text(hopo_text);
 }
 
@@ -3724,7 +3729,7 @@ void TRead::read_note_paren_group(Chord *ch, XmlReader &e, ReadContext &ctx) {
 
         if (t == "Parenthesis") {
             Parenthesis *paren = Factory::create_parenthesis(ch);
-            paren->authored_child = {AuthoredChildRole::NONE, static_cast<uint32_t>(ch->note_parentheses().size()), 0, 1};
+            read_child_key(*paren, ctx) = {AuthoredChildRole::NONE, static_cast<uint32_t>(ch->note_parentheses().size()), 0, 1};
             TRead::read(paren, e, ctx);
             paren->set_track(ctx.track());
 
@@ -3775,7 +3780,7 @@ void TRead::read_note_paren_group(Chord *ch, XmlReader &e, ReadContext &ctx) {
 
 bool TRead::read_properties(Spanner *s, XmlReader &e, ReadContext &ctx) {
     const AsciiStringView tag(e.name());
-    if (nested_spanner_role(s->authored_child.role) && (tag == "startElement" || tag == "endElement")) {
+    if (nested_spanner_role(read_child_key(*s, ctx).role) && (tag == "startElement" || tag == "endElement")) {
         // Display endpoints come from the owner; this read-time carrier will be destroyed.
         e.skip_current_element();
         return true;
@@ -3783,7 +3788,7 @@ bool TRead::read_properties(Spanner *s, XmlReader &e, ReadContext &ctx) {
     if (tag == "play") {
         const bool play = e.read_bool();
         s->set_play_spanner(play);
-        read_child_property(*s, Pid::PLAY, play, PropertyFlags::NOSTYLE);
+        read_child_property(*s, Pid::PLAY, play, PropertyFlags::NOSTYLE, ctx);
         return true;
     } else if (tag == "track2") {
         track_idx_t track2 = e.read_int();
@@ -4167,13 +4172,13 @@ bool TRead::read_properties(InstrumentLabel &item, XmlReader &xml) {
 }
 
 void TRead::read(Stem *s, XmlReader &e, ReadContext &ctx) {
-    bind_authored_child(*s, {AuthoredChildRole::STEM});
+    begin_child_read(*s, {AuthoredChildRole::STEM}, ctx);
     while (e.read_next_start_element()) {
         if (!TRead::read_properties(s, e, ctx)) {
             e.unknown();
         }
     }
-    finish_authored_read(*s);
+    finish_child_read(*s, ctx);
 }
 
 bool TRead::read_properties(Stem *s, XmlReader &e, ReadContext &ctx) {
@@ -4189,13 +4194,13 @@ bool TRead::read_properties(Stem *s, XmlReader &e, ReadContext &ctx) {
 }
 
 void TRead::read(StemSlash *s, XmlReader &e, ReadContext &ctx) {
-    bind_authored_child(*s, {AuthoredChildRole::STEM_SLASH});
+    begin_child_read(*s, {AuthoredChildRole::STEM_SLASH}, ctx);
     while (e.read_next_start_element()) {
         if (!read_item_properties(s, e, ctx)) {
             e.unknown();
         }
     }
-    finish_authored_read(*s);
+    finish_child_read(*s, ctx);
 }
 
 void TRead::read(StringData *item, XmlReader &e) {
@@ -4259,7 +4264,7 @@ void TRead::read(Text *t, XmlReader &e, ReadContext &ctx) {
                 continue;
             }
             t->init_text_style_type(s);
-            read_child_property(*t, Pid::TEXT_STYLE, PropertyValue::from_value(s), t->property_flags(Pid::TEXT_STYLE));
+            read_child_property(*t, Pid::TEXT_STYLE, PropertyValue::from_value(s), t->property_flags(Pid::TEXT_STYLE), ctx);
         } else if (!read_properties(to_text_base(t), e, ctx)) {
             e.unknown();
         }
@@ -4494,7 +4499,7 @@ bool TRead::read_properties(TextBase *t, XmlReader &e, ReadContext &ctx) {
     if (tag == "text") {
         String str = line_break_from_tag(e.read_xml());
         t->set_xml_text(str);
-        read_child_property(*t, Pid::TEXT, str, t->property_flags(Pid::TEXT));
+        read_child_property(*t, Pid::TEXT, str, t->property_flags(Pid::TEXT), ctx);
         // Checkpoints already carry authored property flags; inline text must not override them.
         if (!ctx.transaction_snapshot) t->check_custom_formatting(str);
     } else if (tag == "bold") {
@@ -4547,7 +4552,7 @@ bool TRead::read_properties(TextBase *t, XmlReader &e, ReadContext &ctx) {
         return false;
     }
     if (tag == "bold" || tag == "italic" || tag == "underline" || tag == "strike")
-        read_child_property(*t, Pid::FONT_STYLE, static_cast<int>(t->font_style()), PropertyFlags::UNSTYLED);
+        read_child_property(*t, Pid::FONT_STYLE, static_cast<int>(t->font_style()), PropertyFlags::UNSTYLED, ctx);
     return true;
 }
 

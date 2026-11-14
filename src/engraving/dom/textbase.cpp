@@ -1095,6 +1095,25 @@ void TextBase::set_family(const String &val) { cursor_->set_format(FormatId::FON
 
 void TextBase::set_size(const double &val) { cursor_->set_format(FormatId::FONT_SIZE, val); }
 
+void TextBase::set_output_format(FormatId id, const FormatValue &value) {
+    auto &text = *this;
+    if (!text.xml_text().is_empty()) {
+        TextBase::LayoutData blocks;
+        text.create_blocks(&blocks, true);
+        bool changed = false;
+        for (auto &block : blocks.blocks) {
+            for (const auto &fragment : block.fragments())
+                if (!(id == FormatId::FONT_FAMILY && fragment.format.font_family() == u"ScoreText"))
+                    changed |= fragment.format.format_value(id) != value;
+            block.change_format(id, value, 0, static_cast<int>(block.columns()));
+        }
+        text.cursor()->format()->set_format_value(id, value);
+        if (changed) text.set_xml_text(text.gen_text(&blocks, true));
+    } else {
+        text.cursor()->format()->set_format_value(id, value);
+    }
+}
+
 struct XmlNesting : std::stack<String> {
 private:
 
@@ -1543,7 +1562,6 @@ bool TextBase::is_unlinked_from_master() const {
 }
 
 PropertyValue TextBase::get_property(Pid property_id) const {
-    if (auto value = authored_override_value(*this, property_id)) return *value;
     switch (property_id) {
         case Pid::TEXT_STYLE: return text_style_type();
         case Pid::FONT_FACE: return cursor_->selected_fragments_format().font_family();
@@ -1571,7 +1589,6 @@ PropertyValue TextBase::get_property(Pid property_id) const {
 }
 
 bool TextBase::set_property(Pid pid, const PropertyValue &v) {
-    if (set_authored_override(*this, pid, v)) return true;
     if (text_invalid_ && ldata() && ldata()->is_valid()) {
         gen_text();
     }

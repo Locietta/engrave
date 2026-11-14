@@ -68,7 +68,7 @@ public:
 
     Text *number() const { return has_layout_data() ? ldata()->number : nullptr; }
 
-    void apply_number_style();
+    void apply_number_style() const;
     void read_number_style(const Text &);
     static void reset_number_property(Text *number);
 

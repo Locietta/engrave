@@ -168,7 +168,6 @@ using namespace mu::engraving::rendering::score;
 
 void TLayout::layout_item(EngravingItem *item, LayoutContext &ctx) {
     apply_authored_overrides(*item);
-    AuthoredOverrideMirror authored_mirror(*item);
 
     EngravingItem::LayoutData *ldata = item->mutldata();
 
@@ -2639,10 +2638,10 @@ void TLayout::layout_guitar_bend(GuitarBend *item, LayoutContext &ctx, System *s
 }
 
 void TLayout::layout_guitar_bend_segment(GuitarBendSegment *item, LayoutContext &ctx) {
-    AuthoredOverrideMirror mirror(*item);
+
     LAYOUT_CALL_ITEM(item);
-    bind_authored_child(*item->bend_text(), {AuthoredChildRole::SEGMENT_TEXT, item->authored_child.ordinal});
-    AuthoredOverrideMirror text_mirror(*item->bend_text());
+    set_layout_child_key(*item->bend_text(), {AuthoredChildRole::SEGMENT_TEXT, item->authored_child.ordinal});
+
     bool tab_staff = item->staff_type()->is_tab_staff();
     if (tab_staff) {
         GuitarBendLayout::layout_tab_staff(item, ctx);
@@ -2671,7 +2670,7 @@ void TLayout::fill_guitar_bend_segment_shape(const GuitarBendSegment *item, Guit
 }
 
 void TLayout::layout_hairpin_segment(HairpinSegment *item, LayoutContext &ctx) {
-    AuthoredOverrideMirror mirror(*item);
+
     LAYOUT_CALL_ITEM(item);
     HairpinSegment::LayoutData *ldata = item->mutldata();
 
@@ -5324,7 +5323,7 @@ static PolygonF create_arrow(bool start, bool filled, PointF &start_point, Point
 void TLayout::layout_text_line_base(TextLineBase *item, LayoutContext &ctx) { layout_line(item, ctx); }
 
 void TLayout::layout_text_line_base_segment(TextLineBaseSegment *item, LayoutContext &ctx) {
-    AuthoredOverrideMirror mirror(*item);
+
     TextLineBaseSegment::LayoutData *ldata = item->mutldata();
     ldata->npoints = 0;
     const TextLineBase *tl = item->text_line_base();
@@ -6136,7 +6135,7 @@ SpannerSegment *TLayout::get_next_layout_system_segment(Spanner *spanner, System
     seg->set_track(spanner->track());
     const auto &segments = spanner->spanner_segments();
     const auto ordinal = static_cast<uint32_t>(std::find(segments.begin(), segments.end(), seg) - segments.begin());
-    bind_authored_child(*seg, {AuthoredChildRole::SPANNER_SEGMENT, ordinal});
+    set_layout_child_key(*seg, {AuthoredChildRole::SPANNER_SEGMENT, ordinal});
     return seg;
 }
 

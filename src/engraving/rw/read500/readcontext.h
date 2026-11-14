@@ -27,6 +27,7 @@
 
 #include "../infrastructure/eid.h"
 #include "../types/types.h"
+#include "dom/authoredoverride.h"
 #include "dom/interval.h"
 #include "dom/location.h"
 #include "engraving/internal/engravingfontsprovider.h"
@@ -64,6 +65,7 @@ struct ReadContext {
     bool paste_mode() const { return paste_mode_value; }
 
     bool transaction_snapshot = false;
+    std::map<const EngravingItem *, AuthoredChildKey> child_keys;
 
     String mscore_version() const;
     int msc_version() const;

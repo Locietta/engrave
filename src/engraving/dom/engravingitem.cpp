@@ -260,7 +260,6 @@ EngravingItem::EngravingItem(const ElementType &type, EngravingObject *parent, E
 }
 
 EngravingItem::EngravingItem(const EngravingItem &e, bool link) : EngravingObject(e), layout_type_(e.layout_type_) {
-    authored_child = e.authored_child;
     offset_ = e.offset_;
     track_ = e.track_;
     flags_ = e.flags_;
@@ -274,6 +273,7 @@ EngravingItem::EngravingItem(const EngravingItem &e, bool link) : EngravingObjec
         left_parenthesis_ = e.left_parenthesis_->clone();
         left_parenthesis_->set_ownership_parent(this);
         left_parenthesis_->set_track(track());
+        left_parenthesis_->set_eid(master_score()->eid_register()->new_eid(false));
         if (link) {
             score()->apply_link(left_parenthesis_, e.left_parenthesis_);
         }
@@ -282,6 +282,7 @@ EngravingItem::EngravingItem(const EngravingItem &e, bool link) : EngravingObjec
         right_parenthesis_ = e.right_parenthesis_->clone();
         right_parenthesis_->set_ownership_parent(this);
         right_parenthesis_->set_track(track());
+        right_parenthesis_->set_eid(master_score()->eid_register()->new_eid(false));
         if (link) {
             score()->apply_link(right_parenthesis_, e.right_parenthesis_);
         }
@@ -928,7 +929,6 @@ bool EngravingItem::autoplace() const {
 }
 
 PropertyValue EngravingItem::get_property(Pid property_id) const {
-    if (auto value = authored_override_value(*this, property_id)) return *value;
     switch (property_id) {
         case Pid::TICK: return tick();
         case Pid::TRACK: return track();
@@ -959,7 +959,6 @@ PropertyValue EngravingItem::get_property(Pid property_id) const {
 }
 
 bool EngravingItem::set_property(Pid property_id, const PropertyValue &v) {
-    if (set_authored_override(*this, property_id, v)) return true;
     switch (property_id) {
         case Pid::TRACK: set_track(v.value<track_idx_t>()); break;
         case Pid::VOICE: set_voice(v.value<voice_idx_t>()); break;
@@ -1656,7 +1655,6 @@ bool EngravingItem::is_user_modified() const {
 }
 
 void EngravingItem::trigger_layout() const {
-    if (authored_mirror) return;
     if (ownership_parent()) {
         score()->set_layout(tick(), staff_idx(), this);
     }
@@ -1716,6 +1714,7 @@ void EngravingItem::set_has_left_parenthesis(bool v, bool add_to_linked, bool ge
             paren->set_track(track());
             paren->set_direction(DirectionH::LEFT);
             paren->set_generated(generated);
+            if (!generated) paren->assign_new_eid();
 
             score()->undo_add_element(paren, add_to_linked);
         }
@@ -1743,6 +1742,7 @@ void EngravingItem::set_has_right_parenthesis(bool v, bool add_to_linked, bool g
             paren->set_track(track());
             paren->set_direction(DirectionH::RIGHT);
             paren->set_generated(generated);
+            if (!generated) paren->assign_new_eid();
 
             score()->undo_add_element(paren, add_to_linked);
         }

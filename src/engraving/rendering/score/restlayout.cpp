@@ -148,7 +148,7 @@ void RestLayout::layout_rest(const Rest *item, Rest::LayoutData *ldata, const La
     double invisible_x = item->sym_width_no_ledger_lines(ldata);
     double y = item->dot_line() * item->spatium() * .5;
     for (NoteDot *dot : item->dot_list()) {
-        AuthoredOverrideMirror mirror(*dot);
+
         dot->set_track(item->track());
         dot->set_visible(item->visible());
         NoteDot::LayoutData *dotldata = dot->mutldata();

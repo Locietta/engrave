@@ -280,6 +280,8 @@ public:
     virtual String family() const;
     virtual double size() const;
 
+    void set_output_format(FormatId id, const FormatValue &value);
+
     virtual void set_font_style(const FontStyle &val);
     virtual void set_family(const String &val);
     virtual void set_size(const double &val);
