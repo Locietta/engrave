@@ -26,6 +26,7 @@
 #include <cstdio>
 #include <map>
 #include <regex>
+#include <set>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -118,14 +119,21 @@ static ByteArray canonical_ids(const ByteArray &xml) {
         R"(<(eid|linkedTo|startElement|endElement|NoteEID|mmRestLast|startMeasure|endMeasure|sharedPart)>([A-Za-z0-9+/]+_[A-Za-z0-9+/]+)</\1>)");
     std::map<std::string, size_t> ids;
     const std::string source(xml.const_char(), xml.size());
+    std::set<std::string> defined;
+    for (std::sregex_iterator it(source.begin(), source.end(), identity), end; it != end; ++it)
+        if ((*it)[1].str() == "eid") defined.insert((*it)[2].str());
     std::string result;
     size_t cursor = 0;
     for (std::sregex_iterator it(source.begin(), source.end(), identity), end; it != end; ++it) {
         const auto &match = *it;
         result.append(source, cursor, match.position() - cursor);
         const auto value = match[2].str();
-        const auto [id, inserted] = ids.try_emplace(value, ids.size());
-        result += "<" + match[1].str() + ">id" + std::to_string(id->second) + "</" + match[1].str() + ">";
+        if (match[1].str() != "eid" && !defined.contains(value))
+            result += match.str();
+        else {
+            const auto id = ids.try_emplace(value, ids.size()).first;
+            result += "<" + match[1].str() + ">id" + std::to_string(id->second) + "</" + match[1].str() + ">";
+        }
         cursor = match.position() + match.length();
     }
     result.append(source, cursor, source.size() - cursor);
