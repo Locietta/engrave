@@ -184,7 +184,6 @@ Measure::Measure(Score *parent) : MeasureBase(ElementType::MEASURE, parent), tim
     measure_number_mode_ = MeasureNumberMode::AUTO;
     user_stretch_ = 1.0;
     break_multi_measure_rest_ = false;
-    mm_rest_ = nullptr;
     mm_rest_count_ = 0;
     set_flag(ElementFlag::MOVABLE, false);
 }
@@ -210,7 +209,6 @@ Measure::Measure(const Measure &m) : MeasureBase(m) {
     }
 
     break_multi_measure_rest_ = m.break_multi_measure_rest_;
-    mm_rest_ = m.mm_rest_;
     mm_rest_count_ = m.mm_rest_count_;
     playback_count_ = m.playback_count_;
 }
@@ -319,8 +317,15 @@ MMRestRange *Measure::mm_range_text(staff_idx_t staff_idx) const { return mstave
 //---------------------------------------------------------
 
 void Measure::set_mm_rest(Measure *measure) {
-    if (mm_rest_ && mm_rest_ != measure) score()->clear_layout_copies(*mm_rest_);
-    mm_rest_ = measure;
+    auto *old = ldata()->mm_rest;
+    if (old == measure) return;
+    if (old) {
+        if (auto *store = score()->layout_data_store()) store->retire_measure_borrowers(*old);
+        score()->clear_layout_copies(*old);
+    }
+    mutldata()->mm_rest = measure;
+    if (measure) measure->mutldata()->mm_rest_first = this;
+    delete old;
 }
 
 Measure::~Measure() {
@@ -636,7 +641,10 @@ Segment *Measure::tick2segment(const Fraction &input_t, SegmentType st) {
 //    position t.
 //---------------------------------------------------------
 
-Measure::LayoutData::~LayoutData() { muse::delete_all(segments); }
+Measure::LayoutData::~LayoutData() {
+    delete mm_rest;
+    muse::delete_all(segments);
+}
 
 bool Measure::owns_output_segment(const Segment *segment) const {
     const auto &owned = ldata()->segments;
@@ -662,6 +670,9 @@ void Measure::reconcile_output_segments() {
     const bool resized = ldata()->segment_output_invalid || (ldata()->output_ticks >= Fraction(0, 1) && ldata()->output_ticks != ticks());
     for (auto *source = first(); source; source = source->next()) {
         if (resized) {
+            source->mutldata()->suppressed = false;
+            muse::delete_all(source->mutldata()->display_copies);
+            source->mutldata()->display_copies.clear();
             source->set_enabled(true);
             source->set_header(source->is_header_clef_type());
             source->set_trailer(source->is_time_sig_announce_type() || source->is_key_sig_announce_type());
@@ -931,7 +942,7 @@ void Measure::add(EngravingItem *e) {
             el().push_back(e);
             break;
 
-        case ElementType::MEASURE: mm_rest_ = to_measure(e); break;
+        case ElementType::MEASURE: set_mm_rest(to_measure(e)); break;
 
         case ElementType::STAFFTYPE_CHANGE: {
             StaffTypeChange *staff_type_change = to_staff_type_change(e);
@@ -1038,7 +1049,7 @@ void Measure::remove(EngravingItem *e) {
             LOGD("Measure::remove: %s %p not found", e->type_name(), e);
             break;
 
-        case ElementType::MEASURE: mm_rest_ = 0; break;
+        case ElementType::MEASURE: set_mm_rest(nullptr); break;
 
         case ElementType::STAFFTYPE_CHANGE: {
             StaffTypeChange *stc = to_staff_type_change(e);
@@ -2441,10 +2452,7 @@ void Measure::undo_change_property(Pid id, const PropertyValue &v, PropertyFlags
 
 Measure *Measure::mm_rest_first() const {
     assert(is_mm_rest());
-    if (prev()) {
-        return to_measure(prev()->next());
-    }
-    return score()->first_measure();
+    return ldata()->mm_rest_first;
 }
 
 //-------------------------------------------------------------------
@@ -2455,10 +2463,7 @@ Measure *Measure::mm_rest_first() const {
 
 Measure *Measure::mm_rest_last() const {
     assert(is_mm_rest());
-    if (next()) {
-        return to_measure(next()->prev());
-    }
-    return score()->last_measure();
+    return ldata()->mm_rest_last;
 }
 
 //---------------------------------------------------------
@@ -2474,8 +2479,8 @@ Measure *Measure::covering_mm_rest_or_this() {
         return this;
     }
 
-    if (mm_rest_) {
-        return mm_rest_;
+    if (mm_rest()) {
+        return mm_rest();
     }
 
     if (is_mm_rest()) {
@@ -2483,12 +2488,12 @@ Measure *Measure::covering_mm_rest_or_this() {
     }
 
     const Measure *m = this;
-    while (m && !m->mm_rest_) {
+    while (m && !m->mm_rest()) {
         m = m->prev_measure();
     }
 
-    if (m && !m->mm_rest_->mm_rest_last()->is_before(this)) {
-        return m->mm_rest_;
+    if (m && !m->mm_rest()->mm_rest_last()->is_before(this)) {
+        return m->mm_rest();
     }
 
     return this;

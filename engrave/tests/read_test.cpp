@@ -1296,27 +1296,19 @@ TEST(Read, MissingNativeDisplayIdentitiesAreFinalizedBeforeSaving) {
     EXPECT_FALSE(number->generated());
     EXPECT_TRUE(number->eid().is_valid());
     ASSERT_TRUE((*opened)->checkpoint("number"));
-    auto mmr_opened = g_engine->open(as_bytes(mmr_source()));
-    ASSERT_TRUE(mmr_opened);
-    auto xml = (*mmr_opened)->export_score({.format = engrave::Format::MSCX});
-    ASSERT_TRUE(xml) << xml.error().message;
-    std::string input(reinterpret_cast<const char *>(xml->data()), xml->size());
-    const auto mmr = input.find("<multiMeasureRest>");
-    ASSERT_NE(mmr, std::string::npos);
-    auto remove_id = [&](size_t from) {
-        const auto begin = input.find("<eid>", from);
-        EXPECT_NE(begin, std::string::npos);
-        if (begin != std::string::npos) input.erase(begin, input.find("</eid>", begin) + 6 - begin);
-    };
-    remove_id(mmr);
-    const auto rest = input.find("<Rest>", mmr);
-    ASSERT_NE(rest, std::string::npos);
-    remove_id(rest);
-    auto reopened = g_engine->open(as_bytes(input));
+    auto legacy = mmr_source();
+    const auto after_first = legacy.find("</Measure>") + std::string("</Measure>").size();
+    legacy.insert(after_first, "<Measure><multiMeasureRest>2</multiMeasureRest><voice>"
+                               "<KeySig><concertKey>3</concertKey><actualKey>3</actualKey></KeySig>"
+                               "<Rest><durationType>measure</durationType></Rest></voice></Measure>");
+    auto reopened = g_engine->open(as_bytes(legacy));
     ASSERT_TRUE(reopened) << reopened.error().message;
     auto &restored = master_of(**reopened);
-    ASSERT_NE(restored.first_measure()->mm_rest(), nullptr);
-    EXPECT_TRUE(restored.first_measure()->mm_rest()->eid().is_valid());
+    EXPECT_EQ(restored.first_measure()->mm_rest(), nullptr);
+    auto *key = restored.first_measure()->find_segment_r(mu::engraving::SegmentType::KEY_SIG, mu::engraving::Fraction(0, 1));
+    ASSERT_NE(key, nullptr);
+    ASSERT_NE(key->element(0), nullptr);
+    EXPECT_EQ(mu::engraving::to_key_sig(key->element(0))->key(), mu::engraving::Key::A);
     EXPECT_EQ(restored.layout_state.whole_count + restored.layout_state.range_count, 0u);
     EXPECT_TRUE((*reopened)->checkpoint("mmr"));
 }
@@ -6532,25 +6524,24 @@ TEST(LayoutDataStore, DiscardRetiresHiddenAndMmrSegmentViewsBeforeLedgerShells) 
     ASSERT_TRUE(opened);
     auto &master = master_of(**opened);
     auto *measure = master.first_measure();
-    std::unique_ptr<Measure> mmr(Factory::create_measure(&master));
+    auto *mmr = Factory::create_measure(&master);
     mmr->set_mm_rest_count(2);
-    measure->set_mm_rest(mmr.get());
+    measure->set_mm_rest(mmr);
     std::unique_ptr<Segment> hidden(Factory::create_segment(measure, SegmentType::CHORD_REST, Fraction(0, 1)));
     hidden->set_visible(false);
-    std::unique_ptr<Segment> display(Factory::create_segment(mmr.get(), SegmentType::CHORD_REST, Fraction(0, 1)));
+    auto *display = Factory::create_segment(mmr, SegmentType::CHORD_REST, Fraction(0, 1));
+    mmr->add_output_segment(display);
     std::unique_ptr<Chord> chord(Factory::create_chord(hidden.get()));
     chord->resize_ledger_lines_to(1);
     auto *ledger = chord->ldata()->ledger_lines.front();
     hidden->staff_shape(0).add(Shape(muse::RectF(1, 2, 3, 4), ledger));
     display->staff_shape(0).add(Shape(muse::RectF(1, 2, 3, 4), ledger));
     engrave::DocumentAccess::impl(**opened).discard_layout_output(master);
-    for (const auto *segment : {hidden.get(), display.get()}) {
-        EXPECT_TRUE(segment->staff_shape(0).empty());
-        EXPECT_EQ(segment->min_right(), 0.0);
-        EXPECT_EQ(segment->min_left(), 0.0);
-    }
+    EXPECT_EQ(measure->mm_rest(), nullptr);
+    EXPECT_TRUE(hidden->staff_shape(0).empty());
+    EXPECT_EQ(hidden->min_right(), 0.0);
+    EXPECT_EQ(hidden->min_left(), 0.0);
     EXPECT_FALSE(chord->has_layout_data());
-    measure->set_mm_rest(nullptr);
 }
 
 TEST(LayoutDataStore, LedgerOwnershipGrowthFailureDoesNotAttachAnUnownedShell) {

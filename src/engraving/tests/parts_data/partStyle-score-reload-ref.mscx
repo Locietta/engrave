@@ -640,19 +640,6 @@
               </Rest>
             </voice>
           </Measure>
-        <Measure len="32/4">
-          <multiMeasureRest>8</multiMeasureRest>
-          <eid>E19L13308lL_jZBTT6fDXaC</eid>
-          <mmRestLast>nGXZH23uMzI_hMM3/Xb37kC</mmRestLast>
-          <voice>
-            <Rest>
-              <eid>sVTetopXrVE_qnCA6mlOXLL</eid>
-              <placement>above</placement>
-              <durationType>measure</durationType>
-              <duration>32/4</duration>
-              </Rest>
-            </voice>
-          </Measure>
         <Measure>
           <eid>pBwftxwupvF_QzxQHZ9qABH</eid>
           <voice>

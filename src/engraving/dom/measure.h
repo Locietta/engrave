@@ -402,11 +402,11 @@ public:
     void undo_change_property(Pid id, const PropertyValue &new_value);
     void undo_change_property(Pid id, const PropertyValue &new_value, PropertyFlags ps) override;
 
-    bool has_mm_rest() const { return mm_rest_ != nullptr; }
+    bool has_mm_rest() const { return mm_rest() != nullptr; }
 
     bool is_mm_rest() const { return mm_rest_count_ > 0; }
 
-    Measure *mm_rest() const { return mm_rest_; }
+    Measure *mm_rest() const { return ldata()->mm_rest; }
 
     Measure *covering_mm_rest_or_this();
     const Measure *covering_mm_rest_or_this() const;
@@ -476,6 +476,9 @@ public:
 
     struct LayoutData : public MeasureBase::LayoutData {
         ~LayoutData() override;
+        Measure *mm_rest = nullptr;
+        Measure *mm_rest_first = nullptr;
+        Measure *mm_rest_last = nullptr;
         std::vector<Segment *> segments;
         std::vector<Segment *> rendered;
         Fraction output_ticks = Fraction(-1, 1);
@@ -508,7 +511,6 @@ private:
 
     std::vector<MStaff *> mstaves_;
     SegmentList segments_{this};
-    Measure *mm_rest_ = nullptr; // multi measure rest which replaces a measure range
 
     double user_stretch_ = 0.0;
 

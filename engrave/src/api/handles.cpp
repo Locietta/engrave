@@ -294,25 +294,14 @@ void assign_missing_ids(MasterScore &master) {
             master.eid_register()->publish(object);
         }
     });
-    // Legacy native output still persists these display records. Their private
-    // wire identities must exist before saving without publishing API handles.
     const auto identify = [](EngravingObject *item) {
         if (item && !item->eid().is_valid()) item->assign_new_eid();
     };
     for (Score *score : master.score_list()) {
         for (Measure *measure = score->first_measure(); measure; measure = measure->next_measure()) {
-            for (Measure *written : {measure, measure->mm_rest()}) {
-                if (!written) continue;
-                if (written->is_mm_rest()) {
-                    identify(written);
-                    for (const Segment &segment : written->segments())
-                        for (auto *item : segment.elist())
-                            if (item && item->is_mm_rest()) identify(item);
-                }
-                for (const auto *staff : written->mstaves()) {
-                    if (auto *number = staff->measure_number(); number && !number->generated()) identify(number);
-                    if (auto *range = staff->mm_range_text(); range && !range->generated()) identify(range);
-                }
+            for (const auto *staff : measure->mstaves()) {
+                if (auto *number = staff->measure_number(); number && !number->generated()) identify(number);
+                if (auto *range = staff->mm_range_text(); range && !range->generated()) identify(range);
             }
         }
     }

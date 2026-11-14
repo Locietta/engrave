@@ -88,6 +88,12 @@ void ScoreLayout::layout_range(Score *score, const Fraction &st, const Fraction 
             collision |=
                 measure->find_segment_r(output->segment_type(), output->rtick()) != nullptr || output->elist().size() != score->ntracks();
         }
+        for (auto *segment = measure->rendered_first(); segment; segment = segment->rendered_next()) {
+            if (segment->ldata()->suppressed || !segment->ldata()->display_copies.empty()) {
+                measure->mutldata()->segment_output_invalid = true;
+                collision = true;
+            }
+        }
         for (auto *source = measure->first(); source; source = source->next()) {
             const auto &generated = source->ldata()->generated;
             collision |= !generated.empty() && generated.size() != score->ntracks();

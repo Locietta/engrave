@@ -32,19 +32,12 @@ using namespace mu::engraving::write;
 
 static void write_measure(XmlWriter &xml, WriteContext &ctx, MeasureBase *m, staff_idx_t staff_idx, bool write_system_elements,
                           bool force_time_sig) {
-    //
-    // special case multi measure rest
-    //
     if (m->is_measure() || staff_idx == 0) {
         if (Measure::classof(m)) {
             MeasureWrite::write_measure(to_measure(m), xml, ctx, staff_idx, write_system_elements, force_time_sig);
         } else {
             TWrite::write_item(m, xml, ctx);
         }
-    }
-
-    if (m->score()->style().style_b(Sid::CREATE_MULTI_MEASURE_RESTS) && m->is_measure() && to_measure(m)->mm_rest()) {
-        MeasureWrite::write_measure(to_measure(m)->mm_rest(), xml, ctx, staff_idx, write_system_elements, force_time_sig);
     }
 
     ctx.set_cur_tick(m->end_tick());

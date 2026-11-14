@@ -624,28 +624,36 @@ bool MeasureBase::is_before(const MeasureBase *other) const {
     return false;
 }
 
-const RangeLock *MeasureBase::system_lock() const { return score()->system_locks()->lock_containing(this); }
+const RangeLock *MeasureBase::system_lock() const {
+    return score()->system_locks()->lock_containing(is_measure() && to_measure(this)->is_mm_rest() ? to_measure(this)->mm_rest_first() :
+                                                                                                     this);
+}
 
 bool MeasureBase::is_start_of_system_lock() const {
-    const RangeLock *lock = score()->system_locks()->lock_starting_at(this);
+    const RangeLock *lock = score()->system_locks()->lock_starting_at(
+        is_measure() && to_measure(this)->is_mm_rest() ? to_measure(this)->mm_rest_first() : this);
     return lock != nullptr;
 }
 
 bool MeasureBase::is_end_of_system_lock() const {
     const RangeLock *lock = system_lock();
-    return lock && lock->end_mb() == this;
+    return lock && (lock->end_mb()->is_measure() ? to_measure(lock->end_mb())->covering_mm_rest_or_this() : lock->end_mb()) == this;
 }
 
-const RangeLock *MeasureBase::page_lock() const { return score()->page_locks()->lock_containing(this); }
+const RangeLock *MeasureBase::page_lock() const {
+    return score()->page_locks()->lock_containing(is_measure() && to_measure(this)->is_mm_rest() ? to_measure(this)->mm_rest_first() :
+                                                                                                   this);
+}
 
 bool MeasureBase::is_start_of_page_lock() const {
-    const RangeLock *lock = score()->page_locks()->lock_starting_at(this);
+    const RangeLock *lock =
+        score()->page_locks()->lock_starting_at(is_measure() && to_measure(this)->is_mm_rest() ? to_measure(this)->mm_rest_first() : this);
     return lock != nullptr;
 }
 
 bool MeasureBase::is_end_of_page_lock() const {
     const RangeLock *lock = page_lock();
-    return lock && lock->end_mb() == this;
+    return lock && (lock->end_mb()->is_measure() ? to_measure(lock->end_mb())->covering_mm_rest_or_this() : lock->end_mb()) == this;
 }
 
 //---------------------------------------------------------

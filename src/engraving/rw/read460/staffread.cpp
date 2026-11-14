@@ -61,8 +61,8 @@ void StaffRead::read_staff(Score *score, XmlReader &e, ReadContext &ctx) {
                 measure->check_measure(staff);
                 if (!measure->is_mm_rest()) {
                     score->measures()->append(measure);
-                    if (m && m->mm_rest()) {
-                        m->mm_rest()->set_next(measure);
+                    if (m && ctx.legacy_mmrests.contains(m)) {
+                        ctx.legacy_mmrests.at(m)->set_next(measure);
                     }
                     score->check_spanner(ctx.tick(), ctx.tick() + measure->ticks(), /*removeOrphans*/ false);
                     ctx.set_last_measure(measure);
@@ -73,7 +73,7 @@ void StaffRead::read_staff(Score *score, XmlReader &e, ReadContext &ctx) {
                     Measure *m1 = ctx.last_measure();
 
                     if (m1) {
-                        m1->set_mm_rest(measure);
+                        ctx.legacy_mmrests.emplace(m1, std::unique_ptr<Measure>(measure));
                         measure->set_tick(m1->tick());
                         measure->set_prev(m1->prev());
                     }
@@ -113,8 +113,8 @@ void StaffRead::read_staff(Score *score, XmlReader &e, ReadContext &ctx) {
                     measure = ctx.last_measure()->next_measure();
                 } else {
                     ctx.set_last_measure(measure);
-                    if (measure->mm_rest()) {
-                        measure = measure->mm_rest();
+                    if (ctx.legacy_mmrests.contains(measure)) {
+                        measure = ctx.legacy_mmrests.at(measure).get();
                     } else {
                         measure = measure->next_measure();
                     }

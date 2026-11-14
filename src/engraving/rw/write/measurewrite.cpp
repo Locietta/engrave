@@ -50,18 +50,8 @@ void MeasureWrite::write_measure(const Measure *measure, XmlWriter &xml, WriteCo
     ctx.set_cur_tick(measure->tick());
     ctx.set_cur_track(staff * ::mu::engraving::voices);
 
-    if (measure->mm_rest_count() > 0) {
-        xml.tag("multiMeasureRest", measure->mm_rest_count());
-    }
     if (write_system_elements) {
         TWrite::write_item_eid(measure, xml);
-
-        if (measure->is_mm_rest()) {
-            const Measure *last_measure = measure->mm_rest_last();
-            const EID eid_of_last_measure = last_measure->eid();
-            if (!eid_of_last_measure.is_valid()) throw std::logic_error("native writer: missing MMR end measure EID");
-            xml.tag("mmRestLast", eid_of_last_measure.to_std_string());
-        }
 
         if (measure->repeat_start()) {
             xml.tag("startRepeat");

@@ -276,7 +276,14 @@ bool Read460::read_score_tag(Score *score, XmlReader &e, ReadContext &ctx) {
         }
     }
 
-    rw::restore_mm_rest_sources(*score);
+    for (auto it = ctx.legacy_mmrests.begin(); it != ctx.legacy_mmrests.end();) {
+        if (it->first->score() != score) {
+            ++it;
+            continue;
+        }
+        rw::restore_mm_rest_sources(*it->first, *it->second);
+        it = ctx.legacy_mmrests.erase(it);
+    }
     score->update_ticks_and_time_sig_map();
     if (score->is_master()) {
         // Publish the completed repeat structure before repairing tie jump points.
