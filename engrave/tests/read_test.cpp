@@ -5502,17 +5502,16 @@ TEST(Read, BulkPositionResetRemovesColdSparseSegmentOffsetsAndGrips) {
         auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
         ASSERT_TRUE(reopened);
         for (auto *owner : master_of(**reopened).spanner_list()) {
-            for (const auto &entry : owner->authored_overrides.entries) {
-                if (entry.pid == Pid::OFFSET || entry.pid == Pid::OFFSET2 || entry.pid == Pid::SLUR_UOFF1 || entry.pid == Pid::SLUR_UOFF4)
-                    EXPECT_EQ(entry.value, PropertyValue(PointF()));
-            }
+            for (const uint32_t ordinal : {0u, 2u})
+                for (const auto pid : {Pid::OFFSET, Pid::OFFSET2, Pid::SLUR_UOFF1, Pid::SLUR_UOFF4})
+                    EXPECT_EQ(owner->authored_overrides.find({AuthoredChildRole::SPANNER_SEGMENT, ordinal}, pid), nullptr);
             EXPECT_TRUE(owner->segments_empty());
         }
         auto line = engrave::resolve(master_of(**reopened), *engrave::element_id_from_string("F_F"));
         ASSERT_TRUE(line);
         const auto &table = to_spanner(line->object)->authored_overrides;
         ASSERT_NE(table.carrier({AuthoredChildRole::SPANNER_SEGMENT, 2}), nullptr);
-        EXPECT_EQ(table.find({AuthoredChildRole::SPANNER_SEGMENT, 2}, Pid::OFFSET)->value, PropertyValue(PointF()));
+        EXPECT_EQ(table.find({AuthoredChildRole::SPANNER_SEGMENT, 2}, Pid::OFFSET), nullptr);
     }
 }
 
