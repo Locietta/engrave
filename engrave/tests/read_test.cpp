@@ -6278,6 +6278,205 @@ TEST(Read, S17SectionReplacementInvalidatesRepeatTraversal) {
     }
 }
 
+std::string s18_break_fixture(const std::string &breaks) {
+    return R"(<museScore version="5.00"><Score><Division>480</Division>
+<Part><Staff><StaffType group="pitched"/></Staff><Instrument id="piano"><Channel/></Instrument></Part>
+<Staff id="1"><Measure len="1/4"><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
+<Rest><durationType>quarter</durationType></Rest></voice>)" +
+           breaks + R"(</Measure><Measure len="1/4"><endRepeat>2</endRepeat><voice>
+<Rest><durationType>quarter</durationType></Rest></voice></Measure></Staff></Score></museScore>)";
+}
+
+std::string s18_break_xml(const std::string &type) { return "<LayoutBreak><subtype>" + type + "</subtype></LayoutBreak>"; }
+
+void expect_s18_breaks(mu::engraving::Measure *measure, const std::vector<mu::engraving::LayoutBreakType> &expected) {
+    using namespace mu::engraving;
+    std::vector<LayoutBreakType> actual;
+    for (auto *item : measure->el())
+        if (item->is_layout_break()) actual.push_back(to_layout_break(item)->layout_break_type());
+    EXPECT_EQ(actual, expected);
+    const auto contains = [&](auto type) { return std::find(expected.begin(), expected.end(), type) != expected.end(); };
+    EXPECT_EQ(measure->line_break(), contains(LayoutBreakType::LINE));
+    EXPECT_EQ(measure->page_break(), contains(LayoutBreakType::PAGE));
+    EXPECT_EQ(measure->section_break(), contains(LayoutBreakType::SECTION));
+    EXPECT_EQ(measure->no_break(), contains(LayoutBreakType::NOBREAK));
+}
+
+TEST(Read, S18ImportBreakConflictsUseIncomingOrderWithoutLayout) {
+    using enum mu::engraving::LayoutBreakType;
+
+    struct Case {
+        std::vector<std::string> incoming;
+        std::vector<mu::engraving::LayoutBreakType> expected;
+    };
+
+    const std::vector<Case> cases{
+        {{"section", "nobreak"}, {NOBREAK}},
+        {{"nobreak", "section"}, {SECTION}},
+        {{"line", "page"}, {PAGE}},
+        {{"page", "line"}, {LINE}},
+        {{"line", "section"}, {SECTION}},
+        {{"section", "line"}, {LINE}},
+        {{"page", "nobreak"}, {NOBREAK}},
+        {{"nobreak", "page"}, {PAGE}},
+        {{"line", "nobreak"}, {NOBREAK}},
+        {{"nobreak", "line"}, {LINE}},
+        {{"page", "section"}, {PAGE, SECTION}},
+        {{"section", "page"}, {SECTION, PAGE}},
+        {{"line", "page", "section"}, {PAGE, SECTION}},
+        {{"page", "line", "section"}, {SECTION}},
+        {{"page", "section", "nobreak"}, {NOBREAK}},
+    };
+    for (const std::string version : {"4.60", "5.00"}) {
+        for (const auto &spec : cases) {
+            SCOPED_TRACE(version);
+            std::string breaks;
+            for (const auto &type : spec.incoming) breaks += s18_break_xml(type);
+            SCOPED_TRACE(breaks);
+            auto xml = s18_break_fixture(breaks);
+            xml.replace(xml.find("5.00"), 4, version);
+            auto opened = g_engine->open(as_bytes(xml));
+            ASSERT_TRUE(opened);
+            auto &master = master_of(**opened);
+            expect_s18_breaks(master.first_measure(), spec.expected);
+            EXPECT_EQ(layout_count(master), 0u);
+        }
+    }
+}
+
+TEST(Read, S18BreakSubtypeEditsRemoveSiblingsAndRepeatBoundary) {
+    using namespace mu::engraving;
+    for (const std::string selected : {"page", "section"}) {
+        for (const std::string replacement : {"nobreak", "line"}) {
+            for (bool warm : {false, true}) {
+                SCOPED_TRACE(selected + " -> " + replacement);
+                SCOPED_TRACE(warm);
+                auto opened = g_engine->open(as_bytes(s18_break_fixture(s18_break_xml("section") + s18_break_xml("page"))));
+                ASSERT_TRUE(opened);
+                auto &document = **opened;
+                auto &master = master_of(document);
+                auto *measure = master.first_measure();
+                LayoutBreak *target = nullptr;
+                LayoutBreak *sibling = nullptr;
+                for (auto *item : measure->el()) {
+                    if (!item->is_layout_break()) continue;
+                    auto *br = to_layout_break(item);
+                    if (br->is_page_break() == (selected == "page"))
+                        target = br;
+                    else
+                        sibling = br;
+                }
+                ASSERT_NE(target, nullptr);
+                ASSERT_NE(sibling, nullptr);
+                const auto target_id = engrave::from_engine(target->eid());
+                const auto sibling_id = engrave::from_engine(sibling->eid());
+                if (warm) ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+                master.update_repeat_list(false);
+                // Without a section boundary the end repeat includes both quarters.
+                EXPECT_EQ(master.repeat_list(true).ticks(), 1440);
+                const auto layouts = layout_count(master);
+                const auto result = document.edit({{engrave::SetProperty{target_id, "LAYOUT_BREAK", engrave::Enum{replacement}}}});
+                ASSERT_TRUE(result);
+                ASSERT_FALSE(result->rejection);
+                EXPECT_FALSE(engrave::resolve(master, sibling_id));
+                EXPECT_TRUE(engrave::resolve(master, target_id));
+                const auto expected = replacement == "line" ? LayoutBreakType::LINE : LayoutBreakType::NOBREAK;
+                expect_s18_breaks(measure, {expected});
+                EXPECT_EQ(layout_count(master), layouts);
+                master.update_repeat_list(false);
+                EXPECT_EQ(master.repeat_list(true).ticks(), 1920);
+                for (const auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
+                    auto saved = document.export_score({.format = format});
+                    ASSERT_TRUE(saved);
+                    auto reopened = g_engine->open(*saved, {.format = format});
+                    ASSERT_TRUE(reopened);
+                    auto &copy = master_of(**reopened);
+                    expect_s18_breaks(copy.first_measure(), {expected});
+                    copy.update_repeat_list(false);
+                    EXPECT_EQ(copy.repeat_list(true).ticks(), 1920);
+                    ASSERT_TRUE((*reopened)->render({.format = engrave::RenderFormat::SVG}));
+                    expect_s18_breaks(copy.first_measure(), {expected});
+                }
+                ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+                expect_s18_breaks(measure, {expected});
+            }
+        }
+    }
+}
+
+TEST(Read, S18BreakSubtypeBatchFailurePreservesTheBatchContract) {
+    using namespace mu::engraving;
+    for (bool warm : {false, true}) {
+        SCOPED_TRACE(warm);
+        auto opened = g_engine->open(as_bytes(s18_break_fixture(s18_break_xml("section") + s18_break_xml("page"))));
+        ASSERT_TRUE(opened);
+        auto &document = **opened;
+        auto &master = master_of(document);
+        auto *measure = master.first_measure();
+        const auto section = engrave::from_engine(measure->section_break_element()->eid());
+        LayoutBreak *page = nullptr;
+        for (auto *item : measure->el())
+            if (item->is_layout_break() && to_layout_break(item)->is_page_break()) page = to_layout_break(item);
+        ASSERT_NE(page, nullptr);
+        const auto page_id = engrave::from_engine(page->eid());
+        if (warm) ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+        const auto layouts = layout_count(master);
+        const auto preflight = document.edit({{engrave::SetProperty{page_id, "LAYOUT_BREAK", engrave::Enum{"line"}},
+                                               engrave::SetProperty{section, "unknown-property", int64_t{1}}}});
+        ASSERT_FALSE(preflight);
+        EXPECT_FALSE(preflight.error().poisoned);
+        expect_s18_breaks(measure, {LayoutBreakType::SECTION, LayoutBreakType::PAGE});
+        const auto prefix =
+            document.edit({{engrave::SetProperty{page_id, "LAYOUT_BREAK", engrave::Enum{"line"}}, engrave::Remove{section}}});
+        ASSERT_TRUE(prefix);
+        ASSERT_TRUE(prefix->rejection);
+        EXPECT_EQ(prefix->applied, 1u);
+        EXPECT_EQ(prefix->rejection->op_index, 1u);
+        EXPECT_FALSE(prefix->rejection->error.poisoned);
+        expect_s18_breaks(measure, {LayoutBreakType::LINE});
+        EXPECT_FALSE(engrave::resolve(master, section));
+        EXPECT_EQ(layout_count(master), layouts);
+        ASSERT_TRUE(document.edit({}));
+        ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+    }
+}
+
+TEST(Read, S18DirectBreakSubtypeEditsRemoveLinkedSiblings) {
+    using namespace mu::engraving;
+    for (bool active : {false, true}) {
+        SCOPED_TRACE(active);
+        auto opened = g_engine->open(as_bytes(s18_break_fixture(s18_break_xml("section") + s18_break_xml("page"))));
+        ASSERT_TRUE(opened);
+        auto &master = master_of(**opened);
+        ASSERT_TRUE((*opened)->edit({{engrave::GenerateExcerpts{{engrave::from_engine(master.parts().front()->eid())}}}}));
+        ASSERT_EQ(master.excerpts().size(), 1u);
+        auto *part = master.excerpts().front()->excerpt_score();
+        ASSERT_NE(part, nullptr);
+        auto *measure = master.first_measure();
+        auto *other = part->first_measure();
+        ASSERT_NE(other->section_break_element(), nullptr);
+        ASSERT_NE(other->section_break_element()->links(), nullptr);
+        auto *page = to_layout_break(measure->el().back());
+        // Generated excerpts omit page breaks; attach a linked authored copy.
+        auto *page_copy = page->linked_clone();
+        page_copy->set_ownership_parent(other);
+        other->add(page_copy);
+        expect_s18_breaks(other, {LayoutBreakType::SECTION, LayoutBreakType::PAGE});
+        if (active) {
+            ASSERT_TRUE(
+                (*opened)->edit({{engrave::SetProperty{engrave::from_engine(page->eid()), "LAYOUT_BREAK", engrave::Enum{"line"}}}}));
+        } else {
+            page->set_layout_break_type(LayoutBreakType::LINE);
+        }
+        expect_s18_breaks(measure, {LayoutBreakType::LINE});
+        expect_s18_breaks(other, {active ? LayoutBreakType::LINE : LayoutBreakType::PAGE});
+        master.update_repeat_list(false);
+        EXPECT_EQ(master.repeat_list(true).ticks(), 1920);
+        ASSERT_TRUE((*opened)->render({.format = engrave::RenderFormat::SVG}));
+        ASSERT_TRUE((*opened)->render({.score = {engrave::from_engine(part->eid())}, .format = engrave::RenderFormat::SVG}));
+    }
+}
+
 TEST(Read, S17GraceBeamEditsRespectSeparateAuthoredOwnership) {
     using namespace mu::engraving;
     for (bool after : {false, true}) {
@@ -6329,6 +6528,79 @@ std::string s17_beam_fixture(const std::string &voice) {
 <TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>)" +
            voice + R"(</voice></Measure></Staff>
 <Staff id="2"><Measure><voice><Rest><durationType>whole</durationType></Rest></voice></Measure></Staff></Score></museScore>)";
+}
+
+TEST(Read, S18AuthoredBeamOwnersPartitionUnanchoredMembers) {
+    using namespace mu::engraving;
+    for (int grace : {-1, 0, 1}) {
+        for (bool cross_staff : {false, true}) {
+            for (bool warm : {false, true}) {
+                SCOPED_TRACE(grace);
+                SCOPED_TRACE(cross_staff);
+                SCOPED_TRACE(warm);
+                std::string voice;
+                for (int i = 0; i < 4; ++i) {
+                    const int index = grace == 1 ? 3 - i : i;
+                    if (index == 0) voice += "<Beam><eid>F_F</eid></Beam>";
+                    if (index == 2) voice += "<Beam><eid>G_G</eid></Beam>";
+                    voice += "<Chord>";
+                    if (grace != 0) voice += grace == -1 ? "<appoggiatura/>" : "<grace8after/>";
+                    voice += "<durationType>eighth</durationType><BeamMode>";
+                    voice += index == 0 ? "begin" : "mid";
+                    voice += "</BeamMode>";
+                    if (cross_staff && index == 0) voice += "<staffMove>1</staffMove>";
+                    voice += "<Note><pitch>60</pitch><tpc>14</tpc></Note></Chord>";
+                }
+                if (grace != 0) voice += "<Chord><durationType>quarter</durationType><Note><pitch>60</pitch><tpc>14</tpc></Note></Chord>";
+                auto opened = g_engine->open(as_bytes(s17_beam_fixture(voice)));
+                ASSERT_TRUE(opened);
+                auto &document = **opened;
+                auto &master = master_of(document);
+                auto *measure = master.first_measure();
+                std::vector<ChordRest *> notes;
+                if (grace == 0) {
+                    for (auto *seg = measure->first(SegmentType::CHORD_REST); seg; seg = seg->next(SegmentType::CHORD_REST))
+                        if (auto *cr = to_chord_rest(seg->element(0)); cr && cr->is_chord()) notes.push_back(cr);
+                } else {
+                    auto *main = to_chord(measure->first(SegmentType::CHORD_REST)->element(0));
+                    const auto graces = grace == -1 ? main->grace_notes_before() : main->grace_notes_after();
+                    for (auto *cr : graces) notes.push_back(cr);
+                }
+                ASSERT_EQ(notes.size(), 4u);
+                auto *first = notes[0]->authored_beam();
+                auto *second = notes[2]->authored_beam();
+                ASSERT_NE(first, nullptr);
+                ASSERT_NE(second, nullptr);
+                ASSERT_NE(first, second);
+                const std::vector<ChordRest *> first_members{notes[0], notes[1]};
+                const std::vector<ChordRest *> second_members{notes[2], notes[3]};
+                const auto check = [&] {
+                    EXPECT_EQ(first->source_elements(), first_members);
+                    EXPECT_EQ(second->source_elements(), second_members);
+                };
+                check();
+                EXPECT_EQ(layout_count(master), 0u);
+                if (warm) ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+                check();
+                const auto layouts = layout_count(master);
+                ASSERT_TRUE(
+                    document.edit({{engrave::SetProperty{engrave::from_engine(second->eid()), "StemDirection", engrave::Enum{"down"}}}}));
+                EXPECT_EQ(to_chord(notes[0])->stem_direction(), DirectionV::AUTO);
+                EXPECT_EQ(to_chord(notes[1])->stem_direction(), DirectionV::AUTO);
+                ASSERT_TRUE(
+                    document.edit({{engrave::SetProperty{engrave::from_engine(first->eid()), "StemDirection", engrave::Enum{"up"}}}}));
+                EXPECT_EQ(to_chord(notes[0])->stem_direction(), cross_staff ? DirectionV::AUTO : DirectionV::UP);
+                EXPECT_EQ(to_chord(notes[1])->stem_direction(), cross_staff ? DirectionV::AUTO : DirectionV::UP);
+                EXPECT_EQ(to_chord(notes[2])->stem_direction(), DirectionV::DOWN);
+                EXPECT_EQ(to_chord(notes[3])->stem_direction(), DirectionV::DOWN);
+                EXPECT_EQ(layout_count(master), layouts);
+                ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+                check();
+                EXPECT_EQ(to_chord(notes[1])->stem_direction(), cross_staff ? DirectionV::AUTO : DirectionV::UP);
+                EXPECT_EQ(to_chord(notes[2])->stem_direction(), DirectionV::DOWN);
+            }
+        }
+    }
 }
 
 TEST(Read, S17SourceBeamGroupsMatchRenderedTransitions) {

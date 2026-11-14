@@ -411,10 +411,7 @@ void MeasureBase::undo_set_break(bool v, LayoutBreakType type) {
         if (!item->is_layout_break()) continue;
         const auto existing = to_layout_break(item)->layout_break_type();
         present |= existing == type;
-        // Page and section breaks may coexist; every other pair is exclusive.
-        const bool compatible = (type == LayoutBreakType::PAGE && existing == LayoutBreakType::SECTION) ||
-                                (type == LayoutBreakType::SECTION && existing == LayoutBreakType::PAGE);
-        if ((!v && existing == type) || (v && existing != type && !compatible)) remove.push_back(item);
+        if ((!v && existing == type) || (v && !breaks_compatible(existing, type))) remove.push_back(item);
     }
     for (auto *item : remove) score()->undo_remove_element(item);
     if (v && !present) {
@@ -426,32 +423,18 @@ void MeasureBase::undo_set_break(bool v, LayoutBreakType type) {
 }
 
 void MeasureBase::cleanup_layout_breaks(bool undo) {
+    std::vector<EngravingItem *> retained;
     std::vector<EngravingItem *> to_delete;
-    for (EngravingItem *e : el()) {
-        if (e->is_layout_break()) {
-            switch (to_layout_break(e)->layout_break_type()) {
-                case LayoutBreakType::LINE:
-                    if (!line_break()) {
-                        to_delete.push_back(e);
-                    }
-                    break;
-                case LayoutBreakType::PAGE:
-                    if (!page_break()) {
-                        to_delete.push_back(e);
-                    }
-                    break;
-                case LayoutBreakType::SECTION:
-                    if (!section_break()) {
-                        to_delete.push_back(e);
-                    }
-                    break;
-                case LayoutBreakType::NOBREAK:
-                    if (!no_break()) {
-                        to_delete.push_back(e);
-                    }
-                    break;
-            }
-        }
+    for (auto *e : el()) {
+        if (!e->is_layout_break()) continue;
+        const auto incoming = to_layout_break(e)->layout_break_type();
+        // Import order determines precedence, independently of the cached flags.
+        std::erase_if(retained, [&](auto *previous) {
+            if (breaks_compatible(to_layout_break(previous)->layout_break_type(), incoming)) return false;
+            to_delete.push_back(previous);
+            return true;
+        });
+        retained.push_back(e);
     }
     for (EngravingItem *e : to_delete) {
         if (undo) {

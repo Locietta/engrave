@@ -85,9 +85,20 @@ void LayoutBreak::set_layout_break_type(LayoutBreakType val) {
     if (layout_break_type_ == val) return;
     note_change(this, CommandType::UNKNOWN);
     const bool section_changed = is_section_break() || val == LayoutBreakType::SECTION;
-    layout_break_type_ = val;
     auto *parent = measure();
-    if (parent && muse::contains(parent->el(), static_cast<EngravingItem *>(this))) parent->sync_break_flags(section_changed);
+    const bool attached = parent && muse::contains(parent->el(), static_cast<EngravingItem *>(this));
+    if (attached) {
+        std::vector<EngravingItem *> displaced;
+        for (auto *item : parent->el()) {
+            if (item == this || !item->is_layout_break()) continue;
+            if (!breaks_compatible(to_layout_break(item)->layout_break_type(), val)) displaced.push_back(item);
+        }
+        // The transaction removal path also removes linked copies and defers
+        // destruction safely when a direct setter runs outside an edit batch.
+        for (auto *item : displaced) score()->undo_remove_element(item);
+    }
+    layout_break_type_ = val;
+    if (attached) parent->sync_break_flags(section_changed);
 }
 
 //---------------------------------------------------------
