@@ -2125,7 +2125,7 @@ void Score::undo_change_bar_line_type(BarLine *bl, BarLineType bar_type, bool al
         case BarLineType::REVERSE_END:
         case BarLineType::HEAVY:
         case BarLineType::DOUBLE_HEAVY: {
-            if (m->next_measure_mm() && m->next_measure_mm()->system() && m->next_measure_mm()->is_first_in_system()) {
+            if (m2->line_break() || m2->page_break() || m2->section_break() || (m2->next() && !m2->next()->is_measure())) {
                 keep_start_repeat = true;
             }
 
