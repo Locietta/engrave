@@ -92,10 +92,7 @@ std::string plain_text(const muse::String &text) { return text.to_std_string(); 
 // properties keep the semantic read path free of layout.
 bool property_needs_layout(Pid pid, const EngravingObject *object = nullptr) {
     using mu::engraving::ElementType;
-    static constexpr std::pair<ElementType, Pid> properties[] = {
-        {ElementType::FINGERING, Pid::PLACEMENT}, {ElementType::CHORDLINE, Pid::PATH}, {ElementType::BEAM, Pid::BEAM_POS}};
-    return std::ranges::any_of(
-        properties, [&](const auto &property) { return property.second == pid && (!object || property.first == object->type()); });
+    return pid == Pid::PLACEMENT && (!object || object->type() == ElementType::FINGERING);
 }
 
 PropertyRead read_property(const EngravingObject &object, Pid pid) {

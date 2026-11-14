@@ -92,8 +92,11 @@ int BeamBase::default_cross_staff_idx() const {
 }
 
 bool BeamBase::accept_cross_staff_move(int move) const {
-    int new_cross_staff_idx = default_cross_staff_idx() + move;
-    return new_cross_staff_idx >= min_cr_move() && new_cross_staff_idx <= max_cr_move() + 1;
+    const auto [min_move, max_move] =
+        is_beam() ? static_cast<const Beam *>(this)->source_staff_move_bounds() : std::pair{min_cr_move(), max_cr_move()};
+    const int default_idx = std::ceil(0.5 * (static_cast<double>(min_move) + static_cast<double>(max_move)));
+    const int new_cross_staff_idx = default_idx + move;
+    return new_cross_staff_idx >= min_move && new_cross_staff_idx <= max_move + 1;
 }
 
 bool BeamBase::user_modified() const {

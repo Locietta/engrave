@@ -5944,6 +5944,72 @@ TEST(Read, PublicStemSlashEditReachesTheRenderedGraceBeam) {
     for (auto *grace : restored->grace_notes()) EXPECT_FALSE(grace->show_stem_slash());
 }
 
+TEST(Read, S14DormantBeamDirectionUsesAuthoredMembers) {
+    using namespace mu::engraving;
+    for (bool warm : {false, true}) {
+        auto xml = legacy_segment_fixture("");
+        for (size_t at; (at = xml.find("<durationType>half</durationType>")) != std::string::npos;)
+            xml.replace(at, 33, "<durationType>eighth</durationType>");
+        xml.insert(xml.find("<Chord>"), "<Beam><eid>F_F</eid></Beam>");
+        auto opened = g_engine->open(as_bytes(xml));
+        ASSERT_TRUE(opened);
+        auto &document = **opened;
+        auto &master = master_of(document);
+        auto *first = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+        auto *second = to_chord(first->segment()->next(SegmentType::CHORD_REST)->element(0));
+        auto *beam = first->authored_beam();
+        ASSERT_NE(beam, nullptr);
+        ASSERT_TRUE(document.edit({{engrave::SetProperty{engrave::from_engine(second->eid()), "BeamMode", engrave::Enum{"no"}}}}));
+        if (warm) ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+        const auto layouts = layout_count(master);
+        ASSERT_TRUE(document.edit({{engrave::SetProperty{engrave::from_engine(beam->eid()), "StemDirection", engrave::Enum{"down"}}}}));
+        EXPECT_EQ(beam->direction(), DirectionV::DOWN);
+        EXPECT_EQ(first->stem_direction(), DirectionV::DOWN);
+        EXPECT_EQ(second->stem_direction(), DirectionV::AUTO);
+        EXPECT_EQ(layout_count(master), layouts);
+    }
+}
+
+TEST(Read, S14BeamCrossStaffValidationUsesCurrentSourceMoves) {
+    using namespace mu::engraving;
+    auto xml = legacy_segment_fixture("");
+    xml.insert(xml.find("</Part>"), "<Staff><StaffType group=\"pitched\"/></Staff>");
+    xml.insert(xml.find("<SpannerMap>"),
+               "<Staff id=\"2\"><Measure><voice><Rest><durationType>whole</durationType></Rest></voice></Measure></Staff>");
+    for (size_t at; (at = xml.find("<durationType>half</durationType>")) != std::string::npos;)
+        xml.replace(at, 33, "<durationType>eighth</durationType>");
+    xml.insert(xml.find("<Chord>"), "<Beam><eid>F_F</eid></Beam>");
+    for (bool warm : {false, true}) {
+        auto opened = g_engine->open(as_bytes(xml));
+        ASSERT_TRUE(opened);
+        auto &document = **opened;
+        auto &master = master_of(document);
+        auto *first = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+        auto *second = to_chord(first->segment()->next(SegmentType::CHORD_REST)->element(0));
+        auto *beam = first->authored_beam();
+        ASSERT_NE(beam, nullptr);
+        beam->add(second);
+        second->set_staff_move(1);
+        if (warm) ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+        const auto layouts = layout_count(master);
+        const auto id = engrave::from_engine(beam->eid());
+        ASSERT_TRUE(document.edit(
+            {{engrave::SetProperty{id, "crossStaffMove", int64_t{-1}}, engrave::SetProperty{id, "StemDirection", engrave::Enum{"down"}}}}));
+        EXPECT_EQ(beam->cross_staff_move(), -1);
+        EXPECT_EQ(beam->direction(), DirectionV::AUTO);
+        ASSERT_TRUE(document.edit(
+            {{engrave::SetProperty{engrave::from_engine(second->eid()), "staffMove", int64_t{0}},
+              engrave::SetProperty{id, "crossStaffMove", int64_t{0}}, engrave::SetProperty{id, "StemDirection", engrave::Enum{"down"}}}}));
+        EXPECT_EQ(beam->cross_staff_move(), 0);
+        EXPECT_EQ(beam->direction(), DirectionV::DOWN);
+        EXPECT_EQ(first->stem_direction(), DirectionV::DOWN);
+        EXPECT_EQ(second->stem_direction(), DirectionV::DOWN);
+        ASSERT_TRUE(document.edit({{engrave::SetProperty{id, "crossStaffMove", int64_t{-1}}}}));
+        EXPECT_EQ(beam->cross_staff_move(), 0);
+        EXPECT_EQ(layout_count(master), layouts);
+    }
+}
+
 TEST(Read, AuthoredBeamPositionSurvivesRegroupingAndFullLayout) {
     using namespace mu::engraving;
     auto xml = legacy_segment_fixture("");
@@ -6432,6 +6498,39 @@ TEST(Read, StemUserLengthSurvivesDisplayRecreation) {
         auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
         ASSERT_TRUE(reopened) << reopened.error().message;
         EXPECT_DOUBLE_EQ(offset_test_lines(master_of(**reopened)).front()->chord()->stem_user_length().val(), 1.25);
+    }
+}
+
+TEST(Read, S14AuthoredGeometryPropertiesGetAndQueryWithoutLayout) {
+    for (bool beam : {false, true}) {
+        auto xml = beam ? legacy_segment_fixture("") : chordline_offset_fixture();
+        if (beam) xml.insert(xml.find("<Chord>"), "<Beam><eid>F_F</eid><Fragment><y1>1.25</y1><y2>2.5</y2></Fragment></Beam>");
+        auto opened = g_engine->open(as_bytes(xml));
+        ASSERT_TRUE(opened);
+        auto &document = **opened;
+        auto &master = master_of(document);
+        const std::string property = beam ? "BEAM_POS" : "path";
+        const engrave::Value expected = beam ? engrave::Value{engrave::Point{1.25, 2.5}} : engrave::Value{engrave::Opaque{"draw_path"}};
+        const std::string type = beam ? "Beam" : "ChordLine";
+        auto found = document.query({.types = {type}});
+        ASSERT_TRUE(found);
+        ASSERT_EQ(found->elements.size(), 1u);
+        const auto id = found->elements.front().id;
+        for (int pass = 0; pass != 2; ++pass) {
+            const auto layouts = layout_count(master);
+            const auto value = document.get(id, {property});
+            ASSERT_TRUE(value) << value.error().message;
+            ASSERT_EQ(value->size(), 1u);
+            EXPECT_EQ(value->front().value, expected);
+            ASSERT_TRUE(document.get(id));
+            const auto query = document.query({.types = {type}, .props = {property}});
+            ASSERT_TRUE(query);
+            ASSERT_EQ(query->elements.size(), 1u);
+            EXPECT_EQ(query->elements.front().props.front().value, expected);
+            EXPECT_EQ(layout_count(master), layouts);
+            ASSERT_TRUE(document.edit({{engrave::SetProperty{id, "color", engrave::Color{20, 40, 60}}}}));
+        }
+        EXPECT_EQ(layout_count(master), 0u);
     }
 }
 

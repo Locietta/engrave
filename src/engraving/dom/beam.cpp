@@ -301,14 +301,30 @@ void Beam::spatium_changed(double, double) {}
 //   setBeamDirection
 //---------------------------------------------------------
 
+std::pair<int, int> Beam::source_staff_move_bounds() const {
+    std::optional<std::pair<int, int>> bounds;
+    for (const auto *member : elements_) {
+        if (!member->is_chord()) continue;
+        const int move = member->staff_move();
+        if (!bounds)
+            bounds = {move, move};
+        else {
+            bounds->first = std::min(bounds->first, move);
+            bounds->second = std::max(bounds->second, move);
+        }
+    }
+    return bounds.value_or(std::pair{0, 0});
+}
+
 void Beam::set_direction(DirectionV d) {
-    if (direction() == d || cross_) {
+    const auto [min_move, max_move] = source_staff_move_bounds();
+    if (direction() == d || min_move != max_move) {
         return;
     }
 
     do_set_direction(d);
 
-    const auto members = static_cast<const Beam &>(*this).rendered_elements();
+    const auto members = elements_;
     for (ChordRest *e : members) {
         if (e->is_chord()) {
             to_chord(e)->undo_change_property(Pid::STEM_DIRECTION, d);

@@ -90,6 +90,7 @@ public:
     void move(const PointF &) override;
 
     void set_direction(DirectionV d) override;
+    std::pair<int, int> source_staff_move_bounds() const;
 
     void calc_beam_breaks(const ChordRest *chord, const ChordRest *prev_chord, int level, bool &is_broken32, bool &is_broken64) const;
 
