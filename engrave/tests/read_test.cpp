@@ -9916,3 +9916,80 @@ TEST(LayoutBounds, AuthoredNoteDeletionRetiresCachedCollisionPointersBeforeSpann
         EXPECT_EQ(rendered->pages, expected_svg->pages);
     }
 }
+
+TEST(LayoutBounds, ClonedMeasureDoesNotBorrowDeletedSourceCollisionShapes) {
+    using namespace mu::engraving;
+    auto expected_xml = legacy_segment_fixture("");
+    expected_xml.replace(expected_xml.find("<Note>"), 6, "<Note><eid>D_D</eid>");
+    auto expected_opened = g_engine->open(as_bytes(expected_xml));
+    ASSERT_TRUE(expected_opened);
+    const auto expected_svg = (*expected_opened)->render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(expected_svg);
+
+    auto xml = legacy_segment_fixture("");
+    xml.replace(xml.find("<Note>"), 6, "<Note><eid>D_D</eid>");
+    xml.insert(xml.find("</Note>") + 7,
+               "<Note><eid>E_E</eid><Accidental><subtype>accidentalSharp</subtype></Accidental><pitch>61</pitch><tpc>21</tpc></Note>");
+
+    auto opened = g_engine->open(as_bytes(xml));
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+
+    auto *source_measure = master.first_measure();
+    auto *source_seg = source_measure->first(SegmentType::CHORD_REST);
+    ASSERT_NE(source_seg, nullptr);
+    ASSERT_FALSE(source_seg->staff_shape(0).empty());
+
+    std::unique_ptr<Measure> cloned(source_measure->clone());
+    auto *cloned_seg = cloned->first(SegmentType::CHORD_REST);
+    ASSERT_NE(cloned_seg, nullptr);
+    ASSERT_EQ(cloned_seg->shapes().size(), master.nstaves());
+    EXPECT_TRUE(cloned_seg->staff_shape(0).empty());
+
+    auto *extra_note = to_chord(source_seg->element(0))->find_note(61);
+    ASSERT_NE(extra_note, nullptr);
+    ASSERT_TRUE(document.edit({{engrave::Remove{engrave::from_engine(extra_note->eid())}}}));
+    EXPECT_TRUE(cloned_seg->staff_shape(0).empty());
+
+    const auto rendered = document.render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(rendered);
+    EXPECT_EQ(rendered->pages, expected_svg->pages);
+}
+
+TEST(LayoutBounds, MultiPageRetirementPreservesUnrelatedPageBspAndBinarySearches) {
+    using namespace mu::engraving;
+    const auto input_path = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "tests/data/inputs/golden/slurs.mscz";
+    auto opened = g_engine->open(input_path);
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+    ASSERT_EQ(master.pages().size(), 2u);
+
+    auto *page0 = master.pages()[0];
+    auto *page1 = master.pages()[1];
+    page0->rebuild_bsp_tree();
+    page1->rebuild_bsp_tree();
+    const auto page0_items = page0->items(page0->ldata()->bbox());
+    const auto page1_items = page1->items(page1->ldata()->bbox());
+    ASSERT_FALSE(page0_items.empty());
+    ASSERT_FALSE(page1_items.empty());
+
+    // Collect >= 17 items strictly on page 1 so BspTree::contains_any exercises binary_search.
+    std::vector<const EngravingItem *> page1_only;
+    ankerl::unordered_dense::set<const EngravingItem *> page0_set(page0_items.begin(), page0_items.end());
+    for (const auto *item : page1_items) {
+        if (!page0_set.contains(item)) page1_only.push_back(item);
+        if (page1_only.size() >= 18) break;
+    }
+    ASSERT_GT(page1_only.size(), 16u);
+    std::sort(page1_only.begin(), page1_only.end(), std::less<>{});
+
+    page0->invalidate_bsp_tree_if_referenced(page1_only);
+    EXPECT_EQ(page0->items(page0->ldata()->bbox()), page0_items);
+
+    page1->invalidate_bsp_tree_if_referenced(page1_only);
+    EXPECT_TRUE(page1->items(page1->ldata()->bbox()).empty());
+}

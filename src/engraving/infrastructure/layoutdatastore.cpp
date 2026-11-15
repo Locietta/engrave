@@ -332,12 +332,12 @@ void LayoutDataStore::erase(EngravingItem &item) {
     EngravingItem::disconnect_all_origin_items(&item);
     // Extract before running destructors: Chord payloads still own generated
     // ledger shells, whose destruction recursively retires other records (L3).
+    RetireScope scope;
     auto data = std::move(it->second.data);
     records_->items.erase(it);
     data->disconnect_snapped_items();
     item.layout_data_ = nullptr;
     item.layout_store_ = nullptr;
-    RetireScope scope;
     if (!clearing_ && !suppress_shape_prune_ && has_borrower_containers()) {
         std::vector<const EngravingItem *> targets;
         ankerl::unordered_dense::set<const EngravingItem *> seen;
@@ -351,6 +351,8 @@ void LayoutDataStore::erase(EngravingItem &item) {
         std::erase_if(targets, [&](const EngravingItem *candidate) { return is_retired_in_flight(*candidate); });
         scope = begin_retire_scope(std::move(targets));
     }
+    // Destroy data while RetireScope guards nested teardown against redundant rescans.
+    data.reset();
 }
 
 void LayoutDataStore::for_each_output(const std::function<void(EngravingItem &, EngravingItem::LayoutData &)> &complete) {

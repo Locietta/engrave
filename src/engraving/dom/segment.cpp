@@ -416,7 +416,8 @@ Segment::Segment(const Segment &s) : EngravingItem(s) {
         }
         elist_.push_back(ne);
     }
-    shapes_ = s.shapes_;
+    // Reset transient collision shapes rather than borrowing source item pointers on an unlaid-out clone.
+    shapes_.assign(s.shapes_.size(), Shape());
 }
 
 void Segment::set_ownership_parent(DummyParentOr<Measure> parent) { EngravingItem::set_ownership_parent(parent); }
