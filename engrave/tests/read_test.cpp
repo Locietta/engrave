@@ -6602,6 +6602,171 @@ TEST(Read, S19LocalReplacementPreservesIndependentExcerptBreak) {
     }
 }
 
+void render_s20_scores(engrave::Document &document) {
+    ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+    for (auto *excerpt : master_of(document).excerpts()) {
+        const auto id = engrave::from_engine(excerpt->excerpt_score()->eid());
+        ASSERT_TRUE(document.render({.score = {id}, .format = engrave::RenderFormat::SVG}));
+    }
+}
+
+template <typename Check>
+void check_s20_roundtrips(engrave::Document &document, const Check &check) {
+    ASSERT_NO_FATAL_FAILURE(check(document));
+    ASSERT_NO_FATAL_FAILURE(render_s20_scores(document));
+    ASSERT_NO_FATAL_FAILURE(check(document));
+    ASSERT_TRUE(document.checkpoint("section propagation"));
+    ASSERT_TRUE(document.restore_checkpoint("section propagation"));
+    ASSERT_NO_FATAL_FAILURE(check(document));
+    ASSERT_NO_FATAL_FAILURE(render_s20_scores(document));
+    ASSERT_NO_FATAL_FAILURE(check(document));
+    for (const auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
+        SCOPED_TRACE(static_cast<int>(format));
+        const auto saved = document.export_score({.format = format});
+        ASSERT_TRUE(saved);
+        auto reopened = g_engine->open(*saved, {.format = format});
+        ASSERT_TRUE(reopened) << reopened.error().message;
+        ASSERT_NO_FATAL_FAILURE(check(**reopened));
+        ASSERT_NO_FATAL_FAILURE(render_s20_scores(**reopened));
+        ASSERT_NO_FATAL_FAILURE(check(**reopened));
+    }
+}
+
+TEST(Read, S20MasterSectionTogglePreservesIndependentExcerptPage) {
+    using namespace mu::engraving;
+    for (bool warm : {false, true}) {
+        SCOPED_TRACE(warm);
+        auto opened = g_engine->open(as_bytes(s18_break_fixture(s18_break_xml("section") + s18_break_xml("page"))));
+        ASSERT_TRUE(opened);
+        auto &document = **opened;
+        auto &master = master_of(document);
+        ASSERT_TRUE(document.edit({{engrave::GenerateExcerpts{{engrave::from_engine(master.parts().front()->eid())}}}}));
+        auto *part = master.excerpts().front()->excerpt_score();
+        auto *section = part->first_measure()->section_break_element();
+        ASSERT_NE(section, nullptr);
+        const auto excerpt_break_id = engrave::from_engine(section->eid());
+        const auto master_section_id = engrave::from_engine(master.first_measure()->section_break_element()->eid());
+        const auto master_page_id = engrave::from_engine(master.first_measure()->el().back()->eid());
+        if (warm) ASSERT_NO_FATAL_FAILURE(render_s20_scores(document));
+        const auto independent = document.edit({{engrave::SetProperty{excerpt_break_id, "LAYOUT_BREAK", engrave::Enum{"page"}}}});
+        ASSERT_TRUE(independent);
+        ASSERT_FALSE(independent->rejection);
+        EXPECT_FALSE(section->is_property_linked_to_master(Pid::LAYOUT_BREAK));
+        expect_s18_breaks(master.first_measure(), {LayoutBreakType::SECTION, LayoutBreakType::PAGE});
+        expect_s18_breaks(part->first_measure(), {LayoutBreakType::PAGE});
+        const auto removed =
+            document.edit({{engrave::SetLayoutBreak{engrave::from_engine(master.first_measure()->eid()), "section", false}}});
+        ASSERT_TRUE(removed);
+        ASSERT_FALSE(removed->rejection);
+        const auto check = [&](engrave::Document &doc) {
+            auto &score = master_of(doc);
+            expect_s18_breaks(score.first_measure(), {LayoutBreakType::PAGE});
+            EXPECT_FALSE(doc.get(master_section_id));
+            EXPECT_TRUE(doc.get(master_page_id));
+            ASSERT_EQ(score.excerpts().size(), 1u);
+            auto *measure = score.excerpts().front()->excerpt_score()->first_measure();
+            expect_s18_breaks(measure, {LayoutBreakType::PAGE});
+            ASSERT_EQ(measure->el().size(), 1u);
+            EXPECT_EQ(engrave::from_engine(measure->el().front()->eid()), excerpt_break_id);
+            EXPECT_TRUE(doc.get(excerpt_break_id));
+        };
+        ASSERT_NO_FATAL_FAILURE(check_s20_roundtrips(document, check));
+    }
+}
+
+TEST(Read, S20MasterSectionReadditionRetainsSingleExcerptSection) {
+    using namespace mu::engraving;
+    for (bool measure_break : {false, true}) {
+        for (bool warm : {false, true}) {
+            SCOPED_TRACE(measure_break);
+            SCOPED_TRACE(warm);
+            auto opened = g_engine->open(as_bytes(s18_break_fixture(s18_break_xml("section") + s18_break_xml("page"))));
+            ASSERT_TRUE(opened);
+            auto &document = **opened;
+            auto &master = master_of(document);
+            ASSERT_TRUE(document.edit({{engrave::GenerateExcerpts{{engrave::from_engine(master.parts().front()->eid())}}}}));
+            auto *part = master.excerpts().front()->excerpt_score();
+            const auto excerpt_break_id = engrave::from_engine(part->first_measure()->section_break_element()->eid());
+            const auto measure_id = engrave::from_engine(master.first_measure()->eid());
+            const auto page_id = engrave::from_engine(master.first_measure()->el().back()->eid());
+            if (warm) ASSERT_NO_FATAL_FAILURE(render_s20_scores(document));
+            const auto replaced = measure_break ? document.edit({{engrave::SetLayoutBreak{measure_id, "line", true}}}) :
+                                                  document.edit({{engrave::SetProperty{page_id, "LAYOUT_BREAK", engrave::Enum{"line"}}}});
+            ASSERT_TRUE(replaced);
+            ASSERT_FALSE(replaced->rejection);
+            expect_s18_breaks(master.first_measure(), {LayoutBreakType::LINE});
+            expect_s18_breaks(part->first_measure(), {LayoutBreakType::SECTION});
+            const auto added = document.edit({{engrave::SetLayoutBreak{measure_id, "section", true}}});
+            ASSERT_TRUE(added);
+            ASSERT_FALSE(added->rejection);
+            const auto master_break_id = engrave::from_engine(master.first_measure()->section_break_element()->eid());
+            const auto check = [&](engrave::Document &doc) {
+                auto &score = master_of(doc);
+                expect_s18_breaks(score.first_measure(), {LayoutBreakType::SECTION});
+                EXPECT_TRUE(doc.get(master_break_id));
+                EXPECT_FALSE(doc.get(page_id));
+                ASSERT_EQ(score.excerpts().size(), 1u);
+                auto *measure = score.excerpts().front()->excerpt_score()->first_measure();
+                expect_s18_breaks(measure, {LayoutBreakType::SECTION});
+                ASSERT_EQ(measure->el().size(), 1u);
+                EXPECT_EQ(engrave::from_engine(measure->el().front()->eid()), excerpt_break_id);
+                EXPECT_TRUE(doc.get(excerpt_break_id));
+            };
+            ASSERT_NO_FATAL_FAILURE(check_s20_roundtrips(document, check));
+        }
+    }
+}
+
+TEST(Read, S20MasterSectionAdditionDisplacesExcerptConflictsAndKeepsPage) {
+    using namespace mu::engraving;
+    for (const std::string type : {"line", "nobreak", "page"}) {
+        for (bool warm : {false, true}) {
+            SCOPED_TRACE(type);
+            SCOPED_TRACE(warm);
+            auto opened = g_engine->open(as_bytes(s18_break_fixture("")));
+            ASSERT_TRUE(opened);
+            auto &document = **opened;
+            auto &master = master_of(document);
+            ASSERT_TRUE(document.edit({{engrave::GenerateExcerpts{{engrave::from_engine(master.parts().front()->eid())}}}}));
+            auto *part = master.excerpts().front()->excerpt_score();
+            if (warm) ASSERT_NO_FATAL_FAILURE(render_s20_scores(document));
+            const auto independent =
+                document.edit({{engrave::SetLayoutBreak{engrave::from_engine(part->first_measure()->eid()), type, true}}});
+            ASSERT_TRUE(independent);
+            ASSERT_FALSE(independent->rejection);
+            ASSERT_EQ(part->first_measure()->el().size(), 1u);
+            const auto excerpt_break_id = engrave::from_engine(part->first_measure()->el().front()->eid());
+            expect_s18_breaks(master.first_measure(), {});
+            const auto added =
+                document.edit({{engrave::SetLayoutBreak{engrave::from_engine(master.first_measure()->eid()), "section", true}}});
+            ASSERT_TRUE(added);
+            ASSERT_FALSE(added->rejection);
+            auto *section = part->first_measure()->section_break_element();
+            ASSERT_NE(section, nullptr);
+            const auto excerpt_section_id = engrave::from_engine(section->eid());
+            const auto check = [&](engrave::Document &doc) {
+                auto &score = master_of(doc);
+                expect_s18_breaks(score.first_measure(), {LayoutBreakType::SECTION});
+                ASSERT_EQ(score.excerpts().size(), 1u);
+                auto *measure = score.excerpts().front()->excerpt_score()->first_measure();
+                if (type == "page") {
+                    expect_s18_breaks(measure, {LayoutBreakType::PAGE, LayoutBreakType::SECTION});
+                    ASSERT_EQ(measure->el().size(), 2u);
+                    EXPECT_EQ(engrave::from_engine(measure->el().front()->eid()), excerpt_break_id);
+                    EXPECT_TRUE(doc.get(excerpt_break_id));
+                } else {
+                    expect_s18_breaks(measure, {LayoutBreakType::SECTION});
+                    EXPECT_FALSE(doc.get(excerpt_break_id));
+                }
+                ASSERT_NE(measure->section_break_element(), nullptr);
+                EXPECT_EQ(engrave::from_engine(measure->section_break_element()->eid()), excerpt_section_id);
+                EXPECT_TRUE(doc.get(excerpt_section_id));
+            };
+            ASSERT_NO_FATAL_FAILURE(check_s20_roundtrips(document, check));
+        }
+    }
+}
+
 TEST(Read, S19DuplicateImportAndCleanupKeepTheIncomingBreak) {
     using namespace mu::engraving;
     const std::vector<std::pair<std::string, LayoutBreakType>> cases{{"page", LayoutBreakType::PAGE},

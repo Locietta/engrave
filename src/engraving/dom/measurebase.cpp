@@ -413,8 +413,19 @@ void MeasureBase::undo_set_break(bool v, LayoutBreakType type) {
         present |= existing == type;
         if ((!v && existing == type) || (v && existing != type && !breaks_coexist(existing, type))) remove.push_back(item);
     }
-    // Only an explicit toggle-off removes linked copies; replacement is local.
-    for (auto *item : remove) score()->undo_remove_element(item, !v);
+    for (auto *item : remove) {
+        if (!v && score()->is_master() && type == LayoutBreakType::SECTION) {
+            std::vector<LayoutBreak *> linked_sections;
+            for (auto *linked : item->link_list()) {
+                if (linked == item || !linked->is_layout_break()) continue;
+                auto *lb = to_layout_break(linked);
+                if (lb->is_section_break() && lb->is_property_linked_to_master(Pid::LAYOUT_BREAK)) linked_sections.push_back(lb);
+            }
+            // Removal disconnects links, so collect the eligible copies first.
+            for (auto *lb : linked_sections) lb->score()->undo_remove_element(lb, false);
+        }
+        score()->undo_remove_element(item, false);
+    }
     if (v && !present) {
         auto *lb = Factory::create_layout_break(mb);
         lb->set_layout_break_type(type);

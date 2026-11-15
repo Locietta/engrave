@@ -2484,6 +2484,22 @@ void Score::undo_insert_staff(Staff *staff, staff_idx_t ridx, bool create_rests)
     //adjustBracketsIns(idx, idx+1);
 }
 
+static void propagate_section_break(LayoutBreak *lb, MeasureBase *target_mb) {
+    if (!target_mb || target_mb->section_break()) return;
+    auto *score = target_mb->score();
+    std::vector<EngravingItem *> conflicts;
+    for (auto *item : target_mb->el()) {
+        if (item->is_layout_break() && !breaks_coexist(to_layout_break(item)->layout_break_type(), LayoutBreakType::SECTION)) {
+            conflicts.push_back(item);
+        }
+    }
+    for (auto *item : conflicts) score->undo_remove_element(item, false);
+    auto *e = lb->linked_clone();
+    e->set_score(score);
+    e->set_ownership_parent(target_mb);
+    score->do_undo_add_element(e);
+}
+
 void Score::undo_add_element(EngravingItem *element, bool add_to_linked_staves, bool ctrl_modifier, EngravingItem *element_to_relink) {
     Transaction &tx = transaction_manager()->current_or_dummy_transaction();
 
@@ -2656,10 +2672,7 @@ void Score::undo_add_element(EngravingItem *element, bool add_to_linked_staves, 
                             Box *box = to_box(lo);
                             Score *score = box->score();
                             if (score != lb->score()) {
-                                EngravingItem *e = lb->linked_clone();
-                                e->set_score(score);
-                                e->set_ownership_parent(box);
-                                do_undo_add_element(e);
+                                propagate_section_break(lb, box);
                             }
                         }
                     }
@@ -2673,11 +2686,8 @@ void Score::undo_add_element(EngravingItem *element, bool add_to_linked_staves, 
             }
             for (Score *s : score_list()) {
                 if (s != lb->score()) {
-                    EngravingItem *e = lb->linked_clone();
-                    e->set_score(s);
                     Measure *nm = s->tick2measure(m->tick());
-                    e->set_ownership_parent(nm);
-                    do_undo_add_element(e);
+                    propagate_section_break(lb, nm);
                 }
             }
             return;
