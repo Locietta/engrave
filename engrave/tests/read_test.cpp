@@ -5807,25 +5807,25 @@ TEST(Read, SpannerSegmentRemovalDetachesEveryGuitarTechnique) {
             if (spanner->is_slur()) return to_slur(spanner.get())->new_slur_tie_segment();
             return to_s_line(spanner.get())->create_line_segment();
         };
-        System first(&master);
-        System second(&master);
+        std::unique_ptr<System> first(Factory::create_system(&master));
+        std::unique_ptr<System> second(Factory::create_system(&master));
         spanner->fixup_segments(1, create_segment);
         auto *segment = spanner->front_segment();
-        segment->move_to_system(&first);
-        segment->move_to_system(&second);
-        EXPECT_TRUE(first.spanner_segments().empty());
-        second.add(segment);
-        second.remove(segment);
-        EXPECT_TRUE(second.spanner_segments().empty());
+        segment->move_to_system(first.get());
+        segment->move_to_system(second.get());
+        EXPECT_TRUE(first->spanner_segments().empty());
+        second->add(segment);
+        second->remove(segment);
+        EXPECT_TRUE(second->spanner_segments().empty());
         EXPECT_EQ(segment->system(), nullptr);
-        segment->move_to_system(&first);
+        segment->move_to_system(first.get());
         spanner->erase_spanner_segments();
-        EXPECT_TRUE(first.spanner_segments().empty());
+        EXPECT_TRUE(first->spanner_segments().empty());
         spanner->fixup_segments(1, create_segment);
         segment = spanner->front_segment();
         {
-            System temporary(&master);
-            segment->move_to_system(&temporary);
+            std::unique_ptr<System> temporary(Factory::create_system(&master));
+            segment->move_to_system(temporary.get());
         }
         EXPECT_EQ(segment->system(), nullptr);
         spanner->erase_spanner_segments();
