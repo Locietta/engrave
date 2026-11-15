@@ -12,6 +12,7 @@
 #include "dom/part.h"
 #include "dom/score.h"
 #include "dom/segment.h"
+#include "dom/sharedpart.h"
 #include "dom/spacer.h"
 #include "dom/staff.h"
 #include "dom/text.h"
@@ -78,6 +79,11 @@ static EIDRegister *active_register(EngravingObject &owner) {
 // newly inserted subtree enrolls those actual fields, never constructor children_.
 static void set_subtree_live(EIDRegister &registry, EngravingObject &item, bool live, bool detaching_score = false);
 
+static Part &as_part(EngravingObject &item) {
+    if (item.is_shared_part()) return *to_shared_part(&item);
+    return *to_part(&item);
+}
+
 template <typename Function>
 static void for_each_source_child(EngravingObject &item, const Function &adopt, bool live) {
     if (item.is_score()) {
@@ -90,7 +96,7 @@ static void for_each_source_child(EngravingObject &item, const Function &adopt, 
     if (item.is_part() || item.is_shared_part()) {
         // Part copies briefly retain borrowed staff references before the clone
         // builder replaces them. Those references are not ownership transfers.
-        for (auto *staff : to_part(&item)->staves())
+        for (auto *staff : as_part(item).staves())
             if (staff->part() == &item) adopt(staff);
         return;
     }
@@ -232,7 +238,7 @@ bool source_attached(EngravingObject &item) {
 void source_collection_cleared(EngravingObject &owner, SourceCollection collection) {
     if (!active_register(owner)) return;
     if (collection == SourceCollection::STAVES) {
-        for (auto *staff : to_part(&owner)->staves())
+        for (auto *staff : as_part(owner).staves())
             if (staff->part() == &owner) source_child_removed(owner, staff);
     } else if (collection == SourceCollection::SEGMENTS) {
         for (auto *segment = to_measure(&owner)->first(); segment; segment = segment->next()) source_child_removed(owner, segment);
