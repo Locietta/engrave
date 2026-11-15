@@ -529,6 +529,7 @@
             <Note>
               <eid>e73</eid>
               <linkedTo>e20</linkedTo>
+              <visible>1</visible>
               <Accidental>
                 <role>1</role>
                 <subtype>accidentalFlat</subtype>
@@ -604,6 +605,7 @@
             <Note>
               <eid>e83</eid>
               <linkedTo>e33</linkedTo>
+              <visible>1</visible>
               <Accidental>
                 <role>1</role>
                 <subtype>accidentalQuarterToneSharpArrowDown</subtype>
@@ -681,6 +683,7 @@
             <Note>
               <eid>e93</eid>
               <linkedTo>e46</linkedTo>
+              <visible>1</visible>
               <parentheses>both</parentheses>
               <Accidental>
                 <role>1</role>
@@ -775,6 +778,7 @@
             <Note>
               <eid>e105</eid>
               <linkedTo>e61</linkedTo>
+              <visible>1</visible>
               <parentheses>both</parentheses>
               <Accidental>
                 <role>1</role>
