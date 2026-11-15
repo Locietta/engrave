@@ -26,6 +26,7 @@
 #include "editing/editmeasures.h"
 #include "editing/editstaffbrackets.h"
 #include "editing/inserttime.h"
+#include "rendering/score/layoutdatastore.h"
 
 namespace mu::engraving {
 
@@ -428,6 +429,15 @@ void TransactionManager::cleanup_detached() {
                 delete *lock;
         }
     }
+    std::vector<EngravingItem *> detached_items;
+    detached_items.reserve(roots.size());
+    for (auto &root : roots) {
+        if (auto *handle = std::get_if<SourceHandle>(&root.object)) {
+            if (auto *object = registry.item_from_handle(*handle); object && object->is_engraving_item() && !source_attached(*object))
+                detached_items.push_back(to_engraving_item(object));
+        }
+    }
+    const auto retire_scopes = rendering::score::LayoutDataStore::retire_batch_for_disposal(detached_items);
     for (auto &root : roots) {
         if (auto *handle = std::get_if<SourceHandle>(&root.object)) {
             auto *object = registry.item_from_handle(*handle);

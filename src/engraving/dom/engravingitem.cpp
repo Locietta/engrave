@@ -298,7 +298,11 @@ EngravingItem::~EngravingItem() {
     if (auto *shared = shared_item()) disconnect_shared_item(shared, this);
     disconnect_all_origin_items(this);
     Score::on_element_destruction(this);
-    if (layout_store_) layout_store_->erase(*this);
+    if (layout_store_) {
+        layout_store_->erase(*this);
+    } else if (score() && Score::is_alive(score())) {
+        if (auto *store = score()->layout_data_store()) store->retire_item_borrowers(*this);
+    }
 }
 
 EngravingItem *EngravingItem::ownership_parent_item() const {
@@ -1900,8 +1904,13 @@ EngravingItem::LayoutData *EngravingItem::mutldata() {
 }
 
 void EngravingItem::transfer_layout_data(Score *destination) {
-    if (!layout_store_ || layout_store_->score() == destination) return;
-    layout_store_->erase(*this);
+    if (layout_store_) {
+        if (layout_store_->score() != destination) layout_store_->erase(*this);
+        return;
+    }
+    if (score() && score() != destination && Score::is_alive(score())) {
+        if (auto *store = score()->layout_data_store()) store->retire_item_borrowers(*this);
+    }
 }
 
 bool EngravingItem::element_applies_to_track(const track_idx_t element_track, const track_idx_t ref_track,

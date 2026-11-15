@@ -90,6 +90,7 @@ public:
     std::vector<EngravingItem *> items(const PointF &p);
 
     void invalidate_bsp_tree();
+    void invalidate_bsp_tree_if_referenced(std::span<const EngravingItem *const> sorted_targets);
     void rebuild_bsp_tree();
 
     PointF page_pos() const override { return PointF(); } ///< position in page coordinates

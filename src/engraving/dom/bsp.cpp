@@ -22,7 +22,9 @@
 
 #include "bsp.h"
 
+#include <algorithm>
 #include <cmath>
+#include <functional>
 #include <unordered_set>
 
 #include "engravingitem.h"
@@ -124,6 +126,29 @@ void BspTree::remove(EngravingItem *element) {
     RemoveItemBspTreeVisitor remove_visitor;
     remove_visitor.item = element;
     climb_tree(&remove_visitor, element->page_bounding_rect());
+}
+
+bool BspTree::contains_any(std::span<const EngravingItem *const> sorted_targets) const {
+    if (sorted_targets.empty() || leaves_.empty()) {
+        return false;
+    }
+    const auto matches = [&](const EngravingItem *item) {
+        if (!item) {
+            return false;
+        }
+        if (sorted_targets.size() <= 16) {
+            return std::find(sorted_targets.begin(), sorted_targets.end(), item) != sorted_targets.end();
+        }
+        return std::binary_search(sorted_targets.begin(), sorted_targets.end(), item, std::less<>{});
+    };
+    for (const auto &leaf : leaves_) {
+        for (const EngravingItem *item : leaf) {
+            if (matches(item)) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 //---------------------------------------------------------

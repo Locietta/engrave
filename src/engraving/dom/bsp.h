@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <span>
 #include <vector>
 
 #include "../types/types.h"
@@ -75,6 +76,7 @@ public:
 
     void insert(EngravingItem *item);
     void remove(EngravingItem *item);
+    bool contains_any(std::span<const EngravingItem *const> sorted_targets) const;
 
     std::vector<EngravingItem *> items(const RectF &rect);
     std::vector<EngravingItem *> items(const PointF &pos);

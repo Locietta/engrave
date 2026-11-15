@@ -9865,3 +9865,54 @@ TEST(LayoutBounds, DottedSlurSurvivesRepeatedOutputRetirement) {
         EXPECT_EQ(chord->up_note()->pitch(), 60);
     }
 }
+
+TEST(LayoutBounds, AuthoredNoteDeletionRetiresCachedCollisionPointersBeforeSpannerErase) {
+    using namespace mu::engraving;
+    auto expected_xml = legacy_segment_fixture("");
+    expected_xml.replace(expected_xml.find("<Note>"), 6, "<Note><eid>D_D</eid>");
+    auto expected_opened = g_engine->open(as_bytes(expected_xml));
+    ASSERT_TRUE(expected_opened);
+    const auto expected_svg = (*expected_opened)->render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(expected_svg);
+    ASSERT_EQ(expected_svg->pages.size(), 1u);
+
+    auto xml = legacy_segment_fixture(
+        R"(<HairPin><eid>F_F</eid><track>0</track><subtype>0</subtype><startTick>0/1</startTick><ticks>1/1</ticks><track2>0</track2></HairPin>)");
+    xml.replace(xml.find("<Note>"), 6, "<Note><eid>D_D</eid>");
+    xml.insert(xml.find("</Note>") + 7,
+               "<Note><eid>E_E</eid><Accidental><subtype>accidentalSharp</subtype></Accidental><pitch>61</pitch><tpc>21</tpc></Note>");
+
+    for (const bool same_batch : {false, true}) {
+        SCOPED_TRACE(same_batch ? "same_batch" : "sequential_edits");
+        auto opened = g_engine->open(as_bytes(xml));
+        ASSERT_TRUE(opened);
+        auto &document = **opened;
+        auto &master = master_of(document);
+        ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+
+        auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+        ASSERT_EQ(chord->notes().size(), 2u);
+        ASSERT_EQ(master.spanner_list().size(), 1u);
+        auto *extra_note = chord->find_note(61);
+        ASSERT_NE(extra_note, nullptr);
+        const auto note_ref = engrave::from_engine(extra_note->eid());
+        const auto hairpin_ref = engrave::from_engine(master.spanner_list().front()->eid());
+
+        if (same_batch) {
+            ASSERT_TRUE(document.edit({{engrave::Remove{note_ref}, engrave::Remove{hairpin_ref}}}));
+        } else {
+            ASSERT_TRUE(document.edit({{engrave::Remove{note_ref}}}));
+            ASSERT_EQ(chord->notes().size(), 1u);
+            EXPECT_EQ(chord->up_note()->pitch(), 60);
+            ASSERT_TRUE(document.edit({{engrave::Remove{hairpin_ref}}}));
+        }
+
+        ASSERT_EQ(chord->notes().size(), 1u);
+        EXPECT_EQ(chord->up_note()->pitch(), 60);
+        EXPECT_TRUE(master.spanner_list().empty());
+
+        const auto rendered = document.render({.format = engrave::RenderFormat::SVG});
+        ASSERT_TRUE(rendered);
+        EXPECT_EQ(rendered->pages, expected_svg->pages);
+    }
+}
