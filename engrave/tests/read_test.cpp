@@ -5101,10 +5101,64 @@ TEST(Read, ImageReloadReleasesOldStoreReferencesBeforeArchiveWrite) {
     }
     EXPECT_FALSE(first->is_used());
     EXPECT_FALSE(second->is_used());
+
+    const auto stamp = std::to_string(static_cast<long long>(std::time(nullptr)));
+    const auto temp_dir = std::filesystem::temp_directory_path();
+    const auto file1 = temp_dir / ("engrave_read_s22_file1_" + stamp + ".svg");
+    const auto file2 = temp_dir / ("engrave_read_s22_file2_" + stamp + ".svg");
+    const auto missing_file = temp_dir / ("engrave_read_s22_missing_" + stamp + ".svg");
+
+    struct Cleanup {
+        std::filesystem::path a, b, c;
+
+        ~Cleanup() {
+            std::error_code ec;
+            std::filesystem::remove(a, ec);
+            std::filesystem::remove(b, ec);
+            std::filesystem::remove(c, ec);
+        }
+    } cleanup{file1, file2, missing_file};
+
+    {
+        std::ofstream out1(file1, std::ios::binary);
+        out1 << R"(<svg width="41" height="23"/>)";
+        std::ofstream out2(file2, std::ios::binary);
+        out2 << R"(<svg width="53" height="29"/>)";
+    }
+    std::error_code rm_ec;
+    std::filesystem::remove(missing_file, rm_ec);
+
+    ImageStoreItem *file_first = nullptr;
+    ImageStoreItem *file_second = nullptr;
+    {
+        Image file_image(master.first_measure());
+        ASSERT_TRUE(file_image.load_from_file(muse::io::PathT(file1.string())));
+        file_first = file_image.store_item();
+        ASSERT_NE(file_first, nullptr);
+        EXPECT_TRUE(file_first->is_used(&master));
+        EXPECT_EQ(file_image.image_size(), muse::SizeF(41, 23));
+
+        ASSERT_TRUE(file_image.load_from_file(muse::io::PathT(file2.string())));
+        file_second = file_image.store_item();
+        ASSERT_NE(file_second, nullptr);
+        ASSERT_NE(file_second, file_first);
+        EXPECT_FALSE(file_first->is_used());
+        EXPECT_TRUE(file_second->is_used(&master));
+        EXPECT_EQ(file_image.image_size(), muse::SizeF(53, 29));
+
+        EXPECT_FALSE(file_image.load_from_file(muse::io::PathT(missing_file.string())));
+        EXPECT_EQ(file_image.store_item(), file_second);
+        EXPECT_TRUE(file_second->is_used(&master));
+    }
+    EXPECT_FALSE(file_first->is_used());
+    EXPECT_FALSE(file_second->is_used());
+
     auto other = g_engine->open(write470_fixture());
     ASSERT_TRUE(other);
     EXPECT_FALSE(first->is_used(&master_of(**other)));
     EXPECT_FALSE(second->is_used(&master_of(**other)));
+    EXPECT_FALSE(file_first->is_used(&master_of(**other)));
+    EXPECT_FALSE(file_second->is_used(&master_of(**other)));
     const auto archive = (*other)->export_score({.format = engrave::Format::MSCZ});
     ASSERT_TRUE(archive) << archive.error().message;
     EXPECT_TRUE(g_engine->open(*archive));
@@ -5794,6 +5848,7 @@ TEST(Read, SpannerSegmentRemovalDetachesEveryGuitarTechnique) {
     using namespace mu::engraving;
     auto opened = g_engine->open(write470_fixture());
     ASSERT_TRUE(opened);
+    ASSERT_TRUE((*opened)->page_count());
     auto &master = master_of(**opened);
     for (const auto type :
          {ElementType::LET_RING, ElementType::PALM_MUTE, ElementType::WHAMMY_BAR, ElementType::RASGUEADO, ElementType::HARMONIC_MARK,
@@ -5809,23 +5864,41 @@ TEST(Read, SpannerSegmentRemovalDetachesEveryGuitarTechnique) {
         };
         std::unique_ptr<System> first(Factory::create_system(&master));
         std::unique_ptr<System> second(Factory::create_system(&master));
+        first->mutldata();
+        second->mutldata();
+        ASSERT_TRUE(first->is_layout_data_current());
+        ASSERT_TRUE(second->is_layout_data_current());
+
         auto *segment = create_segment();
         spanner->add(segment);
         segment->move_to_system(first.get());
+        ASSERT_EQ(first->spanner_segments().size(), 1u);
+        EXPECT_EQ(first->spanner_segments().front(), segment);
+
         segment->move_to_system(second.get());
         EXPECT_TRUE(first->spanner_segments().empty());
+        ASSERT_EQ(second->spanner_segments().size(), 1u);
+        EXPECT_EQ(second->spanner_segments().front(), segment);
+
         second->add(segment);
+        EXPECT_EQ(second->spanner_segments().size(), 1u);
         second->remove(segment);
         EXPECT_TRUE(second->spanner_segments().empty());
         EXPECT_EQ(segment->system(), nullptr);
+
         segment->move_to_system(first.get());
+        ASSERT_EQ(first->spanner_segments().size(), 1u);
         spanner->erase_spanner_segments();
         EXPECT_TRUE(first->spanner_segments().empty());
+
         segment = create_segment();
         spanner->add(segment);
         {
             std::unique_ptr<System> temporary(Factory::create_system(&master));
+            temporary->mutldata();
+            ASSERT_TRUE(temporary->is_layout_data_current());
             segment->move_to_system(temporary.get());
+            ASSERT_EQ(temporary->spanner_segments().size(), 1u);
         }
         EXPECT_EQ(segment->system(), nullptr);
         spanner->erase_spanner_segments();
@@ -6894,9 +6967,10 @@ TEST(Read, S19DuplicateImportAndCleanupKeepTheIncomingBreak) {
 
 TEST(Read, S17GraceBeamEditsRespectSeparateAuthoredOwnership) {
     using namespace mu::engraving;
-    for (bool slashed : {false, true}) {
-        for (bool after : {false, true}) {
-            for (bool warm : {false, true}) {
+    for (bool after : {false, true}) {
+        for (bool warm : {false, true}) {
+            std::string unslashed_svg;
+            for (bool slashed : {false, true}) {
                 SCOPED_TRACE(slashed);
                 SCOPED_TRACE(after);
                 SCOPED_TRACE(warm);
@@ -6926,7 +7000,24 @@ TEST(Read, S17GraceBeamEditsRespectSeparateAuthoredOwnership) {
                 ASSERT_NE(beam, notes[0]->authored_beam());
                 const std::vector<ChordRest *> expected{notes[1], notes[2]};
                 EXPECT_EQ(beam->source_elements(), expected);
-                if (warm) ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+                const auto check_slashes = [&]() {
+                    ASSERT_EQ(beam->rendered_elements().size(), 2u);
+                    auto *front = to_chord(beam->rendered_elements().front());
+                    auto *back = to_chord(beam->rendered_elements().back());
+                    EXPECT_EQ(notes[0]->stem_slash() != nullptr, slashed);
+                    EXPECT_EQ(front->stem_slash() != nullptr, slashed);
+                    EXPECT_EQ(back->stem_slash(), nullptr);
+                    if (slashed) {
+                        ASSERT_NE(notes[0]->stem_slash(), nullptr);
+                        ASSERT_NE(front->stem_slash(), nullptr);
+                        EXPECT_FALSE(notes[0]->stem_slash()->ldata()->bbox().is_empty());
+                        EXPECT_FALSE(front->stem_slash()->ldata()->bbox().is_empty());
+                    }
+                };
+                if (warm) {
+                    ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+                    check_slashes();
+                }
                 const auto layouts = layout_count(master);
                 const auto id = engrave::from_engine(beam->eid());
                 ASSERT_TRUE(document.edit({{engrave::SetProperty{id, "crossStaffMove", int64_t{-1}},
@@ -6937,11 +7028,19 @@ TEST(Read, S17GraceBeamEditsRespectSeparateAuthoredOwnership) {
                 EXPECT_EQ(notes[1]->stem_direction(), DirectionV::DOWN);
                 EXPECT_EQ(notes[2]->stem_direction(), DirectionV::DOWN);
                 EXPECT_EQ(layout_count(master), layouts);
-                ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+                const auto rendered = document.render({.format = engrave::RenderFormat::SVG});
+                ASSERT_TRUE(rendered);
+                ASSERT_EQ(rendered->pages.size(), 1u);
                 EXPECT_EQ(beam->source_elements(), expected);
                 EXPECT_EQ(notes[0]->stem_direction(), DirectionV::AUTO);
                 EXPECT_EQ(notes[1]->hook(), nullptr);
                 EXPECT_EQ(notes[2]->hook(), nullptr);
+                check_slashes();
+                if (!slashed) {
+                    unslashed_svg = rendered->pages.front();
+                } else {
+                    EXPECT_NE(rendered->pages.front(), unslashed_svg);
+                }
             }
         }
     }
@@ -9627,25 +9726,50 @@ TEST(LayoutBounds, WarmSlashedGraceBeamRegroupingRebuildsCollisionShapes) {
 
 TEST(LayoutBounds, DottedSlurSurvivesRepeatedOutputRetirement) {
     using namespace mu::engraving;
-    auto xml = legacy_segment_fixture(R"(<Slur><eid>F_F</eid><track>0</track>
-<startElement>B_B</startElement><endElement>C_C</endElement></Slur>)");
+    const std::string slur_xml = R"(<Slur><eid>F_F</eid><track>0</track>
+<startElement>B_B</startElement><endElement>C_C</endElement></Slur>)";
+    auto xml = legacy_segment_fixture(slur_xml);
     const std::string half = "<durationType>half</durationType>";
     xml.insert(xml.find(half) + half.size(), "<dots>1</dots>");
     xml.replace(xml.find("<sigN>4</sigN>"), 14, "<sigN>5</sigN>");
+    auto unslurred_xml = xml;
+    unslurred_xml.erase(unslurred_xml.find(slur_xml), slur_xml.size());
+    auto unslurred = g_engine->open(as_bytes(unslurred_xml));
+    ASSERT_TRUE(unslurred);
+    const auto unslurred_svg = (*unslurred)->render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(unslurred_svg);
+
+    auto baseline = g_engine->open(as_bytes(xml));
+    ASSERT_TRUE(baseline);
+    const auto expected_mscx = (*baseline)->export_score({.format = engrave::Format::MSCX});
+    ASSERT_TRUE(expected_mscx);
+    const auto expected = (*baseline)->render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(expected);
+    ASSERT_EQ(expected->pages.size(), 1u);
+    EXPECT_NE(expected->pages.front().find("<svg"), std::string::npos);
+    EXPECT_NE(expected->pages, unslurred_svg->pages);
+
     auto opened = g_engine->open(as_bytes(xml));
     ASSERT_TRUE(opened);
     auto &document = **opened;
     auto &master = master_of(document);
-    const auto expected = document.render({.format = engrave::RenderFormat::SVG});
-    ASSERT_TRUE(expected);
+    ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
     auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
     ASSERT_EQ(chord->up_note()->dots().size(), 1u);
     ASSERT_FALSE(master.spanner_list().empty());
+    auto *slur = master.spanner_list().front();
     for (int run = 0; run < 3; ++run) {
         engrave::DocumentAccess::impl(document).discard_layout_output(master);
         const auto rendered = document.render({.format = engrave::RenderFormat::SVG});
         ASSERT_TRUE(rendered);
         EXPECT_EQ(rendered->pages, expected->pages);
+        ASSERT_EQ(slur->spanner_segments().size(), 1u);
+        EXPECT_FALSE(slur->spanner_segments().front()->ldata()->bbox().is_empty());
+        ASSERT_EQ(chord->up_note()->dots().size(), 1u);
+        EXPECT_FALSE(chord->up_note()->dots().front()->ldata()->bbox().is_empty());
+        const auto saved_mscx = document.export_score({.format = engrave::Format::MSCX});
+        ASSERT_TRUE(saved_mscx);
+        EXPECT_EQ(*saved_mscx, *expected_mscx);
         EXPECT_EQ(chord->up_note()->pitch(), 60);
     }
 }
