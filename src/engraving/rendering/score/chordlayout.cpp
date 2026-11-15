@@ -1445,17 +1445,15 @@ void ChordLayout::update_ledger_lines(Chord *item, LayoutContext &ctx) {
 }
 
 bool ChordLayout::is_chord_pos_below_beam(const Chord *item, Beam *beam) {
-    assert(!beam->beam_fragments().empty());
-
-    Note *base_note = item->up() ? item->down_note() : item->up_note();
-    double note_y = base_note->page_pos().y();
-
     PointF start_anchor = beam->start_anchor();
     PointF end_anchor = beam->end_anchor();
 
-    if (start_anchor.is_null() || end_anchor.is_null()) {
+    if (beam->beam_fragments().empty() || start_anchor.is_null() || end_anchor.is_null()) {
         return beam->cross() ? item->is_below_cross_beam(beam) : beam->up();
     }
+
+    Note *base_note = item->up() ? item->down_note() : item->up_note();
+    double note_y = base_note->page_pos().y();
 
     if (item == beam->rendered_elements().front()) {
         return note_y > start_anchor.y();
