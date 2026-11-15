@@ -334,31 +334,18 @@
             <noStem>1</noStem>
             <Note>
               <eid>e44</eid>
-              <parentheses>both</parentheses>
               <pitch>57</pitch>
               <tpc>17</tpc>
               <fret>2</fret>
               <string>2</string>
               <ghost>1</ghost>
               </Note>
-            <NoteParenGroup>
-              <Parenthesis>
-                <eid>e45</eid>
-                </Parenthesis>
-              <Parenthesis>
-                <horizontalDirection>right</horizontalDirection>
-                <eid>e46</eid>
-                </Parenthesis>
-              <Notes>
-                <NoteEID>e44</NoteEID>
-                </Notes>
-              </NoteParenGroup>
             </Chord>
           <Chord>
-            <eid>e47</eid>
+            <eid>e45</eid>
             <durationType>half</durationType>
             <Note>
-              <eid>e48</eid>
+              <eid>e46</eid>
               <pitch>59</pitch>
               <tpc>19</tpc>
               <fret>2</fret>
@@ -368,20 +355,20 @@
                 <bendStartTimeFactor>0</bendStartTimeFactor>
                 <bendEndTimeFactor>1</bendEndTimeFactor>
                 <startElement>e44</startElement>
-                <endElement>e48</endElement>
-                <eid>e49</eid>
+                <endElement>e46</endElement>
+                <eid>e47</eid>
                 <track>0</track>
                 </GuitarBend>
               </Note>
             </Chord>
           <Chord>
-            <eid>e50</eid>
+            <eid>e48</eid>
             <BeamMode>no</BeamMode>
             <durationType>eighth</durationType>
             <grace8after/>
             <noStem>1</noStem>
             <Note>
-              <eid>e51</eid>
+              <eid>e49</eid>
               <pitch>53</pitch>
               <tpc>13</tpc>
               <fret>5</fret>
@@ -390,46 +377,33 @@
                 <guitarBendType>bend</guitarBendType>
                 <bendStartTimeFactor>0</bendStartTimeFactor>
                 <bendEndTimeFactor>0.65</bendEndTimeFactor>
-                <startElement>e52</startElement>
-                <endElement>e51</endElement>
-                <eid>e53</eid>
+                <startElement>e50</startElement>
+                <endElement>e49</endElement>
+                <eid>e51</eid>
                 <track>0</track>
                 </GuitarBend>
               </Note>
             </Chord>
           <Chord>
-            <eid>e54</eid>
+            <eid>e52</eid>
             <BeamMode>no</BeamMode>
             <durationType>eighth</durationType>
             <appoggiatura/>
             <noStem>1</noStem>
             <Note>
-              <eid>e55</eid>
-              <parentheses>both</parentheses>
+              <eid>e53</eid>
               <pitch>53</pitch>
               <tpc>13</tpc>
               <fret>3</fret>
               <string>3</string>
               <ghost>1</ghost>
               </Note>
-            <NoteParenGroup>
-              <Parenthesis>
-                <eid>e56</eid>
-                </Parenthesis>
-              <Parenthesis>
-                <horizontalDirection>right</horizontalDirection>
-                <eid>e57</eid>
-                </Parenthesis>
-              <Notes>
-                <NoteEID>e55</NoteEID>
-                </Notes>
-              </NoteParenGroup>
             </Chord>
           <Chord>
-            <eid>e58</eid>
+            <eid>e54</eid>
             <durationType>half</durationType>
             <Note>
-              <eid>e52</eid>
+              <eid>e50</eid>
               <pitch>55</pitch>
               <tpc>15</tpc>
               <fret>3</fret>
@@ -438,9 +412,9 @@
                 <guitarBendType>pre-bend</guitarBendType>
                 <bendStartTimeFactor>0</bendStartTimeFactor>
                 <bendEndTimeFactor>1</bendEndTimeFactor>
-                <startElement>e55</startElement>
-                <endElement>e52</endElement>
-                <eid>e59</eid>
+                <startElement>e53</startElement>
+                <endElement>e50</endElement>
+                <eid>e55</eid>
                 <track>0</track>
                 </GuitarBend>
               </Note>
