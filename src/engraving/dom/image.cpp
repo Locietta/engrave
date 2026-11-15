@@ -45,7 +45,6 @@ static bool default_size_is_spatium = true;
 Image::Image(DummyParentOr<EngravingItem> parent) : BSymbol(ElementType::IMAGE, parent, ElementFlag::MOVABLE) {
     image_type_ = ImageType::NONE;
     size_ = SizeF(0.0, 0.0);
-    store_item_ = 0;
     dirty_ = false;
     lock_aspect_ratio_ = default_lock_aspect_ratio;
     auto_scale_ = default_auto_scale;
@@ -59,11 +58,8 @@ Image::Image(const Image &img) : BSymbol(img) {
     lock_aspect_ratio_ = img.lock_aspect_ratio_;
     auto_scale_ = img.auto_scale_;
     dirty_ = img.dirty_;
-    store_item_ = img.store_item_;
+    set_store_item(img.store_item_);
     size_is_spatium_ = img.size_is_spatium_;
-    if (store_item_) {
-        store_item_->reference(this);
-    }
     if (image_type_ == ImageType::RASTER) {
         raster_doc_ = img.raster_doc_ ? std::make_shared<Pixmap>(*img.raster_doc_) : nullptr;
     } else if (image_type_ == ImageType::SVG) {
@@ -73,22 +69,31 @@ Image::Image(const Image &img) : BSymbol(img) {
 }
 
 Image::~Image() {
+    set_store_item(nullptr);
+    delete svg_doc_;
+}
+
+void Image::set_store_item(ImageStoreItem *item) {
+    if (store_item_ == item) {
+        return;
+    }
     if (store_item_) {
         store_item_->dereference(this);
     }
-    if (image_type_ == ImageType::SVG) {
-        delete svg_doc_;
+    store_item_ = item;
+    if (store_item_) {
+        store_item_->reference(this);
     }
 }
 
 void Image::set_image_type(ImageType t) {
+    delete svg_doc_;
+    svg_doc_ = nullptr;
+    raster_doc_.reset();
     image_type_ = t;
     if (image_type_ == ImageType::SVG) {
-        delete svg_doc_;
         svg_doc_ = store_item_ ? new SvgRenderer(store_item_->buffer()) : nullptr;
-    } else if (image_type_ == ImageType::RASTER) {
-        raster_doc_.reset();
-    } else {
+    } else if (image_type_ != ImageType::RASTER) {
         LOGD("illegal image type");
     }
 }
@@ -144,17 +149,16 @@ double Image::image_height() const { return size().height(); }
 double Image::image_width() const { return size().width(); }
 
 bool Image::load_from_store(const std::string &store_path) {
-    store_path_ = store_path;
     if (store_path.empty()) {
         return false;
     }
 
-    store_item_ = image_store.get_image(store_path);
-    if (!store_item_) {
+    auto *item = image_store.get_image(store_path);
+    if (!item) {
         return false;
     }
-    store_item_->reference(this);
-
+    set_store_item(item);
+    store_path_ = store_path;
     std::string suffix = muse::io::suffix(store_path);
     if (suffix == "svg" || suffix == "svgz") {
         set_image_type(ImageType::SVG);
@@ -164,9 +168,6 @@ bool Image::load_from_store(const std::string &store_path) {
 
     return true;
 }
-
-//    load image from file and put into ImageStore
-//    return true on success
 
 bool Image::load_from_file(muse::io::PathT path) {
     if (path.empty()) {
@@ -186,8 +187,7 @@ bool Image::load_from_file(muse::io::PathT path) {
     muse::ByteArray ba = f.read_all();
     f.close();
 
-    store_item_ = image_store.add(path.to_std_string(), ba);
-    store_item_->reference(this);
+    set_store_item(image_store.add(path.to_std_string(), ba));
     if (path.has_suffix("svg") || path.has_suffix("svgz")) {
         set_image_type(ImageType::SVG);
     } else {
@@ -196,12 +196,8 @@ bool Image::load_from_file(muse::io::PathT path) {
     return true;
 }
 
-//    load image from data and put into ImageStore
-//    return true on success
-
 bool Image::load_from_data(const std::string &name, const muse::ByteArray &ba) {
-    store_item_ = image_store.add(name, ba);
-    store_item_->reference(this);
+    set_store_item(image_store.add(name, ba));
 
     muse::io::PathT io_path(name);
     if (io_path.has_suffix("svg") || io_path.has_suffix("svgz")) {

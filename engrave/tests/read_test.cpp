@@ -75,6 +75,7 @@
 #include "engraving/dom/harmony.h"
 #include "engraving/dom/hook.h"
 #include "engraving/dom/image.h"
+#include "engraving/dom/imageStore.h"
 #include "engraving/dom/instrument.h"
 #include "engraving/dom/jump.h"
 #include "engraving/dom/layoutbreak.h"
@@ -5067,6 +5068,47 @@ TEST(Read, ColdSvgDimensionsAndLockedResizeUseIntrinsicAspect) {
     EXPECT_DOUBLE_EQ(image->image_width(), 14.0);
 }
 
+TEST(Read, ImageReloadReleasesOldStoreReferencesBeforeArchiveWrite) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    ImageStoreItem *first = nullptr;
+    ImageStoreItem *second = nullptr;
+    {
+        Image image(master.first_measure());
+        ASSERT_TRUE(image.load_from_data("s22-first.svg", muse::ByteArray(R"(<svg width="31" height="17"/>)")));
+        first = image.store_item();
+        {
+            Image copy(image);
+            ASSERT_TRUE(image.load_from_data("s22-second.svg", muse::ByteArray(R"(<svg width="37" height="19"/>)")));
+            second = image.store_item();
+            EXPECT_TRUE(first->is_used(&master));
+        }
+        EXPECT_FALSE(first->is_used());
+        EXPECT_FALSE(first->is_used(&master));
+        ASSERT_TRUE(image.load_from_data("s22-second.svg", second->buffer()));
+        EXPECT_TRUE(second->is_used(&master));
+        ASSERT_TRUE(image.load_from_store(first->hash_name()));
+        EXPECT_FALSE(second->is_used());
+        EXPECT_EQ(image.image_size(), muse::SizeF(31, 17));
+        ASSERT_TRUE(image.load_from_store(first->hash_name()));
+        EXPECT_TRUE(first->is_used(&master));
+        EXPECT_FALSE(image.load_from_store("missing.svg"));
+        Image copy(image);
+        EXPECT_EQ(copy.image_size(), muse::SizeF(31, 17));
+    }
+    EXPECT_FALSE(first->is_used());
+    EXPECT_FALSE(second->is_used());
+    auto other = g_engine->open(write470_fixture());
+    ASSERT_TRUE(other);
+    EXPECT_FALSE(first->is_used(&master_of(**other)));
+    EXPECT_FALSE(second->is_used(&master_of(**other)));
+    const auto archive = (*other)->export_score({.format = engrave::Format::MSCZ});
+    ASSERT_TRUE(archive) << archive.error().message;
+    EXPECT_TRUE(g_engine->open(*archive));
+}
+
 TEST(Read, SvgIntrinsicPhysicalUnitsAndViewBoxAreAvailableCold) {
     using namespace mu::engraving;
     auto opened = g_engine->open(write470_fixture());
@@ -5745,6 +5787,45 @@ TEST(Read, LegacySlurGripOrdinalGapsBaselineBeforeLayout) {
     }
     slur->erase_spanner_segments();
     EXPECT_EQ(legacy_override_write(slur), bytes);
+}
+
+TEST(Read, SpannerSegmentRemovalDetachesEveryGuitarTechnique) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    for (const auto type :
+         {ElementType::LET_RING, ElementType::PALM_MUTE, ElementType::WHAMMY_BAR, ElementType::RASGUEADO, ElementType::HARMONIC_MARK,
+          ElementType::PICK_SCRAPE, ElementType::HAMMER_ON_PULL_OFF, ElementType::TAPPING_HALF_SLUR}) {
+        SCOPED_TRACE(static_cast<int>(type));
+        std::unique_ptr<Spanner> spanner(to_spanner(Factory::create_item(type, master.first_measure())));
+        const auto create_segment = [&]() -> SpannerSegment * {
+            if (spanner->is_slur()) return to_slur(spanner.get())->new_slur_tie_segment();
+            return to_s_line(spanner.get())->create_line_segment();
+        };
+        System first(&master);
+        System second(&master);
+        spanner->fixup_segments(1, create_segment);
+        auto *segment = spanner->front_segment();
+        segment->move_to_system(&first);
+        segment->move_to_system(&second);
+        EXPECT_TRUE(first.spanner_segments().empty());
+        second.add(segment);
+        second.remove(segment);
+        EXPECT_TRUE(second.spanner_segments().empty());
+        EXPECT_EQ(segment->system(), nullptr);
+        segment->move_to_system(&first);
+        spanner->erase_spanner_segments();
+        EXPECT_TRUE(first.spanner_segments().empty());
+        spanner->fixup_segments(1, create_segment);
+        segment = spanner->front_segment();
+        {
+            System temporary(&master);
+            segment->move_to_system(&temporary);
+        }
+        EXPECT_EQ(segment->system(), nullptr);
+        spanner->erase_spanner_segments();
+    }
 }
 
 TEST(Read, LegacySegmentTextAppearanceAndExplicitZeroFontSurviveDiscard) {

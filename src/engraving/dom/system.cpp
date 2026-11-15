@@ -362,12 +362,17 @@ void System::add(EngravingItem *el) {
     if (!el) {
         return;
     }
-    // LOGD("%p System::add: %p %s", this, el, el->typeName());
 
     if (el->is_measure_base()) {
         to_measure_base(el)->set_system(this);
     } else if (el->is_spanner_segment()) {
-        to_spanner_segment(el)->set_system(this);
+        auto *segment = to_spanner_segment(el);
+        segment->set_system(this);
+        if (!muse::contains(spanner_segments_, segment)) {
+            spanner_segments_.push_back(segment);
+        }
+        el->added();
+        return;
     } else if (!el->is_beam()) { // a beam's placement is derived from its elements
         el->set_ownership_parent(this);
     }
@@ -392,40 +397,6 @@ void System::add(EngravingItem *el) {
         case ElementType::VBOX:
         case ElementType::TBOX:
         case ElementType::FBOX: score()->add_element(el); break;
-        case ElementType::TEXTLINE_SEGMENT:
-        case ElementType::HAIRPIN_SEGMENT:
-        case ElementType::OTTAVA_SEGMENT:
-        case ElementType::TRILL_SEGMENT:
-        case ElementType::VIBRATO_SEGMENT:
-        case ElementType::VOLTA_SEGMENT:
-        case ElementType::SLUR_SEGMENT:
-        case ElementType::TIE_SEGMENT:
-        case ElementType::LAISSEZ_VIB_SEGMENT:
-        case ElementType::PARTIAL_TIE_SEGMENT:
-        case ElementType::PEDAL_SEGMENT:
-        case ElementType::LYRICSLINE_SEGMENT:
-        case ElementType::PARTIAL_LYRICSLINE_SEGMENT:
-        case ElementType::GLISSANDO_SEGMENT:
-        case ElementType::NOTELINE_SEGMENT:
-        case ElementType::LET_RING_SEGMENT:
-        case ElementType::GRADUAL_TEMPO_CHANGE_SEGMENT:
-        case ElementType::PALM_MUTE_SEGMENT:
-        case ElementType::WHAMMY_BAR_SEGMENT:
-        case ElementType::RASGUEADO_SEGMENT:
-        case ElementType::HARMONIC_MARK_SEGMENT:
-        case ElementType::PICK_SCRAPE_SEGMENT:
-        case ElementType::GUITAR_BEND_SEGMENT:
-        case ElementType::GUITAR_BEND_HOLD_SEGMENT:
-        case ElementType::HAMMER_ON_PULL_OFF_SEGMENT:
-        case ElementType::TAPPING_HALF_SLUR_SEGMENT: {
-            SpannerSegment *ss = to_spanner_segment(el);
-#ifndef NDEBUG
-            if (muse::contains(spanner_segments_, ss)) {
-                LOGD("System::add() %s %p already there", ss->type_name(), ss);
-            } else
-#endif
-                spanner_segments_.push_back(ss);
-        } break;
 
         case ElementType::SYSTEM_DIVIDER: {
             SystemDivider *sd = to_system_divider(el);
@@ -443,6 +414,18 @@ void System::add(EngravingItem *el) {
 }
 
 void System::remove(EngravingItem *el) {
+    if (el->is_spanner_segment()) {
+        auto *segment = to_spanner_segment(el);
+        if (!muse::remove(spanner_segments_, segment)) {
+            LOGD("System::remove: %p(%s) not found, score %p", el, el->type_name(), score());
+            assert(score() == el->score());
+        }
+        if (segment->system() == this) {
+            segment->set_system(nullptr);
+        }
+        el->removed();
+        return;
+    }
     switch (el->type()) {
         case ElementType::INSTRUMENT_NAME: {
             // NOTE: el gets deleted here
@@ -463,33 +446,6 @@ void System::remove(EngravingItem *el) {
         case ElementType::VBOX:
         case ElementType::TBOX:
         case ElementType::FBOX: score()->remove_element(el); break;
-        case ElementType::TEXTLINE_SEGMENT:
-        case ElementType::HAIRPIN_SEGMENT:
-        case ElementType::OTTAVA_SEGMENT:
-        case ElementType::TRILL_SEGMENT:
-        case ElementType::VIBRATO_SEGMENT:
-        case ElementType::VOLTA_SEGMENT:
-        case ElementType::SLUR_SEGMENT:
-        case ElementType::TIE_SEGMENT:
-        case ElementType::LAISSEZ_VIB_SEGMENT:
-        case ElementType::PARTIAL_TIE_SEGMENT:
-        case ElementType::PEDAL_SEGMENT:
-        case ElementType::LYRICSLINE_SEGMENT:
-        case ElementType::PARTIAL_LYRICSLINE_SEGMENT:
-        case ElementType::GRADUAL_TEMPO_CHANGE_SEGMENT:
-        case ElementType::GLISSANDO_SEGMENT:
-        case ElementType::NOTELINE_SEGMENT:
-        case ElementType::GUITAR_BEND_SEGMENT:
-        case ElementType::GUITAR_BEND_HOLD_SEGMENT: {
-            SpannerSegment *ss = to_spanner_segment(el);
-            if (!muse::remove(spanner_segments_, ss)) {
-                LOGD("System::remove: %p(%s) not found, score %p", el, el->type_name(), score());
-                assert(score() == el->score());
-            }
-            if (ss->system() == this) {
-                ss->set_system(nullptr);
-            }
-        } break;
         case ElementType::SYSTEM_DIVIDER:
             if (el == system_divider_left_) {
                 system_divider_left_ = 0;
