@@ -92,6 +92,7 @@ struct ChordLayout {
     static void layout_articulations3(Chord *item, Slur *s, LayoutContext &ctx);
 
     static void layout_stem(Chord *item, const LayoutContext &ctx);
+    static void refresh_shape(Chord *item);
 
     static void compute_up(const Chord *item, ChordRest::LayoutData *ldata, const LayoutContext &ctx);
     static void compute_up(ChordRest *item, const LayoutContext &ctx);

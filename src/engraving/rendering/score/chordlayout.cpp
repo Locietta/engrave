@@ -62,6 +62,7 @@
 #include "editing/editchord.h"
 #include "editing/navigation.h"
 #include "horizontalspacing.h"
+#include "layoutdatastore.h"
 #include "log.h"
 #include "normalization/notes.h"
 #include "parenthesislayout.h"
@@ -120,7 +121,7 @@ void ChordLayout::layout_pitched(Chord *item, LayoutContext &ctx) {
     Note *downnote = item->down_note();
     Note *left_note = nullptr;
 
-    delete item->tab_dur(); // no TAB? no duration symbol! (may happen when converting a TAB into PITCHED)
+    LayoutDataStore::delete_layout_child(item->tab_dur()); // no TAB? no duration symbol! (may happen when converting a TAB into PITCHED)
     item->mutldata()->tab_dur = nullptr;
 
     //-----------------------------------------
@@ -276,7 +277,7 @@ void ChordLayout::layout_pitched(Chord *item, LayoutContext &ctx) {
 
     if (item->hook()) {
         if (item->beam()) {
-            delete item->hook();
+            LayoutDataStore::delete_layout_child(item->hook());
             item->mutldata()->hook = nullptr;
         } else {
             apply_authored_overrides(*item->hook());
@@ -345,7 +346,7 @@ void ChordLayout::layout_pitched(Chord *item, LayoutContext &ctx) {
     create_paren_groups(item);
     ParenthesisLayout::layout_chord_parentheses(item, ctx);
 
-    fill_shape(item, item->mutldata(), ctx.conf());
+    refresh_shape(item);
 }
 
 void ChordLayout::layout_tablature(Chord *item, LayoutContext &ctx) {
@@ -483,7 +484,7 @@ void ChordLayout::layout_tablature(Chord *item, LayoutContext &ctx) {
         item->stem()->set_pos(StemLayout::tab_stem_pos(item, tab) * spatium_value);
         if (item->hook()) {
             if (item->beam()) {
-                delete item->hook();
+                LayoutDataStore::delete_layout_child(item->hook());
                 item->mutldata()->hook = nullptr;
             } else {
                 if (rrr < stem_x + item->hook()->width()) {
@@ -495,11 +496,13 @@ void ChordLayout::layout_tablature(Chord *item, LayoutContext &ctx) {
         }
     } else {
         if (item->stem()) {
-            delete item->stem();
+            LayoutDataStore::delete_layout_child(item->stem());
             item->mutldata()->stem = nullptr;
         }
+        LayoutDataStore::delete_layout_child(item->stem_slash());
+        item->mutldata()->stem_slash = nullptr;
         if (item->hook()) {
-            delete item->hook();
+            LayoutDataStore::delete_layout_child(item->hook());
             item->mutldata()->hook = nullptr;
         }
         if (auto *beam = item->beam()) {
@@ -513,7 +516,7 @@ void ChordLayout::layout_tablature(Chord *item, LayoutContext &ctx) {
         || (item->is_grace()                           // no tab duration symbols if grace notes
             && item->beam_mode() == BeamMode::AUTO)) { // and beammode == AUTO
         //
-        delete item->tab_dur(); // delete an existing duration symbol
+        LayoutDataStore::delete_layout_child(item->tab_dur()); // delete an existing duration symbol
         item->mutldata()->tab_dur = nullptr;
     } else {
         //
@@ -561,7 +564,7 @@ void ChordLayout::layout_tablature(Chord *item, LayoutContext &ctx) {
                 tdladata->set_bbox(tdladata->bbox().translated(0, min_y));
             }
         } else { // symbol not needed: if exists, delete
-            delete item->tab_dur();
+            LayoutDataStore::delete_layout_child(item->tab_dur());
             item->mutldata()->tab_dur = nullptr;
         }
     } // end of if(duration_symbols)
@@ -588,7 +591,7 @@ void ChordLayout::layout_tablature(Chord *item, LayoutContext &ctx) {
 
     if (item->hook()) {
         if (item->beam()) {
-            delete item->hook();
+            LayoutDataStore::delete_layout_child(item->hook());
             item->mutldata()->hook = nullptr;
         } else if (tab == 0) {
             apply_authored_overrides(*item->hook());
@@ -699,7 +702,7 @@ void ChordLayout::layout_tablature(Chord *item, LayoutContext &ctx) {
     create_paren_groups(item);
     ParenthesisLayout::layout_chord_parentheses(item, ctx);
 
-    fill_shape(item, item->mutldata(), ctx.conf());
+    refresh_shape(item);
 }
 
 void ChordLayout::layout_lv_articulation(Chord *item, LayoutContext &ctx) {
@@ -1212,6 +1215,22 @@ void ChordLayout::layout_articulations3(Chord *item, Slur *slur, LayoutContext &
     }
 }
 
+void ChordLayout::refresh_shape(Chord *item) {
+    if (!item->ldata()->is_set_shape()) return;
+    fill_shape(item, item->mutldata());
+    auto refresh_segment = [](Segment *segment) {
+        if (!segment) return;
+        const auto count = static_cast<const Segment *>(segment)->shapes().size();
+        for (size_t staff = 0; staff < count; ++staff)
+            if (!segment->staff_shape(staff).empty()) segment->create_shape(staff);
+    };
+    refresh_segment(item->segment());
+    if (item->is_grace()) {
+        const auto *main = to_chord(item->ownership_parent());
+        if (item->is_grace_after()) refresh_segment(grace_notes_after_segment(main));
+    }
+}
+
 //! May be called again when the chord is added to or removed from a beam.
 void ChordLayout::layout_stem(Chord *item, const LayoutContext &ctx) {
 
@@ -1232,6 +1251,9 @@ void ChordLayout::layout_stem(Chord *item, const LayoutContext &ctx) {
     item->mutldata()->default_stem_length = StemLayout::calc_default_stem_length(item, ctx);
 
     if (!item->stem()) {
+        LayoutDataStore::delete_layout_child(item->stem_slash());
+        item->mutldata()->stem_slash = nullptr;
+        refresh_shape(item);
         return;
     }
 
@@ -1256,9 +1278,10 @@ void ChordLayout::layout_stem(Chord *item, const LayoutContext &ctx) {
         apply_authored_overrides(*item->stem_slash());
         TLayout::layout_stem_slash(item->stem_slash(), item->stem_slash()->mutldata(), ctx.conf());
     } else if (item->stem_slash()) {
-        delete item->stem_slash();
+        LayoutDataStore::delete_layout_child(item->stem_slash());
         item->mutldata()->stem_slash = nullptr;
     }
+    refresh_shape(item);
 }
 
 bool ChordLayout::compute_up_beam_case(const Chord *item, Beam *beam) {
@@ -2564,7 +2587,7 @@ void ChordLayout::set_dot_relative_line(Note *note, int dot_move, LayoutContext 
     }
     if (n < 0) {
         for (int i = 0; i < -n; ++i) {
-            delete note->mutldata()->dots.back();
+            LayoutDataStore::delete_layout_child(note->mutldata()->dots.back());
             note->mutldata()->dots.pop_back();
         }
     }
@@ -2796,8 +2819,10 @@ void ChordLayout::layout_chords3(const std::vector<Chord *> &chords, const std::
 void ChordLayout::layout_ledger_lines(const std::vector<Chord *> &chords, LayoutContext &ctx) {
     for (Chord *item : chords) {
         update_ledger_lines(item, ctx);
+        refresh_shape(item);
         for (Chord *grace : item->grace_notes()) {
             update_ledger_lines(grace, ctx);
+            refresh_shape(grace);
         }
     }
 }
@@ -3210,8 +3235,8 @@ void ChordLayout::create_paren_groups(Chord *chord) {
     shape.remove_if([](const ShapeElement &element) { return element.item() && element.item()->is_parenthesis(); });
     chord->mutldata()->set_shape(shape);
     for (auto &group : output) {
-        delete group.left;
-        delete group.right;
+        LayoutDataStore::delete_layout_child(group.left);
+        LayoutDataStore::delete_layout_child(group.right);
     }
     output.clear();
     output.resize(groups.size());

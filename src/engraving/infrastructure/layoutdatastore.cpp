@@ -191,11 +191,19 @@ void LayoutDataStore::retire_beam_borrowers(const BeamBase &beam) {
     }
 }
 
-void LayoutDataStore::retire_spanner_borrowers(const SpannerSegment &segment) {
+void LayoutDataStore::delete_layout_child(EngravingItem *item) {
+    if (!item) return;
+    if (auto *store = item->score()->layout_data_store()) store->retire_shape_borrowers(*item);
+    delete item;
+}
+
+void LayoutDataStore::retire_spanner_borrowers(const SpannerSegment &segment) { retire_shape_borrowers(segment); }
+
+void LayoutDataStore::retire_shape_borrowers(const EngravingItem &retired) {
     for (auto *page : output_.pages) page->invalidate_bsp_tree();
-    const auto borrows_segment = [&](const ShapeElement &element) {
+    const auto borrows_item = [&](const ShapeElement &element) {
         for (auto *item = element.item(); item; item = item->ownership_parent_item())
-            if (item == &segment) return true;
+            if (item == &retired) return true;
         return false;
     };
     // Reusable tail systems live outside ScoreOutput during a range pass.
@@ -203,17 +211,17 @@ void LayoutDataStore::retire_spanner_borrowers(const SpannerSegment &segment) {
     for (auto &record : records_->items.values()) {
         auto *item = record.second.item;
         auto &data = *record.second.data;
-        if (data.is_set_shape()) data.mut_shape().remove_if(borrows_segment);
-        if (data.mask_.has_value()) data.mask_.mut_value().remove_if(borrows_segment);
+        if (data.is_set_shape()) data.mut_shape().remove_if(borrows_item);
+        if (data.mask_.has_value()) data.mask_.mut_value().remove_if(borrows_item);
         if (item->is_system()) {
             for (auto *staff : to_system(item)->staves()) {
-                std::erase_if(staff->skyline().north().elements(), borrows_segment);
-                std::erase_if(staff->skyline().south().elements(), borrows_segment);
+                std::erase_if(staff->skyline().north().elements(), borrows_item);
+                std::erase_if(staff->skyline().south().elements(), borrows_item);
             }
         } else if (item->is_segment()) {
             auto *owner = to_segment(item);
             const auto size = static_cast<const Segment *>(owner)->shapes().size();
-            for (size_t i = 0; i < size; ++i) owner->staff_shape(i).remove_if(borrows_segment);
+            for (size_t i = 0; i < size; ++i) owner->staff_shape(i).remove_if(borrows_item);
         }
     }
 }

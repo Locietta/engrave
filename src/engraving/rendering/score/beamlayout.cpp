@@ -78,10 +78,12 @@ void BeamLayout::detach_beam_for_layout(ChordRest *cr, bool beamed) {
                 apply_authored_overrides(*hook);
             }
         } else if (chord->hook()) {
-            delete chord->hook();
+            LayoutDataStore::delete_layout_child(chord->hook());
             chord->mutldata()->hook = nullptr;
         }
         chord->renderer()->layout_stem(chord);
+    } else if (cr->is_chord()) {
+        ChordLayout::refresh_shape(to_chord(cr));
     }
 }
 
@@ -694,10 +696,7 @@ void BeamLayout::create_beams(LayoutContext &ctx, Measure *measure) {
                             if (prev_cr->is_chord()) {
                                 if (Hook *hook = to_chord(prev_cr)->hook()) {
                                     to_chord(prev_cr)->mutldata()->hook = nullptr;
-                                    prev_cr->segment()->staff_shape(prev_cr->v_staff_idx()).remove_if([hook](const ShapeElement &el) {
-                                        return el.item() == hook;
-                                    });
-                                    delete hook;
+                                    LayoutDataStore::delete_layout_child(hook);
                                 }
                             }
                             //a1 = beam ? beam->rendered_elements().front() : prevCR;

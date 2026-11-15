@@ -32,6 +32,7 @@
 #include "dom/system.h"
 #include "dom/text.h"
 #include "dom/tuplet.h"
+#include "layoutdatastore.h"
 #include "log.h"
 #include "tlayout.h"
 
@@ -153,7 +154,7 @@ void TupletLayout::create_number(Tuplet *item, LayoutContext &ctx) {
             if (item->number()->selected()) {
                 ctx.deselect(item->number());
             }
-            delete item->number();
+            LayoutDataStore::delete_layout_child(item->number());
             item->mutldata()->number = nullptr;
         }
 
