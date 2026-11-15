@@ -109,6 +109,7 @@
 #include "engraving/dom/stem.h"
 #include "engraving/dom/stemslash.h"
 #include "engraving/dom/system.h"
+#include "engraving/dom/tapping.h"
 #include "engraving/dom/tempotext.h"
 #include "engraving/dom/tempotimeline.h"
 #include "engraving/dom/text.h"
@@ -5798,7 +5799,10 @@ TEST(Read, SpannerSegmentRemovalDetachesEveryGuitarTechnique) {
          {ElementType::LET_RING, ElementType::PALM_MUTE, ElementType::WHAMMY_BAR, ElementType::RASGUEADO, ElementType::HARMONIC_MARK,
           ElementType::PICK_SCRAPE, ElementType::HAMMER_ON_PULL_OFF, ElementType::TAPPING_HALF_SLUR}) {
         SCOPED_TRACE(static_cast<int>(type));
-        std::unique_ptr<Spanner> spanner(to_spanner(Factory::create_item(type, master.first_measure())));
+        std::unique_ptr<Tapping> tapping(Factory::create_tapping(master.dummy()));
+        std::unique_ptr<Spanner> spanner(type == ElementType::TAPPING_HALF_SLUR ?
+                                             new TappingHalfSlur(tapping.get()) :
+                                             to_spanner(Factory::create_item(type, master.first_measure())));
         const auto create_segment = [&]() -> SpannerSegment * {
             if (spanner->is_slur()) return to_slur(spanner.get())->new_slur_tie_segment();
             return to_s_line(spanner.get())->create_line_segment();
