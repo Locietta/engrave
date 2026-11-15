@@ -2009,33 +2009,8 @@ bool TRead::read_properties(MeasureBase *b, XmlReader &e, ReadContext &ctx) {
         LayoutBreak *lb = Factory::create_layout_break(b);
         TRead::read(lb, e, ctx);
         lb->set_track(0);
-        bool do_add = true;
-        switch (lb->layout_break_type()) {
-            case LayoutBreakType::LINE:
-                if (b->line_break()) {
-                    do_add = false;
-                }
-                break;
-            case LayoutBreakType::PAGE:
-                if (b->page_break()) {
-                    do_add = false;
-                }
-                break;
-            case LayoutBreakType::SECTION:
-                if (b->section_break()) {
-                    do_add = false;
-                }
-                break;
-            case LayoutBreakType::NOBREAK:
-                if (b->no_break()) {
-                    do_add = false;
-                }
-                break;
-        }
-        if (do_add) {
-            b->add(lb);
-            b->cleanup_layout_breaks(false);
-        }
+        b->add(lb);
+        b->cleanup_layout_breaks(false);
     } else if (tag == "StaffTypeChange") {
         StaffTypeChange *stc = Factory::create_staff_type_change(b);
         stc->set_track(ctx.track());

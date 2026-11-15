@@ -6048,9 +6048,8 @@ TEST(Read, S16RemovingDuplicatePageBreakPreservesFollowingRepeat) {
             const auto page_id = engrave::from_engine(page->eid());
             if (warm) ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
             const auto layouts = layout_count(master);
-            ASSERT_TRUE(document.edit({{engrave::SetProperty{section_id, "LAYOUT_BREAK", engrave::Enum{"page"}}}}));
-            EXPECT_FALSE(measure->section_break());
             ASSERT_TRUE(document.edit({{engrave::Remove{section_id}}}));
+            EXPECT_FALSE(measure->section_break());
             EXPECT_TRUE(measure->page_break());
             if (remove_all) ASSERT_TRUE(document.edit({{engrave::Remove{page_id}}}));
             ASSERT_TRUE(document.edit({{engrave::SetProperty{engrave::from_engine(bar->eid()), "BARLINE_TYPE", engrave::Enum{"end"}}}}));
@@ -6469,11 +6468,175 @@ TEST(Read, S18DirectBreakSubtypeEditsRemoveLinkedSiblings) {
             page->set_layout_break_type(LayoutBreakType::LINE);
         }
         expect_s18_breaks(measure, {LayoutBreakType::LINE});
-        expect_s18_breaks(other, {active ? LayoutBreakType::LINE : LayoutBreakType::PAGE});
+        if (active)
+            expect_s18_breaks(other, {LayoutBreakType::LINE});
+        else
+            expect_s18_breaks(other, {LayoutBreakType::SECTION, LayoutBreakType::PAGE});
         master.update_repeat_list(false);
         EXPECT_EQ(master.repeat_list(true).ticks(), 1920);
         ASSERT_TRUE((*opened)->render({.format = engrave::RenderFormat::SVG}));
         ASSERT_TRUE((*opened)->render({.score = {engrave::from_engine(part->eid())}, .format = engrave::RenderFormat::SVG}));
+    }
+}
+
+TEST(Read, S19DuplicateSubtypeEditPreservesIdentityAndFollowingRepeat) {
+    using namespace mu::engraving;
+    for (bool warm : {false, true}) {
+        SCOPED_TRACE(warm);
+        auto xml = s18_break_fixture(s18_break_xml("section") + s18_break_xml("page"));
+        xml.insert(xml.find("</voice>"), "<BarLine><subtype>double</subtype></BarLine>");
+        xml.insert(xml.find("<endRepeat>"), "<startRepeat/>");
+        auto opened = g_engine->open(as_bytes(xml));
+        ASSERT_TRUE(opened);
+        auto &document = **opened;
+        auto &master = master_of(document);
+        auto *measure = master.first_measure();
+        auto *section = measure->section_break_element();
+        ASSERT_NE(section, nullptr);
+        const auto section_id = engrave::from_engine(section->eid());
+        const auto page_id = engrave::from_engine(measure->el().back()->eid());
+        if (warm) ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+        const auto layouts = layout_count(master);
+        const auto edited = document.edit({{engrave::SetProperty{section_id, "LAYOUT_BREAK", engrave::Enum{"page"}}}});
+        ASSERT_TRUE(edited);
+        ASSERT_FALSE(edited->rejection);
+        const auto check = [&](engrave::Document &doc) {
+            auto &score = master_of(doc);
+            auto *first = score.first_measure();
+            expect_s18_breaks(first, {LayoutBreakType::PAGE});
+            ASSERT_EQ(first->el().size(), 1u);
+            EXPECT_EQ(engrave::from_engine(first->el().front()->eid()), section_id);
+            EXPECT_TRUE(doc.get(section_id));
+            EXPECT_FALSE(doc.get(page_id));
+            EXPECT_TRUE(first->next_measure()->repeat_start());
+        };
+        ASSERT_TRUE(document.edit(
+            {{engrave::SetProperty{engrave::from_engine(measure->end_bar_line()->eid()), "BARLINE_TYPE", engrave::Enum{"end"}}}}));
+        check(document);
+        EXPECT_EQ(layout_count(master), layouts);
+        ASSERT_TRUE(document.checkpoint("single page"));
+        ASSERT_TRUE(document.edit({{engrave::Remove{section_id}}}));
+        ASSERT_TRUE(document.restore_checkpoint("single page"));
+        check(document);
+        for (const auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
+            SCOPED_TRACE(static_cast<int>(format));
+            const auto saved = document.export_score({.format = format});
+            ASSERT_TRUE(saved);
+            auto reopened = g_engine->open(*saved, {.format = format});
+            ASSERT_TRUE(reopened);
+            check(**reopened);
+            ASSERT_TRUE((*reopened)->render({.format = engrave::RenderFormat::SVG}));
+            check(**reopened);
+        }
+    }
+}
+
+TEST(Read, S19LocalReplacementPreservesIndependentExcerptBreak) {
+    using namespace mu::engraving;
+    for (bool measure_break : {false, true}) {
+        for (bool warm : {false, true}) {
+            SCOPED_TRACE(measure_break);
+            SCOPED_TRACE(warm);
+            auto opened = g_engine->open(as_bytes(s18_break_fixture(s18_break_xml("section") + s18_break_xml("page"))));
+            ASSERT_TRUE(opened);
+            auto &document = **opened;
+            auto &master = master_of(document);
+            ASSERT_TRUE(document.edit({{engrave::GenerateExcerpts{{engrave::from_engine(master.parts().front()->eid())}}}}));
+            ASSERT_EQ(master.excerpts().size(), 1u);
+            auto *part = master.excerpts().front()->excerpt_score();
+            ASSERT_NE(part, nullptr);
+            auto *section = part->first_measure()->section_break_element();
+            ASSERT_NE(section, nullptr);
+            ASSERT_NE(section->links(), nullptr);
+            const auto excerpt_break_id = engrave::from_engine(section->eid());
+            const auto excerpt_id = engrave::from_engine(part->eid());
+            auto *measure = master.first_measure();
+            const auto page_id = engrave::from_engine(measure->el().back()->eid());
+            if (warm) {
+                ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+                ASSERT_TRUE(document.render({.score = {excerpt_id}, .format = engrave::RenderFormat::SVG}));
+            }
+            const auto layouts = layout_count(master);
+            const auto part_layouts = layout_count(*part);
+            const auto independent = document.edit({{engrave::SetProperty{excerpt_break_id, "LAYOUT_BREAK", engrave::Enum{"page"}}}});
+            ASSERT_TRUE(independent);
+            ASSERT_FALSE(independent->rejection);
+            expect_s18_breaks(measure, {LayoutBreakType::SECTION, LayoutBreakType::PAGE});
+            expect_s18_breaks(part->first_measure(), {LayoutBreakType::PAGE});
+            const auto replaced = measure_break ?
+                                      document.edit({{engrave::SetLayoutBreak{engrave::from_engine(measure->eid()), "line", true}}}) :
+                                      document.edit({{engrave::SetProperty{page_id, "LAYOUT_BREAK", engrave::Enum{"line"}}}});
+            ASSERT_TRUE(replaced);
+            ASSERT_FALSE(replaced->rejection);
+            const auto check = [&](engrave::Document &doc) {
+                auto &score = master_of(doc);
+                expect_s18_breaks(score.first_measure(), {LayoutBreakType::LINE});
+                if (!measure_break) EXPECT_TRUE(doc.get(page_id));
+                ASSERT_EQ(score.excerpts().size(), 1u);
+                auto *excerpt = score.excerpts().front()->excerpt_score();
+                ASSERT_NE(excerpt, nullptr);
+                expect_s18_breaks(excerpt->first_measure(), {LayoutBreakType::PAGE});
+                ASSERT_EQ(excerpt->first_measure()->el().size(), 1u);
+                EXPECT_EQ(engrave::from_engine(excerpt->first_measure()->el().front()->eid()), excerpt_break_id);
+                EXPECT_TRUE(doc.get(excerpt_break_id));
+            };
+            check(document);
+            EXPECT_EQ(layout_count(master), layouts);
+            EXPECT_EQ(layout_count(*part), part_layouts);
+            ASSERT_TRUE(document.checkpoint("independent excerpt"));
+            ASSERT_TRUE(document.restore_checkpoint("independent excerpt"));
+            check(document);
+            for (const auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
+                SCOPED_TRACE(static_cast<int>(format));
+                const auto saved = document.export_score({.format = format});
+                ASSERT_TRUE(saved);
+                auto reopened = g_engine->open(*saved, {.format = format});
+                ASSERT_TRUE(reopened);
+                check(**reopened);
+                ASSERT_TRUE((*reopened)->render({.format = engrave::RenderFormat::SVG}));
+                const auto restored_excerpt = engrave::from_engine(master_of(**reopened).excerpts().front()->excerpt_score()->eid());
+                ASSERT_TRUE((*reopened)->render({.score = {restored_excerpt}, .format = engrave::RenderFormat::SVG}));
+                check(**reopened);
+            }
+        }
+    }
+}
+
+TEST(Read, S19DuplicateImportAndCleanupKeepTheIncomingBreak) {
+    using namespace mu::engraving;
+    const std::vector<std::pair<std::string, LayoutBreakType>> cases{{"page", LayoutBreakType::PAGE},
+                                                                     {"section", LayoutBreakType::SECTION},
+                                                                     {"line", LayoutBreakType::LINE},
+                                                                     {"nobreak", LayoutBreakType::NOBREAK}};
+    for (const auto &[type, subtype] : cases) {
+        for (const std::string version : {"4.60", "5.00"}) {
+            SCOPED_TRACE(type);
+            SCOPED_TRACE(version);
+            auto xml = s18_break_fixture("<LayoutBreak><eid>A_A</eid><subtype>" + type + "</subtype></LayoutBreak>" +
+                                         "<LayoutBreak><eid>B_B</eid><subtype>" + type + "</subtype></LayoutBreak>");
+            xml.replace(xml.find("5.00"), 4, version);
+            auto opened = g_engine->open(as_bytes(xml));
+            ASSERT_TRUE(opened);
+            auto &master = master_of(**opened);
+            auto *measure = master.first_measure();
+            ASSERT_EQ(measure->el().size(), 1u);
+            EXPECT_EQ(measure->el().front()->eid().to_std_string(), "B_B");
+            EXPECT_FALSE((*opened)->get(*engrave::element_id_from_string("A_A")));
+            EXPECT_TRUE((*opened)->get(*engrave::element_id_from_string("B_B")));
+            expect_s18_breaks(measure, {subtype});
+            for (bool undo : {false, true}) {
+                SCOPED_TRACE(undo);
+                auto *incoming = Factory::create_layout_break(measure);
+                incoming->set_layout_break_type(subtype);
+                incoming->set_track(0);
+                measure->add(incoming);
+                measure->cleanup_layout_breaks(undo);
+                expect_s18_breaks(measure, {subtype});
+                ASSERT_EQ(measure->el().size(), 1u);
+                EXPECT_EQ(measure->el().front(), incoming);
+            }
+            EXPECT_EQ(layout_count(master), 0u);
+        }
     }
 }
 

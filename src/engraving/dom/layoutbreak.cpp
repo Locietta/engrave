@@ -91,11 +91,10 @@ void LayoutBreak::set_layout_break_type(LayoutBreakType val) {
         std::vector<EngravingItem *> displaced;
         for (auto *item : parent->el()) {
             if (item == this || !item->is_layout_break()) continue;
-            if (!breaks_compatible(to_layout_break(item)->layout_break_type(), val)) displaced.push_back(item);
+            if (!breaks_coexist(to_layout_break(item)->layout_break_type(), val)) displaced.push_back(item);
         }
-        // The transaction removal path also removes linked copies and defers
-        // destruction safely when a direct setter runs outside an edit batch.
-        for (auto *item : displaced) score()->undo_remove_element(item);
+        // Excerpts may have independent appearance edits on linked siblings.
+        for (auto *item : displaced) score()->undo_remove_element(item, false);
     }
     layout_break_type_ = val;
     if (attached) parent->sync_break_flags(section_changed);

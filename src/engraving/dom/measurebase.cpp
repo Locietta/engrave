@@ -411,9 +411,10 @@ void MeasureBase::undo_set_break(bool v, LayoutBreakType type) {
         if (!item->is_layout_break()) continue;
         const auto existing = to_layout_break(item)->layout_break_type();
         present |= existing == type;
-        if ((!v && existing == type) || (v && !breaks_compatible(existing, type))) remove.push_back(item);
+        if ((!v && existing == type) || (v && existing != type && !breaks_coexist(existing, type))) remove.push_back(item);
     }
-    for (auto *item : remove) score()->undo_remove_element(item);
+    // Only an explicit toggle-off removes linked copies; replacement is local.
+    for (auto *item : remove) score()->undo_remove_element(item, !v);
     if (v && !present) {
         auto *lb = Factory::create_layout_break(mb);
         lb->set_layout_break_type(type);
@@ -430,7 +431,7 @@ void MeasureBase::cleanup_layout_breaks(bool undo) {
         const auto incoming = to_layout_break(e)->layout_break_type();
         // Import order determines precedence, independently of the cached flags.
         std::erase_if(retained, [&](auto *previous) {
-            if (breaks_compatible(to_layout_break(previous)->layout_break_type(), incoming)) return false;
+            if (breaks_coexist(to_layout_break(previous)->layout_break_type(), incoming)) return false;
             to_delete.push_back(previous);
             return true;
         });
@@ -438,7 +439,7 @@ void MeasureBase::cleanup_layout_breaks(bool undo) {
     }
     for (EngravingItem *e : to_delete) {
         if (undo) {
-            score()->undo_remove_element(e);
+            score()->undo_remove_element(e, false);
         } else {
             remove(e);
             delete e;

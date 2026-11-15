@@ -29,9 +29,8 @@ namespace mu::engraving {
 struct Factory;
 struct Transaction;
 
-constexpr bool breaks_compatible(LayoutBreakType a, LayoutBreakType b) {
-    return a == b || (a == LayoutBreakType::PAGE && b == LayoutBreakType::SECTION) ||
-           (a == LayoutBreakType::SECTION && b == LayoutBreakType::PAGE);
+constexpr bool breaks_coexist(LayoutBreakType a, LayoutBreakType b) {
+    return (a == LayoutBreakType::PAGE && b == LayoutBreakType::SECTION) || (a == LayoutBreakType::SECTION && b == LayoutBreakType::PAGE);
 }
 
 //---------------------------------------------------------
