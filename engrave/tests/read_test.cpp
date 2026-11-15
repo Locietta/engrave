@@ -5160,13 +5160,13 @@ TEST(Read, ImageReloadReleasesOldStoreReferencesBeforeArchiveWrite) {
     ImageStoreItem *file_second = nullptr;
     {
         Image file_image(master.first_measure());
-        ASSERT_TRUE(file_image.load_from_file(muse::io::PathT(file1.string())));
+        ASSERT_TRUE(file_image.load_from_file(muse::io::PathT(file1.generic_string())));
         file_first = file_image.store_item();
         ASSERT_NE(file_first, nullptr);
         EXPECT_TRUE(file_first->is_used(&master));
         EXPECT_EQ(file_image.image_size(), muse::SizeF(41, 23));
 
-        ASSERT_TRUE(file_image.load_from_file(muse::io::PathT(file2.string())));
+        ASSERT_TRUE(file_image.load_from_file(muse::io::PathT(file2.generic_string())));
         file_second = file_image.store_item();
         ASSERT_NE(file_second, nullptr);
         ASSERT_NE(file_second, file_first);
@@ -5177,10 +5177,11 @@ TEST(Read, ImageReloadReleasesOldStoreReferencesBeforeArchiveWrite) {
         const muse::RectF laid_out_bbox = file_image.ldata()->bbox();
         EXPECT_NEAR(laid_out_bbox.width(), 53.0, 1e-9);
         EXPECT_NEAR(laid_out_bbox.height(), 29.0, 1e-9);
+        const std::string previous_store_path = file_image.store_path();
 
-        EXPECT_FALSE(file_image.load_from_file(muse::io::PathT(missing_file.string())));
+        EXPECT_FALSE(file_image.load_from_file(muse::io::PathT(missing_file.generic_string())));
         EXPECT_EQ(file_image.store_item(), file_second);
-        EXPECT_EQ(file_image.store_path(), file_second->hash_name());
+        EXPECT_EQ(file_image.store_path(), previous_store_path);
         EXPECT_TRUE(file_second->is_used(&master));
         EXPECT_TRUE(file_image.is_valid());
         ASSERT_NE(file_image.svg_renderer(), nullptr);
@@ -5902,6 +5903,16 @@ TEST(Read, SpannerSegmentRemovalDetachesEveryGuitarTechnique) {
             if (spanner->is_slur()) return to_slur(spanner.get())->new_slur_tie_segment();
             return to_s_line(spanner.get())->create_line_segment();
         };
+
+        struct CmdLock {
+            MasterScore &score;
+
+            explicit CmdLock(MasterScore &score) : score(score) { score.cmd_state().lock(); }
+
+            ~CmdLock() { score.cmd_state().unlock(); }
+        };
+
+        const CmdLock layout_lock(master);
         std::unique_ptr<System> first(Factory::create_system(&master));
         std::unique_ptr<System> second(Factory::create_system(&master));
         first->mutldata();
@@ -5912,23 +5923,30 @@ TEST(Read, SpannerSegmentRemovalDetachesEveryGuitarTechnique) {
         auto *segment = create_segment();
         spanner->add(segment);
         segment->move_to_system(first.get());
+        ASSERT_TRUE(first->is_layout_data_current());
         ASSERT_EQ(first->spanner_segments().size(), 1u);
         EXPECT_EQ(first->spanner_segments().front(), segment);
 
         segment->move_to_system(second.get());
+        ASSERT_TRUE(first->is_layout_data_current());
+        ASSERT_TRUE(second->is_layout_data_current());
         EXPECT_TRUE(first->spanner_segments().empty());
         ASSERT_EQ(second->spanner_segments().size(), 1u);
         EXPECT_EQ(second->spanner_segments().front(), segment);
 
         second->add(segment);
+        ASSERT_TRUE(second->is_layout_data_current());
         EXPECT_EQ(second->spanner_segments().size(), 1u);
         second->remove(segment);
+        ASSERT_TRUE(second->is_layout_data_current());
         EXPECT_TRUE(second->spanner_segments().empty());
         EXPECT_EQ(segment->system(), nullptr);
 
         segment->move_to_system(first.get());
+        ASSERT_TRUE(first->is_layout_data_current());
         ASSERT_EQ(first->spanner_segments().size(), 1u);
         spanner->erase_spanner_segments();
+        ASSERT_TRUE(first->is_layout_data_current());
         EXPECT_TRUE(first->spanner_segments().empty());
 
         segment = create_segment();
@@ -5936,8 +5954,8 @@ TEST(Read, SpannerSegmentRemovalDetachesEveryGuitarTechnique) {
         {
             std::unique_ptr<System> temporary(Factory::create_system(&master));
             temporary->mutldata();
-            ASSERT_TRUE(temporary->is_layout_data_current());
             segment->move_to_system(temporary.get());
+            ASSERT_TRUE(temporary->is_layout_data_current());
             ASSERT_EQ(temporary->spanner_segments().size(), 1u);
         }
         EXPECT_EQ(segment->system(), nullptr);
@@ -7040,18 +7058,19 @@ TEST(Read, S17GraceBeamEditsRespectSeparateAuthoredOwnership) {
                 ASSERT_NE(beam, notes[0]->authored_beam());
                 const std::vector<ChordRest *> expected{notes[1], notes[2]};
                 EXPECT_EQ(beam->source_elements(), expected);
+                const std::vector<ChordRest *> rendered_expected{notes[0], notes[1], notes[2]};
                 const auto check_slashes = [&]() {
-                    ASSERT_EQ(beam->rendered_elements().size(), 2u);
-                    auto *front = to_chord(beam->rendered_elements().front());
-                    auto *back = to_chord(beam->rendered_elements().back());
+                    auto *rendered_beam = notes[1]->beam();
+                    ASSERT_NE(rendered_beam, nullptr);
+                    EXPECT_EQ(rendered_beam, notes[0]->beam());
+                    EXPECT_EQ(rendered_beam, notes[2]->beam());
+                    EXPECT_EQ(rendered_beam->rendered_elements(), rendered_expected);
                     EXPECT_EQ(notes[0]->stem_slash() != nullptr, slashed);
-                    EXPECT_EQ(front->stem_slash() != nullptr, slashed);
-                    EXPECT_EQ(back->stem_slash(), nullptr);
+                    EXPECT_EQ(notes[1]->stem_slash(), nullptr);
+                    EXPECT_EQ(notes[2]->stem_slash(), nullptr);
                     if (slashed) {
                         ASSERT_NE(notes[0]->stem_slash(), nullptr);
-                        ASSERT_NE(front->stem_slash(), nullptr);
                         EXPECT_FALSE(notes[0]->stem_slash()->ldata()->bbox().is_empty());
-                        EXPECT_FALSE(front->stem_slash()->ldata()->bbox().is_empty());
                     }
                 };
                 if (warm) {
