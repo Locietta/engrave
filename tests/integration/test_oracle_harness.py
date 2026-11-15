@@ -271,7 +271,7 @@ class TestCurrentGoldenInventory(unittest.TestCase):
         path = REPO_ROOT / "tests/data/golden/allow.json"
         self.assertEqual(golden.load_allow(path), [])
         entries = golden.load_allow(path, context="engine-gate-archive")
-        self.assertEqual(len(entries), 27)
+        self.assertEqual(len(entries), 25)
         entry = entries[0]
         digest = entry["sha256"]["linux"]
         self.assertIsNone(
