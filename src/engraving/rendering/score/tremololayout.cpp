@@ -145,6 +145,7 @@ void TremoloLayout::layout_one_note_tremolo(TremoloSingleChord *item, const Layo
         y = std::max(y, 0.0);
     }
     item->set_pos(x, y);
+    ChordLayout::refresh_shape(item->chord());
 }
 
 void TremoloLayout::calc_is_up(TremoloTwoChord *item) {

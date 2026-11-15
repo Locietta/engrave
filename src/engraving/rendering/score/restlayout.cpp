@@ -29,6 +29,7 @@
 #include "dom/measure.h"
 #include "dom/staff.h"
 #include "dom/system.h"
+#include "layoutdatastore.h"
 #include "log.h"
 #include "tlayout.h"
 
@@ -109,7 +110,7 @@ void RestLayout::layout_rest(const Rest *item, Rest::LayoutData *ldata, const La
         // this is to ensure horiz space is reserved for rest, even if they are not displayed
         // Rest::draw() will skip their drawing, if not needed
         if (item->tab_dur()) {
-            delete item->tab_dur();
+            LayoutDataStore::delete_layout_child(item->tab_dur());
             ldata->tab_dur = nullptr;
         }
     }
@@ -140,7 +141,7 @@ void RestLayout::layout_rest(const Rest *item, Rest::LayoutData *ldata, const La
         ldata->dots.push_back(dot);
     }
     while (ldata->dots.size() > size_t(item->dots())) {
-        delete ldata->dots.back();
+        LayoutDataStore::delete_layout_child(ldata->dots.back());
         ldata->dots.pop_back();
     }
     double visible_x = item->sym_width_no_ledger_lines(ldata) + ctx.conf().style_absolute(Sid::DOT_NOTE_DISTANCE) * item->mag();

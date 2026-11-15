@@ -56,6 +56,7 @@
 #include "noteline.h"
 #include "ornament.h"
 #include "part.h"
+#include "rendering/score/layoutdatastore.h"
 #include "rest.h"
 #include "score.h"
 #include "segment.h"
@@ -835,7 +836,7 @@ void Chord::resize_ledger_lines_to(size_t new_size) {
     }
     while (lines.size() > new_size) {
         assert(lines.back()->generated());
-        delete lines.back();
+        rendering::score::LayoutDataStore::delete_layout_child(lines.back());
         lines.pop_back();
     }
 }

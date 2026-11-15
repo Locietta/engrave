@@ -39,6 +39,7 @@
 #include "dom/utils.h"
 #include "editing/addremoveelement.h"
 #include "rendering/score/chordlayout.h"
+#include "rendering/score/layoutdatastore.h"
 
 using namespace mu::engraving::rendering::score;
 
@@ -66,9 +67,9 @@ void ModifyDom::create_stems(const Measure *measure, LayoutContext &ctx) {
 
                 auto create_stems = [](Chord *chord) {
                     if (!chord->should_have_stem()) {
-                        delete chord->stem();
-                        delete chord->hook();
-                        delete chord->stem_slash();
+                        LayoutDataStore::delete_layout_child(chord->stem());
+                        LayoutDataStore::delete_layout_child(chord->hook());
+                        LayoutDataStore::delete_layout_child(chord->stem_slash());
                         chord->mutldata()->stem = nullptr;
                         chord->mutldata()->hook = nullptr;
                         chord->mutldata()->stem_slash = nullptr;

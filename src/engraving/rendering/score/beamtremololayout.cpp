@@ -318,13 +318,7 @@ void BeamTremoloLayout::extend_stem(const BeamBase::LayoutData *ldata, Chord *ch
         TLayout::layout_stem_slash(chord->stem_slash(), chord->stem_slash()->mutldata(), ctx.conf());
     }
 
-    // Update stem shape
-    Stem *stem = chord->stem();
-    for (ShapeElement &shape_el : chord->segment()->staff_shape(chord->v_staff_idx()).elements()) {
-        if (shape_el.item() == stem) {
-            shape_el = ShapeElement(stem->ldata()->bbox().translated(stem->pos() + chord->pos()), stem);
-        }
-    }
+    ChordLayout::refresh_shape(chord);
 }
 
 bool BeamTremoloLayout::is_beam_inside_staff(int y_pos, int staff_lines, bool allow_floater) {

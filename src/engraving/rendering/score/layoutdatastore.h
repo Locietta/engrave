@@ -49,6 +49,8 @@ struct LayoutDataStore {
     Beam *create_beam();
     void retire_beam_borrowers(const BeamBase &beam);
     void retire_spanner_borrowers(const SpannerSegment &segment);
+    void retire_shape_borrowers(const EngravingItem &item);
+    static void delete_layout_child(EngravingItem *item);
     void prune_spanner_segments();
 
     size_t size() const;
