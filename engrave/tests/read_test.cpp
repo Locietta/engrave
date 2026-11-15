@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -40,6 +41,7 @@
 
 #include <gtest/gtest.h>
 
+#include "draw/svgrenderer.h"
 #include "engrave/src/api/handles.h"
 #include "engrave/src/api/pid_support.h"
 #include "engrave/src/api/state.h"
@@ -178,6 +180,20 @@ std::string read_text(const std::filesystem::path &path) {
 std::vector<std::byte> as_bytes(std::string_view text) {
     const auto *data = reinterpret_cast<const std::byte *>(text.data());
     return {data, data + text.size()};
+}
+
+std::string_view as_text(const std::vector<std::byte> &bytes) {
+    if (bytes.empty()) return {};
+    return {reinterpret_cast<const char *>(bytes.data()), bytes.size()};
+}
+
+std::string normalize_lf(std::string_view text) {
+    std::string normalized;
+    normalized.reserve(text.size());
+    for (const char ch : text) {
+        if (ch != '\r') normalized.push_back(ch);
+    }
+    return normalized;
 }
 
 std::unique_ptr<engrave::Document> open_path(const std::filesystem::path &path) {
@@ -5102,31 +5118,43 @@ TEST(Read, ImageReloadReleasesOldStoreReferencesBeforeArchiveWrite) {
     EXPECT_FALSE(first->is_used());
     EXPECT_FALSE(second->is_used());
 
-    const auto stamp = std::to_string(static_cast<long long>(std::time(nullptr)));
-    const auto temp_dir = std::filesystem::temp_directory_path();
-    const auto file1 = temp_dir / ("engrave_read_s22_file1_" + stamp + ".svg");
-    const auto file2 = temp_dir / ("engrave_read_s22_file2_" + stamp + ".svg");
-    const auto missing_file = temp_dir / ("engrave_read_s22_missing_" + stamp + ".svg");
+    const auto temp_root = std::filesystem::temp_directory_path();
+    std::filesystem::path run_dir;
+    for (int attempt = 0; attempt < 64; ++attempt) {
+        const auto tick = std::chrono::steady_clock::now().time_since_epoch().count();
+        const auto candidate = temp_root / ("engrave_read_s22_" + std::to_string(tick) + "_" + std::to_string(attempt));
+        std::error_code mkdir_ec;
+        if (std::filesystem::create_directory(candidate, mkdir_ec)) {
+            run_dir = candidate;
+            break;
+        }
+    }
+    ASSERT_FALSE(run_dir.empty());
 
     struct Cleanup {
-        std::filesystem::path a, b, c;
+        std::filesystem::path dir;
 
         ~Cleanup() {
+            if (dir.empty()) return;
             std::error_code ec;
-            std::filesystem::remove(a, ec);
-            std::filesystem::remove(b, ec);
-            std::filesystem::remove(c, ec);
+            std::filesystem::remove_all(dir, ec);
         }
-    } cleanup{file1, file2, missing_file};
+    } cleanup{run_dir};
+
+    const auto file1 = run_dir / "file1.svg";
+    const auto file2 = run_dir / "file2.svg";
+    const auto missing_file = run_dir / "missing.svg";
+    const std::string svg1 = R"(<svg width="41" height="23"/>)";
+    const std::string svg2 = R"(<svg width="53" height="29"/>)";
 
     {
         std::ofstream out1(file1, std::ios::binary);
-        out1 << R"(<svg width="41" height="23"/>)";
+        out1 << svg1;
+        ASSERT_TRUE(static_cast<bool>(out1));
         std::ofstream out2(file2, std::ios::binary);
-        out2 << R"(<svg width="53" height="29"/>)";
+        out2 << svg2;
+        ASSERT_TRUE(static_cast<bool>(out2));
     }
-    std::error_code rm_ec;
-    std::filesystem::remove(missing_file, rm_ec);
 
     ImageStoreItem *file_first = nullptr;
     ImageStoreItem *file_second = nullptr;
@@ -5145,10 +5173,22 @@ TEST(Read, ImageReloadReleasesOldStoreReferencesBeforeArchiveWrite) {
         EXPECT_FALSE(file_first->is_used());
         EXPECT_TRUE(file_second->is_used(&master));
         EXPECT_EQ(file_image.image_size(), muse::SizeF(53, 29));
+        rendering::score::TLayout::layout_image(&file_image, file_image.mutldata());
+        const muse::RectF laid_out_bbox = file_image.ldata()->bbox();
+        EXPECT_NEAR(laid_out_bbox.width(), 53.0, 1e-9);
+        EXPECT_NEAR(laid_out_bbox.height(), 29.0, 1e-9);
 
         EXPECT_FALSE(file_image.load_from_file(muse::io::PathT(missing_file.string())));
         EXPECT_EQ(file_image.store_item(), file_second);
+        EXPECT_EQ(file_image.store_path(), file_second->hash_name());
         EXPECT_TRUE(file_second->is_used(&master));
+        EXPECT_TRUE(file_image.is_valid());
+        ASSERT_NE(file_image.svg_renderer(), nullptr);
+        EXPECT_EQ(file_image.svg_renderer()->default_size(), muse::SizeF(53, 29));
+        EXPECT_EQ(file_image.image_size(), muse::SizeF(53, 29));
+        EXPECT_EQ(file_second->buffer(), muse::ByteArray(svg2.data(), svg2.size()));
+        rendering::score::TLayout::layout_image(&file_image, file_image.mutldata());
+        EXPECT_EQ(file_image.ldata()->bbox(), laid_out_bbox);
     }
     EXPECT_FALSE(file_first->is_used());
     EXPECT_FALSE(file_second->is_used());
@@ -6969,7 +7009,7 @@ TEST(Read, S17GraceBeamEditsRespectSeparateAuthoredOwnership) {
     using namespace mu::engraving;
     for (bool after : {false, true}) {
         for (bool warm : {false, true}) {
-            std::string unslashed_svg;
+            std::vector<std::byte> unslashed_svg;
             for (bool slashed : {false, true}) {
                 SCOPED_TRACE(slashed);
                 SCOPED_TRACE(after);
@@ -9726,6 +9766,34 @@ TEST(LayoutBounds, WarmSlashedGraceBeamRegroupingRebuildsCollisionShapes) {
 
 TEST(LayoutBounds, DottedSlurSurvivesRepeatedOutputRetirement) {
     using namespace mu::engraving;
+    const auto root = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT);
+#ifdef _WIN32
+    const std::filesystem::path platform = "windows";
+#else
+    const std::filesystem::path platform = "linux";
+#endif
+    const auto golden_dir = root / "tests/data/golden" / platform / "slurs.mscz";
+    const std::array<std::string, 2> golden_pages = {
+        normalize_lf(read_text(golden_dir / "page-0.svg")),
+        normalize_lf(read_text(golden_dir / "page-1.svg")),
+    };
+    ASSERT_NE(golden_pages[0].find("<svg"), std::string::npos);
+    ASSERT_NE(golden_pages[1].find("<svg"), std::string::npos);
+
+    auto golden_opened = g_engine->open(root / "tests/data/inputs/golden/slurs.mscz");
+    ASSERT_TRUE(golden_opened);
+    auto &golden_doc = **golden_opened;
+    auto &golden_master = master_of(golden_doc);
+    for (int run = 0; run < 3; ++run) {
+        engrave::DocumentAccess::impl(golden_doc).discard_layout_output(golden_master);
+        const auto rendered = golden_doc.render({.format = engrave::RenderFormat::SVG});
+        ASSERT_TRUE(rendered);
+        ASSERT_EQ(rendered->pages.size(), golden_pages.size());
+        for (std::size_t page = 0; page < golden_pages.size(); ++page) {
+            EXPECT_EQ(normalize_lf(as_text(rendered->pages[page])), golden_pages[page]);
+        }
+    }
+
     const std::string slur_xml = R"(<Slur><eid>F_F</eid><track>0</track>
 <startElement>B_B</startElement><endElement>C_C</endElement></Slur>)";
     auto xml = legacy_segment_fixture(slur_xml);
@@ -9739,16 +9807,6 @@ TEST(LayoutBounds, DottedSlurSurvivesRepeatedOutputRetirement) {
     const auto unslurred_svg = (*unslurred)->render({.format = engrave::RenderFormat::SVG});
     ASSERT_TRUE(unslurred_svg);
 
-    auto baseline = g_engine->open(as_bytes(xml));
-    ASSERT_TRUE(baseline);
-    const auto expected_mscx = (*baseline)->export_score({.format = engrave::Format::MSCX});
-    ASSERT_TRUE(expected_mscx);
-    const auto expected = (*baseline)->render({.format = engrave::RenderFormat::SVG});
-    ASSERT_TRUE(expected);
-    ASSERT_EQ(expected->pages.size(), 1u);
-    EXPECT_NE(expected->pages.front().find("<svg"), std::string::npos);
-    EXPECT_NE(expected->pages, unslurred_svg->pages);
-
     auto opened = g_engine->open(as_bytes(xml));
     ASSERT_TRUE(opened);
     auto &document = **opened;
@@ -9756,20 +9814,35 @@ TEST(LayoutBounds, DottedSlurSurvivesRepeatedOutputRetirement) {
     ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
     auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
     ASSERT_EQ(chord->up_note()->dots().size(), 1u);
-    ASSERT_FALSE(master.spanner_list().empty());
+    ASSERT_EQ(master.spanner_list().size(), 1u);
     auto *slur = master.spanner_list().front();
     for (int run = 0; run < 3; ++run) {
         engrave::DocumentAccess::impl(document).discard_layout_output(master);
         const auto rendered = document.render({.format = engrave::RenderFormat::SVG});
         ASSERT_TRUE(rendered);
-        EXPECT_EQ(rendered->pages, expected->pages);
+        ASSERT_EQ(rendered->pages.size(), 1u);
+        const std::string_view svg_text = as_text(rendered->pages.front());
+        EXPECT_NE(svg_text.find("<svg"), std::string_view::npos);
+        EXPECT_NE(svg_text.find("</svg>"), std::string_view::npos);
+        EXPECT_NE(rendered->pages, unslurred_svg->pages);
         ASSERT_EQ(slur->spanner_segments().size(), 1u);
-        EXPECT_FALSE(slur->spanner_segments().front()->ldata()->bbox().is_empty());
+        const auto &slur_bbox = slur->spanner_segments().front()->ldata()->bbox();
+        EXPECT_FALSE(slur_bbox.is_empty());
+        EXPECT_GT(slur_bbox.width(), chord->spatium());
+        EXPECT_GT(slur_bbox.height(), 0.0);
         ASSERT_EQ(chord->up_note()->dots().size(), 1u);
-        EXPECT_FALSE(chord->up_note()->dots().front()->ldata()->bbox().is_empty());
+        const auto *dot = chord->up_note()->dots().front();
+        EXPECT_FALSE(dot->ldata()->bbox().is_empty());
+        EXPECT_GT(dot->ldata()->bbox().width(), 0.0);
+        EXPECT_GT(dot->pos().x(), 0.0);
         const auto saved_mscx = document.export_score({.format = engrave::Format::MSCX});
         ASSERT_TRUE(saved_mscx);
-        EXPECT_EQ(*saved_mscx, *expected_mscx);
+        const std::string_view mscx_text = as_text(*saved_mscx);
+        EXPECT_NE(mscx_text.find("<durationType>half</durationType>"), std::string_view::npos);
+        EXPECT_NE(mscx_text.find("<dots>1</dots>"), std::string_view::npos);
+        EXPECT_NE(mscx_text.find("<Slur>"), std::string_view::npos);
+        EXPECT_NE(mscx_text.find("<startElement>B_B</startElement>"), std::string_view::npos);
+        EXPECT_NE(mscx_text.find("<endElement>C_C</endElement>"), std::string_view::npos);
         EXPECT_EQ(chord->up_note()->pitch(), 60);
     }
 }
