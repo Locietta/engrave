@@ -5809,8 +5809,8 @@ TEST(Read, SpannerSegmentRemovalDetachesEveryGuitarTechnique) {
         };
         std::unique_ptr<System> first(Factory::create_system(&master));
         std::unique_ptr<System> second(Factory::create_system(&master));
-        spanner->fixup_segments(1, create_segment);
-        auto *segment = spanner->front_segment();
+        auto *segment = create_segment();
+        spanner->add(segment);
         segment->move_to_system(first.get());
         segment->move_to_system(second.get());
         EXPECT_TRUE(first->spanner_segments().empty());
@@ -5821,8 +5821,8 @@ TEST(Read, SpannerSegmentRemovalDetachesEveryGuitarTechnique) {
         segment->move_to_system(first.get());
         spanner->erase_spanner_segments();
         EXPECT_TRUE(first->spanner_segments().empty());
-        spanner->fixup_segments(1, create_segment);
-        segment = spanner->front_segment();
+        segment = create_segment();
+        spanner->add(segment);
         {
             std::unique_ptr<System> temporary(Factory::create_system(&master));
             segment->move_to_system(temporary.get());
