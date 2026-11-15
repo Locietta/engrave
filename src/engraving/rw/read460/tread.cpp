@@ -476,11 +476,11 @@ void TRead::read_item_link(EngravingItem *item, XmlReader &xml, ReadContext &ctx
     if (read_child_key(*item, ctx).role != AuthoredChildRole::NONE) return;
     EIDRegister *eid_register = ctx.score()->master_score()->eid_register();
     EngravingObject *main_element = eid_register->item_from_eid(eid);
-    IF_ASSERT_FAILED(main_element) {
+    if (!main_element) {
         LOGE() << "Link failed: Main linked element not found for " << item->type_name() << " at " << ctx.tick().to_string();
         return;
     }
-    IF_ASSERT_FAILED(main_element->type() == item->type()) {
+    if (main_element->type() != item->type()) {
         LOGE() << "Link failed: Main element type (" << main_element->type_name() << ") does not match linked item type ("
                << item->type_name() << ") at " << ctx.tick().to_string();
         return;
