@@ -121,6 +121,7 @@ public:
     void set_dirty(bool val) const { dirty_ = val; }
 
 private:
+    void set_store_item(ImageStoreItem *item);
 
     ImageStoreItem *store_item_ = nullptr;
     std::string store_path_;            // the path of the img in the ImageStore
