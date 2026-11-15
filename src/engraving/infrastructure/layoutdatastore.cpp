@@ -294,6 +294,12 @@ void LayoutDataStore::retire_shared_auxiliary_output() {
 }
 
 void LayoutDataStore::discard_score_output() {
+    // Payload destruction can retire spanners after notes and their dots. Clear
+    // every copied collision before the first display child can be freed.
+    for (auto &record : records_->items.values()) {
+        record.second.data->clear_shape();
+        record.second.data->mask_.reset();
+    }
     if (score_) {
         clear_output_anchors(*score_);
         // These legacy L5 caches can retain pointers to output-owned ledger and

@@ -9539,3 +9539,28 @@ TEST(LayoutBounds, WarmSlashedGraceBeamRegroupingRebuildsCollisionShapes) {
         EXPECT_EQ(notes[2]->up_note()->pitch(), 76);
     }
 }
+
+TEST(LayoutBounds, DottedSlurSurvivesRepeatedOutputRetirement) {
+    using namespace mu::engraving;
+    auto xml = legacy_segment_fixture(R"(<Slur><eid>F_F</eid><track>0</track>
+<startElement>B_B</startElement><endElement>C_C</endElement></Slur>)");
+    const std::string half = "<durationType>half</durationType>";
+    xml.insert(xml.find(half) + half.size(), "<dots>1</dots>");
+    xml.replace(xml.find("<sigN>4</sigN>"), 14, "<sigN>5</sigN>");
+    auto opened = g_engine->open(as_bytes(xml));
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    const auto expected = document.render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(expected);
+    auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    ASSERT_EQ(chord->up_note()->dots().size(), 1u);
+    ASSERT_FALSE(master.spanner_list().empty());
+    for (int run = 0; run < 3; ++run) {
+        engrave::DocumentAccess::impl(document).discard_layout_output(master);
+        const auto rendered = document.render({.format = engrave::RenderFormat::SVG});
+        ASSERT_TRUE(rendered);
+        EXPECT_EQ(rendered->pages, expected->pages);
+        EXPECT_EQ(chord->up_note()->pitch(), 60);
+    }
+}
