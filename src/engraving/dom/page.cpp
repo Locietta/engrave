@@ -130,6 +130,12 @@ void Page::invalidate_bsp_tree() {
     if (Score::is_alive(score())) score()->invalidate_layout(Fraction(0, 1), Fraction(-1, 1));
 }
 
+void Page::invalidate_bsp_tree_if_referenced(std::span<const EngravingItem *const> sorted_targets) {
+    if (bsp_tree_valid_ && bsp_tree.contains_any(sorted_targets)) {
+        invalidate_bsp_tree();
+    }
+}
+
 void Page::rebuild_bsp_tree() {
     if (bsp_tree_valid_) return;
     int n = 0;
