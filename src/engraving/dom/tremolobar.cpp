@@ -23,6 +23,7 @@
 #include "tremolobar.h"
 
 #include "draw/types/pen.h"
+#include "engraving/style/styletypes.h"
 #include "log.h"
 #include "score.h"
 

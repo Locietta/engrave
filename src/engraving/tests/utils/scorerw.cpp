@@ -30,6 +30,7 @@
 #include "engrave/src/api/handles.h"
 #include "engraving/compat/mscxcompat.h"
 #include "engraving/compat/scoreaccess.h"
+#include "engraving/dom/dummyparent.h"
 #include "engraving/dom/factory.h"
 #include "engraving/infrastructure/localfileinfoprovider.h"
 #include "engraving/rw/rwregister.h"

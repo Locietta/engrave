@@ -23,6 +23,7 @@
 
 #include "dom/masterscore.h"
 #include "dom/part.h"
+#include "engraving/rendering/paddingtable.h"
 #include "log.h"
 #include "rw/inoutdata.h"
 #include "rw/mscloader.h"

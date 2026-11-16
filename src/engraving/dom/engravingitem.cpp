@@ -42,6 +42,7 @@
 #include "engraving/rendering/score/layoutdatafactory.h"
 #include "engraving/rendering/score/layoutdatastore.h"
 #include "engraving/rendering/score/scorerenderer.h"
+#include "engraving/style/styletypes.h"
 #include "factory.h"
 #include "internal/engravingcontextconfiguration.h"
 #include "linkedobjects.h"

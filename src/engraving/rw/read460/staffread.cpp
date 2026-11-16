@@ -24,6 +24,7 @@
 #include "dom/factory.h"
 #include "dom/measure.h"
 #include "dom/score.h"
+#include "engraving/dom/dummyparent.h"
 #include "log.h"
 #include "measureread.h"
 #include "tread.h"

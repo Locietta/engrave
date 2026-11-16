@@ -22,6 +22,7 @@
 
 #include "measurenumber.h"
 
+#include "engraving/style/styletypes.h"
 #include "measure.h"
 #include "score.h"
 

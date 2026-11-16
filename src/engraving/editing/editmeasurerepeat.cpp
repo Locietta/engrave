@@ -33,6 +33,7 @@
 #include "../dom/staff.h"
 #include "../dom/utils.h"
 #include "../infrastructure/messagebox.h"
+#include "engraving/dom/dummyparent.h"
 #include "translation.h"
 
 using namespace mu;

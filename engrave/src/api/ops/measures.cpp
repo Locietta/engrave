@@ -6,6 +6,7 @@
 #include "engrave/src/api/batch.h"
 #include "engrave/src/api/value_codec.h"
 #include "engraving/dom/clef.h"
+#include "engraving/dom/dummyparent.h"
 #include "engraving/dom/engravingitem.h"
 #include "engraving/dom/factory.h"
 #include "engraving/dom/key.h"

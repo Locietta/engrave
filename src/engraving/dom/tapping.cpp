@@ -22,6 +22,7 @@
 
 #include "tapping.h"
 
+#include "engraving/style/styletypes.h"
 #include "infrastructure/eidregister.h"
 #include "masterscore.h"
 #include "stafftype.h"

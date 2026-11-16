@@ -46,6 +46,7 @@
 #include "dom/tie.h"
 #include "dom/tremolotwochord.h"
 #include "dom/tuplet.h"
+#include "engraving/dom/dummyparent.h"
 #include "rendering/score/layoutdatafactory.h"
 #include "rendering/score/scorerenderer.h"
 

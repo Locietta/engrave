@@ -24,6 +24,7 @@
 
 #include "barline.h"
 #include "chord.h"
+#include "engraving/dom/dummyparent.h"
 #include "excerpt.h"
 #include "factory.h"
 #include "linkedobjects.h"

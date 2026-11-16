@@ -23,6 +23,8 @@
 #include "../editing/navigation.h"
 #include "chord.h"
 #include "chordrest.h"
+#include "engraving/dom/dummyparent.h"
+#include "engraving/style/styletypes.h"
 #include "factory.h"
 #include "lyrics.h"
 #include "measure.h"

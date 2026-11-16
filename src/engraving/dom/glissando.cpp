@@ -35,6 +35,7 @@ NICE-TO-HAVE TODO:
 #include <cmath>
 
 #include "chord.h"
+#include "engraving/style/styletypes.h"
 #include "harppedaldiagram.h"
 #include "log.h"
 #include "measure.h"

@@ -1,3 +1,4 @@
+#include "engraving/dom/scoreorder.h"
 /*
  * SPDX-License-Identifier: GPL-3.0-only
  * MuseScore-Studio-CLA-applies
@@ -19,8 +20,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "writer.h"
-
 #include "../inoutdata.h"
 #include "../types/types.h"
 #include "../xmlwriter.h"
@@ -34,6 +33,7 @@
 #include "log.h"
 #include "staffwrite.h"
 #include "twrite.h"
+#include "writer.h"
 
 using namespace muse;
 using namespace mu::engraving;
@@ -136,8 +136,8 @@ void Writer::write(Score *score, XmlWriter &xml, WriteContext &ctx, compat::Writ
         }
     }
 
-    if (score->score_order_.is_valid()) {
-        ScoreOrder order = score->score_order_;
+    if (score->score_order_ && score->score_order_->is_valid()) {
+        ScoreOrder order = *score->score_order_;
         order.update_instruments(score);
         order.write(xml);
     }

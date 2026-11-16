@@ -25,6 +25,8 @@
 #include <cmath>
 
 #include "editing/transaction/transaction.h"
+#include "engraving/dom/dummyparent.h"
+#include "engraving/style/styletypes.h"
 #include "factory.h"
 #include "fret.h"
 #include "harmony.h"

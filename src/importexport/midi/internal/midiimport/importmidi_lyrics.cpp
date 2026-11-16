@@ -29,6 +29,7 @@
 
 #include "../midishared/midifile.h"
 #include "engraving/dom/box.h"
+#include "engraving/dom/dummyparent.h"
 #include "engraving/dom/engravingitem.h"
 #include "engraving/dom/factory.h"
 #include "engraving/dom/masterscore.h"

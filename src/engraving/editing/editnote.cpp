@@ -41,6 +41,7 @@
 #include "dom/utils.h"
 #include "editchord.h"
 #include "editing/transaction/transaction.h"
+#include "engraving/dom/dummyparent.h"
 #include "engraving/normalization/normalize.h"
 #include "log.h"
 

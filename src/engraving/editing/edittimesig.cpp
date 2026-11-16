@@ -47,6 +47,7 @@
 #include "editmeasures.h"
 #include "editspanner.h"
 #include "edittremolo.h"
+#include "engraving/dom/dummyparent.h"
 #include "global/containers.h"
 #include "log.h"
 #include "transaction/transaction.h"

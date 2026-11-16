@@ -10,6 +10,7 @@
 #include "engrave/src/api/value_codec.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/chordrest.h"
+#include "engraving/dom/dummyparent.h"
 #include "engraving/dom/durationtype.h"
 #include "engraving/dom/engravingitem.h"
 #include "engraving/dom/engravingobject.h"

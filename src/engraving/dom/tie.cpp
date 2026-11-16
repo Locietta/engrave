@@ -24,6 +24,7 @@
 #include "accidental.h"
 #include "barline.h"
 #include "chord.h"
+#include "engraving/dom/dummyparent.h"
 #include "engraving/rendering/score/scorerenderer.h"
 #include "factory.h"
 #include "hook.h"

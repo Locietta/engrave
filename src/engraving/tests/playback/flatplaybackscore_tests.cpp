@@ -21,6 +21,7 @@
 
 #include "audio/engine/internal/synthesizers/fluidsynth/fluidsequencer.h"
 #include "engraving/dom/chord.h"
+#include "engraving/dom/dummyparent.h"
 #include "engraving/dom/factory.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"

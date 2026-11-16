@@ -20,13 +20,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #pragma once
-
 #include <map>
 #include <unordered_set>
 #include <vector>
 
 #include "../dom/engravingobject.h"
 #include "../types/types.h"
+#include "engraving/dom/property.h"
 
 namespace mu::engraving {
 enum class CommandType : signed char {

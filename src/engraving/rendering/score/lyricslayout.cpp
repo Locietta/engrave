@@ -31,6 +31,7 @@
 #include "dom/staff.h"
 #include "dom/stafftype.h"
 #include "dom/system.h"
+#include "engraving/dom/dummyparent.h"
 #include "log.h"
 #include "style/styledef.h"
 #include "textlayout.h"

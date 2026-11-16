@@ -27,6 +27,7 @@
 #include "engrave/src/api/batch.h"
 #include "engrave/src/api/handles.h"
 #include "engraving/compat/scoreaccess.h"
+#include "engraving/dom/dummyparent.h"
 #include "engraving/dom/factory.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"

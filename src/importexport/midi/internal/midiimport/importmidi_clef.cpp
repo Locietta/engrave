@@ -29,6 +29,7 @@
 #include "engraving/dom/chord.h"
 #include "engraving/dom/chordrest.h"
 #include "engraving/dom/clef.h"
+#include "engraving/dom/dummyparent.h"
 #include "engraving/dom/engravingitem.h"
 #include "engraving/dom/factory.h"
 #include "engraving/dom/instrtemplate.h"

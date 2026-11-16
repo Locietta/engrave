@@ -23,7 +23,9 @@
 #include "figuredbass.h"
 
 #include "chord.h"
+#include "engraving/dom/dummyparent.h"
 #include "engraving/rendering/score/scorerenderer.h"
+#include "engraving/style/styletypes.h"
 #include "factory.h"
 #include "io/file.h"
 #include "linkedobjects.h"

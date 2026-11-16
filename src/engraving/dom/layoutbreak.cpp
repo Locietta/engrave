@@ -23,6 +23,7 @@
 #include "layoutbreak.h"
 
 #include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
+#include "engraving/style/styletypes.h"
 #include "log.h"
 #include "measurebase.h"
 #include "score.h"

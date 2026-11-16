@@ -31,6 +31,7 @@
 #include "engraving/editing/transaction/transaction.h"
 #include "engraving/internal/engravingfont.h"
 #include "engraving/rendering/score/scorerenderer.h"
+#include "engraving/style/styletypes.h"
 #include "harppedaldiagram.h"
 #include "instrumentname.h"
 #include "log.h"
@@ -823,7 +824,7 @@ TextBase::TextBase(const TextBase &st) : EngravingItem(st) {
     center_between_staves_ = st.center_between_staves_;
     anchor_to_end_of_previous_ = st.anchor_to_end_of_previous_;
 
-    size_t n = element_style_->size() + ::mu::engraving::text_style_size;
+    size_t n = styled_properties()->size() + ::mu::engraving::text_style_size;
     delete[] property_flags_list_;
     property_flags_list_ = new PropertyFlags[n];
     for (size_t i = 0; i < n; ++i) {
@@ -1676,7 +1677,7 @@ PropertyValue TextBase::property_default(Pid id) const {
 
 int TextBase::get_property_flags_idx(Pid id) const {
     int i = 0;
-    for (const StyledProperty &p : *element_style_) {
+    for (const StyledProperty &p : *styled_properties()) {
         if (p.pid == id) {
             return i;
         }
@@ -1768,7 +1769,7 @@ void TextBase::notify_about_text_removed([[maybe_unused]] int start_position, [[
                                          [[maybe_unused]] const String &text) {}
 
 Sid TextBase::get_property_style(Pid id) const {
-    for (const StyledProperty &p : *element_style_) {
+    for (const StyledProperty &p : *styled_properties()) {
         if (p.pid == id) {
             return p.sid;
         }
@@ -1787,7 +1788,7 @@ void TextBase::style_changed() {
         return;
     }
     int i = 0;
-    for (const StyledProperty &spp : *element_style_) {
+    for (const StyledProperty &spp : *styled_properties()) {
         PropertyFlags f = property_flags_list_[i];
         if (f == PropertyFlags::STYLED) {
             set_property(spp.pid, style_value(spp.pid, get_property_style(spp.pid)));
@@ -1812,7 +1813,7 @@ void TextBase::init_element_style(const ElementStyle *ss) {
     for (size_t i = 0; i < n; ++i) {
         property_flags_list_[i] = PropertyFlags::STYLED;
     }
-    for (const StyledProperty &p : *element_style_) {
+    for (const StyledProperty &p : *styled_properties()) {
         set_property(p.pid, style_value(p.pid, p.sid));
     }
     for (const auto &p : *text_style(text_style_type())) {

@@ -29,6 +29,7 @@
 #include "draw/fontmetrics.h"
 #include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
 #include "engraving/rendering/score/scorerenderer.h"
+#include "engraving/style/styletypes.h"
 #include "fret.h"
 #include "harmonydisplay.h"
 #include "linkedobjects.h"

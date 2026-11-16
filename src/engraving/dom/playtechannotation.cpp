@@ -22,6 +22,7 @@
 
 #include "playtechannotation.h"
 
+#include "engraving/style/styletypes.h"
 #include "log.h"
 #include "segment.h"
 #include "types/typesconv.h"

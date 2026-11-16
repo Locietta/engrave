@@ -22,6 +22,7 @@
 
 #include "chordrest.h"
 #include "durationtype.h"
+#include "engraving/dom/dummyparent.h"
 #include "engravingerrors.h"
 #include "factory.h"
 #include "keysig.h"

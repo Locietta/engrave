@@ -28,11 +28,13 @@
 #include "../infrastructure/eid.h"
 #include "../infrastructure/rtti.h" // IWYU pragma: export
 #include "../infrastructure/sourcehandle.h"
-#include "../style/styledef.h"
+#include "../style/sid.h"
 #include "../types/propertyvalue.h"
 #include "../types/types.h"
 
 namespace mu::engraving {
+struct StyledProperty;
+using ElementStyle = std::vector<StyledProperty>;
 struct Accidental;
 struct Ambitus;
 struct Arpeggio;
@@ -295,7 +297,7 @@ struct EngravingObject {
 
     virtual void init_element_style(const ElementStyle *);
 
-    virtual const ElementStyle *styled_properties() const { return element_style_; }
+    virtual const ElementStyle *styled_properties() const { return element_style_ ? element_style_ : &empty_style(); }
 
     virtual PropertyFlags *property_flags_list() const { return property_flags_list_; }
 
@@ -336,7 +338,7 @@ protected:
     void add_child(EngravingObject *o);
     void remove_child(EngravingObject *o);
 
-    const ElementStyle *element_style_{&::mu::engraving::EngravingObject::empty_style};
+    const ElementStyle *element_style_{nullptr};
     PropertyFlags *property_flags_list_ = nullptr;
     LinkedObjects *links_ = nullptr;
     Score *score_ = nullptr;
@@ -345,7 +347,7 @@ private:
     friend struct EIDRegister;
 
     SourceHandle source_handle_;
-    static ElementStyle const empty_style;
+    static const ElementStyle &empty_style();
 
     void do_set_parent(EngravingObject *p);
     void do_set_score(Score *sc);

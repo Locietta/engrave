@@ -12,6 +12,7 @@
 #include "engraving/dom/clef.h"
 #include "engraving/dom/deadslapped.h"
 #include "engraving/dom/drumset.h"
+#include "engraving/dom/dummyparent.h"
 #include "engraving/dom/dynamic.h"
 #include "engraving/dom/factory.h"
 #include "engraving/dom/fermata.h"

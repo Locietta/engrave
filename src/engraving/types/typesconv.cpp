@@ -22,6 +22,7 @@
 #include "typesconv.h"
 
 #include "draw/types/drawtypes.h"
+#include "engraving/dom/guitarbend.h"
 #include "global/types/translatablestring.h"
 #include "log.h"
 #include "symnames.h"

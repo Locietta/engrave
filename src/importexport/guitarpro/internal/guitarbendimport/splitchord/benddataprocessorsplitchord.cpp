@@ -22,6 +22,8 @@
 #include "benddataprocessorsplitchord.h"
 
 #include "benddatacontextsplitchord.h"
+#include "engraving/dom/dummyparent.h"
+#include "engraving/dom/guitarbend.h"
 #include "log.h"
 #include <engraving/dom/chord.h>
 #include <engraving/dom/factory.h>

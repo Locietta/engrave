@@ -12,6 +12,7 @@
 #include "engrave/src/api/value_codec.h"
 #include "engraving/dom/property.h"
 #include "engraving/style/styledef.h"
+#include "engraving/style/styletypes.h"
 
 namespace engrave {
 namespace {

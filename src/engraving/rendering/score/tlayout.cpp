@@ -135,6 +135,7 @@
 #include "editing/navigation.h"
 #include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
 #include "engraving/internal/engravingfont.h"
+#include "engraving/style/styletypes.h"
 #include "global/realfn.h"
 #include "global/types/number.h"
 #include "guitarbendlayout.h"

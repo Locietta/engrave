@@ -13,7 +13,6 @@
 #include "engrave/src/api/mnx.h"
 #include "engrave/src/api/sniff.h"
 #include "engrave/src/api/state.h"
-#include "engrave/src/audio/engine_audio.h"
 #include "engrave/src/runtime/runtime_assets.h"
 #include "engrave/src/runtime/version.h"
 #include "engrave/src/score/json.h"
@@ -27,10 +26,6 @@ namespace {
 std::atomic<bool> s_engine_created = false;
 
 std::unexpected<Error> fail(ErrorCode code, std::string message) { return std::unexpected(Error{code, std::move(message)}); }
-
-std::filesystem::path path_from_utf8(std::string_view text) {
-    return std::u8string(reinterpret_cast<const char8_t *>(text.data()), text.size());
-}
 
 const char *backend_name(Format format) {
     switch (format) {
@@ -154,29 +149,6 @@ std::vector<RuntimeFontInfo> Engine::runtime_fonts() const {
         result.push_back({font.id, font.family, font.bold, font.italic, path_from_utf8(font.path), font.content_hash});
     }
     return result;
-}
-
-Result<void> Engine::set_soundfonts(const std::vector<std::filesystem::path> &files) {
-    impl_->state.check_thread();
-    std::vector<std::filesystem::path> retained;
-    for (const auto &file : files) {
-        std::error_code ec;
-        if (!std::filesystem::is_regular_file(file, ec)) return fail(ErrorCode::NOT_FOUND, "no SoundFont file '" + utf8(file) + "'");
-        try {
-            retained.push_back(
-                path_from_utf8(impl_->state.context->assets().freeze_sound_font(utf8(std::filesystem::absolute(file))).path));
-        } catch (const std::runtime_error &error) {
-            return fail(ErrorCode::INVALID_INPUT, error.what());
-        }
-    }
-    if (!retained.empty()) {
-        std::vector<std::string> paths;
-        for (const auto &file : retained) paths.push_back(utf8(file));
-        std::string error;
-        if (!music::validate_engine_soundfonts(paths, &error)) return fail(ErrorCode::INVALID_INPUT, error);
-    }
-    impl_->state.soundfonts.swap(retained);
-    return {};
 }
 
 Engine::~Engine() {

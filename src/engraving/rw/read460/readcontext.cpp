@@ -30,6 +30,7 @@
 #include "dom/measure.h"
 #include "dom/score.h"
 #include "dom/trill.h"
+#include "engraving/dom/dummyparent.h"
 #include "log.h"
 
 using namespace mu::engraving;

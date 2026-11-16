@@ -24,6 +24,7 @@
 
 #include "chord.h"
 #include "chordrest.h"
+#include "engraving/style/styletypes.h"
 #include "log.h"
 #include "measure.h"
 #include "note.h"

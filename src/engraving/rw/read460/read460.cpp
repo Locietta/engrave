@@ -51,6 +51,8 @@
 #include "dom/tie.h"
 #include "dom/tremolotwochord.h"
 #include "dom/tuplet.h"
+#include "engraving/dom/dummyparent.h"
+#include "engraving/dom/scoreorder.h"
 #include "engraving/rw/compat/mmrestsources.h"
 #include "engravingerrors.h"
 #include "log.h"

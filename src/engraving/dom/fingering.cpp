@@ -24,6 +24,7 @@
 
 #include "beam.h"
 #include "chord.h"
+#include "engraving/style/styletypes.h"
 #include "measure.h"
 #include "note.h"
 #include "part.h"

@@ -44,6 +44,7 @@
 #include "chord.h"
 #include "chordline.h"
 #include "drumset.h"
+#include "engraving/dom/dummyparent.h"
 #include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
 #include "engraving/internal/engravingfont.h"
 #include "factory.h"

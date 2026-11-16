@@ -36,6 +36,7 @@
 #include "../dom/stafftype.h"
 #include "../dom/stringtunings.h"
 #include "../dom/utils.h"
+#include "engraving/dom/dummyparent.h"
 #include "log.h"
 #include "transaction/transaction.h"
 #include "transpose.h"

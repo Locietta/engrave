@@ -23,6 +23,7 @@
 
 #include "chord.h"
 #include "dynamic.h"
+#include "engraving/style/styletypes.h"
 #include "note.h"
 #include "score.h"
 #include "segment.h"

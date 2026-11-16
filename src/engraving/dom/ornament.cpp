@@ -28,6 +28,7 @@
 #include "editing/editparentheses.h"
 #include "editing/transaction/transaction.h"
 #include "editing/transpose.h"
+#include "engraving/dom/dummyparent.h"
 #include "engravingitem.h"
 #include "factory.h"
 #include "key.h"

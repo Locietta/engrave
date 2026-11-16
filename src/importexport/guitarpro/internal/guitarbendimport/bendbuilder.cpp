@@ -24,6 +24,8 @@
 #include <algorithm>
 
 #include "../utils.h"
+#include "engraving/dom/dummyparent.h"
+#include "engraving/dom/guitarbend.h"
 #include "global/log.h"
 #include <engraving/dom/chord.h>
 #include <engraving/dom/factory.h>

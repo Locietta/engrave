@@ -23,6 +23,7 @@
 
 #include "../editing/transaction/transaction.h"
 #include "../types/typesconv.h"
+#include "engraving/style/styletypes.h"
 #include "expression.h"
 #include "hairpin.h"
 #include "log.h"

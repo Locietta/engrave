@@ -24,6 +24,7 @@
 
 #include "chordrest.h"
 #include "containers.h"
+#include "engraving/dom/dummyparent.h"
 #include "engraving/internal/engravingconfiguration.h"
 #include "factory.h"
 #include "fret.h"

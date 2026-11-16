@@ -112,3 +112,7 @@ std::string utf8(const std::filesystem::path &path);
 Result<int> excerpt_id_of(mu::engraving::MasterScore &master, const ScoreSel &selection);
 
 } // namespace engrave
+
+namespace engrave {
+std::filesystem::path path_from_utf8(std::string_view text);
+} // namespace engrave

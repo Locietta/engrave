@@ -26,6 +26,8 @@
 
 #include "beam.h"
 #include "chord.h"
+#include "engraving/dom/dummyparent.h"
+#include "engraving/style/styletypes.h"
 #include "engravingitem.h"
 #include "factory.h"
 #include "log.h"

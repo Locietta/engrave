@@ -26,6 +26,7 @@
 
 #include "../editing/edittimesig.h"
 #include "../editing/transaction/transaction.h"
+#include "engraving/style/styletypes.h"
 #include "log.h"
 #include "measure.h"
 #include "score.h"

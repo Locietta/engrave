@@ -1,5 +1,6 @@
 #include "chordbracket.h"
 
+#include "engraving/style/styletypes.h"
 #include "style/style.h"
 
 namespace mu::engraving {

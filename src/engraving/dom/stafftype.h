@@ -24,7 +24,7 @@
 
 #include <array>
 
-#include "../style/styledef.h"
+#include "../style/sid.h"
 #include "../types/types.h"
 #include "draw/types/font.h"
 #include "stafflabel.h"

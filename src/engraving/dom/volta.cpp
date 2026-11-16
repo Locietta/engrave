@@ -26,6 +26,7 @@
 #include <vector>
 
 #include "barline.h"
+#include "engraving/style/styletypes.h"
 #include "keysig.h"
 #include "log.h"
 #include "measure.h"

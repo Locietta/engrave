@@ -21,6 +21,8 @@
  */
 #include "guitarbendimporter.h"
 
+#include "engraving/dom/guitarbend.h"
+
 using namespace mu::engraving;
 
 namespace mu::iex::guitarpro {

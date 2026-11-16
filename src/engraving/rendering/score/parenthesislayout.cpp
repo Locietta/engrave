@@ -33,6 +33,7 @@
 #include "dom/slurtie.h"
 #include "dom/staff.h"
 #include "dom/timesig.h"
+#include "engraving/rendering/paddingtable.h"
 #include "horizontalspacing.h"
 #include "log.h"
 

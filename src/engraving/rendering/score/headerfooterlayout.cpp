@@ -27,6 +27,7 @@
 #include "dom/mscore.h"
 #include "dom/page.h"
 #include "dom/text.h"
+#include "engraving/dom/dummyparent.h"
 #include "engraving/infrastructure/localfileinfoprovider.h"
 #include "tlayout.h"
 

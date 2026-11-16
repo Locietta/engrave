@@ -29,6 +29,7 @@
 #include "dom/measure.h"
 #include "dom/staff.h"
 #include "dom/system.h"
+#include "engraving/dom/dummyparent.h"
 #include "layoutdatastore.h"
 #include "log.h"
 #include "tlayout.h"

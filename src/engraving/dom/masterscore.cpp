@@ -31,6 +31,7 @@
 #include "editing/editkeysig.h"
 #include "editing/editmeasures.h"
 #include "editing/transaction/transaction.h"
+#include "engraving/dom/dummyparent.h"
 #include "engravingproject.h"
 #include "excerpt.h"
 #include "factory.h"

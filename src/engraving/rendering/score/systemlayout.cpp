@@ -71,6 +71,7 @@
 #include "dom/volta.h"
 #include "dom/whammybar.h"
 #include "dynamicslayout.h"
+#include "engraving/dom/dummyparent.h"
 #include "guitarbendlayout.h"
 #include "guitardivelayout.h"
 #include "harmonylayout.h"

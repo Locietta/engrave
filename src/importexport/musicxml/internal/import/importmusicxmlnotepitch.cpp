@@ -24,6 +24,7 @@
 
 #include "../shared/musicxmlsupport.h"
 #include "draw/types/color.h"
+#include "engraving/dom/dummyparent.h"
 #include "engraving/dom/factory.h"
 #include "engraving/dom/score.h"
 #include "importmusicxmllogger.h"

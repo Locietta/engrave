@@ -24,6 +24,7 @@
 #include <cmath>
 
 #include "chord.h"
+#include "engraving/style/styletypes.h"
 #include "hook.h"
 #include "log.h"
 #include "tremolosinglechord.h"

@@ -22,6 +22,7 @@
 
 #include "tripletfeel.h"
 
+#include "engraving/style/styletypes.h"
 #include "score.h"
 #include "types/string.h"
 #include "types/translatablestring.h"

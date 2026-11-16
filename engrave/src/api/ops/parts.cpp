@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "engrave/src/api/batch.h"
+#include "engraving/dom/dummyparent.h"
 #include "engraving/dom/excerpt.h"
 #include "engraving/dom/factory.h"
 #include "engraving/dom/instrtemplate.h"

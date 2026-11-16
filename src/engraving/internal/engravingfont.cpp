@@ -26,6 +26,7 @@
 #include "draw/internal/fontprovider.h"
 #include "draw/painter.h"
 #include "engraving/dom/mscore.h"
+#include "engraving/style/styletypes.h"
 #include "engravingfontsprovider.h"
 #include "io/file.h"
 #include "log.h"

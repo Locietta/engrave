@@ -22,6 +22,7 @@
 
 #include "textlinebase.h"
 
+#include "engraving/dom/dummyparent.h"
 #include "engraving/rendering/score/scorerenderer.h"
 #include "factory.h"
 #include "log.h"

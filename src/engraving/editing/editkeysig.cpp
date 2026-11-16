@@ -31,6 +31,7 @@
 #include "dom/score.h"
 #include "dom/segment.h"
 #include "dom/staff.h"
+#include "engraving/dom/dummyparent.h"
 #include "log.h"
 #include "transaction/transaction.h"
 #include "transpose.h"

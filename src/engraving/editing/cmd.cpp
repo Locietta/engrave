@@ -81,6 +81,7 @@
 #include "editpagelocks.h"
 #include "editspanner.h"
 #include "editsystemlocks.h"
+#include "engraving/dom/dummyparent.h"
 #include "infrastructure/messagebox.h"
 #include "log.h"
 #include "navigation.h"

@@ -54,6 +54,7 @@
 #include "../dom/tremolobar.h"
 #include "../dom/tuplet.h"
 #include "../types/typesconv.h"
+#include "engraving/dom/dummyparent.h"
 #include "log.h"
 #include "translation.h"
 #include "tread.h"

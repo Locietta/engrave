@@ -30,6 +30,7 @@
 #include <cmath>
 #include <map>
 
+#include "../rendering/paddingtable.h"
 #include "anchors.h"
 #include "beam.h"
 #include "box.h"
@@ -2349,12 +2350,12 @@ void Score::select_similar_in_range(EngravingItem *e) {
 }
 
 ScoreOrder Score::score_order() const {
-    ScoreOrder order = score_order_;
+    ScoreOrder order = score_order_ ? *score_order_ : ScoreOrder{};
     order.customized = !order.is_score_order(this);
     return order;
 }
 
-void Score::set_score_order(ScoreOrder order) { score_order_ = order; }
+void Score::set_score_order(ScoreOrder order) { score_order_ = std::make_unique<ScoreOrder>(std::move(order)); }
 
 void Score::update_braces_and_barlines(Part *part, size_t new_index) {
     bool no_braces_found = true;
@@ -3435,7 +3436,12 @@ void Score::do_layout_range(const Fraction &st, const Fraction &et) {
     layout_state.dirty = false;
 }
 
-void Score::update_padding_tables() { padding_tables_.update(style()); }
+const PaddingTables &Score::padding_tables() const { return *padding_tables_; }
+
+void Score::update_padding_tables() {
+    if (!padding_tables_) padding_tables_ = std::make_unique<PaddingTables>();
+    padding_tables_->update(style());
+}
 
 void Score::add_system_lock(const RangeLock *lock) {
     system_locks_.add(lock);

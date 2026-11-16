@@ -21,10 +21,14 @@
  */
 #pragma once
 
+#include <array>
+
 #include "../types/types.h"
-#include "styledef.h"
+#include "sid.h"
 
 namespace mu::engraving {
+enum class Pid : short;
+
 struct OffsetSids {
     Sid above = Sid::NOSTYLE;
     Sid below = Sid::NOSTYLE;

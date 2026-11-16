@@ -112,6 +112,7 @@
 #include "editsystemlocks.h"
 #include "edittimesig.h"
 #include "edittremolo.h"
+#include "engraving/dom/dummyparent.h"
 #include "inserttime.h"
 #include "log.h"
 #include "navigation.h"

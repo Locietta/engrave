@@ -40,6 +40,7 @@
 #include "containers.h"
 #include "dom/parenthesis.h"
 #include "drumset.h"
+#include "engraving/dom/dummyparent.h"
 #include "factory.h"
 #include "guitarbend.h"
 #include "hook.h"

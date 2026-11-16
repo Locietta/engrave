@@ -29,6 +29,7 @@
 #include "dom/part.h"
 #include "dom/staff.h"
 #include "dom/system.h"
+#include "engraving/dom/dummyparent.h"
 #include "style/defaultstyle.h"
 #include "systemlayout.h"
 #include "tlayout.h"

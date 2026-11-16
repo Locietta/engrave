@@ -22,6 +22,7 @@
 
 #include "rehearsalmark.h"
 
+#include "engraving/style/styletypes.h"
 #include "measure.h"
 #include "score.h"
 #include "system.h"

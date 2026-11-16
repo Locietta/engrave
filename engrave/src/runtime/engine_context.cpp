@@ -5,7 +5,6 @@
 #include <stdexcept>
 
 #include "draw/fontmetrics.h"
-#include "engrave/src/audio/engine_audio.h"
 #include "engrave/src/runtime/fonts_database.h"
 #include "engraving/dom/drumset.h"
 #include "engraving/dom/figuredbass.h"
@@ -126,14 +125,12 @@ struct EngineContext::Impl {
     std::unique_ptr<EngravingContextConfiguration> context_configuration;
     EngravingServices engraving;
 
-    std::unique_ptr<EngineAudio> audio;
     void teardown() noexcept;
 };
 
 // Reverse of the constructor; tolerates a partially built context.
 void EngineContext::Impl::teardown() noexcept {
     try {
-        audio.reset();
         engraving = EngravingServices();
         context_configuration.reset();
         music_xml.reset();
@@ -171,7 +168,6 @@ EngineContext::EngineContext(const std::string &assets, const std::string &cache
         d.configuration = std::make_unique<EngravingConfiguration>();
         d.renderer = std::make_unique<rendering::score::ScoreRenderer>();
         d.articulation_profiles = std::make_unique<mpe::ArticulationProfilesRepository>(*d.file_system);
-        d.audio = std::make_unique<EngineAudio>(*d.articulation_profiles);
         d.music_xml = std::make_unique<mu::iex::musicxml::MusicXmlConfiguration>();
         d.context_configuration = std::make_unique<EngravingContextConfiguration>();
         d.engraving.configuration = d.configuration.get();
@@ -198,11 +194,12 @@ EngineContext::EngineContext(const std::string &assets, const std::string &cache
     }
 }
 
-EngineContext::~EngineContext() { impl_->teardown(); }
+EngineContext::~EngineContext() {
+    audio_.reset();
+    impl_->teardown();
+}
 
 io::NativeFileSystem &EngineContext::file_system() const { return *impl_->file_system; }
-
-EngineAudio &EngineContext::audio() const { return *impl_->audio; }
 
 RuntimeAssets &EngineContext::assets() const { return *impl_->assets; }
 

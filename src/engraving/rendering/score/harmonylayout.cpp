@@ -28,6 +28,7 @@
 #include "dom/harmonydisplay.h"
 #include "dom/staff.h"
 #include "draw/fontmetrics.h"
+#include "engraving/dom/dummyparent.h"
 #include "log.h"
 #include "parenthesislayout.h"
 #include "textlayout.h"

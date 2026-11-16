@@ -33,6 +33,7 @@
 #include "dom/segment.h"
 #include "dom/staff.h"
 #include "editing/editmeasures.h"
+#include "engraving/dom/dummyparent.h"
 #include "layoutdatastore.h"
 #include "log.h"
 #include "measurelayout.h"

@@ -24,6 +24,7 @@
 
 #include "accidental.h"
 #include "chord.h"
+#include "engraving/dom/dummyparent.h"
 #include "factory.h"
 #include "log.h"
 #include "measure.h"

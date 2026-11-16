@@ -28,6 +28,8 @@
 #include "beamgrouping.h"
 #include "chord.h"
 #include "containers.h"
+#include "engraving/dom/dummyparent.h"
+#include "engraving/style/styletypes.h"
 #include "groups.h"
 #include "log.h"
 #include "masterscore.h"

@@ -24,6 +24,7 @@
 #include <cmath>
 #include <map>
 
+#include "engraving/dom/dummyparent.h"
 #include "engraving/dom/factory.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"

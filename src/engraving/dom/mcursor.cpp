@@ -25,6 +25,7 @@
 #include "chord.h"
 #include "compat/scoreaccess.h"
 #include "durationtype.h"
+#include "engraving/dom/dummyparent.h"
 #include "factory.h"
 #include "instrtemplate.h"
 #include "keysig.h"

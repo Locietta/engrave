@@ -22,6 +22,8 @@
 
 #include "text.h"
 
+#include "engraving/dom/dummyparent.h"
+#include "engraving/style/styletypes.h"
 #include "log.h"
 #include "rw/rwregister.h"
 #include "score.h"

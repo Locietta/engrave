@@ -41,6 +41,7 @@
 #include "dom/system.h"
 #include "dom/tie.h"
 #include "dom/timesig.h"
+#include "engraving/rendering/paddingtable.h"
 #include "log.h"
 #include "parenthesislayout.h"
 

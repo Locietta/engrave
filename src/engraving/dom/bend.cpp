@@ -22,6 +22,7 @@
 
 #include "bend.h"
 
+#include "engraving/style/styletypes.h"
 #include "log.h"
 #include "note.h"
 

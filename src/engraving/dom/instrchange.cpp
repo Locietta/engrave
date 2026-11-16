@@ -26,6 +26,7 @@
 #include "../editing/editkeysig.h"
 #include "../editing/transaction/transaction.h"
 #include "../editing/transpose.h"
+#include "engraving/style/styletypes.h"
 #include "keysig.h"
 #include "log.h"
 #include "measure.h"

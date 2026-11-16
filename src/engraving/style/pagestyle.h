@@ -23,7 +23,7 @@
 
 #include <vector>
 
-#include "styledef.h"
+#include "sid.h"
 
 namespace mu::engraving {
 const std::vector<Sid> &page_styles();

@@ -61,6 +61,8 @@
 #include "dom/utils.h"
 #include "editing/editchord.h"
 #include "editing/navigation.h"
+#include "engraving/dom/dummyparent.h"
+#include "engraving/rendering/paddingtable.h"
 #include "horizontalspacing.h"
 #include "layoutdatastore.h"
 #include "log.h"
