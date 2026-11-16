@@ -7,7 +7,7 @@ rule("build.ccache")
             return
         end
         target:set("policy", "build.ccache", true)
-        if is_mode("debug", "releasedbg", "asan") and target:has_tool("cxx", "cl", "clang_cl") then
+        if is_mode("debug", "releasedbg", "asan") and target:has_tool("cxx", "cl") then
             -- cl's embed mapping emits /Z7 and suppresses /Zi and /Fd entirely.
             target:set("symbols", "debug", "embed")
         end

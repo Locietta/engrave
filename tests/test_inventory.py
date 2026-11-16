@@ -3,7 +3,10 @@
 import contextlib
 import io
 import json
+import runpy
 import shutil
+import subprocess
+import sys
 import tempfile
 import threading
 import unittest
@@ -257,6 +260,81 @@ class InventoryMutations(unittest.TestCase):
                 (out_split / "score.pdf.json").read_text(encoding="utf-8"),
                 (out_full / "score.pdf.json").read_text(encoding="utf-8"),
             )
+
+    def test_upstream_gtest_defaults_to_serial_execution(self):
+        ext = ".exe" if sys.platform == "win32" else ""
+        script = TEST_ROOT / "integration/test_upstream_gtest.py"
+
+        with temporary_directory() as directory:
+            root = Path(directory)
+            bin_dir = root / "bin"
+            assets_dir = root / "assets"
+            data_dir = root / "data"
+            for folder in (bin_dir, assets_dir, data_dir):
+                folder.mkdir()
+            for suite in ("engraving_playback_tests", "mpe_tests"):
+                (bin_dir / f"{suite}{ext}").write_bytes(b"")
+
+            def invoke(name: str, extra_args: list[str], barrier: threading.Barrier | None = None):
+                out_dir = root / name
+                lock = threading.Lock()
+                active = 0
+                max_active = 0
+                seen = []
+
+                def fake_run(cmd, **_kwargs):
+                    nonlocal active, max_active
+                    with lock:
+                        active += 1
+                        max_active = max(max_active, active)
+                    try:
+                        if barrier is not None:
+                            barrier.wait()
+                        binary_name = Path(cmd[0]).stem
+                        seen.append(binary_name)
+                        if binary_name == "engraving_playback_tests":
+                            stdout = "[==========] Running 220 tests from 10 test suites.\n[  PASSED  ] 220 tests.\n"
+                        else:
+                            stdout = "[==========] Running 24 tests from 4 test suites.\n[  PASSED  ] 24 tests.\n"
+                        return subprocess.CompletedProcess(cmd, 0, stdout=stdout, stderr="")
+                    finally:
+                        with lock:
+                            active -= 1
+
+                argv = [
+                    str(script),
+                    "--bin-dir",
+                    str(bin_dir),
+                    "--assets",
+                    str(assets_dir),
+                    "--engraving-data",
+                    str(data_dir),
+                    "--output",
+                    str(out_dir),
+                    *extra_args,
+                ]
+                with (
+                    patch.object(sys, "argv", argv),
+                    patch("subprocess.run", side_effect=fake_run),
+                    contextlib.redirect_stdout(io.StringIO()),
+                ):
+                    runpy.run_path(str(script), run_name="__main__")
+                summary = json.loads((out_dir / "gtest_summary.json").read_text(encoding="utf-8"))
+                return max_active, seen, summary
+
+            default_max, default_seen, default_summary = invoke("serial", [])
+            self.assertEqual(default_max, 1)
+            self.assertEqual(len(default_seen), 2)
+            self.assertEqual(default_summary["status"], "passed")
+            self.assertEqual(default_summary["jobs"], 1)
+            self.assertEqual([s["name"] for s in default_summary["suites"]], ["engraving_playback_tests", "mpe_tests"])
+
+            parallel_max, parallel_seen, parallel_summary = invoke(
+                "parallel", ["--jobs", "2"], barrier=threading.Barrier(2, timeout=2.0)
+            )
+            self.assertEqual(parallel_max, 2)
+            self.assertEqual(len(parallel_seen), 2)
+            self.assertEqual(parallel_summary["jobs"], 2)
 
 
 if __name__ == "__main__":
