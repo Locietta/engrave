@@ -1,4 +1,3 @@
-#include "engraving/style/styletypes.h"
 /*
  * SPDX-License-Identifier: GPL-3.0-only
  * MuseScore-Studio-CLA-applies
@@ -21,6 +20,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include "engravingobject.h"
+
 #include <algorithm>
 #include <memory>
 
@@ -31,7 +32,7 @@
 #include "chord.h"
 #include "chordline.h"
 #include "dummyparent.h"
-#include "engravingobject.h"
+#include "engraving/style/styletypes.h"
 #include "global/containers.h"
 #include "linkedobjects.h"
 #include "log.h"

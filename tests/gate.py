@@ -5,9 +5,7 @@ from __future__ import annotations
 
 import argparse
 import base64
-import contextlib
 import hashlib
-import io
 import json
 import os
 import re
@@ -24,7 +22,14 @@ from engrave_testing.dependencies import validate_dependencies
 from engrave_testing.inventory import validate_actual, validate_allow_usage, validate_baseline
 from engrave_testing.links import setup_link
 from engrave_testing.paths import INPUT_ROOT, REPO_ROOT, pixi_env
-from engrave_testing.public_output import compare, describe_audio_file, describe_render, probe_command
+from engrave_testing.public_output import (
+    compare,
+    describe_audio_file,
+    describe_render,
+    describe_render_pdf,
+    probe_command,
+    run_capture_pipeline,
+)
 
 PROFILES = ("release", "debug", "releasedbg", "asan")
 
@@ -467,7 +472,7 @@ def main():
     probe = a.build_dir / ("engrave_output_probe" + suffix)
     semantic_dump = a.build_dir / ("semantic_dump" + suffix)
 
-    def capture(source: Path) -> list[dict]:
+    def capture_worker(source: Path):
         raw = a.output / "raw" / source.name
         out = a.output / "actual" / source.name
         raw.mkdir(parents=True, exist_ok=True)
@@ -500,7 +505,13 @@ def main():
             timeout=120,
         )
         g.write_json(out / "semantic.json", json.loads(dump))
-        names = ["semantic.json"] + describe_render(raw, out) + describe_audio_file(raw / "score.wav", out)
+        # PyMuPDF initializes as single-threaded; PDF normalization runs on the
+        # main thread in finalize_capture after the worker pool drains.
+        names = (
+            ["semantic.json"]
+            + describe_render(raw, out, include_pdf=False)
+            + describe_audio_file(raw / "score.wav", out)
+        )
         for name, value in [
             ("score.mscx", g.normalize_mscx(g.read_text(raw / "score.mscx"))),
             (
@@ -520,50 +531,42 @@ def main():
         expected_svg = {p.name for p in (golden_root / source.name).glob("page-*.svg")}
         if {n for n in names if n.endswith(".svg")} != expected_svg:
             raise RuntimeError(f"{source.name}: SVG page coverage changed")
+        return source, raw, out, produced, names
+
+    def print_produced(item) -> None:
+        _source, _raw, _out, produced, _names = item
+        for record in produced:
+            print(f"{record['name']}: {record['exit']} ({record['seconds']}s)", flush=True)
+
+    def finalize_capture(item) -> None:
+        source, raw, out, _produced, names = item
+        names = [*names, *describe_render_pdf(raw, out)]
         validate_actual(source.name, out, names, inventory)
-        buffer = io.StringIO()
-        with lock, contextlib.redirect_stdout(buffer):
+        compare(
+            golden_root,
+            source.name,
+            out,
+            names,
+            allow,
+            platform,
+            counts,
+            matched_allow,
+            inventory=inventory,
+        )
+        if dual_inventory is not None:
             compare(
-                golden_root,
+                a.dual_capture,
                 source.name,
                 out,
                 names,
-                allow,
+                [],
                 platform,
-                counts,
-                matched_allow,
-                inventory=inventory,
+                dual,
+                dual_matched,
+                inventory=dual_inventory,
             )
-            if dual_inventory is not None:
-                compare(
-                    a.dual_capture,
-                    source.name,
-                    out,
-                    names,
-                    [],
-                    platform,
-                    dual,
-                    dual_matched,
-                    inventory=dual_inventory,
-                )
-        return produced, buffer.getvalue()
 
-    captured = []
-    errors = []
-    with ThreadPoolExecutor(max_workers=a.test_jobs) as pool:
-        futures = [pool.submit(capture, source) for source in sources]
-        for future in futures:
-            try:
-                captured.append(future.result())
-            except Exception as exc:
-                errors.append(exc)
-    for produced, compare_output in captured:
-        if compare_output:
-            sys.stdout.write(compare_output)
-        for record in produced:
-            print(f"{record['name']}: {record['exit']} ({record['seconds']}s)", flush=True)
-    if errors:
-        raise errors[0]
+    run_capture_pipeline(sources, capture_worker, finalize_capture, a.test_jobs, on_captured=print_produced)
     if {p.name for p in (a.output / "actual").iterdir()} != set(inventory):
         raise RuntimeError("gate fixture inventory mismatch")
     run(

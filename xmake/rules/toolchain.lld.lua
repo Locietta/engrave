@@ -2,7 +2,7 @@ local probes = {}
 rule("toolchain.lld")
     on_config(function (target)
         import("lib.detect.find_tool")
-        if target:is_plat("linux") and target:has_tool("cxx", "gcc", "gxx", "g++", "clang", "clangxx") then
+        if target:is_plat("linux") and target:has_tool("cxx", "gcc", "gxx", "g%+%+", "clang", "clangxx") then
             local linker = find_tool("mold") and "mold" or (find_tool("ld.lld") and "lld")
             if linker then
                 import("core.tool.linker", {alias = "linker_tool"})
@@ -22,7 +22,7 @@ rule("toolchain.lld")
             local key = cl.program .. lld.program .. (is_mode("asan") and "asan" or "plain")
             if probes[key] == nil then
                 probes[key] = false
-                local dir = path.join(os.projectdir(), "build", ".linker-probe", is_mode("asan") and "asan" or "plain")
+                local dir = os.tmpfile() .. ".lld-probe"
                 os.mkdir(dir)
                 local source = path.join(dir, "main.cpp")
                 local object = path.join(dir, "main.obj")
@@ -44,7 +44,8 @@ rule("toolchain.lld")
                         os.iorunv(binary, {}, {envs = runenv})
                         probes[key] = os.isfile(pdb)
                     end,
-                    catch {function () end}
+                    catch {function () end},
+                    finally {function () os.tryrm(dir) end}
                 }
             end
             if probes[key] then

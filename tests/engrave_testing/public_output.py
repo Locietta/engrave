@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import subprocess
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from engrave_testing.golden import (
@@ -44,7 +45,16 @@ def run_probe(command: list[str]) -> str | None:
     return None
 
 
-def describe_render(raw: Path, out: Path) -> list[str]:
+def describe_render_pdf(raw: Path, out: Path) -> list[str]:
+    """Normalize and describe the rendered PDF on the caller thread (PyMuPDF is single-threaded)."""
+    pdf = raw / "score.pdf"
+    if pdf.is_file():
+        write_json(out / "score.pdf.json", describe_pdf(pdf))
+        return ["score.pdf.json"]
+    return []
+
+
+def describe_render(raw: Path, out: Path, *, include_pdf: bool = True) -> list[str]:
     """Write the golden.py representations of the probe's render, return their names."""
     names = []
     for svg in sorted(raw.glob("page-*.svg")):
@@ -54,11 +64,29 @@ def describe_render(raw: Path, out: Path) -> list[str]:
     if png.is_file():
         write_json(out / "page-0.png.json", describe_png(png))
         names.append("page-0.png.json")
-    pdf = raw / "score.pdf"
-    if pdf.is_file():
-        write_json(out / "score.pdf.json", describe_pdf(pdf))
-        names.append("score.pdf.json")
+    if include_pdf:
+        names.extend(describe_render_pdf(raw, out))
     return names
+
+
+def run_capture_pipeline(sources, capture_worker, finalize_capture, max_workers: int, on_captured=None):
+    """Run worker-safe capture steps concurrently, then finalize single-threaded steps on the caller thread."""
+    captured = []
+    errors = []
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        futures = [pool.submit(capture_worker, source) for source in sources]
+        for future in futures:
+            try:
+                item = future.result()
+            except Exception as exc:
+                errors.append(exc)
+            else:
+                captured.append(item)
+                if on_captured is not None:
+                    on_captured(item)
+    if errors:
+        raise errors[0]
+    return [finalize_capture(item) for item in captured]
 
 
 def describe_audio_file(raw: Path, out: Path) -> list[str]:

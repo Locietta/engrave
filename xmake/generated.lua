@@ -76,4 +76,3 @@ target("muse_generated")
         generate_version_header(target, os, io)
     end)
 target_end()
-
