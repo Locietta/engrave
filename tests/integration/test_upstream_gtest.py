@@ -11,6 +11,10 @@ with non-zero if any test suite fails. The pinned inventory is asserted exactly
 a changed count, an unexpected skip or a disabled test also fail the lane. With
 an explicit ``--filter`` the subset size is unknown but zero tests, skips and
 disabled tests still fail.
+
+The independent binaries run concurrently (``-j/--jobs``); each keeps its own
+temporary working directory and its captured output is reported in a fixed
+suite order, so failures never depend on completion order.
 """
 
 from __future__ import annotations
@@ -23,6 +27,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from engrave_testing.paths import REPO_ROOT
@@ -176,7 +181,6 @@ def run_suite(
     gtest_filter: str | None,
     output_dir: Path | None,
     timeout: int,
-    verbose: bool,
 ) -> dict:
     if not binary_path.is_file():
         return {
@@ -187,6 +191,8 @@ def run_suite(
             "error": f"Binary not found: {binary_path}",
             "elapsed_seconds": 0.0,
             "stats": {},
+            "stdout": "",
+            "stderr": "",
         }
 
     cmd = [
@@ -215,8 +221,10 @@ def run_suite(
             rc = proc.returncode
         except subprocess.TimeoutExpired as exc:
             elapsed = time.perf_counter() - start_time
-            stdout = exc.stdout or ""
-            stderr = exc.stderr or ""
+            raw_out = exc.stdout or ""
+            raw_err = exc.stderr or ""
+            stdout = raw_out.decode("utf-8", errors="replace") if isinstance(raw_out, bytes) else raw_out
+            stderr = raw_err.decode("utf-8", errors="replace") if isinstance(raw_err, bytes) else raw_err
             rc = -1
 
     stats = parse_gtest_output(stdout)
@@ -229,14 +237,6 @@ def run_suite(
     problems = check_expected_counts(suite_name, stats, filtered=bool(gtest_filter))
     status = "passed" if rc == 0 and not problems else "failed"
 
-    if verbose or status == "failed":
-        if stdout:
-            print(stdout)
-        if stderr:
-            print(stderr, file=sys.stderr)
-        for problem in problems:
-            print(f"  count check: {problem}", file=sys.stderr)
-
     return {
         "name": suite_name,
         "status": status,
@@ -246,6 +246,8 @@ def run_suite(
         "stats": stats,
         "expected": EXPECTED_SUITES.get(suite_name),
         "count_problems": problems,
+        "stdout": stdout,
+        "stderr": stderr,
     }
 
 
@@ -296,12 +298,21 @@ def main():
         help="Timeout in seconds per test binary (default: 180)",
     )
     parser.add_argument(
+        "-j",
+        "--jobs",
+        type=int,
+        default=max(1, min(2, os.cpu_count() or 1)),
+        help="Test binaries to run concurrently (default: min(2, CPU count))",
+    )
+    parser.add_argument(
         "--verbose",
         "-v",
         action="store_true",
         help="Print verbose test stdout/stderr",
     )
     args = parser.parse_args()
+    if args.jobs < 1:
+        parser.error("--jobs must be at least 1")
 
     bin_dir = args.bin_dir.resolve()
     assets_dir = args.assets.resolve()
@@ -322,14 +333,13 @@ def main():
     print(f"Engraving test fixtures: {engraving_data_dir}")
     if args.filter:
         print(f"Filter:                 {args.filter}")
+    print(f"Concurrent binaries:    {args.jobs}")
     print("-" * 70)
 
-    results = []
-    all_passed = True
-
-    for suite_name, binary_path in suites_to_run:
+    for suite_name, _ in suites_to_run:
         print(f"Running suite '{suite_name}'...")
-        res = run_suite(
+    calls = [
+        dict(
             suite_name=suite_name,
             binary_path=binary_path,
             assets_dir=assets_dir,
@@ -337,9 +347,28 @@ def main():
             gtest_filter=args.filter,
             output_dir=args.output,
             timeout=args.timeout,
-            verbose=args.verbose,
         )
-        results.append(res)
+        for suite_name, binary_path in suites_to_run
+    ]
+    if args.jobs == 1 or len(calls) <= 1:
+        results = [run_suite(**call) for call in calls]
+    else:
+        with ThreadPoolExecutor(max_workers=min(args.jobs, len(calls))) as pool:
+            futures = [pool.submit(run_suite, **call) for call in calls]
+            # Report in submission order; each binary's buffered output is
+            # printed only after the pool drained, so logs never interleave.
+            results = [future.result() for future in futures]
+
+    all_passed = True
+    for res in results:
+        stdout, stderr = res.pop("stdout", ""), res.pop("stderr", "")
+        if args.verbose or res["status"] == "failed":
+            if stdout:
+                print(stdout)
+            if stderr:
+                print(stderr, file=sys.stderr)
+            for problem in res.get("count_problems", []):
+                print(f"  count check: {problem}", file=sys.stderr)
 
         st = res["status"]
         stats = res.get("stats", {})
@@ -367,6 +396,7 @@ def main():
     summary_data = {
         "timestamp": time.time(),
         "status": "passed" if all_passed else "failed",
+        "jobs": args.jobs,
         "suites": results,
     }
 

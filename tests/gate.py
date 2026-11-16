@@ -4,14 +4,19 @@
 from __future__ import annotations
 
 import argparse
+import base64
+import contextlib
 import hashlib
+import io
 import json
 import os
 import re
 import subprocess
 import sys
+import threading
 import time
 import zipfile
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from engrave_testing import golden as g
@@ -21,27 +26,63 @@ from engrave_testing.links import setup_link
 from engrave_testing.paths import INPUT_ROOT, REPO_ROOT, pixi_env
 from engrave_testing.public_output import compare, describe_audio_file, describe_render, probe_command
 
+PROFILES = ("release", "debug", "releasedbg", "asan")
+
+
+def manifest_fingerprint(manifest: Path) -> dict:
+    files = [manifest, manifest.parent / "pixi.lock"]
+    return {
+        "path": str(manifest),
+        "sha256": {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in files if path.is_file()},
+    }
+
 
 def main():
 
     validate_dependencies()
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--engine-source", type=Path, default=REPO_ROOT)
-    for name in ("build-dir", "assets", "soundfont", "output"):
+    for name in ("assets", "soundfont", "output"):
         p.add_argument("--" + name, type=Path, required=True)
+    p.add_argument(
+        "--build-dir",
+        type=Path,
+        help="Build output directory (default: <engine-source>/build/gate-<profile>)",
+    )
+    p.add_argument(
+        "--profile",
+        choices=PROFILES,
+        default="release",
+        help="xmake build mode (default: release)",
+    )
     p.add_argument(
         "--pixi-manifest",
         type=Path,
         help="pixi.toml whose default environment provides cairo and zlib (default: the engine source's)",
     )
     p.add_argument("--mutex-wrapper", type=Path)
-    p.add_argument("--jobs", type=int, default=8)
+    p.add_argument("-j", "--jobs", type=int, default=8, help="Compile jobs (default: 8)")
+    p.add_argument(
+        "-J",
+        "--test-jobs",
+        type=int,
+        default=min(8, os.cpu_count() or 4),
+        help="Concurrent test workers (default: min(8, CPU count))",
+    )
+    p.add_argument(
+        "--clean-config",
+        action="store_true",
+        help="Force xmake f -c even when the isolated per-build-directory config can be reused",
+    )
     p.add_argument("--skip-build", action="store_true", help="diagnostic rerun only")
     p.add_argument("--dual-capture", type=Path, help="old golden lane actual directory")
     a = p.parse_args()
     for key, value in vars(a).items():
         if isinstance(value, Path):
             setattr(a, key, value.resolve())
+    a.build_dir = (a.build_dir or a.engine_source / "build" / ("gate-" + a.profile)).resolve()
+    a.jobs = max(1, a.jobs)
+    a.test_jobs = max(1, a.test_jobs)
     if (a.output / "actual").exists() or (a.output / "raw").exists():
         raise RuntimeError("Use a fresh output directory; retained captures must never mask missing outputs")
     a.output.mkdir(parents=True, exist_ok=True)
@@ -63,10 +104,18 @@ def main():
     os.environ["PYTHONPATH"] = os.pathsep.join(
         (str(REPO_ROOT / "tests"), str(REPO_ROOT / "tools"), os.environ.get("PYTHONPATH", ""))
     )
+    lock = threading.Lock()
     records = []
     start = time.monotonic()
 
-    def run(name, command, cwd=None):
+    def log_record(record, quiet=False):
+        with lock:
+            records.append(record)
+            (a.output / "timings.json").write_text(json.dumps(records, indent=2) + "\n", encoding="utf-8")
+            if not quiet:
+                print(f"{record['name']}: {record['exit']} ({record['seconds']}s)", flush=True)
+
+    def run(name, command, cwd=None, env=None, quiet=False):
         command = list(map(str, command))
         t = time.monotonic()
         with (a.output / (name + ".log")).open("wb") as log:
@@ -76,23 +125,54 @@ def main():
                 stdout=log,
                 stderr=subprocess.STDOUT,
                 timeout=1800,
+                env={**os.environ, **env} if env else None,
             )
-        records.append(
-            dict(
-                name=name,
-                command=command,
-                seconds=round(time.monotonic() - t, 3),
-                exit=r.returncode,
-            )
+        record = dict(
+            name=name,
+            command=command,
+            seconds=round(time.monotonic() - t, 3),
+            exit=r.returncode,
         )
-        (a.output / "timings.json").write_text(json.dumps(records, indent=2) + "\n", encoding="utf-8")
-        print(f"{name}: {r.returncode} ({records[-1]['seconds']}s)", flush=True)
+        log_record(record, quiet)
         if r.returncode:
             raise RuntimeError(f"{name}: see {a.output / (name + '.log')}")
+        return record
 
-    def xmake(name, args):
+    def run_check(name, check):
+        t = time.monotonic()
+        try:
+            check()
+        except Exception as exc:
+            (a.output / (name + ".log")).write_text(str(exc) + "\n", encoding="utf-8")
+            log_record(dict(name=name, command=[], seconds=round(time.monotonic() - t, 3), exit=1))
+            raise
+        log_record(dict(name=name, command=[], seconds=round(time.monotonic() - t, 3), exit=0))
+
+    def run_task(task):
+        try:
+            record = run(task["name"], task["command"], task.get("cwd"), task.get("env"), quiet=True)
+            return task["name"], record, None
+        except Exception as exc:
+            return task["name"], None, exc
+
+    def run_parallel(tasks):
+        outcomes = []
+        with ThreadPoolExecutor(max_workers=a.test_jobs) as pool:
+            futures = [pool.submit(run_task, task) for task in tasks]
+            for future in futures:
+                outcomes.append(future.result())
+        # Report buffered results in submission order, never completion order.
+        for name, record, _error in outcomes:
+            if record is not None:
+                print(f"{name}: {record['exit']} ({record['seconds']}s)", flush=True)
+        error = next((error for _name, _record, error in outcomes if error), None)
+        if error:
+            raise error
+
+    def xmake(name, args, env):
         cmd = ["xmake", *args]
         if platform == "windows" and a.mutex_wrapper:
+            encoded = base64.b64encode(json.dumps(list(map(str, args))).encode("utf-8")).decode("ascii")
             cmd = [
                 "pwsh",
                 "-NoProfile",
@@ -102,25 +182,61 @@ def main():
                 a.engine_source,
                 "-Log",
                 a.output / (name + "-mutex.log"),
-                "-Command",
-                " ".join(map(str, args)),
+                "-ArgsBase64",
+                encoded,
             ]
-        run(name, cmd, a.engine_source)
+        run(name, cmd, a.engine_source, env)
 
-    run("comparator-mutations", [sys.executable, REPO_ROOT / "tests/test_inventory.py"])
-    run("playback-witness-controls", [sys.executable, "-O", REPO_ROOT / "tests/test_playback_witness.py"])
+    # Runtime assets gate every capture; a broken manifest must fail before the
+    # engine compiles, not after the full build.
+    run(
+        "asset-manifest",
+        [
+            sys.executable,
+            "-B",
+            a.engine_source / "tools/install_assets.py",
+            "--verify",
+            a.assets,
+        ],
+    )
     if not a.skip_build:
         run("pixi-install", ["pixi", "install", "--locked", "--manifest-path", manifest])
-        config = [
-            "f",
-            # -c: the Pixi manifest is no xmake option, so a reused config would
-            # keep the previous environment's cached cairo and zlib.
-            "-c",
+        # An isolated config per build directory makes reuse safe: the pixi
+        # manifest is not an xmake option, so its fingerprint is the stamp that
+        # decides whether the cached configuration may be kept.
+        config_dir = a.build_dir / ".xmake-config"
+        config_dir.mkdir(parents=True, exist_ok=True)
+        xmake_env = {"XMAKE_CONFIGDIR": str(config_dir)}
+        try:
+            a.build_dir.relative_to(a.engine_source)
+        except ValueError:
+            pass
+        else:
+            # Share built source packages across profiles/build dirs in this checkout.
+            xmake_env["XMAKE_PKG_LOCALDIR"] = str(a.engine_source / "build/.packages")
+        stamp = {
+            "manifest": manifest_fingerprint(manifest),
+            "profile": a.profile,
+            "build_dir": str(a.build_dir),
+        }
+        # Keep the stamp outside the config directory: `xmake f -c` may clear
+        # that directory, and the next run must still see whether reuse is safe.
+        stamp_path = a.build_dir / "gate-config.json"
+        clean_config = a.clean_config
+        if not clean_config:
+            try:
+                clean_config = json.loads(stamp_path.read_text(encoding="utf-8")) != stamp
+            except (OSError, ValueError):
+                clean_config = True
+        config = ["f"]
+        if clean_config:
+            config.append("-c")
+        config += [
             "-P",
             ".",
             "-y",
             "-m",
-            "release",
+            a.profile,
             "-o",
             a.build_dir,
             "--ccache=y",
@@ -133,17 +249,20 @@ def main():
                 "--cc=" + str(native / "bin/x86_64-conda-linux-gnu-gcc"),
                 "--cxx=" + str(native / "bin/x86_64-conda-linux-gnu-g++"),
             ]
-        xmake("configure", config)
-        xmake("build", ["build", "-P", ".", "-y", "-j" + str(a.jobs), "engine_tests"])
+        xmake("configure", config, xmake_env)
+        stamp_path.write_text(json.dumps(stamp, indent=2) + "\n", encoding="utf-8")
+        xmake("build", ["build", "-P", ".", "-y", "-j" + str(a.jobs), "engine_tests"], xmake_env)
     forbidden = re.compile(
         r"\bmuse::|\bmu::|\bkors\b|\bnlohmann\b|\bglz::|\bQt\b|\bQ[A-Z]\w*\b|"
         r'#\s*include\s*[<"](?:muse/|framework/|engraving/|nlohmann/|glaze/)'
     )
-    for header in (a.engine_source / "engrave/include/engrave").rglob("*.h"):
-        if forbidden.search(header.read_text(encoding="utf-8")):
-            raise RuntimeError(f"public header leak: {header}")
-    asset = "--assets=" + str(a.assets)
-    corpus = "--corpus=" + str(REPO_ROOT / "tests/data/inputs/golden")
+
+    def check_headers():
+        for header in (a.engine_source / "engrave/include/engrave").rglob("*.h"):
+            if forbidden.search(header.read_text(encoding="utf-8")):
+                raise RuntimeError(f"public header leak: {header}")
+
+    run_check("header_scan", check_headers)
     run(
         "sine",
         [
@@ -152,6 +271,25 @@ def main():
             a.output / "sine.sf2",
         ],
     )
+    asset = "--assets=" + str(a.assets)
+    corpus = "--corpus=" + str(REPO_ROOT / "tests/data/inputs/golden")
+    output_args = [
+        asset,
+        corpus,
+        "--corpus=" + str(REPO_ROOT / "tests/data/inputs/audio"),
+        "--soundfont=" + str(a.soundfont),
+        "--soundfont=" + str(a.output / "sine.sf2"),
+        "--native-fonts=" + str(native_fonts),
+    ]
+    dense_timing_test = "AudioInternal.DenseScoreCancellationLatencyAndRecovery"
+    shared_timing_tests = ":".join(
+        (
+            "AudioInternal.CancellationLatencyDistribution",
+            "AudioInternal.FirstRenderCancelThenRepeatedRenderAndTeardown",
+            "AudioInternal.WarmGraphRebuildTiming",
+        )
+    )
+    excluded_timing_tests = dense_timing_test + ":" + shared_timing_tests
     suites = {
         "engrave_api_test": [asset],
         "engrave_handles_test": [asset, corpus],
@@ -165,30 +303,38 @@ def main():
         "engrave_gp_import_test": [asset],
         "engrave_mnx_import_test": [asset, "--mnx-out=" + str(a.output / "mnx-export")],
         "engrave_mnx_model_test": [],
-        "engrave_output_test": [
-            asset,
-            corpus,
-            "--corpus=" + str(REPO_ROOT / "tests/data/inputs/audio"),
-            "--soundfont=" + str(a.soundfont),
-            "--soundfont=" + str(a.output / "sine.sf2"),
-            "--native-fonts=" + str(native_fonts),
-        ],
+        "engrave_output_test": output_args,
         "diagnostics_test": [],
         "io_boundary_test": [],
     }
+    tasks = [
+        dict(name="comparator-mutations", command=[sys.executable, REPO_ROOT / "tests/test_inventory.py"]),
+        dict(
+            name="playback-witness-controls",
+            command=[sys.executable, "-O", REPO_ROOT / "tests/test_playback_witness.py"],
+        ),
+        dict(name="oracle-controls", command=[sys.executable, REPO_ROOT / "tests/integration/test_oracle_harness.py"]),
+    ]
     for name, args in suites.items():
         cwd = a.output / name
         cwd.mkdir(exist_ok=True)
-        binary = a.build_dir / (name + suffix)
+        command = [a.build_dir / (name + suffix), *args]
         if name == "engrave_output_test":
-            # Run the timing contract in a fresh process, sequentially. Earlier
-            # output tests mutate shared engine/allocator state; their process
-            # history must not become part of the dense cancellation budget.
-            timing_test = "AudioInternal.DenseScoreCancellationLatencyAndRecovery"
-            run(name, [binary, *args, "--gtest_filter=-" + timing_test], cwd)
-            run("dense-cancellation", [binary, *args, "--gtest_filter=" + timing_test], cwd)
-        else:
-            run(name, [binary, *args], cwd)
+            # Keep all latency, teardown, and warm-timing tests isolated in Phase C.
+            command.append("--gtest_filter=-" + excluded_timing_tests)
+        tasks.append(dict(name=name, command=command, cwd=cwd))
+    run_parallel(tasks)
+    # Schema validation reads the import suite's export; it starts only after
+    # that suite has completed.
+    run(
+        "mnx_schema",
+        [
+            sys.executable,
+            REPO_ROOT / "tests/engrave_testing/check_mnx_schema.py",
+            a.output / "mnx-export",
+            a.engine_source / "src/importexport/mnx/model/mnx-schema.json",
+        ],
+    )
     run(
         "write470-excerpts",
         [
@@ -200,15 +346,6 @@ def main():
             a.assets,
             "--out",
             a.output / "write470-excerpts",
-        ],
-    )
-    run(
-        "mnx_schema",
-        [
-            sys.executable,
-            REPO_ROOT / "tests/engrave_testing/check_mnx_schema.py",
-            a.output / "mnx-export",
-            a.engine_source / "src/importexport/mnx/model/mnx-schema.json",
         ],
     )
     run(
@@ -224,15 +361,18 @@ def main():
             a.engine_source / "src/engraving/tests",
             "--output",
             a.output / "gtest",
+            "--jobs",
+            str(a.test_jobs),
         ],
     )
     # These pinned engine tests still read cwd-relative fixtures and engine data.
-    # Keep that compatibility contract inside the capture, beside generated output.
-    engine_cwd = a.output / "engine-cwd"
-    (engine_cwd / "vendor").mkdir(parents=True, exist_ok=True)
-    setup_link(INPUT_ROOT, engine_cwd / "fixtures")
-    setup_link(a.engine_source, engine_cwd / "vendor/engrave")
+    # Each suite gets its own capture directory so a shared engine-cwd can never
+    # race between them.
     for name in ("score_edit_test", "score_audio_test", "score_positions_test"):
+        engine_cwd = a.output / "engine-cwd" / name
+        (engine_cwd / "vendor").mkdir(parents=True, exist_ok=True)
+        setup_link(INPUT_ROOT, engine_cwd / "fixtures")
+        setup_link(a.engine_source, engine_cwd / "vendor/engrave")
         run(
             name,
             [
@@ -293,39 +433,10 @@ def main():
         ],
     )
     run(
-        "asset-manifest",
-        [
-            sys.executable,
-            "-B",
-            a.engine_source / "tools/install_assets.py",
-            "--verify",
-            a.assets,
-        ],
-    )
-    run(
         "asset-installer",
         [sys.executable, "-B", a.engine_source / "tools/test_install_assets.py"],
         cwd=a.engine_source / "tools",
     )
-    run(
-        "engine-audio",
-        [
-            sys.executable,
-            REPO_ROOT / "tests/integration/test_engine_audio.py",
-            "--engine-only",
-            "--bin-dir",
-            a.build_dir,
-            "--resources",
-            a.assets,
-            "--soundfont",
-            a.soundfont,
-            "--engine-source",
-            a.engine_source,
-            "--output",
-            a.output / "engine-audio",
-        ],
-    )
-    run("oracle-controls", [sys.executable, REPO_ROOT / "tests/integration/test_oracle_harness.py"])
     sources = sorted((REPO_ROOT / "tests/data/inputs/golden").glob("*")) + [
         REPO_ROOT / "tests/data/inputs/evening.musicxml"
     ]
@@ -345,36 +456,44 @@ def main():
         "embedder",
         [a.build_dir / ("example_embedder" + suffix), a.assets, *sources],
     )
+    golden_root = REPO_ROOT / "tests/data/golden" / platform
+    inventory = validate_baseline(golden_root)
+    allow = g.load_allow(REPO_ROOT / "tests/data/golden/allow.json", context="engine-gate-archive")
     counts = dict(identical=0, allowed=0, different=0, **{"missing-golden": 0})
     dual = dict(identical=0, allowed=0, different=0, **{"missing-golden": 0})
-    allow = g.load_allow(REPO_ROOT / "tests/data/golden/allow.json", context="engine-gate-archive")
     matched_allow = set()
+    dual_matched = set()
+    dual_inventory = validate_baseline(a.dual_capture) if a.dual_capture else None
+    probe = a.build_dir / ("engrave_output_probe" + suffix)
+    semantic_dump = a.build_dir / ("semantic_dump" + suffix)
 
-    inventory = validate_baseline(REPO_ROOT / "tests/data/golden" / platform)
-    for source in sources:
+    def capture(source: Path) -> list[dict]:
         raw = a.output / "raw" / source.name
         out = a.output / "actual" / source.name
         raw.mkdir(parents=True, exist_ok=True)
         out.mkdir(parents=True, exist_ok=True)
-        probe = a.build_dir / ("engrave_output_probe" + suffix)
+        produced = []
         for mode in ("export", "render", "audio"):
-            run(
-                source.name + "-" + mode,
-                probe_command(
-                    probe,
-                    a.assets,
-                    [a.soundfont],
-                    mode,
-                    source,
-                    raw / "score.wav" if mode == "audio" else raw,
-                ),
+            produced.append(
+                run(
+                    source.name + "-" + mode,
+                    probe_command(
+                        probe,
+                        a.assets,
+                        [a.soundfont],
+                        mode,
+                        source,
+                        raw / "score.wav" if mode == "audio" else raw,
+                    ),
+                    quiet=True,
+                )
             )
         with zipfile.ZipFile(raw / "score.mscz") as archive:
             master = next(n for n in archive.namelist() if n.endswith(".mscx") and "/" not in n)
             (raw / "score.mscx").write_bytes(archive.read(master))
         dump = subprocess.check_output(
             [
-                str(a.build_dir / ("semantic_dump" + suffix)),
+                str(semantic_dump),
                 str(a.assets),
                 str(raw / "score.mscz"),
             ],
@@ -398,22 +517,53 @@ def main():
         ]:
             g.write_json(out / name, value)
             names.append(name)
-        expected_svg = {p.name for p in (REPO_ROOT / "tests/data/golden" / platform / source.name).glob("page-*.svg")}
+        expected_svg = {p.name for p in (golden_root / source.name).glob("page-*.svg")}
         if {n for n in names if n.endswith(".svg")} != expected_svg:
             raise RuntimeError(f"{source.name}: SVG page coverage changed")
         validate_actual(source.name, out, names, inventory)
-        compare(
-            REPO_ROOT / "tests/data/golden" / platform,
-            source.name,
-            out,
-            names,
-            allow,
-            platform,
-            counts,
-            matched_allow,
-        )
-        if a.dual_capture:
-            compare(a.dual_capture, source.name, out, names, [], platform, dual)
+        buffer = io.StringIO()
+        with lock, contextlib.redirect_stdout(buffer):
+            compare(
+                golden_root,
+                source.name,
+                out,
+                names,
+                allow,
+                platform,
+                counts,
+                matched_allow,
+                inventory=inventory,
+            )
+            if dual_inventory is not None:
+                compare(
+                    a.dual_capture,
+                    source.name,
+                    out,
+                    names,
+                    [],
+                    platform,
+                    dual,
+                    dual_matched,
+                    inventory=dual_inventory,
+                )
+        return produced, buffer.getvalue()
+
+    captured = []
+    errors = []
+    with ThreadPoolExecutor(max_workers=a.test_jobs) as pool:
+        futures = [pool.submit(capture, source) for source in sources]
+        for future in futures:
+            try:
+                captured.append(future.result())
+            except Exception as exc:
+                errors.append(exc)
+    for produced, compare_output in captured:
+        if compare_output:
+            sys.stdout.write(compare_output)
+        for record in produced:
+            print(f"{record['name']}: {record['exit']} ({record['seconds']}s)", flush=True)
+    if errors:
+        raise errors[0]
     if {p.name for p in (a.output / "actual").iterdir()} != set(inventory):
         raise RuntimeError("gate fixture inventory mismatch")
     run(
@@ -422,6 +572,36 @@ def main():
     )
     # Entries are only expected to match on the platforms they pin.
     validate_allow_usage(allow, matched_allow, platform)
+    # Exclusive timing lane: every parallel pool above has drained, so the
+    # cancellation budgets, teardown timing, and audio render measure a quiet machine.
+    run(
+        "output-timing",
+        [a.build_dir / ("engrave_output_test" + suffix), *output_args, "--gtest_filter=" + shared_timing_tests],
+        cwd=a.output / "engrave_output_test",
+    )
+    run(
+        "dense-cancellation",
+        [a.build_dir / ("engrave_output_test" + suffix), *output_args, "--gtest_filter=" + dense_timing_test],
+        cwd=a.output / "engrave_output_test",
+    )
+    run(
+        "engine-audio",
+        [
+            sys.executable,
+            REPO_ROOT / "tests/integration/test_engine_audio.py",
+            "--engine-only",
+            "--bin-dir",
+            a.build_dir,
+            "--resources",
+            a.assets,
+            "--soundfont",
+            a.soundfont,
+            "--engine-source",
+            a.engine_source,
+            "--output",
+            a.output / "engine-audio",
+        ],
+    )
     inputs = [
         REPO_ROOT / "tests/data/golden/inputs.json",
         a.soundfont,
