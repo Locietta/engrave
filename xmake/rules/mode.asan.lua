@@ -28,7 +28,7 @@ rule("mode.asan")
                 dll_dir = cl and path.directory(cl.program) or nil
             end
             if dll_dir then target:add("runenvs", "PATH", dll_dir) end
-            target:set("symbols", "debug", "embed")
+            if target:has_tool("cxx", "cl") then target:set("symbols", "debug", "embed") end
             target:add("cxflags", "/O1", {force = true})
             target:add("ldflags", "/INCREMENTAL:NO", {force = true})
             target:add("shflags", "/INCREMENTAL:NO", {force = true})
