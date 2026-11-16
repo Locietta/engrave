@@ -21,6 +21,10 @@
 -- Every binary lands in the including project's build directory under its
 -- own name.
 
+-- These defines have direct C++ consumers: handles_test concatenates literals,
+-- MNX tests initialize global paths, and playback tests construct fixture paths.
+-- Retain absolute roots until those consumers support a runtime root; relative
+-- defines would break direct test execution from arbitrary working directories.
 local fork_root = path.directory(os.scriptdir())
 local source_root = path.absolute(ENGRAVE_SOURCE_ROOT or fork_root)
 local tests_dir = path.join(source_root, "engrave", "tests")
