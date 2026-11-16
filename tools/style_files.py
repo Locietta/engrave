@@ -3,7 +3,7 @@
 import subprocess
 from pathlib import Path
 
-CPP_EXTENSIONS = {".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".hxx"}
+CPP_EXTENSIONS = {".c", ".cc", ".cpp", ".cppm", ".cxx", ".h", ".hh", ".hpp", ".hxx"}
 ENGINE_ROOT = Path(__file__).resolve().parents[1]
 
 
