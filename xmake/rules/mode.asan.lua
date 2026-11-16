@@ -13,7 +13,7 @@ rule("mode.asan")
             target:set("symbols", "debug", "embed")
             target:add("cxflags", "/O1", "/fsanitize=address", {force = true})
             target:add("ldflags", "/INCREMENTAL:NO", {force = true})
-        elseif target:has_tool("cxx", "gcc", "gxx", "clang", "clangxx") then
+        elseif target:has_tool("cxx", "gcc", "gxx", "g++", "clang", "clangxx") then
             target:add("cxflags", "-O1", "-fsanitize=address,undefined", "-fno-omit-frame-pointer", {force = true})
             target:add("ldflags", "-fsanitize=address,undefined", {force = true})
             target:add("shflags", "-fsanitize=address,undefined", {force = true})

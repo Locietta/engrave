@@ -2,7 +2,7 @@ local probes = {}
 rule("toolchain.lld")
     on_config(function (target)
         import("lib.detect.find_tool")
-        if target:is_plat("linux") and target:has_tool("cxx", "gcc", "gxx", "clang", "clangxx") then
+        if target:is_plat("linux") and target:has_tool("cxx", "gcc", "gxx", "g++", "clang", "clangxx") then
             local linker = find_tool("mold") and "mold" or (find_tool("ld.lld") and "lld")
             if linker then
                 import("core.tool.linker", {alias = "linker_tool"})

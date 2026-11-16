@@ -61,3 +61,23 @@ target("engrave")
     set_kind("phony")
     add_deps("engrave_core", "engrave_audio", {public = true})
 target_end()
+
+if has_config("engrave_modules") then
+    target("engrave_module")
+        set_kind("static")
+        set_default(false)
+        set_policy("build.c++.modules", true)
+        add_deps("engrave")
+        add_includedirs(ENGRAVE_PUBLIC_INCLUDES, {public = true})
+        add_files(engine("engrave/modules/engrave.cppm"), {public = true})
+    target_end()
+
+    target("engrave_module_test")
+        set_kind("binary")
+        set_default(false)
+        set_policy("build.c++.modules", true)
+        add_deps("engrave_module")
+        add_files(engine("engrave/tests/engrave_module_test.cpp"))
+        if is_plat("windows") then add_files(engine("engrave/tests/utf8.manifest")) end
+    target_end()
+end
