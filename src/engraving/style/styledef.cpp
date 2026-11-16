@@ -1,4 +1,3 @@
-#include "engraving/style/styletypes.h"
 /*
  * SPDX-License-Identifier: GPL-3.0-only
  * MuseScore-Studio-CLA-applies
@@ -21,14 +20,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "../dom/mscore.h"
+#include "styledef.h"
+
 #include "dom/articulation.h"
 #include "dom/mmrestrange.h"
 #include "dom/mscore.h"
 #include "dom/realizedharmony.h"
 #include "dom/stafftype.h"
 #include "dom/tuplet.h"
-#include "styledef.h"
+#include "engraving/style/styletypes.h"
 #include "types/types.h"
 
 using namespace mu::engraving;

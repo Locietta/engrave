@@ -35,4 +35,3 @@ add_requires("fdk-aac 2.0.3", {system = false})
 add_requires("pugixml 1.15", {system = false})
 add_requires("utfcpp v4.1.1", {system = false})
 add_requires("picojson 111c9be", {system = false})
-

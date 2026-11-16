@@ -5,6 +5,7 @@ import io
 import json
 import shutil
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -13,7 +14,7 @@ from engrave_testing import golden as g
 from engrave_testing.dependencies import validate_dependencies
 from engrave_testing.inventory import validate_actual, validate_allow_usage, validate_baseline
 from engrave_testing.paths import REPO_ROOT
-from engrave_testing.public_output import compare
+from engrave_testing.public_output import compare, describe_render, describe_render_pdf, run_capture_pipeline
 
 TEST_ROOT = REPO_ROOT / "tests"
 PLATFORM = "windows"
@@ -214,6 +215,48 @@ class InventoryMutations(unittest.TestCase):
         with patch("engrave_testing.dependencies.version", return_value="wrong"):
             with self.assertRaisesRegex(RuntimeError, "PyMuPDF: installed wrong, required 2.0"):
                 validate_dependencies()
+
+    def test_render_pdf_deferred_to_caller_thread(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            raw_split = root / "raw-split"
+            raw_full = root / "raw-full"
+            out_split = root / "out-split"
+            out_full = root / "out-full"
+            for folder in (raw_split, raw_full, out_split, out_full):
+                folder.mkdir()
+            for raw in (raw_split, raw_full):
+                (raw / "page-0.svg").write_text("<svg/>", encoding="utf-8")
+                (raw / "score.pdf").write_bytes(b"%PDF-mock")
+
+            seen_threads = []
+
+            def fake_describe_pdf(path: Path) -> dict:
+                seen_threads.append(threading.current_thread())
+                return {"pages": 1, "bytes": path.stat().st_size, "sha256": g.sha256(path.read_bytes())}
+
+            with patch("engrave_testing.public_output.describe_pdf", side_effect=fake_describe_pdf):
+                worker_threads = []
+
+                def worker(tag: str):
+                    worker_threads.append(threading.current_thread())
+                    if tag == "split":
+                        return describe_render(raw_split, out_split, include_pdf=False)
+                    return []
+
+                def finalize(names):
+                    return [*names, *describe_render_pdf(raw_split, out_split)]
+
+                results = run_capture_pipeline(["split", "other"], worker, finalize, max_workers=2)
+                full_names = describe_render(raw_full, out_full)
+
+            self.assertEqual(results[0], full_names)
+            self.assertEqual(seen_threads, [threading.main_thread(), threading.main_thread(), threading.main_thread()])
+            self.assertTrue(any(thread is not threading.main_thread() for thread in worker_threads))
+            self.assertEqual(
+                (out_split / "score.pdf.json").read_text(encoding="utf-8"),
+                (out_full / "score.pdf.json").read_text(encoding="utf-8"),
+            )
 
 
 if __name__ == "__main__":

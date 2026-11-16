@@ -1,4 +1,3 @@
-#include "engraving/dom/scoreorder.h"
 /*
  * SPDX-License-Identifier: GPL-3.0-only
  * MuseScore-Studio-CLA-applies
@@ -20,6 +19,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+#include "writer.h"
+
 #include "../inoutdata.h"
 #include "../types/types.h"
 #include "../xmlwriter.h"
@@ -27,13 +28,13 @@
 #include "dom/masterscore.h"
 #include "dom/part.h"
 #include "dom/score.h"
+#include "dom/scoreorder.h"
 #include "dom/segment.h"
 #include "dom/staff.h"
 #include "global/appinfo.h"
 #include "log.h"
 #include "staffwrite.h"
 #include "twrite.h"
-#include "writer.h"
 
 using namespace muse;
 using namespace mu::engraving;

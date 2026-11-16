@@ -20,7 +20,7 @@ set_targetdir("$(builddir)")
 includes("xmake/rules/*.lua")
 ENGRAVE_BUILD_RULES_LOADED = true
 add_rules("mode.debug", "mode.release", "mode.releasedbg", "mode.asan",
-    "build.ccache", "toolchain.lld", "ci.test-output")
+    "build.ccache", "toolchain.lld")
 -- The profile runner shares build/.packages; xmake hashes package configurations
 -- so CRT and sanitizer variants remain separate. Always use the pinned sources.
 set_policy("package.install_locally", true)

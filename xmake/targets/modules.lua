@@ -230,4 +230,3 @@ target("muse_audio_engine")
         engine("muse/framework/audio/engine/internal/**.cpp|synthesizers/fluidsynth/fluidsequencer.cpp")
     )
 target_end()
-
