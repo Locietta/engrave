@@ -12,9 +12,9 @@ a changed count, an unexpected skip or a disabled test also fail the lane. With
 an explicit ``--filter`` the subset size is unknown but zero tests, skips and
 disabled tests still fail.
 
-The independent binaries run concurrently (``-j/--jobs``); each keeps its own
-temporary working directory and its captured output is reported in a fixed
-suite order, so failures never depend on completion order.
+By default the binaries run serially (`--jobs 1`) so playback timing assertions
+do not contend with MPE checks; each run uses its own temporary working
+directory and buffered output is reported in a fixed suite order.
 """
 
 from __future__ import annotations
@@ -301,8 +301,8 @@ def main():
         "-j",
         "--jobs",
         type=int,
-        default=max(1, min(2, os.cpu_count() or 1)),
-        help="Test binaries to run concurrently (default: min(2, CPU count))",
+        default=1,
+        help="Test binaries to run concurrently (default: 1 so playback timing checks run uncontended)",
     )
     parser.add_argument(
         "--verbose",

@@ -366,8 +366,9 @@ def main():
             a.engine_source / "src/engraving/tests",
             "--output",
             a.output / "gtest",
+            # Keep engraving_playback_tests serial relative to mpe_tests for its 2.5 ms timing check.
             "--jobs",
-            str(a.test_jobs),
+            "1",
         ],
     )
     # These pinned engine tests still read cwd-relative fixtures and engine data.
