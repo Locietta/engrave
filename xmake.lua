@@ -17,10 +17,12 @@ set_xmakever("3.1.1")
 set_version("0.1.0")
 set_languages("cxx23")
 set_targetdir("$(builddir)")
-add_rules("mode.debug", "mode.release", "mode.releasedbg")
--- Packages install into the project (.xmake, gitignored) so a checkout is
--- self-contained, and everything is built from source: a precompiled artifact
--- could carry a different CRT or feature set than the pinned recipe asks for.
+includes("xmake/rules/*.lua")
+ENGRAVE_BUILD_RULES_LOADED = true
+add_rules("mode.debug", "mode.release", "mode.releasedbg", "mode.asan",
+    "build.ccache", "toolchain.lld", "ci.test-output")
+-- The profile runner shares build/.packages; xmake hashes package configurations
+-- so CRT and sanitizer variants remain separate. Always use the pinned sources.
 set_policy("package.install_locally", true)
 set_policy("package.precompiled", false)
 
