@@ -33,9 +33,8 @@ struct AddSpanner {
 // when the note is already tied, when nothing follows it, or when the note it
 // would tie to already has a tie.
 //
-// A tie has no id the document hands out (an id is a persisted handle, and a tie
-// is rebuilt from its notes on read), so it is not in created/removed and an
-// OpRef to it is StaleHandle.
+// The created tie takes a persisted id, so it appears in OpResult::created and
+// EditResult::created and can be addressed by id or OpRef.
 struct AddTie {
     Ref note;
 };
