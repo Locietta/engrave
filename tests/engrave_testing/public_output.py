@@ -75,8 +75,10 @@ def compare(
     platform: str,
     counts: dict,
     matched_allow: set | None = None,
+    inventory: dict | None = None,
 ) -> None:
-    inventory = validate_baseline(golden_root)
+    if inventory is None:
+        inventory = validate_baseline(golden_root)
     validate_actual(fixture, out, names, inventory)
     local_matched = set()
     for name in names:

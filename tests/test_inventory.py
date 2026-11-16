@@ -16,23 +16,47 @@ from engrave_testing.paths import REPO_ROOT
 from engrave_testing.public_output import compare
 
 TEST_ROOT = REPO_ROOT / "tests"
+PLATFORM = "windows"
+FIXTURE = "bend.gp"
+
+
+def temporary_directory() -> tempfile.TemporaryDirectory:
+    """Keep copies on the checkout volume: hashing a freshly copied baseline in
+    the OS temp directory dominates the suite runtime on this platform."""
+    build = REPO_ROOT / "build"
+    try:
+        build.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        build = None
+    return tempfile.TemporaryDirectory(dir=build)
 
 
 class InventoryMutations(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # The shared baseline is read-only: only the two golden-mutating tests
+        # allocate an isolated copy.
+        cls.golden = TEST_ROOT / "data/golden" / PLATFORM
+        cls.inventory = validate_baseline(cls.golden)
+        cls.names = cls.inventory[FIXTURE]
+
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory()
+        self.temp = temporary_directory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
-        self.golden = self.root / "golden/windows"
-        shutil.copytree(TEST_ROOT / "data/golden/windows", self.golden)
-        shutil.copyfile(TEST_ROOT / "data/gate-inventory.json", self.root / "gate-inventory.json")
-        self.inventory = validate_baseline(self.golden)
-        self.fixture = "bend.gp"
-        self.names = self.inventory[self.fixture]
+        self.fixture = FIXTURE
         self.actual = self.root / "actual"
         self.actual.mkdir()
         for name in self.names:
             shutil.copyfile(self.golden / self.fixture / name, self.actual / name)
+
+    def isolated_golden(self) -> Path:
+        root = self.root / "isolated"
+        golden = root / "golden" / PLATFORM
+        shutil.copytree(type(self).golden, golden)
+        shutil.copyfile(TEST_ROOT / "data/gate-inventory.json", root / "gate-inventory.json")
+        self.golden = golden
+        return golden
 
     def test_valid(self):
         validate_actual(self.fixture, self.actual, self.names, self.inventory)
@@ -46,7 +70,14 @@ class InventoryMutations(unittest.TestCase):
                     validate_actual(self.fixture, self.actual, [n for n in self.names if n != name], self.inventory)
                 with self.assertRaises(ValueError):
                     compare(
-                        self.golden, self.fixture, self.actual, [n for n in self.names if n != name], [], "windows", {}
+                        self.golden,
+                        self.fixture,
+                        self.actual,
+                        [n for n in self.names if n != name],
+                        [],
+                        PLATFORM,
+                        {},
+                        inventory=self.inventory,
                     )
                 (self.actual / name).write_bytes(data)
 
@@ -56,22 +87,24 @@ class InventoryMutations(unittest.TestCase):
             validate_actual(self.fixture, self.actual, self.names, self.inventory)
 
     def test_wrong_index(self):
-        index = json.loads((self.golden / "index.json").read_text())
+        golden = self.isolated_golden()
+        index = json.loads((golden / "index.json").read_text())
         index[self.fixture]["score.mscx"] = "0" * 64
-        (self.golden / "index.json").write_text(json.dumps(index))
+        (golden / "index.json").write_text(json.dumps(index))
         with self.assertRaises(ValueError):
-            validate_baseline(self.golden)
+            validate_baseline(golden)
         with self.assertRaises(ValueError):
-            compare(self.golden, self.fixture, self.actual, self.names, [], "windows", {})
+            compare(golden, self.fixture, self.actual, self.names, [], PLATFORM, {})
 
     def test_unindexed_and_missing_baseline(self):
-        (self.golden / self.fixture / "unexpected").touch()
+        golden = self.isolated_golden()
+        (golden / self.fixture / "unexpected").touch()
         with self.assertRaises(ValueError):
-            validate_baseline(self.golden)
-        (self.golden / self.fixture / "unexpected").unlink()
-        (self.golden / self.fixture / "score.pdf.json").unlink()
+            validate_baseline(golden)
+        (golden / self.fixture / "unexpected").unlink()
+        (golden / self.fixture / "score.pdf.json").unlink()
         with self.assertRaises(ValueError):
-            validate_baseline(self.golden)
+            validate_baseline(golden)
 
     def test_changed_and_hash_mismatched_allow(self):
         path = self.actual / "score.musicxml"
@@ -91,15 +124,42 @@ class InventoryMutations(unittest.TestCase):
             with contextlib.redirect_stdout(io.StringIO()):
                 if policy:
                     with self.assertRaisesRegex(ValueError, "unused"):
-                        compare(self.golden, self.fixture, self.actual, self.names, policy, "windows", counts)
+                        compare(
+                            self.golden,
+                            self.fixture,
+                            self.actual,
+                            self.names,
+                            policy,
+                            PLATFORM,
+                            counts,
+                            inventory=self.inventory,
+                        )
                 else:
-                    compare(self.golden, self.fixture, self.actual, self.names, policy, "windows", counts)
+                    compare(
+                        self.golden,
+                        self.fixture,
+                        self.actual,
+                        self.names,
+                        policy,
+                        PLATFORM,
+                        counts,
+                        inventory=self.inventory,
+                    )
             self.assertEqual(counts["different"], 1)
 
     def test_comparator_extra(self):
         (self.actual / "unexpected").touch()
         with self.assertRaisesRegex(ValueError, "inventory mismatch"):
-            compare(self.golden, self.fixture, self.actual, self.names, [], "windows", {})
+            compare(
+                self.golden,
+                self.fixture,
+                self.actual,
+                self.names,
+                [],
+                PLATFORM,
+                {},
+                inventory=self.inventory,
+            )
 
     def test_stale_selected_allowance(self):
         allow = [
@@ -114,7 +174,16 @@ class InventoryMutations(unittest.TestCase):
         ]
         counts = dict(identical=0, allowed=0, different=0, **{"missing-golden": 0})
         with contextlib.redirect_stdout(io.StringIO()), self.assertRaisesRegex(ValueError, "unused"):
-            compare(self.golden, self.fixture, self.actual, self.names, allow, "windows", counts)
+            compare(
+                self.golden,
+                self.fixture,
+                self.actual,
+                self.names,
+                allow,
+                PLATFORM,
+                counts,
+                inventory=self.inventory,
+            )
 
     def test_changed_fixture(self):
         inputs = self.root / "inputs"
@@ -122,7 +191,9 @@ class InventoryMutations(unittest.TestCase):
         with (inputs / self.fixture).open("ab") as stream:
             stream.write(b"\n")
         with patch.object(g, "FIXTURE_DIR", inputs), self.assertRaisesRegex(ValueError, "input fixture changed"):
-            compare(self.golden, self.fixture, self.actual, self.names, [], "windows", {})
+            # No cached inventory here: the default compare path must revalidate
+            # the baseline before it compares any artifact.
+            compare(self.golden, self.fixture, self.actual, self.names, [], PLATFORM, {})
 
     def test_manifest_source_commit(self):
         manifest = self.root / "tests/data/golden/inputs.json"
@@ -134,14 +205,12 @@ class InventoryMutations(unittest.TestCase):
             validate_baseline(self.golden)
 
     def test_full_gate_rejects_allowance_outside_inventory(self):
-
         allowance = [{"fixture": "unselected", "output": "unexpected", "sha256": {"windows": "0" * 64}}]
         with self.assertRaisesRegex(ValueError, "unused"):
             validate_allow_usage(allowance, set(), "windows")
         validate_allow_usage(allowance, set(), "linux")
 
     def test_dependency_mismatch(self):
-
         with patch("engrave_testing.dependencies.version", return_value="wrong"):
             with self.assertRaisesRegex(RuntimeError, "PyMuPDF: installed wrong, required 2.0"):
                 validate_dependencies()
