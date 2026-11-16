@@ -146,7 +146,9 @@
 #include "../compat/tremolocompat.h"
 #include "../readchild.h"
 #include "../xmlreader.h"
+#include "engraving/dom/dummyparent.h"
 #include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
+#include "engraving/style/styletypes.h"
 #include "log.h"
 #include "readcontext.h"
 

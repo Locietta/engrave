@@ -24,6 +24,7 @@
 #include <cmath>
 
 #include "engraving/internal/engravingfont.h"
+#include "engraving/style/styletypes.h"
 #include "log.h"
 #include "score.h"
 #include "system.h"

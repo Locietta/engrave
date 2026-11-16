@@ -23,6 +23,7 @@
 #include "stafftext.h"
 
 #include "../editing/addremoveelement.h"
+#include "engraving/style/styletypes.h"
 #include "log.h"
 #include "score.h"
 #include "segment.h"

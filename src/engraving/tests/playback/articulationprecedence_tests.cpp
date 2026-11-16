@@ -12,6 +12,7 @@
 #include "audio/engine/internal/synthesizers/fluidsynth/soundmapping.h"
 #include "engrave/src/runtime/resource_filesystem.h"
 #include "engraving/dom/chord.h"
+#include "engraving/dom/dummyparent.h"
 #include "engraving/dom/factory.h"
 #include "engraving/dom/guitarbend.h"
 #include "engraving/dom/masterscore.h"

@@ -22,6 +22,7 @@
 
 #include "harmonicmark.h"
 
+#include "engraving/style/styletypes.h"
 #include "score.h"
 #include "system.h"
 #include "text.h"

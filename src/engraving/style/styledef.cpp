@@ -1,3 +1,4 @@
+#include "engraving/style/styletypes.h"
 /*
  * SPDX-License-Identifier: GPL-3.0-only
  * MuseScore-Studio-CLA-applies
@@ -20,14 +21,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "styledef.h"
-
+#include "../dom/mscore.h"
 #include "dom/articulation.h"
 #include "dom/mmrestrange.h"
 #include "dom/mscore.h"
 #include "dom/realizedharmony.h"
 #include "dom/stafftype.h"
 #include "dom/tuplet.h"
+#include "styledef.h"
 #include "types/types.h"
 
 using namespace mu::engraving;
@@ -2260,3 +2261,13 @@ const std::array<StyleDef::StyleValue, size_t(Sid::STYLES)> StyleDef::style_valu
 }};
 
 #undef styleDef
+
+namespace mu::engraving {
+double StyleDef::default_smufl_point_size() {
+    const double default_spatium = ::mu::engraving::StyleDef::style_values[static_cast<size_t>(Sid::SPATIUM)].default_value.to_double();
+    const double default_spatium_in_point_units = default_spatium / mu::engraving::dpi * mu::engraving::ppi;
+    const double default_smufl_point_size = 4 * default_spatium_in_point_units; // By Smufl spec the spatium is 1/4 of the em
+
+    return default_smufl_point_size;
+}
+} // namespace mu::engraving

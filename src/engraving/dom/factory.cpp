@@ -40,6 +40,7 @@
 #include "chordline.h"
 #include "deadslapped.h"
 #include "dynamic.h"
+#include "engraving/dom/dummyparent.h"
 #include "expression.h"
 #include "fermata.h"
 #include "figuredbass.h"

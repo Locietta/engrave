@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "../style/styledef.h"
+#include "../style/sid.h"
 
 namespace mu::engraving {
 struct Score;

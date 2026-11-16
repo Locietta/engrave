@@ -24,6 +24,7 @@
 
 #include <climits>
 
+#include "engraving/dom/dummyparent.h"
 #include "factory.h"
 #include "figuredbass.h"
 #include "fret.h"

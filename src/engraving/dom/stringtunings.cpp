@@ -24,6 +24,7 @@
 
 #include "../editing/editpart.h"
 #include "containers.h"
+#include "engraving/style/styletypes.h"
 #include "log.h"
 #include "part.h"
 #include "score.h"

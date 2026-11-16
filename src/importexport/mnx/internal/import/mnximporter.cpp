@@ -31,6 +31,7 @@
 #include "engraving/dom/bracketitem.h"
 #include "engraving/dom/clef.h"
 #include "engraving/dom/drumset.h"
+#include "engraving/dom/dummyparent.h"
 #include "engraving/dom/factory.h"
 #include "engraving/dom/instrtemplate.h"
 #include "engraving/dom/jump.h"

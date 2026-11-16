@@ -37,6 +37,7 @@
 #include "engraving/dom/chord.h"
 #include "engraving/dom/clef.h"
 #include "engraving/dom/drumset.h"
+#include "engraving/dom/dummyparent.h"
 #include "engraving/dom/factory.h"
 #include "engraving/dom/key.h"
 #include "engraving/dom/masterscore.h"

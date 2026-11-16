@@ -38,6 +38,7 @@
 #include "dom/stafflines.h"
 #include "dom/system.h"
 #include "dom/textlinebase.h"
+#include "engraving/style/styletypes.h"
 #include "log.h"
 
 using namespace mu::engraving;

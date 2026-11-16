@@ -26,6 +26,7 @@
 
 #include "../types/types.h"
 #include "instrument.h"
+#include "mscore.h"
 
 namespace mu::engraving {
 struct Staff;

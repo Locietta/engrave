@@ -22,6 +22,7 @@
 #include "continiouselementsbuilder.h"
 
 #include "engraving/dom/chordrest.h"
+#include "engraving/dom/dummyparent.h"
 #include "engraving/dom/factory.h"
 #include "engraving/dom/hairpin.h"
 #include "engraving/dom/ottava.h"

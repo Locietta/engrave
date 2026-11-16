@@ -38,6 +38,7 @@
 #include "dom/trill.h"
 #include "dom/utils.h"
 #include "editing/addremoveelement.h"
+#include "engraving/dom/dummyparent.h"
 #include "rendering/score/chordlayout.h"
 #include "rendering/score/layoutdatastore.h"
 

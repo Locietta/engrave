@@ -28,6 +28,7 @@
 #include "dom/score.h"
 #include "dom/staff.h"
 #include "dom/stringdata.h"
+#include "engraving/dom/guitarbend.h"
 
 namespace mu::engraving {
 // static

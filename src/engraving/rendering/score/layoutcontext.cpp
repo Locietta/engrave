@@ -29,6 +29,8 @@
 #include "editing/editpagelocks.h"
 #include "editing/editsystemlocks.h"
 #include "editing/transaction/transaction.h"
+#include "engraving/dom/dummyparent.h"
+#include "engraving/rendering/paddingtable.h"
 #include "log.h"
 #include "scorerenderer.h"
 #include "style/defaultstyle.h"

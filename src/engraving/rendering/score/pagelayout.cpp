@@ -49,6 +49,7 @@
 #include "dom/tremolosinglechord.h"
 #include "dom/tremolotwochord.h"
 #include "dom/tuplet.h"
+#include "engraving/dom/dummyparent.h"
 #include "headerfooterlayout.h"
 #include "log.h"
 #include "masklayout.h"

@@ -25,6 +25,7 @@
 #include "../editing/transaction/transaction.h"
 #include "../types/typesconv.h"
 #include "barline.h"
+#include "engraving/style/styletypes.h"
 #include "measure.h"
 #include "score.h"
 

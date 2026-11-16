@@ -37,20 +37,16 @@
 #include "../editing/cmd.h"
 #include "../engravingservices.h"
 #include "../rendering/layoutoptions.h"
-#include "../rendering/paddingtable.h"
 #include "../style/pagestyle.h"
 #include "../style/style.h"
 #include "../types/constants.h"
 #include "chordlist.h"
-#include "dummyparent.h"
 #include "global/types/ret.h"
-#include "guitarbend.h"
 #include "input.h"
 #include "mscore.h"
 #include "normalization/normalize.h"
 #include "property.h"
 #include "rangelock.h"
-#include "scoreorder.h"
 #include "segment.h"
 #include "select.h"
 #include "spannermap.h"
@@ -90,6 +86,11 @@ struct WriteScoreHook;
 } // namespace mu::engraving::compat
 
 namespace mu::engraving {
+struct ScoreOrder;
+struct PaddingTables;
+struct DummyParent;
+struct GuitarBend;
+enum class GuitarBendType : unsigned char;
 struct StringTunings;
 struct StringData;
 struct Instrument;
@@ -868,7 +869,7 @@ public:
 
     void update_padding_tables();
 
-    const PaddingTables &padding_tables() const { return padding_tables_; }
+    const PaddingTables &padding_tables() const;
 
     const RangeLocks *system_locks() const { return &system_locks_; }
 
@@ -1005,7 +1006,7 @@ private:
 
     ShowAnchors show_anchors_;
 
-    ScoreOrder score_order_;                   // used for score ordering
+    std::unique_ptr<ScoreOrder> score_order_;
     int msc_version_ = Constants::msc_version; // version of current loading *.msc file
 
     bool is_open_ = false;
@@ -1018,7 +1019,7 @@ private:
     DummyParent *dummy_ = nullptr;
     LayoutOptions layout_options_;
 
-    PaddingTables padding_tables_;
+    std::unique_ptr<PaddingTables> padding_tables_;
     double minimum_padding_unit_ = 0.0;
 };
 

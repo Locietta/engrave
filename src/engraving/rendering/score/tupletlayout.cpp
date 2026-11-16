@@ -32,6 +32,7 @@
 #include "dom/system.h"
 #include "dom/text.h"
 #include "dom/tuplet.h"
+#include "engraving/dom/dummyparent.h"
 #include "layoutdatastore.h"
 #include "log.h"
 #include "tlayout.h"

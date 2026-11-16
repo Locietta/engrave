@@ -39,6 +39,7 @@
 #include "engraving/dom/segment.h"
 #include "engraving/dom/staff.h"
 #include "engraving/engravingproject.h"
+#include "engraving/style/styletypes.h"
 #include "engraving/types/groupnode.h"
 #include "engraving/types/pitchvalue.h"
 #include "engraving/types/typesconv.h"

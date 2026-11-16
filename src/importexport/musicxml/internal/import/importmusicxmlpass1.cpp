@@ -26,6 +26,7 @@
 #include "../shared/musicxmltypes.h"
 #include "engraving/dom/box.h"
 #include "engraving/dom/bracketitem.h"
+#include "engraving/dom/dummyparent.h"
 #include "engraving/dom/factory.h"
 #include "engraving/dom/layoutbreak.h"
 #include "engraving/dom/measure.h"

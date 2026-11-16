@@ -25,6 +25,7 @@
 #include <cstdlib>
 #include <vector>
 
+#include "engraving/dom/dummyparent.h"
 #include "engraving/dom/factory.h"
 #include "engraving/dom/key.h"
 #include "engraving/dom/keylist.h"

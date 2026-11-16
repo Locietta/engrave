@@ -24,6 +24,7 @@
 
 #include "draw/fontmetrics.h"
 #include "engraving/internal/engravingconfiguration.h"
+#include "engraving/style/styletypes.h"
 #include "mscore.h"
 #include "score.h"
 #include "staff.h"

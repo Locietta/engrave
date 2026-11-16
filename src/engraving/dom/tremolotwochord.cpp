@@ -24,6 +24,7 @@
 
 #include "chord.h"
 #include "draw/types/transform.h"
+#include "engraving/style/styletypes.h"
 #include "log.h"
 #include "masterscore.h"
 #include "rendering/score/beamtremololayout.h"

@@ -38,6 +38,7 @@
 #include "dom/staff.h"
 #include "dom/system.h"
 #include "dom/timesig.h"
+#include "engraving/dom/dummyparent.h"
 #include "layoutdatastore.h"
 #include "measurelayout.h"
 #include "scorerenderer.h"

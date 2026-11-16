@@ -23,6 +23,7 @@
 #include "hammeronpulloff.h"
 
 #include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
+#include "engraving/style/styletypes.h"
 #include "mscore.h"
 #include "note.h"
 #include "score.h"

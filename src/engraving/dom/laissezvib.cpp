@@ -23,6 +23,7 @@
 #include "laissezvib.h"
 
 #include "chord.h"
+#include "engraving/style/styletypes.h"
 #include "measure.h"
 #include "note.h"
 #include "score.h"

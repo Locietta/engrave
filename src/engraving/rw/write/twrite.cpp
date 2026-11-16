@@ -146,8 +146,10 @@
 #include "dom/volta.h"
 #include "dom/whammybar.h"
 #include "editing/transpose.h"
+#include "engraving/dom/dummyparent.h"
 #include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
 #include "engraving/internal/engravingfont.h"
+#include "engraving/style/styletypes.h"
 #include "global/serialization/textstream.h"
 #include "infrastructure/eidregister.h"
 #include "log.h"

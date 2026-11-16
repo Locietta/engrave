@@ -26,6 +26,7 @@
 
 #include "draw/types/transform.h"
 #include "dynamic.h"
+#include "engraving/style/styletypes.h"
 #include "measure.h"
 #include "rendering/score/layoutdatastore.h"
 #include "score.h"

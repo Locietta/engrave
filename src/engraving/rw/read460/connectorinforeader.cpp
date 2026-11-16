@@ -35,6 +35,7 @@
 #include "../../infrastructure/rtti.h"
 #include "../types/typesconv.h"
 #include "../xmlreader.h"
+#include "engraving/dom/dummyparent.h"
 #include "log.h"
 #include "tread.h"
 

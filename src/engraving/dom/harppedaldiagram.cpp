@@ -22,6 +22,7 @@
 
 #include "harppedaldiagram.h"
 
+#include "engraving/style/styletypes.h"
 #include "log.h"
 #include "part.h"
 #include "score.h"

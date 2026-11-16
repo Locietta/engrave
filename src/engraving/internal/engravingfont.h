@@ -20,18 +20,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #pragma once
-
 #include <memory>
 #include <unordered_map>
 
 #include "draw/types/font.h"
 #include "draw/types/geometry.h"
+#include "engraving/types/propertyvalue.h"
 #include "global/types/string.h"
 #include "infrastructure/shape.h"
 #include "infrastructure/smufl.h"
 #include "io/iodevice.h"
 #include "io/path.h"
-#include "style/styledef.h"
+#include "style/sid.h"
 #include "types/symid.h"
 
 namespace muse {

@@ -32,6 +32,7 @@
 #include "../dom/score.h"
 #include "../dom/staff.h"
 #include "../style/style.h"
+#include "engraving/dom/dummyparent.h"
 
 using namespace muse;
 using namespace mu;

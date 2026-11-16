@@ -73,3 +73,9 @@ std::string_view to_string(AudioFormat format) noexcept {
 }
 
 } // namespace engrave
+
+namespace engrave {
+std::filesystem::path path_from_utf8(std::string_view text) {
+    return std::u8string(reinterpret_cast<const char8_t *>(text.data()), text.size());
+}
+} // namespace engrave

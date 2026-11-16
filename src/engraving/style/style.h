@@ -28,7 +28,7 @@
 #include "../types/propertyvalue.h"
 #include "../types/spatium.h"
 #include "global/io/iodevice.h"
-#include "styledef.h"
+#include "sid.h"
 
 namespace mu::engraving::compat {
 struct ReadChordListHook;

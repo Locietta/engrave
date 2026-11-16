@@ -1,3 +1,4 @@
+#include "engraving/style/styletypes.h"
 /*
  * SPDX-License-Identifier: GPL-3.0-only
  * MuseScore-Studio-CLA-applies
@@ -20,8 +21,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "engravingobject.h"
-
 #include <algorithm>
 #include <memory>
 
@@ -32,6 +31,7 @@
 #include "chord.h"
 #include "chordline.h"
 #include "dummyparent.h"
+#include "engravingobject.h"
 #include "global/containers.h"
 #include "linkedobjects.h"
 #include "log.h"
@@ -46,7 +46,10 @@ using namespace mu;
 using namespace mu::engraving;
 
 namespace mu::engraving {
-ElementStyle const EngravingObject::empty_style;
+const ElementStyle &EngravingObject::empty_style() {
+    static const ElementStyle style;
+    return style;
+}
 
 EngravingObject::EngravingObject(const ElementType &type, EngravingObject *parent) : type_(type) {
     IF_ASSERT_FAILED(this != parent) { return; }
@@ -71,7 +74,7 @@ EngravingObject::EngravingObject(const EngravingObject &se) {
     type_ = se.type_;
     do_set_parent(se.parent_);
     score_ = se.score_;
-    element_style_ = se.element_style_;
+    element_style_ = se.styled_properties();
     if (element_style_) {
         size_t n = element_style_->size();
         property_flags_list_ = new PropertyFlags[n];
@@ -298,7 +301,7 @@ void EngravingObject::init_element_style(const ElementStyle *ss) {
     for (size_t i = 0; i < n; ++i) {
         property_flags_list_[i] = PropertyFlags::STYLED;
     }
-    for (const StyledProperty &spp : *element_style_) {
+    for (const StyledProperty &spp : *styled_properties()) {
         //            setProperty(spp.pid, styleValue(spp.pid, spp.sid));
         set_property(spp.pid, style_value(spp.pid, get_property_style(spp.pid)));
     }
@@ -596,7 +599,7 @@ std::list<EngravingObject *> EngravingObject::link_list() const {
 
 int EngravingObject::get_property_flags_idx(Pid id) const {
     int i = 0;
-    for (const StyledProperty &p : *element_style_) {
+    for (const StyledProperty &p : *styled_properties()) {
         if (p.pid == id) {
             return i;
         }
@@ -645,7 +648,7 @@ void EngravingObject::set_property_flags(Pid id, PropertyFlags f) {
 //---------------------------------------------------------
 
 Sid EngravingObject::get_property_style(Pid id) const {
-    for (const StyledProperty &p : *element_style_) {
+    for (const StyledProperty &p : *styled_properties()) {
         if (p.pid == id) {
             return p.sid;
         }
@@ -658,7 +661,7 @@ Sid EngravingObject::get_property_style(Pid id) const {
 //---------------------------------------------------------
 
 void EngravingObject::style_changed() {
-    for (const StyledProperty &spp : *element_style_) {
+    for (const StyledProperty &spp : *styled_properties()) {
         PropertyFlags f = property_flags(spp.pid);
         if (f == PropertyFlags::STYLED) {
             set_property(spp.pid, style_value(spp.pid, get_property_style(spp.pid)));

@@ -29,6 +29,7 @@
 #include "../dom/factory.h"
 #include "../dom/score.h"
 #include "../dom/staff.h"
+#include "engraving/dom/dummyparent.h"
 
 using namespace mu::engraving;
 

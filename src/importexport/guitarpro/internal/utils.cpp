@@ -22,6 +22,7 @@
 #include "utils.h"
 
 #include "engraving/dom/chord.h"
+#include "engraving/dom/dummyparent.h"
 #include "engraving/dom/factory.h"
 #include "engraving/dom/measure.h"
 #include "engraving/dom/note.h"

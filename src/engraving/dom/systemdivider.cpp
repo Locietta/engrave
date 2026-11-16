@@ -22,6 +22,7 @@
 
 #include "systemdivider.h"
 
+#include "engraving/style/styletypes.h"
 #include "score.h"
 #include "system.h"
 #include "types/symnames.h"

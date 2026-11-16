@@ -21,6 +21,8 @@
  */
 #include "stavesharinglabel.h"
 
+#include "engraving/style/styletypes.h"
+
 namespace mu::engraving {
 static const ElementStyle stave_sharing_label_element_style{
     {Sid::STAVE_SHARING_LABEL_PLACEMENT, Pid::PLACEMENT},

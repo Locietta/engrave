@@ -54,6 +54,7 @@ struct EngineContext {
     const mu::iex::musicxml::MusicXmlConfiguration &music_xml() const;
 
 private:
+    mutable std::unique_ptr<EngineAudio, void (*)(EngineAudio *)> audio_{nullptr, nullptr};
     struct Impl;
     std::unique_ptr<Impl> impl_;
 };

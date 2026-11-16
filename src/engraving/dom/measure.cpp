@@ -46,6 +46,7 @@
 #include "chord.h"
 #include "clef.h"
 #include "durationelement.h"
+#include "engraving/dom/dummyparent.h"
 #include "factory.h"
 #include "hook.h"
 #include "key.h"

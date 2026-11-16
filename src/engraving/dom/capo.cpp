@@ -22,6 +22,7 @@
 
 #include "capo.h"
 
+#include "engraving/style/styletypes.h"
 #include "score.h"
 #include "translation.h"
 

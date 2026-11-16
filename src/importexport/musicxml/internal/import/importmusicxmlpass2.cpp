@@ -47,6 +47,7 @@
 #include "engraving/dom/chordlist.h"
 #include "engraving/dom/chordrest.h"
 #include "engraving/dom/drumset.h"
+#include "engraving/dom/dummyparent.h"
 #include "engraving/dom/dynamic.h"
 #include "engraving/dom/factory.h"
 #include "engraving/dom/fermata.h"

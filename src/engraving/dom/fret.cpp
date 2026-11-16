@@ -25,6 +25,8 @@
 #include "../editing/addremoveelement.h"
 #include "anchors.h"
 #include "chord.h"
+#include "engraving/dom/dummyparent.h"
+#include "engraving/style/styletypes.h"
 #include "factory.h"
 #include "harmony.h"
 #include "io/file.h"

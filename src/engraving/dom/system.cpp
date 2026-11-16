@@ -33,6 +33,7 @@
 #include "bracket.h"
 #include "bracketitem.h"
 #include "chordrest.h"
+#include "engraving/dom/dummyparent.h"
 #include "factory.h"
 #include "log.h"
 #include "measure.h"

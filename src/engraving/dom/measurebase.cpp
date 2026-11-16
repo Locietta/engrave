@@ -25,6 +25,7 @@
 #include "../editing/editpagelocks.h"
 #include "../editing/editsystemlocks.h"
 #include "box.h"
+#include "engraving/dom/dummyparent.h"
 #include "factory.h"
 #include "layoutbreak.h"
 #include "log.h"

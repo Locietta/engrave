@@ -29,6 +29,7 @@
 #include "dom/mscore.h"
 #include "dom/pedal.h"
 #include "engraving/internal/engravingfontsprovider.h"
+#include "engraving/style/styletypes.h"
 #include "log.h"
 #include "rw/compat/compatutils.h"
 #include "rw/compat/readchordlisthook.h"

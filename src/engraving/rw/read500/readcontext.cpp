@@ -26,6 +26,7 @@
 #include "dom/measure.h"
 #include "dom/note.h"
 #include "dom/score.h"
+#include "engraving/dom/dummyparent.h"
 #include "log.h"
 
 using namespace mu::engraving;

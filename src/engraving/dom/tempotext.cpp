@@ -27,6 +27,7 @@
 #include <unordered_map>
 
 #include "containers.h"
+#include "engraving/style/styletypes.h"
 #include "log.h"
 #include "score.h"
 #include "segment.h"

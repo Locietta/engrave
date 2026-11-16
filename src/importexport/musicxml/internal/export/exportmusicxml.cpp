@@ -55,6 +55,7 @@
 #include "engraving/dom/chordline.h"
 #include "engraving/dom/clef.h"
 #include "engraving/dom/drumset.h"
+#include "engraving/dom/dummyparent.h"
 #include "engraving/dom/dynamic.h"
 #include "engraving/dom/engravingitem.h"
 #include "engraving/dom/factory.h"

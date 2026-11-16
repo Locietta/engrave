@@ -32,6 +32,7 @@
 #include "chord.h"
 #include "containers.h"
 #include "editing/transaction/transaction.h"
+#include "engraving/dom/dummyparent.h"
 #include "factory.h"
 #include "fret.h"
 #include "guitarbend.h"

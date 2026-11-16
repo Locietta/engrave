@@ -23,6 +23,7 @@
 #include "palmmute.h"
 
 #include "chordrest.h"
+#include "engraving/style/styletypes.h"
 #include "log.h"
 #include "part.h"
 #include "score.h"

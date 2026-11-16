@@ -21,12 +21,15 @@
  */
 #pragma once
 
-#include <string>
+#include <cassert>
+#include <type_traits>
 #include <typeinfo>
+#include <utility>
 
 #include "global/asserts.h"
 
 namespace mu::engraving {
+void report_bad_cast(const char *from, const char *to, const char *file, int line);
 #define DECLARE_CLASSOF(Type)                                                     \
 public:                                                                           \
     static bool classof(const ElementType type) noexcept { return type == Type; } \
@@ -52,8 +55,7 @@ To item_cast(From from, CastMode mode = CastMode::CHECK) noexcept {
         To casted = dynamic_cast<To>(from);
         if (mode == CastMode::CHECK) {
             if (!(casted || !from)) {
-                muse::diagnostics::assertion_failure(std::string("[BAD CAST] from: ") + typeid(From).name() + ", to: " + typeid(To).name(),
-                                                     __FILE__, __LINE__);
+                report_bad_cast(typeid(From).name(), typeid(To).name(), __FILE__, __LINE__);
             }
             assert(casted || !from);
         }

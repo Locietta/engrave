@@ -30,6 +30,7 @@
 #include "accidental.h"
 #include "chord.h"
 #include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
+#include "engraving/style/styletypes.h"
 #include "log.h"
 #include "note.h"
 #include "part.h"

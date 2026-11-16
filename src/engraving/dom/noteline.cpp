@@ -22,6 +22,7 @@
 
 #include "noteline.h"
 
+#include "engraving/style/styletypes.h"
 #include "note.h"
 #include "text.h"
 

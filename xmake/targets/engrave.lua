@@ -26,19 +26,38 @@ for _, list in ipairs({ENGRAVE_AUDIO_INCLUDES, ENGRAVE_INCLUDES}) do
     end
 end
 
-target("engrave")
+target("engrave_core")
     set_kind("static")
     add_packages("pugixml")
     add_packages("glaze", {public = true})
     if is_plat("windows") then add_cxxflags("/Zc:preprocessor") end
     add_deps("muse_generated", "muse_global", "muse_draw", "muse_mpe", "engraving",
-        "iex_musicxml", "iex_guitarpro", "iex_midi", "iex_mnx", "muse_audio_engine", "native_fluidsynth")
+        "iex_musicxml", "iex_guitarpro", "iex_midi", "iex_mnx")
     add_engine_target_defaults()
     add_includedirs(ENGRAVE_ADAPTER_INCLUDES)
-    add_files(path.join(engrave_src, "**.cpp|global/*.cpp|runtime/resource_filesystem.cpp|render/cairo_painter.cpp"))
+    add_files(path.join(engrave_src, "**.cpp|global/*.cpp|runtime/resource_filesystem.cpp|render/cairo_painter.cpp|audio/engine_audio.cpp|runtime/engine_context_audio.cpp|api/audio.cpp|api/soundfonts.cpp"))
     add_includedirs(ENGRAVE_PUBLIC_INCLUDES, {public = true})
     if not is_plat("windows") then
         add_links("m", {public = true})
     end
 target_end()
 
+target("engrave_audio")
+    set_kind("static")
+    add_deps("engrave_core", "muse_audio_engine", "native_fluidsynth")
+    add_packages("pugixml")
+    add_packages("glaze", {public = true})
+    if is_plat("windows") then add_cxxflags("/Zc:preprocessor") end
+    add_engine_target_defaults()
+    add_includedirs(ENGRAVE_ADAPTER_INCLUDES)
+    add_includedirs(ENGRAVE_PUBLIC_INCLUDES, {public = true})
+    add_files(path.join(engrave_src, "audio/engine_audio.cpp"),
+        path.join(engrave_src, "runtime/engine_context_audio.cpp"),
+        path.join(engrave_src, "api/audio.cpp"), path.join(engrave_src, "api/soundfonts.cpp"))
+    if not is_plat("windows") then add_links("m", {public = true}) end
+target_end()
+
+target("engrave")
+    set_kind("phony")
+    add_deps("engrave_core", "engrave_audio", {public = true})
+target_end()
