@@ -50,7 +50,8 @@ def default_bin_dir() -> Path:
     if os.environ.get("ENGRAVE_MCP_BIN_DIR"):
         return Path(os.environ["ENGRAVE_MCP_BIN_DIR"]).resolve()
     candidates = (
-        REPO_ROOT / "build" / "xmake-windows",
+        REPO_ROOT / "build" / "gate-release",
+        REPO_ROOT / "build" / "release",
         REPO_ROOT / "build",
         REPO_ROOT / "build" / "windows" / "x64" / "release",
         REPO_ROOT / "build" / "windows" / "x64" / "debug",
@@ -60,7 +61,7 @@ def default_bin_dir() -> Path:
     for c in candidates:
         if c.is_dir():
             return c.resolve()
-    return (REPO_ROOT / "build" / "xmake-windows").resolve()
+    return (REPO_ROOT / "build" / "gate-release").resolve()
 
 
 def default_assets_dir() -> Path:
@@ -257,7 +258,7 @@ def main():
         "--bin-dir",
         type=Path,
         default=default_bin_dir(),
-        help="Directory containing compiled test binaries (default: build/xmake-windows)",
+        help="Directory containing compiled test binaries (default: the first of build/gate-release, build/release and build that exists)",
     )
     parser.add_argument(
         "--assets",
