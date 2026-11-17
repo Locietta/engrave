@@ -55,6 +55,11 @@ def main():
         help="Build output directory (default: <engine-source>/build/gate-<profile>)",
     )
     p.add_argument(
+        "--ccachedir",
+        type=Path,
+        help="xmake compile cache directory (default: <engine-source>/build/.build_cache)",
+    )
+    p.add_argument(
         "--profile",
         choices=PROFILES,
         default="release",
@@ -80,12 +85,18 @@ def main():
         help="Force xmake f -c even when the isolated per-build-directory config can be reused",
     )
     p.add_argument("--skip-build", action="store_true", help="diagnostic rerun only")
+    p.add_argument(
+        "--quick",
+        action="store_true",
+        help="Skip exclusive timing checks (output-timing and dense-cancellation); use full gate at milestones",
+    )
     p.add_argument("--dual-capture", type=Path, help="old golden lane actual directory")
     a = p.parse_args()
     for key, value in vars(a).items():
         if isinstance(value, Path):
             setattr(a, key, value.resolve())
     a.build_dir = (a.build_dir or a.engine_source / "build" / ("gate-" + a.profile)).resolve()
+    a.ccachedir = (a.ccachedir or a.engine_source / "build" / ".build_cache").resolve()
     a.jobs = max(1, a.jobs)
     a.test_jobs = max(1, a.test_jobs)
     if (a.output / "actual").exists() or (a.output / "raw").exists():
@@ -219,10 +230,12 @@ def main():
         else:
             # Share built source packages across profiles/build dirs in this checkout.
             xmake_env["XMAKE_PKG_LOCALDIR"] = str(a.engine_source / "build/.packages")
+        a.ccachedir.mkdir(parents=True, exist_ok=True)
         stamp = {
             "manifest": manifest_fingerprint(manifest),
             "profile": a.profile,
             "build_dir": str(a.build_dir),
+            "ccachedir": str(a.ccachedir),
         }
         # Keep the stamp outside the config directory: `xmake f -c` may clear
         # that directory, and the next run must still see whether reuse is safe.
@@ -245,6 +258,7 @@ def main():
             "-o",
             a.build_dir,
             "--ccache=y",
+            "--ccachedir=" + str(a.ccachedir),
             "--engrave_tests=y",
             # Pinned inventories describe the harness-off build; a reused config must not keep it on.
             "--engrave_playback_harness=n",
@@ -578,16 +592,22 @@ def main():
     validate_allow_usage(allow, matched_allow, platform)
     # Exclusive timing lane: every parallel pool above has drained, so the
     # cancellation budgets, teardown timing, and audio render measure a quiet machine.
-    run(
-        "output-timing",
-        [a.build_dir / ("engrave_output_test" + suffix), *output_args, "--gtest_filter=" + shared_timing_tests],
-        cwd=a.output / "engrave_output_test",
-    )
-    run(
-        "dense-cancellation",
-        [a.build_dir / ("engrave_output_test" + suffix), *output_args, "--gtest_filter=" + dense_timing_test],
-        cwd=a.output / "engrave_output_test",
-    )
+    if a.quick:
+        print(
+            "quick mode: skipped output-timing and dense-cancellation timing checks (required at milestones)",
+            flush=True,
+        )
+    else:
+        run(
+            "output-timing",
+            [a.build_dir / ("engrave_output_test" + suffix), *output_args, "--gtest_filter=" + shared_timing_tests],
+            cwd=a.output / "engrave_output_test",
+        )
+        run(
+            "dense-cancellation",
+            [a.build_dir / ("engrave_output_test" + suffix), *output_args, "--gtest_filter=" + dense_timing_test],
+            cwd=a.output / "engrave_output_test",
+        )
     run(
         "engine-audio",
         [
@@ -617,6 +637,7 @@ def main():
         provenance=provenance,
         counts=counts,
         dual=dual,
+        quick=a.quick,
         seconds=round(time.monotonic() - start, 3),
         engine=subprocess.check_output(["git", "-C", str(a.engine_source), "rev-parse", "HEAD"], text=True).strip(),
     )
