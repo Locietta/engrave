@@ -84,7 +84,11 @@ def main():
         action="store_true",
         help="Force xmake f -c even when the isolated per-build-directory config can be reused",
     )
-    p.add_argument("--skip-build", action="store_true", help="diagnostic rerun only")
+    p.add_argument(
+        "--skip-build",
+        action="store_true",
+        help="use the engine_tests binaries already built in --build-dir, such as an embedding project's build",
+    )
     p.add_argument(
         "--quick",
         action="store_true",
