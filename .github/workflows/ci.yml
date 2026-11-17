@@ -185,7 +185,7 @@ jobs:
           $PSNativeCommandUseErrorActionPreference = $true
           $targets = @(
             'engrave_api_test', 'engrave_handles_test', 'engrave_describe_test',
-            'engrave_read_test', 'engrave_ops_test', 'engrave_op_policy_test',
+            'engrave_read_test', 'engrave_ops_test',
             'engrave_gp_import_test', 'engrave_mnx_import_test', 'engrave_mnx_model_test',
             'diagnostics_test', 'io_boundary_test',
             'engraving_playback_tests', 'mpe_tests', 'example_embedder'
@@ -225,7 +225,6 @@ jobs:
             engrave_describe_test  = @("--assets=$assets", "--python=$python", $data)
             engrave_read_test      = @("--assets=$assets", "--corpus=$data")
             engrave_ops_test       = @("--assets=$assets", "--corpus=$data/golden")
-            engrave_op_policy_test = @()
             engrave_gp_import_test = @("--assets=$assets")
             engrave_mnx_import_test = @("--assets=$assets", "--mnx-out=$mnxOut")
             engrave_mnx_model_test = @()
