@@ -196,59 +196,9 @@ def clice_project_root(files: list[Path]) -> Path | None:
     return None
 
 
-def extension_roots() -> list[Path]:
-    """Directories holding editor extensions, in the order to search them."""
-    roots = []
-    configured = os.environ.get("VSCODE_EXTENSIONS")
-    if configured:
-        roots.append(Path(configured))
-    home = Path.home()
-    for edition in (
-        ".vscode",
-        ".vscode-insiders",
-        ".vscode-server",
-        ".antigravity",
-        ".antigravity-ide",
-        ".cursor",
-        ".windsurf",
-    ):
-        roots.append(home / edition / "extensions")
-    # Portable and Scoop-style installs keep the extension tree inside the
-    # install's data directory; the editor's own executable says where that
-    # install is, which also covers an install on another drive.
-    for editor in ("code", "code-insiders", "codium", "antigravity", "antigravity-ide", "windsurf"):
-        executable = shutil.which(editor)
-        if not executable:
-            continue
-        for ancestor in Path(executable).resolve().parents:
-            roots.append(ancestor / "data" / "extensions")
-            roots += sorted((ancestor / "persist").glob("*/data/extensions"))
-    for variable in ("SCOOP", "SCOOP_GLOBAL"):
-        scoop = os.environ.get(variable)
-        if scoop:
-            for edition in ("vscode", "vscode-insiders", "antigravity", "cursor"):
-                roots.append(Path(scoop) / "persist" / edition / "data" / "extensions")
-    for variable in ("LOCALAPPDATA", "PROGRAMFILES", "PROGRAMFILES(X86)"):
-        base = os.environ.get(variable)
-        if base:
-            roots += sorted((Path(base) / "Programs").glob("*/data/extensions"))
-    return list(dict.fromkeys(roots))
-
-
-def clice_extension_binaries() -> list[Path]:
-    """The clice servers shipped inside editor extensions, newest first."""
-    if sys.platform != "win32":
-        return []
-    found: list[Path] = []
-    for root in extension_roots():
-        if not root.is_dir():
-            continue
-        for pattern in ("clice-io.clice-*/clice/bin/clice.exe", "clice-io.clice-*/clice/bin/clice"):
-            found += [path for path in root.glob(pattern) if path.is_file()]
-    return sorted(found, key=lambda path: path.parent.parent.parent.name, reverse=True)
-
-
 def find_clice() -> Path | None:
+    """A standalone clice: CLICE_BIN, else PATH. clice.toml needs clice 1.0+,
+    newer than the servers editor extensions bundle, so those are not searched."""
     configured = os.environ.get("CLICE_BIN")
     if configured:
         binary = Path(configured).expanduser()
@@ -256,11 +206,7 @@ def find_clice() -> Path | None:
             return binary
         print(f"format: CLICE_BIN={configured} is not a file", file=sys.stderr)
     on_path = shutil.which("clice")
-    if on_path:
-        return Path(on_path)
-    for binary in clice_extension_binaries():
-        return binary
-    return None
+    return Path(on_path) if on_path else None
 
 
 def declared_databases(workspace: Path) -> list[Path] | None:
@@ -328,9 +274,7 @@ def resolve_backend(requested: str, files: list[Path]) -> tuple[str, Path | None
     workspace = clice_project_root(files)
     if binary is None:
         if requested == "clice":
-            print(
-                "format: no clice binary (CLICE_BIN, PATH or an editor extension); using clang-format", file=sys.stderr
-            )
+            print("format: no clice binary (CLICE_BIN or PATH); using clang-format", file=sys.stderr)
         return "clang-format", None, None
     if workspace is None:
         if requested == "clice":
@@ -408,7 +352,7 @@ def run_clang_format(executable: str | None, files: list[Path], check: bool, job
 
 def run_clice_format(binary: Path, workspace: Path, files: list[Path], check: bool, jobs: int) -> int:
     jobs = worker_count(jobs)
-    prefix = [str(binary), "format", "--workspace", str(workspace), "--log-level", "error"]
+    prefix = [str(binary), "format", "--workspace", str(workspace)]
     if check:
         prefix.append("--check")
     # Spread the files over at most `jobs` processes; clice formats a batch's
