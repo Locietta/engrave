@@ -22,7 +22,7 @@ from pathlib import Path
 from style_files import ENGINE_ROOT, engine_files
 
 FORMATTERS = {
-    "clang-format": {".c", ".cc", ".cpp", ".cppm", ".cxx", ".h", ".hh", ".hpp", ".hxx"},
+    "clang-format": {".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".hxx"},
     "ruff": {".py", ".pyi"},
     "prettier": {".json", ".md", ".yaml", ".yml"},
     "taplo": {".toml"},
