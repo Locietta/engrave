@@ -54,24 +54,14 @@ Capabilities can be queried programmatically via `Engine::capabilities()`.
 
 - **xmake** >= 3.1.1
 - **C++23 Compiler**:
-  - Windows: MSVC (Visual Studio 2022 / Build Tools 17.10+) or clang-cl
-  - Linux: GCC 13+ or Clang 16+
+  - Windows: MSVC 14.51+ (Visual Studio 2026 / Build Tools)
+  - Linux: GCC 15+ (CI runs GCC 15.2 on `ubuntu-26.04`; validated on conda GCC 15.3) or Clang 23.1.4 (Pixi pin)
 - **Python** 3 and **Git** (for asset installation and manifest verification)
 - **[Pixi](https://pixi.sh/)**: cairo and zlib are the conda-forge builds pinned in `pixi.toml` / `pixi.lock`. Run `pixi install --locked` once; `xmake/engrave.lua` requires them as `pixi::cairo` and `pixi::zlib` through the Pixi package manager in `xmake/modules`. A project that includes `xmake/engrave.lua` provides them from its own `pixi.toml`. Windows binaries need `.pixi/envs/default/Library/bin` on `PATH` at run time; Linux binaries carry the environment's library directory as their run path.
 
 All other C/C++ third-party dependencies (FreeType, HarfBuzz, libflac, LAME, libopus, libopusenc, fdk-aac, pugixml, utfcpp, picojson, glaze, proxy, amc, unordered_dense) are built from pinned source recipes in `xmake/packages/`, an xmake package repository (`packages/<letter>/<name>/xmake.lua`, patches beside their recipe) that `xmake/engrave.lua` registers as `engrave-pinned` and that takes precedence over xmake-repo. `glaze` is the engine's only JSON library; MNX is read and written through a document model generated from the MNX schema (`docs/mnx.md`).
 
-### Build Commands
-
-#### Windows
-
-```pwsh
-pixi install --locked
-xmake f -m release
-xmake build engrave
-```
-
-#### Linux
+### Build Commands (Windows and Linux)
 
 ```bash
 pixi install --locked
@@ -114,9 +104,9 @@ Public headers are located under `engrave/include/engrave/`:
 
 ### Execution Model and Lifecycle Rules
 
-The engine operates on a single dedicated owner thread per process. Lifecycle rules per `engrave/include/engrave/engine.h:105`:
+The engine operates on a single dedicated owner thread per process. Lifecycle rules (see `engrave/include/engrave/engine.h`):
 
-- **Single Instance Per Process**: A process has at most one `Engine`. A second `Engine::create()` aborts the process only after a `create()` call has succeeded in claiming the process-global singleton (`s_engine_created` via `engine.cpp:90`). Initial validation failures due to missing resources or nonexistent font/SoundFont file paths return an error (`ErrorCode::NOT_FOUND` or `ErrorCode::INVALID_ARGUMENT`) before the singleton is claimed, so a subsequent `Engine::create()` call can succeed. (A font that exists on disk but fails during engine runtime loading fails after the singleton is claimed, preventing retries). Once claimed, any subsequent `Engine::create()` aborts, even after the first `Engine` has been destroyed.
+- **Single Instance Per Process**: A process has at most one `Engine`. A second `Engine::create()` aborts the process only after a `create()` call has succeeded in claiming the process-global singleton (`s_engine_created` in `engrave/src/api/engine.cpp`). Initial validation failures due to missing resources or nonexistent font/SoundFont file paths return an error (`ErrorCode::NOT_FOUND` or `ErrorCode::INVALID_ARGUMENT`) before the singleton is claimed, so a subsequent `Engine::create()` call can succeed. (A font that exists on disk but fails during engine runtime loading fails after the singleton is claimed, preventing retries). Once claimed, any subsequent `Engine::create()` aborts, even after the first `Engine` has been destroyed.
 - **Open Documents at Teardown**: Destroying an `Engine` while any of its `Document` instances are still open aborts the process. All documents must be destroyed before the engine is destroyed.
 - **Owner Thread Affiliation**: Every call on an `Engine` and its `Document` instances must occur on the thread that created the engine; a call from another thread aborts.
 
@@ -149,11 +139,11 @@ In a fork-only checkout, `tests/gate.py` automatically prepends `tests/` and `to
 
 ```bash
 python tools/install_assets.py .runtime/assets
-python tests/gate.py --build-dir build/gate --assets .runtime/assets --soundfont /path/to/FluidR3Mono_GM.sf3 --output .runtime/gate-run
+python tests/gate.py --build-dir build/gate --assets .runtime/assets --soundfont /path/to/FluidR3Mono_GM.sf3 --output notes/runs/gate
 python tests/test_inventory.py
 ```
 
-Use a fresh output directory for each run. The gate builds against the Pixi environment of `--pixi-manifest` (default: this checkout's `pixi.toml`), installing it with `pixi install --locked`, and puts its `bin` on `PATH`. When that environment supplies the Conda compiler (Linux), the gate selects it; otherwise xmake uses the system compiler. The optional `--mutex-wrapper` supports callers sharing xmake's Windows lock. `--skip-build` is diagnostic only. The dense-audio cancellation timing assertion can fail on Windows; failures are retained and must not be reported as a pass.
+Use a fresh output directory under `notes/runs/<name>` for each run (never `.runtime/`, which holds runtime assets only). The gate builds against the Pixi environment of `--pixi-manifest` (default: this checkout's `pixi.toml`), installing it with `pixi install --locked`, and puts its `bin` on `PATH`. When that environment supplies the Conda compiler (Linux), the gate selects it; otherwise xmake uses the system compiler. The optional `--mutex-wrapper` supports callers sharing xmake's Windows lock. `--skip-build` is diagnostic only. `--quick` skips the exclusive `output-timing` and `dense-cancellation` checks while running all other suites and captures; use it for per-step checks, and run the full gate without `--quick` at milestones and for engine bumps. `--ccachedir` sets the xmake compile cache directory passed as `--ccachedir=<path>` (default: `<engine-source>/build/.build_cache`), letting builds across profiles or host checkouts share cached objects. The dense-audio cancellation timing assertion can fail on Windows; failures are retained and must not be reported as a pass.
 
 Create a new virtual environment with Python 3.13 (`python -m venv .venv`), then install dependencies and the test package in editable mode:
 
@@ -171,14 +161,14 @@ Validation tools: Python 3.13, jsonschema 4.26.0, numpy 2.5.4, soundfile 0.14.0,
 To execute an individual integration script in a fork-only checkout without an editable package install, prepend `tests` and `tools` to `PYTHONPATH`:
 
 ```bash
-PYTHONPATH="tests:tools${PYTHONPATH:+:$PYTHONPATH}" python tests/integration/test_assets.py --binary build/gate/assets_test --assets .runtime/assets --font .pixi/envs/default/fonts/DejaVuSans.ttf --soundfont /path/to/FluidR3Mono_GM.sf3 --output .runtime/test-assets
+PYTHONPATH="tests:tools${PYTHONPATH:+:$PYTHONPATH}" python tests/integration/test_assets.py --binary build/gate/assets_test --assets .runtime/assets --font .pixi/envs/default/fonts/DejaVuSans.ttf --soundfont /path/to/FluidR3Mono_GM.sf3 --output notes/runs/test-assets
 ```
 
 On Windows PowerShell:
 
 ```powershell
 $env:PYTHONPATH = "tests;tools;$env:PYTHONPATH"
-python tests/integration/test_assets.py --binary build/gate/assets_test.exe --assets .runtime/assets --font C:/Windows/Fonts/arial.ttf --soundfont /path/to/FluidR3Mono_GM.sf3 --output .runtime/test-assets
+python tests/integration/test_assets.py --binary build/gate/assets_test.exe --assets .runtime/assets --font C:/Windows/Fonts/arial.ttf --soundfont /path/to/FluidR3Mono_GM.sf3 --output notes/runs/test-assets
 ```
 
 Alternatively, install the `engrave-testing` package in editable mode within the virtual environment (`pip install -e .`), allowing test scripts to run directly without specifying `PYTHONPATH`.
@@ -210,4 +200,3 @@ Third-party directories are excluded. Run these tools from the fork root.
 `engrave` is free software licensed under the **GNU General Public License version 3.0 (GPLv3)**. See [LICENSE.txt](LICENSE.txt).
 
 Bundled font families and third-party components are licensed under their respective terms (including GNU FreeFont with embedding exception, MScore with font exception, SIL Open Font License 1.1, LGPL 2.1, MIT, and BSD). See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for the complete attribution and license inventory.
-

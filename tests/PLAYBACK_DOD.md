@@ -1,9 +1,16 @@
 # Playback refactor harness
 
-Windows host configuration (test-only capture is off by default):
+Host configuration (`engrave-mcp` checkout; test-only capture is off by default):
 
 ```powershell
-xmake f -P . -y -m release -o build/xmake-windows --engrave_tests=y --engrave_playback_harness=y
+pixi run --locked python scripts/xbuild.py --build-directory build/playback configure --engrave_playback_harness=y
+pixi run --locked python scripts/xbuild.py --build-directory build/playback build -j 12 playback_probe playback_counting_probe playback_container_probe playback_dump_test
+```
+
+In a standalone `engrave` checkout, pass `-P .` to raw `xmake`:
+
+```powershell
+xmake f -P . -y -m release -o build/playback --engrave_tests=y --engrave_playback_harness=y
 xmake build -P . -y -j 12 playback_probe playback_counting_probe playback_container_probe playback_dump_test
 ```
 
@@ -11,9 +18,9 @@ xmake build -P . -y -j 12 playback_probe playback_counting_probe playback_contai
 the flat-record projection `B.txt` with its independent legacy counterpart
 `B_legacy.txt`, synth input `C.txt`, a FLOAT32 WAV, build metadata and phase
 measurements. Options are `--rate 44100|48000`, `--no-repeats`, `--no-reverb`,
-`--mute-part N`, and `--excerpt N`. Since step 4c the export builds only the flat
-store (`PlaybackScoreBuilder`, no legacy model). Dump A keeps the legacy `legacy-mpe-v1`
-format but comes from the new path: each NoteEvent is serialized when it is frozen, and
+`--mute-part N`, and `--excerpt N`. The export builds only the flat
+store (`PlaybackScoreBuilder`). Dump A keeps the `legacy-mpe-v1`
+format from the flat store: each NoteEvent is serialized when it is frozen, and
 the groups are rebuilt from the records, cold events and empty-group marks. For dump B a
 capture also loads the legacy `PlaybackModel` (the test oracle) from the same score and
 projects it with the independent extractor; the probe fails when the two projections
@@ -29,9 +36,9 @@ code units for MPE strings, original-width integers and hexadecimal float bits.
 Run the plain integration script using the host Pixi Python:
 
 ```powershell
-python vendor/engrave/tests/integration/test_playback_dod.py executables --exe OLD/playback_probe.exe --other-exe NEW/playback_probe.exe --assets .runtime/assets --font .runtime/soundfonts/FluidR3Mono_GM.sf3 --output notes/playback-comparison
-python vendor/engrave/tests/integration/test_playback_dod.py compare --left DUMPS1 --right DUMPS2
-python vendor/engrave/tests/integration/test_playback_dod.py measure --exe build/xmake-windows/playback_counting_probe.exe --assets .runtime/assets --font .runtime/soundfonts/FluidR3Mono_GM.sf3 --output notes/playback-counts --trials 7 --cancel-trials 20
+pixi run python vendor/engrave/tests/integration/test_playback_dod.py executables --exe OLD/playback_probe.exe --other-exe NEW/playback_probe.exe --assets .runtime/assets --font .runtime/soundfonts/FluidR3Mono_GM.sf3 --output notes/runs/playback-comparison
+pixi run python vendor/engrave/tests/integration/test_playback_dod.py compare --left DUMPS1 --right DUMPS2
+pixi run python vendor/engrave/tests/integration/test_playback_dod.py measure --exe build/playback/playback_counting_probe.exe --assets .runtime/assets --font .runtime/soundfonts/FluidR3Mono_GM.sf3 --output notes/runs/playback-counts --trials 7 --cancel-trials 20
 ```
 
 `capture` accepts the same asset arguments and one `--exe`. `--match SUBSTRING`
@@ -78,5 +85,4 @@ sleeps. Every trial is a fresh process. Raw samples retain request-to-observed,
 observed-to-return and request-to-return; summaries use nearest-rank p50/p95/max.
 These scheduled-poll samples do not model an asynchronous request during an
 unpolled bulk stage. Existing dense asynchronous cancellation/recovery tests
-remain part of the engine gate. K calibration requires step 2's batch-release
-implementation and both platforms; no calibrated K is claimed here.
+remain part of the engine gate.

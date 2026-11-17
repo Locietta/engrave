@@ -289,7 +289,7 @@ target("engrave_read_test")
     end
 target_end()
 
--- The edit harness (design 搂5.3): Document::edit, the snapshot round trip and the
+-- The edit harness: Document::edit, the snapshot round trip and the
 -- per-operation evidence.  A group of operations adds its cases as a file under
 -- harness/cases/; the folder glob picks it up.
 target("engrave_ops_test")

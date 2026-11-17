@@ -132,7 +132,7 @@ Cancellation is polled cooperatively at bounded boundaries throughout all execut
 - **Latency Design Targets**:
   - Request-to-observed latency: p95 <= 5 ms, max <= 10 ms.
   - Cleanup and return latency: p95 <= 50 ms, max <= 100 ms.
-  These bounds are design targets checked by the test harness measurement against a generated dense score (`dense.musicxml`), rather than an absolute operational guarantee across all score topologies.
+    These bounds are design targets checked by the test harness measurement against a generated dense score (`dense.musicxml`), rather than an absolute operational guarantee across all score topologies.
 
 Cancellation unlinks and removes partial output files from disk before returning.
 
@@ -168,14 +168,14 @@ python tests/integration/test_playback_dod.py capture \
     --exe build/gate/playback_probe.exe \
     --assets .runtime/assets \
     --font /path/to/FluidR3Mono_GM.sf3 \
-    --output .runtime/capture-run
+    --output notes/runs/capture-run
 
 # Run cancellation timing and export performance measurements (uncounted probe)
 python tests/integration/test_playback_dod.py measure \
     --exe build/gate/playback_probe.exe \
     --assets .runtime/assets \
     --font /path/to/FluidR3Mono_GM.sf3 \
-    --output .runtime/playback-measurements \
+    --output notes/runs/playback-measurements \
     --trials 7 \
     --cancel-trials 20
 ```
@@ -204,6 +204,6 @@ The pipeline enforces deliberate precedence and normalization rules to resolve a
 
 ## Future Directions
 
-- **Parallel Per-Track Synthesis**: While per-track scratch buffers in `OfflineRenderSession` are disjoint and the dry/send accumulation order is deterministic, concurrent track synthesis is not ready and requires a comprehensive threading assessment. FluidSynth is compiled with `NO_THREADS` (`add_defines("NO_THREADS", "NO_GLIB", "EXTERN_VORBIS_SUPPORT")` in `xmake/engrave.lua`), soundfonts share a mutable `SoundFontCache` in `AudioResources`, sample decompression relies on a shared process-global decoder pointer (`FluidVorbisDecoder::decoder`), and soundfont file streaming uses a thread-local bridge (`file_cache_bridge`). These shared state and loader mechanisms must be assessed and redesigned before track rendering can run concurrently across threads.
+- **Parallel Per-Track Synthesis**: While per-track scratch buffers in `OfflineRenderSession` are disjoint and the dry/send accumulation order is deterministic, concurrent track synthesis is not ready and requires a comprehensive threading assessment. FluidSynth and the audio targets are compiled with `NO_THREADS` (`ENGRAVE_AUDIO_ENGINE.defines` in `xmake/environment.lua` and `native_fluidsynth` in `xmake/targets/modules.lua`), soundfonts share a mutable `SoundFontCache` in `AudioResources`, sample decompression relies on a shared process-global decoder pointer (`FluidVorbisDecoder::decoder`), and soundfont file streaming uses a thread-local bridge (`file_cache_bridge`). These shared state and loader mechanisms must be assessed and redesigned before track rendering can run concurrently across threads.
 - **Encode Overlap**: Pipelining the synchronous 4096-frame PCM block synthesis with an asynchronous encoding queue, overlapping audio rendering with codec compression.
 - **Releasing the Owner Thread**: Detaching the offline render session from the single engine owner thread by snapshotting score properties, duration, and track configurations at the start of export, allowing long exports to run on background worker threads without blocking interactive score operations.
