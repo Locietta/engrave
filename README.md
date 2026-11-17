@@ -82,7 +82,6 @@ xmake build engrave
 ### Configuration Options
 
 - `--engrave_tests=y`: Enable development test targets (requires GoogleTest, resolved automatically).
-- `--engrave_modules=y`: Enable the opt-in C++23 `engrave` module facade (`engrave/modules/engrave.cppm`, target `engrave_module`) and `engrave_module_test`. Disabled by default so header consumers keep `build.ccache` enabled.
 
 ## Asset Installation
 
