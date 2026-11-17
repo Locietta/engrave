@@ -8,14 +8,14 @@ If not specified here, follow the code style of the existing code around the cod
 
 The engine is a hard fork of MuseScore core and preserves upstream MuseScore music algorithms, data structures, and object models. Untouched upstream code is not rewritten simply to fit this guide: music-domain inheritance hierarchies and existing error-handling patterns stay as they are. Dependency-injection interfaces with one production implementation are removed when touched; tests use concrete configuration data. Closed implementation sets use `std::variant` or enum dispatch, and only genuinely open runtime seams use proxy.
 
-For code that is rewritten or newly written in the engine (the audio/playback pipeline described in [docs/playback.md](playback.md) is the first example), the following architectural rules apply:
+For code that is rewritten or newly written in the engine (the audio/playback pipeline described in [docs/playback.md](playback.md) is the first example), the following architectural rules apply (existing wrappers in `engrave/src/runtime/` such as `resource_filesystem.h`, `fonts_database.h`, and `score_io.h` retain their current container and ownership types until refactored):
 
 - **No virtual functions**: Do not introduce `virtual` member functions, abstract base classes, or vtable hierarchies in new or refactored engine code.
 - **Runtime seams via proxy**: When a runtime polymorphic seam is genuinely required (such as format-specific encoders), use proxy (`pro::proxy` from ngcpp/proxy 4.1.0, available via `<proxy/proxy.h>`), rather than virtual interfaces.
 - **Separate data from behaviour**: Keep data definitions as plain data structures (`struct`), operating on them using free functions or dedicated systems rather than monolithic stateful classes.
-- **Value semantics without sharing**: Value types own their data. Do not add copy-on-write, reference-counted buffers or lazily allocated boxes (`muse::String` holds its UTF-16 text by value; `PropertyValue` stores its alternatives inline and boxes only `PainterPath`, with deep copies). Avoid copies on hot paths by returning references or views, not by sharing ownership.
-- **Data-oriented layouts**: Structure storage around contiguous, cache-friendly flat arrays (`amc::vector`, `std::span`) and index/offset references rather than deep pointer graphs or `std::shared_ptr` ownership trees.
-- **No standard associative node containers**: Do not use `std::map`, `std::unordered_map`, `std::set`, or `std::unordered_set` in runtime paths. Instead, use:
+- **Value semantics without sharing**: Value types in new or rewritten code own their data. Do not add copy-on-write, reference-counted buffers or lazily allocated boxes (`muse::String` holds its UTF-16 text by value; `PropertyValue` stores its alternatives inline and boxes only `PainterPath`, with deep copies). Avoid copies on hot paths by returning references or views, not by sharing ownership.
+- **Data-oriented layouts**: Structure storage in new or rewritten code around contiguous, cache-friendly flat arrays (`amc::vector`, `std::span`) and index/offset references rather than deep pointer graphs or `std::shared_ptr` ownership trees.
+- **No standard associative node containers**: Do not use `std::map`, `std::unordered_map`, `std::set`, or `std::unordered_set` in new or rewritten code or runtime paths. Instead, use:
   - The fork's `FlatMap` (`muse/framework/global/flatmap.h`) or sorted vectors for ordered key-value data.
   - `amc` containers (`amc v2.8.1`, e.g. `amc::FlatSet` from `<amc/flatset.hpp>` or `amc::vector` from `<amc/vector.hpp>`).
   - `ankerl::unordered_dense` (`unordered_dense v5.3.3` via `<ankerl/unordered_dense.h>`) for lookup-only hash tables or sets.
@@ -26,11 +26,11 @@ The remaining guidelines here apply to all new and touched code across the engin
 
 ## Formatting and Linting
 
-The engine checkout does not use Pixi tasks; formatters and linters are run directly using Python scripts in `tools/`. Both scripts operate in engine C++ mode, targeting tracked, owned engine C++ files (`.c`, `.cc`, `.cpp`, `.cxx`, `.h`, `.hh`, `.hpp`, `.hxx`) under `engrave/`, `src/`, or `muse/` (excluding third-party directories).
+`pixi.toml` in the engine checkout pins only the native `cairo` and `zlib` libraries (it defines no Pixi tasks); formatters and linters run through `tools/format.py` and `tools/lint.py` (or `pixi run format -- --engine` and `pixi run lint -- --engine` from the enclosing host checkout). Both scripts operate in engine C++ mode, targeting tracked, owned engine C++ files (`.c`, `.cc`, `.cpp`, `.cxx`, `.h`, `.hh`, `.hpp`, `.hxx`) under `engrave/`, `src/`, or `muse/` (excluding third-party directories).
 
 ### Formatting (`tools/format.py`)
 
-`tools/format.py` formats owned engine C++ source and header files using `clang-format`.
+`tools/format.py` formats owned engine C++ source and header files using `clice format` when a usable `clice` binary, `clice.toml`, and compilation database are available (such as from the enclosing host checkout), and `clang-format` otherwise (`--backend {auto,clice,clang-format}`).
 
 Run `python tools/format.py <paths...>` to format specific engine C++ files or directories, and `python tools/format.py --check <paths...>` to verify formatting without modifying files.
 
@@ -52,14 +52,14 @@ python tools/format.py engrave/src/api/sniff.cpp
 
 ### Linting (`tools/lint.py`)
 
-`tools/lint.py` checks compiled owned engine translation units against `.clang-tidy` using `clang-tidy`. It requires `compile_commands.json` in the engine root (generate via `xmake project -k compile_commands`). Automatic fixing (`--fix`) is unsupported in engine mode because shared headers require coordinated changes.
+`tools/lint.py` checks compiled owned engine translation units against `.clang-tidy` using `clang-tidy`. It selects the newest `compile_commands.json` across `build/<profile>/` (`release`, `debug`, `releasedbg`, `asan`) and the repository root, falling back to `xmake project -k compile_commands` at the repository root only if none exists. Automatic fixing (`--fix`) is unsupported in engine mode because shared headers require coordinated changes.
 
-Run `python tools/lint.py [paths...]` to lint compiled engine translation units matching the specified paths.
+Run `python tools/lint.py [paths...]` (or `pixi run lint -- --engine [paths...]` from the host) to lint compiled engine translation units matching the specified paths.
 
 Supported options:
 
 - `[paths...]`: files or directories to lint (defaults to `.`). Only compiled translation units matching owned engine C++ files are checked.
-- `-j, --jobs <N>`: control linting parallelism (defaults to available CPU cores, capped at 12).
+- `-j, --jobs <N>`: control linting parallelism (defaults to available CPU cores).
 - `--engine-root <path>`: engine checkout location (defaults to repository root).
 
 Commands:
@@ -134,7 +134,7 @@ The engine fork organizes test code into dedicated directories:
 - `tests/test_inventory.py`: Verification suite for test inventory and comparator mutations.
 - `tests/data/`: Golden outputs, input fixtures, and platform hash allow-lists.
 
-Every engine change must be verified against the engine gate (`tests/gate.py`).
+Run `tests/gate.py --quick` (or `tests/engine_gate.py --quick` from the host) per step when engine code changes; run the full gate without `--quick` at milestones and engine bumps.
 
 The gate builds the fork's `engine_tests` target and executes the public API, import, playback, and adapter suites, asset manifest verification, MNX schema validation, independent semantic checks, and indexed public-output comparisons against pinned goldens and the platform allow-list (`tests/data/golden/allow.json`).
 
@@ -148,11 +148,11 @@ python -m venv .venv
 .venv/bin/python -m pip install -e .
 ```
 
-(Windows: `.venv/Scripts/python.exe`). Run the gate:
+(Windows: `.venv/Scripts/python.exe`). Run the gate (output under `notes/runs/<name>`, never `.runtime/`):
 
 ```bash
 python tools/install_assets.py .runtime/assets
-python tests/gate.py --build-dir build/gate --assets .runtime/assets --soundfont /path/to/FluidR3Mono_GM.sf3 --output .runtime/gate-run
+python tests/gate.py --build-dir build/gate --assets .runtime/assets --soundfont /path/to/FluidR3Mono_GM.sf3 --output notes/runs/gate
 python tests/test_inventory.py
 ```
 
@@ -190,4 +190,3 @@ refactor(render): align cairo painter pen transform with upstream geometry
 - Normalizes point coordinate transformations before rasterization.
 - Verifies visual output against golden rendering baselines.
 ```
-
