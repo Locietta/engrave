@@ -181,6 +181,7 @@ def lint_engine(args: argparse.Namespace, repo_root: Path) -> int:
     root_pattern = re.escape(engine_root.as_posix()).replace("/", r"[\\/]")
     command = [
         "clang-tidy",
+        "--quiet",
         "-p",
         str(package),
         "--config-file=" + str(engine_root / ".clang-tidy"),
@@ -188,17 +189,18 @@ def lint_engine(args: argparse.Namespace, repo_root: Path) -> int:
         "--warnings-as-errors=readability-identifier-naming",
     ]
     if sys.platform == "win32":
-        # MSVC vector algorithms use intrinsics unsupported by clang-tidy.
-        command += ["--extra-arg=-D_USE_STD_VECTOR_ALGORITHMS=0"]
+        # MSVC vector algorithms use intrinsics unsupported by clang-tidy;
+        # clang-tidy's MSVC-compat frontend also trips ngcpp-proxy's clang-cl
+        # [[msvc::no_unique_address]] layout guard (llvm/llvm-project#143245),
+        # whereas cl.exe compiles the actual binary.
+        command += [
+            "--extra-arg=-D_USE_STD_VECTOR_ALGORITHMS=0",
+            "--extra-arg=-DMSFT_PROXY_V4_DETAIL_COMPATIBILITY_CHECK_H_",
+        ]
 
     def check(path: Path):
-        result = subprocess.run([*command, str(path)], cwd=repo_root, capture_output=True, text=True)
-        print(f"{path}: exit {result.returncode}", flush=True)
-        if result.stdout:
-            print(result.stdout, flush=True)
-        if result.stderr:
-            print(result.stderr, file=sys.stderr, flush=True)
-        return result.returncode
+        result = subprocess.run([*command, str(path)], cwd=repo_root, capture_output=True, text=True, errors="replace")
+        return path, result.returncode, result.stdout, result.stderr
 
     print(
         f"Checking {len(units)} engine file(s) from {len(entries)} translation unit entry/entries "
@@ -208,10 +210,23 @@ def lint_engine(args: argparse.Namespace, repo_root: Path) -> int:
     )
     try:
         with ThreadPoolExecutor(max_workers=worker_count(args.jobs)) as pool:
-            return int(any(list(pool.map(check, units))))
+            outcomes = list(pool.map(check, units))
     finally:
         if temporary is not None:
             temporary.cleanup()
+
+    failed = 0
+    for path, code, stdout, stderr in outcomes:
+        if code != 0 or stdout.strip():
+            print(f"{path}: exit {code}", flush=True)
+            if stdout:
+                print(stdout, end="", flush=True)
+            if stderr:
+                print(stderr, end="", file=sys.stderr, flush=True)
+        if code != 0:
+            failed += 1
+    print(f"Checked {len(outcomes)} engine file(s), {failed} failed.", flush=True)
+    return int(failed > 0)
 
 
 def main() -> int:

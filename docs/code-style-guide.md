@@ -1,192 +1,119 @@
 # Code Style Guide
 
-This is a concise code style guide for the `engrave` engine fork. Contributors or agents should follow these guidelines unless there is a compelling reason to deviate.
+This is a concise code style guide for the `engrave` engine fork. Contributors and agents should follow these guidelines unless there is a compelling reason to deviate.
 
-If not specified here, follow the code style of the existing code around the code you are writing.
+If not specified here, follow the style of modern refactored code nearby. Build, formatting, linting, and test commands live in [README.md](../README.md), not in this guide.
 
-## Scope and Upstream Code
+## Naming
 
-The engine is a hard fork of MuseScore core and preserves upstream MuseScore music algorithms, data structures, and object models. Untouched upstream code is not rewritten simply to fit this guide: music-domain inheritance hierarchies and existing error-handling patterns stay as they are. Dependency-injection interfaces with one production implementation are removed when touched; tests use concrete configuration data. Closed implementation sets use `std::variant` or enum dispatch, and only genuinely open runtime seams use proxy.
+Enforced by [.clang-tidy](../.clang-tidy):
 
-For code that is rewritten or newly written in the engine (the audio/playback pipeline described in [docs/playback.md](playback.md) is the first example), the following architectural rules apply (existing wrappers in `engrave/src/runtime/` such as `resource_filesystem.h`, `fonts_database.h`, and `score_io.h` retain their current container and ownership types until refactored):
+- Types (`struct`, `enum`, `union`): `CamelCase`.
+- Functions, methods, parameters, variables, and struct fields: `lower_case` (Add trailing `_` if the field is meant to be private).
+- Enum constants: `UPPER_CASE`.
+- Short uppercase template parameters or domain acronyms (`T`, `ID`) are fine.
 
-- **No virtual functions**: Do not introduce `virtual` member functions, abstract base classes, or vtable hierarchies in new or refactored engine code.
-- **Runtime seams via proxy**: When a runtime polymorphic seam is genuinely required (such as format-specific encoders), use proxy (`pro::proxy` from ngcpp/proxy 4.1.0, available via `<proxy/proxy.h>`), rather than virtual interfaces.
-- **Separate data from behaviour**: Keep data definitions as plain data structures (`struct`), operating on them using free functions or dedicated systems rather than monolithic stateful classes.
-- **Value semantics without sharing**: Value types in new or rewritten code own their data. Do not add copy-on-write, reference-counted buffers or lazily allocated boxes (`muse::String` holds its UTF-16 text by value; `PropertyValue` stores its alternatives inline and boxes only `PainterPath`, with deep copies). Avoid copies on hot paths by returning references or views, not by sharing ownership.
-- **Data-oriented layouts**: Structure storage in new or rewritten code around contiguous, cache-friendly flat arrays (`amc::vector`, `std::span`) and index/offset references rather than deep pointer graphs or `std::shared_ptr` ownership trees.
-- **No standard associative node containers**: Do not use `std::map`, `std::unordered_map`, `std::set`, or `std::unordered_set` in new or rewritten code or runtime paths. Instead, use:
-  - The fork's `FlatMap` (`muse/framework/global/flatmap.h`) or sorted vectors for ordered key-value data.
-  - `amc` containers (`amc v2.8.1`, e.g. `amc::FlatSet` from `<amc/flatset.hpp>` or `amc::vector` from `<amc/vector.hpp>`).
-  - `ankerl::unordered_dense` (`unordered_dense v5.3.3` via `<ankerl/unordered_dense.h>`) for lookup-only hash tables or sets.
-- **No Boost**: Boost is not part of the engine dependencies and must not be introduced.
-- **JSON via glaze**: Build and parse JSON with `glaze` (pinned in `xmake/packages/g/glaze`), through the engine's `engrave/src/score/json.h` aliases and writer. nlohmann::json is not a dependency (MNX is read and written by the engine's own glaze model, `docs/mnx.md`), and public headers (`engrave/include/engrave`) must stay free of every JSON library.
+## Basic Types
 
-The remaining guidelines here apply to all new and touched code across the engine.
-
-## Formatting and Linting
-
-`pixi.toml` in the engine checkout pins only the native `cairo` and `zlib` libraries (it defines no Pixi tasks); formatters and linters run through `tools/format.py` and `tools/lint.py` (or `pixi run format -- --engine` and `pixi run lint -- --engine` from the enclosing host checkout). Both scripts operate in engine C++ mode, targeting tracked, owned engine C++ files (`.c`, `.cc`, `.cpp`, `.cxx`, `.h`, `.hh`, `.hpp`, `.hxx`) under `engrave/`, `src/`, or `muse/` (excluding third-party directories).
-
-### Formatting (`tools/format.py`)
-
-`tools/format.py` formats owned engine C++ source and header files using `clice format` when a usable `clice` binary, `clice.toml`, and compilation database are available (such as from the enclosing host checkout), and `clang-format` otherwise (`--backend {auto,clice,clang-format}`).
-
-Run `python tools/format.py <paths...>` to format specific engine C++ files or directories, and `python tools/format.py --check <paths...>` to verify formatting without modifying files.
-
-Supported options:
-
-- `<paths...>`: one or more files or directories to format. Only owned engine C++ files under `engrave/`, `src/`, or `muse/` are formatted; paths with no owned engine C++ files fail with an error.
-- `--check`: report files that require formatting without modifying them (exits non-zero if unformatted files are found).
-- `--engine-root <path>`: engine checkout location (defaults to repository root).
-
-Commands:
-
-```bash
-# Check formatting across all owned engine C++ files in engrave/
-python tools/format.py --check engrave/
-
-# Format a specific engine C++ file
-python tools/format.py engrave/src/api/sniff.cpp
-```
-
-### Linting (`tools/lint.py`)
-
-`tools/lint.py` checks compiled owned engine translation units against `.clang-tidy` using `clang-tidy`. It selects the newest `compile_commands.json` across `build/<profile>/` (`release`, `debug`, `releasedbg`, `asan`) and the repository root, falling back to `xmake project -k compile_commands` at the repository root only if none exists. Automatic fixing (`--fix`) is unsupported in engine mode because shared headers require coordinated changes.
-
-Run `python tools/lint.py [paths...]` (or `pixi run lint -- --engine [paths...]` from the host) to lint compiled engine translation units matching the specified paths.
-
-Supported options:
-
-- `[paths...]`: files or directories to lint (defaults to `.`). Only compiled translation units matching owned engine C++ files are checked.
-- `-j, --jobs <N>`: control linting parallelism (defaults to available CPU cores).
-- `--engine-root <path>`: engine checkout location (defaults to repository root).
-
-Commands:
-
-```bash
-# Lint compiled engine translation units matching a file
-python tools/lint.py engrave/src/api/sniff.cpp
-
-# Lint with explicit parallelism
-python tools/lint.py -j 4 engrave/src/api/sniff.cpp
-```
-
-You can also run `python tools/setup_hooks.py` to install a Git pre-commit hook (`.git/hooks/pre-commit`) that validates staged engine C++ blobs against `.clang-format` before commit without modifying the index.
-
-## Identifier Naming
-
-See [.clang-tidy](../.clang-tidy).
-
-- Types, structs, classes, enums, and unions use `CamelCase`.
-- Functions, methods, parameters, local variables, and global constants use `lower_case`.
-- Enum constants use `UPPER_CASE`.
-- Single-letter and two-letter uppercase names (such as template parameters or coordinate identifiers like `T`, `ID`) are permitted.
-- Struct and class member variables use `lower_case`. Members may end in one trailing `_` (e.g. `member_`), but never have to.
-
-## Structs and Custom Types
-
-Always use `struct`, do not use `class` for new custom types. This way, we do not need to write `public:` for every member, and when inheriting, we do not need to write `public` in the inheritance list.
-
-As noted above, existing upstream classes retain their original declarations.
-
-## Header Inclusion
-
-Headers should be grouped in the following order, with blank lines separating groups:
-
-1. Interface header of the current `.cpp` file
-2. Standard library headers (`<algorithm>`, `<vector>`, `<string>`, etc.)
-3. Third-party headers (`<cairo/cairo.h>`, `<ft2build.h>`, `<hb.h>`, `<glaze/json/generic.hpp>`, etc.)
-4. Project headers (`muse/...`, `engraving/...`, `engrave/...`)
-
-Example from `engrave/src/api/sniff.cpp`:
+Prefer concise fixed-width and pointer-sized aliases in project code:
 
 ```cpp
+using i8 = std::int8_t;
+using i16 = std::int16_t;
+using i32 = std::int32_t;
+using i64 = std::int64_t;
+using u8 = std::uint8_t;
+using u16 = std::uint16_t;
+using u32 = std::uint32_t;
+using u64 = std::uint64_t;
+using isize = std::ptrdiff_t;
+using usize = std::size_t;
+using f32 = float;
+using f64 = double;
+```
+
+Use `std::string`, `std::string_view`, and `std::span` for text and contiguous slices. External public library headers under `engrave/include/engrave/` stay self-contained on standard C++ headers unless those aliases are exported in the `engrave` namespace.
+
+## Structs and Data Layout
+
+Always use `struct`, do not use `class` for custom types. This avoids `public:` boilerplate in struct definitions and inheritance lists.
+
+- **Separate data from behavior**: Keep data as plain `struct` definitions with free functions or focused systems rather than monolithic stateful OOP hierarchies.
+- **Owned value semantics**: Value types own their data. Do not add copy-on-write wrappers, reference-counted buffers, or `std::shared_ptr` ownership graphs where single ownership or flat storage works. Avoid copies on hot paths by passing views (`std::string_view`, `std::span`) or references.
+- **Data-oriented layout**: Prefer contiguous flat arrays (`amc::vector`, `std::vector`) and integer indices/offsets over pointer-chasing node graphs.
+
+## Polymorphism and Type Erasure
+
+Never introduce `virtual` functions, abstract base classes, or vtable hierarchies.
+
+- **Dynamic dispatch and type erasure via `ngcpp-proxy`**: When runtime polymorphism or callable/interface type erasure is genuinely needed, use `pro::proxy` (owning) or `pro::proxy_view` (non-owning) from `<proxy/proxy.h>` instead of virtual interfaces or `std::function`. `proxy` keeps structs plain data without interfering with their memory layout.
+- **Non-storing inline callbacks**: When a callback does not cross a compilation boundary and is not stored, prefer a template parameter (`template <class Fn>`).
+- **Closed sets**: When the set of alternatives is closed and known statically, use `std::variant` or enum dispatch.
+
+## Containers and JSON
+
+- **No node-based associative containers**: Do not use `std::map`, `std::unordered_map`, `std::set`, or `std::unordered_set`. Use:
+  - `ankerl::unordered_dense` (`<ankerl/unordered_dense.h>`) for hash maps and sets.
+  - `amc` flat containers (`<amc/vector.hpp>`, `<amc/flatset.hpp>`) or sorted vectors (`FlatMap`) for compact or ordered data.
+- **JSON via typed `glaze` structs**: Define plain C++ structs and read/write JSON directly with `glaze` compile-time reflection rather than building or walking untyped dynamic DOM maps. Public `engrave/include/engrave/` headers must not expose any JSON library.
+- **No Boost**: Do not introduce Boost dependencies.
+
+## Headers
+
+Use `#pragma once` (never `#ifndef` include guards). Group includes in the following order, separated by blank lines:
+
+```cpp
+// 1. Interface header of the current .cpp file
 #include "sniff.h"
 
+// 2. Standard library headers
 #include <algorithm>
 #include <cctype>
 #include <string_view>
 
-#include "engrave/src/score/json.h"
+// 3. Third-party headers
+#include <ankerl/unordered_dense.h>
+#include <proxy/proxy.h>
+
+// 4. Project headers (muse/..., engraving/..., engrave/...)
 #include "global/io/buffer.h"
 #include "global/serialization/xmlstreamreader.h"
-#include "global/serialization/zipreader.h"
 ```
 
-## Unused Values and Parameters
+## Unused Values, Assertions, and Error Handling
 
-Unused parameters and variables use `[[maybe_unused]]` on the declaration. Deliberately discarded `[[nodiscard]]` results use `std::ignore = expr;` (include `<tuple>`). Do not use `(void)` casts.
+- **Unused values**: Mark intentionally unused parameters/variables with `[[maybe_unused]]`. Discard `[[nodiscard]]` return values explicitly with `std::ignore = expr;`, never `(void)` casts.
+- **Assertions and panic**: Use `<cassert>` `assert(...)` for internal preconditions checked in debug builds, `std::unreachable()` for impossible branches, and small local `check(condition, message)` / `panic(message)` helpers for invariants that must stay checked in release builds.
+- **Error handling**: Distinguish the 3 kinds of failures by asking who can act on the failure:
+  - **Expected failures** (invalid arguments, malformed score/JSON input, unknown IDs, resource limits): the immediate caller acts on it — return `std::expected` (`Result<T>`), never throw.
+  - **Rare failures** (unexpected OS failures or internal store limits whose only sensible handler is a distant recovery boundary): throw a runtime exception.
+  - **Fatal failures** (owner-thread or global-invariant corruption): no caller can recover — terminate or panic.
 
-## Python Code Style
+## Redundancy and Comments
 
-- Shared test helpers live only in the package (`engrave_testing` in the engine fork, `engrave_mcp_testing` in the host).
-- Test scripts never import other test scripts; the layout lint guard enforces this boundary.
-- Python code adheres to Ruff rules: `E` (pycodestyle errors), `F` (Pyflakes), `I` (isort), and `W` (pycodestyle warnings).
+- **No redundant or dead paths**: Every branch must be reachable. When replacing an old path, migrate all callers and delete the old path in the same change.
+- **Comments**: Default to self-explanatory names and zero tautological comments. Add a comment only to explain a non-obvious _why_, an un-enforced invariant, or an external platform/library quirk. Do not add section-banner comments or comments that narrate git history.
 
-## Test Layout and Gate Validation
+## Python Test Boundaries
 
-The engine fork organizes test code into dedicated directories:
+- Shared test helpers live only in the `engrave_testing` package; executable scripts under `tests/integration/` never import other `test_*` scripts.
 
-- `tests/integration/`: Plain executable test scripts (`test_assets.py`, `test_excerpts.py`, `test_engine_audio.py`, `test_roundtrip.py`, etc.). These scripts are executed directly and are never imported as Python modules.
-- `tests/engrave_testing/`: Shared helper package (`golden`, `paths`, `public_output`, `dependencies`, `inventory`, `links`, etc.).
-- `tests/gate.py`: Public C++ boundary gate runner.
-- `tests/test_inventory.py`: Verification suite for test inventory and comparator mutations.
-- `tests/data/`: Golden outputs, input fixtures, and platform hash allow-lists.
+## Concurrency in Tests
 
-Run `tests/gate.py --quick` (or `tests/engine_gate.py --quick` from the host) per step when engine code changes; run the full gate without `--quick` at milestones and engine bumps.
-
-The gate builds the fork's `engine_tests` target and executes the public API, import, playback, and adapter suites, asset manifest verification, MNX schema validation, independent semantic checks, and indexed public-output comparisons against pinned goldens and the platform allow-list (`tests/data/golden/allow.json`).
-
-### Running the Gate in a Fork-Only Checkout
-
-In a standalone fork checkout, create a virtual environment, install `tests/requirements.txt`, and install the test package in editable mode (`python -m pip install -e .` in the fork root) so `engrave_testing` is available before running `tests/gate.py` or `tests/test_inventory.py`:
-
-```bash
-python -m venv .venv
-.venv/bin/python -m pip install -r tests/requirements.txt
-.venv/bin/python -m pip install -e .
-```
-
-(Windows: `.venv/Scripts/python.exe`). Run the gate (output under `notes/runs/<name>`, never `.runtime/`):
-
-```bash
-python tools/install_assets.py .runtime/assets
-python tests/gate.py --build-dir build/gate --assets .runtime/assets --soundfont /path/to/FluidR3Mono_GM.sf3 --output notes/runs/gate
-python tests/test_inventory.py
-```
-
-Use a fresh output directory for each run. The gate builds against the Pixi environment of `--pixi-manifest` (default: this checkout's `pixi.toml`) and puts its `bin` on `PATH`.
-
-### Running a Single Fork Test Script Directly
-
-To run a single integration test script directly in a fork-only checkout without an editable package install, set `PYTHONPATH` to include `tests` and `tools`:
-
-```bash
-PYTHONPATH="tests:tools${PYTHONPATH:+:$PYTHONPATH}" python tests/integration/test_assets.py --binary build/gate/assets_test --assets .runtime/assets --font .pixi/envs/default/fonts/DejaVuSans.ttf --soundfont /path/to/FluidR3Mono_GM.sf3 --output .runtime/test-assets
-```
-
-On Windows PowerShell:
-
-```powershell
-$env:PYTHONPATH = "tests;tools;$env:PYTHONPATH"
-python tests/integration/test_assets.py --binary build/gate/assets_test.exe --assets .runtime/assets --font C:/Windows/Fonts/arial.ttf --soundfont /path/to/FluidR3Mono_GM.sf3 --output .runtime/test-assets
-```
-
-Alternatively, install the test package in editable mode (`pip install -e .` in a virtual environment), after which test scripts can be run directly with the environment Python without setting `PYTHONPATH`.
+Tests for concurrent code must be deterministic and coordinate via observable state transitions (events, barriers, condition variables, atomics, futures), never `sleep` or wall-clock timing assumptions.
 
 ## Commit Messages
 
-The headline of a commit should follow the format: `<type>(<scope>): <subject>`. Type or scope can be omitted if not applicable.
+Format commit headlines as `<type>(<scope>): <subject>` (omitting type or scope when not applicable), with an optional bulleted body separated by a blank line:
 
-If the commit cannot be fully described in the headline, add a body separated by a blank line, preferably formatted as a list of bullet points.
-
-Example:
-
-```
+```text
 refactor(render): align cairo painter pen transform with upstream geometry
 
 - Updates pen scaling logic to account for current staff magnification.
 - Normalizes point coordinate transformations before rasterization.
 - Verifies visual output against golden rendering baselines.
 ```
+
+## Scope and Upstream Code
+
+Untouched upstream MuseScore code under `src/` and `muse/` retains its existing classes, virtual hierarchies, and conventions to keep cherry-picks clean. Dependency-injection interfaces with one production implementation are removed when touched, and any newly written or refactored subsystem (such as `engrave/` and the flat playback/audio pipeline in [playback.md](playback.md)) follows all rules above.

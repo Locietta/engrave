@@ -180,10 +180,10 @@ int Transpose::transpose_tpc(int tpc, Interval interval, bool use_double_sharps_
 }
 
 namespace {
-static void apply_transpose_harmony(Harmony *harmony_, Interval interval_, bool use_double_sharps_flats_) {
-    note_change(harmony_, CommandType::TRANSPOSE_HARMONY);
+static void apply_transpose_harmony(Harmony *harmony, Interval interval, bool use_double_sharps_flats) {
+    note_change(harmony, CommandType::TRANSPOSE_HARMONY);
 
-    Transpose::do_undo_transpose_harmony(harmony_, interval_, use_double_sharps_flats_);
+    Transpose::do_undo_transpose_harmony(harmony, interval, use_double_sharps_flats);
 }
 } // namespace
 
