@@ -178,11 +178,16 @@ cc_library(
         exclude = ["src/engraving/tests/**"],
     ),
     additional_compiler_inputs = select({
-        "//bazel:pch_enabled": [":engraving_pch"],
+        "//bazel:pch_enabled": [
+            ":engraving_pch",
+            "//bazel:pch/engraving_pch.h",
+        ],
         "//conditions:default": [],
     }),
     copts = ENGINE_COPTS + select({
         "//bazel:pch_enabled": [
+            "-Xclang",
+            "-fno-validate-pch",
             "-include-pch",
             "$(location :engraving_pch)",
         ],
