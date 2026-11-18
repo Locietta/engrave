@@ -108,13 +108,13 @@ const SharedTrackMap &SharedPart::track_map_at_tick(const Fraction &tick) const 
     const auto &maps = store->score_output().shared_track_maps;
     const auto found = maps.find(this);
     if (found == maps.end() || found->second.empty()) return empty;
-    const auto &track_maps_by_tick_ = found->second;
+    const auto &track_maps_by_tick = found->second;
     static constexpr Fraction tick_zero = Fraction(0, 1);
 
-    if (tick <= tick_zero) return track_maps_by_tick_.begin()->second;
+    if (tick <= tick_zero) return track_maps_by_tick.begin()->second;
 
-    auto upper_bound_value = track_maps_by_tick_.upper_bound(tick);
-    if (upper_bound_value == track_maps_by_tick_.begin()) return empty;
+    auto upper_bound_value = track_maps_by_tick.upper_bound(tick);
+    if (upper_bound_value == track_maps_by_tick.begin()) return empty;
 
     --upper_bound_value;
 
@@ -126,17 +126,17 @@ void SharedPart::set_track_map_at_tick(const SharedTrackMap &map, const Fraction
 }
 
 void mu::engraving::SharedPart::remove_maps_between_ticks(const Fraction &start_tick, const Fraction &end_tick) {
-    auto &track_maps_by_tick_ = score()->renderer()->layout_data_store(*score()).score_output().shared_track_maps[this];
-    auto upper_bound_value = track_maps_by_tick_.lower_bound(start_tick);
-    if (upper_bound_value == track_maps_by_tick_.end()) {
+    auto &track_maps_by_tick = score()->renderer()->layout_data_store(*score()).score_output().shared_track_maps[this];
+    auto upper_bound_value = track_maps_by_tick.lower_bound(start_tick);
+    if (upper_bound_value == track_maps_by_tick.end()) {
         return;
     }
 
-    for (auto iter = upper_bound_value; iter != track_maps_by_tick_.end();) {
+    for (auto iter = upper_bound_value; iter != track_maps_by_tick.end();) {
         if (iter->first >= end_tick) {
             break;
         }
-        iter = track_maps_by_tick_.erase(iter);
+        iter = track_maps_by_tick.erase(iter);
     }
 }
 

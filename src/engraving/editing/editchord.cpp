@@ -211,34 +211,34 @@ void EditChord::undo_clear_parenthesis_group(Chord *chord, std::vector<Note *> n
     }
 }
 
-void mu::engraving::apply_change_span_arpeggio(Chord *chord_, Arpeggio *span_arpeggio_) {
-    note_change(chord_, CommandType::UNKNOWN);
+void mu::engraving::apply_change_span_arpeggio(Chord *chord, Arpeggio *span_arpeggio) {
+    note_change(chord, CommandType::UNKNOWN);
 
-    chord_->set_span_arpeggio(span_arpeggio_);
+    chord->set_span_arpeggio(span_arpeggio);
 }
 
-void mu::engraving::apply_add_note_parenthesis_info(Chord *chord_, NoteParenthesisInfo *note_paren_info_) {
-    note_change(chord_, CommandType::ADD_NOTE_PARENTHESES_INFO);
+void mu::engraving::apply_add_note_parenthesis_info(Chord *chord, NoteParenthesisInfo *note_paren_info) {
+    note_change(chord, CommandType::ADD_NOTE_PARENTHESES_INFO);
 
-    chord_->add_note_parenthesis_info(note_paren_info_);
+    chord->add_note_parenthesis_info(note_paren_info);
 
-    chord_->trigger_layout();
+    chord->trigger_layout();
 }
 
-void mu::engraving::apply_remove_note_parenthesis_info(Chord *chord_, NoteParenthesisInfo *note_paren_info_) {
-    note_change(chord_, CommandType::REMOVE_NOTE_PARENTHESES_INFO);
+void mu::engraving::apply_remove_note_parenthesis_info(Chord *chord, NoteParenthesisInfo *note_paren_info) {
+    note_change(chord, CommandType::REMOVE_NOTE_PARENTHESES_INFO);
 
-    chord_->remove_note_parenthesis_info(note_paren_info_);
+    chord->remove_note_parenthesis_info(note_paren_info);
 
-    chord_->trigger_layout();
+    chord->trigger_layout();
 
-    defer_root(*chord_, note_paren_info_);
+    defer_root(*chord, note_paren_info);
 }
 
-void mu::engraving::apply_remove_single_note_parentheses(Chord *chord_, Note *note_, const NoteParenthesisInfo *group) {
-    note_change(chord_, CommandType::REMOVE_SINGLE_NOTE_PARENTHESES);
+void mu::engraving::apply_remove_single_note_parentheses(Chord *chord, Note *note, const NoteParenthesisInfo *group) {
+    note_change(chord, CommandType::REMOVE_SINGLE_NOTE_PARENTHESES);
 
-    chord_->remove_note_from_parenthesis_info(note_, group);
+    chord->remove_note_from_parenthesis_info(note, group);
 
-    chord_->trigger_layout();
+    chord->trigger_layout();
 }

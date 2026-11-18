@@ -38,17 +38,17 @@
 
 using namespace mu::engraving;
 
-void mu::engraving::apply_change_tie_jump_point_active(TieJumpPointList *jump_point_list_, muse::String id_, bool active_) {
-    note_change(jump_point_list_->start_tie(), CommandType::CHANGE_TIE_END_POINT_ACTIVE);
+void mu::engraving::apply_change_tie_jump_point_active(TieJumpPointList *jump_point_list, muse::String id, bool active) {
+    note_change(jump_point_list->start_tie(), CommandType::CHANGE_TIE_END_POINT_ACTIVE);
 
-    TieJumpPoint *jump_point = jump_point_list_->find_jump_point(id_);
+    TieJumpPoint *jump_point = jump_point_list->find_jump_point(id);
     if (!jump_point) {
         return;
     }
 
-    if (active_ && jump_point->end_tie() && jump_point->end_tie()->jump_point() != jump_point) {
+    if (active && jump_point->end_tie() && jump_point->end_tie()->jump_point() != jump_point) {
         jump_point->end_tie()->set_jump_point(jump_point);
     }
 
-    jump_point->set_active(active_);
+    jump_point->set_active(active);
 }

@@ -341,14 +341,14 @@ void mu::engraving::apply_measure_repeat_count(Measure *measure, int count, staf
     measure->set_measure_repeat_count(count, staff);
 }
 
-void mu::engraving::apply_change_mmrest_next(Measure *mmrest_, MeasureBase *next_) {
-    assert(mmrest_->is_mm_rest());
+void mu::engraving::apply_change_mmrest_next(Measure *mmrest, MeasureBase *next) {
+    assert(mmrest->is_mm_rest());
 
-    mmrest_->set_next(next_);
+    mmrest->set_next(next);
 }
 
-void mu::engraving::apply_change_mmrest_prev(Measure *mmrest_, MeasureBase *prev_) {
-    assert(mmrest_->is_mm_rest());
+void mu::engraving::apply_change_mmrest_prev(Measure *mmrest, MeasureBase *prev) {
+    assert(mmrest->is_mm_rest());
 
-    mmrest_->set_prev(prev_);
+    mmrest->set_prev(prev);
 }
