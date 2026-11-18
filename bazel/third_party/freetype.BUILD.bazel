@@ -80,7 +80,10 @@ cc_library(
             "_CRT_SECURE_NO_WARNINGS",
             "_CRT_NONSTDC_NO_WARNINGS",
         ],
-        "//conditions:default": [],
+        "//conditions:default": [
+            "HAVE_FCNTL_H=1",
+            "HAVE_UNISTD_H=1",
+        ],
     }),
     textual_hdrs = glob([
         "src/**/*.c",
