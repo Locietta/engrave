@@ -75,6 +75,10 @@ def _cc_pch_impl(ctx):
             "-x",
             "c++-header",
             "-fpch-instantiate-templates",
+            "-Xclang",
+            "-fno-pch-timestamp",
+            "-Xclang",
+            "-fmodule-file-home-is-cwd",
         ]
     )
     sys_includes = [comp_ctx.system_includes]
