@@ -29,6 +29,7 @@ cc_library(
         "include",
         "src/libFLAC/include",
     ],
+    textual_hdrs = glob(["src/libFLAC/deduplication/*.c"]),
     visibility = ["//visibility:private"],
 )
 
@@ -117,7 +118,6 @@ cc_library(
     implementation_deps = [":flac_private_hdrs"],
     includes = ["include"],
     local_defines = FLAC_LOCAL_DEFINES,
-    textual_hdrs = glob(["src/libFLAC/deduplication/*.c"]),
     visibility = ["//visibility:private"],
     deps = [
         ":flac_avx2",
