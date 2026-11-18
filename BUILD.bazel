@@ -444,6 +444,7 @@ cc_library(
     hdrs = glob(
         [
             "engrave/tests/**/*.h",
+            "muse/framework/mpe/tests/**/*.h",
             "src/engraving/tests/**/*.h",
         ],
         allow_empty = True,
