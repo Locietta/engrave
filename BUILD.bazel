@@ -304,6 +304,8 @@ cc_library(
         [
             "muse/framework/audio/**/*.h",
             "muse/framework/audio/**/*.hpp",
+            "muse/framework/midi/**/*.h",
+            "muse/framework/midi/**/*.hpp",
         ],
         allow_empty = True,
     ),
