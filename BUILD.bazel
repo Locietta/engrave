@@ -266,7 +266,9 @@ cc_library(
         FLUIDSYNTH_DIR + "/src/synth/*.c",
         FLUIDSYNTH_DIR + "/src/utils/*.c",
     ]),
-    hdrs = glob(
+    hdrs = [
+        "muse/framework/audio/engine/internal/offlinecancellation.h",
+    ] + glob(
         [
             FLUIDSYNTH_DIR + "/include/**/*.h",
             FLUIDSYNTH_DIR + "/src/**/*.h",
