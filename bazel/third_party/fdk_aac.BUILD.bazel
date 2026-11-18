@@ -2,7 +2,7 @@ load("@rules_cc//cc:defs.bzl", "cc_library")
 
 cc_library(
     name = "fdk_aac_private_hdrs",
-    hdrs = glob(["lib*/include/*.h"]),
+    hdrs = glob(["lib*/include/**/*.h"]),
     includes = [
         "libArithCoding/include",
         "libDRCdec/include",
@@ -54,6 +54,6 @@ cc_library(
         "libAACenc/include",
         "libSYS/include",
     ],
-    textual_hdrs = glob(["lib*/src/*.h"]),
+    textual_hdrs = glob(["lib*/src/**/*.h"]),
     visibility = ["//visibility:public"],
 )
