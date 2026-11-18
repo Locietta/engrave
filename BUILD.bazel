@@ -507,6 +507,7 @@ cc_binary(
     ],
     copts = ENGINE_COPTS,
     deps = [
+        ":muse_audio_headers",
         ":muse_mpe",
         ":test_harness_headers",
         "@gtest",
