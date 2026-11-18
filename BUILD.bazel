@@ -1,0 +1,795 @@
+load("@engrave_config//:defs.bzl", "ENGRAVE_SOURCE_ROOT", "ENGRAVING_TESTS_DATA_ROOT")
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
+load("//bazel:defs.bzl", "ENGINE_COPTS", "ENGINE_LINKOPTS", "ENGINE_PLATFORM_DEFINES", "cc_pch", "win_manifest_library")
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files([
+    "version.cmake",
+    "engrave/tests/utf8.manifest",
+])
+
+FLUIDSYNTH_DIR = "muse/framework/audio/thirdparty/fluidsynth/fluidsynth-2.3.3"
+
+FLUIDSYNTH_INCLUDES = [
+    FLUIDSYNTH_DIR + "/include",
+    FLUIDSYNTH_DIR + "/src",
+    FLUIDSYNTH_DIR + "/src/bindings",
+    FLUIDSYNTH_DIR + "/src/drivers",
+    FLUIDSYNTH_DIR + "/src/external",
+    FLUIDSYNTH_DIR + "/src/midi",
+    FLUIDSYNTH_DIR + "/src/rvoice",
+    FLUIDSYNTH_DIR + "/src/sfloader",
+    FLUIDSYNTH_DIR + "/src/synth",
+    FLUIDSYNTH_DIR + "/src/utils",
+]
+
+AUDIO_ENGINE_DEFINES = [
+    "NO_GLIB",
+    "NO_THREADS",
+    "SYSTEM_LAME",
+]
+
+win_manifest_library(
+    name = "test_utf8_manifest",
+    manifest = "engrave/tests/utf8.manifest",
+)
+
+WIN_MANIFEST_DEPS = select({
+    "@platforms//os:windows": [":test_utf8_manifest"],
+    "//conditions:default": [],
+})
+
+cc_library(
+    name = "public_headers",
+    hdrs = glob(["engrave/include/engrave/**/*.h"]),
+    includes = ["engrave/include"],
+)
+
+cc_library(
+    name = "muse_global",
+    srcs = glob([
+        "muse/framework/global/*.cpp",
+        "muse/framework/global/io/*.cpp",
+        "muse/framework/global/serialization/**/*.cpp",
+        "muse/framework/global/types/*.cpp",
+        "muse/framework/global/thirdparty/kors_logger/src/*.cpp",
+        "engrave/src/global/*.cpp",
+    ]) + ["engrave/src/runtime/resource_filesystem.cpp"],
+    hdrs = glob(
+        [
+            "muse/framework/global/**/*.h",
+            "muse/framework/global/**/*.hpp",
+            "muse/modularity/**/*.h",
+            "engrave/src/**/*.h",
+        ],
+        allow_empty = True,
+    ),
+    copts = ENGINE_COPTS,
+    defines = ENGINE_PLATFORM_DEFINES,
+    implementation_deps = [
+        "@picojson",
+        "@pugixml",
+        "@utfcpp",
+    ],
+    includes = [
+        ".",
+        "muse",
+        "muse/framework",
+        "muse/framework/global",
+        "src",
+    ],
+    linkopts = ENGINE_LINKOPTS,
+    textual_hdrs = glob(
+        ["engrave/src/**/*.inc"],
+        allow_empty = True,
+    ),
+    deps = [
+        ":public_headers",
+        "@amc",
+        "@engrave_config//:muse_generated",
+        "@pixi_deps//:zlib",
+        "@unordered_dense",
+    ],
+)
+
+cc_library(
+    name = "muse_draw",
+    srcs = glob(["muse/framework/draw/**/*.cpp"]) + ["engrave/src/render/cairo_painter.cpp"],
+    hdrs = glob(
+        [
+            "muse/framework/draw/**/*.h",
+            "muse/framework/draw/**/*.hpp",
+        ],
+        allow_empty = True,
+    ),
+    copts = ENGINE_COPTS,
+    includes = ["muse/framework/draw"],
+    deps = [
+        ":muse_global",
+        "@freetype",
+        "@harfbuzz",
+        "@pixi_deps//:cairo",
+    ],
+)
+
+cc_library(
+    name = "muse_mpe",
+    srcs = glob(["muse/framework/mpe/internal/*.cpp"]),
+    hdrs = glob(
+        [
+            "muse/framework/mpe/**/*.h",
+            "muse/framework/mpe/**/*.hpp",
+        ],
+        exclude = ["muse/framework/mpe/tests/**"],
+        allow_empty = True,
+    ),
+    copts = ENGINE_COPTS,
+    includes = ["muse/framework/mpe"],
+    deps = [
+        ":muse_global",
+        "@amc",
+        "@unordered_dense",
+    ],
+)
+
+cc_library(
+    name = "engraving_headers",
+    hdrs = glob(
+        [
+            "src/engraving/**/*.h",
+            "src/engraving/**/*.hpp",
+            "src/importexport/**/*.h",
+            "src/importexport/**/*.hpp",
+        ],
+        exclude = ["src/engraving/tests/**"],
+        allow_empty = True,
+    ),
+    includes = [
+        "src/engraving",
+        "src/engraving/infrastructure",
+        "src/engraving/thirdparty/dtl",
+    ],
+    textual_hdrs = glob(
+        [
+            "src/engraving/**/*.inc",
+            "src/engraving/**/*.ipp",
+        ],
+        allow_empty = True,
+    ),
+    deps = [
+        ":muse_draw",
+        ":muse_global",
+        ":muse_mpe",
+    ],
+)
+
+cc_pch(
+    name = "engraving_pch",
+    copts = ENGINE_COPTS,
+    header = "//bazel:pch/engraving_pch.h",
+    deps = [":engraving_headers"],
+)
+
+cc_library(
+    name = "engraving",
+    srcs = glob(
+        ["src/engraving/**/*.cpp"],
+        exclude = ["src/engraving/tests/**"],
+    ),
+    additional_compiler_inputs = select({
+        "//bazel:pch_enabled": [":engraving_pch"],
+        "//conditions:default": [],
+    }),
+    copts = ENGINE_COPTS + select({
+        "//bazel:pch_enabled": [
+            "-include-pch",
+            "$(location :engraving_pch)",
+        ],
+        "//conditions:default": [],
+    }),
+    deps = [":engraving_headers"],
+)
+
+cc_library(
+    name = "iex_musicxml",
+    srcs = glob(["src/importexport/musicxml/**/*.cpp"]),
+    copts = ENGINE_COPTS,
+    includes = ["src/importexport/musicxml"],
+    deps = [":engraving"],
+)
+
+cc_library(
+    name = "mnx_model",
+    srcs = glob(["src/importexport/mnx/model/*.cpp"]),
+    hdrs = glob(
+        [
+            "src/importexport/mnx/model/*.h",
+            "src/importexport/mnx/thirdparty/**/*.h",
+            "src/importexport/mnx/thirdparty/**/*.hpp",
+        ],
+        allow_empty = True,
+    ),
+    copts = ENGINE_COPTS,
+    includes = [
+        "src/importexport/mnx",
+        "src/importexport/mnx/thirdparty",
+    ],
+    deps = [
+        "@glaze",
+        "@unordered_dense",
+    ],
+)
+
+cc_library(
+    name = "iex_mnx",
+    srcs = glob([
+        "src/importexport/mnx/internal/export/*.cpp",
+        "src/importexport/mnx/internal/import/*.cpp",
+        "src/importexport/mnx/internal/shared/*.cpp",
+    ]),
+    copts = ENGINE_COPTS,
+    includes = ["src/importexport/mnx"],
+    deps = [
+        ":engraving",
+        ":mnx_model",
+    ],
+)
+
+cc_library(
+    name = "iex_guitarpro",
+    srcs = glob(["src/importexport/guitarpro/**/*.cpp"]),
+    copts = ENGINE_COPTS,
+    includes = ["src/importexport/guitarpro"],
+    deps = [":engraving"],
+)
+
+cc_library(
+    name = "iex_midi",
+    srcs = glob(["src/importexport/midi/**/*.cpp"]),
+    copts = ENGINE_COPTS,
+    includes = ["src/importexport/midi"],
+    deps = [":engraving"],
+)
+
+cc_library(
+    name = "native_fluidsynth",
+    srcs = [
+        "muse/framework/audio/thirdparty/fluidsynth/vorbis_decode.cpp",
+    ] + glob([
+        FLUIDSYNTH_DIR + "/src/bindings/*.c",
+        FLUIDSYNTH_DIR + "/src/drivers/*.c",
+        FLUIDSYNTH_DIR + "/src/midi/*.c",
+        FLUIDSYNTH_DIR + "/src/midi/*.cpp",
+        FLUIDSYNTH_DIR + "/src/rvoice/*.c",
+        FLUIDSYNTH_DIR + "/src/sfloader/*.c",
+        FLUIDSYNTH_DIR + "/src/synth/*.c",
+        FLUIDSYNTH_DIR + "/src/utils/*.c",
+    ]),
+    hdrs = glob(
+        [
+            FLUIDSYNTH_DIR + "/include/**/*.h",
+            FLUIDSYNTH_DIR + "/src/**/*.h",
+            "muse/framework/audio/thirdparty/fluidsynth/*.h",
+        ],
+        allow_empty = True,
+    ),
+    copts = ["-w"] + select({
+        "@platforms//os:windows": [],
+        "//conditions:default": [
+            "-fPIC",
+            "-pthread",
+        ],
+    }),
+    defines = ENGINE_PLATFORM_DEFINES + [
+        "EXTERN_VORBIS_SUPPORT",
+        "NO_GLIB",
+        "NO_THREADS",
+    ],
+    includes = FLUIDSYNTH_INCLUDES,
+    textual_hdrs = glob(
+        [
+            "muse/framework/audio/thirdparty/stb/*.c",
+            "muse/framework/audio/thirdparty/stb/*.h",
+        ],
+        allow_empty = True,
+    ),
+)
+
+cc_library(
+    name = "muse_audio_headers",
+    hdrs = glob(
+        [
+            "muse/framework/audio/**/*.h",
+            "muse/framework/audio/**/*.hpp",
+        ],
+        allow_empty = True,
+    ),
+    defines = AUDIO_ENGINE_DEFINES,
+    includes = [
+        "muse/framework/audio",
+        "muse/framework/audio/common",
+        "muse/framework/audio/engine",
+    ],
+    textual_hdrs = glob(
+        ["muse/framework/audio/thirdparty/stb/*.c"],
+        allow_empty = True,
+    ),
+    deps = [
+        ":muse_global",
+        ":muse_mpe",
+        ":native_fluidsynth",
+        "@amc",
+        "@ngcpp_proxy",
+        "@unordered_dense",
+    ],
+)
+
+cc_library(
+    name = "muse_midi_sequencer",
+    srcs = ["muse/framework/audio/engine/internal/synthesizers/fluidsynth/fluidsequencer.cpp"],
+    copts = ENGINE_COPTS,
+    deps = [":muse_audio_headers"],
+)
+
+cc_library(
+    name = "muse_audio_engine",
+    srcs = glob(
+        [
+            "muse/framework/audio/engine/*.cpp",
+            "muse/framework/audio/engine/internal/**/*.cpp",
+        ],
+        exclude = ["muse/framework/audio/engine/internal/synthesizers/fluidsynth/fluidsequencer.cpp"],
+    ),
+    copts = ENGINE_COPTS,
+    implementation_deps = [
+        "@fdk_aac",
+        "@lame",
+        "@libflac",
+        "@libopus",
+        "@libopusenc",
+    ],
+    deps = [
+        ":muse_audio_headers",
+        ":muse_midi_sequencer",
+    ],
+)
+
+cc_library(
+    name = "engrave_core_internal",
+    srcs = glob(
+        ["engrave/src/**/*.cpp"],
+        exclude = [
+            "engrave/src/global/*.cpp",
+            "engrave/src/runtime/resource_filesystem.cpp",
+            "engrave/src/render/cairo_painter.cpp",
+            "engrave/src/audio/engine_audio.cpp",
+            "engrave/src/runtime/engine_context_audio.cpp",
+            "engrave/src/api/audio.cpp",
+            "engrave/src/api/soundfonts.cpp",
+        ],
+    ),
+    copts = ENGINE_COPTS,
+    implementation_deps = ["@pugixml"],
+    deps = [
+        ":engraving",
+        ":iex_guitarpro",
+        ":iex_midi",
+        ":iex_mnx",
+        ":iex_musicxml",
+        ":muse_audio_headers",
+        ":muse_draw",
+        ":muse_global",
+        ":muse_mpe",
+        ":public_headers",
+        "@glaze",
+    ],
+)
+
+cc_library(
+    name = "engrave_audio_internal",
+    srcs = [
+        "engrave/src/api/audio.cpp",
+        "engrave/src/api/soundfonts.cpp",
+        "engrave/src/audio/engine_audio.cpp",
+        "engrave/src/runtime/engine_context_audio.cpp",
+    ],
+    copts = ENGINE_COPTS,
+    implementation_deps = ["@pugixml"],
+    deps = [
+        ":engrave_core_internal",
+        ":muse_audio_engine",
+        ":native_fluidsynth",
+        "@glaze",
+    ],
+)
+
+# Public std-only boundary: consumers only see engrave/include/.
+cc_library(
+    name = "engrave_core",
+    implementation_deps = [":engrave_core_internal"],
+    linkopts = ENGINE_LINKOPTS,
+    deps = [":public_headers"],
+)
+
+cc_library(
+    name = "engrave_audio",
+    implementation_deps = [":engrave_audio_internal"],
+    linkopts = ENGINE_LINKOPTS,
+    deps = [
+        ":engrave_core",
+        ":public_headers",
+    ],
+)
+
+cc_library(
+    name = "engrave",
+    deps = [
+        ":engrave_audio",
+        ":engrave_core",
+    ],
+)
+
+# ---------------------------------------------------------------------------
+# Engine test and probe targets
+# ---------------------------------------------------------------------------
+
+TEST_SOURCE_ROOT_DEFINE = 'ENGRAVE_TEST_SOURCE_ROOT=\\"%s\\"' % ENGRAVE_SOURCE_ROOT
+ENGRAVING_DATA_ROOT_DEFINE = 'ENGRAVING_TESTS_DATA_ROOT=\\"%s\\"' % ENGRAVING_TESTS_DATA_ROOT
+
+cc_library(
+    name = "test_harness_headers",
+    hdrs = glob(
+        [
+            "engrave/tests/**/*.h",
+            "src/engraving/tests/**/*.h",
+        ],
+        allow_empty = True,
+    ),
+    includes = [
+        "engrave/tests",
+        "src/engraving/tests",
+    ],
+)
+
+cc_binary(
+    name = "engraving_playback_tests",
+    srcs = [
+        "engrave/tests/gtest_main.cpp",
+        "engrave/tests/test_environment.cpp",
+        "src/engraving/tests/parts_tests.cpp",
+        "src/engraving/tests/playback/articulationprecedence_tests.cpp",
+        "src/engraving/tests/playback/bendsrenderer_tests.cpp",
+        "src/engraving/tests/playback/flatplaybackscore_tests.cpp",
+        "src/engraving/tests/playback/playbackcontext_tests.cpp",
+        "src/engraving/tests/playback/playbackeventsrendering_tests.cpp",
+        "src/engraving/tests/playback/playbackmodel_tests.cpp",
+        "src/engraving/tests/repeat_tests.cpp",
+        "src/engraving/tests/savehiddenparts_tests.cpp",
+        "src/engraving/tests/utils/scorecomp.cpp",
+        "src/engraving/tests/utils/scorerw.cpp",
+        "src/engraving/tests/utils/testutils.cpp",
+    ],
+    copts = ENGINE_COPTS,
+    local_defines = [
+        "TEST_HAS_ENGRAVING=1",
+        ENGRAVING_DATA_ROOT_DEFINE,
+    ],
+    deps = [
+        ":engrave_core_internal",
+        ":muse_midi_sequencer",
+        ":test_harness_headers",
+        "@amc",
+        "@gtest",
+        "@unordered_dense",
+    ] + WIN_MANIFEST_DEPS,
+)
+
+cc_binary(
+    name = "mpe_tests",
+    srcs = [
+        "engrave/tests/gtest_main.cpp",
+        "engrave/tests/test_environment.cpp",
+        "muse/framework/mpe/tests/flatmaptest.cpp",
+        "muse/framework/mpe/tests/multinotearticulationstest.cpp",
+        "muse/framework/mpe/tests/sharedflatmaptest.cpp",
+        "muse/framework/mpe/tests/singlenotearticulationstest.cpp",
+    ],
+    copts = ENGINE_COPTS,
+    deps = [
+        ":muse_mpe",
+        ":test_harness_headers",
+        "@gtest",
+    ] + WIN_MANIFEST_DEPS,
+)
+
+cc_binary(
+    name = "archive_test",
+    srcs = ["engrave/tests/archive_test.cpp"],
+    copts = ENGINE_COPTS,
+    deps = [
+        ":muse_global",
+        ":test_harness_headers",
+        "@amc",
+        "@glaze",
+        "@unordered_dense",
+    ] + WIN_MANIFEST_DEPS,
+)
+
+[
+    cc_binary(
+        name = name,
+        srcs = ["engrave/tests/%s.cpp" % name],
+        copts = ENGINE_COPTS,
+        deps = [
+            ":engrave_core_internal",
+            ":test_harness_headers",
+            "@amc",
+            "@unordered_dense",
+        ] + WIN_MANIFEST_DEPS,
+    )
+    for name in [
+        "excerpts_test",
+        "score_audio_test",
+        "score_edit_test",
+        "score_positions_test",
+        "semantic_dump",
+        "import_export_probe",
+        "write470_probe",
+    ]
+]
+
+cc_binary(
+    name = "assets_test",
+    srcs = ["engrave/tests/assets_test.cpp"],
+    copts = ENGINE_COPTS,
+    deps = [
+        ":engrave_audio_internal",
+        ":engrave_core_internal",
+        ":test_harness_headers",
+        "@amc",
+        "@unordered_dense",
+    ] + WIN_MANIFEST_DEPS,
+)
+
+cc_binary(
+    name = "engine_audio_probe",
+    srcs = ["engrave/tests/engine_audio_probe.cpp"],
+    copts = ENGINE_COPTS,
+    linkopts = select({
+        "@platforms//os:windows": ["-lpsapi"],
+        "//conditions:default": [],
+    }),
+    deps = [
+        ":engrave_audio_internal",
+        ":engrave_core_internal",
+        ":test_harness_headers",
+        "@amc",
+        "@unordered_dense",
+    ] + WIN_MANIFEST_DEPS,
+)
+
+cc_library(
+    name = "probe_internal_headers",
+    hdrs = [
+        "engrave/src/api/sniff.h",
+        "engrave/src/score/json.h",
+    ],
+    includes = ["."],
+    visibility = ["//visibility:private"],
+    deps = ["@glaze"],
+)
+
+cc_binary(
+    name = "engrave_api_test",
+    srcs = ["engrave/tests/api_test.cpp"],
+    copts = ENGINE_COPTS,
+    local_defines = [TEST_SOURCE_ROOT_DEFINE],
+    deps = [
+        ":engrave_core",
+        ":probe_internal_headers",
+        "@gtest",
+    ] + WIN_MANIFEST_DEPS,
+)
+
+cc_binary(
+    name = "engrave_handles_test",
+    srcs = [
+        "engrave/tests/handles_mmr_segment_test.cpp",
+        "engrave/tests/handles_native_save_test.cpp",
+        "engrave/tests/handles_stave_sharing_test.cpp",
+        "engrave/tests/handles_test.cpp",
+        "engrave/tests/handles_test_fixture.cpp",
+    ],
+    copts = ENGINE_COPTS,
+    local_defines = [TEST_SOURCE_ROOT_DEFINE],
+    deps = [
+        ":engrave_core_internal",
+        ":test_harness_headers",
+        "@gtest",
+    ] + WIN_MANIFEST_DEPS,
+)
+
+cc_binary(
+    name = "engrave_mnx_model_test",
+    srcs = ["engrave/tests/mnx_model_test.cpp"],
+    copts = ENGINE_COPTS,
+    local_defines = [TEST_SOURCE_ROOT_DEFINE],
+    deps = [
+        ":mnx_model",
+        "@gtest",
+    ] + WIN_MANIFEST_DEPS,
+)
+
+cc_binary(
+    name = "engrave_mnx_import_test",
+    srcs = ["engrave/tests/mnx_import_test.cpp"],
+    copts = ENGINE_COPTS,
+    local_defines = [TEST_SOURCE_ROOT_DEFINE],
+    deps = [
+        ":engrave_core_internal",
+        ":mnx_model",
+        ":test_harness_headers",
+        "@gtest",
+    ] + WIN_MANIFEST_DEPS,
+)
+
+cc_binary(
+    name = "engrave_gp_import_test",
+    srcs = ["engrave/tests/gp_import_test.cpp"],
+    copts = ENGINE_COPTS,
+    local_defines = [TEST_SOURCE_ROOT_DEFINE],
+    deps = [
+        ":engrave_core_internal",
+        ":test_harness_headers",
+        "@gtest",
+    ] + WIN_MANIFEST_DEPS,
+)
+
+cc_binary(
+    name = "engrave_describe_test",
+    srcs = [
+        "engrave/tests/describe_test.cpp",
+        "engrave/tests/propertyvalue_test.cpp",
+    ],
+    copts = ENGINE_COPTS,
+    local_defines = [TEST_SOURCE_ROOT_DEFINE],
+    deps = [
+        ":engrave_core_internal",
+        ":test_harness_headers",
+        "@gtest",
+    ] + WIN_MANIFEST_DEPS,
+)
+
+cc_binary(
+    name = "engrave_read_test",
+    srcs = [
+        "engrave/tests/layout_headers_test.cpp",
+        "engrave/tests/read_export470_test.cpp",
+        "engrave/tests/read_layoutbounds_test.cpp",
+        "engrave/tests/read_layoutdatastore_test.cpp",
+        "engrave/tests/read_test.cpp",
+        "engrave/tests/read_test_fixture.cpp",
+    ],
+    copts = ENGINE_COPTS,
+    local_defines = [TEST_SOURCE_ROOT_DEFINE],
+    deps = [
+        ":engrave_core_internal",
+        ":test_harness_headers",
+        "@gtest",
+    ] + WIN_MANIFEST_DEPS,
+)
+
+cc_binary(
+    name = "engrave_ops_test",
+    srcs = glob(["engrave/tests/harness/**/*.cpp"]),
+    copts = ENGINE_COPTS,
+    local_defines = [TEST_SOURCE_ROOT_DEFINE],
+    deps = [
+        ":engrave_core_internal",
+        ":test_harness_headers",
+        "@gtest",
+    ] + WIN_MANIFEST_DEPS,
+)
+
+cc_binary(
+    name = "engrave_output_test",
+    srcs = [
+        "engrave/tests/audio_internal_test.cpp",
+        "engrave/tests/audio_test.cpp",
+        "engrave/tests/digest.cpp",
+        "engrave/tests/output_test.cpp",
+    ],
+    copts = ENGINE_COPTS,
+    local_defines = [TEST_SOURCE_ROOT_DEFINE],
+    deps = [
+        ":engrave_audio_internal",
+        ":engrave_core_internal",
+        ":test_harness_headers",
+        "@amc",
+        "@gtest",
+        "@pixi_deps//:zlib",
+        "@unordered_dense",
+    ] + WIN_MANIFEST_DEPS,
+)
+
+cc_binary(
+    name = "engrave_output_probe",
+    srcs = ["engrave/tests/output_probe.cpp"],
+    copts = ENGINE_COPTS,
+    deps = [
+        ":engrave",
+        ":probe_internal_headers",
+        ":test_harness_headers",
+    ] + WIN_MANIFEST_DEPS,
+)
+
+# Strict public-header leak check: compiles with ONLY public_headers in scope.
+cc_binary(
+    name = "example_embedder",
+    srcs = ["engrave/tests/example_embedder.cpp"],
+    deps = [":engrave_core"],
+)
+
+cc_binary(
+    name = "audio_engine_link_check",
+    srcs = ["engrave/tests/audio_engine_link_check.cpp"],
+    copts = ENGINE_COPTS,
+    deps = [
+        ":muse_audio_engine",
+        ":test_harness_headers",
+    ] + WIN_MANIFEST_DEPS,
+)
+
+cc_binary(
+    name = "diagnostics_test",
+    srcs = ["engrave/tests/diagnostics_test.cpp"],
+    copts = ENGINE_COPTS,
+    deps = [
+        ":muse_global",
+        ":test_harness_headers",
+        "@gtest",
+    ],
+)
+
+cc_binary(
+    name = "io_boundary_test",
+    srcs = ["engrave/tests/io_boundary_test.cpp"],
+    copts = ENGINE_COPTS,
+    deps = [
+        ":muse_global",
+        ":test_harness_headers",
+        "@gtest",
+    ],
+)
+
+filegroup(
+    name = "engine_tests",
+    srcs = [
+        ":archive_test",
+        ":assets_test",
+        ":diagnostics_test",
+        ":engine_audio_probe",
+        ":engrave_api_test",
+        ":engrave_describe_test",
+        ":engrave_gp_import_test",
+        ":engrave_handles_test",
+        ":engrave_mnx_import_test",
+        ":engrave_mnx_model_test",
+        ":engrave_ops_test",
+        ":engrave_output_probe",
+        ":engrave_output_test",
+        ":engrave_read_test",
+        ":engraving_playback_tests",
+        ":example_embedder",
+        ":excerpts_test",
+        ":import_export_probe",
+        ":io_boundary_test",
+        ":mpe_tests",
+        ":score_audio_test",
+        ":score_edit_test",
+        ":score_positions_test",
+        ":semantic_dump",
+        ":write470_probe",
+    ],
+)

@@ -46,7 +46,7 @@
 namespace muse::mpe {
 // common
 using usecs_t = int64_t; // microseconds
-using percentage_t = int_fast16_t;
+using percentage_t = int32_t;
 constexpr percentage_t one_percent = 100;
 constexpr percentage_t fifty_percent = ::muse::mpe::one_percent * 50;
 constexpr percentage_t hundred_percent = ::muse::mpe::one_percent * 100;
@@ -64,9 +64,9 @@ constexpr inline percentage_t percentage_from_factor(const float factor) {
 using timestamp_t = usecs_t;
 using duration_t = usecs_t;
 using duration_percentage_t = percentage_t;
-using voice_layer_idx_t = uint_fast8_t;
-using staff_layer_idx_t = uint_fast16_t;
-using layer_idx_t = uint_fast32_t;
+using voice_layer_idx_t = uint8_t;
+using staff_layer_idx_t = uint32_t;
+using layer_idx_t = uint32_t;
 
 static constexpr duration_t infinite_duration = std::numeric_limits<duration_t>::max();
 

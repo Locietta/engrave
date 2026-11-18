@@ -1,0 +1,13 @@
+common --enable_platform_specific_config
+common --registry=https://bazel.clice.io/
+common --registry=https://bcr.bazel.build/
+common --experimental_repository_downloader_retries=10 --http_timeout_scaling=2
+common --repo_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
+common --cxxopt=-std=c++23 --host_cxxopt=-std=c++23
+common --experimental_cpp_modules
+
+build -c opt
+build:release -c opt
+build:releasedbg -c opt --copt=-g
+build:debug -c dbg
+build:asan -c dbg --copt=-O1 --features=asan

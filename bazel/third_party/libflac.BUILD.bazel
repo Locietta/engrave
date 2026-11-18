@@ -1,0 +1,148 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+FLAC_COMMON_COPTS = [
+    "-fassociative-math",
+    "-fno-signed-zeros",
+    "-fno-trapping-math",
+    "-freciprocal-math",
+    "-w",
+]
+
+FLAC_LOCAL_DEFINES = [
+    "HAVE_CONFIG_H",
+    "_USE_MATH_DEFINES",
+] + select({
+    "@platforms//os:windows": ["_CRT_SECURE_NO_WARNINGS"],
+    "//conditions:default": [],
+})
+
+cc_library(
+    name = "flac_private_hdrs",
+    hdrs = [
+        "config_include/config.h",
+    ] + glob([
+        "include/**/*.h",
+        "src/libFLAC/include/**/*.h",
+    ]),
+    includes = [
+        "config_include",
+        "include",
+        "src/libFLAC/include",
+    ],
+    visibility = ["//visibility:private"],
+)
+
+cc_library(
+    name = "flac_ssse3",
+    srcs = [
+        "src/libFLAC/fixed_intrin_ssse3.c",
+        "src/libFLAC/stream_encoder_intrin_ssse3.c",
+    ],
+    copts = FLAC_COMMON_COPTS + ["-mssse3"],
+    defines = ["FLAC__NO_DLL"],
+    implementation_deps = [":flac_private_hdrs"],
+    local_defines = FLAC_LOCAL_DEFINES,
+    visibility = ["//visibility:private"],
+)
+
+cc_library(
+    name = "flac_sse41",
+    srcs = ["src/libFLAC/lpc_intrin_sse41.c"],
+    copts = FLAC_COMMON_COPTS + ["-msse4.1"],
+    defines = ["FLAC__NO_DLL"],
+    implementation_deps = [":flac_private_hdrs"],
+    local_defines = FLAC_LOCAL_DEFINES,
+    visibility = ["//visibility:private"],
+)
+
+cc_library(
+    name = "flac_sse42",
+    srcs = ["src/libFLAC/fixed_intrin_sse42.c"],
+    copts = FLAC_COMMON_COPTS + ["-msse4.2"],
+    defines = ["FLAC__NO_DLL"],
+    implementation_deps = [":flac_private_hdrs"],
+    local_defines = FLAC_LOCAL_DEFINES,
+    visibility = ["//visibility:private"],
+)
+
+cc_library(
+    name = "flac_avx2",
+    srcs = [
+        "src/libFLAC/fixed_intrin_avx2.c",
+        "src/libFLAC/lpc_intrin_avx2.c",
+        "src/libFLAC/lpc_intrin_fma.c",
+        "src/libFLAC/stream_encoder_intrin_avx2.c",
+    ],
+    copts = FLAC_COMMON_COPTS + [
+        "-mavx2",
+        "-mfma",
+    ],
+    defines = ["FLAC__NO_DLL"],
+    implementation_deps = [":flac_private_hdrs"],
+    local_defines = FLAC_LOCAL_DEFINES,
+    visibility = ["//visibility:private"],
+)
+
+cc_library(
+    name = "flac_c",
+    srcs = [
+        "src/libFLAC/bitmath.c",
+        "src/libFLAC/bitreader.c",
+        "src/libFLAC/bitwriter.c",
+        "src/libFLAC/cpu.c",
+        "src/libFLAC/crc.c",
+        "src/libFLAC/fixed.c",
+        "src/libFLAC/fixed_intrin_sse2.c",
+        "src/libFLAC/float.c",
+        "src/libFLAC/format.c",
+        "src/libFLAC/lpc.c",
+        "src/libFLAC/lpc_intrin_neon.c",
+        "src/libFLAC/lpc_intrin_sse2.c",
+        "src/libFLAC/md5.c",
+        "src/libFLAC/memory.c",
+        "src/libFLAC/metadata_iterators.c",
+        "src/libFLAC/metadata_object.c",
+        "src/libFLAC/stream_decoder.c",
+        "src/libFLAC/stream_encoder.c",
+        "src/libFLAC/stream_encoder_framing.c",
+        "src/libFLAC/stream_encoder_intrin_sse2.c",
+        "src/libFLAC/window.c",
+    ] + select({
+        "@platforms//os:windows": ["src/share/win_utf8_io/win_utf8_io.c"],
+        "//conditions:default": [],
+    }),
+    hdrs = glob(["include/FLAC/*.h"]),
+    copts = FLAC_COMMON_COPTS,
+    defines = ["FLAC__NO_DLL"],
+    implementation_deps = [":flac_private_hdrs"],
+    includes = ["include"],
+    local_defines = FLAC_LOCAL_DEFINES,
+    textual_hdrs = glob(["src/libFLAC/deduplication/*.c"]),
+    visibility = ["//visibility:private"],
+    deps = [
+        ":flac_avx2",
+        ":flac_sse41",
+        ":flac_sse42",
+        ":flac_ssse3",
+    ],
+)
+
+cc_library(
+    name = "libflac",
+    srcs = [
+        "src/libFLAC++/metadata.cpp",
+        "src/libFLAC++/stream_decoder.cpp",
+        "src/libFLAC++/stream_encoder.cpp",
+    ],
+    hdrs = glob([
+        "include/FLAC/*.h",
+        "include/FLAC++/*.h",
+    ]),
+    copts = ["-w"],
+    defines = ["FLAC__NO_DLL"],
+    implementation_deps = [":flac_private_hdrs"],
+    includes = ["include"],
+    local_defines = FLAC_LOCAL_DEFINES,
+    visibility = ["//visibility:public"],
+    deps = [":flac_c"],
+)

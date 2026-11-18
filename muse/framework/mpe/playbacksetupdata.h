@@ -117,7 +117,7 @@ struct PlaybackSetupData {
             return false;
         }
 
-        if (id == ::muse::mpe::id_strings.at(SoundId::UNDEFINED)) {
+        if (id == sound_id_to_string(SoundId::UNDEFINED)) {
             return false;
         }
 
@@ -158,9 +158,12 @@ struct PlaybackSetupData {
     }
 };
 
-static const PlaybackSetupData generic_setup_data = {SoundId::LAST, SoundCategory::LAST, {SoundSubCategory::LAST}};
+inline const PlaybackSetupData &generic_setup_data() {
+    static const PlaybackSetupData data = {SoundId::LAST, SoundCategory::LAST, {SoundSubCategory::LAST}};
+    return data;
+}
 
-static const String generic_setup_data_string = ::muse::mpe::generic_setup_data.to_string();
+inline const String generic_setup_data_string(u"last.last.last");
 } // namespace muse::mpe
 
 #endif // MUSE_MPE_PLAYBACKSETUPDATA_H

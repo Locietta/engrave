@@ -97,6 +97,8 @@ compile_commands.json
 **/.qmlls.ini
 # xmake standalone build state
 .xmake/
+/bazel-*
+/user.bazelrc
 
 # Local runtime captures, assets, and downloaded inputs
 .runtime/

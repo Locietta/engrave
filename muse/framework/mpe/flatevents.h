@@ -65,8 +65,7 @@ inline bool contains_articulation(std::span<const ArticulationRecord> articulati
 }
 
 //! A ValuesCurve entry in the curve's own key and value types (design B3: no narrowing). The sorted-range
-//! helpers (amplitude_value_point, velocity_fraction, ...) therefore run on the legacy arithmetic types on
-//! every platform; percentage_t is int_fast16_t, 32-bit on MSVC and 64-bit on glibc/libstdc++
+//! helpers (amplitude_value_point, velocity_fraction, ...) run on deterministic 32-bit percentage_t everywhere
 struct CurvePoint {
     duration_percentage_t at = 0;
     percentage_t value = 0;
