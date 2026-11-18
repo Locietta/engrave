@@ -135,7 +135,13 @@ cc_import(
 
 cc_library(
     name = "cairo",
-    hdrs = glob(["env/Library/include/cairo/*.h"]),
+    hdrs = glob(
+        [
+            "env/Library/include/cairo/*.h",
+            "env/Library/include/fontconfig/*.h",
+        ],
+        allow_empty = True,
+    ),
     includes = [
         "env/Library/include",
         "env/Library/include/cairo",
@@ -173,7 +179,13 @@ cc_import(
 
 cc_library(
     name = "cairo",
-    hdrs = glob(["env/include/cairo/*.h"]),
+    hdrs = glob(
+        [
+            "env/include/cairo/*.h",
+            "env/include/fontconfig/*.h",
+        ],
+        allow_empty = True,
+    ),
     includes = [
         "env/include",
         "env/include/cairo",
