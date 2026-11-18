@@ -1,0 +1,59 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+cc_library(
+    name = "fdk_aac_private_hdrs",
+    hdrs = glob(["lib*/include/*.h"]),
+    includes = [
+        "libArithCoding/include",
+        "libDRCdec/include",
+        "libFDK/include",
+        "libMpegTPDec/include",
+        "libMpegTPEnc/include",
+        "libPCMutils/include",
+        "libSACdec/include",
+        "libSACenc/include",
+        "libSBRdec/include",
+        "libSBRenc/include",
+    ],
+    visibility = ["//visibility:private"],
+)
+
+cc_library(
+    name = "fdk_aac",
+    srcs = glob([
+        "libAACdec/src/*.cpp",
+        "libAACenc/src/*.cpp",
+        "libArithCoding/src/*.cpp",
+        "libDRCdec/src/*.cpp",
+        "libFDK/src/*.cpp",
+        "libMpegTPDec/src/*.cpp",
+        "libMpegTPEnc/src/*.cpp",
+        "libPCMutils/src/*.cpp",
+        "libSACdec/src/*.cpp",
+        "libSACenc/src/*.cpp",
+        "libSBRdec/src/*.cpp",
+        "libSBRenc/src/*.cpp",
+        "libSYS/src/*.cpp",
+    ]),
+    hdrs = [
+        "libAACdec/include/aacdecoder_lib.h",
+        "libAACenc/include/aacenc_lib.h",
+        "libSYS/include/FDK_audio.h",
+        "libSYS/include/genericStds.h",
+        "libSYS/include/machine_type.h",
+        "libSYS/include/syslib_channelMapDescr.h",
+    ],
+    copts = [
+        "-fno-exceptions",
+        "-fno-rtti",
+        "-w",
+    ],
+    implementation_deps = [":fdk_aac_private_hdrs"],
+    includes = [
+        "libAACdec/include",
+        "libAACenc/include",
+        "libSYS/include",
+    ],
+    textual_hdrs = glob(["lib*/src/*.h"]),
+    visibility = ["//visibility:public"],
+)

@@ -269,25 +269,16 @@ TEST(FlatPlaybackStoreTests, FreezeRejectsEventsWithoutProducerAndKeyMismatch) {
     EXPECT_THROW(freeze_events(track, 0, mismatched, progress), std::logic_error);
 }
 
-// Design B3: curve entries keep the legacy value type, so the shared helpers see the same arithmetic on
-// every platform. percentage_t is 32-bit on MSVC and 64-bit with libstdc++; the wide cases only run there
+// Design B3: curve entries keep percentage_t (32-bit signed across all platforms) so shared helpers see identical arithmetic
 TEST(FlatPlaybackStoreTests, CurveValuesKeepTheLegacyTypeAndHelperResults) {
     static_assert(std::is_same_v<decltype(max_amplitude_level(std::declval<std::span<const CurvePoint>>())), percentage_t>);
     static_assert(std::is_same_v<decltype(amplitude_value_point(std::declval<std::span<const CurvePoint>>()).second),
                                  decltype(std::declval<PitchCurve>().amplitude_value_point().second)>);
 
-    using Limits = std::numeric_limits<percentage_t>;
-    std::vector<std::vector<percentage_t>> cases{
+    static_assert(std::is_same_v<percentage_t, std::int32_t>);
+
+    const std::vector<std::vector<percentage_t>> cases{
         {0, 120, -340}, {std::numeric_limits<std::int32_t>::max(), -5}, {std::numeric_limits<std::int32_t>::min() + 1, 7}};
-    if constexpr (sizeof(percentage_t) > sizeof(std::int32_t)) {
-        // Representable by the legacy curve only when percentage_t is wider than int32 (Linux)
-        const percentage_t above = static_cast<percentage_t>(std::numeric_limits<std::int32_t>::max()) + 1;
-        const percentage_t at_min = std::numeric_limits<std::int32_t>::min();
-        cases.push_back({above, 3});
-        cases.push_back({at_min, -2});
-        cases.push_back({static_cast<percentage_t>(at_min) - 1, 1});
-        cases.push_back({Limits::max() / 2, Limits::min() / 2});
-    }
 
     for (const auto &values : cases) {
         mpe::NoteEvent note = make_note(0, 6500, false);
