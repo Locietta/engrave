@@ -115,6 +115,7 @@ def _cc_pch_impl(ctx):
             transitive = [cc_toolchain.all_files, comp_ctx.headers],
         ),
         outputs = [pch_out],
+        execution_requirements = {"no-sandbox": "1"},
         mnemonic = "CppPch",
         progress_message = "Precompiling C++ header %{input}",
     )
