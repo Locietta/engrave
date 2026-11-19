@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstdint>
 #include <cstdlib>
 #include <exception>
 #include <filesystem>
@@ -14,6 +15,11 @@
 #include <stdexcept>
 #include <thread>
 #include <utility>
+
+#if defined(__SSE2__) || defined(_M_X64) || defined(_M_AMD64)
+#include <pmmintrin.h>
+#include <xmmintrin.h>
+#endif
 
 #include <amc/flatset.hpp>
 #include <fluidsynth.h>
@@ -62,6 +68,64 @@ using namespace mu::engraving;
 
 namespace music {
 namespace {
+// Recursive reverb tails otherwise incur subnormal arithmetic traps; keep the
+// caller's floating-point modes intact for callbacks and subsequent layout work.
+struct ScopedDenormalGuard {
+#if defined(__SSE2__) || defined(_M_X64) || defined(_M_AMD64)
+    static void enable() noexcept {
+        _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+        _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
+    }
+
+    void restore() const noexcept {
+        _MM_SET_FLUSH_ZERO_MODE(flush_zero_mode);
+        _MM_SET_DENORMALS_ZERO_MODE(denormals_zero_mode);
+    }
+
+    ScopedDenormalGuard() noexcept { enable(); }
+
+    ~ScopedDenormalGuard() { restore(); }
+
+    const std::uint32_t flush_zero_mode = _MM_GET_FLUSH_ZERO_MODE();
+    const std::uint32_t denormals_zero_mode = _MM_GET_DENORMALS_ZERO_MODE();
+#elif defined(__aarch64__) && !defined(_MSC_VER)
+    void enable() const noexcept {
+        const auto enabled = fpcr | (1ULL << 24);
+        if (enabled != fpcr) asm volatile("msr fpcr, %0" : : "r"(enabled));
+    }
+
+    void restore() const noexcept { asm volatile("msr fpcr, %0" : : "r"(fpcr)); }
+
+    ScopedDenormalGuard() noexcept {
+        asm volatile("mrs %0, fpcr" : "=r"(fpcr));
+        enable();
+    }
+
+    ~ScopedDenormalGuard() { restore(); }
+
+    std::uint64_t fpcr;
+#else
+    static void enable() noexcept {}
+
+    static void restore() noexcept {}
+
+    ScopedDenormalGuard() = default;
+    ~ScopedDenormalGuard() = default;
+#endif
+    struct Suspend {
+        explicit Suspend(const ScopedDenormalGuard &owner) noexcept : guard(owner) { guard.restore(); }
+
+        ~Suspend() { guard.enable(); }
+
+        Suspend(const Suspend &) = delete;
+        Suspend &operator=(const Suspend &) = delete;
+        const ScopedDenormalGuard &guard;
+    };
+
+    ScopedDenormalGuard(const ScopedDenormalGuard &) = delete;
+    ScopedDenormalGuard &operator=(const ScopedDenormalGuard &) = delete;
+};
+
 constexpr sample_rate_t k_default_sample_rate = 44100;
 constexpr samples_t k_samples_per_channel = 4096;
 constexpr audioch_t k_audio_channel_count = 2;
@@ -418,6 +482,7 @@ std::string engine_soundfont_resource_id(const EngineAudio &audio) { return audi
 std::string engine_soundfont_uri(const EngineAudio &audio) { return audio.state().resources.soundfont_uri; }
 
 AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, const AudioRenderRequest &request) {
+    const ScopedDenormalGuard denormal_guard;
     OfflineTimingReport timing_report;
     AudioRenderResult result;
     const auto fail = [&result](AudioRenderResult::Failure kind, std::string message) {
@@ -444,6 +509,7 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
         // Encoder file writes may originate in C codec callbacks. Unwind only
         // after leaving the codec, closing the file and idling the graph.
         if (!cancelled && request.cancelled) {
+            const ScopedDenormalGuard::Suspend suspend(denormal_guard);
             try {
                 cancelled = request.cancelled();
             } catch (...) {

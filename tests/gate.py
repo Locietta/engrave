@@ -343,6 +343,30 @@ def main():
         "--python=" + sys.executable,
         "--mnx-out=" + str(a.output / "mnx-export"),
     ]
+    font = (
+        Path("C:/Windows/Fonts/arial.ttf")
+        if platform == "windows"
+        else (
+            native / "fonts/DejaVuSans.ttf"
+            if (native / "fonts/DejaVuSans.ttf").is_file()
+            else Path("/usr/share/fonts/TTF/DejaVuSans.ttf")
+        )
+    )
+    sources = sorted((REPO_ROOT / "tests/data/inputs/golden").glob("*")) + [
+        REPO_ROOT / "tests/data/inputs/evening.musicxml"
+    ]
+    sources += [
+        a.engine_source / "src/importexport/mnx/tests/data" / name
+        for name in (
+            "engine/two-notes.mnx",
+            "project_examples/tupletSimple.mnx",
+            "project_examples/percussionKit.mnx",
+            "project_examples/graceArps.mnx",
+        )
+    ]
+    sources = [s for s in sources if s.suffix in {".mscx", ".mscz", ".musicxml", ".mxl", ".mid", ".gp", ".mnx"}]
+    if not sources:
+        raise RuntimeError("incomplete supported corpus")
     tasks = [
         dict(name="comparator-mutations", command=[sys.executable, REPO_ROOT / "tests/test_inventory.py"]),
         dict(
@@ -351,28 +375,146 @@ def main():
         ),
         dict(name="oracle-controls", command=[sys.executable, REPO_ROOT / "tests/integration/test_oracle_harness.py"]),
     ]
-    core_shards = min(4, a.test_jobs)
-    for shard in range(core_shards):
-        name = f"engrave_core_tests-shard{shard}"
-        cwd = a.output / name
-        cwd.mkdir(exist_ok=True)
+    for binary, arguments, max_shards in (
+        ("engrave_core_tests", core_args, 8),
+        ("engrave_output_test", output_args, 4),
+    ):
+        shards = min(max_shards, a.test_jobs)
+        for shard in range(shards):
+            name = f"{binary}-shard{shard}"
+            cwd = a.output / name
+            # Some tests use predictable filenames in the OS temp directory.
+            scratch = cwd / "tmp"
+            scratch.mkdir(parents=True, exist_ok=True)
+            tasks.append(
+                dict(
+                    name=name,
+                    command=[a.build_dir / (binary + suffix), *arguments],
+                    cwd=cwd,
+                    env={
+                        "GTEST_TOTAL_SHARDS": str(shards),
+                        "GTEST_SHARD_INDEX": str(shard),
+                        "TMPDIR": str(scratch),
+                        "TMP": str(scratch),
+                        "TEMP": str(scratch),
+                    },
+                )
+            )
+    tasks.append(
+        dict(
+            name="write470-excerpts",
+            command=[
+                sys.executable,
+                REPO_ROOT / "engrave/tests/test_write470_excerpts.py",
+                "--probe",
+                a.build_dir / ("write470_probe" + suffix),
+                "--assets",
+                a.assets,
+                "--out",
+                a.output / "write470-excerpts",
+            ],
+        )
+    )
+    # These pinned engine tests still read cwd-relative fixtures and engine data.
+    # Each suite gets its own capture directory so a shared engine-cwd can never
+    # race between them.
+    for name in ("score_edit_test", "score_audio_test", "score_positions_test"):
+        engine_cwd = a.output / "engine-cwd" / name
+        (engine_cwd / "vendor").mkdir(parents=True, exist_ok=True)
+        setup_link(INPUT_ROOT, engine_cwd / "fixtures")
+        setup_link(a.engine_source, engine_cwd / "vendor/engrave")
         tasks.append(
             dict(
                 name=name,
-                command=[a.build_dir / ("engrave_core_tests" + suffix), *core_args],
-                cwd=cwd,
-                env={"GTEST_TOTAL_SHARDS": str(core_shards), "GTEST_SHARD_INDEX": str(shard)},
+                command=[
+                    a.build_dir / (name + suffix),
+                    a.assets,
+                    *([a.engine_source] if name == "score_audio_test" else []),
+                ],
+                cwd=engine_cwd,
             )
         )
-    output_cwd = a.output / "engrave_output_test"
-    output_cwd.mkdir(exist_ok=True)
     tasks.append(
         dict(
-            name="engrave_output_test",
-            command=[a.build_dir / ("engrave_output_test" + suffix), *output_args],
-            cwd=output_cwd,
+            name="excerpts",
+            command=[
+                sys.executable,
+                REPO_ROOT / "tests/integration/test_excerpts.py",
+                "--binary",
+                a.build_dir / ("excerpts_test" + suffix),
+                "--assets",
+                a.assets,
+                "--output",
+                a.output / "excerpts",
+            ],
         )
     )
+    tasks.append(
+        dict(
+            name="archives",
+            command=[
+                sys.executable,
+                REPO_ROOT / "tests/integration/test_archives.py",
+                "--binary",
+                a.build_dir / ("archive_test" + suffix),
+                "--output",
+                a.output / "archives",
+            ],
+        )
+    )
+    tasks.append(
+        dict(
+            name="assets",
+            command=[
+                sys.executable,
+                REPO_ROOT / "tests/integration/test_assets.py",
+                "--binary",
+                a.build_dir / ("assets_test" + suffix),
+                "--assets",
+                a.assets,
+                "--font",
+                font,
+                "--soundfont",
+                a.soundfont,
+                "--output",
+                a.output / "assets",
+            ],
+        )
+    )
+    tasks.append(
+        dict(
+            name="asset-installer",
+            command=[sys.executable, "-B", a.engine_source / "tools/test_install_assets.py"],
+            cwd=a.engine_source / "tools",
+        )
+    )
+    tasks.append(
+        dict(
+            name="embedder",
+            command=[a.build_dir / ("example_embedder" + suffix), a.assets, *sources],
+        )
+    )
+    if not a.quick:
+        tasks.append(
+            dict(
+                name="engine-audio",
+                command=[
+                    sys.executable,
+                    REPO_ROOT / "tests/integration/test_engine_audio.py",
+                    "--engine-only",
+                    "--bin-dir",
+                    a.build_dir,
+                    "--resources",
+                    a.assets,
+                    "--soundfont",
+                    a.soundfont,
+                    "--engine-source",
+                    a.engine_source,
+                    "--output",
+                    a.output / "engine-audio",
+                ],
+            )
+        )
     run_parallel(tasks)
     # Schema validation reads the import suite's export; it starts only after
     # that suite has completed.
@@ -383,19 +525,6 @@ def main():
             REPO_ROOT / "tests/engrave_testing/check_mnx_schema.py",
             a.output / "mnx-export",
             a.engine_source / "src/importexport/mnx/model/mnx-schema.json",
-        ],
-    )
-    run(
-        "write470-excerpts",
-        [
-            sys.executable,
-            REPO_ROOT / "engrave/tests/test_write470_excerpts.py",
-            "--probe",
-            a.build_dir / ("write470_probe" + suffix),
-            "--assets",
-            a.assets,
-            "--out",
-            a.output / "write470-excerpts",
         ],
     )
     run(
@@ -415,97 +544,6 @@ def main():
             "--jobs",
             "1",
         ],
-    )
-    # These pinned engine tests still read cwd-relative fixtures and engine data.
-    # Each suite gets its own capture directory so a shared engine-cwd can never
-    # race between them.
-    for name in ("score_edit_test", "score_audio_test", "score_positions_test"):
-        engine_cwd = a.output / "engine-cwd" / name
-        (engine_cwd / "vendor").mkdir(parents=True, exist_ok=True)
-        setup_link(INPUT_ROOT, engine_cwd / "fixtures")
-        setup_link(a.engine_source, engine_cwd / "vendor/engrave")
-        run(
-            name,
-            [
-                a.build_dir / (name + suffix),
-                a.assets,
-                *([a.engine_source] if name == "score_audio_test" else []),
-            ],
-            cwd=engine_cwd,
-        )
-    run(
-        "excerpts",
-        [
-            sys.executable,
-            REPO_ROOT / "tests/integration/test_excerpts.py",
-            "--binary",
-            a.build_dir / ("excerpts_test" + suffix),
-            "--assets",
-            a.assets,
-            "--output",
-            a.output / "excerpts",
-        ],
-    )
-    run(
-        "archives",
-        [
-            sys.executable,
-            REPO_ROOT / "tests/integration/test_archives.py",
-            "--binary",
-            a.build_dir / ("archive_test" + suffix),
-            "--output",
-            a.output / "archives",
-        ],
-    )
-    font = (
-        Path("C:/Windows/Fonts/arial.ttf")
-        if platform == "windows"
-        else (
-            native / "fonts/DejaVuSans.ttf"
-            if (native / "fonts/DejaVuSans.ttf").is_file()
-            else Path("/usr/share/fonts/TTF/DejaVuSans.ttf")
-        )
-    )
-    run(
-        "assets",
-        [
-            sys.executable,
-            REPO_ROOT / "tests/integration/test_assets.py",
-            "--binary",
-            a.build_dir / ("assets_test" + suffix),
-            "--assets",
-            a.assets,
-            "--font",
-            font,
-            "--soundfont",
-            a.soundfont,
-            "--output",
-            a.output / "assets",
-        ],
-    )
-    run(
-        "asset-installer",
-        [sys.executable, "-B", a.engine_source / "tools/test_install_assets.py"],
-        cwd=a.engine_source / "tools",
-    )
-    sources = sorted((REPO_ROOT / "tests/data/inputs/golden").glob("*")) + [
-        REPO_ROOT / "tests/data/inputs/evening.musicxml"
-    ]
-    sources += [
-        a.engine_source / "src/importexport/mnx/tests/data" / name
-        for name in (
-            "engine/two-notes.mnx",
-            "project_examples/tupletSimple.mnx",
-            "project_examples/percussionKit.mnx",
-            "project_examples/graceArps.mnx",
-        )
-    ]
-    sources = [s for s in sources if s.suffix in {".mscx", ".mscz", ".musicxml", ".mxl", ".mid", ".gp", ".mnx"}]
-    if not sources:
-        raise RuntimeError("incomplete supported corpus")
-    run(
-        "embedder",
-        [a.build_dir / ("example_embedder" + suffix), a.assets, *sources],
     )
     golden_root = REPO_ROOT / "tests/data/golden" / platform
     inventory = validate_baseline(golden_root)
@@ -614,25 +652,6 @@ def main():
     validate_allow_usage(allow, matched_allow, platform)
     if a.quick:
         print("quick mode: skipped engine-audio corpus check (required at milestones)", flush=True)
-    else:
-        run(
-            "engine-audio",
-            [
-                sys.executable,
-                REPO_ROOT / "tests/integration/test_engine_audio.py",
-                "--engine-only",
-                "--bin-dir",
-                a.build_dir,
-                "--resources",
-                a.assets,
-                "--soundfont",
-                a.soundfont,
-                "--engine-source",
-                a.engine_source,
-                "--output",
-                a.output / "engine-audio",
-            ],
-        )
     inputs = [
         REPO_ROOT / "tests/data/golden/inputs.json",
         a.soundfont,

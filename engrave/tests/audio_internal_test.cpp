@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -20,6 +21,11 @@
 #include <tuple>
 #include <type_traits>
 #include <vector>
+
+#if defined(__SSE2__) || defined(_M_X64) || defined(_M_AMD64)
+#include <pmmintrin.h>
+#include <xmmintrin.h>
+#endif
 
 #include "audio/thirdparty/fluidsynth/vorbis_decode.h"
 #include <gtest/gtest.h>
@@ -48,6 +54,62 @@
 #endif
 
 namespace {
+
+#if defined(__SSE2__) || defined(_M_X64) || defined(_M_AMD64)
+TEST(AudioInternal, RenderAudioRestoresCallerDenormalState) {
+    struct RestoreDenormalState {
+        const std::uint32_t flush_zero_mode = _MM_GET_FLUSH_ZERO_MODE();
+        const std::uint32_t denormals_zero_mode = _MM_GET_DENORMALS_ZERO_MODE();
+
+        ~RestoreDenormalState() {
+            _MM_SET_FLUSH_ZERO_MODE(flush_zero_mode);
+            _MM_SET_DENORMALS_ZERO_MODE(denormals_zero_mode);
+        }
+    } restore;
+
+    _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_OFF);
+    _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_OFF);
+
+    auto opened = music::test::g_engine->open(music::test::corpus_file("ghost_note.mscx"));
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    const auto expect_subnormals = [] {
+        EXPECT_EQ(_MM_GET_FLUSH_ZERO_MODE(), _MM_FLUSH_ZERO_OFF);
+        EXPECT_EQ(_MM_GET_DENORMALS_ZERO_MODE(), _MM_DENORMALS_ZERO_OFF);
+        volatile float sub = 1.0e-40f;
+        volatile float half = sub * 0.5f;
+        EXPECT_GT(half, 0.0f);
+    };
+    EXPECT_TRUE(document.render_audio({}, [](std::span<const std::byte>) {}));
+    expect_subnormals();
+
+    engrave::AudioOptions options;
+    int polls = 0;
+    options.cancelled = [&] {
+        expect_subnormals();
+        return ++polls >= 2;
+    };
+    const auto cancelled = document.render_audio(options, [](std::span<const std::byte>) {});
+    ASSERT_FALSE(cancelled);
+    EXPECT_EQ(cancelled.error().code, engrave::ErrorCode::CANCELLED);
+    EXPECT_GE(polls, 2);
+    expect_subnormals();
+
+    _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+    _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
+    int on_polls = 0;
+    options.cancelled = [&] {
+        EXPECT_EQ(_MM_GET_FLUSH_ZERO_MODE(), _MM_FLUSH_ZERO_ON);
+        EXPECT_EQ(_MM_GET_DENORMALS_ZERO_MODE(), _MM_DENORMALS_ZERO_ON);
+        ++on_polls;
+        return false;
+    };
+    EXPECT_TRUE(document.render_audio(options, [](std::span<const std::byte>) {}));
+    EXPECT_GE(on_polls, 2);
+    EXPECT_EQ(_MM_GET_FLUSH_ZERO_MODE(), _MM_FLUSH_ZERO_ON);
+    EXPECT_EQ(_MM_GET_DENORMALS_ZERO_MODE(), _MM_DENORMALS_ZERO_ON);
+}
+#endif
 
 struct FailingFinalizer final {
     FailingFinalizer(const muse::audio::SoundTrackFormat &format, muse::io::IODevice &device, bool fail_encode, int &ended)

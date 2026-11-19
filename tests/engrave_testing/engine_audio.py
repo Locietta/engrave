@@ -17,6 +17,7 @@ import traceback
 import xml.etree.ElementTree as ET
 from collections import Counter
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
@@ -727,16 +728,21 @@ def test_midi_event_goldens(
     golden_dir = REPO_ROOT / "tests/data/engine_audio" / "midi"
     golden_results = {}
 
-    for name, fix_path in fixtures:
-        assert fix_path.is_file(), f"Fixture missing: {fix_path}"
+    with ThreadPoolExecutor(max_workers=min(5, os.cpu_count() or 2)) as pool:
+        futures = []
+        for name, fix_path in fixtures:
+            assert fix_path.is_file(), f"Fixture missing: {fix_path}"
+            golden_file = midi_golden_file(name, golden_dir)
+            assert golden_file.is_file(), f"MIDI golden file missing: {golden_file}"
+            tmp_wav = out_dir / f"midi_{name}.wav"
+            if tmp_wav.exists():
+                tmp_wav.unlink()
+            futures.append(pool.submit(run_probe, probe_bin, assets, soundfont, fix_path, tmp_wav, ["--midi-events"]))
+        results = [future.result() for future in futures]
+
+    for (name, _fix_path), res in zip(fixtures, results):
         golden_file = midi_golden_file(name, golden_dir)
-        assert golden_file.is_file(), f"MIDI golden file missing: {golden_file}"
-
         tmp_wav = out_dir / f"midi_{name}.wav"
-        if tmp_wav.exists():
-            tmp_wav.unlink()
-
-        res = run_probe(probe_bin, assets, soundfont, fix_path, tmp_wav, ["--midi-events"])
         if tmp_wav.exists():
             tmp_wav.unlink()
 
@@ -815,15 +821,21 @@ def test_determinism_and_decoding(
     formats = ["wav", "flac", "ogg", "mp3", "aac"]
     det_results = {}
 
+    with ThreadPoolExecutor(max_workers=min(6, os.cpu_count() or 2)) as pool:
+        futures = {}
+        for fmt in formats:
+            for run in (1, 2):
+                out = out_dir / f"det_run{run}.{fmt}"
+                if out.exists():
+                    out.unlink()
+                futures[fmt, run] = pool.submit(run_probe, probe_bin, assets, soundfont, score_path, out)
+        results = {key: future.result() for key, future in futures.items()}
+
     for fmt in formats:
         out1 = out_dir / f"det_run1.{fmt}"
         out2 = out_dir / f"det_run2.{fmt}"
-        for out in (out1, out2):
-            if out.exists():
-                out.unlink()
-
-        res1 = run_probe(probe_bin, assets, soundfont, score_path, out1)
-        res2 = run_probe(probe_bin, assets, soundfont, score_path, out2)
+        res1 = results[fmt, 1]
+        res2 = results[fmt, 2]
 
         data1 = out1.read_bytes()
         data2 = out2.read_bytes()
@@ -883,11 +895,18 @@ def test_determinism_and_decoding(
     nonascii_dir = out_dir / "输出 音频"
     nonascii_dir.mkdir(parents=True, exist_ok=True)
     nonascii_results = {}
+    with ThreadPoolExecutor(max_workers=min(6, os.cpu_count() or 2)) as pool:
+        futures = {}
+        for fmt in formats:
+            out_path = nonascii_dir / f"输出 音频.{fmt}"
+            if out_path.exists():
+                out_path.unlink()
+            futures[fmt] = pool.submit(run_probe, probe_bin, assets, nonascii_sf, pitch_score, out_path)
+        results = {fmt: future.result() for fmt, future in futures.items()}
+
     for fmt in formats:
         out_path = nonascii_dir / f"输出 音频.{fmt}"
-        if out_path.exists():
-            out_path.unlink()
-        res = run_probe(probe_bin, assets, nonascii_sf, pitch_score, out_path)
+        res = results[fmt]
         assert res.get("ok") is True, f"Non-ASCII {fmt} export failed: {res}"
         assert res.get("soundfont", {}).get("uriRoundTrip") is True, (
             f"Non-ASCII SoundFont URI did not round-trip for {fmt}: {res.get('soundfont')}"
