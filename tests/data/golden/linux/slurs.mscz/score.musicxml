@@ -282,7 +282,7 @@
         <beam number="1">begin</beam>
         <beam number="2">begin</beam>
         <notations>
-          <slur type="start" bezier-x="23.528575" bezier-y="-15.969663" number="1"/>
+          <slur type="start" bezier-x="23.448249" bezier-y="-15.973756" number="1"/>
           </notations>
         </note>
       <note default-x="24.36" default-y="-20">
@@ -546,7 +546,7 @@
         <beam number="1">begin</beam>
         <beam number="2">begin</beam>
         <notations>
-          <slur type="start" bezier-x="22.875225" bezier-y="16.247057" number="1"/>
+          <slur type="start" bezier-x="22.769057" bezier-y="16.25979" number="1"/>
           </notations>
         </note>
       <note default-x="24.36" default-y="-20">
