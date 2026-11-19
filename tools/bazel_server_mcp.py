@@ -19,6 +19,7 @@ import os
 import shutil
 import subprocess
 import sys
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -122,6 +123,7 @@ class BazelServerManager:
         if self.default_project not in self.projects:
             raise ValueError(f"Unknown default project {self.default_project!r}")
         self._output_bases: dict[str, Path] = {}
+        self._lock = threading.Lock()
 
     def _resolve_project(self, name: str | None) -> tuple[str, Path]:
         selected = name or self.default_project
@@ -138,54 +140,44 @@ class BazelServerManager:
         bazel = find_bazel(workspace)
         # Use Bazel's default startup options so subsequent `bbuild.py` / `gate.py` / `bazel`
         # invocations match startup flags identically and reuse this JVM without restarting it.
-        proc = subprocess.run(
-            [bazel, "info", "server_pid", "output_base"],
-            cwd=workspace,
-            capture_output=True,
-            text=True,
-        )
-        if proc.returncode != 0:
-            raise RuntimeError(proc.stderr.strip() or f"bazel info failed with exit {proc.returncode}")
-        values: dict[str, str] = {}
-        for line in proc.stdout.splitlines():
-            if ": " in line:
-                key, val = line.split(": ", 1)
-                values[key.strip()] = val.strip()
-        pid = int(values["server_pid"])
-        output_base = Path(values["output_base"])
-        self._output_bases[name] = output_base
-        return {
-            "project": name,
-            "workspace": str(workspace),
-            "server_pid": pid,
-            "output_base": str(output_base),
-            "running": pid_alive(pid),
-        }
+        with self._lock:
+            proc = subprocess.run(
+                [bazel, "info", "server_pid", "output_base"],
+                cwd=workspace,
+                capture_output=True,
+                text=True,
+            )
+            if proc.returncode != 0:
+                raise RuntimeError(proc.stderr.strip() or f"bazel info failed with exit {proc.returncode}")
+            values: dict[str, str] = {}
+            for line in proc.stdout.splitlines():
+                if ": " in line:
+                    key, val = line.split(": ", 1)
+                    values[key.strip()] = val.strip()
+            pid = int(values["server_pid"])
+            output_base = Path(values["output_base"])
+            self._output_bases[name] = output_base
+            return {
+                "project": name,
+                "workspace": str(workspace),
+                "server_pid": pid,
+                "output_base": str(output_base),
+                "running": pid_alive(pid),
+            }
 
-    def stop(self, project: str | None = None) -> dict[str, Any]:
-        if project == "all":
-            results = [self.stop(name) for name in self.projects]
-            return {"stopped": results}
-        name, workspace = self._resolve_project(project)
-        bazel = find_bazel(workspace)
-        proc = subprocess.run(
-            [bazel, "shutdown"],
-            cwd=workspace,
-            capture_output=True,
-            text=True,
-        )
-        if proc.returncode != 0:
-            raise RuntimeError(proc.stderr.strip() or f"bazel shutdown failed with exit {proc.returncode}")
-        return {
-            "project": name,
-            "workspace": str(workspace),
-            "running": False,
-        }
+    def ensure_warm(self, project: str) -> dict[str, Any] | None:
+        with self._lock:
+            output_base = self._output_bases.get(project)
+        if output_base is not None and read_pid_from_output_base(output_base) is not None:
+            return None
+        return self.start(project)
 
     def status(self) -> dict[str, Any]:
+        with self._lock:
+            output_bases = dict(self._output_bases)
         items: list[dict[str, Any]] = []
         for name, workspace in self.projects.items():
-            output_base = self._output_bases.get(name)
+            output_base = output_bases.get(name)
             pid = read_pid_from_output_base(output_base) if output_base is not None else None
             entry: dict[str, Any] = {
                 "project": name,
@@ -197,6 +189,37 @@ class BazelServerManager:
             }
             items.append(entry)
         return {"projects": items}
+
+
+def start_keepalive_thread(
+    manager: BazelServerManager,
+    warm_projects: list[str],
+    interval_secs: float,
+    stop_event: threading.Event,
+) -> threading.Thread | None:
+    if not warm_projects:
+        return None
+
+    def loop() -> None:
+        while not stop_event.is_set():
+            for name in warm_projects:
+                if stop_event.is_set():
+                    return
+                try:
+                    info = manager.ensure_warm(name)
+                    if info is not None:
+                        sys.stderr.write(f"bazel-server-mcp: warmed {name} (pid={info['server_pid']})\n")
+                        sys.stderr.flush()
+                except Exception as exc:
+                    sys.stderr.write(f"bazel-server-mcp: failed to warm {name}: {exc}\n")
+                    sys.stderr.flush()
+            if interval_secs <= 0:
+                return
+            stop_event.wait(interval_secs)
+
+    thread = threading.Thread(target=loop, name="bazel-keepalive", daemon=True)
+    thread.start()
+    return thread
 
 
 def tool_definitions(manager: BazelServerManager) -> list[dict[str, Any]]:
@@ -215,21 +238,6 @@ def tool_definitions(manager: BazelServerManager) -> list[dict[str, Any]]:
                         "type": "string",
                         "enum": names,
                         "description": f"Project key (default: {manager.default_project}).",
-                    }
-                },
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "bazel_server_stop",
-            "description": "Shut down the persistent Bazel JVM server for a configured project (or 'all').",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "project": {
-                        "type": "string",
-                        "enum": [*names, "all"],
-                        "description": f"Project key or 'all' (default: {manager.default_project}).",
                     }
                 },
                 "additionalProperties": False,
@@ -275,8 +283,6 @@ def handle_request(manager: BazelServerManager, request: dict[str, Any]) -> dict
         try:
             if tool_name == "bazel_server_start":
                 payload = manager.start(arguments.get("project"))
-            elif tool_name == "bazel_server_stop":
-                payload = manager.stop(arguments.get("project"))
             elif tool_name == "bazel_server_status":
                 payload = manager.status()
             else:
@@ -360,22 +366,25 @@ def main(argv: list[str] | None = None) -> int:
         action="append",
         default=[],
         metavar="NAME",
-        help="Warm the named project's Bazel JVM immediately on server startup (repeatable).",
+        help="Warm the named project's Bazel JVM in the background on startup and keep it alive (repeatable).",
+    )
+    parser.add_argument(
+        "--keepalive-secs",
+        type=float,
+        default=60.0,
+        help="Re-check --warm projects every N seconds and re-warm if the JVM exited (0 = warm once only).",
     )
     args = parser.parse_args(argv)
 
     repo_root = Path(__file__).resolve().parents[1]
     projects = load_projects(repo_root, args.config, args.project)
     manager = BazelServerManager(projects, default_project=args.default_project)
-    for name in args.warm:
-        try:
-            info = manager.start(name)
-            sys.stderr.write(f"bazel-server-mcp: warmed {name} (pid={info['server_pid']})\n")
-            sys.stderr.flush()
-        except Exception as exc:
-            sys.stderr.write(f"bazel-server-mcp: failed to warm {name}: {exc}\n")
-            sys.stderr.flush()
-    return serve_stdio(manager)
+    stop_event = threading.Event()
+    start_keepalive_thread(manager, args.warm, args.keepalive_secs, stop_event)
+    try:
+        return serve_stdio(manager)
+    finally:
+        stop_event.set()
 
 
 if __name__ == "__main__":

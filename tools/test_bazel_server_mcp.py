@@ -24,7 +24,7 @@ class BazelServerMcpTests(unittest.TestCase):
             self.assertEqual(projects["alpha"], proj_a.resolve())
             self.assertEqual(projects["beta"], proj_b.resolve())
 
-    def test_mcp_protocol_start_status_stop(self):
+    def test_mcp_protocol_start_status_and_keepalive_rewarm(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             out_base = root / "outbase"
@@ -41,16 +41,13 @@ class BazelServerMcpTests(unittest.TestCase):
 
             list_resp = mcp.handle_request(manager, {"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
             names = [t["name"] for t in list_resp["result"]["tools"]]
-            self.assertEqual(names, ["bazel_server_start", "bazel_server_stop", "bazel_server_status"])
+            self.assertEqual(names, ["bazel_server_start", "bazel_server_status"])
 
             def fake_run(cmd, **kwargs):
                 res = MagicMock()
                 res.returncode = 0
                 res.stderr = ""
-                if cmd[1] == "info":
-                    res.stdout = f"server_pid: {pid}\noutput_base: {out_base}\n"
-                else:
-                    res.stdout = ""
+                res.stdout = f"server_pid: {pid}\noutput_base: {out_base}\n"
                 return res
 
             with (
@@ -66,25 +63,23 @@ class BazelServerMcpTests(unittest.TestCase):
                 self.assertTrue(start_resp["result"]["structuredContent"]["running"])
                 self.assertEqual(run_mock.call_args.args[0], ["bazel", "info", "server_pid", "output_base"])
 
+                # Alive JVM -> ensure_warm is a pure read-only no-op (no subprocess call).
+                self.assertIsNone(manager.ensure_warm("demo"))
+                self.assertEqual(run_mock.call_count, 1)
+
+                # Simulated JVM exit (missing PID file) -> ensure_warm restarts it.
+                (out_base / "server/server.pid.txt").unlink()
+                rewarmed = manager.ensure_warm("demo")
+                self.assertIsNotNone(rewarmed)
+                self.assertEqual(run_mock.call_count, 2)
+
+                (out_base / "server/server.pid.txt").write_text(f"{pid}\n", encoding="utf-8")
                 status_resp = mcp.handle_request(
                     manager,
                     {"jsonrpc": "2.0", "id": 4, "method": "tools/call", "params": {"name": "bazel_server_status"}},
                 )
                 self.assertEqual(status_resp["result"]["structuredContent"]["projects"][0]["server_pid"], pid)
                 self.assertTrue(status_resp["result"]["structuredContent"]["projects"][0]["running"])
-
-                stop_resp = mcp.handle_request(
-                    manager,
-                    {
-                        "jsonrpc": "2.0",
-                        "id": 5,
-                        "method": "tools/call",
-                        "params": {"name": "bazel_server_stop", "arguments": {"project": "demo"}},
-                    },
-                )
-                self.assertFalse(stop_resp["result"]["isError"])
-                self.assertFalse(stop_resp["result"]["structuredContent"]["running"])
-                self.assertEqual(run_mock.call_args.args[0], ["bazel", "shutdown"])
 
 
 if __name__ == "__main__":
