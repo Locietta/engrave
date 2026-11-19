@@ -602,112 +602,35 @@ cc_library(
 )
 
 cc_binary(
-    name = "engrave_api_test",
-    srcs = ["engrave/tests/api_test.cpp"],
-    copts = ENGINE_COPTS,
-    local_defines = [TEST_SOURCE_ROOT_DEFINE],
-    deps = [
-        ":engrave_core",
-        ":probe_internal_headers",
-        "@gtest",
-    ] + WIN_MANIFEST_DEPS,
-)
-
-cc_binary(
-    name = "engrave_handles_test",
+    name = "engrave_core_tests",
     srcs = [
+        "engrave/tests/api_test.cpp",
+        "engrave/tests/core_tests_main.cpp",
+        "engrave/tests/describe_test.cpp",
+        "engrave/tests/diagnostics_test.cpp",
+        "engrave/tests/gp_import_test.cpp",
         "engrave/tests/handles_mmr_segment_test.cpp",
         "engrave/tests/handles_native_save_test.cpp",
         "engrave/tests/handles_stave_sharing_test.cpp",
         "engrave/tests/handles_test.cpp",
         "engrave/tests/handles_test_fixture.cpp",
-    ],
-    copts = ENGINE_COPTS,
-    local_defines = [TEST_SOURCE_ROOT_DEFINE],
-    deps = [
-        ":engrave_core_internal",
-        ":test_harness_headers",
-        "@gtest",
-    ] + WIN_MANIFEST_DEPS,
-)
-
-cc_binary(
-    name = "engrave_mnx_model_test",
-    srcs = ["engrave/tests/mnx_model_test.cpp"],
-    copts = ENGINE_COPTS,
-    local_defines = [TEST_SOURCE_ROOT_DEFINE],
-    deps = [
-        ":mnx_model",
-        "@gtest",
-    ] + WIN_MANIFEST_DEPS,
-)
-
-cc_binary(
-    name = "engrave_mnx_import_test",
-    srcs = ["engrave/tests/mnx_import_test.cpp"],
-    copts = ENGINE_COPTS,
-    local_defines = [TEST_SOURCE_ROOT_DEFINE],
-    deps = [
-        ":engrave_core_internal",
-        ":mnx_model",
-        ":test_harness_headers",
-        "@gtest",
-    ] + WIN_MANIFEST_DEPS,
-)
-
-cc_binary(
-    name = "engrave_gp_import_test",
-    srcs = ["engrave/tests/gp_import_test.cpp"],
-    copts = ENGINE_COPTS,
-    local_defines = [TEST_SOURCE_ROOT_DEFINE],
-    deps = [
-        ":engrave_core_internal",
-        ":test_harness_headers",
-        "@gtest",
-    ] + WIN_MANIFEST_DEPS,
-)
-
-cc_binary(
-    name = "engrave_describe_test",
-    srcs = [
-        "engrave/tests/describe_test.cpp",
-        "engrave/tests/propertyvalue_test.cpp",
-    ],
-    copts = ENGINE_COPTS,
-    local_defines = [TEST_SOURCE_ROOT_DEFINE],
-    deps = [
-        ":engrave_core_internal",
-        ":test_harness_headers",
-        "@gtest",
-    ] + WIN_MANIFEST_DEPS,
-)
-
-cc_binary(
-    name = "engrave_read_test",
-    srcs = [
+        "engrave/tests/io_boundary_test.cpp",
         "engrave/tests/layout_headers_test.cpp",
+        "engrave/tests/mnx_import_test.cpp",
+        "engrave/tests/mnx_model_test.cpp",
+        "engrave/tests/propertyvalue_test.cpp",
         "engrave/tests/read_export470_test.cpp",
         "engrave/tests/read_layoutbounds_test.cpp",
         "engrave/tests/read_layoutdatastore_test.cpp",
         "engrave/tests/read_test.cpp",
         "engrave/tests/read_test_fixture.cpp",
-    ],
+    ] + glob(["engrave/tests/harness/**/*.cpp"]),
     copts = ENGINE_COPTS,
     local_defines = [TEST_SOURCE_ROOT_DEFINE],
     deps = [
         ":engrave_core_internal",
-        ":test_harness_headers",
-        "@gtest",
-    ] + WIN_MANIFEST_DEPS,
-)
-
-cc_binary(
-    name = "engrave_ops_test",
-    srcs = glob(["engrave/tests/harness/**/*.cpp"]),
-    copts = ENGINE_COPTS,
-    local_defines = [TEST_SOURCE_ROOT_DEFINE],
-    deps = [
-        ":engrave_core_internal",
+        ":mnx_model",
+        ":probe_internal_headers",
         ":test_harness_headers",
         "@gtest",
     ] + WIN_MANIFEST_DEPS,
@@ -762,50 +685,19 @@ cc_binary(
     ] + WIN_MANIFEST_DEPS,
 )
 
-cc_binary(
-    name = "diagnostics_test",
-    srcs = ["engrave/tests/diagnostics_test.cpp"],
-    copts = ENGINE_COPTS,
-    deps = [
-        ":muse_global",
-        ":test_harness_headers",
-        "@gtest",
-    ],
-)
-
-cc_binary(
-    name = "io_boundary_test",
-    srcs = ["engrave/tests/io_boundary_test.cpp"],
-    copts = ENGINE_COPTS,
-    deps = [
-        ":muse_global",
-        ":test_harness_headers",
-        "@gtest",
-    ],
-)
-
 filegroup(
     name = "engine_tests",
     srcs = [
         ":archive_test",
         ":assets_test",
-        ":diagnostics_test",
         ":engine_audio_probe",
-        ":engrave_api_test",
-        ":engrave_describe_test",
-        ":engrave_gp_import_test",
-        ":engrave_handles_test",
-        ":engrave_mnx_import_test",
-        ":engrave_mnx_model_test",
-        ":engrave_ops_test",
+        ":engrave_core_tests",
         ":engrave_output_probe",
         ":engrave_output_test",
-        ":engrave_read_test",
         ":engraving_playback_tests",
         ":example_embedder",
         ":excerpts_test",
         ":import_export_probe",
-        ":io_boundary_test",
         ":mpe_tests",
         ":score_audio_test",
         ":score_edit_test",

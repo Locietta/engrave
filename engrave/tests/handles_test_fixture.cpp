@@ -18,7 +18,7 @@ bool g_deterministic = false;
 
 bool g_update_inventory = false;
 
-std::unique_ptr<engrave::Engine> g_engine;
+engrave::Engine *g_engine = nullptr;
 
 std::string read_text(const std::filesystem::path &path) {
     std::ifstream in(path, std::ios::binary);
@@ -669,64 +669,4 @@ void expect_repaired(const std::string &text) {
     }
 }
 
-bool looks_like_score(const std::filesystem::path &path) {
-    static const std::set<std::string> extensions = {".mscx", ".mscz", ".musicxml", ".mxl", ".mid", ".midi",
-                                                     ".gp",   ".gp3",  ".gp4",      ".gp5", ".gpx", ".ptb"};
-    return extensions.contains(path.extension().string());
-}
-
-void collect(const std::filesystem::path &path) {
-    std::error_code ec;
-    if (std::filesystem::is_directory(path, ec)) {
-        std::vector<std::filesystem::path> entries;
-        for (const auto &entry : std::filesystem::directory_iterator(path, ec)) entries.push_back(entry.path());
-        std::ranges::sort(entries);
-        for (const auto &entry : entries) collect(entry);
-        return;
-    }
-    if (std::filesystem::is_regular_file(path, ec) && looks_like_score(path)) g_corpus.push_back(path);
-}
-
 } // namespace handles_test
-
-using namespace handles_test;
-
-int main(int argc, char **argv) {
-    testing::InitGoogleTest(&argc, argv);
-    g_program = argv[0];
-    for (int i = 1; i < argc; ++i) {
-        const std::string_view argument = argv[i];
-        if (argument.starts_with("--assets=")) {
-            g_assets = std::filesystem::path(argument.substr(9));
-            g_engine_args.emplace_back(argument);
-        } else if (argument.starts_with("--corpus=")) {
-            collect(std::filesystem::path(argument.substr(9)));
-            g_engine_args.emplace_back(argument);
-        } else if (argument == "--deterministic") {
-            g_deterministic = true;
-        } else if (argument == "--update-inventory") {
-            g_update_inventory = true;
-        }
-    }
-    if (g_corpus.empty()) {
-        for (const auto &candidate : {std::filesystem::path("fixtures/golden"), std::filesystem::path("../fixtures/golden"),
-                                      std::filesystem::path("../../fixtures/golden")}) {
-            std::error_code ec;
-            if (std::filesystem::is_directory(candidate, ec)) collect(candidate);
-        }
-    }
-    if (g_corpus.empty()) {
-        std::fprintf(stderr, "no corpus: pass --corpus=<file or directory>\n");
-        return 1;
-    }
-
-    auto engine = engrave::Engine::create({.resources = g_assets, .deterministic_ids = g_deterministic});
-    if (!engine) {
-        std::fprintf(stderr, "Engine::create: %s (pass --assets=<resources>)\n", engine.error().message.c_str());
-        return 1;
-    }
-    g_engine = std::move(*engine);
-    const int result = RUN_ALL_TESTS();
-    g_engine.reset();
-    return result;
-}

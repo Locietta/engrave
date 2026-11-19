@@ -9,6 +9,7 @@
 
 #include <gtest/gtest.h>
 
+#include "core_test_env.h"
 #include "engrave/src/api/state.h"
 #include "engrave/src/score/score_semantic.h"
 #include "engraving/dom/masterscore.h"
@@ -17,7 +18,7 @@
 #include <engrave/engrave.h>
 
 namespace {
-std::unique_ptr<engrave::Engine> engine;
+auto &engine = engrave::test::core_env().engine;
 std::filesystem::path data = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "src/importexport/mnx/tests/data/project_examples";
 using Json = music::Json;
 
@@ -97,7 +98,7 @@ TEST(MnxImport, IndependentSemanticOracle) {
 
 // Optional directory for the exported MNX files; the engine gate also validates
 // them with an independent draft 2020-12 schema validator.
-std::filesystem::path mnx_out;
+auto &mnx_out = engrave::test::core_env().mnx_out;
 
 // Compare the importer-supported core independently of engraving/layout details:
 // every chord with its pitches and every rest, each with its position and length.
@@ -225,23 +226,3 @@ TEST(MnxImport, InvalidInputAndRecovery) {
     EXPECT_TRUE(engine->open(data / "tupletSimple.mnx"));
 }
 } // namespace
-
-int main(int argc, char **argv) {
-    testing::InitGoogleTest(&argc, argv);
-    std::filesystem::path assets;
-    for (int i = 1; i < argc; ++i) {
-        std::string_view arg = argv[i];
-        if (arg.starts_with("--assets=")) assets = arg.substr(9);
-        if (arg.starts_with("--mnx-out=")) mnx_out = arg.substr(10);
-    }
-    if (!mnx_out.empty()) std::filesystem::create_directories(mnx_out);
-    auto created = engrave::Engine::create({.resources = assets});
-    if (!created) {
-        std::fprintf(stderr, "%s\n", created.error().message.c_str());
-        return 1;
-    }
-    engine = std::move(*created);
-    int result = RUN_ALL_TESTS();
-    engine.reset();
-    return result;
-}

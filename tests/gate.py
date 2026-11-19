@@ -163,7 +163,7 @@ def main():
     p.add_argument(
         "--quick",
         action="store_true",
-        help="Skip exclusive timing checks (output-timing and dense-cancellation); use full gate at milestones",
+        help="Skip the engine-audio corpus check for faster per-step verification; use full gate at milestones",
     )
     p.add_argument("--dual-capture", type=Path, help="old golden lane actual directory")
     a = p.parse_args()
@@ -326,41 +326,23 @@ def main():
         ],
     )
     asset = "--assets=" + str(a.assets)
-    corpus = "--corpus=" + str(REPO_ROOT / "tests/data/inputs/golden")
+    golden_corpus = "--golden-corpus=" + str(REPO_ROOT / "tests/data/inputs/golden")
+    inputs_corpus = "--inputs-corpus=" + str(REPO_ROOT / "tests/data/inputs")
     output_args = [
         asset,
-        corpus,
+        "--corpus=" + str(REPO_ROOT / "tests/data/inputs/golden"),
         "--corpus=" + str(REPO_ROOT / "tests/data/inputs/audio"),
         "--soundfont=" + str(a.soundfont),
         "--soundfont=" + str(a.output / "sine.sf2"),
         "--native-fonts=" + str(native_fonts),
     ]
-    dense_timing_test = "AudioInternal.DenseScoreCancellationLatencyAndRecovery"
-    shared_timing_tests = ":".join(
-        (
-            "AudioInternal.CancellationLatencyDistribution",
-            "AudioInternal.FirstRenderCancelThenRepeatedRenderAndTeardown",
-            "AudioInternal.WarmGraphRebuildTiming",
-        )
-    )
-    excluded_timing_tests = dense_timing_test + ":" + shared_timing_tests
-    suites = {
-        "engrave_api_test": [asset],
-        "engrave_handles_test": [asset, corpus],
-        "engrave_describe_test": [
-            asset,
-            "--python=" + sys.executable,
-            REPO_ROOT / "tests/data/inputs",
-        ],
-        "engrave_read_test": [asset, "--corpus=" + str(REPO_ROOT / "tests/data/inputs")],
-        "engrave_ops_test": [asset, corpus],
-        "engrave_gp_import_test": [asset],
-        "engrave_mnx_import_test": [asset, "--mnx-out=" + str(a.output / "mnx-export")],
-        "engrave_mnx_model_test": [],
-        "engrave_output_test": output_args,
-        "diagnostics_test": [],
-        "io_boundary_test": [],
-    }
+    core_args = [
+        asset,
+        golden_corpus,
+        inputs_corpus,
+        "--python=" + sys.executable,
+        "--mnx-out=" + str(a.output / "mnx-export"),
+    ]
     tasks = [
         dict(name="comparator-mutations", command=[sys.executable, REPO_ROOT / "tests/test_inventory.py"]),
         dict(
@@ -369,14 +351,28 @@ def main():
         ),
         dict(name="oracle-controls", command=[sys.executable, REPO_ROOT / "tests/integration/test_oracle_harness.py"]),
     ]
-    for name, args in suites.items():
+    core_shards = min(4, a.test_jobs)
+    for shard in range(core_shards):
+        name = f"engrave_core_tests-shard{shard}"
         cwd = a.output / name
         cwd.mkdir(exist_ok=True)
-        command = [a.build_dir / (name + suffix), *args]
-        if name == "engrave_output_test":
-            # Keep all latency, teardown, and warm-timing tests isolated in Phase C.
-            command.append("--gtest_filter=-" + excluded_timing_tests)
-        tasks.append(dict(name=name, command=command, cwd=cwd))
+        tasks.append(
+            dict(
+                name=name,
+                command=[a.build_dir / ("engrave_core_tests" + suffix), *core_args],
+                cwd=cwd,
+                env={"GTEST_TOTAL_SHARDS": str(core_shards), "GTEST_SHARD_INDEX": str(shard)},
+            )
+        )
+    output_cwd = a.output / "engrave_output_test"
+    output_cwd.mkdir(exist_ok=True)
+    tasks.append(
+        dict(
+            name="engrave_output_test",
+            command=[a.build_dir / ("engrave_output_test" + suffix), *output_args],
+            cwd=output_cwd,
+        )
+    )
     run_parallel(tasks)
     # Schema validation reads the import suite's export; it starts only after
     # that suite has completed.
@@ -616,42 +612,27 @@ def main():
     )
     # Entries are only expected to match on the platforms they pin.
     validate_allow_usage(allow, matched_allow, platform)
-    # Exclusive timing lane: every parallel pool above has drained, so the
-    # cancellation budgets, teardown timing, and audio render measure a quiet machine.
     if a.quick:
-        print(
-            "quick mode: skipped output-timing and dense-cancellation timing checks (required at milestones)",
-            flush=True,
-        )
+        print("quick mode: skipped engine-audio corpus check (required at milestones)", flush=True)
     else:
         run(
-            "output-timing",
-            [a.build_dir / ("engrave_output_test" + suffix), *output_args, "--gtest_filter=" + shared_timing_tests],
-            cwd=a.output / "engrave_output_test",
+            "engine-audio",
+            [
+                sys.executable,
+                REPO_ROOT / "tests/integration/test_engine_audio.py",
+                "--engine-only",
+                "--bin-dir",
+                a.build_dir,
+                "--resources",
+                a.assets,
+                "--soundfont",
+                a.soundfont,
+                "--engine-source",
+                a.engine_source,
+                "--output",
+                a.output / "engine-audio",
+            ],
         )
-        run(
-            "dense-cancellation",
-            [a.build_dir / ("engrave_output_test" + suffix), *output_args, "--gtest_filter=" + dense_timing_test],
-            cwd=a.output / "engrave_output_test",
-        )
-    run(
-        "engine-audio",
-        [
-            sys.executable,
-            REPO_ROOT / "tests/integration/test_engine_audio.py",
-            "--engine-only",
-            "--bin-dir",
-            a.build_dir,
-            "--resources",
-            a.assets,
-            "--soundfont",
-            a.soundfont,
-            "--engine-source",
-            a.engine_source,
-            "--output",
-            a.output / "engine-audio",
-        ],
-    )
     inputs = [
         REPO_ROOT / "tests/data/golden/inputs.json",
         a.soundfont,

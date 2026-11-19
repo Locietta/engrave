@@ -137,7 +137,7 @@ python tests/test_inventory.py
 Key options and environment requirements:
 
 - **Fresh output directory**: Always pass a new `--output` directory under `notes/runs/<name>` (never `.runtime/`, which holds runtime assets only).
-- **Quick vs. full**: `--quick` skips the exclusive `output-timing` and `dense-cancellation` checks for per-step verification; run without `--quick` at milestones and engine bumps.
+- **Quick vs. full**: `--quick` skips the `engine-audio` corpus check for faster per-step verification; run without `--quick` at milestones and engine bumps.
 - **Build and caches**: The gate builds against `--pixi-manifest` (default: `pixi.toml`, installing with `pixi install --locked` if absent) and puts its libraries on the runtime search path. `--skip-build` reuses binaries already staged in `--build-dir` (the `engrave-mcp` wrapper uses this by default). `--repo-cache` and `--disk-cache` select Bazel cache directories (default: `build/.bazel_repo_cache` and `build/.bazel_disk_cache`).
 - **Standalone Python environment**: In a fork-only checkout, create a Python 3.13 venv and install pinned dependencies plus `engrave_testing` in editable mode:
   ```bash
@@ -165,7 +165,7 @@ python tests/integration/test_assets.py --binary build/gate/assets_test.exe --as
 `.github/workflows/ci.yml` runs on pushes to `main`, pull requests, and manual dispatch:
 
 - **`python-checks`**: Installs `tests/requirements.txt` and `pip install -e .`, then runs `tools/test_install_assets.py`, `tests/test_inventory.py`, `tools/mnx_codegen.py --check`, and `tests/test_playback_witness.py` (also with `python -O`).
-- **`build-test`** (`windows-latest` and `ubuntu-latest`, Bazel + `xclang` + Pixi cairo/zlib): Builds release unit tests, installs/verifies runtime assets, builds `example_embedder` (public-header leak check), and runs `engrave_api_test`, `engrave_handles_test`, `engrave_describe_test`, `engrave_read_test`, `engrave_ops_test`, `engrave_gp_import_test`, `engrave_mnx_import_test` (with schema check), `engrave_mnx_model_test`, `diagnostics_test`, `io_boundary_test`, and the upstream `engraving_playback_tests` and `mpe_tests` via `tests/integration/test_upstream_gtest.py`.
+- **`build-test`** (`windows-latest` and `ubuntu-latest`, Bazel + `xclang` + Pixi cairo/zlib): Builds release unit tests, installs/verifies runtime assets, builds `example_embedder` (public-header leak check), and runs `engrave_core_tests` (with MNX schema check) plus the upstream `engraving_playback_tests` and `mpe_tests` via `tests/integration/test_upstream_gtest.py`.
 - **Manual checks (not in CI)**: The full gate, golden comparisons, SoundFont-dependent suites (`engrave_output_test`, `engine_audio`, render goldens), and formatting/naming lint run manually on Windows and Linux.
 
 ## Documentation and Style Tools

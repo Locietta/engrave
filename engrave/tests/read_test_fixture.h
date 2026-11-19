@@ -172,7 +172,7 @@ using mu::engraving::MasterScore;
 constexpr std::int64_t whole_note_ticks = 4 * mu::engraving::Constants::division;
 extern std::filesystem::path g_assets;
 extern std::vector<std::filesystem::path> g_corpus;
-extern std::unique_ptr<engrave::Engine> g_engine;
+extern engrave::Engine *g_engine;
 
 std::string read_text(const std::filesystem::path &path);
 std::vector<std::byte> as_bytes(std::string_view text);

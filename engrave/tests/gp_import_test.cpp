@@ -23,6 +23,7 @@
 
 #include <gtest/gtest.h>
 
+#include "core_test_env.h"
 #include "engrave/src/api/state.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/engravingitem.h"
@@ -35,8 +36,8 @@
 
 namespace {
 
-std::filesystem::path g_resources;
-std::unique_ptr<engrave::Engine> g_engine;
+auto &g_resources = engrave::test::core_env().assets;
+auto &g_engine = engrave::test::core_env().engine;
 
 constexpr std::string_view score_extensions[] = {".gp", ".gp3", ".gp4", ".gp5", ".gpx", ".ptb"};
 
@@ -133,20 +134,3 @@ TEST(GuitarProImport, EveryTestDataFileOpensOrReturnsAnError) {
 }
 
 } // namespace
-
-int main(int argc, char **argv) {
-    testing::InitGoogleTest(&argc, argv);
-    for (int i = 1; i < argc; ++i) {
-        const std::string_view arg = argv[i];
-        if (arg.starts_with("--assets=")) g_resources = std::filesystem::path(arg.substr(9));
-    }
-    auto engine = engrave::Engine::create({.resources = g_resources});
-    if (!engine) {
-        std::fprintf(stderr, "Engine::create: %s (pass --assets=<resources>)\n", engine.error().message.c_str());
-        return 1;
-    }
-    g_engine = std::move(*engine);
-    const int result = RUN_ALL_TESTS();
-    g_engine.reset();
-    return result;
-}

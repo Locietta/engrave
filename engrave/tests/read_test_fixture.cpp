@@ -8,7 +8,7 @@ std::filesystem::path g_assets;
 
 std::vector<std::filesystem::path> g_corpus;
 
-std::unique_ptr<engrave::Engine> g_engine;
+engrave::Engine *g_engine = nullptr;
 
 std::string read_text(const std::filesystem::path &path) {
     std::ifstream in(path, std::ios::binary);
@@ -324,24 +324,6 @@ std::unique_ptr<engrave::Document> dynamics_native_roundtrip(engrave::Document &
     return reopened ? std::move(*reopened) : nullptr;
 }
 
-bool looks_like_score(const std::filesystem::path &path) {
-    static const std::set<std::string> extensions = {".mscx", ".mscz", ".musicxml", ".mxl", ".mid", ".midi",
-                                                     ".gp",   ".gpx",  ".gp3",      ".gp4", ".gp5", ".ptb"};
-    return extensions.contains(path.extension().string());
-}
-
-void collect(const std::filesystem::path &path) {
-    std::error_code ec;
-    if (std::filesystem::is_directory(path, ec)) {
-        std::vector<std::filesystem::path> files;
-        for (const auto &entry : std::filesystem::directory_iterator(path, ec)) files.push_back(entry.path());
-        std::ranges::sort(files);
-        for (const auto &file : files) collect(file);
-        return;
-    }
-    if (std::filesystem::is_regular_file(path, ec) && looks_like_score(path)) g_corpus.push_back(path);
-}
-
 std::string chordline_offset_fixture() {
     return read_text(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "engrave/tests/data/chordline-offsets/offsets-500.mscx");
 }
@@ -614,40 +596,3 @@ std::string s11_triplet_fixture(bool stem_offset) {
 }
 
 } // namespace read_test
-
-using namespace read_test;
-
-int main(int argc, char **argv) {
-    testing::InitGoogleTest(&argc, argv);
-    for (int i = 1; i < argc; ++i) {
-        const std::string_view argument = argv[i];
-        if (argument.starts_with("--assets=")) {
-            g_assets = std::filesystem::path(argument.substr(9));
-        } else if (argument.starts_with("--corpus=")) {
-            collect(std::filesystem::path(argument.substr(9)));
-        }
-    }
-    if (g_corpus.empty()) {
-        for (const auto &candidate : {std::filesystem::path("fixtures/golden"), std::filesystem::path("../fixtures/golden"),
-                                      std::filesystem::path("../../fixtures/golden")}) {
-            if (std::filesystem::is_directory(candidate)) {
-                collect(candidate);
-                break;
-            }
-        }
-    }
-    if (g_corpus.empty()) {
-        std::fprintf(stderr, "no corpus: pass --corpus=<file or directory>\n");
-        return 1;
-    }
-
-    auto engine = engrave::Engine::create({.resources = g_assets});
-    if (!engine) {
-        std::fprintf(stderr, "Engine::create: %s (pass --assets=<resources>)\n", engine.error().message.c_str());
-        return 1;
-    }
-    g_engine = std::move(*engine);
-    const int result = RUN_ALL_TESTS();
-    g_engine.reset();
-    return result;
-}

@@ -5,11 +5,6 @@
 #include "logger.h"
 #include "types/string.h"
 
-int main(int argc, char **argv) {
-    testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}
-
 TEST(Diagnostics, DisabledMessagesDoNotEvaluateOperands) {
     auto *logger = muse::logger::Logger::instance();
     logger->setLevel(muse::logger::Level::Off);

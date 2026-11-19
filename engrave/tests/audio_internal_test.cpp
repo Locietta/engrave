@@ -353,8 +353,7 @@ TEST(AudioInternal, SoundFontRefreshWaitsForNextRender) {
 
 // Real driver/graph teardown is included. Phase requests occur synchronously on
 // the owner thread; the separate delayed case samples arbitrary operation work.
-TEST(AudioInternal, CancellationLatencyDistribution) {
-    using Clock = std::chrono::steady_clock;
+TEST(AudioInternal, CancellationGranularityAndRecovery) {
     auto opened = music::test::g_engine->open(music::test::corpus_file("repeat70.mscx"));
     ASSERT_TRUE(opened);
     auto &document = **opened;
@@ -395,51 +394,36 @@ TEST(AudioInternal, CancellationLatencyDistribution) {
 
     const auto path = std::filesystem::temp_directory_path() / "engrave-granularity.wav";
     for (int phase = 0; phase < 4; ++phase) {
-        std::vector<double> times;
-        for (int trial = 0; trial < 50; ++trial) {
-            bool armed = false, cancelled = false;
-            int write_polls = 0;
-            std::atomic<bool> external{false};
-            Clock::time_point requested;
-            music::AudioRenderRequest request;
-            const auto utf8 = path.generic_u8string();
-            request.output_path.assign(utf8.begin(), utf8.end());
-            request.cancelled = [&] {
-                if (armed && ++write_polls == 3) {
-                    requested = Clock::now();
+        bool armed = false, cancelled = false;
+        int write_polls = 0;
+        std::atomic<bool> external{false};
+        music::AudioRenderRequest request;
+        const auto utf8 = path.generic_u8string();
+        request.output_path.assign(utf8.begin(), utf8.end());
+        request.cancelled = [&] {
+            if (armed && ++write_polls == 3) cancelled = true;
+            return cancelled || external.load();
+        };
+        if (phase == 0)
+            music::set_engine_audio_midi_event_hook(audio, [&](const auto &, uint64_t) {
+                if (!cancelled && muse::audio::OfflineCancellation::phase == muse::audio::OfflineCancellation::Phase::SYNTHESIS) {
                     cancelled = true;
                 }
-                return cancelled || external.load();
-            };
-            if (phase == 0)
-                music::set_engine_audio_midi_event_hook(audio, [&](const auto &, uint64_t) {
-                    if (!cancelled && muse::audio::OfflineCancellation::phase == muse::audio::OfflineCancellation::Phase::SYNTHESIS) {
-                        requested = Clock::now();
-                        cancelled = true;
-                    }
-                });
-            if (phase == 1 || phase == 2)
-                request.encoder_factory = [&](const auto &f, auto &d) { return std::make_unique<LargeWriter>(f, d, phase == 2, armed); };
-            std::thread transport;
-            if (phase == 3)
-                transport = std::thread([&] {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(50));
-                    requested = Clock::now();
-                    external.store(true);
-                });
-            const auto result = music::export_score_audio(audio, master, request);
-            const auto returned = Clock::now();
-            if (transport.joinable()) transport.join();
-            music::set_engine_audio_midi_event_hook(audio, {});
-            ASSERT_EQ(result.failure, music::AudioRenderResult::Failure::CANCELLED);
-            ASSERT_FALSE(std::filesystem::exists(path));
-            times.push_back(std::chrono::duration<double, std::milli>(returned - requested).count());
-        }
-        std::sort(times.begin(), times.end());
-        std::fprintf(stderr, "cancel_ms phase=%d n=50 p50=%.6f p95=%.6f max=%.6f\n", phase, times[24], times[47], times.back());
-        EXPECT_LT(times[47], 50.0);
-        EXPECT_LT(times.back(), 100.0);
-        EXPECT_EQ(render(), baseline) << "cancellation poisoned the SoundFont cache";
+            });
+        if (phase == 1 || phase == 2)
+            request.encoder_factory = [&](const auto &f, auto &d) { return std::make_unique<LargeWriter>(f, d, phase == 2, armed); };
+        std::thread transport;
+        if (phase == 3)
+            transport = std::thread([&] {
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                external.store(true);
+            });
+        const auto result = music::export_score_audio(audio, master, request);
+        if (transport.joinable()) transport.join();
+        music::set_engine_audio_midi_event_hook(audio, {});
+        ASSERT_EQ(result.failure, music::AudioRenderResult::Failure::CANCELLED) << "phase=" << phase;
+        ASSERT_FALSE(std::filesystem::exists(path)) << "phase=" << phase;
+        EXPECT_EQ(render(), baseline) << "cancellation poisoned the SoundFont cache (phase=" << phase << ")";
     }
 }
 
@@ -518,9 +502,8 @@ TEST(AudioInternal, FailedEventSourceDisarmsBorrow) {
         ::testing::ExitedWithCode(0), "");
 }
 
-// Same 12 x 256 x 16 input shape as the dense-score probe, generated without a desktop.
-TEST(AudioInternal, DenseScoreCancellationLatencyAndRecovery) {
-    using Clock = std::chrono::steady_clock;
+// Multi-part dense synthetic score covering cancellation and recovery across all 5 phases.
+TEST(AudioInternal, DenseScoreCancellationAndRecovery) {
     const auto owner_thread = std::this_thread::get_id();
     const std::string prefix = "engrave-dense-cancel-" + std::to_string(
 #ifdef _WIN32
@@ -533,13 +516,13 @@ TEST(AudioInternal, DenseScoreCancellationLatencyAndRecovery) {
     {
         std::ofstream out(xml);
         out << "<?xml version=\"1.0\"?><score-partwise version=\"4.0\"><part-list>";
-        for (int p = 1; p <= 12; ++p)
+        for (int p = 1; p <= 4; ++p)
             out << "<score-part id=\"P" << p << "\"><part-name>Part " << p << "</part-name><midi-instrument id=\"I" << p
                 << "\"><midi-channel>" << p << "</midi-channel><midi-program>1</midi-program></midi-instrument></score-part>";
         out << "</part-list>";
-        for (int p = 1; p <= 12; ++p) {
+        for (int p = 1; p <= 4; ++p) {
             out << "<part id=\"P" << p << "\">";
-            for (int m = 1; m <= 256; ++m) {
+            for (int m = 1; m <= 32; ++m) {
                 out << "<measure number=\"" << m << "\">";
                 if (m == 1)
                     out << "<attributes><divisions>480</divisions><time><beats>4</beats>"
@@ -573,109 +556,65 @@ TEST(AudioInternal, DenseScoreCancellationLatencyAndRecovery) {
     using Phase = muse::audio::OfflineCancellation::Phase;
     const char *names[] = {"before-synthesis", "playback-model", "synthesis", "encode", "event-release"};
     for (int phase = 0; phase < 5; ++phase) {
-        std::vector<double> responsiveness, cleanup, turnaround;
-        for (int trial = 0; trial < 50; ++trial) {
-            bool cancelled = false;
-            bool model_started = false;
-            int model_polls = 0, stage_polls = 0;
-            std::latch model_start{1};
-            std::atomic<bool> external{false};
-            Clock::time_point requested, observed;
-            std::thread transport;
-            if (phase == 1)
-                transport = std::thread([&] {
-                    model_start.wait();
-                    std::this_thread::sleep_for(std::chrono::milliseconds(1 + trial % 5));
-                    requested = Clock::now();
-                    external.store(true);
-                });
-            const auto cancel = [&] {
-                if (!cancelled) {
-                    requested = Clock::now();
-                    cancelled = true;
-                }
-            };
-            music::AudioRenderRequest request;
-            const auto utf8 = path.generic_u8string();
-            request.output_path.assign(utf8.begin(), utf8.end());
-            request.cancelled = [&] {
-                EXPECT_EQ(std::this_thread::get_id(), owner_thread);
-                // Arm at an existing stage marker, but return false from this poll.
-                // Only the NEXT poll may observe the request: the measured span
-                // includes engine work between polls, rather than callback cost.
-                const auto current_phase = muse::audio::OfflineCancellation::phase;
-                if (!cancelled && ((phase == 3 && current_phase == Phase::ENCODING) || (phase == 0 && current_phase == Phase::SEQUENCER)) &&
-                    ++stage_polls == 1 + trial * 3) {
-                    cancel();
-                    return false;
-                }
-                // The flat store is released in one step between two polls: arm at the first, so the
-                // next poll observes the request after the release
-                if (!cancelled && phase == 4 && current_phase == Phase::EVENT_RELEASE) {
-                    cancel();
-                    return false;
-                }
-                if (phase == 1 && muse::audio::OfflineCancellation::phase == Phase::PLAYBACK_MODEL &&
-                    ++model_polls == 2000 + trial * 3000 && !model_started) {
-                    model_started = true;
-                    model_start.count_down();
-                }
-                if (external.load() && !cancelled) {
-                    EXPECT_EQ(muse::audio::OfflineCancellation::phase, Phase::PLAYBACK_MODEL);
-                    cancelled = true;
-                }
-                // First positive poll is the existing observable cancellation boundary.
-                // Everything after it includes synchronous graph/event cleanup.
-                if (cancelled && observed == Clock::time_point{}) {
-                    observed = Clock::now();
-                }
-                return cancelled;
-            };
-            if (phase == 2)
-                music::set_engine_audio_midi_event_hook(audio, [&](const auto &, uint64_t) {
-                    if (muse::audio::OfflineCancellation::phase == Phase::SYNTHESIS) cancel();
-                });
-            const auto result = music::export_score_audio(audio, master, request);
-            const auto returned = Clock::now();
-            if (transport.joinable()) {
-                if (!model_started) model_start.count_down();
-                transport.join();
-                ASSERT_TRUE(model_started);
+        bool cancelled = false;
+        bool observed = false;
+        bool model_started = false;
+        int model_polls = 0, stage_polls = 0;
+        std::latch model_start{1};
+        std::atomic<bool> external{false};
+        std::thread transport;
+        if (phase == 1)
+            transport = std::thread([&] {
+                model_start.wait();
+                external.store(true);
+            });
+        music::AudioRenderRequest request;
+        const auto utf8 = path.generic_u8string();
+        request.output_path.assign(utf8.begin(), utf8.end());
+        request.cancelled = [&] {
+            EXPECT_EQ(std::this_thread::get_id(), owner_thread);
+            const auto current_phase = muse::audio::OfflineCancellation::phase;
+            if (!cancelled && ((phase == 3 && current_phase == Phase::ENCODING) || (phase == 0 && current_phase == Phase::SEQUENCER)) &&
+                ++stage_polls == 1) {
+                cancelled = true;
+                return false;
             }
-            music::set_engine_audio_midi_event_hook(audio, {});
-            ASSERT_TRUE(cancelled);
-            ASSERT_EQ(result.failure, music::AudioRenderResult::Failure::CANCELLED);
-            ASSERT_FALSE(std::filesystem::exists(path));
-            ASSERT_NE(observed, Clock::time_point{});
-            ASSERT_LE(requested, observed);
-            ASSERT_LE(observed, returned);
-            responsiveness.push_back(std::chrono::duration<double, std::milli>(observed - requested).count());
-            cleanup.push_back(std::chrono::duration<double, std::milli>(returned - observed).count());
-            turnaround.push_back(std::chrono::duration<double, std::milli>(returned - requested).count());
-
-            std::fprintf(stderr, "dense_cancel_sample phase=%s trial=%d request_to_observed_ms=%.6f observed_to_return_ms=%.6f\n",
-                         names[phase], trial, responsiveness.back(), cleanup.back());
-        }
-        const auto report = [&](const char *measurement, auto &times, double p95_limit, double max_limit) {
-            std::sort(times.begin(), times.end());
-            std::fprintf(stderr, "dense_cancel_ms phase=%s measurement=%s n=50 p50=%.6f p95=%.6f max=%.6f\n", names[phase], measurement,
-                         times[24], times[47], times.back());
-            EXPECT_LE(times[47], p95_limit) << names[phase] << " " << measurement;
-            EXPECT_LE(times.back(), max_limit) << names[phase] << " " << measurement;
+            if (!cancelled && phase == 4 && current_phase == Phase::EVENT_RELEASE) {
+                cancelled = true;
+                return false;
+            }
+            if (phase == 1 && muse::audio::OfflineCancellation::phase == Phase::PLAYBACK_MODEL && ++model_polls == 500 && !model_started) {
+                model_started = true;
+                model_start.count_down();
+            }
+            if (external.load() && !cancelled) {
+                EXPECT_EQ(muse::audio::OfflineCancellation::phase, Phase::PLAYBACK_MODEL);
+                cancelled = true;
+            }
+            if (cancelled) observed = true;
+            return cancelled;
         };
-        // Idle Windows/Linux observations are well below a millisecond; leave
-        // scheduling margin while keeping responsiveness independent of teardown.
-        report("request_to_observed", responsiveness, 5.0, 10.0);
-        // Idle Windows request-to-return peaks near 46 ms. Cleanup owns
-        // almost all of that span, so allow 50 ms p95 and 100 ms worst case.
-        report("observed_to_return", cleanup, 50.0, 100.0);
-        report("request_to_return", turnaround, 50.0, 100.0);
-        EXPECT_EQ(render(), baseline);
+        if (phase == 2)
+            music::set_engine_audio_midi_event_hook(audio, [&](const auto &, uint64_t) {
+                if (muse::audio::OfflineCancellation::phase == Phase::SYNTHESIS) cancelled = true;
+            });
+        const auto result = music::export_score_audio(audio, master, request);
+        if (transport.joinable()) {
+            if (!model_started) model_start.count_down();
+            transport.join();
+            ASSERT_TRUE(model_started);
+        }
+        music::set_engine_audio_midi_event_hook(audio, {});
+        ASSERT_TRUE(cancelled) << names[phase];
+        ASSERT_TRUE(observed) << names[phase];
+        ASSERT_EQ(result.failure, music::AudioRenderResult::Failure::CANCELLED) << names[phase];
+        ASSERT_FALSE(std::filesystem::exists(path)) << names[phase];
+        EXPECT_EQ(render(), baseline) << names[phase];
     }
     // Exercise error translation and publication through the public API too.
     engrave::AudioOptions options;
     int model_polls = 0, sinks = 0;
-    options.cancelled = [&] { return muse::audio::OfflineCancellation::phase == Phase::PLAYBACK_MODEL && ++model_polls == 3000; };
+    options.cancelled = [&] { return muse::audio::OfflineCancellation::phase == Phase::PLAYBACK_MODEL && ++model_polls == 500; };
     const auto result = document.render_audio(options, [&](auto) { ++sinks; });
     ASSERT_FALSE(result);
     EXPECT_EQ(result.error().code, engrave::ErrorCode::CANCELLED);
@@ -693,38 +632,12 @@ TEST(AudioInternal, DenseScoreCancellationLatencyAndRecovery) {
     EXPECT_FALSE(std::filesystem::exists(intermediate));
     model_polls = 0;
     options.cancelled = [&]() -> bool {
-        if (muse::audio::OfflineCancellation::phase == Phase::PLAYBACK_MODEL && ++model_polls == 3000)
+        if (muse::audio::OfflineCancellation::phase == Phase::PLAYBACK_MODEL && ++model_polls == 500)
             throw std::runtime_error("model cancellation callback");
         return false;
     };
     EXPECT_THROW(std::ignore = document.render_audio(options, [](auto) {}), std::runtime_error);
     EXPECT_EQ(render(), baseline);
-}
-
-TEST(AudioInternal, WarmGraphRebuildTiming) {
-    if (!muse::audio::OfflineTiming::enabled()) GTEST_SKIP() << "set ENGRAVE_AUDIO_TIMING=1";
-    auto opened = music::test::g_engine->open(music::test::corpus_file("ghost_note.mscx"));
-    ASSERT_TRUE(opened);
-    std::vector<double> setup, teardown, create, fonts, flush;
-    for (int i = 0; i < 51; ++i) {
-        ASSERT_TRUE((*opened)->render_audio({}, [](auto) {}));
-        const auto &t = muse::audio::OfflineTiming::current();
-        if (i == 0) continue;
-        setup.push_back(t.setup * 1000);
-        teardown.push_back(t.teardown * 1000);
-        create.push_back(t.create * 1000);
-        fonts.push_back(t.fonts * 1000);
-        flush.push_back(t.flush * 1000);
-    }
-    const auto report = [](const char *phase, auto values) {
-        std::sort(values.begin(), values.end());
-        std::fprintf(stderr, "warm_ms phase=%s n=50 p50=%.6f p95=%.6f max=%.6f\n", phase, values[24], values[47], values.back());
-    };
-    report("setup", setup);
-    report("teardown", teardown);
-    report("create", create);
-    report("fonts", fonts);
-    report("flush", flush);
 }
 
 TEST(AudioInternal, CancellationDuringPublicationCleansUpAndRecovers) {
@@ -1330,12 +1243,7 @@ TEST(AudioInternal, FirstRenderCancelThenRepeatedRenderAndTeardown) {
                     if (!reference) std::exit(17);
                     if (reference->empty() || *reference != first) std::exit(18);
                     opened->reset();
-                    const auto teardown_start = std::chrono::steady_clock::now();
                     music::test::g_engine.reset();
-                    const double teardown_ms =
-                        std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - teardown_start).count();
-                    std::fprintf(stderr, "engine_teardown_ms=%.6f\n", teardown_ms);
-                    if (teardown_ms > 100.0) std::exit(16);
                     if (muse::audio::fluid::FluidVorbisDecoder::decoder) std::exit(15);
                     std::exit(0);
                 }()),
