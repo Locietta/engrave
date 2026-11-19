@@ -104,6 +104,10 @@ compile_commands.json
 .upstream/
 .worktrees/
 
+# Local-only notes and agent instructions
+AGENTS.local.md
+docs/do_not_commit/
+
 *.egg-info/
 
 # Pixi environment (pixi.toml provides cairo and zlib)

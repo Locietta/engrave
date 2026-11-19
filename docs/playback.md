@@ -119,22 +119,91 @@ Format encoders are decoupled from the render loop using proxy (`pro::proxy`, ng
 - **Render Loop (`SoundTrackWriter`)**:
   Pulls audio from `OfflineRenderSession` in fixed 4096-frame steps, zeroes its intermediate buffer, invokes `session->process(...)`, checks cancellation, and passes the chunk to `encoder_ptr_->encode(chunk, buffer)`.
 
-## Cooperative Cancellation
+## Cooperative Cancellation and Budgets
 
-Cancellation is polled cooperatively at bounded boundaries throughout all execution phases:
+Cancellation is cooperative and non-preemptive via `AudioOptions::cancelled`:
 
-- **Checkpoints**:
-  - Score walk and MPE freeze loops: checked every `FreezeProgress::k_stride` (4096 records).
-  - Context materialization: checked during cold event scans and dynamic layer collection.
-  - Sequencer lowering and sorting: checked every 4096 copied events and 8192 merge steps.
-  - Mix loop: checked before each track synthesis, before reverb processing, and after aux checks.
-  - Render loop: checked before each 4096-frame block pull and before each encoder block write.
-- **Latency Design Targets**:
-  - Request-to-observed latency: p95 <= 5 ms, max <= 10 ms.
-  - Cleanup and return latency: p95 <= 50 ms, max <= 100 ms.
-    These bounds are design targets checked by the test harness measurement against a generated dense score (`dense.musicxml`), rather than an absolute operational guarantee across all score topologies.
+```cpp
+struct AudioOptions {
+    // ...
+    std::function<bool()> cancelled;
+};
+```
 
-Cancellation unlinks and removes partial output files from disk before returning.
+### Calling Contract and Invariants
+
+- **Owner thread only, no re-entrancy**: The predicate runs exclusively on the
+  engine owner thread and must not call back into the engine or mutate open
+  documents.
+- **Unpoisoned state and error code**: A cancelled render returns
+  `ErrorCode::CANCELLED` in `Result<AudioRenderResult>` and leaves `Document`
+  and `Engine` clean for subsequent operations. Repeat exports on unchanged
+  input stay bit-identical.
+- **No partial publication on pre-publication abort**: When cancellation is
+  observed before sink delivery begins, intermediate encoded files are removed
+  and no bytes reach `ByteSink`. Cancellation during sink streaming halts
+  further chunk delivery immediately.
+- **Callback exception handling**:
+  - Inside the driver (`export_score_audio` in `engrave/src/audio/engine_audio.cpp`),
+    exceptions thrown by `cancelled` are caught and latched as a cancellation so
+    the DSP graph is idled, the file device is closed, and the intermediate file
+    is removed before unwinding. If removing the intermediate file fails,
+    `ErrorCode::IO` is returned first; otherwise the latched exception is
+    rethrown.
+  - Outside the driver (`Document::render_audio` in `engrave/src/api/audio.cpp`),
+    pre-render and `ByteSink` chunk-delivery polls propagate callback (or sink)
+    exceptions directly. During stack unwinding, `TempFile`'s destructor removes
+    the temporary file while ignoring removal errors.
+
+### Checkpoints
+
+Cancellation is polled at bounded boundaries across all stages:
+
+- **Setup and track build**: Checked before playback build, per track build, and
+  after track setup.
+- **Score walk and MPE freeze**: Checked every `FreezeProgress::k_stride` (4096
+  records), and during context materialization (cold event scans and dynamic
+  layer collection).
+- **Sequencer lowering and sorting**: Checked every 4096 copied events and every
+  8192 merge steps in `bounded_stable_sort_by`.
+- **Event store release (`EVENT_RELEASE`)**: Checked in polled strides while
+  draining cold event owners and the retained context before freeing flat
+  buffers.
+- **Mix and render loops**: Checked before each track synthesis, before reverb
+  buffer zeroing/processing, before each 4096-frame block pull, before each
+  encoder write, and at intermediate file writes (chunked <= 4 KiB).
+- **Sink delivery**: Checked before delivering each 1 MiB chunk of the finalized
+  file to `ByteSink`.
+
+### Unpolled Intervals
+
+The following stages execute without internal cancellation polling:
+
+- Document loading and initial layout (`Engine::open`) and conditional relayout
+  (`Score::doLayout`) when an unlaid-out score or excerpt is selected.
+- First-use font parsing, text shaping cache population, and audio service
+  initialization.
+- Repeat/tempo cache updates and automation curve resampling.
+- Single heap allocations, bulk container moves, native codec/sample
+  decompression calls, a single 64-frame FluidSynth render block, individual OS
+  file syscalls, intermediate file deletion, and an in-flight `ByteSink` call.
+
+### Resource Budgets
+
+`AudioOptions::max_bytes` caps the finalized encoded output size and
+`AudioOptions::max_write_bytes` caps cumulative intermediate file writes
+(including encoder header rewrites). Exceeding either limit stops rendering with
+`ErrorCode::RESOURCE_LIMIT` (or `ErrorCode::IO`), removes the intermediate file,
+and invokes no further sink callbacks.
+
+### Latency Design Targets
+
+- Request-to-observed latency: p95 <= 5 ms, max <= 10 ms.
+- Cleanup and return latency: p95 <= 50 ms, max <= 100 ms.
+
+These targets are checked by `test_playback_dod.py measure` against a generated
+dense score (`dense.musicxml`) rather than guaranteed universally across
+arbitrary score topologies or unpolled codec frames.
 
 ## Deterministic Output and the Identity Contract
 
@@ -147,7 +216,9 @@ The render pipeline guarantees deterministic, byte-identical output across runs 
 
 ### Verifying with `test_playback_dod.py`
 
-The test harness script `tests/integration/test_playback_dod.py` verifies the identity contract:
+See [playback-harness.md](playback-harness.md) for harness build flags, probe
+options, allocation-counting rules, and scheduled-poll cancellation sampling.
+Basic commands:
 
 ```bash
 # Compare output between two probe binaries across 44.1 kHz and 48 kHz

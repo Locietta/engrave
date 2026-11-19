@@ -1,0 +1,165 @@
+# MuseScore 4.70 Format Export Contract
+
+`engrave` provides a bounded backward-compatibility exporter for MuseScore 4.70
+(interoperable with MuseScore 4.7.0–4.7.6). This document defines the API
+contract, supported subset, degraded features, refusal rules, and style guard.
+
+## 1. Activation and API Contract
+
+### Requesting 4.70 Export
+
+Set `ExportOptions::native_version = "4.70"` for `MSCX` or `MSCZ` exports:
+
+```cpp
+struct ExportOptions {
+    Format format = Format::MSCZ;        // MSCX or MSCZ
+    std::string native_version = "4.70"; // default is "5.00"
+    ScoreSel score;                      // master by default, or specific excerpt
+    CaptureOptions capture;
+};
+```
+
+Any version string other than `"5.00"` or `"4.70"`, or a non-default version on
+any format other than `MSCX`/`MSCZ`, returns `ErrorCode::UNSUPPORTED`.
+
+### Warning Structure and Ordering
+
+Use `Document::export_score_with_warnings(ExportOptions)` to receive exported
+bytes alongside ordered compatibility warnings:
+
+```cpp
+struct ExportWarning {
+    std::string code;
+    std::string message;
+    std::optional<ExportWarningObject> object; // { kind, id }
+};
+
+struct ExportOutput {
+    std::vector<std::byte> bytes;
+    std::vector<ExportWarning> warnings;
+};
+```
+
+- **Frozen warning contract**: Every `B470_*` warning has a frozen `code`,
+  human-readable `message`, and non-empty object identity `{ kind, id }`
+  (warnings are never anonymous; the unsupported-target path supplies
+  `{ "request", "version:<requested value>" }`). Host schemas must require
+  `{ kind, id }` on every `B470_*` warning and allow both EIDs and non-EID
+  composite/locator forms.
+- **Ordering on success**: `convert_degradations` first collects serialized XML
+  degradations (`B470_SHARED_PART_DROPPED`, `B470_STAVE_SHARING_LABEL_DROPPED`,
+  `B470_PAGE_LOCK_DROPPED`, `B470_GROUP_BRACKET_DROPPED`) in pre-order XML
+  traversal, then a pass over source scores and parts appends
+  `B470_INSTRUMENT_GROUP_NAME_DROPPED`.
+- **Ordering on refusal**: When refusal reaches post-serialization checks,
+  degradation warnings precede unsupported-feature warnings. An invalid tie
+  returns early before degradation and style scans run, so only
+  `B470_INVALID_TIE` is reported until it is fixed.
+- **Deduplication and excerpt indices**: Identical warnings are deduplicated in
+  first-occurrence order. Non-EID warning locators retain document-wide score
+  indices (master score `0`, then excerpts in source order) even when exporting
+  a single excerpt.
+
+### Fail-Closed Behavior
+
+- **Byte-only export**: `Document::export_score(ExportOptions)` fails closed —
+  if the export produces any compatibility warnings, it returns
+  `ErrorCode::UNSUPPORTED` with the warnings attached to
+  `Error::export_warnings` so callers cannot silently drop degradations.
+- **Refused export**: No bytes are produced (`bytes` is empty), and
+  `Error::export_warnings` reports the blocking elements.
+
+## 2. Bounded Supported Subset
+
+The 4.70 exporter fails closed on anything outside its independently verified
+subset of 5.00 notation (`engrave/src/score/write470.cpp`):
+
+- **Instruments**: `piano` or `flute` instrument IDs only (`flute` requires
+  pitch ranges `minPitchP=59`, `maxPitchP=98`, `minPitchA=60`, `maxPitchA=93`).
+- **Staves and clefs**: Standard pitched staves (`group="pitched"`,
+  `name="stdNormal"`) and G clefs (`concertClefType="G"`,
+  `transposingClefType="G"`). Bass clef and other clef types are refused.
+- **Time and key signatures**: 4/4 time (`sigN="4"`, `sigD="4"`) and C major
+  (`concertKey="0"`) only.
+- **Notes, rests, and durations**: Pitched notes, half rests, and whole/half/
+  quarter durations (`whole`, `half`, `quarter`). Eighth durations (`eighth`)
+  and grace forms (`appoggiatura`, `grace8after`) are accepted only in
+  standalone excerpts.
+- **Ties and spanners**: Same-voice, same-measure ties (including paired pitch
+  edits). Note spanners must be `Tie`; non-note spanners must be `Pedal` in the
+  strictly checked subset (no XML attributes; only `eid`, `track`, `track2`,
+  `startTick`, `ticks`, and optional `"auto"` `continueTextPlace`/
+  `endTextPlace`; `track="0"`, `track2="0"`, staff 1, `startTick="0/1"`,
+  `ticks="1/2"`, spanning half-measure position 0 to 2). Other spanners, custom
+  chord lists, and non-generated automation curves are refused.
+- **Braces**: Ordinary score braces (`bracket type="1"`).
+- **Identities**: Serialized musical, staff, and score EIDs supported by the
+  mapping, plus legacy numeric part IDs. MuseScore 4.70 has no part EID
+  representation, so part EIDs are omitted.
+- **Excerpt selections**: Selecting an excerpt via `ExportOptions::score`
+  exports a standalone 4.70 score preserving its parts, style, and linked
+  elements.
+
+## 3. Degraded Features (Exported with Warnings)
+
+Five feature families are converted to 4.70 structures with structured warnings:
+
+| Code                                 | Exact Frozen Message                                                                     | Object Kind & Source ID                                                     |
+| ------------------------------------ | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `B470_SHARED_PART_DROPPED`           | Shared-part mapping was removed; its staves and content were retained as ordinary parts. | `kind: "shared_part"`, `id: <SharedPart-EID>` (including disabled mappings) |
+| `B470_STAVE_SHARING_LABEL_DROPPED`   | Stave-sharing label was removed.                                                         | `kind: "stave_sharing_label"`, `id: <label-EID>`                            |
+| `B470_PAGE_LOCK_DROPPED`             | Page lock was removed.                                                                   | `kind: "page_lock"`, `id: "<start-measure-EID>..<end-measure-EID>"`         |
+| `B470_GROUP_BRACKET_DROPPED`         | Group bracket was removed.                                                               | `kind: "group_bracket"`, `id: "<start-staff-EID>:<zero-based-column>"`      |
+| `B470_INSTRUMENT_GROUP_NAME_DROPPED` | Instrument group-name override was removed.                                              | `kind: "part"`, `id: <part-EID>` (one warning for multiple override fields) |
+
+## 4. Refused Features
+
+Output is refused with `ErrorCode::UNSUPPORTED` when constructs have no defined
+4.70 downgrade:
+
+| Code                       | Exact Frozen Message                                            | Object Kind & Source ID                                                                                                     |
+| -------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `B470_INVALID_TIE`         | Cannot write 4.70: tied notes have different pitches.           | `kind: "tie"` with tie EID; else nearest addressable ancestor's kind and EID; else `kind: "tie"` with deterministic locator |
+| `B470_UNSUPPORTED_FEATURE` | Cannot write 4.70: the source feature has no defined downgrade. | Owning source object kind and EID                                                                                           |
+| `B470_UNSUPPORTED_TARGET`  | Cannot write the requested score version.                       | `kind: "request"`, `id: "version:<requested value>"`                                                                        |
+
+### Tie Warning Identities and Locators
+
+An invalid-tie warning never stringifies an invalid-EID sentinel:
+
+1. If the tie has a valid EID, emit `kind: "tie"` and the tie EID.
+2. Otherwise, walk to the nearest addressable ancestor with a valid EID and emit
+   its lowercase type name (for example `kind: "note"`) and EID.
+3. If no addressable owner exists, emit `kind: "tie"` with a deterministic
+   non-EID locator:
+
+```text
+locator:score:<s>/measure:<m>/tick:<t>/track:<k>/note:<n>/tieFor
+```
+
+Here `<s>`, `<m>`, and `<n>` are zero-based score, measure, and in-chord note
+indices (master score `0`, then excerpts in source order); `<t>` is the absolute
+engine tick (480 per quarter); and `<k>` is the staff/voice track index. The
+locator is deterministic for a revision, is not a query handle, and must carry
+all five components plus the trailing `tieFor` field.
+
+## 5. Style Compatibility Guard
+
+Style properties are checked against `engrave/src/score/style470_catalog.inc`:
+
+- Sets `defaultsVersion` to `470`.
+- Omits neutral 5.00-only fields (`windsNameByGroup`, `vocalsNameByGroup`, and
+  default values for `lyricsStackingOrder`, `maskSlurs`, `maskTies`).
+- Preserves legacy header/footer options (`headerFirstPage`, empty header/footer
+  text, and `$C` center-footer macros in excerpts).
+- Any unrecognized or modified style value outside the catalogue causes
+  immediate refusal.
+
+## 6. Cooperative Cancellation and Budgets
+
+During 4.70 conversion, `CaptureOptions::cancelled` is polled every <= 4 KiB:
+
+- Cancellation aborts immediately with `ErrorCode::CANCELLED` and publishes no
+  bytes.
+- `CaptureOptions::max_working_bytes` and `CaptureOptions::max_bytes` remain
+  enforced throughout conversion.

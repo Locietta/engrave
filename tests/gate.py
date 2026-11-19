@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Public C++ boundary gate. See docs/dev/validation.md for coverage and invocation."""
+"""Public C++ boundary gate. See README.md for coverage and invocation."""
 
 from __future__ import annotations
 
