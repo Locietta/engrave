@@ -165,6 +165,7 @@ void expect_code(const engrave::Result<engrave::RenderOutput> &result, engrave::
 namespace {
 
 using music::test::g_engine;
+std::vector<std::filesystem::path> g_initial_soundfonts;
 
 void collect(const std::filesystem::path &path) {
     std::error_code ec;
@@ -185,7 +186,11 @@ TEST(Output, CapabilitiesListTheRenderAndAudioFormats) {
     EXPECT_EQ(capabilities.audio_formats,
               (std::vector<engrave::AudioFormat>{engrave::AudioFormat::WAV, engrave::AudioFormat::FLAC, engrave::AudioFormat::OPUS,
                                                  engrave::AudioFormat::MP3, engrave::AudioFormat::AAC}));
-    EXPECT_EQ(capabilities.soundfonts, music::test::g_soundfonts);
+    // Audio suites sharing this process's Engine call set_soundfonts(g_soundfonts),
+    // which replaces startup paths with retained staging copies; check startup paths
+    // recorded before RUN_ALL_TESTS() and active SoundFont count regardless of suite order.
+    EXPECT_EQ(g_initial_soundfonts, music::test::g_soundfonts);
+    EXPECT_EQ(capabilities.soundfonts.size(), music::test::g_soundfonts.size());
     EXPECT_EQ(capabilities.audio_sample_rate, 44100);
 }
 
@@ -649,6 +654,7 @@ int main(int argc, char **argv) {
         return 1;
     }
     music::test::g_engine = std::move(*engine);
+    g_initial_soundfonts = music::test::g_engine->capabilities().soundfonts;
     int result = RUN_ALL_TESTS();
     music::test::g_engine.reset();
     for (const auto &path : music::test::g_retained_for_cleanup) {
