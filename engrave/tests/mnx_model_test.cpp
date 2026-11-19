@@ -353,8 +353,3 @@ TEST(MnxLayout, SpansOfNestedGroupsAndDefaults) {
     EXPECT_EQ(defaults[1].symbol, model::StaffSymbol::BRACE);
     EXPECT_FALSE(defaults[2].label.has_value());
 }
-
-int main(int argc, char **argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}

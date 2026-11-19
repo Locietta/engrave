@@ -24,6 +24,7 @@
 
 #include <gtest/gtest.h>
 
+#include "core_test_env.h"
 #include "engrave/src/api/pid_support.h"
 #include "engrave/src/api/sniff.h"
 #include "engrave/src/api/state.h"
@@ -61,12 +62,10 @@ using mu::engraving::PType;
 using mu::engraving::Pid;
 using mu::engraving::PropertyValue;
 
-std::filesystem::path g_assets;
-std::filesystem::path g_python;
-std::vector<std::filesystem::path> g_corpus_files;
-std::unique_ptr<engrave::Engine> g_engine;
-// A document of g_engine through which the corpus loader reaches the engine context.
-std::unique_ptr<engrave::Document> g_anchor;
+auto &g_assets = engrave::test::core_env().assets;
+auto &g_python = engrave::test::core_env().python;
+auto &g_corpus_files = engrave::test::core_env().inputs_corpus;
+auto &g_engine = engrave::test::core_env().engine;
 
 std::string read_file(const std::filesystem::path &path) {
     std::ifstream in(path, std::ios::binary);
@@ -133,7 +132,8 @@ struct Corpus {
             return;
         }
         try {
-            projects.push_back(music::load_native_score(engrave::DocumentAccess::context(*g_anchor), bytes, backend_name(*format)));
+            projects.push_back(music::load_native_score(
+                engrave::DocumentAccess::context(engrave::test::core_env().ensure_describe_anchor()), bytes, backend_name(*format)));
         } catch (const std::exception &) {
             unreadable.push_back(file);
             return;
@@ -437,55 +437,4 @@ TEST(Generator, CheckedInTableIsCurrent) {
     const std::string quoted = command;
 #endif
     EXPECT_EQ(std::system(quoted.c_str()), 0) << quoted;
-}
-
-namespace {
-
-void collect(const std::filesystem::path &path) {
-    static const std::set<std::string> score_extensions = {".mscx", ".mscz", ".musicxml", ".mxl", ".mid", ".midi",
-                                                           ".gp",   ".gp3",  ".gp4",      ".gp5", ".gpx", ".ptb"};
-    std::error_code ec;
-    if (std::filesystem::is_directory(path, ec)) {
-        std::vector<std::filesystem::path> files;
-        for (const auto &entry : std::filesystem::recursive_directory_iterator(path, ec))
-            if (entry.is_regular_file(ec) && score_extensions.contains(entry.path().extension().string())) files.push_back(entry.path());
-        std::ranges::sort(files);
-        for (const auto &file : files) g_corpus_files.push_back(file);
-        return;
-    }
-    g_corpus_files.push_back(path);
-}
-
-} // namespace
-
-int main(int argc, char **argv) {
-    testing::InitGoogleTest(&argc, argv);
-    for (int i = 1; i < argc; ++i) {
-        const std::string_view arg = argv[i];
-        if (arg.starts_with("--assets="))
-            g_assets = std::filesystem::path(arg.substr(9));
-        else if (arg.starts_with("--python="))
-            g_python = std::filesystem::path(arg.substr(9));
-        else if (!arg.starts_with("--gtest"))
-            collect(arg);
-    }
-    auto engine = engrave::Engine::create({.resources = g_assets});
-    if (!engine) {
-        std::fprintf(stderr, "Engine::create: %s (pass --assets=<resources>)\n", engine.error().message.c_str());
-        return 1;
-    }
-    g_engine = std::move(*engine);
-    const std::string anchor =
-        R"(<score-partwise version="4.0"><part-list><score-part id="P1"><part-name>P</part-name></score-part></part-list>
-<part id="P1"><measure number="1"><note><rest/><duration>4</duration></note></measure></part></score-partwise>)";
-    auto document = g_engine->open(std::as_bytes(std::span(anchor.data(), anchor.size())));
-    if (!document) {
-        std::fprintf(stderr, "Engine::open: %s\n", document.error().message.c_str());
-        return 1;
-    }
-    g_anchor = std::move(*document);
-    const int result = RUN_ALL_TESTS();
-    g_anchor.reset();
-    g_engine.reset();
-    return result;
 }

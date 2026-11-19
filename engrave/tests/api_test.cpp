@@ -22,6 +22,7 @@
 
 #include <gtest/gtest.h>
 
+#include "core_test_env.h"
 #include "engrave/src/api/sniff.h"
 #include "engrave/src/score/json.h"
 #include <engrave/engrave.h>
@@ -42,8 +43,8 @@ static_assert(F{min_fraction_term, max_fraction_term} < F{-1, 1});
 static_assert(F{max_fraction_term - 1, max_fraction_term} > F{max_fraction_term - 2, max_fraction_term - 1});
 static_assert(F{max_fraction_term - 1, max_fraction_term} < F{1, 1});
 
-std::filesystem::path g_resources;
-std::unique_ptr<engrave::Engine> g_engine;
+auto &g_resources = engrave::test::core_env().assets;
+auto &g_engine = engrave::test::core_env().engine;
 
 std::vector<std::byte> bytes_of(std::string_view text) {
     const auto *data = reinterpret_cast<const std::byte *>(text.data());
@@ -1073,30 +1074,6 @@ TEST(JsonHelpers, OrderedEqualityComparesMembersInPosition) {
 }
 
 } // namespace
-
-int main(int argc, char **argv) {
-    testing::InitGoogleTest(&argc, argv);
-    GTEST_FLAG_SET(death_test_style, "threadsafe");
-    for (int i = 1; i < argc; ++i) {
-        const std::string_view arg = argv[i];
-        if (arg.starts_with("--assets=")) g_resources = std::filesystem::path(arg.substr(9));
-    }
-    // Failure before binding services must leave startup retryable.
-    auto missing = engrave::Engine::create({.resources = g_resources / "c5-missing-resources"});
-    if (missing || missing.error().code != ErrorCode::NOT_FOUND) {
-        std::fprintf(stderr, "C5 startup failure did not leave services unbound\n");
-        return 1;
-    }
-    auto engine = engrave::Engine::create({.resources = g_resources});
-    if (!engine) {
-        std::fprintf(stderr, "Engine::create: %s (pass --assets=<resources>)\n", engine.error().message.c_str());
-        return 1;
-    }
-    g_engine = std::move(*engine);
-    const int result = RUN_ALL_TESTS();
-    g_engine.reset();
-    return result;
-}
 
 TEST(Open, UnicodeFilenameLyricsAndNonBmpRoundTrip) {
     const std::string text = "\xe9\x9f\xb3\xe6\xa5\xbd \xf0\x9d\x84\x9e \xf0\x9f\x98\x80";

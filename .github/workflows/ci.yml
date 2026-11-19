@@ -132,11 +132,7 @@ jobs:
           New-Item -ItemType Directory -Force $env:BUILD_DIR, $env:REPO_CACHE, $env:DISK_CACHE | Out-Null
           $bep = Join-Path $env:BUILD_DIR 'bep.json'
           $targets = @(
-            '//:engrave_api_test', '//:engrave_handles_test', '//:engrave_describe_test',
-            '//:engrave_read_test', '//:engrave_ops_test',
-            '//:engrave_gp_import_test', '//:engrave_mnx_import_test', '//:engrave_mnx_model_test',
-            '//:diagnostics_test', '//:io_boundary_test',
-            '//:engraving_playback_tests', '//:mpe_tests', '//:example_embedder'
+            '//:engrave_core_tests', '//:engraving_playback_tests', '//:mpe_tests', '//:example_embedder'
           )
           bazelisk build `
             --config=release `
@@ -188,34 +184,21 @@ jobs:
           $data = Join-Path $root 'tests/data/inputs'
           $python = (Get-Command python).Source
           $mnxOut = Join-Path $env:RUNNER_TEMP 'mnx-export'
-          $suites = [ordered]@{
-            engrave_api_test        = @("--assets=$assets")
-            engrave_handles_test    = @("--assets=$assets", "--corpus=$data/golden")
-            engrave_describe_test   = @("--assets=$assets", "--python=$python", $data)
-            engrave_read_test       = @("--assets=$assets", "--corpus=$data")
-            engrave_ops_test        = @("--assets=$assets", "--corpus=$data/golden")
-            engrave_gp_import_test  = @("--assets=$assets")
-            engrave_mnx_import_test = @("--assets=$assets", "--mnx-out=$mnxOut")
-            engrave_mnx_model_test  = @()
-            diagnostics_test        = @()
-            io_boundary_test        = @()
+          $work = Join-Path $env:RUNNER_TEMP 'suites/engrave_core_tests'
+          New-Item -ItemType Directory -Force $work | Out-Null
+          Push-Location $work
+          & (Join-Path $build "engrave_core_tests$ext") `
+            "--assets=$assets" `
+            "--golden-corpus=$data/golden" `
+            "--inputs-corpus=$data" `
+            "--python=$python" `
+            "--mnx-out=$mnxOut"
+          $code = $LASTEXITCODE
+          Pop-Location
+          if ($code -ne 0) {
+            Write-Host "::error title=engrave_core_tests::exited with code $code"
+            throw "engrave_core_tests exited with code $code"
           }
-          $failed = @()
-          foreach ($name in $suites.Keys) {
-            $work = Join-Path $env:RUNNER_TEMP "suites/$name"
-            New-Item -ItemType Directory -Force $work | Out-Null
-            Write-Host "::group::$name"
-            Push-Location $work
-            & (Join-Path $build "$name$ext") @($suites[$name])
-            $code = $LASTEXITCODE
-            Pop-Location
-            Write-Host '::endgroup::'
-            if ($code -ne 0) {
-              Write-Host "::error title=$name::exited with code $code"
-              $failed += $name
-            }
-          }
-          if ($failed) { throw "failed suites: $($failed -join ', ')" }
 
       - name: Run upstream gtest suites (engraving playback, MPE)
         run: |

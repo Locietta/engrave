@@ -17,6 +17,7 @@
 
 #include "engrave/src/api/handles.h"
 #include "engrave/src/api/state.h"
+#include "engrave/tests/core_test_env.h"
 #include "engrave/tests/harness/harness.h"
 #include "engraving/automation/automationdata.h"
 #include "engraving/automation/tempovalues.h"
@@ -75,8 +76,8 @@ using engrave::SetStyle;
 using engrave::harness::find_id;
 using engrave::harness::property;
 
-std::vector<std::filesystem::path> g_corpus;
-std::unique_ptr<engrave::Engine> g_engine;
+auto &g_corpus = engrave::test::core_env().golden_corpus;
+auto &g_engine = engrave::test::core_env().engine;
 
 std::filesystem::path fixture(std::string_view name) {
     for (const auto &path : g_corpus) {
@@ -787,43 +788,4 @@ TEST(Operations, CommittedCasesKeepTheirBehaviorAndNativeInterop) {
 
 // --- corpus -----------------------------------------------------------------------
 
-void collect(const std::filesystem::path &path) {
-    static const std::set<std::string> extensions = {".mscx", ".mscz", ".musicxml", ".mxl", ".mid", ".midi",
-                                                     ".gp",   ".gp3",  ".gp4",      ".gp5", ".gpx", ".ptb"};
-    std::error_code ec;
-    if (std::filesystem::is_directory(path, ec)) {
-        std::vector<std::filesystem::path> entries;
-        for (const auto &entry : std::filesystem::directory_iterator(path, ec)) entries.push_back(entry.path());
-        std::ranges::sort(entries);
-        for (const auto &entry : entries) collect(entry);
-    } else if (std::filesystem::is_regular_file(path, ec) && extensions.contains(path.extension().string())) {
-        g_corpus.push_back(path);
-    }
-}
-
 } // namespace
-
-int main(int argc, char **argv) {
-    testing::InitGoogleTest(&argc, argv);
-    std::filesystem::path assets;
-    for (int i = 1; i < argc; ++i) {
-        const std::string_view argument = argv[i];
-        if (argument.starts_with("--assets="))
-            assets = std::filesystem::path(argument.substr(9));
-        else if (argument.starts_with("--corpus="))
-            collect(std::filesystem::path(argument.substr(9)));
-    }
-    if (g_corpus.empty()) {
-        std::fprintf(stderr, "no corpus: pass --corpus=<file or directory>\n");
-        return 1;
-    }
-    auto engine = engrave::Engine::create({.resources = assets});
-    if (!engine) {
-        std::fprintf(stderr, "Engine::create: %s (pass --assets=<resources>)\n", engine.error().message.c_str());
-        return 1;
-    }
-    g_engine = std::move(*engine);
-    const int result = RUN_ALL_TESTS();
-    g_engine.reset();
-    return result;
-}

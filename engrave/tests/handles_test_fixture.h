@@ -143,7 +143,7 @@ extern std::vector<std::string> g_engine_args;
 extern std::string g_program;
 extern bool g_deterministic;
 extern bool g_update_inventory;
-extern std::unique_ptr<engrave::Engine> g_engine;
+extern engrave::Engine *g_engine;
 
 std::string read_text(const std::filesystem::path &path);
 std::vector<std::byte> as_bytes(std::string_view text);
