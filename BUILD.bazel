@@ -47,15 +47,18 @@ cc_library(
 )
 
 cc_library(
-    name = "muse_global",
-    srcs = glob([
-        "muse/framework/global/*.cpp",
-        "muse/framework/global/io/*.cpp",
-        "muse/framework/global/serialization/**/*.cpp",
-        "muse/framework/global/types/*.cpp",
-        "muse/framework/global/thirdparty/kors_logger/src/*.cpp",
-        "engrave/src/global/*.cpp",
-    ]) + ["engrave/src/runtime/resource_filesystem.cpp"],
+    name = "muse_global_base",
+    srcs = glob(
+        [
+            "muse/framework/global/*.cpp",
+            "muse/framework/global/io/*.cpp",
+            "muse/framework/global/serialization/**/*.cpp",
+            "muse/framework/global/types/*.cpp",
+            "muse/framework/global/thirdparty/kors_logger/src/*.cpp",
+            "engrave/src/global/*.cpp",
+        ],
+        exclude = ["muse/framework/global/appinfo.cpp"],
+    ) + ["engrave/src/runtime/resource_filesystem.cpp"],
     hdrs = glob(
         [
             "muse/framework/global/**/*.h",
@@ -87,10 +90,17 @@ cc_library(
     deps = [
         ":public_headers",
         "@amc",
-        "@engrave_config//:muse_generated",
         "@pixi_deps//:zlib",
         "@unordered_dense",
     ],
+)
+
+cc_library(
+    name = "muse_global",
+    srcs = ["muse/framework/global/appinfo.cpp"],
+    copts = ENGINE_COPTS,
+    implementation_deps = ["@engrave_config//:muse_generated"],
+    deps = [":muse_global_base"],
 )
 
 cc_library(
