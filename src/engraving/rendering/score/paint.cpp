@@ -21,6 +21,8 @@
  */
 #include "paint.h"
 
+#include <algorithm>
+
 #include "debugpaint.h"
 #include "dom/engravingitem.h"
 #include "dom/page.h"
@@ -220,7 +222,8 @@ void Paint::paint_item(Painter &painter, const EngravingItem *item, const PaintO
 void Paint::paint_items(Painter &painter, const std::vector<EngravingItem *> &items, const PaintOptions &opt) {
     std::vector<EngravingItem *> sorted_items(items.begin(), items.end());
 
-    std::sort(sorted_items.begin(), sorted_items.end(), mu::engraving::element_less_than);
+    // Preserve deterministic BSP/DOM scan order when (z, selected, visible, track) tie.
+    std::stable_sort(sorted_items.begin(), sorted_items.end(), mu::engraving::element_less_than);
 
     for (const EngravingItem *item : sorted_items) {
         const bool visible = item->display_visible();
