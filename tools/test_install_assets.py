@@ -1,4 +1,3 @@
-import hashlib
 import json
 import tempfile
 import unittest
@@ -13,7 +12,7 @@ class InstallTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             manifest = root / "manifest.json"
-            manifest.write_bytes(b'{\r\n  "version": 1,\r\n  "files": {}\r\n}\r\n')
+            manifest.write_bytes(b'{\r\n  "version": 2,\r\n  "files": {}\r\n}\r\n')
             with patch.object(assets, "MANIFEST", manifest):
                 assets.install(root / "installed")
                 expected = manifest.read_bytes().replace(b"\r\n", b"\n")
@@ -26,12 +25,11 @@ class InstallTests(unittest.TestCase):
             root = Path(tmp)
             manifest = root / "manifest.json"
             data = b"unchanged font/profile/instrument bytes\x00\xff"
-            entry = {"source": "fonts/test", "size": len(data), "sha256": hashlib.sha256(data).hexdigest()}
-            manifest.write_text(json.dumps({"version": 1, "files": {"fonts/test": entry}}))
+            manifest.write_text(json.dumps({"version": 2, "files": {"fonts/test": "src/fonts/test"}}))
             destination = root / "installed"
             with (
                 patch.object(assets, "MANIFEST", manifest),
-                patch.object(assets.subprocess, "check_output", return_value=data),
+                patch.object(assets, "read_blobs", return_value={"src/fonts/test": data}),
             ):
                 assets.install(destination)
                 assets.install(destination, verify=True)
@@ -46,7 +44,9 @@ class InstallTests(unittest.TestCase):
                     assets.install(destination, verify=True)
             with (
                 patch.object(assets, "MANIFEST", manifest),
-                patch.object(assets.subprocess, "check_output", return_value=b"corrupt"),
+                patch.object(
+                    assets, "read_blobs", side_effect=ValueError("Missing committed asset blob: src/fonts/test")
+                ),
             ):
                 with self.assertRaises(ValueError):
                     assets.install(root / "failed")
