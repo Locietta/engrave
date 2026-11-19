@@ -32,7 +32,7 @@
   "semantic.json": "a57d0852e18e21ef50639b509fbc02e7ddb79550e417b895460ed023d6cc1c88"
  },
  "chordline_path.mscx": {
-  "audio.json": "aac227f932262e62849d5f067f4310d34a6f74cfc91f576794ac9dacb5aec6aa",
+  "audio.json": "f9fde0ee10fa3b9c4dfe6a429172a8f6a22e77c6c962c6d6ab573eb6f885336f",
   "excerpt-0/midi.json": "1e674cd131049743169f93d84c77974b897c5c6c53e9ae72d543a3dc4e302514",
   "excerpt-0/musicxml-semantic.json": "fa0c7f824cf446d8a90c8419e802dda84d88e1a329d6eee1e91db20e21c30526",
   "excerpt-0/page-0.svg": "ec78c2572024d71af3e91a123155864e35bf8e939cbbefc719fe362406735378",
@@ -174,7 +174,7 @@
   "semantic.json": "35307056312ae1e24f48e0a6c55ce630f0a37468abada3007bd292342582f5f5"
  },
  "graceArps.mnx": {
-  "audio.json": "72868c8de9e3309bdf22ed4726c845889dce5c73cff7d0ff48cb331a8ba7ef84",
+  "audio.json": "097568f6cf9ac567f1d0295822c4c7d31bf558fcce45dad5ef020b9de1432991",
   "measurePositions.json": "376c656236d8ae9fcf8c785647a6ba374d149f64685215395939328ade9c5dbb",
   "midi.json": "51e4314118eb9e4104665629871df3172863e9116fd53f11da8c29943c0d0d76",
   "mscz.json": "93921678edd9c67fa73c6e0513cd2fa3b56bcae220611065607f8926a54a428f",
