@@ -3,15 +3,13 @@
 Host configuration (`engrave-mcp` checkout; test-only capture is off by default):
 
 ```powershell
-pixi run --locked python scripts/xbuild.py --build-directory build/playback configure --engrave_playback_harness=y
-pixi run --locked python scripts/xbuild.py --build-directory build/playback build -j 12 playback_probe playback_counting_probe playback_container_probe playback_dump_test
+pixi run --locked python scripts/bbuild.py --build-directory build/playback --playback-harness build -j 12 playback_probe playback_counting_probe playback_container_probe playback_dump_test
 ```
 
-In a standalone `engrave` checkout, pass `-P .` to raw `xmake`:
+In a standalone `engrave` checkout:
 
 ```powershell
-xmake f -P . -y -m release -o build/playback --engrave_tests=y --engrave_playback_harness=y
-xmake build -P . -y -j 12 playback_probe playback_counting_probe playback_container_probe playback_dump_test
+bazelisk build --config=release --//bazel:playback_harness=true //:playback_probe //:playback_counting_probe //:playback_container_probe //:playback_dump_test
 ```
 
 `playback_probe ASSETS FONT SCORE OUTDIR` writes full MPE `A.txt`,

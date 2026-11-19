@@ -4,8 +4,10 @@
 //
 //   engrave_output_probe --assets=DIR --soundfont=FILE... --render=SCORE --out=DIR
 //   engrave_output_probe --assets=DIR --positions=SCORE --out=DIR
+//   engrave_output_probe --assets=DIR --export=SCORE --out=DIR
 //   engrave_output_probe --assets=DIR --soundfont=FILE... --audio=SCORE --format=wav|flac|ogg|mp3|aac
-//                        --out=FILE [--repeats=0] [--sample-rate=HZ]
+//                        --out=FILE [--no-repeats] [--sample-rate=HZ]
+//   engrave_output_probe --assets=DIR --soundfont=FILE... --capture=SCORE --out=DIR
 //
 // --render writes page-<n>.svg for every page, page-<n>.png for every page and
 // score.pdf, all with the export defaults (144 dpi, transparent PNG, no page
@@ -79,11 +81,108 @@ std::vector<std::string> notes(engrave::Document &doc) {
     return result;
 }
 
+int report_error(const engrave::Error &err) {
+    std::fprintf(stderr, "error: %s: %s\n", std::string(engrave::to_string(err.code)).c_str(), err.message.c_str());
+    return 2;
+}
+
 int usage() {
     std::fprintf(stderr, "usage: --assets=DIR [--soundfont=FILE]... --render=SCORE --out=DIR\n"
                          "       --assets=DIR --positions=SCORE --out=DIR\n"
-                         "       --assets=DIR [--soundfont=FILE]... --audio=SCORE --format=NAME --out=FILE\n");
+                         "       --assets=DIR --export=SCORE --out=DIR\n"
+                         "       --assets=DIR [--soundfont=FILE]... --audio=SCORE --format=NAME --out=FILE\n"
+                         "       --assets=DIR [--soundfont=FILE]... --capture=SCORE --out=DIR\n");
     return 1;
+}
+
+int run_export(engrave::Engine &engine, const std::filesystem::path &score, const std::filesystem::path &out) {
+    auto document = engine.open(score);
+    if (!document) return report_error(document.error());
+    std::filesystem::create_directories(out);
+    const auto before = notes(**document);
+    const std::pair<engrave::Format, const char *> formats[] = {{engrave::Format::MUSIC_XML, "score.musicxml"},
+                                                                {engrave::Format::MSCZ, "score.mscz"},
+                                                                {engrave::Format::MXL, "score.mxl"},
+                                                                {engrave::Format::MIDI, "score.mid"}};
+    for (auto [kind, name] : formats) {
+        engrave::ExportOptions ex;
+        ex.format = kind;
+        auto bytes = (*document)->export_score(ex);
+        if (!bytes) throw std::runtime_error(bytes.error().message);
+        write(out / name, *bytes);
+        auto reopened = engine.open(out / name);
+        if (!reopened) throw std::runtime_error(reopened.error().message);
+        // Native serialization must preserve note placement and pitch exactly.
+        // Interchange import normalizes voices/staves; the captured oracle owns it.
+        if ((kind == engrave::Format::MSCZ || kind == engrave::Format::MSCX) && notes(**reopened) != before)
+            throw std::runtime_error("native semantic reopen changed notes");
+    }
+    return 0;
+}
+
+int run_render(engrave::Engine &engine, const std::filesystem::path &score, const std::filesystem::path &out, std::size_t *out_pages) {
+    auto document = engine.open(score);
+    if (!document) return report_error(document.error());
+    engrave::RenderOptions render;
+    render.format = engrave::RenderFormat::SVG;
+    const auto svg = (*document)->render(render);
+    if (!svg) return report_error(svg.error());
+    std::filesystem::create_directories(out);
+    for (std::size_t page = 0; page < svg->pages.size(); ++page) write(out / ("page-" + std::to_string(page) + ".svg"), svg->pages[page]);
+
+    render.format = engrave::RenderFormat::PNG;
+    const auto png = (*document)->render(render);
+    if (!png) return report_error(png.error());
+    for (std::size_t page = 0; page < png->pages.size(); ++page) write(out / ("page-" + std::to_string(page) + ".png"), png->pages[page]);
+
+    render.format = engrave::RenderFormat::PDF;
+    const auto pdf = (*document)->render(render);
+    if (!pdf) return report_error(pdf.error());
+    write(out / "score.pdf", pdf->document);
+    if (out_pages) *out_pages = svg->pages.size();
+    return 0;
+}
+
+int run_audio(engrave::Engine &engine, const std::filesystem::path &score, const std::filesystem::path &out_file, std::string_view format,
+              bool repeats, int sample_rate, bool test_output_open_failure, bool print_summary) {
+    engrave::AudioOptions audio;
+    audio.use_repeats = repeats;
+    if (format == "wav")
+        audio.format = engrave::AudioFormat::WAV;
+    else if (format == "flac")
+        audio.format = engrave::AudioFormat::FLAC;
+    else if (format == "ogg" || format == "opus")
+        audio.format = engrave::AudioFormat::OPUS;
+    else if (format == "mp3")
+        audio.format = engrave::AudioFormat::MP3;
+    else if (format == "aac")
+        audio.format = engrave::AudioFormat::AAC;
+    else
+        return usage();
+    audio.sample_rate = sample_rate;
+
+    auto document = engine.open(score);
+    if (!document) return report_error(document.error());
+
+    std::vector<std::byte> bytes;
+    const auto rendered = (*document)->render_audio(
+        audio, [&bytes](std::span<const std::byte> chunk) { bytes.insert(bytes.end(), chunk.begin(), chunk.end()); });
+    if (test_output_open_failure) {
+        if (rendered || rendered.error().code != engrave::ErrorCode::IO || !bytes.empty())
+            throw std::runtime_error("output open failure did not return Io without calling the sink");
+        const auto recovered = (*document)->render_audio(
+            audio, [&bytes](std::span<const std::byte> chunk) { bytes.insert(bytes.end(), chunk.begin(), chunk.end()); });
+        if (!recovered || bytes.empty()) throw std::runtime_error("render after output failure did not recover");
+        return 0;
+    }
+    if (!rendered) return report_error(rendered.error());
+    write_audio(out_file, bytes);
+    if (print_summary) {
+        std::printf("{\"bytes\": %llu, \"frames\": %llu, \"seconds\": %.3f, \"extension\": \"%s\"}\n",
+                    static_cast<unsigned long long>(rendered->bytes), static_cast<unsigned long long>(rendered->frames), rendered->seconds,
+                    std::string(extension_of(audio.format)).c_str());
+    }
+    return 0;
 }
 
 } // namespace
@@ -116,6 +215,9 @@ int main(int argc, char **argv) {
         } else if (argument.starts_with("--audio=")) {
             mode = "audio";
             score = std::filesystem::u8path(value(8));
+        } else if (argument.starts_with("--capture=")) {
+            mode = "capture";
+            score = std::filesystem::u8path(value(10));
         } else if (argument.starts_with("--format="))
             format = value(9);
         else if (argument.starts_with("--sample-rate="))
@@ -165,11 +267,7 @@ int main(int argc, char **argv) {
             cache_cleanup.blocked = blocked;
         }
         auto engine = engrave::Engine::create(options);
-        if (!engine) {
-            std::fprintf(stderr, "error: %s: %s\n", std::string(engrave::to_string(engine.error().code)).c_str(),
-                         engine.error().message.c_str());
-            return 2;
-        }
+        if (!engine) return report_error(engine.error());
         if (!test_startup_font.empty()) {
             const auto fonts = (*engine)->runtime_fonts();
             if (fonts.size() != 1 || fonts[0].id <= 0 || fonts[0].family.empty() || fonts[0].content_fingerprint.empty() ||
@@ -186,14 +284,10 @@ int main(int argc, char **argv) {
             if (std::filesystem::exists(retained)) throw std::runtime_error("startup font survived Engine destruction");
             return 0;
         }
-        auto document = (*engine)->open(score);
-        if (!document) {
-            std::fprintf(stderr, "error: %s: %s\n", std::string(engrave::to_string(document.error().code)).c_str(),
-                         document.error().message.c_str());
-            return 2;
-        }
 
         if (mode == "positions") {
+            auto document = (*engine)->open(score);
+            if (!document) return report_error(document.error());
             std::filesystem::create_directories(out);
             for (const auto [kind, filename] : {std::pair{engrave::PositionKind::MEASURE, "measurePositions.json"},
                                                 std::pair{engrave::PositionKind::SEGMENT, "segmentPositions.json"}}) {
@@ -219,101 +313,26 @@ int main(int argc, char **argv) {
             return 0;
         }
 
-        if (mode == "export") {
-            std::filesystem::create_directories(out);
-            const auto before = notes(**document);
-            const std::pair<engrave::Format, const char *> formats[] = {{engrave::Format::MUSIC_XML, "score.musicxml"},
-                                                                        {engrave::Format::MSCZ, "score.mscz"},
-                                                                        {engrave::Format::MXL, "score.mxl"},
-                                                                        {engrave::Format::MIDI, "score.mid"}};
-            for (auto [kind, name] : formats) {
-                engrave::ExportOptions ex;
-                ex.format = kind;
-                auto bytes = (*document)->export_score(ex);
-                if (!bytes) throw std::runtime_error(bytes.error().message);
-                write(out / name, *bytes);
-                auto reopened = (*engine)->open(out / name);
-                if (!reopened) throw std::runtime_error(reopened.error().message);
-                // Native serialization must preserve note placement and pitch exactly.
-                // Interchange import normalizes voices/staves; the captured oracle owns it.
-                if ((kind == engrave::Format::MSCZ || kind == engrave::Format::MSCX) && notes(**reopened) != before)
-                    throw std::runtime_error("native semantic reopen changed notes");
-            }
-            return 0;
-        }
+        if (mode == "export") return run_export(**engine, score, out);
 
         if (mode == "render") {
-            engrave::RenderOptions render;
-            render.format = engrave::RenderFormat::SVG;
-            const auto svg = (*document)->render(render);
-            if (!svg) {
-                std::fprintf(stderr, "error: %s: %s\n", std::string(engrave::to_string(svg.error().code)).c_str(),
-                             svg.error().message.c_str());
-                return 2;
-            }
-            std::filesystem::create_directories(out);
-            for (std::size_t page = 0; page < svg->pages.size(); ++page)
-                write(out / ("page-" + std::to_string(page) + ".svg"), svg->pages[page]);
-
-            render.format = engrave::RenderFormat::PNG;
-            const auto png = (*document)->render(render);
-            if (!png) {
-                std::fprintf(stderr, "error: %s: %s\n", std::string(engrave::to_string(png.error().code)).c_str(),
-                             png.error().message.c_str());
-                return 2;
-            }
-            for (std::size_t page = 0; page < png->pages.size(); ++page)
-                write(out / ("page-" + std::to_string(page) + ".png"), png->pages[page]);
-
-            render.format = engrave::RenderFormat::PDF;
-            const auto pdf = (*document)->render(render);
-            if (!pdf) {
-                std::fprintf(stderr, "error: %s: %s\n", std::string(engrave::to_string(pdf.error().code)).c_str(),
-                             pdf.error().message.c_str());
-                return 2;
-            }
-            write(out / "score.pdf", pdf->document);
-            std::printf("{\"pages\": %zu}\n", svg->pages.size());
+            std::size_t pages = 0;
+            const int rc = run_render(**engine, score, out, &pages);
+            if (rc != 0) return rc;
+            std::printf("{\"pages\": %zu}\n", pages);
             return 0;
         }
 
-        engrave::AudioOptions audio;
-        audio.use_repeats = repeats;
-        if (format == "wav")
-            audio.format = engrave::AudioFormat::WAV;
-        else if (format == "flac")
-            audio.format = engrave::AudioFormat::FLAC;
-        else if (format == "ogg" || format == "opus")
-            audio.format = engrave::AudioFormat::OPUS;
-        else if (format == "mp3")
-            audio.format = engrave::AudioFormat::MP3;
-        else if (format == "aac")
-            audio.format = engrave::AudioFormat::AAC;
-        else
-            return usage();
-        audio.sample_rate = sample_rate;
-
-        std::vector<std::byte> bytes;
-        const auto rendered = (*document)->render_audio(
-            audio, [&bytes](std::span<const std::byte> chunk) { bytes.insert(bytes.end(), chunk.begin(), chunk.end()); });
-        if (test_output_open_failure) {
-            if (rendered || rendered.error().code != engrave::ErrorCode::IO || !bytes.empty())
-                throw std::runtime_error("output open failure did not return Io without calling the sink");
-            const auto recovered = (*document)->render_audio(
-                audio, [&bytes](std::span<const std::byte> chunk) { bytes.insert(bytes.end(), chunk.begin(), chunk.end()); });
-            if (!recovered || bytes.empty()) throw std::runtime_error("render after output failure did not recover");
+        if (mode == "capture") {
+            if (const int rc = run_export(**engine, score, out); rc != 0) return rc;
+            std::size_t pages = 0;
+            if (const int rc = run_render(**engine, score, out, &pages); rc != 0) return rc;
+            if (const int rc = run_audio(**engine, score, out / "score.wav", "wav", repeats, sample_rate, false, false); rc != 0) return rc;
+            std::printf("{\"pages\": %zu}\n", pages);
             return 0;
         }
-        if (!rendered) {
-            std::fprintf(stderr, "error: %s: %s\n", std::string(engrave::to_string(rendered.error().code)).c_str(),
-                         rendered.error().message.c_str());
-            return 2;
-        }
-        write_audio(out, bytes);
-        std::printf("{\"bytes\": %llu, \"frames\": %llu, \"seconds\": %.3f, \"extension\": \"%s\"}\n",
-                    static_cast<unsigned long long>(rendered->bytes), static_cast<unsigned long long>(rendered->frames), rendered->seconds,
-                    std::string(extension_of(audio.format)).c_str());
-        return 0;
+
+        return run_audio(**engine, score, out, format, repeats, sample_rate, test_output_open_failure, true);
     } catch (const std::exception &error) {
         std::fprintf(stderr, "exception: %s\n", error.what());
         return 3;

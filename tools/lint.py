@@ -63,10 +63,6 @@ def parse_args() -> argparse.Namespace:
 def find_compile_commands(repo_root: Path) -> Path:
     """Return the freshest compilation database, generating one only if none exists."""
     candidates = [
-        repo_root / "build/bazel-release/compile_commands.json",
-        repo_root / "build/bazel-debug/compile_commands.json",
-        repo_root / "build/bazel-releasedbg/compile_commands.json",
-        repo_root / "build/bazel-asan/compile_commands.json",
         repo_root / "build/release/compile_commands.json",
         repo_root / "build/debug/compile_commands.json",
         repo_root / "build/releasedbg/compile_commands.json",
@@ -76,13 +72,19 @@ def find_compile_commands(repo_root: Path) -> Path:
     existing = [path for path in candidates if path.is_file()]
     if existing:
         return max(existing, key=lambda path: path.stat().st_mtime_ns)
-    print("compile_commands.json not found; generating via xmake...", flush=True)
-    fallback = repo_root / "compile_commands.json"
-    try:
-        subprocess.check_call(["xmake", "project", "-k", "compile_commands"], cwd=repo_root)
-    except (OSError, subprocess.CalledProcessError) as error:
-        raise ValueError(f"cannot generate compile_commands.json: {error}") from error
-    return fallback
+    bbuild = repo_root / "scripts/bbuild.py"
+    if bbuild.is_file():
+        print("compile_commands.json not found; generating via scripts/bbuild.py compdb...", flush=True)
+        try:
+            subprocess.check_call([sys.executable, str(bbuild), "compdb"], cwd=repo_root)
+        except (OSError, subprocess.CalledProcessError) as error:
+            raise ValueError(f"cannot generate compile_commands.json: {error}") from error
+        generated = repo_root / "build/release/compile_commands.json"
+        if generated.is_file():
+            return generated
+    raise ValueError(
+        "compile_commands.json not found; run `pixi run compdb` (or `python scripts/bbuild.py compdb`) in the host checkout"
+    )
 
 
 def compile_database(repo_root: Path) -> tuple[Path, list[dict]]:

@@ -85,7 +85,7 @@ std::string find_assets_dir(const std::string &hint) {
         }
     }
 
-    // 3. Compile-time definition if specified in xmake
+    // 3. Compile-time definition if specified by the build system
 #ifdef MUSESCORE_RUNTIME_ASSETS
     {
         fs::path p = fs::u8path(MUSESCORE_RUNTIME_ASSETS);
@@ -135,7 +135,7 @@ std::string find_engraving_data_dir(const std::string &hint) {
         }
     }
 
-    // 3. Compile-time definition if specified in xmake
+    // 3. Compile-time definition if specified by the build system
 #ifdef ENGRAVING_TESTS_DATA_ROOT
     {
         fs::path p = fs::u8path(ENGRAVING_TESTS_DATA_ROOT);

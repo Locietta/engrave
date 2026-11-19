@@ -95,8 +95,7 @@ compile_commands.json
 
 # QML language server
 **/.qmlls.ini
-# xmake standalone build state
-.xmake/
+# Bazel standalone build symlinks and user config
 /bazel-*
 /user.bazelrc
 

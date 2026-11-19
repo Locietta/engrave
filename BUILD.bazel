@@ -814,3 +814,119 @@ filegroup(
         ":write470_probe",
     ],
 )
+
+# Opt-in playback harness and allocation probes (manual; build with --//bazel:playback_harness=true where needed).
+cc_binary(
+    name = "playback_probe",
+    srcs = ["engrave/tests/playback_probe.cpp"],
+    copts = ENGINE_COPTS,
+    linkopts = select({
+        "@platforms//os:windows": ["-lpsapi"],
+        "//conditions:default": [],
+    }),
+    local_defines = [
+        'ENGRAVE_PLAYBACK_BUILD_MODE=\\"bazel\\"',
+    ],
+    tags = ["manual"],
+    target_compatible_with = select({
+        "//bazel:playback_harness_enabled": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = [
+        ":engrave_audio_internal",
+        ":engrave_core_internal",
+        ":test_harness_headers",
+        "@amc",
+        "@unordered_dense",
+    ] + WIN_MANIFEST_DEPS,
+)
+
+cc_binary(
+    name = "playback_counting_probe",
+    srcs = [
+        "engrave/tests/playback_allocations.cpp",
+        "engrave/tests/playback_probe.cpp",
+    ],
+    copts = ENGINE_COPTS,
+    linkopts = ["-lpsapi"],
+    local_defines = [
+        "ENGRAVE_PLAYBACK_COUNTING",
+        'ENGRAVE_PLAYBACK_BUILD_MODE=\\"bazel\\"',
+    ],
+    tags = ["manual"],
+    target_compatible_with = [
+        "@platforms//os:windows",
+    ] + select({
+        "//bazel:playback_harness_enabled": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = [
+        ":engrave_audio_internal",
+        ":engrave_core_internal",
+        ":test_harness_headers",
+        "@amc",
+        "@unordered_dense",
+    ] + WIN_MANIFEST_DEPS,
+)
+
+cc_binary(
+    name = "playback_dump_test",
+    srcs = ["engrave/tests/playback_dump_test.cpp"],
+    copts = ENGINE_COPTS,
+    tags = ["manual"],
+    target_compatible_with = select({
+        "//bazel:playback_harness_enabled": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = [
+        ":engrave_core_internal",
+        ":test_harness_headers",
+        "@amc",
+        "@unordered_dense",
+    ] + WIN_MANIFEST_DEPS,
+)
+
+cc_binary(
+    name = "playback_container_probe",
+    srcs = ["engrave/tests/playback_container_probe.cpp"],
+    copts = ENGINE_COPTS,
+    tags = ["manual"],
+    target_compatible_with = select({
+        "//bazel:playback_harness_enabled": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = [
+        "@amc",
+        "@ngcpp_proxy",
+        "@unordered_dense",
+    ],
+)
+
+cc_binary(
+    name = "score_allocations",
+    srcs = ["engrave/tests/score_allocations.cpp"],
+    copts = ENGINE_COPTS,
+    tags = ["manual"],
+    target_compatible_with = ["@platforms//os:windows"],
+    deps = [
+        ":engrave_core_internal",
+        ":test_harness_headers",
+        "@amc",
+        "@unordered_dense",
+    ] + WIN_MANIFEST_DEPS,
+)
+
+cc_binary(
+    name = "score_timing",
+    srcs = ["engrave/tests/score_allocations.cpp"],
+    copts = ENGINE_COPTS,
+    local_defines = ["ENGRAVE_PROBE_NO_HOOKS"],
+    tags = ["manual"],
+    target_compatible_with = ["@platforms//os:windows"],
+    deps = [
+        ":engrave_core_internal",
+        ":test_harness_headers",
+        "@amc",
+        "@unordered_dense",
+    ] + WIN_MANIFEST_DEPS,
+)
