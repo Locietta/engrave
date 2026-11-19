@@ -139,6 +139,7 @@ Key options and environment requirements:
 - **Fresh output directory**: Always pass a new `--output` directory under `notes/runs/<name>` (never `.runtime/`, which holds runtime assets only).
 - **Quick vs. full**: `--quick` skips the `engine-audio` corpus check for faster per-step verification; run without `--quick` at milestones and engine bumps.
 - **Build and caches**: The gate builds against `--pixi-manifest` (default: `pixi.toml`, installing with `pixi install --locked` if absent) and puts its libraries on the runtime search path. `--skip-build` reuses binaries already staged in `--build-dir` (the `engrave-mcp` wrapper uses this by default). `--repo-cache` and `--disk-cache` select Bazel cache directories (default: `build/.bazel_repo_cache` and `build/.bazel_disk_cache`).
+- **Persistent Bazel JVM for Windows agent sessions**: Register `tools/bazel_server_mcp.py` (stdlib-only stdio MCP server exposing `bazel_server_start`, `bazel_server_stop`, and `bazel_server_status`, extensible via `--project NAME=PATH` or `--config projects.json`) in your IDE/agent MCP config so the Bazel JVM stays warm outside per-command Windows Job Objects.
 - **Standalone Python environment**: In a fork-only checkout, create a Python 3.13 venv and install pinned dependencies plus `engrave_testing` in editable mode:
   ```bash
   python -m venv .venv
