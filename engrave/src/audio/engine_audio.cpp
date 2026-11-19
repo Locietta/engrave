@@ -17,7 +17,6 @@
 #include <utility>
 
 #if defined(__SSE2__) || defined(_M_X64) || defined(_M_AMD64)
-#include <pmmintrin.h>
 #include <xmmintrin.h>
 #endif
 
@@ -68,42 +67,44 @@ using namespace mu::engraving;
 
 namespace music {
 namespace {
-// Recursive reverb tails otherwise incur subnormal arithmetic traps; keep the
-// caller's floating-point modes intact for callbacks and subsequent layout work.
+// Recursive reverb tails otherwise incur subnormal arithmetic traps. Own only
+// the denormal bits so callbacks can use and change the rest of the FP state.
 struct ScopedDenormalGuard {
 #if defined(__SSE2__) || defined(_M_X64) || defined(_M_AMD64)
+    static constexpr std::uint32_t k_denormal_mask = (1U << 15) | (1U << 6); // FTZ and DAZ
+
+    static std::uint32_t read() noexcept { return _mm_getcsr(); }
+
+    static void write(std::uint32_t state) noexcept { _mm_setcsr(state); }
+#elif defined(__aarch64__)
+    static constexpr std::uint64_t k_fpcr_fz = 1ULL << 24;
+    static constexpr std::uint64_t k_denormal_mask = k_fpcr_fz;
+
+    static std::uint64_t read() noexcept {
+        std::uint64_t fpcr;
+        asm volatile("mrs %0, fpcr" : "=r"(fpcr));
+        return fpcr;
+    }
+
+    static void write(std::uint64_t fpcr) noexcept { asm volatile("msr fpcr, %0" : : "r"(fpcr)); }
+#endif
+
+#if defined(__SSE2__) || defined(_M_X64) || defined(_M_AMD64) || defined(__aarch64__)
     static void enable() noexcept {
-        _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
-        _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
+        const auto current = read();
+        if ((current & k_denormal_mask) != k_denormal_mask) write(current | k_denormal_mask);
     }
 
     void restore() const noexcept {
-        _MM_SET_FLUSH_ZERO_MODE(flush_zero_mode);
-        _MM_SET_DENORMALS_ZERO_MODE(denormals_zero_mode);
+        const auto current = read();
+        if ((current & k_denormal_mask) != entry_denormal_mode) write((current & ~k_denormal_mask) | entry_denormal_mode);
     }
 
     ScopedDenormalGuard() noexcept { enable(); }
 
     ~ScopedDenormalGuard() { restore(); }
 
-    const std::uint32_t flush_zero_mode = _MM_GET_FLUSH_ZERO_MODE();
-    const std::uint32_t denormals_zero_mode = _MM_GET_DENORMALS_ZERO_MODE();
-#elif defined(__aarch64__) && !defined(_MSC_VER)
-    void enable() const noexcept {
-        const auto enabled = fpcr | (1ULL << 24);
-        if (enabled != fpcr) asm volatile("msr fpcr, %0" : : "r"(enabled));
-    }
-
-    void restore() const noexcept { asm volatile("msr fpcr, %0" : : "r"(fpcr)); }
-
-    ScopedDenormalGuard() noexcept {
-        asm volatile("mrs %0, fpcr" : "=r"(fpcr));
-        enable();
-    }
-
-    ~ScopedDenormalGuard() { restore(); }
-
-    std::uint64_t fpcr;
+    const decltype(k_denormal_mask) entry_denormal_mode = read() & k_denormal_mask;
 #else
     static void enable() noexcept {}
 

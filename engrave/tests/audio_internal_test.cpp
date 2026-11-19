@@ -23,7 +23,6 @@
 #include <vector>
 
 #if defined(__SSE2__) || defined(_M_X64) || defined(_M_AMD64)
-#include <pmmintrin.h>
 #include <xmmintrin.h>
 #endif
 
@@ -56,58 +55,89 @@
 namespace {
 
 #if defined(__SSE2__) || defined(_M_X64) || defined(_M_AMD64)
+struct TestFpState {
+    static constexpr std::uint32_t k_denormal_mask = (1U << 15) | (1U << 6);
+    static constexpr std::uint32_t k_rounding_bit = 1U << 13;
+
+    static std::uint32_t read() { return _mm_getcsr(); }
+
+    static void write(std::uint32_t state) { _mm_setcsr(state); }
+};
+#elif defined(__aarch64__)
+struct TestFpState {
+    static constexpr std::uint64_t k_denormal_mask = 1ULL << 24;
+    static constexpr std::uint64_t k_rounding_bit = 1ULL << 22;
+
+    static std::uint64_t read() {
+        std::uint64_t fpcr;
+        asm volatile("mrs %0, fpcr" : "=r"(fpcr));
+        return fpcr;
+    }
+
+    static void write(std::uint64_t fpcr) { asm volatile("msr fpcr, %0" : : "r"(fpcr)); }
+};
+#endif
+
+#if defined(__SSE2__) || defined(_M_X64) || defined(_M_AMD64) || defined(__aarch64__)
 TEST(AudioInternal, RenderAudioRestoresCallerDenormalState) {
-    struct RestoreDenormalState {
-        const std::uint32_t flush_zero_mode = _MM_GET_FLUSH_ZERO_MODE();
-        const std::uint32_t denormals_zero_mode = _MM_GET_DENORMALS_ZERO_MODE();
+    using Fp = TestFpState;
 
-        ~RestoreDenormalState() {
-            _MM_SET_FLUSH_ZERO_MODE(flush_zero_mode);
-            _MM_SET_DENORMALS_ZERO_MODE(denormals_zero_mode);
-        }
+    struct RestoreFpState {
+        const decltype(Fp::read()) state = Fp::read();
+
+        ~RestoreFpState() { Fp::write(state); }
     } restore;
-
-    _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_OFF);
-    _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_OFF);
 
     auto opened = music::test::g_engine->open(music::test::corpus_file("ghost_note.mscx"));
     ASSERT_TRUE(opened);
     auto &document = **opened;
-    const auto expect_subnormals = [] {
-        EXPECT_EQ(_MM_GET_FLUSH_ZERO_MODE(), _MM_FLUSH_ZERO_OFF);
-        EXPECT_EQ(_MM_GET_DENORMALS_ZERO_MODE(), _MM_DENORMALS_ZERO_OFF);
-        volatile float sub = 1.0e-40f;
-        volatile float half = sub * 0.5f;
-        EXPECT_GT(half, 0.0f);
-    };
-    EXPECT_TRUE(document.render_audio({}, [](std::span<const std::byte>) {}));
-    expect_subnormals();
-
-    engrave::AudioOptions options;
-    int polls = 0;
-    options.cancelled = [&] {
-        expect_subnormals();
-        return ++polls >= 2;
-    };
-    const auto cancelled = document.render_audio(options, [](std::span<const std::byte>) {});
-    ASSERT_FALSE(cancelled);
-    EXPECT_EQ(cancelled.error().code, engrave::ErrorCode::CANCELLED);
-    EXPECT_GE(polls, 2);
-    expect_subnormals();
-
-    _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
-    _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
-    int on_polls = 0;
-    options.cancelled = [&] {
-        EXPECT_EQ(_MM_GET_FLUSH_ZERO_MODE(), _MM_FLUSH_ZERO_ON);
-        EXPECT_EQ(_MM_GET_DENORMALS_ZERO_MODE(), _MM_DENORMALS_ZERO_ON);
-        ++on_polls;
-        return false;
-    };
-    EXPECT_TRUE(document.render_audio(options, [](std::span<const std::byte>) {}));
-    EXPECT_GE(on_polls, 2);
-    EXPECT_EQ(_MM_GET_FLUSH_ZERO_MODE(), _MM_FLUSH_ZERO_ON);
-    EXPECT_EQ(_MM_GET_DENORMALS_ZERO_MODE(), _MM_DENORMALS_ZERO_ON);
+    ASSERT_TRUE(document.render_audio({}, [](std::span<const std::byte>) {}));
+    auto &audio = engrave::DocumentAccess::context(document).audio();
+    auto *master = engrave::DocumentAccess::master_score(document);
+#ifdef _WIN32
+    const int process = _getpid();
+#else
+    const int process = getpid();
+#endif
+    const auto output = std::filesystem::temp_directory_path() / ("engrave-denormal-" + std::to_string(process) + ".wav");
+    for (const auto entry_mode : {decltype(Fp::read()){0}, Fp::k_denormal_mask}) {
+        SCOPED_TRACE(entry_mode);
+        music::AudioRenderRequest request;
+        const auto utf8 = output.generic_u8string();
+        request.output_path.assign(utf8.begin(), utf8.end());
+        const auto entry = (restore.state & ~Fp::k_denormal_mask) | entry_mode;
+        const auto callback_rounding = (entry ^ Fp::k_rounding_bit) & Fp::k_rounding_bit;
+        Fp::write(entry);
+        int polls = 0;
+        request.cancelled = [&] {
+            const auto current = Fp::read();
+            if (polls < 2) {
+                EXPECT_EQ(current & Fp::k_denormal_mask, entry_mode);
+                EXPECT_EQ(current & Fp::k_rounding_bit, polls == 0 ? entry & Fp::k_rounding_bit : callback_rounding);
+            }
+            ++polls;
+            Fp::write((current & ~(Fp::k_denormal_mask | Fp::k_rounding_bit)) | callback_rounding);
+            return false;
+        };
+        int observed_events = 0;
+        music::set_engine_audio_midi_event_hook(audio, [&](const auto &, std::uint64_t) {
+            EXPECT_GT(polls, 0);
+            const auto current = Fp::read();
+            EXPECT_EQ(current & Fp::k_denormal_mask, Fp::k_denormal_mask);
+            EXPECT_EQ(current & Fp::k_rounding_bit, callback_rounding);
+            ++observed_events;
+        });
+        const auto rendered = music::export_score_audio(audio, master, request);
+        const auto current = Fp::read();
+        Fp::write(restore.state);
+        music::set_engine_audio_midi_event_hook(audio, {});
+        std::filesystem::remove(output);
+        EXPECT_TRUE(rendered.ok) << rendered.error;
+        EXPECT_GT(polls, 1);
+        EXPECT_GT(observed_events, 0);
+        EXPECT_EQ(current & Fp::k_denormal_mask, entry_mode);
+        EXPECT_EQ(current & Fp::k_rounding_bit, callback_rounding);
+    }
 }
 #endif
 
