@@ -4,15 +4,18 @@
 from __future__ import annotations
 
 import argparse
-import base64
 import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 import threading
 import time
+import urllib.parse
+import urllib.request
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -34,12 +37,81 @@ from engrave_testing.public_output import (
 PROFILES = ("release", "debug", "releasedbg", "asan")
 
 
-def manifest_fingerprint(manifest: Path) -> dict:
-    files = [manifest, manifest.parent / "pixi.lock"]
-    return {
-        "path": str(manifest),
-        "sha256": {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in files if path.is_file()},
-    }
+def _find_bazel(env_prefix: Path) -> str:
+    found_bazel = shutil.which("bazel")
+    if found_bazel:
+        return found_bazel
+    candidates = [
+        env_prefix / "Library/bin/bazelisk.exe",
+        env_prefix / "bin/bazelisk",
+        env_prefix / "Library/bin/bazel.exe",
+        env_prefix / "bin/bazel",
+    ]
+    for cand in candidates:
+        if cand.is_file():
+            return str(cand)
+    found_bazelisk = shutil.which("bazelisk")
+    if found_bazelisk:
+        return found_bazelisk
+    raise RuntimeError("bazelisk/bazel not found; run `pixi install` or add bazel to PATH")
+
+
+def _stage_bep_outputs(bep_path: Path, out_dir: Path) -> None:
+    named_sets: dict[str, dict] = {}
+    root_ids: list[str] = []
+    for line in bep_path.read_text(encoding="utf-8", errors="replace").splitlines():
+        if not line.strip():
+            continue
+        event = json.loads(line)
+        if "namedSetOfFiles" in event:
+            set_id = event.get("id", {}).get("namedSet", {}).get("id")
+            if set_id:
+                named_sets[set_id] = event["namedSetOfFiles"]
+        elif "completed" in event:
+            for group in event["completed"].get("outputGroup", []):
+                if group.get("name") == "default":
+                    for fs in group.get("fileSets", []):
+                        if "id" in fs:
+                            root_ids.append(fs["id"])
+
+    visited: set[str] = set()
+    stack = list(root_ids)
+    files: list[Path] = []
+    while stack:
+        sid = stack.pop()
+        if sid in visited or sid not in named_sets:
+            continue
+        visited.add(sid)
+        node = named_sets[sid]
+        for f in node.get("files", []):
+            uri = f.get("uri")
+            if uri:
+                parsed = urllib.parse.urlparse(uri)
+                if parsed.scheme == "file":
+                    files.append(Path(urllib.request.url2pathname(parsed.path)))
+        for child in node.get("fileSets", []):
+            if "id" in child:
+                stack.append(child["id"])
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for src in files:
+        if not src.is_file():
+            continue
+        if os.name == "nt" and src.suffix.lower() not in {".exe", ".dll"}:
+            continue
+        if os.name != "nt" and (src.suffix in {".a", ".o", ".h", ".pch"} or not os.access(src, os.X_OK)):
+            continue
+        dst = out_dir / src.name
+        if dst.exists():
+            try:
+                if dst.stat().st_mtime_ns == src.stat().st_mtime_ns and dst.stat().st_size == src.stat().st_size:
+                    continue
+            except OSError:
+                pass
+            os.chmod(dst, 0o755)
+            dst.unlink()
+        shutil.copy2(src, dst)
+        os.chmod(dst, 0o755)
 
 
 def main():
@@ -55,22 +127,26 @@ def main():
         help="Build output directory (default: <engine-source>/build/gate-<profile>)",
     )
     p.add_argument(
-        "--ccachedir",
+        "--repo-cache",
         type=Path,
-        help="xmake compile cache directory (default: <engine-source>/build/.build_cache)",
+        help="Bazel repository cache directory (default: <engine-source>/build/.bazel_repo_cache)",
+    )
+    p.add_argument(
+        "--disk-cache",
+        type=Path,
+        help="Bazel action disk cache directory (default: <engine-source>/build/.bazel_disk_cache)",
     )
     p.add_argument(
         "--profile",
         choices=PROFILES,
         default="release",
-        help="xmake build mode (default: release)",
+        help="Bazel build profile (default: release)",
     )
     p.add_argument(
         "--pixi-manifest",
         type=Path,
         help="pixi.toml whose default environment provides cairo and zlib (default: the engine source's)",
     )
-    p.add_argument("--mutex-wrapper", type=Path)
     p.add_argument("-j", "--jobs", type=int, default=8, help="Compile jobs (default: 8)")
     p.add_argument(
         "-J",
@@ -78,11 +154,6 @@ def main():
         type=int,
         default=min(8, os.cpu_count() or 4),
         help="Concurrent test workers (default: min(8, CPU count))",
-    )
-    p.add_argument(
-        "--clean-config",
-        action="store_true",
-        help="Force xmake f -c even when the isolated per-build-directory config can be reused",
     )
     p.add_argument(
         "--skip-build",
@@ -100,7 +171,8 @@ def main():
         if isinstance(value, Path):
             setattr(a, key, value.resolve())
     a.build_dir = (a.build_dir or a.engine_source / "build" / ("gate-" + a.profile)).resolve()
-    a.ccachedir = (a.ccachedir or a.engine_source / "build" / ".build_cache").resolve()
+    a.repo_cache = (a.repo_cache or a.engine_source / "build/.bazel_repo_cache").resolve()
+    a.disk_cache = (a.disk_cache or a.engine_source / "build/.bazel_disk_cache").resolve()
     a.jobs = max(1, a.jobs)
     a.test_jobs = max(1, a.test_jobs)
     if (a.output / "actual").exists() or (a.output / "raw").exists():
@@ -109,18 +181,18 @@ def main():
     platform = "windows" if sys.platform == "win32" else "linux"
     suffix = ".exe" if platform == "windows" else ""
     manifest = a.pixi_manifest or a.engine_source / "pixi.toml"
-    native = pixi_env(manifest.parent)
+    env_prefix = pixi_env(manifest.parent)
+    native = env_prefix
     native_fonts = native / "fonts"  # the environment root's fonts/ on every platform
     if platform == "windows":
         native = native / "Library"
-    # xmake's pixi:: package manager must resolve this workspace, not one
-    # inherited from an enclosing `pixi run` (whose CONDA_PREFIX it prefers).
     os.environ["PIXI_PROJECT_MANIFEST"] = str(manifest)
     for name in ("CONDA_PREFIX", "PIXI_ENVIRONMENT_NAME"):
         os.environ.pop(name, None)
-    # The binaries load the environment's shared libraries (cairo, zlib) at run
-    # time: Windows through PATH, Linux through the run path xmake links in.
+    # The binaries load the environment's shared libraries (cairo, zlib) at run time.
     os.environ["PATH"] = str(native / "bin") + os.pathsep + os.environ.get("PATH", "")
+    if platform != "windows" and (native / "lib").is_dir():
+        os.environ["LD_LIBRARY_PATH"] = str(native / "lib") + os.pathsep + os.environ.get("LD_LIBRARY_PATH", "")
     os.environ["PYTHONPATH"] = os.pathsep.join(
         (str(REPO_ROOT / "tests"), str(REPO_ROOT / "tools"), os.environ.get("PYTHONPATH", ""))
     )
@@ -189,24 +261,6 @@ def main():
         if error:
             raise error
 
-    def xmake(name, args, env):
-        cmd = ["xmake", *args]
-        if platform == "windows" and a.mutex_wrapper:
-            encoded = base64.b64encode(json.dumps(list(map(str, args))).encode("utf-8")).decode("ascii")
-            cmd = [
-                "pwsh",
-                "-NoProfile",
-                "-File",
-                a.mutex_wrapper,
-                "-ProjectPath",
-                a.engine_source,
-                "-Log",
-                a.output / (name + "-mutex.log"),
-                "-ArgsBase64",
-                encoded,
-            ]
-        run(name, cmd, a.engine_source, env)
-
     # Runtime assets gate every capture; a broken manifest must fail before the
     # engine compiles, not after the full build.
     run(
@@ -220,61 +274,38 @@ def main():
         ],
     )
     if not a.skip_build:
-        run("pixi-install", ["pixi", "install", "--locked", "--manifest-path", manifest])
-        # An isolated config per build directory makes reuse safe: the pixi
-        # manifest is not an xmake option, so its fingerprint is the stamp that
-        # decides whether the cached configuration may be kept.
-        config_dir = a.build_dir / ".xmake-config"
-        config_dir.mkdir(parents=True, exist_ok=True)
-        xmake_env = {"XMAKE_CONFIGDIR": str(config_dir)}
+        if not env_prefix.is_dir():
+            run("pixi-install", ["pixi", "install", "--locked", "--manifest-path", manifest])
+        bazel = _find_bazel(env_prefix)
+        a.repo_cache.mkdir(parents=True, exist_ok=True)
+        a.disk_cache.mkdir(parents=True, exist_ok=True)
+        a.build_dir.mkdir(parents=True, exist_ok=True)
+        rev = subprocess.check_output(["git", "-C", str(a.engine_source), "rev-parse", "HEAD"], text=True).strip()[:7]
+        with tempfile.NamedTemporaryFile(dir=a.build_dir, prefix=".bep-", suffix=".json", delete=False) as tf:
+            bep_path = Path(tf.name)
         try:
-            a.build_dir.relative_to(a.engine_source)
-        except ValueError:
-            pass
-        else:
-            # Share built source packages across profiles/build dirs in this checkout.
-            xmake_env["XMAKE_PKG_LOCALDIR"] = str(a.engine_source / "build/.packages")
-        a.ccachedir.mkdir(parents=True, exist_ok=True)
-        stamp = {
-            "manifest": manifest_fingerprint(manifest),
-            "profile": a.profile,
-            "build_dir": str(a.build_dir),
-            "ccachedir": str(a.ccachedir),
-        }
-        # Keep the stamp outside the config directory: `xmake f -c` may clear
-        # that directory, and the next run must still see whether reuse is safe.
-        stamp_path = a.build_dir / "gate-config.json"
-        clean_config = a.clean_config
-        if not clean_config:
-            try:
-                clean_config = json.loads(stamp_path.read_text(encoding="utf-8")) != stamp
-            except (OSError, ValueError):
-                clean_config = True
-        config = ["f"]
-        if clean_config:
-            config.append("-c")
-        config += [
-            "-P",
-            ".",
-            "-y",
-            "-m",
-            a.profile,
-            "-o",
-            a.build_dir,
-            "--ccache=y",
-            "--ccachedir=" + str(a.ccachedir),
-            "--engrave_tests=y",
-            # Pinned inventories describe the harness-off build; a reused config must not keep it on.
-            "--engrave_playback_harness=n",
-        ]
-        if platform == "linux" and (native / "bin/x86_64-conda-linux-gnu-gcc").is_file():
-            config += [
-                "--cc=" + str(native / "bin/x86_64-conda-linux-gnu-gcc"),
-                "--cxx=" + str(native / "bin/x86_64-conda-linux-gnu-g++"),
-            ]
-        xmake("configure", config, xmake_env)
-        stamp_path.write_text(json.dumps(stamp, indent=2) + "\n", encoding="utf-8")
-        xmake("build", ["build", "-P", ".", "-y", "-j" + str(a.jobs), "engine_tests"], xmake_env)
+            run(
+                "build",
+                [
+                    bazel,
+                    "build",
+                    f"--config={a.profile}",
+                    f"--repository_cache={a.repo_cache}",
+                    "--repo_contents_cache=",
+                    f"--disk_cache={a.disk_cache}",
+                    f"--repo_env=ENGRAVE_PIXI_PREFIX={env_prefix}",
+                    f"--repo_env=ENGRAVE_GIT_REVISION={rev}",
+                    f"--symlink_prefix={a.build_dir / '.bazel-symlinks'}/",
+                    f"--jobs={a.jobs}",
+                    "--//bazel:playback_harness=false",
+                    f"--build_event_json_file={bep_path}",
+                    "//:engine_tests",
+                ],
+                cwd=a.engine_source,
+            )
+            _stage_bep_outputs(bep_path, a.build_dir)
+        finally:
+            bep_path.unlink(missing_ok=True)
     forbidden = re.compile(
         r"\bmuse::|\bmu::|\bkors\b|\bnlohmann\b|\bglz::|\bQt\b|\bQ[A-Z]\w*\b|"
         r'#\s*include\s*[<"](?:muse/|framework/|engraving/|nlohmann/|glaze/)'
@@ -496,22 +527,13 @@ def main():
         out = a.output / "actual" / source.name
         raw.mkdir(parents=True, exist_ok=True)
         out.mkdir(parents=True, exist_ok=True)
-        produced = []
-        for mode in ("export", "render", "audio"):
-            produced.append(
-                run(
-                    source.name + "-" + mode,
-                    probe_command(
-                        probe,
-                        a.assets,
-                        [a.soundfont],
-                        mode,
-                        source,
-                        raw / "score.wav" if mode == "audio" else raw,
-                    ),
-                    quiet=True,
-                )
+        produced = [
+            run(
+                source.name + "-capture",
+                probe_command(probe, a.assets, [a.soundfont], "capture", source, raw),
+                quiet=True,
             )
+        ]
         with zipfile.ZipFile(raw / "score.mscz") as archive:
             master = next(n for n in archive.namelist() if n.endswith(".mscx") and "/" not in n)
             (raw / "score.mscx").write_bytes(archive.read(master))

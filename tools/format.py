@@ -55,7 +55,6 @@ IGNORED_PREFIXES = (
     ".upstream/",
     "tests/data/",
     ".pixi/",
-    ".xmake/",
     "build/",
     ".runtime/",
 )

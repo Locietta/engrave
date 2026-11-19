@@ -2,12 +2,11 @@ name: CI
 
 # Build and unit-test lane for the engrave engine fork.
 #
-# Runs on Windows (MSVC) and Linux (GCC 15): configures the documented release
-# build with tests enabled, builds the unit-test closure, and runs the C++ unit
-# test binaries plus the fast Python checks. The engine gate (tests/gate.py),
-# the golden comparisons and the audio corpus stay manual: they need the
-# SoundFont and the full `engine_tests` build, and are validated by hand on the
-# physical Windows and Linux hosts (see README.md, "Testing").
+# Runs on Windows and Linux with Bazel + hermetic xclang 23: builds the release
+# unit-test closure, and runs the C++ unit test binaries plus the fast Python
+# checks. The engine gate (tests/gate.py), the golden comparisons and the audio
+# corpus stay manual: they need the SoundFont and the full `engine_tests`
+# build, and are validated on the physical Windows and Linux hosts.
 
 on:
   push:
@@ -23,10 +22,6 @@ permissions:
   contents: read
 
 env:
-  # The build requires xmake >= 3.1.1; 3.1.2 is the release the recipes were
-  # last exercised with.
-  XMAKE_VERSION: "3.1.2"
-  # tests/requirements.txt pins the validation closure for Python 3.13.
   PYTHON_VERSION: "3.13"
 
 jobs:
@@ -68,47 +63,30 @@ jobs:
   build-test:
     name: build-test (${{ matrix.name }})
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 150
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
         include:
-          # windows-latest is the Windows Server 2025 + Visual Studio 2026 image
-          # (MSVC 14.51); the project needs MSVC 14.51+ for C++23.
-          - name: windows-msvc
+          - name: windows-xclang
             runner: windows-latest
-          # ubuntu-latest (24.04) ships GCC 13.2 only; 26.04 ships GCC 15.2,
-          # the closest system compiler to the validated GCC 15.3.
-          - name: linux-gcc15
-            runner: ubuntu-26.04
+          - name: linux-xclang
+            runner: ubuntu-latest
     defaults:
       run:
         shell: pwsh
     env:
       BUILD_DIR: build/ci
-      CCACHE_DIR: ${{ github.workspace }}/.ccache
-      CCACHE_MAXSIZE: 2G
-      CCACHE_COMPRESS: "1"
+      REPO_CACHE: build/.bazel_repo_cache
+      DISK_CACHE: build/.bazel_disk_cache
     steps:
       - uses: actions/checkout@v7
 
-      - name: Install Linux build dependencies
+      - name: Install Linux runtime fonts
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          # nasm: the LAME recipe; fonts-dejavu-core: renderer fallback font.
-          # cmake, ninja, make and autotools ship with the image; cairo and
-          # zlib come from the Pixi environment.
-          sudo apt-get install -y --no-install-recommends nasm ccache fonts-dejavu-core
-          g++ --version
-
-      - name: Install Windows build dependencies
-        if: runner.os == 'Windows'
-        run: choco install ccache --no-progress -y
-
-      - uses: xmake-io/github-action-setup-xmake@v1
-        with:
-          xmake-version: ${{ env.XMAKE_VERSION }}
+          sudo apt-get install -y --no-install-recommends fonts-dejavu-core
 
       - uses: actions/setup-python@v7
         with:
@@ -121,8 +99,6 @@ jobs:
           python -m pip install -r tests/requirements.txt
           python -m pip install -e .
 
-      # cairo and zlib: the conda-forge builds pinned by pixi.lock, which
-      # xmake/engrave.lua requires as pixi::cairo and pixi::zlib.
       - name: Install the Pixi environment (cairo, zlib)
         uses: prefix-dev/setup-pixi@v0
         with:
@@ -130,74 +106,64 @@ jobs:
           locked: true
           cache: true
 
-      - name: Put the Pixi DLLs on PATH (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          # The test binaries load the conda cairo and zlib DLLs at run time
-          # (Linux binaries carry the environment's lib directory as run path).
-          Join-Path $PWD ".pixi/envs/default/Library/bin" >> $env:GITHUB_PATH
-
-      # Packages are built from source into <build dir>/.packages
-      # (package.install_locally); cache them on the recipes and build files.
-      - name: Restore xmake package cache
-        id: packages
+      - name: Restore Bazel repository cache
+        id: repo-cache
         uses: actions/cache/restore@v6
         with:
-          path: ${{ env.BUILD_DIR }}/.packages
-          key: xmake-packages-${{ matrix.name }}-${{ hashFiles('xmake.lua', 'xmake/**') }}
-          restore-keys: xmake-packages-${{ matrix.name }}-
+          path: ${{ env.REPO_CACHE }}
+          key: bazel-repo-${{ matrix.name }}-${{ hashFiles('.bazelversion', 'MODULE.bazel', 'bazel/deps.bzl') }}
+          restore-keys: bazel-repo-${{ matrix.name }}-
 
-      - name: Restore compiler cache
-        id: ccache
+      - name: Restore Bazel disk cache
         uses: actions/cache/restore@v6
         with:
-          path: .ccache
-          key: ccache-${{ matrix.name }}-${{ github.sha }}
-          restore-keys: ccache-${{ matrix.name }}-
+          path: ${{ env.DISK_CACHE }}
+          key: bazel-disk-${{ matrix.name }}-${{ github.sha }}
+          restore-keys: bazel-disk-${{ matrix.name }}-
 
-      - name: Configure (release, tests enabled)
-        id: configure
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $PSNativeCommandUseErrorActionPreference = $true
-          $config = @(
-            'f', '-P', '.', '-y', '-m', 'release', '-o', $env:BUILD_DIR,
-            '--ccache=y', "--ccachedir=$env:CCACHE_DIR",
-            '--engrave_tests=y', '--engrave_playback_harness=n'
-          )
-          xmake @config
-
-      - name: Save xmake package cache
-        if: ${{ !cancelled() && steps.configure.outcome == 'success' && steps.packages.outputs.cache-hit != 'true' }}
-        uses: actions/cache/save@v6
-        with:
-          path: ${{ env.BUILD_DIR }}/.packages
-          key: xmake-packages-${{ matrix.name }}-${{ hashFiles('xmake.lua', 'xmake/**') }}
-
-      # The unit-test closure only: the targets the gate runs as suites, the
-      # upstream gtest binaries and the public-header leak test. The full
-      # engine_tests closure (output tests, probes, semantic_dump) is the
-      # manual gate's.
       - name: Build unit-test targets
         id: build
         run: |
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
+          $root = $PWD.Path
+          $pixiPrefix = Join-Path $root '.pixi/envs/default'
+          $rev = (git rev-parse HEAD).Substring(0, 7)
+          New-Item -ItemType Directory -Force $env:BUILD_DIR, $env:REPO_CACHE, $env:DISK_CACHE | Out-Null
+          $bep = Join-Path $env:BUILD_DIR 'bep.json'
           $targets = @(
-            'engrave_api_test', 'engrave_handles_test', 'engrave_describe_test',
-            'engrave_read_test', 'engrave_ops_test',
-            'engrave_gp_import_test', 'engrave_mnx_import_test', 'engrave_mnx_model_test',
-            'diagnostics_test', 'io_boundary_test',
-            'engraving_playback_tests', 'mpe_tests', 'example_embedder'
+            '//:engrave_api_test', '//:engrave_handles_test', '//:engrave_describe_test',
+            '//:engrave_read_test', '//:engrave_ops_test',
+            '//:engrave_gp_import_test', '//:engrave_mnx_import_test', '//:engrave_mnx_model_test',
+            '//:diagnostics_test', '//:io_boundary_test',
+            '//:engraving_playback_tests', '//:mpe_tests', '//:example_embedder'
           )
-          xmake build -P . -y -j 4 @targets
+          bazelisk build `
+            --config=release `
+            "--repository_cache=$root/$env:REPO_CACHE" `
+            --repo_contents_cache= `
+            "--disk_cache=$root/$env:DISK_CACHE" `
+            "--repo_env=ENGRAVE_PIXI_PREFIX=$pixiPrefix" `
+            "--repo_env=ENGRAVE_GIT_REVISION=$rev" `
+            "--symlink_prefix=$root/$env:BUILD_DIR/.bazel-symlinks/" `
+            --jobs=4 `
+            "--build_event_json_file=$bep" `
+            @targets
+          python -c "from pathlib import Path; from tests.gate import _stage_bep_outputs; _stage_bep_outputs(Path(r'$bep'), Path(r'$env:BUILD_DIR'))"
 
-      - name: Save compiler cache
+      - name: Save Bazel repository cache
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.repo-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ env.REPO_CACHE }}
+          key: bazel-repo-${{ matrix.name }}-${{ hashFiles('.bazelversion', 'MODULE.bazel', 'bazel/deps.bzl') }}
+
+      - name: Save Bazel disk cache
         if: ${{ !cancelled() && steps.build.outcome != 'skipped' }}
         uses: actions/cache/save@v6
         with:
-          path: .ccache
-          key: ccache-${{ matrix.name }}-${{ github.sha }}
+          path: ${{ env.DISK_CACHE }}
+          key: bazel-disk-${{ matrix.name }}-${{ github.sha }}
 
       - name: Install runtime assets and verify the manifest
         run: |
@@ -213,23 +179,26 @@ jobs:
           $ext = $IsWindows ? '.exe' : ''
           $root = $PWD.Path
           $build = Join-Path $root $env:BUILD_DIR
+          if ($IsWindows) {
+            $env:PATH = (Join-Path $root '.pixi/envs/default/Library/bin') + [IO.Path]::PathSeparator + $env:PATH
+          } else {
+            $env:LD_LIBRARY_PATH = (Join-Path $root '.pixi/envs/default/lib') + ($env:LD_LIBRARY_PATH ? ":$env:LD_LIBRARY_PATH" : '')
+          }
           $assets = Join-Path $env:RUNNER_TEMP 'assets'
           $data = Join-Path $root 'tests/data/inputs'
           $python = (Get-Command python).Source
           $mnxOut = Join-Path $env:RUNNER_TEMP 'mnx-export'
-          # Same arguments as tests/gate.py, minus engrave_output_test (needs
-          # SoundFonts and the render goldens; part of the manual gate).
           $suites = [ordered]@{
-            engrave_api_test       = @("--assets=$assets")
-            engrave_handles_test   = @("--assets=$assets", "--corpus=$data/golden")
-            engrave_describe_test  = @("--assets=$assets", "--python=$python", $data)
-            engrave_read_test      = @("--assets=$assets", "--corpus=$data")
-            engrave_ops_test       = @("--assets=$assets", "--corpus=$data/golden")
-            engrave_gp_import_test = @("--assets=$assets")
+            engrave_api_test        = @("--assets=$assets")
+            engrave_handles_test    = @("--assets=$assets", "--corpus=$data/golden")
+            engrave_describe_test   = @("--assets=$assets", "--python=$python", $data)
+            engrave_read_test       = @("--assets=$assets", "--corpus=$data")
+            engrave_ops_test        = @("--assets=$assets", "--corpus=$data/golden")
+            engrave_gp_import_test  = @("--assets=$assets")
             engrave_mnx_import_test = @("--assets=$assets", "--mnx-out=$mnxOut")
-            engrave_mnx_model_test = @()
-            diagnostics_test       = @()
-            io_boundary_test       = @()
+            engrave_mnx_model_test  = @()
+            diagnostics_test        = @()
+            io_boundary_test        = @()
           }
           $failed = @()
           foreach ($name in $suites.Keys) {
@@ -249,12 +218,17 @@ jobs:
           if ($failed) { throw "failed suites: $($failed -join ', ')" }
 
       - name: Run upstream gtest suites (engraving playback, MPE)
-        run: >
-          python tests/integration/test_upstream_gtest.py
-          --bin-dir "$env:BUILD_DIR"
-          --assets "$env:RUNNER_TEMP/assets"
-          --engraving-data src/engraving/tests
-          --output "$env:RUNNER_TEMP/gtest"
+        run: |
+          if ($IsWindows) {
+            $env:PATH = (Join-Path $PWD '.pixi/envs/default/Library/bin') + [IO.Path]::PathSeparator + $env:PATH
+          } else {
+            $env:LD_LIBRARY_PATH = (Join-Path $PWD '.pixi/envs/default/lib') + ($env:LD_LIBRARY_PATH ? ":$env:LD_LIBRARY_PATH" : '')
+          }
+          python tests/integration/test_upstream_gtest.py `
+            --bin-dir "$env:BUILD_DIR" `
+            --assets "$env:RUNNER_TEMP/assets" `
+            --engraving-data src/engraving/tests `
+            --output "$env:RUNNER_TEMP/gtest"
 
       - name: Validate exported MNX against the schema
         run: >

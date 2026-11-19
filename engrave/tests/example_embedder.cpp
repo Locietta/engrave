@@ -1,5 +1,5 @@
 // An engrave client that knows nothing but the public API: it is compiled
-// with engrave/include as its only include path (xmake/tests.lua).
+// with engrave/include as its only include path (BUILD.bazel).
 //
 //   example_embedder <resources> <score file>...
 //

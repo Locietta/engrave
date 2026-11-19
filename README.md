@@ -1,6 +1,6 @@
 # engrave
 
-`engrave` is a native, headless C++ score engine library providing core music notation, layout, engraving, rendering, import/export, and audio synthesis capabilities. It is built with [xmake](https://xmake.io/) and is completely free of Qt, GUI, and desktop application dependencies.
+`engrave` is a native, headless C++ score engine library providing core music notation, layout, engraving, rendering, import/export, and audio synthesis capabilities. It is built with [Bazel](https://bazel.build/) and a hermetic Clang/libc++ (`xclang`) toolchain, completely free of Qt, GUI, and desktop application dependencies.
 
 The library serves as the core engraving and playback engine for the [`engrave-mcp`](https://github.com/Locietta/engrave-mcp) Model Context Protocol (MCP) host.
 
@@ -48,30 +48,28 @@ Capabilities can be queried programmatically via `Engine::capabilities()`.
 
 ## Building
 
-`engrave` uses the [xmake](https://xmake.io/) build system and requires a C++23 conforming compiler.
+`engrave` uses [Bazel](https://bazel.build/) (pinned in `.bazelversion`) with a hermetic Clang 23 / `libc++` (`xclang`) C++23 toolchain across Windows and Linux.
 
 ### Prerequisites
 
-- **xmake** >= 3.1.1
-- **C++23 Compiler**:
-  - Windows: MSVC 14.51+ (Visual Studio 2026 / Build Tools)
-  - Linux: GCC 15+ (CI runs GCC 15.2 on `ubuntu-26.04`; validated on conda GCC 15.3) or Clang 23.1.4 (Pixi pin)
+- **Bazelisk** (or Bazel matching `.bazelversion`)
 - **Python** 3 and **Git** (for asset installation and manifest verification)
-- **[Pixi](https://pixi.sh/)**: cairo and zlib are the conda-forge builds pinned in `pixi.toml` / `pixi.lock`. Run `pixi install --locked` once; `xmake/engrave.lua` requires them as `pixi::cairo` and `pixi::zlib` through the Pixi package manager in `xmake/modules`. A project that includes `xmake/engrave.lua` provides them from its own `pixi.toml`. Windows binaries need `.pixi/envs/default/Library/bin` on `PATH` at run time; Linux binaries carry the environment's library directory as their run path.
+- **[Pixi](https://pixi.sh/)**: cairo and zlib are the conda-forge builds pinned in `pixi.toml` / `pixi.lock`. Run `pixi install --locked` once; `bazel/deps.bzl` exposes them as `@pixi_deps//:cairo` and `@pixi_deps//:zlib`. A superproject consuming `@engrave` via Bzlmod supplies its own Pixi prefix via `--repo_env=ENGRAVE_PIXI_PREFIX=...`. Windows binaries need `.pixi/envs/default/Library/bin` on `PATH` at run time; Linux binaries load `.pixi/envs/default/lib`.
 
-All other C/C++ third-party dependencies (FreeType, HarfBuzz, libflac, LAME, libopus, libopusenc, fdk-aac, pugixml, utfcpp, picojson, glaze, proxy, amc, unordered_dense) are built from pinned source recipes in `xmake/packages/`, an xmake package repository (`packages/<letter>/<name>/xmake.lua`, patches beside their recipe) that `xmake/engrave.lua` registers as `engrave-pinned` and that takes precedence over xmake-repo. `glaze` is the engine's only JSON library; MNX is read and written through a document model generated from the MNX schema (`docs/mnx.md`).
+All other C/C++ third-party dependencies (FreeType, HarfBuzz, libflac, LAME, libopus, libopusenc, fdk-aac, pugixml, utfcpp, picojson, glaze, proxy, amc, unordered_dense, GoogleTest) are fetched from hash-pinned archives in `MODULE.bazel` (`bazel/deps.bzl`) and built via `bazel/third_party/*.BUILD.bazel`. `glaze` is the engine's only JSON library; MNX is read and written through a document model generated from the MNX schema (`docs/mnx.md`).
 
 ### Build Commands (Windows and Linux)
 
 ```bash
 pixi install --locked
-xmake f -m release
-xmake build engrave
+bazelisk build --config=release //:engrave
 ```
 
-### Configuration Options
+### Configuration Flags
 
-- `--engrave_tests=y`: Enable development test targets (requires GoogleTest, resolved automatically).
+- `--config=<release|debug|releasedbg|asan>`: Select optimization/debug/sanitizer profile (`bazel/engrave.bazelrc`).
+- `--//bazel:pch=false`: Disable binary precompiled headers for `//:engraving` (enabled by default).
+- `--//bazel:playback_harness=true`: Enable opt-in playback capture instrumentation (`ENGRAVE_PLAYBACK_HARNESS`).
 
 ## Asset Installation
 
@@ -124,11 +122,10 @@ The engine test suite is organized into distinct directories:
 
 ### Building Test Binaries
 
-Engine tests are built with xmake (pass `-P .` when building in a nested checkout):
+Engine tests are built with Bazel:
 
 ```bash
-xmake f -P . --engrave_tests=y
-xmake build -P . engine_tests
+bazelisk build --config=release //:engine_tests
 ```
 
 ### Running the Public Boundary Gate
@@ -143,7 +140,7 @@ python tests/gate.py --build-dir build/gate --assets .runtime/assets --soundfont
 python tests/test_inventory.py
 ```
 
-Use a fresh output directory under `notes/runs/<name>` for each run (never `.runtime/`, which holds runtime assets only). The gate builds against the Pixi environment of `--pixi-manifest` (default: this checkout's `pixi.toml`), installing it with `pixi install --locked`, and puts its `bin` on `PATH`. When that environment supplies the Conda compiler (Linux), the gate selects it; otherwise xmake uses the system compiler. The optional `--mutex-wrapper` supports callers sharing xmake's Windows lock. `--skip-build` runs the gate on `engine_tests` binaries already built in `--build-dir`, such as an embedding project's build (the engrave-mcp wrapper does this by default). `--quick` skips the exclusive `output-timing` and `dense-cancellation` checks while running all other suites and captures; use it for per-step checks, and run the full gate without `--quick` at milestones and for engine bumps. `--ccachedir` sets the xmake compile cache directory passed as `--ccachedir=<path>` (default: `<engine-source>/build/.build_cache`), letting builds across profiles or host checkouts share cached objects. The dense-audio cancellation timing assertion can fail on Windows; failures are retained and must not be reported as a pass.
+Use a fresh output directory under `notes/runs/<name>` for each run (never `.runtime/`, which holds runtime assets only). The gate builds against the Pixi environment of `--pixi-manifest` (default: this checkout's `pixi.toml`), installing it with `pixi install --locked` if absent, and puts its library and binary directories on the runtime search path. `--skip-build` runs the gate on `engine_tests` binaries already staged in `--build-dir`, such as an embedding project's build (the `engrave-mcp` wrapper does this by default). `--quick` skips the exclusive `output-timing` and `dense-cancellation` checks while running all other suites and captures; use it for per-step checks, and run the full gate without `--quick` at milestones and for engine bumps. `--repo-cache` and `--disk-cache` set the Bazel repository and action cache directories (default: `<engine-source>/build/.bazel_repo_cache` and `<engine-source>/build/.bazel_disk_cache`).
 
 Create a new virtual environment with Python 3.13 (`python -m venv .venv`), then install dependencies and the test package in editable mode:
 
@@ -154,7 +151,7 @@ Create a new virtual environment with Python 3.13 (`python -m venv .venv`), then
 
 (Windows: `.venv/Scripts/python.exe`). Running `python -m pip install -e .` in the fork root inside the virtual environment provides `engrave_testing`, which `tests/gate.py` and `tests/test_inventory.py` import at startup (and which `tests/requirements.txt` does not supply). Run the commands above with that Python. All normalization and validation dependencies are exact pins matching the host `pixi.lock`. The gate rejects missing or different versions before building or capturing; PyMuPDF 2.1 changes normalized PDF bytes and is unsupported.
 
-Validation tools: Python 3.13, jsonschema 4.26.0, numpy 2.5.4, soundfile 0.14.0, Pillow 13.0.0, PyMuPDF 2.0 and psutil 7.2.2. Cairo and DejaVu fonts must be installed in the supplied native prefix on Linux. xmake 3.1.1+, MSVC 14.51+ or GCC 15.3 build the C++23 closure. No MCP SDK or desktop MuseScore installation is needed. Shared input/baseline provenance is frozen under `tests/data`; the host reads these files through its submodule. `gate-inventory.json` explicitly selects the 251 master API artifacts from the complete shared platform index. The index's entire payload inventory and hashes are verified before comparison.
+Validation tools: Python 3.13, jsonschema 4.26.0, numpy 2.5.4, soundfile 0.14.0, Pillow 13.0.0, PyMuPDF 2.0 and psutil 7.2.2. Cairo and DejaVu fonts must be installed in the supplied native prefix on Linux. Bazel 9.3.2 with hermetic `xclang` 23.1.5.2 builds the C++23 closure on both Windows and Linux. No MCP SDK or desktop MuseScore installation is needed. Shared input/baseline provenance is frozen under `tests/data`; the host reads these files through its submodule. `gate-inventory.json` explicitly selects the 251 master API artifacts from the complete shared platform index. The index's entire payload inventory and hashes are verified before comparison.
 
 ### Running a Single Fork Test Script Directly
 
@@ -175,18 +172,17 @@ Alternatively, install the `engrave-testing` package in editable mode within the
 
 ### Continuous Integration
 
-`.github/workflows/ci.yml` runs on pushes to `main`, pull requests and manual dispatch. A `python-checks` job installs `tests/requirements.txt` and `pip install -e .`, then runs `tools/test_install_assets.py`, `tests/test_inventory.py` and `tests/test_playback_witness.py` (also with `python -O`). A `build-test` job on Windows (MSVC from the `windows-latest` Visual Studio 2026 image, and Linux (`ubuntu-26.04`, GCC 15), both with the conda-forge cairo and zlib from `pixi.lock`, configures `xmake f -m release --engrave_tests=y`, builds the unit-test targets, installs and verifies the runtime assets, and runs the same suites and arguments as `tests/gate.py` except `engrave_output_test`: `engrave_api_test`, `engrave_handles_test`, `engrave_describe_test`, `engrave_read_test`, `engrave_ops_test`, `engrave_gp_import_test`, `engrave_mnx_import_test` with its MNX schema check, `diagnostics_test` and `io_boundary_test`, then the upstream `engraving_playback_tests` and `mpe_tests` through `tests/integration/test_upstream_gtest.py`. `example_embedder` is built as the public-header leak check. CI does not run the full gate, the golden comparisons, the audio corpus or anything that needs a SoundFont (`engrave_output_test`, `engine_audio`, the render goldens); those stay manual on the Windows and Linux hosts. Formatting and naming lint are not part of CI.
+`.github/workflows/ci.yml` runs on pushes to `main`, pull requests and manual dispatch. A `python-checks` job installs `tests/requirements.txt` and `pip install -e .`, then runs `tools/test_install_assets.py`, `tests/test_inventory.py`, `tools/mnx_codegen.py --check`, and `tests/test_playback_witness.py` (also with `python -O`). A `build-test` job on Windows (`windows-latest`) and Linux (`ubuntu-latest`), both using Bazel + hermetic `xclang` with the conda-forge cairo and zlib from `pixi.lock`, builds the unit-test targets in `release` mode, installs and verifies the runtime assets, and runs the same suites and arguments as `tests/gate.py` except `engrave_output_test`: `engrave_api_test`, `engrave_handles_test`, `engrave_describe_test`, `engrave_read_test`, `engrave_ops_test`, `engrave_gp_import_test`, `engrave_mnx_import_test` with its MNX schema check, `engrave_mnx_model_test`, `diagnostics_test` and `io_boundary_test`, then the upstream `engraving_playback_tests` and `mpe_tests` through `tests/integration/test_upstream_gtest.py`. `example_embedder` is built as the public-header leak check. CI does not run the full gate, the golden comparisons, the audio corpus or anything that needs a SoundFont (`engrave_output_test`, `engine_audio`, the render goldens); those stay manual on the Windows and Linux hosts. Formatting and naming lint are not part of CI.
 
 ## Development
 
 - [docs/code-style-guide.md](docs/code-style-guide.md): Code style, naming conventions, and contribution guidelines.
 - [docs/playback.md](docs/playback.md): Offline audio render pipeline and synthesis architecture.
 
-Style tools use clang-format/clang-tidy 23.1.4 on PATH:
+Style tools use clang-format/clang-tidy 23.1.4 on PATH (compilation databases are generated from the enclosing `engrave-mcp` checkout via `pixi run compdb`):
 
 ```bash
 python tools/format.py --check .
-xmake project -k compile_commands
 python tools/lint.py .
 python tools/setup_hooks.py
 ```
