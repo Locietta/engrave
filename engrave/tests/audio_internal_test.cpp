@@ -1534,3 +1534,29 @@ TEST(AudioInternal, ArticulationProfileSaveWritesSchemaAndReloads) {
     ASSERT_TRUE(pattern.contains(1250));
     EXPECT_EQ(pattern.at(1250), segment);
 }
+
+TEST(AudioInternal, AmplitudeValuePointHandlesIntMinWithoutOverflow) {
+    using namespace muse::mpe;
+    ExpressionCurve curve;
+    curve.emplace(0, std::numeric_limits<dynamic_level_t>::min());
+    curve.emplace(5000, std::numeric_limits<dynamic_level_t>::max());
+    const auto [pos, level] = curve.amplitude_value_point();
+    EXPECT_EQ(pos, 0);
+    EXPECT_EQ(level, std::numeric_limits<dynamic_level_t>::min());
+}
+
+TEST(AudioInternal, DynamicAutomationLayersCompareByValue) {
+    using namespace muse::mpe;
+    auto make_layer = [](double out_val) {
+        auto map = std::make_shared<DynamicAutomationMap>();
+        map->emplace(0, AutomationPoint{.in_value = AutomationPoint::ArrivalFromPrevious{}, .out_value = muse::real_t(out_val)});
+        return map;
+    };
+
+    DynamicAutomationLayers a{{0, make_layer(0.5)}};
+    DynamicAutomationLayers b{{0, make_layer(0.5)}};
+    DynamicAutomationLayers c{{0, make_layer(0.75)}};
+    EXPECT_NE(a.at(0).get(), b.at(0).get());
+    EXPECT_EQ(a, b);
+    EXPECT_NE(a, c);
+}

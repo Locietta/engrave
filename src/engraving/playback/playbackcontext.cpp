@@ -23,6 +23,7 @@
 #include "playbackcontext.h"
 
 #include <cmath>
+#include <cstdint>
 
 #include "dom/lyrics.h"
 #include "dom/measure.h"
@@ -114,7 +115,9 @@ dynamic_level_t PlaybackContext::appliable_dynamic_level(const track_idx_t track
         return to_dynamic_level(it->second.value.out_value);
     }
 
-    const real_t t = static_cast<real_t>(nominal_position_tick - it->first) / static_cast<real_t>(next->first - it->first);
+    const auto span = static_cast<std::int64_t>(next->first) - static_cast<std::int64_t>(it->first);
+    const auto offset = static_cast<std::int64_t>(nominal_position_tick) - static_cast<std::int64_t>(it->first);
+    const real_t t = static_cast<real_t>(offset) / static_cast<real_t>(span);
     return to_dynamic_level(muse::mpe::evaluate_at(next->second.value, it->second.value.out_value, t));
 }
 

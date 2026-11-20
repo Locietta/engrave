@@ -279,7 +279,20 @@ using PlaybackEventList = std::vector<PlaybackEvent>;
 using PlaybackEventsMap = std::map<timestamp_t, PlaybackEventList>;
 
 using DynamicAutomationMap = AutomationCurve<timestamp_t>;
-using DynamicAutomationLayers = std::map<layer_idx_t, std::shared_ptr<const DynamicAutomationMap>>;
+
+struct DynamicAutomationLayers : std::map<layer_idx_t, std::shared_ptr<const DynamicAutomationMap>> {
+    using Base = std::map<layer_idx_t, std::shared_ptr<const DynamicAutomationMap>>;
+    using Base::Base;
+
+    friend bool operator==(const DynamicAutomationLayers &lhs, const DynamicAutomationLayers &rhs) {
+        if (lhs.size() != rhs.size()) {
+            return false;
+        }
+        return std::equal(lhs.begin(), lhs.end(), rhs.begin(), [](const auto &a, const auto &b) {
+            return a.first == b.first && (a.second == b.second || (a.second && b.second && *a.second == *b.second));
+        });
+    }
+};
 
 struct PlaybackData {
     PlaybackEventsMap origin_events;
@@ -287,12 +300,7 @@ struct PlaybackData {
     DynamicAutomationLayers dynamics;
 
     bool operator==(const PlaybackData &other) const {
-        if (setup_data != other.setup_data || origin_events != other.origin_events || dynamics.size() != other.dynamics.size()) {
-            return false;
-        }
-        return std::equal(dynamics.begin(), dynamics.end(), other.dynamics.begin(), [](const auto &a, const auto &b) {
-            return a.first == b.first && (a.second == b.second || (a.second && b.second && *a.second == *b.second));
-        });
+        return setup_data == other.setup_data && origin_events == other.origin_events && dynamics == other.dynamics;
     }
 
     bool is_valid() const { return setup_data.is_valid(); }
