@@ -44,8 +44,8 @@ void ChordLineMetaParser::do_parse(const EngravingItem *item, const RenderingCon
         return;
     }
 
-    const mpe::ArticulationPattern &pattern = ctx.profile->pattern(type);
-    if (pattern.empty()) {
+    const auto &pattern = ctx.profile->pattern_ptr(type);
+    if (!pattern || pattern->empty()) {
         return;
     }
 

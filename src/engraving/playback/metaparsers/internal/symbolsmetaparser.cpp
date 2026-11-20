@@ -360,8 +360,8 @@ void SymbolsMetaParser::do_parse(const EngravingItem *item, const RenderingConte
     }
 
     for (mpe::ArticulationType type : types) {
-        const mpe::ArticulationPattern &pattern = ctx.profile->pattern(type, mpe::ArticulationType::STANDARD);
-        if (pattern.empty()) {
+        const auto &pattern = ctx.profile->pattern_ptr(type, mpe::ArticulationType::STANDARD);
+        if (!pattern || pattern->empty()) {
             continue;
         }
 

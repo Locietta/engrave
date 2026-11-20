@@ -33,7 +33,7 @@ struct FlatStore {
     }
 
     template <class Walk>
-    void apply_context(const InstrumentTrackId &track_id, const PlaybackPartData &data, const Walk &walk) {
+    void apply_context(const InstrumentTrackId &track_id, const PlaybackPartData &data, const Walk &walk, bool) {
         muse::mpe::TrackEvents &track = score.track(track_id);
         muse::mpe::freeze_dynamics(track, data.dynamics, score.progress);
 

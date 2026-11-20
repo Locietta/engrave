@@ -122,6 +122,7 @@ private:
         PausesMap no_repeat_pauses; // repeat-agnostic twin of pauses
         std::vector<AnacrusisMeasureInfo> anacrusis_measures;
         AutomationCurve *tempo_curve = nullptr;
+        const AutomationCurve *tempo_for_dynamics = nullptr;
         AutomationCurve no_repeat_tempo_curve; // repeat-agnostic Tempo curve
         std::vector<std::pair<utick_t, int>> pending_tempo_resets;
         BeatsPerSecond tempo_multiplier = 1.0;
@@ -159,11 +160,16 @@ private:
         std::optional<real_t> nominal_value_to;
     };
 
-    void update(const UpdateRequest &request, const AutomationCurveMap &curves);
-    void full_rebuild(AutomationCurveMap &curves, bool include_tempo = true, bool include_dynamics = true);
+    struct TempoOverride {
+        const AutomationCurveKey &key;
+        const AutomationCurve &curve;
+    };
 
-    static void copy_curves_for_rebuild(const AutomationCurveMap &curves, const StaffRange &range, utick_t clear_from_u_tick,
-                                        bool include_tempo, bool include_dynamics, AutomationCurveMap &dest_curves);
+    void update(const UpdateRequest &request, const AutomationCurveMap &curves, std::optional<TempoOverride> tempo_override = std::nullopt);
+    void full_rebuild(const AutomationCurveMap &curves);
+
+    static void copy_curves_for_rebuild(const AutomationCurveMap &curves, const StaffRange &range,
+                                        std::optional<TempoOverride> tempo_override, UpdateContext &ctx);
 
     static void add_segment_points(const Segment *segment, int tick_offset, const StaffRange &range, UpdateContext &ctx);
     static void add_dynamic_points(const Dynamic *dynamic, int tick_offset, const StaffRange &range, UpdateContext &ctx);

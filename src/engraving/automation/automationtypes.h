@@ -22,6 +22,7 @@
 #pragma once
 
 #include <algorithm>
+#include <map>
 #include <optional>
 #include <set>
 #include <tuple>
@@ -33,7 +34,6 @@
 #include "engraving/types/types.h"
 #include "global/types/id.h"
 #include "global/types/number.h"
-#include "global/types/sharedmap.h"
 #include "mpe/automationpoint.h"
 
 namespace mu::engraving {
@@ -51,7 +51,7 @@ struct AutomationPoint {
 };
 
 using utick_t = int;
-using AutomationCurve = muse::SharedMap<utick_t, AutomationPoint>;
+using AutomationCurve = std::map<utick_t, AutomationPoint>;
 
 inline std::optional<AutomationPoint::Ease> ease(const AutomationPoint &point) noexcept { return muse::mpe::ease(point.value); }
 
@@ -167,7 +167,7 @@ struct AutomationCurveKey {
     bool operator<(const AutomationCurveKey &k) const { return std::tie(type, scope) < std::tie(k.type, k.scope); }
 };
 
-using AutomationCurveMap = muse::SharedMap<AutomationCurveKey, AutomationCurve>;
+using AutomationCurveMap = std::map<AutomationCurveKey, AutomationCurve>;
 
 inline const AutomationCurveKey tempo_key = AutomationCurveKey::global(AutomationType::TEMPO);
 

@@ -233,7 +233,7 @@ void BendsRenderer::render_slight_bend(const Note *note, const GuitarBend *bend,
     // Go up
     slight_note_ctx.timestamp = ctx.nominal_timestamp + ctx.nominal_duration * factors.end_factor;
     slight_note_ctx.pitch_level += pitch_offset(bend);
-    result.emplace_back(build_note_event(slight_note_ctx));
+    result.emplace_back(build_note_event(std::move(slight_note_ctx)));
 }
 
 void BendsRenderer::render_dip(const Note *note, const GuitarBend *bend, const RenderingContext &ctx, mpe::PlaybackEventList &result) {
@@ -280,7 +280,7 @@ void BendsRenderer::render_scoop(const Note *note, const GuitarBend *bend, const
     // Go back to the origin pitch
     scoop_note_ctx.timestamp = ctx.nominal_timestamp + ctx.nominal_duration * factors.end_factor;
     scoop_note_ctx.pitch_level = origin_pitch_level;
-    result.emplace_back(build_note_event(scoop_note_ctx));
+    result.emplace_back(build_note_event(std::move(scoop_note_ctx)));
 }
 
 BendsRenderer::BendTimeFactors BendsRenderer::time_factors(const GuitarBend *bend) {
@@ -310,8 +310,8 @@ RenderingContext BendsRenderer::build_rendering_context(const Note *note, const 
         inherited.erase(type);
     }
 
-    RenderingContext ctx =
-        engraving::build_rendering_ctx(chord, initial_ctx.position_tick_offset, initial_ctx.profile, initial_ctx.playback_ctx, inherited);
+    RenderingContext ctx = engraving::build_rendering_ctx(chord, initial_ctx.position_tick_offset, initial_ctx.profile,
+                                                          initial_ctx.playback_ctx, std::move(inherited));
 
     ChordArticulationsParser::build_chord_articulation_map(chord, ctx, ctx.common_articulations);
 
@@ -360,7 +360,7 @@ mpe::NoteEvent BendsRenderer::build_bend_event(const Note *start_note, const Ren
     }
 
     mpe::PitchCurve curve = build_pitch_curve(note_ctx.timestamp, note_ctx.duration, pitch_offsets, time_factor_map);
-    mpe::NoteEvent result = build_note_event(note_ctx, curve);
+    mpe::NoteEvent result = build_note_event(std::move(note_ctx), std::move(curve));
 
     return result;
 }

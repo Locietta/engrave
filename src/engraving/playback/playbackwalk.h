@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #pragma once
 
+#include <iterator>
+
 //! NOTE: the score walk shared by the legacy PlaybackModel (test oracle, design exception E1) and the
 //! listener-free PlaybackScoreBuilder (production export). The walk is the former PlaybackModel load
 //! code, moved unchanged; only its writes go through a Store, selected at compile time:
@@ -9,7 +11,7 @@
 //!   void touch(const InstrumentTrackId &);                    // creates the track
 //!   void resolve_setup(const InstrumentTrackId &, Resolve);   // creates the track, resolve(PlaybackSetupData &)
 //!   const PlaybackSetupData *find_setup(const InstrumentTrackId &) const;
-//!   void apply_context(const InstrumentTrackId &, const PlaybackPartData &, Walk &); // dynamics and context events
+//!   void apply_context(const InstrumentTrackId &, PlaybackPartData &, Walk &, bool last_track); // dynamics and context events
 //!   void emit(const InstrumentTrackId &, Render);             // creates the track, render(sink)
 //!
 //! A track is created exactly where the legacy model created its map entry, so every store sees the same tracks
@@ -188,9 +190,9 @@ struct PlaybackWalk {
             data.text_articulations = playback_ctx->text_articulations(track_range.start_track, track_range.end_track, checkpoint_callback);
             data.syllables = playback_ctx->syllables(track_range.start_track, track_range.end_track, checkpoint_callback);
 
-            for (const InstrumentTrackId &track_id : track_ids) {
+            for (auto it = track_ids.cbegin(); it != track_ids.cend(); ++it) {
                 checkpoint();
-                store.apply_context(track_id, data, *this);
+                store.apply_context(*it, data, *this, std::next(it) == track_ids.cend());
             }
             data.release();
         }

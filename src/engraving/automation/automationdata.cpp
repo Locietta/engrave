@@ -110,10 +110,10 @@ const AutomationCurve &AutomationData::curve(const AutomationCurveKey &key) cons
 
 bool AutomationData::is_empty() const { return curve_map_.empty(); }
 
-void AutomationData::set_curves(const AutomationCurveMap &curves) {
+void AutomationData::set_curves(AutomationCurveMap curves) {
 
     if (curve_map_.empty() && !curves.empty()) {
-        curve_map_ = curves;
+        curve_map_ = std::move(curves);
         return;
     }
 
@@ -143,13 +143,13 @@ void AutomationData::set_curves(const AutomationCurveMap &curves) {
         changes.is_full_reset = true;
     }
 
-    curve_map_ = curves;
+    curve_map_ = std::move(curves);
 }
 
-void AutomationData::replace_curves(const AutomationCurveMap &curves) {
+void AutomationData::replace_curves(AutomationCurveMap curves) {
 
     if (curve_map_.empty() && !curves.empty()) {
-        curve_map_ = curves;
+        curve_map_ = std::move(curves);
         return;
     }
 
@@ -157,7 +157,7 @@ void AutomationData::replace_curves(const AutomationCurveMap &curves) {
     size_t overlap_count = 0;
     AutomationChanges changes;
 
-    for (const auto &[key, new_curve] : curves) {
+    for (auto &[key, new_curve] : curves) {
         const auto old_it = curve_map_.find(key);
         const bool existed = old_it != curve_map_.end();
         if (existed) {
@@ -172,9 +172,9 @@ void AutomationData::replace_curves(const AutomationCurveMap &curves) {
                 curve_map_.erase(old_it);
             }
         } else if (existed) {
-            old_it->second = new_curve;
+            old_it->second = std::move(new_curve);
         } else {
-            curve_map_.emplace(key, new_curve);
+            curve_map_.emplace(key, std::move(new_curve));
         }
     }
 

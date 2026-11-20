@@ -86,7 +86,7 @@ void GlissandosRenderer::render_discrete_glissando(const Note *note, NominalNote
 
         update_articulation_boundaries(ArticulationType::DISCRETE_GLISSANDO, note_ctx.timestamp, note_ctx.duration, note_ctx.articulations);
 
-        result.emplace_back(build_note_event(note_ctx));
+        result.emplace_back(build_note_event(std::move(note_ctx)));
     }
 }
 

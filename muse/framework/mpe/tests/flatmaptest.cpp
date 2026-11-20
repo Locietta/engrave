@@ -15,6 +15,7 @@
 #include "audio/engine/internal/synthesizers/fluidsynth/soundmapping.h"
 #include "global/flatmap.h"
 #include "soundmapping_oracle_fixture.h"
+#include "types/enumset.h"
 
 using namespace muse;
 using namespace muse::mpe;
@@ -360,4 +361,38 @@ TEST(MpeFlatMapTest, ChannelMapSameProgramAndExhaustionReusePreserveOrder) {
     EXPECT_EQ(resolve(0, 0, ArticulationType::TREMOLO16TH), ch_trem64);
     EXPECT_EQ(resolve(0, 0, ArticulationType::TREMOLO32ND), ch_trem64);
     EXPECT_EQ(channels.channel_count(), 4u);
+}
+
+TEST(MpeFlatMapTest, EnumSetMembershipAndOrder) {
+    enum class E { A, B, C, LAST };
+    EnumSet<E, 3> set{E::C, E::A, E::C};
+    EXPECT_EQ(set.size(), 2);
+    EXPECT_TRUE(contains(set, E::A));
+    EXPECT_FALSE(set.contains(E::B));
+    auto it = set.begin();
+    EXPECT_EQ(*it++, E::A);
+    EXPECT_EQ(*it++, E::C);
+    EXPECT_EQ(it, set.end());
+}
+
+TEST(MpeFlatMapTest, ProfileReplacementKeepsExistingAppliedPattern) {
+    ArticulationsProfile profile;
+    const auto make_pattern = [](duration_percentage_t factor) {
+        ArticulationPatternSegment segment;
+        segment.arrangement_pattern.duration_factor_value = factor;
+        return ArticulationPattern{{0, std::move(segment)}};
+    };
+    profile.set_pattern(ArticulationType::STANDARD, make_pattern(7500));
+    ArticulationsProfile equal_profile;
+    equal_profile.set_pattern(ArticulationType::STANDARD, make_pattern(7500));
+    EXPECT_EQ(profile, equal_profile);
+    EXPECT_TRUE(profile.pattern(ArticulationType::STACCATO).empty());
+
+    const ArticulationAppliedData applied(
+        ArticulationMeta(ArticulationType::STACCATO, profile.pattern_ptr(ArticulationType::STACCATO, ArticulationType::STANDARD), 0, 1000),
+        0, hundred_percent);
+    profile.set_pattern(ArticulationType::STANDARD, make_pattern(5000));
+    EXPECT_NE(profile, equal_profile);
+    EXPECT_EQ(applied.applied_pattern_segment().arrangement_pattern.duration_factor_value, 7500);
+    EXPECT_EQ(profile.pattern(ArticulationType::STANDARD).begin()->second.arrangement_pattern.duration_factor_value, 5000);
 }

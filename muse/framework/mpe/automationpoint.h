@@ -22,6 +22,7 @@
 #pragma once
 
 #include <algorithm>
+#include <map>
 #include <optional>
 #include <type_traits>
 #include <variant>
@@ -30,7 +31,6 @@
 #include "realfn.h"
 #include "sortedrange.h"
 #include "types/number.h"
-#include "types/sharedmap.h"
 
 namespace muse::mpe {
 struct AutomationPoint {
@@ -68,7 +68,7 @@ struct AutomationPoint {
 };
 
 template <typename KeyT>
-using AutomationCurve = SharedMap<KeyT, AutomationPoint>;
+using AutomationCurve = std::map<KeyT, AutomationPoint>;
 
 //! NOTE: this point's ease, if it can have one; nullopt for ArrivalFromPrevious
 inline std::optional<AutomationPoint::Ease> ease(const AutomationPoint &point) noexcept {

@@ -21,6 +21,8 @@
  */
 #pragma once
 
+#include <utility>
+
 #include "../dom/chord.h"
 #include "../dom/note.h"
 #include "../dom/sig.h"
@@ -55,7 +57,7 @@ struct RenderingContext {
 
 inline RenderingContext build_rendering_ctx(const Chord *chord, const int tick_position_offset,
                                             const muse::mpe::ArticulationsProfilePtr profile, const PlaybackContextPtr playback_ctx,
-                                            const muse::mpe::ArticulationMap &articulations = {}) {
+                                            muse::mpe::ArticulationMap articulations = {}) {
     int chord_pos_tick = chord->tick().ticks();
     int chord_duration_ticks = chord->actual_ticks().ticks();
     int chord_pos_tick_with_offset = chord_pos_tick + tick_position_offset;
@@ -77,7 +79,7 @@ inline RenderingContext build_rendering_ctx(const Chord *chord, const int tick_p
                          tick_position_offset,
                          bps,
                          time_signature_fraction,
-                         articulations,
+                         std::move(articulations),
                          score,
                          profile,
                          playback_ctx};
@@ -96,7 +98,7 @@ struct NominalNoteCtx {
 
     muse::mpe::pitch_level_t pitch_level = 0;
 
-    RenderingContext chord_ctx;
+    const RenderingContext &chord_ctx;
     muse::mpe::ArticulationMap articulations;
 
     explicit NominalNoteCtx(const Note *note, const RenderingContext &ctx)
@@ -104,11 +106,14 @@ struct NominalNoteCtx {
           tempo(ctx.beats_per_second), dynamic_level(ctx.nominal_dynamic_level), user_velocity_fraction(note->user_velocity_fraction()),
           pitch_level(note_pitch_level(note->playing_tpc(), note->playing_octave(), note->playing_tuning())), chord_ctx(ctx),
           articulations(ctx.common_articulations) {}
+
+    NominalNoteCtx(const Note *, RenderingContext &&) = delete;
 };
 
-inline muse::mpe::NoteEvent build_note_event(const NominalNoteCtx &ctx, const muse::mpe::PitchCurve &pitch_curve = {}) {
+inline muse::mpe::NoteEvent build_note_event(auto &&ctx, muse::mpe::PitchCurve pitch_curve = {}) {
     return muse::mpe::NoteEvent(ctx.timestamp, ctx.duration, static_cast<muse::mpe::voice_layer_idx_t>(ctx.voice_idx),
                                 static_cast<muse::mpe::staff_layer_idx_t>(ctx.staff_idx), ctx.pitch_level, ctx.dynamic_level,
-                                ctx.articulations, ctx.tempo.val, ctx.user_velocity_fraction, pitch_curve);
+                                std::forward<decltype(ctx)>(ctx).articulations, ctx.tempo.val, ctx.user_velocity_fraction,
+                                std::move(pitch_curve));
 }
 } // namespace mu::engraving

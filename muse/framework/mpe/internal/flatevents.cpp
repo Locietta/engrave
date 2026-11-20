@@ -142,9 +142,11 @@ void freeze_dynamics(TrackEvents &track, const DynamicAutomationLayers &dynamics
 
     for (const auto &[layer, curve] : dynamics) {
         DynamicLayer record{layer, {buffer_end(track.dynamic_points), 0}};
-        for (const auto &[at, point] : curve) {
-            emplace_checked(track.dynamic_points, DynamicPoint{at, point});
-            progress.advance();
+        if (curve) {
+            for (const auto &[at, point] : *curve) {
+                emplace_checked(track.dynamic_points, DynamicPoint{at, point});
+                progress.advance();
+            }
         }
         record.points.count = buffer_end(track.dynamic_points) - record.points.first;
         emplace_checked(track.dynamic_layers, record);

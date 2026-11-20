@@ -79,12 +79,13 @@ struct LegacyDump {
             const auto &m = data.meta;
             out << "art " << +static_cast<int>(key) << ' ' << static_cast<int>(m.type) << ' ' << m.timestamp << ' ' << m.overall_duration
                 << ' ' << m.overall_pitch_changes_range << ' ' << m.overall_dynamic_changes_range << '\n';
-            out << "pattern " << m.pattern.size() << '\n';
-            for (const auto &[at, part] : m.pattern) {
+            const auto &pattern = muse::mpe::pattern_or_empty(m.pattern);
+            out << "pattern " << pattern.size() << '\n';
+            for (const auto &[at, part] : pattern) {
                 out << "at " << at << '\n';
                 segment(part);
             }
-            segment(data.applied_pattern_segment);
+            segment(data.applied_pattern_segment());
             out << "occupied " << data.occupied_from_value << ' ' << data.occupied_to_value << ' ' << data.occupied_pitch_changes_range
                 << ' ' << data.occupied_dynamic_changes_range << '\n';
         }
@@ -152,8 +153,10 @@ struct LegacyDump {
         track_header(id, instrument, data.setup_data);
         out << "dynamics " << data.dynamics.size() << '\n';
         for (const auto &[layer, points] : data.dynamics) {
-            out << "layer " << +layer << ' ' << points.size() << '\n';
-            for (const auto &[at, point] : points) dynamics_point(at, point);
+            out << "layer " << +layer << ' ' << (points ? points->size() : 0) << '\n';
+            if (points) {
+                for (const auto &[at, point] : *points) dynamics_point(at, point);
+            }
         }
         out << "groups " << data.origin_events.size() << '\n';
         for (const auto &[at, events] : data.origin_events) {

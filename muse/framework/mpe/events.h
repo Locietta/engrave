@@ -21,6 +21,10 @@
  */
 #pragma once
 
+#include <algorithm>
+#include <map>
+#include <memory>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -31,7 +35,6 @@
 #include "realfn.h"
 #include "types/flags.h"
 #include "types/number.h"
-#include "types/sharedmap.h"
 
 namespace muse::mpe {
 struct ArrangementContext {
@@ -72,7 +75,7 @@ struct ExpressionContext {
 
     bool operator==(const ExpressionContext &other) const {
         return articulations == other.articulations && nominal_dynamic_level == other.nominal_dynamic_level &&
-               expression_curve == other.expression_curve && velocity_override == velocity_override;
+               expression_curve == other.expression_curve && velocity_override == other.velocity_override;
     }
 };
 
@@ -80,12 +83,12 @@ struct NoteEvent {
     NoteEvent() = default;
 
     explicit NoteEvent(ArrangementContext &&arrangement_ctx, PitchContext &&pitch_ctx, ExpressionContext &&expression_ctx)
-        : arrangement_ctx_(arrangement_ctx), pitch_ctx_(pitch_ctx), expression_ctx_(expression_ctx) {}
+        : arrangement_ctx_(std::move(arrangement_ctx)), pitch_ctx_(std::move(pitch_ctx)), expression_ctx_(std::move(expression_ctx)) {}
 
     explicit NoteEvent(const timestamp_t nominal_timestamp, const duration_t nominal_duration, const voice_layer_idx_t voice_idx,
                        const staff_layer_idx_t staff_idx, const pitch_level_t nominal_pitch_level,
-                       const dynamic_level_t nominal_dynamic_level, const ArticulationMap &articulations_applied, const double bps,
-                       const float required_velocity_fraction = 0.f, const PitchCurve &required_pitch_curve = {}) {
+                       const dynamic_level_t nominal_dynamic_level, ArticulationMap articulations_applied, const double bps,
+                       const float required_velocity_fraction = 0.f, PitchCurve required_pitch_curve = {}) {
         arrangement_ctx_.nominal_duration = nominal_duration;
         arrangement_ctx_.nominal_timestamp = nominal_timestamp;
         arrangement_ctx_.voice_layer_index = voice_idx;
@@ -94,10 +97,10 @@ struct NoteEvent {
 
         pitch_ctx_.nominal_pitch_level = nominal_pitch_level;
 
-        expression_ctx_.articulations = articulations_applied;
+        expression_ctx_.articulations = std::move(articulations_applied);
         expression_ctx_.nominal_dynamic_level = nominal_dynamic_level;
 
-        set_up(required_velocity_fraction, required_pitch_curve);
+        set_up(required_velocity_fraction, std::move(required_pitch_curve));
     }
 
     const ArrangementContext &arrangement_ctx() const { return arrangement_ctx_; }
@@ -117,14 +120,14 @@ private:
         return static_cast<T>(static_cast<float>(v) * f);
     }
 
-    void set_up(const float required_velocity_fraction, const PitchCurve &required_pitch_curve) {
+    void set_up(const float required_velocity_fraction, PitchCurve &&required_pitch_curve) {
         calculate_actual_duration(expression_ctx_.articulations);
         calculate_actual_timestamp(expression_ctx_.articulations);
 
         if (required_pitch_curve.empty()) {
             calculate_pitch_curve(expression_ctx_.articulations);
         } else {
-            pitch_ctx_.pitch_curve = required_pitch_curve;
+            pitch_ctx_.pitch_curve = std::move(required_pitch_curve);
         }
 
         calculate_expression_curve(expression_ctx_.articulations, required_velocity_fraction);
@@ -165,7 +168,6 @@ private:
         float ratio = static_cast<float>(average_pitch_range) / static_cast<float>(::muse::mpe::pitch_level_step);
         float pattern_unit_ratio = ::muse::mpe::pitch_level_step / static_cast<float>(::muse::mpe::one_percent);
 
-        // Mutable begin detaches before iteration; only values change in this loop.
         for (auto &pair : pitch_ctx_.pitch_curve) {
             pair.second = static_cast<pitch_level_t>(real_round(static_cast<float>(pair.second) * ratio * pattern_unit_ratio, 0));
         }
@@ -201,7 +203,6 @@ private:
 
         float ratio = static_cast<float>(actual_dynamic_level) / static_cast<float>(articulation_dynamic_level);
 
-        // Mutable begin detaches before iteration; only values change in this loop.
         for (auto &pair : expression_ctx_.expression_curve) {
             pair.second = static_cast<dynamic_level_t>(real_round(pair.second * ratio, 0));
         }
@@ -275,10 +276,10 @@ using PlaybackEvent =
     std::variant<std::monostate, NoteEvent, TextArticulationEvent, SoundPresetChangeEvent, SyllableEvent, ControllerChangeEvent>;
 
 using PlaybackEventList = std::vector<PlaybackEvent>;
-using PlaybackEventsMap = SharedMap<timestamp_t, PlaybackEventList>;
+using PlaybackEventsMap = std::map<timestamp_t, PlaybackEventList>;
 
 using DynamicAutomationMap = AutomationCurve<timestamp_t>;
-using DynamicAutomationLayers = SharedMap<layer_idx_t, DynamicAutomationMap>;
+using DynamicAutomationLayers = std::map<layer_idx_t, std::shared_ptr<const DynamicAutomationMap>>;
 
 struct PlaybackData {
     PlaybackEventsMap origin_events;
@@ -286,7 +287,12 @@ struct PlaybackData {
     DynamicAutomationLayers dynamics;
 
     bool operator==(const PlaybackData &other) const {
-        return origin_events == other.origin_events && setup_data == other.setup_data && dynamics == other.dynamics;
+        if (setup_data != other.setup_data || origin_events != other.origin_events || dynamics.size() != other.dynamics.size()) {
+            return false;
+        }
+        return std::equal(dynamics.begin(), dynamics.end(), other.dynamics.begin(), [](const auto &a, const auto &b) {
+            return a.first == b.first && (a.second == b.second || (a.second && b.second && *a.second == *b.second));
+        });
     }
 
     bool is_valid() const { return setup_data.is_valid(); }

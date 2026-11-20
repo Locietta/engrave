@@ -237,7 +237,7 @@ void AutomationRW::read(AutomationData &data, const muse::ByteArray &bytes) {
         }
     }
 
-    data.set_curves(curves);
+    data.set_curves(std::move(curves));
 }
 
 muse::ByteArray AutomationRW::write(const AutomationData &data, bool write_generated) {

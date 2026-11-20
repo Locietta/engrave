@@ -514,7 +514,6 @@ cc_binary(
         "engrave/tests/test_environment.cpp",
         "muse/framework/mpe/tests/flatmaptest.cpp",
         "muse/framework/mpe/tests/multinotearticulationstest.cpp",
-        "muse/framework/mpe/tests/sharedflatmaptest.cpp",
         "muse/framework/mpe/tests/singlenotearticulationstest.cpp",
     ],
     copts = ENGINE_COPTS,

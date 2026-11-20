@@ -67,7 +67,7 @@ struct BothSink {
 static_assert(PlaybackEventSink<BothSink>);
 
 ArticulationAppliedData applied(const ArticulationType type, const timestamp_t timestamp, const duration_t duration) {
-    return ArticulationAppliedData(ArticulationMeta(type, ArticulationPattern{}, timestamp, duration), 0, hundred_percent);
+    return ArticulationAppliedData(ArticulationMeta(type, {}, timestamp, duration), 0, hundred_percent);
 }
 
 mpe::NoteEvent make_note(const timestamp_t at, const pitch_level_t pitch, const bool with_override) {
@@ -133,8 +133,9 @@ DynamicAutomationLayers make_dynamics() {
     curve.emplace(1000000, second);
 
     DynamicAutomationLayers layers;
-    layers.emplace(4, curve);
-    layers.emplace(1, curve);
+    const auto shared_curve = std::make_shared<const DynamicAutomationMap>(std::move(curve));
+    layers.emplace(4, shared_curve);
+    layers.emplace(1, shared_curve);
     return layers;
 }
 
@@ -189,6 +190,26 @@ struct DualFixture {
     }
 };
 } // namespace
+
+TEST(FlatPlaybackStoreTests, PlaybackDataComparesDynamicsByContent) {
+    const auto make_curve = [](muse::real_t value) {
+        mpe::AutomationPoint point;
+        point.out_value = value;
+        return std::make_shared<const DynamicAutomationMap>(DynamicAutomationMap{{250000, point}});
+    };
+    PlaybackData first;
+    first.dynamics.emplace(2, make_curve(0.25));
+    PlaybackData second;
+    second.dynamics.emplace(2, make_curve(0.25));
+    EXPECT_EQ(first, second);
+
+    second.dynamics.at(2) = make_curve(0.5);
+    EXPECT_NE(first, second);
+
+    second.dynamics.erase(2);
+    second.dynamics.emplace(3, make_curve(0.25));
+    EXPECT_NE(first, second);
+}
 
 TEST(FlatPlaybackStoreTests, FreezeKeepsLegacyOrderAndFields) {
     DualFixture fixture;
@@ -349,7 +370,7 @@ TEST(FlatPlaybackStoreTests, FreezeLoopsPollWithinTheStride) {
         DynamicAutomationMap curve;
         for (std::uint32_t i = 0; i < stride + 1; ++i) curve.emplace(i, mpe::AutomationPoint{});
         DynamicAutomationLayers layers;
-        layers.emplace(0, curve);
+        layers.emplace(0, std::make_shared<const DynamicAutomationMap>(std::move(curve)));
         TrackEvents track;
         FreezeProgress progress;
         progress.checkpoint = [] { throw Cancelled{}; };

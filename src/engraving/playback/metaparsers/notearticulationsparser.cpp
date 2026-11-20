@@ -45,7 +45,7 @@ void NoteArticulationsParser::build_note_articulation_map(const Note *note, cons
     parse(note, ctx, result);
 
     if (result.empty()) {
-        append_articulation_data({mpe::ArticulationType::STANDARD, ctx.profile->pattern(mpe::ArticulationType::STANDARD),
+        append_articulation_data({mpe::ArticulationType::STANDARD, ctx.profile->pattern_ptr(mpe::ArticulationType::STANDARD),
                                   ctx.nominal_timestamp, ctx.nominal_duration, 0, 0},
                                  result);
     }
@@ -120,8 +120,8 @@ void NoteArticulationsParser::parse_playing_technique(const RenderingContext &ct
         return;
     }
 
-    const mpe::ArticulationPattern &pattern = ctx.profile->pattern(articulation_type);
-    if (pattern.empty()) {
+    const auto &pattern = ctx.profile->pattern_ptr(articulation_type);
+    if (!pattern || pattern->empty()) {
         return;
     }
 
@@ -174,8 +174,8 @@ void NoteArticulationsParser::parse_laissez_vibrer(const Note *note, const Rende
         return;
     }
 
-    const mpe::ArticulationPattern &pattern = ctx.profile->pattern(mpe::ArticulationType::LAISSEZ_VIBRER);
-    if (pattern.empty()) {
+    const auto &pattern = ctx.profile->pattern_ptr(mpe::ArticulationType::LAISSEZ_VIBRER);
+    if (!pattern || pattern->empty()) {
         return;
     }
 
@@ -223,8 +223,8 @@ void NoteArticulationsParser::append_articulations(const mpe::ArticulationTypeSe
             continue;
         }
 
-        const mpe::ArticulationPattern &pattern = ctx.profile->pattern(type);
-        if (pattern.empty()) {
+        const auto &pattern = ctx.profile->pattern_ptr(type);
+        if (!pattern || pattern->empty()) {
             continue;
         }
 
