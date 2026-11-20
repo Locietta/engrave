@@ -58,7 +58,7 @@ def _find_bazel(env_prefix: Path) -> str:
 
 def _stage_bep_outputs(bep_path: Path, out_dir: Path) -> None:
     named_sets: dict[str, dict] = {}
-    root_ids: list[str] = []
+    root_ids: dict[str, list[str]] = {"default": [], "runtime_dynamic_libraries": []}
     for line in bep_path.read_text(encoding="utf-8", errors="replace").splitlines():
         if not line.strip():
             continue
@@ -69,13 +69,14 @@ def _stage_bep_outputs(bep_path: Path, out_dir: Path) -> None:
                 named_sets[set_id] = event["namedSetOfFiles"]
         elif "completed" in event:
             for group in event["completed"].get("outputGroup", []):
-                if group.get("name") == "default":
+                if (name := group.get("name")) in root_ids:
                     for fs in group.get("fileSets", []):
                         if "id" in fs:
-                            root_ids.append(fs["id"])
+                            root_ids[name].append(fs["id"])
 
     visited: set[str] = set()
-    stack = list(root_ids)
+    # Default outputs take precedence over runtime files with the same basename.
+    stack = root_ids["runtime_dynamic_libraries"] + root_ids["default"]
     files: list[Path] = []
     while stack:
         sid = stack.pop()
@@ -94,13 +95,20 @@ def _stage_bep_outputs(bep_path: Path, out_dir: Path) -> None:
                 stack.append(child["id"])
 
     out_dir.mkdir(parents=True, exist_ok=True)
+    staged_names: set[str] = set()
     for src in files:
         if not src.is_file():
             continue
         if os.name == "nt" and src.suffix.lower() not in {".exe", ".dll"}:
             continue
-        if os.name != "nt" and (src.suffix in {".a", ".o", ".h", ".pch"} or not os.access(src, os.X_OK)):
+        if os.name != "nt":
+            shared_library = src.suffix == ".so" or ".so." in src.name
+            if not shared_library and (src.suffix in {".a", ".o", ".h", ".pch"} or not os.access(src, os.X_OK)):
+                continue
+        name = src.name.casefold() if os.name == "nt" else src.name
+        if name in staged_names:
             continue
+        staged_names.add(name)
         dst = out_dir / src.name
         if dst.exists():
             try:
@@ -115,7 +123,6 @@ def _stage_bep_outputs(bep_path: Path, out_dir: Path) -> None:
 
 
 def main():
-
     validate_dependencies()
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--engine-source", type=Path, default=REPO_ROOT)
@@ -302,6 +309,7 @@ def main():
                     f"--symlink_prefix={a.build_dir / '.bazel-symlinks'}/",
                     f"--jobs={a.jobs}",
                     "--//bazel:playback_harness=false",
+                    "--output_groups=+runtime_dynamic_libraries",
                     f"--build_event_json_file={bep_path}",
                     "//:engine_tests",
                 ],
