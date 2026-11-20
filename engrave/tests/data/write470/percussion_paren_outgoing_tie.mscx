@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<museScore version="5.00">
+  <Score>
+    <eid>A_A</eid>
+    <Division>480</Division>
+    <Part id="1">
+      <Staff><eid>B_B</eid><StaffType group="percussion"/></Staff>
+      <Instrument id="piano">
+        <useDrumset>1</useDrumset>
+        <Drum pitch="36"><head>normal</head><line>-1</line><name>Bass Drum</name></Drum>
+        <Drum pitch="42"><head>cross</head><line>7</line><name>Closed Hi-hat</name></Drum>
+        <instrumentId>keyboard.piano</instrumentId>
+      </Instrument>
+    </Part>
+    <Staff id="1"><Measure><voice>
+      <Chord><durationType>half</durationType>
+        <Note><eid>D_D</eid><pitch>36</pitch><tpc>14</tpc></Note>
+        <Note><eid>E_E</eid><pitch>42</pitch><tpc>20</tpc></Note>
+        <NoteParenGroup><Notes><NoteEID>D_D</NoteEID></Notes></NoteParenGroup>
+      </Chord>
+      <Chord><durationType>half</durationType>
+        <Note><eid>F_F</eid><pitch>36</pitch><tpc>14</tpc>
+          <Tie><eid>G_G</eid><startElement>D_D</startElement><endElement>F_F</endElement><track>0</track></Tie>
+        </Note>
+      </Chord>
+    </voice></Measure></Staff>
+  </Score>
+</museScore>

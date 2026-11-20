@@ -177,9 +177,13 @@ score or excerpt.
 
 ## 6. Cooperative Cancellation and Budgets
 
-During 4.70 conversion, `CaptureOptions::cancelled` is polled every <= 4 KiB:
+The 4.70 writer polls `CaptureOptions::cancelled` at traversal steps during
+preflight and conversion, and at intervals of at most 4 KiB in chunked
+serialization and output loops. Score, style, and chord-list XML each use a
+single `pugi::load_buffer` call. The writer polls and charges their input
+against the working-byte budget before parsing, and resumes polling after each
+call returns.
 
-- Cancellation aborts immediately with `ErrorCode::CANCELLED` and publishes no
-  bytes.
+- Observed cancellation returns `ErrorCode::CANCELLED` and publishes no bytes.
 - `CaptureOptions::max_working_bytes` and `CaptureOptions::max_bytes` remain
   enforced throughout conversion.

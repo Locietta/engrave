@@ -1,6 +1,7 @@
 #include <pugixml.hpp>
 
 #include "engrave/src/score/write470_spanners.h"
+#include "engraving/dom/bracketitem.h"
 #include "engraving/dom/chordlist.h"
 #include "engraving/dom/linkedobjects.h"
 #include "engraving/dom/partialtie.h"
@@ -627,20 +628,30 @@ TEST(Export470, HiddenExcerptAndMasterStavesAreBothChecked) {
     auto document = open_path(write470_fixture().parent_path() / "excerpts.mscx");
     ASSERT_TRUE(document);
     auto &master = master_of(*document);
-    std::size_t ties = 0;
+    std::vector<mu::engraving::Tie *> ties;
     for (auto *object : engrave::document_objects(master)) {
         if (!object->is_note()) continue;
         auto *tie = static_cast<mu::engraving::Note *>(object)->tie_for();
         if (!tie || !tie->end_note()) continue;
-        ++ties;
+        ties.push_back(tie);
+        if (tie->start_note()->score() == &master) tie->end_note()->set_pitch(tie->start_note()->pitch() + 2);
+    }
+    ASSERT_EQ(ties.size(), 4u);
+    const auto outline = document->outline();
+    ASSERT_TRUE(outline);
+    ASSERT_FALSE(outline->excerpts.empty());
+    const auto selected = document->export_score_with_warnings(
+        {.format = engrave::Format::MSCX, .score = engrave::ScoreSel{outline->excerpts.front().id}, .native_version = "4.70"});
+    ASSERT_TRUE(selected) << selected.error().message;
+
+    for (auto *tie : ties) {
         tie->end_note()->set_pitch(tie->start_note()->pitch() + 2);
         tie->start_note()->staff()->set_visible(false);
     }
-    ASSERT_EQ(ties, 4u);
     for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
         auto result = document->export_score_with_warnings({.format = format, .native_version = "4.70"});
         ASSERT_FALSE(result);
-        ASSERT_EQ(result.error().export_warnings.size(), ties);
+        ASSERT_EQ(result.error().export_warnings.size(), ties.size());
         for (const auto &warning : result.error().export_warnings) EXPECT_EQ(warning.code, "B470_INVALID_TIE");
     }
 }
@@ -710,6 +721,28 @@ TEST(Export470, CombinesDuplicateGhostNoteGroupsAndRebasesBothLinks) {
     const auto linked = groups[1].node().child("Parenthesis");
     EXPECT_STREQ(linked.child_value("linkedTo"), left.child_value("eid"));
     EXPECT_STREQ(linked.next_sibling("Parenthesis").child_value("linkedTo"), right.child_value("eid"));
+}
+
+TEST(Export470, RoundTripsAnAuthoredBraceColor) {
+    constexpr auto rest = "<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>";
+    auto source = connector_score(rest, rest, "");
+    source.replace(source.find("version=\"5.00\""), std::string_view("version=\"5.00\"").size(), "version=\"4.70\"");
+    source.insert(source.find("</Staff>"), R"(<bracket type="1" span="2" col="0" visible="1" color="#234567"/>)");
+    const auto document = g_engine->open(as_bytes(source));
+    ASSERT_TRUE(document) << document.error().message;
+    const auto legacy = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+    ASSERT_TRUE(legacy) << legacy.error().message;
+    EXPECT_TRUE(legacy->warnings.empty());
+    pugi::xml_document xml;
+    ASSERT_TRUE(parse_export(xml, *legacy));
+    EXPECT_STREQ(xml.select_node("//Part/Staff/bracket[@type='1'][@span='2']").node().attribute("color").value(), "#234567");
+
+    auto reopened = g_engine->open(legacy->bytes);
+    ASSERT_TRUE(reopened) << reopened.error().message;
+    const auto &brackets = master_of(**reopened).brackets(0);
+    ASSERT_FALSE(brackets.empty());
+    ASSERT_TRUE(brackets.front());
+    EXPECT_EQ(brackets.front()->color(), muse::Color(0x23, 0x45, 0x67));
 }
 
 TEST(Export470, RefusesDifferentParenthesisGroupsSharingANote) {
@@ -796,6 +829,39 @@ TEST(Export470, IndexesPercussionParenthesisBeforeUntiedUnison) {
     EXPECT_EQ(xml.select_node("//NoteParenGroup/Notes/NoteIdx").node().text().as_int(-1), 0);
 }
 
+TEST(Export470, ResolvesPercussionParenthesesAndFullTieEndpoints) {
+    using namespace mu::engraving;
+    for (const bool incoming : {false, true}) {
+        SCOPED_TRACE(incoming);
+        auto document = open_path(write470_fixture().parent_path() /
+                                  (incoming ? "percussion_paren_incoming_tie.mscx" : "percussion_paren_outgoing_tie.mscx"));
+        ASSERT_TRUE(document);
+        const auto legacy = document->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+        ASSERT_TRUE(legacy) << legacy.error().message;
+        EXPECT_TRUE(legacy->warnings.empty());
+        pugi::xml_document xml;
+        ASSERT_TRUE(parse_export(xml, *legacy));
+        EXPECT_EQ(xml.select_node("//NoteParenGroup/Notes/NoteIdx").node().text().as_int(-1), incoming ? 0 : 1);
+        EXPECT_EQ(xml.select_node("//Note[eid='D_D']/Spanner[@type='Tie']/next/location/notes").node().text().as_int(), incoming ? 1 : -1);
+        EXPECT_EQ(xml.select_node("//Note[eid='F_F']/Spanner[@type='Tie']/prev/location/notes").node().text().as_int(), incoming ? -1 : 1);
+
+        auto reopened = g_engine->open(legacy->bytes);
+        ASSERT_TRUE(reopened) << reopened.error().message;
+        const auto *registry = master_of(**reopened).eid_register();
+        const auto note = [&](std::string_view id) { return to_note(registry->item_from_eid(EID::from_std_string(id))); };
+        const auto *start = note("D_D");
+        const auto *other = note("E_E");
+        const auto *end = note("F_F");
+        ASSERT_TRUE(start && other && end);
+        ASSERT_TRUE(start->tie_for());
+        EXPECT_EQ(start->tie_for()->end_note(), end);
+        EXPECT_EQ(end->tie_back(), start->tie_for());
+        EXPECT_EQ(start->parenthesis_info() != nullptr, !incoming);
+        EXPECT_EQ(other->parenthesis_info() != nullptr, incoming);
+        EXPECT_FALSE(end->parenthesis_info());
+    }
+}
+
 TEST(Export470, RefusesPercussionParenthesesOnUnisonsWithConflictingIncomingTies) {
     using namespace mu::engraving;
     auto source = connector_score(
@@ -809,40 +875,24 @@ TEST(Export470, RefusesPercussionParenthesesOnUnisonsWithConflictingIncomingTies
         "<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>", "");
     source.replace(source.find("group=\"pitched\""), std::string_view("group=\"pitched\"").size(), "group=\"percussion\"");
     source.insert(source.find("<instrumentId>"), R"(<useDrumset>1</useDrumset><Drum pitch="36"><head>normal</head><line>7</line></Drum>)");
-    for (const bool full_tie : {false, true}) {
-        SCOPED_TRACE(full_tie);
-        const auto document = g_engine->open(as_bytes(source));
-        ASSERT_TRUE(document) << document.error().message;
-        auto &master = master_of(**document);
-        const auto find_note = [&](std::string_view eid) {
-            return to_note(master.eid_register()->item_from_eid(EID::from_std_string(eid)));
-        };
-        auto *first = find_note("D_D");
-        auto *left = find_note("E_E");
-        auto *right = find_note("F_F");
-        ASSERT_TRUE(first && left && right);
-        for (auto *note : {left, right}) {
-            if (full_tie && note == left) {
-                auto *tie = Factory::create_tie(first);
-                tie->set_note_span(first, note);
-                master.add_element(tie);
-                tie->assign_new_eid();
-                ASSERT_EQ(note->tie_back(), tie);
-            } else {
-                auto *tie = Factory::create_partial_tie(note);
-                tie->set_partial_spanner_direction(PartialSpannerDirection::INCOMING);
-                tie->set_end_note(note);
-                note->add(tie);
-                tie->assign_new_eid();
-                ASSERT_EQ(note->incoming_partial_tie(), tie);
-            }
-        }
-        const auto result = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
-        ASSERT_FALSE(result);
-        ASSERT_EQ(result.error().export_warnings.size(), 1u) << result.error().message;
-        EXPECT_EQ(result.error().export_warnings.front().code, "B470_UNSUPPORTED_FEATURE");
-        EXPECT_NE(result.error().message.find("percussion unisons with ambiguous incoming ties"), std::string::npos);
+    const auto document = g_engine->open(as_bytes(source));
+    ASSERT_TRUE(document) << document.error().message;
+    auto &master = master_of(**document);
+    for (const std::string_view id : {"E_E", "F_F"}) {
+        auto *note = to_note(master.eid_register()->item_from_eid(EID::from_std_string(id)));
+        ASSERT_TRUE(note);
+        auto *tie = Factory::create_partial_tie(note);
+        tie->set_partial_spanner_direction(PartialSpannerDirection::INCOMING);
+        tie->set_end_note(note);
+        note->add(tie);
+        tie->assign_new_eid();
+        ASSERT_EQ(note->incoming_partial_tie(), tie);
     }
+    const auto result = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+    ASSERT_FALSE(result);
+    ASSERT_EQ(result.error().export_warnings.size(), 1u) << result.error().message;
+    EXPECT_EQ(result.error().export_warnings.front().code, "B470_UNSUPPORTED_FEATURE");
+    EXPECT_NE(result.error().message.find("percussion unisons with ambiguous incoming ties"), std::string::npos);
 }
 
 TEST(Export470, UsesInitialStaffTypeForParenthesisOrdinals) {
@@ -903,6 +953,30 @@ TEST(Export470, RefusesSparseBeamFragmentsAndNestedImages) {
         ASSERT_EQ(result.error().export_warnings.size(), 1u) << result.error().message;
         EXPECT_EQ(result.error().export_warnings[0].code, "B470_UNSUPPORTED_FEATURE");
         EXPECT_NE(result.error().message.find(image ? "VBox/Image" : "nonconsecutive Beam/Fragment"), std::string::npos);
+    }
+}
+
+TEST(Export470, RefusesOppositeDirectionBeamAndTremoloFragments) {
+    constexpr auto fragment = R"(<Fragment direction="1"><y1>2</y1><y2>3</y2></Fragment>)";
+    for (const bool tremolo : {false, true}) {
+        SCOPED_TRACE(tremolo);
+        const auto first_staff = std::format(
+            R"(<Measure><voice>{}<Chord><BeamMode>begin</BeamMode><durationType>eighth</durationType>{}
+              <Note><pitch>60</pitch><tpc>14</tpc></Note></Chord>
+              <Chord><BeamMode>end</BeamMode><durationType>eighth</durationType><Note><pitch>62</pitch><tpc>16</tpc></Note></Chord>
+              <Rest><durationType>half</durationType><dots>1</dots></Rest></voice></Measure>)",
+            tremolo ? "" : std::format("<Beam>{}</Beam>", fragment),
+            tremolo ? std::format("<TremoloTwoChord><subtype>c16</subtype>{}</TremoloTwoChord>", fragment) : "");
+        const auto source =
+            connector_score(first_staff, "<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>", "");
+        const auto document = g_engine->open(as_bytes(source));
+        ASSERT_TRUE(document) << document.error().message;
+        const auto result = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+        ASSERT_FALSE(result);
+        ASSERT_EQ(result.error().export_warnings.size(), 1u) << result.error().message;
+        EXPECT_EQ(result.error().export_warnings.front().code, "B470_UNSUPPORTED_FEATURE");
+        EXPECT_NE(result.error().message.find(tremolo ? "TremoloTwoChord/Fragment@direction" : "Beam/Fragment@direction"),
+                  std::string::npos);
     }
 }
 
@@ -1093,6 +1167,20 @@ TEST(Export470, RefusesEmbeddedTracklistThatLegacyReaderRebuildsWithWrongStaff) 
 TEST(Export470, RetainsCustomChordDefinitionsAndArchiveSidecar) {
     auto document = open_path(write470_fixture().parent_path() / "custom_chordlist.mscx");
     ASSERT_TRUE(document);
+    const auto current = document->export_score_with_warnings({.format = engrave::Format::MSCZ, .native_version = "5.00"});
+    ASSERT_TRUE(current) << current.error().message;
+    muse::ByteArray bytes(reinterpret_cast<const uint8_t *>(current->bytes.data()), current->bytes.size());
+    auto buffer = muse::io::Buffer::opened(muse::io::IODevice::READ_ONLY, &bytes);
+    muse::ZipReader zip(&buffer);
+    const auto sidecar = zip.file_data("chordlist.xml");
+    pugi::xml_document current_xml;
+    ASSERT_TRUE(current_xml.load_buffer(sidecar.const_data(), sidecar.size()));
+    EXPECT_STREQ(current_xml.child("museScore").attribute("version").value(), "5.00");
+    const auto current_token = current_xml.select_node("/museScore/token[name='engraveAccidental']").node();
+    ASSERT_TRUE(current_token);
+    EXPECT_STREQ(current_token.attribute("class").value(), "accidental");
+    EXPECT_FALSE(current_token.attribute("accidental"));
+
     for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
         const auto result = document->export_score_with_warnings({.format = format, .native_version = "4.70"});
         ASSERT_TRUE(result) << result.error().message;
@@ -1385,6 +1473,34 @@ TEST(Export470, RefusesActivePartialLyricCentering) {
             const auto line = xml.select_node("//PartialLyricsLine").node();
             ASSERT_TRUE(line);
             EXPECT_FALSE(line.child("centerBetweenStaves"));
+        }
+    }
+}
+
+TEST(Export470, RefusesActiveOrdinaryLyricCentering) {
+    for (const auto policy : {"off", "on", "auto"}) {
+        SCOPED_TRACE(policy);
+        auto source = connector_score(std::format(R"(<Measure><voice><Chord><durationType>whole</durationType>
+                <Lyrics><eid>D_D</eid><centerBetweenStaves>{}</centerBetweenStaves><text>La</text></Lyrics>
+                <Note><pitch>60</pitch><tpc>14</tpc></Note></Chord></voice></Measure>)",
+                                                  policy),
+                                      "<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>", "");
+        if (std::string_view(policy) == "auto")
+            source.insert(source.find("<Part"), "<Style><lyricsAutoCenterOnGrandStaff>1</lyricsAutoCenterOnGrandStaff></Style>");
+        const auto document = g_engine->open(as_bytes(source));
+        ASSERT_TRUE(document) << document.error().message;
+        const auto result = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+        if (std::string_view(policy) == "off") {
+            ASSERT_TRUE(result) << result.error().message;
+            pugi::xml_document xml;
+            ASSERT_TRUE(parse_export(xml, *result));
+            EXPECT_STREQ(xml.select_node("//Lyrics/centerBetweenStaves").node().child_value(), "off");
+        } else {
+            ASSERT_FALSE(result);
+            EXPECT_EQ(result.error().code, ErrorCode::UNSUPPORTED);
+            ASSERT_FALSE(result.error().export_warnings.empty());
+            EXPECT_EQ(result.error().export_warnings.front().code, "B470_UNSUPPORTED_FEATURE");
+            EXPECT_NE(result.error().message.find("Lyrics/centerBetweenStaves"), std::string::npos);
         }
     }
 }

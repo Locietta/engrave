@@ -20,17 +20,20 @@
 
 #include "engrave/src/api/handles.h"
 #include "engraving/automation/automationdata.h"
+#include "engraving/dom/bracketitem.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/chordlist.h"
 #include "engraving/dom/excerpt.h"
 #include "engraving/dom/instrchange.h"
 #include "engraving/dom/instrument.h"
 #include "engraving/dom/linkedobjects.h"
+#include "engraving/dom/lyrics.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
 #include "engraving/dom/note.h"
 #include "engraving/dom/part.h"
 #include "engraving/dom/score.h"
+#include "engraving/dom/segment.h"
 #include "engraving/dom/staff.h"
 #include "engraving/dom/staffstate.h"
 #include "engraving/dom/stafftypechange.h"
@@ -89,6 +92,10 @@ bool style_matches(pugi::xml_node node, const StyleEntry &entry) {
 void poll() {
     if (testing::progress.stage != testing::Write470Progress::Stage::NONE) ++testing::progress.units;
     if (muse::io::active_write_budget && !muse::io::active_write_budget->poll()) throw muse::io::WriteBudgetStop{};
+}
+
+void charge(std::size_t bytes) {
+    if (auto *budget = muse::io::active_write_budget; budget && !budget->charge(bytes)) throw muse::io::WriteBudgetStop{};
 }
 
 // Account for the parser's nodes, attributes, strings and the converted copy
@@ -511,7 +518,7 @@ bool legacy_excerpt_tracks(pugi::xml_node score_node, const Score &score) {
     return true;
 }
 
-void convert_bracket(pugi::xml_node bracket, std::optional<ElementId> score_id, std::vector<ExportWarning> &warnings) {
+void convert_bracket(pugi::xml_node bracket, const Score &score, std::optional<ElementId> score_id, std::vector<ExportWarning> &warnings) {
     constexpr std::array types{"Normal"sv, "Brace"sv, "Square"sv, "Line"sv};
     const auto type = std::find(types.begin(), types.end(), bracket.child_value("type"));
     if (type == types.end()) {
@@ -519,11 +526,25 @@ void convert_bracket(pugi::xml_node bracket, std::optional<ElementId> score_id, 
         return;
     }
     auto staff = bracket.parent();
+    const auto *staff_dom = source_item(staff, score);
+    if (!staff_dom || staff_dom->type() != ElementType::STAFF) {
+        unsupported(bracket, "BracketItem without a source staff", score_id, warnings);
+        return;
+    }
+    const auto &brackets = score.brackets(static_cast<const Staff *>(staff_dom)->idx());
+    const auto column = bracket.child("level").text().as_ullong(brackets.size());
+    if (column >= brackets.size() || !brackets[column]) {
+        unsupported(bracket, "BracketItem without a source bracket", score_id, warnings);
+        return;
+    }
+    const auto *source = brackets[column];
     auto legacy = staff.insert_child_before("bracket", bracket);
     legacy.append_attribute("type") = static_cast<int>(type - types.begin());
     legacy.append_attribute("span") = bracket.child_value("bracketSpan");
     legacy.append_attribute("col") = bracket.child_value("level");
     legacy.append_attribute("visible") = bracket.child("visible") ? bracket.child_value("visible") : "1";
+    if (source->color() != source->property_default(Pid::COLOR).value<muse::Color>())
+        legacy.append_attribute("color") = source->color().to_string().c_str();
     staff.remove_child(bracket);
 }
 
@@ -800,6 +821,19 @@ void convert_style(pugi::xml_node score_node, Score &score, std::optional<Elemen
     score_node.prepend_copy(style);
 }
 
+bool lyrics_center_between_staves(const Lyrics &lyrics) {
+    const auto policy = lyrics.center_between_staves();
+    if (policy == AutoOnOff::OFF) return false;
+    const auto *other_staff = lyrics.staff_to_center_against(lyrics.place_above());
+    if (!other_staff) return false;
+    if (policy == AutoOnOff::ON) return true;
+    if (other_staff->part() == lyrics.part()) {
+        return lyrics.style().style_b(Sid::LYRICS_AUTO_CENTER_ON_GRAND_STAFF) &&
+               lyrics.part()->instrument()->is_normally_multi_stave_instrument();
+    }
+    return lyrics.style().style_b(Sid::LYRICS_AUTO_CENTER_ON_VOCAL_STAVES);
+}
+
 void convert_notation(pugi::xml_node node, const Score &score, std::optional<ElementId> score_id, ScoreFeatures &features,
                       ParenthesisAliases &aliases, std::vector<ExportWarning> &warnings) {
     poll();
@@ -814,6 +848,13 @@ void convert_notation(pugi::xml_node node, const Score &score, std::optional<Ele
 
     if (name == "Chord" && node.child("NoteParenGroup")) {
         convert_note_indices(node, score, score_id, aliases, warnings);
+    } else if (name == "Lyrics") {
+        // An auto policy can be effective even when the writer omits the property.
+        const auto *item = source_item(node, score);
+        if (item && item->is_lyrics() && lyrics_center_between_staves(*static_cast<const Lyrics *>(item)))
+            unsupported(node, "Lyrics/centerBetweenStaves", score_id, warnings);
+        else if (!item && !one_of(node.child_value("centerBetweenStaves"), {"", "auto", "off"}) && score.nstaves() > 1)
+            unsupported(node, "Lyrics/centerBetweenStaves without a source lyric", score_id, warnings);
     } else if (name == "StaffTypeChange" && node.child("StaffType") && changes_staff_label(node, score)) {
         unsupported(node, "StaffTypeChange staff label or instrument label visibility", score_id, warnings);
     } else if (name == "Score" && node.child("initialPartId").text().as_ullong() > std::numeric_limits<int>::max()) {
@@ -854,7 +895,7 @@ void convert_notation(pugi::xml_node node, const Score &score, std::optional<Ele
             if (note_endpoint || field == "Image" || !allowed_child(node, field)) {
                 unsupported(child, std::string(name) + "/" + std::string(field), score_id, warnings);
             } else if (name == "Staff" && field == "BracketItem") {
-                convert_bracket(child, score_id, warnings);
+                convert_bracket(child, score, score_id, warnings);
             } else if (field == "maskSlurTie" || (name == "TremoloTwoChord" && field == "StemDirection")) {
                 unsupported(child, std::string(name) + "/" + std::string(field), score_id, warnings);
             } else if (name == "ChordLine" && one_of(field, {"o1", "o2", "o3", "o4"})) {
@@ -875,9 +916,9 @@ void convert_notation(pugi::xml_node node, const Score &score, std::optional<Ele
                     unsupported(child, std::string(name) + "/" + std::string(field), score_id, warnings);
             } else if (one_of(name, {"Beam", "TremoloTwoChord"}) && field == "Fragment") {
                 // The current writer marks only fragments for the opposite direction.
-                if (child.attribute("direction")) {
-                    node.remove_child(child);
-                } else {
+                if (child.attribute("direction"))
+                    unsupported(child, std::string(name) + "/Fragment@direction", score_id, warnings);
+                else {
                     if (const auto ordinal = child.attribute("no");
                         ordinal && ordinal.as_uint(std::numeric_limits<unsigned>::max()) != fragment_index)
                         unsupported(child, "nonconsecutive Beam/Fragment overrides", score_id, warnings);
@@ -1080,6 +1121,67 @@ Result<ExportOutput> refused(std::vector<ExportWarning> warnings) {
     return std::unexpected(std::move(error));
 }
 
+ExportWarningObject invalid_tie_identity(const Note &note, const Tie &tie, std::size_t measure_index, std::size_t note_index) {
+    if (tie.eid().is_valid()) return {"tie", tie.eid().to_std_string()};
+    // A tie need not have an EID. Prefer its nearest addressable owner.
+    for (const EngravingObject *owner = &note; owner; owner = owner->parent()) {
+        poll();
+        if (owner->eid().is_valid()) {
+            std::string kind = owner->type_name();
+            std::transform(kind.begin(), kind.end(), kind.begin(), [](char c) { return c >= 'A' && c <= 'Z' ? c - 'A' + 'a' : c; });
+            return {std::move(kind), to_string(from_engine(owner->eid()))};
+        }
+    }
+    // Locators use document order even when the selected excerpt is written alone.
+    const auto *score = note.score();
+    std::size_t score_index = 0;
+    if (!score->is_master()) {
+        for (const auto *excerpt : score->master_score()->excerpts()) {
+            poll();
+            if (!excerpt->excerpt_score()) continue;
+            ++score_index;
+            if (excerpt->excerpt_score() == score) break;
+        }
+    }
+    return {"tie", "locator:score:" + std::to_string(score_index) + "/measure:" + std::to_string(measure_index) +
+                       "/tick:" + std::to_string(note.tick().ticks()) + "/track:" + std::to_string(note.track()) +
+                       "/note:" + std::to_string(note_index) + "/tieFor"};
+}
+
+void check_chord_ties(const Chord &chord, std::size_t measure_index, std::vector<ExportWarning> &warnings) {
+    for (std::size_t i = 0; i < chord.notes().size(); ++i) {
+        poll();
+        const auto &note = *chord.notes()[i];
+        const auto *tie = note.tie_for();
+        if (tie && tie->start_note() && tie->end_note() && tie->start_note()->ppitch() != tie->end_note()->ppitch()) {
+            charge(2 * sizeof(ExportWarning) + 256);
+            warnings.push_back({"B470_INVALID_TIE", "Cannot write 4.70: tied notes have different pitches.",
+                                invalid_tie_identity(note, *tie, measure_index, i)});
+        }
+    }
+    for (const auto *grace : chord.grace_notes()) {
+        poll();
+        check_chord_ties(*grace, measure_index, warnings);
+    }
+}
+
+void check_score_ties(const Score &score, std::vector<ExportWarning> &warnings) {
+    std::size_t measure_index = 0;
+    for (const auto *base = score.first(); base; base = base->next()) {
+        poll();
+        if (!base->is_measure()) continue;
+        for (const auto *segment = to_measure(base)->first(); segment; segment = segment->next()) {
+            poll();
+            if (!segment->is_chord_rest_type()) continue;
+            for (const auto *item : segment->elist()) {
+                poll();
+                if (item && item->is_chord()) check_chord_ties(*to_chord(item), measure_index, warnings);
+            }
+        }
+        ++measure_index;
+    }
+}
+
 } // namespace
 
 void set_warning_identity_test_fault(ExportWarning warning) { warning_identity_test_fault = std::move(warning); }
@@ -1094,49 +1196,18 @@ Result<ExportOutput> export_score(const music::EngineContext &context, const mus
     }
     const auto score_id = score.eid().is_valid() ? std::optional(from_engine(score.eid())) : std::nullopt;
     auto &master = *score.master_score();
+    charge(sizeof(Score *));
     std::vector<Score *> source_scores{&score};
-    if (score.is_master())
-        for (auto *excerpt : master.excerpts())
-            if (excerpt->excerpt_score()) source_scores.push_back(excerpt->excerpt_score());
-    // Warning locators use document order even for a standalone selection.
-    std::vector<Score *> document_scores{&master};
-    for (auto *excerpt : master.excerpts())
-        if (excerpt->excerpt_score()) document_scores.push_back(excerpt->excerpt_score());
-    for (auto *item : document_objects(master)) {
-        poll();
-        if (!item->is_note()) continue;
-        if (std::find(source_scores.begin(), source_scores.end(), static_cast<Note *>(item)->score()) == source_scores.end()) continue;
-        auto *tie = static_cast<Note *>(item)->tie_for();
-        if (tie && tie->start_note() && tie->end_note() && tie->start_note()->ppitch() != tie->end_note()->ppitch()) {
-            auto *note = static_cast<Note *>(item);
-            const auto score_index = std::find(document_scores.begin(), document_scores.end(), note->score()) - document_scores.begin();
-            std::size_t measure_index = 0;
-            for (auto *measure = note->score()->first_measure(); measure && measure != note->chord()->measure();
-                 measure = measure->next_measure())
-                ++measure_index;
-            const auto &notes = note->chord()->notes();
-            ExportWarningObject identity{
-                "tie", "locator:score:" + std::to_string(score_index) + "/measure:" + std::to_string(measure_index) +
-                           "/tick:" + std::to_string(note->tick().ticks()) + "/track:" + std::to_string(note->track()) +
-                           "/note:" + std::to_string(std::find(notes.begin(), notes.end(), note) - notes.begin()) + "/tieFor"};
-            if (tie->eid().is_valid())
-                identity = {"tie", tie->eid().to_std_string()};
-            else {
-                // A tie need not have an EID. Name its nearest addressable owner,
-                // never stringify the invalid-EID sentinel as a real handle.
-                for (auto *owner = item; owner; owner = owner->parent()) {
-                    if (owner->eid().is_valid()) {
-                        std::string kind = owner->type_name();
-                        std::transform(kind.begin(), kind.end(), kind.begin(),
-                                       [](char c) { return c >= 'A' && c <= 'Z' ? static_cast<char>(c - 'A' + 'a') : c; });
-                        identity = {std::move(kind), to_string(from_engine(owner->eid()))};
-                        break;
-                    }
-                }
+    if (score.is_master()) {
+        for (auto *excerpt : master.excerpts()) {
+            poll();
+            if (auto *part_score = excerpt->excerpt_score()) {
+                charge(2 * sizeof(Score *));
+                source_scores.push_back(part_score);
             }
-            warnings.push_back({"B470_INVALID_TIE", "Cannot write 4.70: tied notes have different pitches.", std::move(identity)});
         }
     }
+    for (const auto *source : source_scores) check_score_ties(*source, warnings);
     if (!warnings.empty()) return refused(std::move(warnings));
     if (const auto automation = master.automation_data()) {
         for (const auto &[key, curve] : automation->curves()) {
