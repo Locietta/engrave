@@ -482,6 +482,10 @@ void TRead::read_item_link(EngravingItem *item, XmlReader &xml, ReadContext &ctx
         LOGE() << "Link failed: Main linked element not found for " << item->type_name() << " at " << ctx.tick().to_string();
         return;
     }
+    if (main_element == item) {
+        LOGE() << "Link failed: Element cannot link to itself (" << item->type_name() << ") at " << ctx.tick().to_string();
+        return;
+    }
     if (main_element->type() != item->type()) {
         LOGE() << "Link failed: Main element type (" << main_element->type_name() << ") does not match linked item type ("
                << item->type_name() << ") at " << ctx.tick().to_string();
