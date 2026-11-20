@@ -22,6 +22,8 @@
 #pragma once
 
 #include <algorithm>
+#include <cmath>
+#include <limits>
 #include <map>
 #include <memory>
 #include <utility>
@@ -184,27 +186,26 @@ private:
             return;
         }
 
-        dynamic_level_t articulation_dynamic_level = articulations_applied.average_max_amplitude_level();
-        dynamic_level_t nominal_dynamic_level = expression_ctx_.nominal_dynamic_level;
+        const dynamic_level_t articulation_dynamic_level = articulations_applied.average_max_amplitude_level();
+        const dynamic_level_t nominal_dynamic_level = expression_ctx_.nominal_dynamic_level;
 
         constexpr dynamic_level_t natural_dynamic_level = dynamic_level_from_type(DynamicType::NATURAL);
 
-        float dynamic_amplify_factor =
-            static_cast<float>(articulation_dynamic_level - natural_dynamic_level) / ::muse::mpe::dynamic_level_step;
-
-        dynamic_level_t amplification_diff =
-            mult(std::max(articulations_applied.average_dynamic_range(), ::muse::mpe::dynamic_level_step), dynamic_amplify_factor);
-
-        dynamic_level_t actual_dynamic_level = nominal_dynamic_level + amplification_diff;
+        const auto dynamic_range = std::max(articulations_applied.average_dynamic_range(), ::muse::mpe::dynamic_level_step);
+        const double amplitude_diff = static_cast<double>(articulation_dynamic_level) - natural_dynamic_level;
+        const double amplification_diff = std::trunc(amplitude_diff * dynamic_range / ::muse::mpe::dynamic_level_step);
+        const double actual_dynamic_level = nominal_dynamic_level + amplification_diff;
 
         if (articulation_dynamic_level == 0 || actual_dynamic_level == articulation_dynamic_level) {
             return;
         }
 
-        float ratio = static_cast<float>(actual_dynamic_level) / static_cast<float>(articulation_dynamic_level);
+        const double ratio = actual_dynamic_level / articulation_dynamic_level;
+        constexpr double min_level = std::numeric_limits<dynamic_level_t>::min();
+        constexpr double max_level = std::numeric_limits<dynamic_level_t>::max();
 
         for (auto &pair : expression_ctx_.expression_curve) {
-            pair.second = static_cast<dynamic_level_t>(real_round(pair.second * ratio, 0));
+            pair.second = static_cast<dynamic_level_t>(std::clamp(real_round(pair.second * ratio, 0), min_level, max_level));
         }
     }
 

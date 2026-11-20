@@ -913,15 +913,21 @@ String String::decode_xml_entities(const String &input_src) {
         bool overflow = false;
         while (end < src.size() && textscan::is_digit(src[end])) {
             const int digit = src[end++] - u'0';
-            if (!overflow && value <= (std::numeric_limits<int>::max() - digit) / 10) {
+            if (!overflow && value <= (0x10FFFF - digit) / 10) {
                 value = value * 10 + digit;
             } else {
                 overflow = true;
             }
         }
-        if (!overflow && end > start + 2 && end < src.size() && src[end] == u';') {
+        if (!overflow && (value < 0xD800 || value > 0xDFFF) && end > start + 2 && end < src.size() && src[end] == u';') {
             result.data_.append(src.substr(copied, start - copied));
-            result.data_.push_back(static_cast<char16_t>(value));
+            if (value >= 0x10000) {
+                const int supplementary = value - 0x10000;
+                result.data_.push_back(static_cast<char16_t>(0xD800 + (supplementary >> 10)));
+                result.data_.push_back(static_cast<char16_t>(0xDC00 + (supplementary & 0x3FF)));
+            } else {
+                result.data_.push_back(static_cast<char16_t>(value));
+            }
             copied = ++end;
         }
         start = src.find(u"&#", end);

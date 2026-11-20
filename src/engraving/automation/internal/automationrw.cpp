@@ -39,6 +39,10 @@ namespace {
 
 namespace json = muse::json;
 
+struct ReadOpts : glz::opts {
+    bool validate_trailing_whitespace = true;
+};
+
 constexpr std::pair<AutomationType, std::string_view> automation_types[]{
     {AutomationType::DYNAMICS, "Dynamics"},
     {AutomationType::TEMPO, "Tempo"},
@@ -113,8 +117,8 @@ AutomationCurveKey read_key(const glz::generic &curve) {
     if (const auto *staff = json::find(curve, "staffId")) {
         std::optional<size_t> voice_idx;
         if (const auto *voice_field = json::find(curve, "voiceId")) {
-            const auto voice = json::rounded_int(*voice_field);
-            if (!voice || *voice < 0 || static_cast<size_t>(*voice) >= ::mu::engraving::voices) {
+            const auto *voice = voice_field->get_if<double>();
+            if (!voice || *voice < 0 || *voice >= ::mu::engraving::voices || std::trunc(*voice) != *voice) {
                 return {};
             }
             voice_idx = static_cast<size_t>(*voice);
@@ -217,25 +221,28 @@ void AutomationRW::read(AutomationData &data, const muse::ByteArray &bytes) {
     if (bytes.empty()) return;
 
     const auto source = json::text(bytes);
-    const auto parsed = glz::read_json<glz::generic>(source);
-    if (!parsed) {
-        LOGE() << "Failed to parse automation JSON: " << glz::format_error(parsed.error(), source);
+    glz::generic parsed;
+    if (const auto error = glz::read<ReadOpts{}>(parsed, source)) {
+        LOGE() << "Failed to parse automation JSON: " << glz::format_error(error, source);
         return;
     }
-    if (!parsed->is_array()) {
+    if (!parsed.is_array()) {
         LOGE() << "Automation JSON must contain an array";
         return;
     }
 
     AutomationCurveMap curves;
-    for (const auto &entry : parsed->get_array()) {
+    for (const auto &entry : parsed.get_array()) {
         const AutomationCurveKey key = read_key(entry);
         if (!key.is_valid()) continue;
 
         const auto &points = json::array(json::member(entry, "points"));
         for (const auto &point : points) {
-            const auto tick = json::rounded_int(json::member(point, "tick"));
-            if (!tick || *tick < 0) continue;
+            const auto &tick_field = json::member(point, "tick");
+            const auto *source_tick = tick_field.get_if<double>();
+            if (!source_tick || *source_tick < 0.0) continue;
+            const auto tick = json::rounded_int(tick_field);
+            if (!tick) continue;
 
             AutomationCurve &curve = curves[key];
             curve.try_emplace(curve.end(), *tick, read_point(point));
