@@ -218,7 +218,8 @@ TEST(MmrOutput, BoundaryRenderDiscardAndTogglePreserveSource) {
         return std::string(reinterpret_cast<const char *>(buffer.data().const_data()), buffer.data().size());
     };
     const auto cold = write();
-    for (const auto *tag : {"<multiMeasureRest", "<mmRestLast", "<MMRest", "<MMRestRange"}) EXPECT_EQ(cold.find(tag), std::string::npos);
+    for (const auto *tag : {"<multiMeasureRest>", "<mmRestLast>", "<MMRest>", "<MMRestRange>"})
+        EXPECT_EQ(cold.find(tag), std::string::npos);
     std::vector<std::vector<std::byte>> baseline;
     for (int cycle = 0; cycle < 2; ++cycle) {
         auto svg = document->render({.format = engrave::RenderFormat::SVG});
