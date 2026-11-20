@@ -34,7 +34,7 @@ from engrave_testing.public_output import (
     run_capture_pipeline,
 )
 
-PROFILES = ("release", "debug", "releasedbg", "asan")
+PROFILES = ("release", "debug", "releasedbg", "sanitize")
 
 
 def _find_bazel(env_prefix: Path) -> str:

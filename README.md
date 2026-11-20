@@ -67,7 +67,7 @@ bazelisk build --config=release //:engrave
 
 ### Configuration Flags
 
-- `--config=<release|debug|releasedbg|asan>`: Select optimization/debug/sanitizer profile (`bazel/engrave.bazelrc`).
+- `--config=<release|debug|releasedbg|sanitize>`: Select optimization/debug/sanitizer profile (`bazel/engrave.bazelrc`).
 - `--//bazel:pch=false`: Disable binary precompiled headers for `//:engraving` (enabled by default).
 - `--//bazel:playback_harness=true`: Enable opt-in playback capture instrumentation (`ENGRAVE_PLAYBACK_HARNESS`).
 
