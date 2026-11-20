@@ -714,7 +714,6 @@ void RepeatList::unwind() {
 
     // Following variables are used during unwinding, but may be altered when following jumps
     // Therefor they are declared outside of the loop
-    RepeatSegment *rs = nullptr;
     int playback_count;
     Volta const *active_volta = nullptr;
     std::pair<std::vector<RepeatListElementList>::const_iterator, RepeatListElementList::const_iterator> play_until =
@@ -737,7 +736,16 @@ void RepeatList::unwind() {
         continue_at.first = rl_elements_.cend();
         force_final_repeat = false;
 
-        rs = new RepeatSegment(playback_count);
+        auto rs = std::make_unique<RepeatSegment>(playback_count);
+        const auto finish_segment = [&] {
+            if (rs && !rs->is_empty()) {
+                push_back(rs.get());
+                rs.release();
+            } else {
+                rs.reset();
+            }
+        };
+
         rs->add_measure((*repeat_list_element_it)->measure);
         ++repeat_list_element_it;
 
@@ -747,9 +755,7 @@ void RepeatList::unwind() {
             }
             switch ((*repeat_list_element_it)->repeat_list_element_type) {
                 case RepeatListElementType::SECTION_BREAK: {
-                    if ((rs != nullptr) && (!rs->is_empty())) {
-                        push_back(rs);
-                    }
+                    finish_segment();
                 } break;
                 case RepeatListElementType::VOLTA_START: {
                     active_volta = to_volta((*repeat_list_element_it)->element);
@@ -760,9 +766,7 @@ void RepeatList::unwind() {
                     if (!active_volta->has_ending(playback_count) && !play_after_repeats) {
                         // Should be skipped, remove our measure from rs
                         rs->pop_measure();
-                        if (!rs->is_empty()) {
-                            push_back(rs);
-                        }
+                        finish_segment();
                         // Skip the volta, but only up to the last repeat structure actually passed:
                         // an open volta's VOLTA_END is deferred to the section end, and skipping that
                         // would discard the remainder of the score.
@@ -789,10 +793,8 @@ void RepeatList::unwind() {
                         active_volta = nullptr;
                         // Start next rs on the following measure
                         Measure const *const possible_next_measure = last_skipped_measure->next_measure();
-                        if (possible_next_measure == nullptr) {
-                            rs = nullptr; // end of score, but will still encounter section break, notify it
-                        } else {
-                            rs = new RepeatSegment(playback_count);
+                        if (possible_next_measure) {
+                            rs = std::make_unique<RepeatSegment>(playback_count);
                             rs->add_measure(possible_next_measure);
                         }
                     }
@@ -803,18 +805,16 @@ void RepeatList::unwind() {
                 } break;
                 case RepeatListElementType::REPEAT_START: {
                     if (rs == nullptr) { // Sent here by an end-repeat
-                        rs = new RepeatSegment(playback_count);
+                        rs = std::make_unique<RepeatSegment>(playback_count);
                         rs->add_measure((*repeat_list_element_it)->measure);
                     } else {
                         int desired_playback_count = (force_final_repeat) ? (*repeat_list_element_it)->get_repeat_count() : 1;
                         if (rs->playback_count != desired_playback_count) {
                             // Restart a segment as we have a new playbackCount reference
                             rs->pop_measure();
-                            if (!rs->is_empty()) {
-                                push_back(rs);
-                            }
+                            finish_segment();
                             playback_count = desired_playback_count;
-                            rs = new RepeatSegment(playback_count);
+                            rs = std::make_unique<RepeatSegment>(playback_count);
                             rs->add_measure((*repeat_list_element_it)->measure);
                         }
                         start_repeat_reference = repeat_list_element_it->get();
@@ -825,10 +825,7 @@ void RepeatList::unwind() {
                     if ((playback_count < start_repeat_reference->get_repeat_count()) &&
                         ((*repeat_list_element_it)->get_repeat_count() < (*repeat_list_element_it)->measure->repeat_count())) {
                         // Honor the repeat
-                        if ((rs != nullptr) && (!rs->is_empty())) {
-                            push_back(rs);
-                        }
-                        rs = nullptr;
+                        finish_segment();
                         do { // rewind
                             --repeat_list_element_it;
                             if ((*repeat_list_element_it)->repeat_list_element_type == RepeatListElementType::VOLTA_START) {
@@ -867,10 +864,7 @@ void RepeatList::unwind() {
 
                             // Execute
                             if (jump_to.first != rl_elements_.cend()) {
-                                if (rs && !rs->is_empty()) {
-                                    push_back(rs);
-                                }
-                                rs = nullptr;
+                                finish_segment();
 
                                 active_jump = jump_occurrence.first;
                                 perform_jump(jump_to.first, jump_to.second, active_jump->play_repeats(), &playback_count, &active_volta,
@@ -938,7 +932,7 @@ void RepeatList::unwind() {
                                 }
 
                                 // We've arrived at the target marker
-                                rs = new RepeatSegment(playback_count);
+                                rs = std::make_unique<RepeatSegment>(playback_count);
                                 rs->add_measure((*repeat_list_element_it)->measure);
                             } // End of jump execution
                         }
@@ -949,10 +943,7 @@ void RepeatList::unwind() {
                         ((playback_count == start_repeat_reference->get_repeat_count()) ||
                          ((active_volta != nullptr) && (playback_count == active_volta->last_ending())))) {
                         // Found final playThrough of this Marker
-                        if (rs && !rs->is_empty()) {
-                            push_back(rs);
-                        }
-                        rs = nullptr;
+                        finish_segment();
                         play_until.first = rl_elements_.cend(); // Clear this reference - processed
                         force_final_repeat = false;
 
@@ -969,7 +960,7 @@ void RepeatList::unwind() {
                             }
 
                             // We've arrived at the target marker
-                            rs = new RepeatSegment(playback_count);
+                            rs = std::make_unique<RepeatSegment>(playback_count);
                             rs->add_measure((*repeat_list_element_it)->measure);
 
                             continue_at.first = rl_elements_.cend(); // Clear this reference - processed
@@ -986,13 +977,13 @@ void RepeatList::unwind() {
         // Reached the end of this section
         if (!this->empty()) {
             // Inform the last RepeatSegment that the Section Break pause property should be honored now
-            rs = this->back();
+            auto *last_segment = this->back();
             repeat_list_element_it = section_it->cend() - 1;
             assert((*repeat_list_element_it)->repeat_list_element_type == RepeatListElementType::SECTION_BREAK);
 
             LayoutBreak const *const layout_break = to_measure_base((*repeat_list_element_it)->element)->section_break_element();
             if (layout_break != nullptr) {
-                rs->pause = layout_break->pause();
+                last_segment->pause = layout_break->pause();
             }
         }
     }
