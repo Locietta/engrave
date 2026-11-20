@@ -31,6 +31,7 @@
 #include "engraving/dom/score.h"
 #include "engraving/dom/staff.h"
 #include "engraving/dom/staffstate.h"
+#include "engraving/dom/stafftypechange.h"
 #include "engraving/dom/tie.h"
 #include "engraving/infrastructure/mscwriter.h"
 #include "engraving/rendering/score/systemheaderlayout.h"
@@ -262,6 +263,81 @@ const EngravingObject *source_item(pugi::xml_node node, const Score &score) {
     return nullptr;
 }
 
+bool legacy_chord_actions(const std::vector<RenderActionPtr> &actions) {
+    using Type = RenderAction::RenderActionType;
+    return std::all_of(actions.begin(), actions.end(), [](const auto &action) {
+        poll();
+        switch (action->action_type()) {
+            case Type::SET: return static_cast<const RenderActionSet &>(*action).render_text();
+            case Type::MOVEXHEIGHT: return static_cast<const RenderActionMoveXHeight &>(*action).up();
+            case Type::MOVE:
+            case Type::PUSH:
+            case Type::POP:
+            case Type::NOTE:
+            case Type::ACCIDENTAL:
+            case Type::SCALE:
+            case Type::PAREN: return true;
+            case Type::STOPHALIGN: return false;
+        }
+        return false;
+    });
+}
+
+bool legacy_chord_list(const ChordList &list) {
+    // Without a root program the legacy loader can replace this list with a preset.
+    if (!list.loaded()) return false;
+    for (const auto *actions : {&list.render_list_root, &list.render_list_function, &list.render_list_bass, &list.render_list_bass_offset})
+        if (!legacy_chord_actions(*actions)) return false;
+    for (const auto &token : list.chord_token_list) {
+        poll();
+        if (!legacy_chord_actions(token.render_list)) return false;
+    }
+    for (const auto &[id, description] : list) {
+        poll();
+        if ((!description.generated || description.export_ok) && !legacy_chord_actions(description.render_list)) return false;
+    }
+    return true;
+}
+
+void convert_chord_list(pugi::xml_node score_node, const Score &score, std::optional<ElementId> score_id, pugi::xml_document *sidecar,
+                        std::vector<ExportWarning> &warnings) {
+    const auto &list = *score.chord_list();
+    if (!list.custom_chord_list() || list.empty()) return;
+    if (!legacy_chord_list(list)) {
+        unsupported(score_node, "custom chord list render actions or missing root program", score_id, warnings);
+        return;
+    }
+
+    muse::ByteArray data;
+    auto buffer = muse::io::Buffer::opened(muse::io::IODevice::WRITE_ONLY, &data);
+    if (!list.write(&buffer)) throw std::runtime_error("could not serialize the custom chord list");
+    buffer.close();
+    charge_xml(data.size());
+
+    pugi::xml_document inline_list;
+    auto &xml = sidecar ? *sidecar : inline_list;
+    if (!xml.load_buffer(data.const_data(), data.size())) throw std::runtime_error("invalid chord list XML");
+    auto root = xml.child("museScore");
+    if (!root) throw std::runtime_error("missing chord list root");
+    root.attribute("version").set_value("4.70");
+    auto font = root.child("font");
+    for (const auto &entry : list.fonts) {
+        poll();
+        if (!font) throw std::runtime_error("missing chord list font");
+        if (entry.music_symbol_text) font.attribute("family").set_value("ScoreText");
+        if (!entry.font_class.empty()) font.append_attribute("class").set_value(entry.font_class.to_std_string().c_str());
+        font = font.next_sibling("font");
+    }
+    // The shared serializer writes only its attributes. The legacy reader also
+    // uses the element text, and font magnifications are already adjusted.
+    if (auto adjust = root.child("autoAdjust")) adjust.text().set("1");
+    if (!sidecar) {
+        auto chord_list = score_node.child("Style").append_copy(root);
+        chord_list.set_name("ChordList");
+        chord_list.remove_attribute("version");
+    }
+}
+
 void convert_bracket(pugi::xml_node bracket, std::optional<ElementId> score_id, std::vector<ExportWarning> &warnings) {
     constexpr std::array types{"Normal"sv, "Brace"sv, "Square"sv, "Line"sv};
     const auto type = std::find(types.begin(), types.end(), bracket.child_value("type"));
@@ -391,6 +467,23 @@ bool neutral_mask(pugi::xml_node field, const Score &score) {
     if (std::string_view(field.child_value()) == "auto") return true;
     const Sid sid = std::string_view(field.parent().name()) == "Slur" ? Sid::MASK_SLURS : Sid::MASK_TIES;
     return std::string_view(field.child_value()) == "off" && !score.style().style_b(sid);
+}
+
+bool inactive_chord_line_control(pugi::xml_node field) {
+    const auto line = field.parent();
+    return line.child("subtype").text().as_int() == static_cast<int>(ChordLineType::NOTYPE) || line.child("wavy").text().as_bool() ||
+           (line.child("straight").text().as_bool() && one_of(field.name(), {"o2", "o3"})) ||
+           (field.attribute("x").as_double(1.0) == 0.0 && field.attribute("y").as_double(1.0) == 0.0);
+}
+
+bool changes_staff_label(pugi::xml_node node, const Score &score) {
+    const auto *object = source_item(node, score);
+    if (!object || !object->is_staff_type_change()) return true;
+    const auto *change = static_cast<const StaffTypeChange *>(object);
+    const auto *type = change->staff_type();
+    const auto *initial = change->staff()->staff_type(mu::engraving::Fraction(0, 1));
+    return type &&
+           (type->staff_label() != initial->staff_label() || type->instrument_label_visibility() != initial->instrument_label_visibility());
 }
 
 void strip_neutral_masks(pugi::xml_node node, const Score &score) {
@@ -545,7 +638,7 @@ void convert_notation(pugi::xml_node node, const Score &score, std::optional<Ele
     poll();
     const std::string_view name = node.name();
     const std::string_view parent = node.parent().name();
-    features.lyrics |= name == "Lyrics";
+    features.lyrics |= one_of(name, {"Lyrics", "PartialLyricsLine"});
     features.slurs |= one_of(name, {"Slur", "HammerOnPullOff"});
     features.ties |= one_of(name, {"Tie", "PartialTie", "LaissezVib"});
     features.dynamics |= one_of(name, {"Dynamic", "Expression", "HairPin"}) ||
@@ -554,6 +647,10 @@ void convert_notation(pugi::xml_node node, const Score &score, std::optional<Ele
 
     if (name == "Chord" && node.child("NoteParenGroup")) {
         convert_note_indices(node, score, score_id, aliases, warnings);
+    } else if (name == "StaffTypeChange" && node.child("StaffType") && changes_staff_label(node, score)) {
+        unsupported(node, "StaffTypeChange staff label or instrument label visibility", score_id, warnings);
+    } else if (name == "Score" && node.child("initialPartId").text().as_ullong() > std::numeric_limits<int>::max()) {
+        unsupported(node, "initialPartId outside the legacy integer range", score_id, warnings);
     } else if (name == "Spanner") {
         if (!is_legacy_connector(node.attribute("type").value(), parent) || node.first_attribute().next_attribute())
             unsupported(node, "Spanner type or attributes", score_id, warnings);
@@ -591,9 +688,18 @@ void convert_notation(pugi::xml_node node, const Score &score, std::optional<Ele
                 unsupported(child, std::string(name) + "/" + std::string(field), score_id, warnings);
             } else if (name == "Staff" && field == "BracketItem") {
                 convert_bracket(child, score_id, warnings);
-            } else if (field == "maskSlurTie" || (name == "ChordLine" && one_of(field, {"o1", "o2", "o3", "o4"})) ||
-                       (name == "TremoloTwoChord" && field == "StemDirection")) {
+            } else if (field == "maskSlurTie" || (name == "TremoloTwoChord" && field == "StemDirection")) {
                 unsupported(child, std::string(name) + "/" + std::string(field), score_id, warnings);
+            } else if (name == "ChordLine" && one_of(field, {"o1", "o2", "o3", "o4"})) {
+                if (inactive_chord_line_control(child))
+                    node.remove_child(child);
+                else
+                    unsupported(child, "ChordLine/" + std::string(field), score_id, warnings);
+            } else if (name == "PartialLyricsLine" && field == "centerBetweenStaves") {
+                if (one_of(child.child_value(), {"auto", "off"}) || score.nstaves() < 2)
+                    node.remove_child(child);
+                else
+                    unsupported(child, "PartialLyricsLine/centerBetweenStaves", score_id, warnings);
             } else if ((name == "Harmony" && field == "excludeVerticalAlign") ||
                        (name == "MeasureRepeat" && field == "measureRepeatNumberOffset")) {
                 if (std::string_view(child.child_value()) == "false" || child.text().as_double(1.0) == 0.0)
@@ -612,10 +718,7 @@ void convert_notation(pugi::xml_node node, const Score &score, std::optional<Ele
                     ++fragment_index;
                 }
             } else if (name == "StaffType" && one_of(field, {"StaffLabel", "instrumentLabelVisibility"})) {
-                if (parent == "StaffTypeChange")
-                    unsupported(child, "StaffTypeChange/StaffType/" + std::string(field), score_id, warnings);
-                else
-                    node.remove_child(child);
+                node.remove_child(child);
             } else {
                 convert_notation(child, score, score_id, features, aliases, warnings);
             }
@@ -860,12 +963,15 @@ Result<ExportOutput> export_score(const music::EngineContext &context, const mus
         }
     }
     if (!warnings.empty()) return refused(std::move(warnings));
-    if (master.chord_list()->custom_chord_list() && !master.chord_list()->empty())
-        warnings.push_back({"B470_UNSUPPORTED_FEATURE", "4.70 conversion of a custom chord list is not implemented", score_id});
     if (const auto automation = master.automation_data()) {
-        for ([[maybe_unused]] const auto &[key, curve] : automation->curves()) {
-            if (std::any_of(curve.begin(), curve.end(), [](const auto &point) { return !point.second.generated; }))
-                warnings.push_back({"B470_UNSUPPORTED_FEATURE", "4.70 cannot represent this automation curve", score_id});
+        for (const auto &[key, curve] : automation->curves()) {
+            if (std::any_of(curve.begin(), curve.end(), [](const auto &point) {
+                    poll();
+                    return !point.second.generated;
+                })) {
+                warnings.push_back({"B470_UNSUPPORTED_FEATURE", "4.70 cannot represent an authored automation curve", score_id});
+                break;
+            }
         }
     }
 
@@ -923,6 +1029,7 @@ Result<ExportOutput> export_score(const music::EngineContext &context, const mus
         return refused(std::move(warnings));
     }
     ParenthesisAliases aliases;
+    pugi::xml_document chord_sidecar;
     for (std::size_t index = 0; index < score_nodes.size(); ++index) {
         auto current = score_nodes[index];
         auto &source_score = *source_scores[index];
@@ -952,6 +1059,7 @@ Result<ExportOutput> export_score(const music::EngineContext &context, const mus
         if (source_part != source_score.parts().end()) throw std::runtime_error("part count changed during serialization");
         convert_notation(current, source_score, current_id, features, aliases, warnings);
         convert_style(current, source_score, current_id, features, warnings);
+        convert_chord_list(current, source_score, current_id, index == 0 && format == "mscz" ? &chord_sidecar : nullptr, warnings);
         for (auto part : current.children("Part")) part.remove_child("eid");
     }
     if (!aliases.empty()) rebase_parenthesis_links(root, aliases);
@@ -989,6 +1097,15 @@ Result<ExportOutput> export_score(const music::EngineContext &context, const mus
         MscWriter archive(params);
         if (!archive.open()) throw std::runtime_error("could not open 4.70 archive writer");
         archive.write_score_file(xml_data);
+        if (chord_sidecar.document_element()) {
+            muse::ByteArray chord_data;
+            OutputBuffer chord_buffer(&chord_data, false);
+            chord_buffer.open(muse::io::IODevice::WRITE_ONLY);
+            XmlOutput chord_writer(chord_buffer);
+            chord_sidecar.save(chord_writer, "  ", pugi::format_default, pugi::encoding_utf8);
+            chord_buffer.close();
+            archive.write_chord_list_file(chord_data);
+        }
         archive.close();
         if (archive.has_error()) throw std::runtime_error("could not write 4.70 archive");
         output.close();

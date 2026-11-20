@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<museScore version="5.00">
+  <Score>
+    <eid>A_A</eid>
+    <Division>480</Division>
+    <Style>
+      <chordStyle>custom</chordStyle>
+      <ChordList>
+        <autoAdjust mag="1.1" adjust="0.125">1</autoAdjust>
+        <font family="Edwin" class="modifier">
+          <mag>1.25</mag>
+          <sym name="diamond" value="◇"/>
+        </font>
+        <token class="modifier"><name>diamond</name><render>diamond</render></token>
+        <renderRoot>:n :a</renderRoot>
+        <chord id="801">
+          <name>altDiamond</name>
+          <xml>other</xml>
+          <voicing>C E G</voicing>
+          <render>m:0.2:0 diamond</render>
+        </chord>
+      </ChordList>
+    </Style>
+    <Part id="1">
+      <Staff><eid>B_B</eid><StaffType group="pitched"/></Staff>
+      <Instrument id="piano"><instrumentId>keyboard.piano</instrumentId></Instrument>
+    </Part>
+    <Staff id="1"><Measure><voice>
+      <Harmony><eid>C_C</eid><harmonyInfo><root>14</root><extension>801</extension><name>altDiamond</name></harmonyInfo></Harmony>
+      <Chord><durationType>whole</durationType><Note><pitch>60</pitch><tpc>14</tpc></Note></Chord>
+    </voice></Measure></Staff>
+  </Score>
+</museScore>

@@ -111,6 +111,7 @@ private:
     void write_name_to_meta_tags();
 
     void update_tracks_mapping();
+    void sync_voice_visibility();
 
     MasterScore *master_score_ = nullptr;
     Score *excerpt_score_ = nullptr;
