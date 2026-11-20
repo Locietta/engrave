@@ -4,6 +4,7 @@
 #include <optional>
 #include <utility>
 
+#include "engraving/types/types.h"
 #include "global/types/string.h"
 
 namespace mu::iex::musicxml {
@@ -20,5 +21,6 @@ RepeatDirection parse_repeat_direction(std::u16string_view text, bool allow_spac
 bool matches_fingering(std::u16string_view text);
 std::pair<muse::String, muse::String> process_instr_name(const muse::String &name);
 std::optional<double> substitute_tempo_note(muse::String &words, bool sibelius, const muse::String &font_family);
+mu::engraving::PlayingTechniqueType infer_playing_technique(const muse::String &words_text);
 
 } // namespace mu::iex::musicxml
