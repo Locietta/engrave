@@ -58,6 +58,11 @@ void DefaultStyle::init(const PathT &default_style_file_path, const PathT &part_
     base_style_.precompute_values();
     default_style_ = MStyle();
     default_style_for_parts_.reset();
+    legacy_v450_ = {};
+    legacy_v302_ = {};
+    legacy_v3_ = {};
+    legacy_v2_ = {};
+    legacy_v1_ = {};
 
     {
         apply_page_size_to_style(&default_style_, default_page_size);
@@ -106,40 +111,20 @@ const MStyle &DefaultStyle::default_style() { return instance()->default_style_;
 const MStyle *DefaultStyle::default_style_for_parts() { return instance()->default_style_for_parts_.get(); }
 
 const MStyle &DefaultStyle::resolve_style_defaults(const int defaults_version) {
-    static auto loaded_style = [](MStyle &style, const String &path, bool &loaded_flag) -> const MStyle & {
-        if (loaded_flag) {
-            return style;
+    auto load = [](LegacyStyleCache &entry, const String &path) -> const MStyle & {
+        if (!entry.loaded) {
+            entry.loaded = do_load_style(&entry.style, path);
         }
-        loaded_flag = do_load_style(&style, path);
-        return style;
+        return entry.style;
     };
 
+    DefaultStyle *self = instance();
     switch (defaults_version) {
-        case ::legacy_msc_version_v450: {
-            static MStyle style_v450;
-            static bool loaded_v450 = false;
-            return loaded_style(style_v450, ::legacy_mss_v450_path, loaded_v450);
-        } break;
-        case ::legacy_msc_version_v302: {
-            static MStyle style_v302;
-            static bool loaded_v302 = false;
-            return loaded_style(style_v302, ::legacy_mss_v302_path, loaded_v302);
-        } break;
-        case ::legacy_msc_version_v3: {
-            static MStyle style_v3;
-            static bool loaded_v3 = false;
-            return loaded_style(style_v3, ::legacy_mss_v3_path, loaded_v3);
-        } break;
-        case ::legacy_msc_version_v2: {
-            static MStyle style_v2;
-            static bool loaded_v2 = false;
-            return loaded_style(style_v2, ::legacy_mss_v2_path, loaded_v2);
-        } break;
-        case ::legacy_msc_version_v1: {
-            static MStyle style_v1;
-            static bool loaded_v1 = false;
-            return loaded_style(style_v1, ::legacy_mss_v1_path, loaded_v1);
-        } break;
+        case ::legacy_msc_version_v450: return load(self->legacy_v450_, ::legacy_mss_v450_path);
+        case ::legacy_msc_version_v302: return load(self->legacy_v302_, ::legacy_mss_v302_path);
+        case ::legacy_msc_version_v3: return load(self->legacy_v3_, ::legacy_mss_v3_path);
+        case ::legacy_msc_version_v2: return load(self->legacy_v2_, ::legacy_mss_v2_path);
+        case ::legacy_msc_version_v1: return load(self->legacy_v1_, ::legacy_mss_v1_path);
         default: return base_style();
     }
 }

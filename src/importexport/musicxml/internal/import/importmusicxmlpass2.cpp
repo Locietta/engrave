@@ -4663,12 +4663,14 @@ static String find_detached_repeat_number(const Measure *measure, const track_id
     DelayedDirectionsList::iterator it;
 
     for (it = directions.begin(); it != directions.end(); ++it) {
-        MusicXmlDelayedDirectionElement d = **it;
-        const EngravingItem *el = d.element();
-        if (d.track() == track && d.tick() == tick && d.placement() == placement && el->is_text_base()) {
+        MusicXmlDelayedDirectionElement *dir = *it;
+        EngravingItem *el = dir->element();
+        if (dir->track() == track && dir->tick() == tick && dir->placement() == placement && el->is_text_base()) {
             const String text = to_text_base(el)->plain_text();
             if (text.to_lower().contains(number)) {
-                it = directions.erase(it);
+                directions.erase(it);
+                delete el;
+                delete dir;
                 return u" " + text;
             }
         }
@@ -4681,6 +4683,7 @@ static String find_detached_repeat_number(const Measure *measure, const track_id
                 const String text = to_text_base(el)->plain_text();
                 if (text.to_lower().contains(number)) {
                     s->remove_annotation(el);
+                    delete el;
                     return u" " + text;
                 }
             }
