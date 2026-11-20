@@ -490,6 +490,13 @@ def main():
     )
     tasks.append(
         dict(
+            name="pid-support-generator",
+            command=[sys.executable, "-B", a.engine_source / "tools/test_gen_pid_support.py"],
+            cwd=a.engine_source / "tools",
+        )
+    )
+    tasks.append(
+        dict(
             name="embedder",
             command=[a.build_dir / ("example_embedder" + suffix), a.assets, *sources],
         )
