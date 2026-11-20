@@ -43,7 +43,7 @@ public:
 
     PlacementV placement() const override {
         const auto *ld = ldata();
-        return is_layout_data_current() && ld->voice_placement ? *ld->voice_placement : EngravingItem::placement();
+        return is_layout_data_current() && ld->voice_placement ? *ld->voice_placement : directed_placement();
     }
 
     Expression *clone() const override { return new Expression(*this); }

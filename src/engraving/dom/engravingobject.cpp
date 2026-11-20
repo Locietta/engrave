@@ -330,6 +330,13 @@ void EngravingObject::undo_reset_property(Pid id) {
     if (f == PropertyFlags::UNSTYLED) {
         f = PropertyFlags::STYLED;
     }
+    if (id == Pid::PLACEMENT && is_engraving_item() && to_engraving_item(this)->has_voice_assignment_properties()) {
+        // An edit of their placement sets DIRECTION (EngravingItem::undo_change_property),
+        // so resetting it must return DIRECTION to automatic placement.
+        undo_reset_property(Pid::DIRECTION);
+        EngravingObject::undo_change_property(id, property_default(id), f);
+        return;
+    }
     if (id == Pid::BEAM_POS && (is_beam() || type() == ElementType::TREMOLO_TWOCHORD)) {
         // Erase the authored entry through the same propagation policy as an edit.
         change_properties(this, id, property_default(id), f, true);
