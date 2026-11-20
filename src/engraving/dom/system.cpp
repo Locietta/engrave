@@ -200,7 +200,11 @@ SysStaff *System::insert_staff(int idx) {
     return staff;
 }
 
-void System::remove_staff(int idx) { staves_.erase(staves_.begin() + idx); }
+void System::remove_staff(int idx) {
+    SysStaff *staff = staves_[idx];
+    staves_.erase(staves_.begin() + idx);
+    delete staff;
+}
 
 void System::adjust_staves_number(size_t nstaves) {
     for (size_t i = staves_.size(); i < nstaves; ++i) {
