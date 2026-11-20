@@ -109,6 +109,10 @@ PropertyRead read_property(const EngravingObject &object, Pid pid) {
                               read.value == default_value;
     }
     read.styled = object.is_styled(pid);
+    if (pid == Pid::PLACEMENT && object.is_engraving_item() &&
+        mu::engraving::to_engraving_item(&object)->has_voice_assignment_properties()) {
+        read.styled = object.get_property(Pid::DIRECTION).value<mu::engraving::DirectionV>() == mu::engraving::DirectionV::AUTO;
+    }
     return read;
 }
 
