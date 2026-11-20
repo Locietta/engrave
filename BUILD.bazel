@@ -636,6 +636,7 @@ cc_binary(
         ":probe_internal_headers",
         ":test_harness_headers",
         "@gtest",
+        "@pugixml",
     ] + WIN_MANIFEST_DEPS,
 )
 

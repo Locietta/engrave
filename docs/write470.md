@@ -85,13 +85,12 @@ struct ExportOutput {
   subtypes and authored chord-line control offsets refuse the downgrade.
 - **Structure.** Score order, system objects, locks and dividers, layout
   frames, repeats, and layout breaks are supported.
-- **Ties and spanners**: Same-voice, same-measure ties (including paired pitch
-  edits). Note spanners must be `Tie`; non-note spanners must be `Pedal` in the
-  strictly checked subset (no XML attributes; only `eid`, `track`, `track2`,
-  `startTick`, `ticks`, and optional `"auto"` `continueTextPlace`/
-  `endTextPlace`; `track="0"`, `track2="0"`, staff 1, `startTick="0/1"`,
-  `ticks="1/2"`, spanning half-measure position 0 to 2). Other spanners, custom
-  chord lists, and non-generated automation curves are refused.
+- **Ties and spanners.** Paired connectors preserve note, chord/rest and
+  segment/measure endpoints, including cross-staff and cross-voice connections,
+  grace notes, and the final barline. The writer preserves inline partial ties,
+  laissez vibrer ties, tapping half-slurs and authored lyrics lines. Relocated
+  starts retain their element IDs, authored segment edits and links to earlier
+  members. Unmappable endpoints and unknown spanner types refuse export.
 - **Brackets.** Normal brackets, braces, square brackets and lines use
   legacy types 0 through 3.
 - **Identities**: Serialized musical, staff, and score EIDs supported by the
@@ -154,9 +153,10 @@ catalog rejects unknown or repeated tags from the intermediate writer.
 
 Settings for dropped group brackets and stave sharing are omitted. Instrument
 name format settings are reflected in the emitted labels. Other 5.00-only
-settings are omitted when neutral or when the affected notation is absent. An
-active setting without a legacy representation, such as masking an existing
-tie, refuses export and names the owning score or excerpt.
+settings are omitted when neutral or when the affected notation is absent.
+Unspecified slur and tie masking uses the 4.70 default. An authored active
+setting without a legacy representation refuses export and names the owning
+score or excerpt.
 
 ## 6. Cooperative Cancellation and Budgets
 
