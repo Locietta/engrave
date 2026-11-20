@@ -11,7 +11,9 @@
           <mag>1.25</mag>
           <sym name="diamond" value="◇"/>
         </font>
+        <font family="ScoreText"><sym name="engraveAccidentalGlyph" value="♯"/></font>
         <token class="modifier"><name>diamond</name><render>diamond</render></token>
+        <token class="accidental"><name>engraveAccidental</name><render>engraveAccidentalGlyph</render></token>
         <renderRoot>:n :a</renderRoot>
         <chord id="801">
           <name>altDiamond</name>

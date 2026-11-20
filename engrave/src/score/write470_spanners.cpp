@@ -222,8 +222,10 @@ void sort_legacy_percussion_notes(std::vector<LegacyNote> &notes, const Chord &d
         if (left.pitch != right.pitch) return left.pitch < right.pitch;
         const auto *left_tie = left.note->tie_back();
         const auto *right_tie = right.note->tie_back();
-        const auto *start = left_tie ? left_tie->start_note() : nullptr;
-        const auto *other_start = right_tie ? right_tie->start_note() : nullptr;
+        if (!left_tie || !right_tie) return left_tie && !right_tie;
+        if (left_tie->is_partial_tie() || right_tie->is_partial_tie()) return !left_tie->is_partial_tie() && right_tie->is_partial_tie();
+        const auto *start = left_tie->start_note();
+        const auto *other_start = right_tie->start_note();
         if (!start || !other_start) return start && !other_start;
         if (start->chord() == other_start->chord()) return start->unison_index() < other_start->unison_index();
         return start->chord()->is_before(other_start->chord());

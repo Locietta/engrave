@@ -3,6 +3,7 @@
 #include "engrave/src/score/write470_spanners.h"
 #include "engraving/dom/chordlist.h"
 #include "engraving/dom/linkedobjects.h"
+#include "engraving/dom/partialtie.h"
 #include "engraving/dom/staff.h"
 #include "read_test_fixture.h"
 
@@ -765,6 +766,36 @@ TEST(Export470, IndexesParenthesesInLegacyUnisonAndPercussionOrder) {
     }
 }
 
+TEST(Export470, IndexesPercussionParenthesisBeforeUntiedUnison) {
+    auto source = connector_score(
+        R"(<Measure><voice><Chord><durationType>whole</durationType>
+           <Note><eid>D_D</eid><pitch>36</pitch><tpc>14</tpc></Note>
+           <Note><eid>E_E</eid><pitch>36</pitch><tpc>14</tpc></Note>
+           <NoteParenGroup><Notes><NoteEID>E_E</NoteEID></Notes></NoteParenGroup>
+           </Chord></voice></Measure>)",
+        "<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>", "");
+    source.replace(source.find("group=\"pitched\""), std::string_view("group=\"pitched\"").size(), "group=\"percussion\"");
+    source.insert(source.find("<instrumentId>"), R"(<useDrumset>1</useDrumset><Drum pitch="36"><head>normal</head><line>7</line></Drum>)");
+    const auto document = g_engine->open(as_bytes(source));
+    ASSERT_TRUE(document) << document.error().message;
+    using namespace mu::engraving;
+    auto *note = to_note(master_of(**document).eid_register()->item_from_eid(EID::from_std_string(std::string_view("E_E"))));
+    ASSERT_TRUE(note);
+    auto *tie = Factory::create_partial_tie(note);
+    tie->set_partial_spanner_direction(PartialSpannerDirection::INCOMING);
+    tie->set_end_note(note);
+    note->add(tie);
+    ASSERT_TRUE(tie->set_eid(EID::from_std_string(std::string_view("F_F"))));
+    ASSERT_EQ(note->incoming_partial_tie(), tie);
+    const auto result = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+    ASSERT_TRUE(result) << result.error().message;
+    pugi::xml_document xml;
+    ASSERT_TRUE(parse_export(xml, *result));
+    ASSERT_TRUE(xml.select_node("//Note[eid='E_E']/PartialTie[partialSpannerDirection='incoming']"));
+    EXPECT_STREQ(xml.select_node("//Chord/Note[1]").node().child_value("eid"), "D_D");
+    EXPECT_EQ(xml.select_node("//NoteParenGroup/Notes/NoteIdx").node().text().as_int(-1), 0);
+}
+
 TEST(Export470, RefusesSparseBeamFragmentsAndNestedImages) {
     for (const bool image : {false, true}) {
         SCOPED_TRACE(image);
@@ -821,6 +852,29 @@ TEST(Export470, AttributesInstrumentChangeGroupNamesToTheOwningParts) {
     }
 }
 
+TEST(Export470, HiddenDifferentInstrumentSeparatesGroupNames) {
+    const auto source = R"(<museScore version="5.00"><Score><eid>A_A</eid><Division>480</Division>
+        <Style><windsNameByGroup>1</windsNameByGroup></Style>
+        <Part id="1"><eid>P_P</eid><Staff><eid>B_B</eid><StaffType group="pitched"/></Staff>
+            <Instrument id="flute"><instrumentId>wind.flutes.flute</instrumentId></Instrument></Part>
+        <Part id="2"><eid>Q_Q</eid><Staff><eid>C_C</eid><StaffType group="pitched"/></Staff>
+            <show>0</show><Instrument id="oboe"><instrumentId>wind.reed.oboe</instrumentId></Instrument></Part>
+        <Part id="3"><eid>R_R</eid><Staff><eid>D_D</eid><StaffType group="pitched"/></Staff>
+            <Instrument id="flute"><instrumentId>wind.flutes.flute</instrumentId></Instrument></Part>
+        <Staff id="1"><Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure></Staff>
+        <Staff id="2"><Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure></Staff>
+        <Staff id="3"><Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure></Staff>
+        </Score></museScore>)";
+    const auto document = g_engine->open(as_bytes(source));
+    ASSERT_TRUE(document) << document.error().message;
+    const auto &parts = master_of(**document).parts();
+    ASSERT_EQ(parts.size(), 3u);
+    ASSERT_TRUE(parts[0]->show() && !parts[1]->show() && parts[2]->show());
+    const auto result = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+    ASSERT_TRUE(result) << result.error().message;
+    EXPECT_TRUE(result->warnings.empty());
+}
+
 TEST(Export470, PreservesUserAndCourtesyAccidentalsAcrossATie) {
     auto source = read_text(write470_fixture().parent_path() / "ties.mscx");
     for (const auto &[id, accidental] :
@@ -858,11 +912,29 @@ TEST(Export470, PreservesUserAndCourtesyAccidentalsAcrossATie) {
     }
 }
 
+namespace {
+
+void use_full_staff_in_lower_excerpt(pugi::xml_node master) {
+    auto lower = master.select_node("Score[eid='I_I']").node();
+    lower.remove_child("Tracklist");
+    auto lower_measure = lower.child("Staff").child("Measure");
+    lower_measure.prepend_child("voice").append_child("Rest").append_child("durationType").text().set("measure");
+    lower_measure.insert_child_after("voice", lower_measure.child("voice"));
+}
+
+} // namespace
+
 TEST(Export470, RetainsAttachedExcerptTracklistsNamesAndStyles) {
-    auto document = open_path(write470_fixture().parent_path() / "attached_tracklists.mscx");
-    ASSERT_TRUE(document);
+    pugi::xml_document xml;
+    ASSERT_TRUE(xml.load_string(read_text(write470_fixture().parent_path() / "attached_tracklists.mscx").c_str()));
+    // The upper excerpt's positional staff ID permits the subset mapping.
+    use_full_staff_in_lower_excerpt(xml.child("museScore").child("Score"));
+    std::ostringstream source;
+    xml.save(source);
+    auto document = g_engine->open(as_bytes(source.str()));
+    ASSERT_TRUE(document) << document.error().message;
     for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
-        const auto result = document->export_score_with_warnings({.format = format, .native_version = "4.70"});
+        const auto result = (*document)->export_score_with_warnings({.format = format, .native_version = "4.70"});
         ASSERT_TRUE(result) << result.error().message;
         EXPECT_TRUE(result->warnings.empty());
         const auto reopened = g_engine->open(result->bytes, {.format = format});
@@ -878,10 +950,25 @@ TEST(Export470, RetainsAttachedExcerptTracklistsNamesAndStyles) {
             EXPECT_EQ(score.eid().to_std_string(), eid);
             EXPECT_DOUBLE_EQ(score.style().style_v(mu::engraving::Sid::STAFF_DISTANCE).value<mu::engraving::Spatium>().val(), distance);
             const auto &tracks = excerpts[index]->tracks_mapping();
-            ASSERT_EQ(tracks.size(), 1u);
-            EXPECT_EQ(tracks.begin()->first, track);
-            EXPECT_EQ(tracks.begin()->second, 0u);
+            const mu::engraving::TracksMap expected =
+                index == 0 ? mu::engraving::TracksMap{{track, 0}} : mu::engraving::TracksMap{{4, 0}, {5, 1}, {track, 2}, {7, 3}};
+            EXPECT_EQ(tracks, expected);
         }
+    }
+}
+
+TEST(Export470, RefusesEmbeddedTracklistThatLegacyReaderRebuildsWithWrongStaff) {
+    auto document = open_path(write470_fixture().parent_path() / "attached_tracklists.mscx");
+    ASSERT_TRUE(document);
+    for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
+        const auto result = document->export_score_with_warnings({.format = format, .native_version = "4.70"});
+        ASSERT_FALSE(result);
+        ASSERT_EQ(result.error().export_warnings.size(), 1u) << result.error().message;
+        const auto &warning = result.error().export_warnings.front();
+        EXPECT_EQ(warning.code, "B470_UNSUPPORTED_FEATURE");
+        ASSERT_TRUE(warning.object);
+        EXPECT_EQ(warning.object->id, "I_I");
+        EXPECT_NE(result.error().message.find("Tracklist"), std::string::npos);
     }
 }
 
@@ -911,6 +998,11 @@ TEST(Export470, RetainsCustomChordDefinitionsAndArchiveSidecar) {
         const auto symbol = root.select_node("font/sym[@name='diamond']").node();
         EXPECT_STREQ(symbol.attribute("value").value(), "◇");
         EXPECT_STREQ(root.select_node("token[name='diamond']/render").node().child_value(), "diamond");
+        const auto accidental = root.select_node("token[name='engraveAccidental']").node();
+        EXPECT_STREQ(accidental.attribute("class").value(), "accidental");
+        EXPECT_FALSE(accidental.attribute("accidental"));
+        const auto glyph_font = root.select_node("font[sym/@name='engraveAccidentalGlyph']").node();
+        EXPECT_STREQ(glyph_font.attribute("family").value(), format == engrave::Format::MSCX ? "ScoreText" : "Leland Text");
         EXPECT_STREQ(root.select_node("chord[@id='801']/name").node().child_value(), "altDiamond");
         const auto reopened = g_engine->open(result->bytes, {.format = format});
         ASSERT_TRUE(reopened) << reopened.error().message;
@@ -923,9 +1015,69 @@ TEST(Export470, RetainsCustomChordDefinitionsAndArchiveSidecar) {
         EXPECT_EQ(custom.value.to_std_string(), "◇");
         ASSERT_LT(static_cast<std::size_t>(custom.font_idx), list.fonts.size());
         EXPECT_DOUBLE_EQ(list.fonts[custom.font_idx].mag, 1.25);
+        const auto accidental_token = list.token(u"engraveAccidental", mu::engraving::ChordTokenClass::ACCIDENTAL);
+        ASSERT_EQ(accidental_token.names.size(), 1u);
+        EXPECT_EQ(accidental_token.names.front().to_std_string(), "engraveAccidental");
+        const auto glyph = list.symbol(u"engraveAccidentalGlyph");
+        ASSERT_LT(static_cast<std::size_t>(glyph.font_idx), list.fonts.size());
+        EXPECT_EQ(list.fonts[glyph.font_idx].family.to_std_string(), "Leland Text");
         const auto *description = list.description(801);
         ASSERT_TRUE(description);
         EXPECT_EQ(description->names.front().to_std_string(), "altDiamond");
+    }
+}
+
+TEST(Export470, RefusesInlinePresetCollisionButAllowsArchiveSidecar) {
+    auto document = open_path(write470_fixture().parent_path() / "custom_chordlist.mscx");
+    ASSERT_TRUE(document);
+    using namespace mu::engraving;
+    auto &list = *master_of(*document).chord_list();
+    // The stock accidental token for "#" has its own render program.
+    const auto token = std::ranges::find_if(list.chord_token_list, [](const auto &entry) {
+        return entry.token_class == ChordTokenClass::ACCIDENTAL && entry.names.contains(u"#");
+    });
+    ASSERT_NE(token, list.chord_token_list.end());
+    token->render_list = {std::make_shared<RenderActionSet>(u"diamond")};
+    const auto inline_result = document->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+    ASSERT_FALSE(inline_result);
+    ASSERT_EQ(inline_result.error().export_warnings.size(), 1u);
+    EXPECT_EQ(inline_result.error().export_warnings.front().code, "B470_UNSUPPORTED_FEATURE");
+    EXPECT_NE(inline_result.error().message.find("conflicting with the 4.7.6 preset"), std::string::npos);
+    const auto archive = document->export_score_with_warnings({.format = engrave::Format::MSCZ, .native_version = "4.70"});
+    ASSERT_TRUE(archive) << archive.error().message;
+    EXPECT_TRUE(archive->warnings.empty());
+    const auto reopened = g_engine->open(archive->bytes, {.format = engrave::Format::MSCZ});
+    ASSERT_TRUE(reopened) << reopened.error().message;
+    const auto sharp = master_of(**reopened).chord_list()->token(u"#", ChordTokenClass::ACCIDENTAL);
+    ASSERT_EQ(sharp.render_list.size(), 1u);
+    EXPECT_EQ(static_cast<const RenderActionSet &>(*sharp.render_list.front()).text().to_std_string(), "diamond");
+}
+
+TEST(Export470, RetainsCustomChordFontsAndSymbolsWithoutDescriptions) {
+    pugi::xml_document xml;
+    ASSERT_TRUE(xml.load_string(read_text(write470_fixture().parent_path() / "custom_chordlist.mscx").c_str()));
+    const auto score = xml.child("museScore").child("Score");
+    auto chords = score.child("Style").child("ChordList");
+    chords.remove_children();
+    constexpr std::string_view font = R"(<font family="Edwin"><sym name="diamond" value="◇"/></font>)";
+    ASSERT_TRUE(chords.append_buffer(font.data(), font.size()));
+    score.child("Staff").child("Measure").child("voice").remove_child("Harmony");
+    std::ostringstream source;
+    xml.save(source);
+    auto document = g_engine->open(as_bytes(source.str()));
+    ASSERT_TRUE(document) << document.error().message;
+    ASSERT_TRUE(master_of(**document).chord_list()->empty());
+    for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
+        const auto result = (*document)->export_score_with_warnings({.format = format, .native_version = "4.70"});
+        ASSERT_TRUE(result) << result.error().message;
+        const auto reopened = g_engine->open(result->bytes, {.format = format});
+        ASSERT_TRUE(reopened) << reopened.error().message;
+        const auto &reloaded = *master_of(**reopened).chord_list();
+        EXPECT_TRUE(reloaded.custom_chord_list());
+        const auto diamond = reloaded.symbol(u"diamond");
+        ASSERT_LT(static_cast<std::size_t>(diamond.font_idx), reloaded.fonts.size());
+        EXPECT_EQ(diamond.value.to_std_string(), "◇");
+        EXPECT_EQ(reloaded.fonts[diamond.font_idx].family.to_std_string(), "Edwin");
     }
 }
 
@@ -1301,6 +1453,7 @@ TEST(Export470, RebasesLinkedStartsToTheFirstEmittedMember) {
     const auto fixture = read_text(write470_fixture().parent_path() / "attached_tracklists.mscx");
     ASSERT_TRUE(source.load_buffer(fixture.data(), fixture.size()));
     auto master = source.child("museScore").child("Score");
+    use_full_staff_in_lower_excerpt(master);
     auto excerpt = master.child("Score");
     constexpr std::string_view rest = "<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>";
     for (auto score : {master, excerpt, excerpt.next_sibling("Score")}) {

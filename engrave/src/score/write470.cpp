@@ -24,6 +24,7 @@
 #include "engraving/dom/excerpt.h"
 #include "engraving/dom/instrchange.h"
 #include "engraving/dom/instrument.h"
+#include "engraving/dom/linkedobjects.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
 #include "engraving/dom/note.h"
@@ -35,6 +36,7 @@
 #include "engraving/dom/tie.h"
 #include "engraving/infrastructure/mscwriter.h"
 #include "engraving/rendering/score/systemheaderlayout.h"
+#include "engraving/style/defaultstyle.h"
 #include "engraving/style/style.h"
 #include "global/io/buffer.h"
 #include "global/io/writebudget.h"
@@ -299,23 +301,22 @@ bool legacy_chord_list(const ChordList &list) {
     return true;
 }
 
-void convert_chord_list(pugi::xml_node score_node, const Score &score, std::optional<ElementId> score_id, pugi::xml_document *sidecar,
-                        std::vector<ExportWarning> &warnings) {
-    const auto &list = *score.chord_list();
-    if (!list.custom_chord_list() || list.empty()) return;
-    if (!legacy_chord_list(list)) {
-        unsupported(score_node, "custom chord list render actions or missing root program", score_id, warnings);
-        return;
-    }
+bool same_xml(pugi::xml_node left, pugi::xml_node right) {
+    poll();
+    return std::string_view(left.name()) == right.name() && std::string_view(left.value()) == right.value() &&
+           std::ranges::equal(
+               left.attributes(), right.attributes(),
+               [](auto a, auto b) { return std::string_view(a.name()) == b.name() && std::string_view(a.value()) == b.value(); }) &&
+           std::ranges::equal(left.children(), right.children(), same_xml);
+}
 
+pugi::xml_node serialize_chord_list(const ChordList &list, pugi::xml_document &xml) {
     muse::ByteArray data;
     auto buffer = muse::io::Buffer::opened(muse::io::IODevice::WRITE_ONLY, &data);
     if (!list.write(&buffer)) throw std::runtime_error("could not serialize the custom chord list");
     buffer.close();
     charge_xml(data.size());
 
-    pugi::xml_document inline_list;
-    auto &xml = sidecar ? *sidecar : inline_list;
     if (!xml.load_buffer(data.const_data(), data.size())) throw std::runtime_error("invalid chord list XML");
     auto root = xml.child("museScore");
     if (!root) throw std::runtime_error("missing chord list root");
@@ -324,18 +325,175 @@ void convert_chord_list(pugi::xml_node score_node, const Score &score, std::opti
     for (const auto &entry : list.fonts) {
         poll();
         if (!font) throw std::runtime_error("missing chord list font");
-        if (entry.music_symbol_text) font.attribute("family").set_value("ScoreText");
         if (!entry.font_class.empty()) font.append_attribute("class").set_value(entry.font_class.to_std_string().c_str());
         font = font.next_sibling("font");
     }
     // The shared serializer writes only its attributes. The legacy reader also
     // uses the element text, and font magnifications are already adjusted.
     if (auto adjust = root.child("autoAdjust")) adjust.text().set("1");
+    return root;
+}
+
+bool same_chord_font(pugi::xml_node left, pugi::xml_node right) {
+    return std::string_view(left.attribute("family").value()) == right.attribute("family").value() &&
+           std::string_view(left.attribute("class").value()) == right.attribute("class").value() &&
+           same_xml(left.child("mag"), right.child("mag"));
+}
+
+bool project_inline_chord_list(pugi::xml_node root, const Score &score, bool embedded) {
+    // The inline reader clears descriptions only. It retains the preset that
+    // was loaded before the master Style tag or at excerpt construction.
+    const auto &style = embedded ? score.master_score()->style() : DefaultStyle::default_style();
+    const auto file = style.style_st(Sid::CHORD_DESCRIPTION_FILE).to_std_string();
+    if (!one_of(file, {"chords_std.xml", "chords_legacy.xml", "chords_jazz.xml"})) return false;
+    const auto symbol_font = style.style_st(Sid::MUSICAL_TEXT_FONT).to_std_string();
+    ChordList preset;
+    preset.check_chord_list(style);
+    preset.clear();
+    pugi::xml_document xml;
+    const auto baseline = serialize_chord_list(preset, xml);
+
+    ankerl::unordered_dense::map<std::string_view, pugi::xml_node> symbols;
+    ankerl::unordered_dense::map<std::string_view, std::vector<pugi::xml_node>> tokens;
+    for (auto font : baseline.children("font")) {
+        for (auto symbol : font.children("sym")) {
+            poll();
+            symbols.try_emplace(symbol.attribute("name").value(), symbol);
+        }
+    }
+    for (auto token : baseline.children("token")) {
+        for (auto name : token.children("name")) {
+            poll();
+            tokens[name.child_value()].push_back(token);
+        }
+    }
+
+    for (auto font = root.child("font"); font;) {
+        const auto next_font = font.next_sibling("font");
+        for (auto symbol = font.child("sym"); symbol;) {
+            poll();
+            const auto next_symbol = symbol.next_sibling("sym");
+            if (const auto found = symbols.find(symbol.attribute("name").value()); found != symbols.end()) {
+                if (!same_xml(symbol, found->second) || !same_chord_font(font, found->second.parent())) return false;
+                font.remove_child(symbol);
+            }
+            symbol = next_symbol;
+        }
+        if (!font.child("sym") && std::ranges::any_of(baseline.children("font"), [&](auto entry) {
+                poll();
+                return same_chord_font(font, entry);
+            })) {
+            root.remove_child(font);
+        } else {
+            const auto index = font.attribute("id").as_ullong();
+            if (score.chord_list()->fonts[index].music_symbol_text && font.attribute("family").value() == symbol_font)
+                font.attribute("family").set_value("ScoreText");
+        }
+        font = next_font;
+    }
+    for (auto token = root.child("token"); token;) {
+        const auto next = token.next_sibling("token");
+        bool inherited = false;
+        const std::string_view type = token.attribute("class").value();
+        for (auto name : token.children("name")) {
+            poll();
+            const auto found = tokens.find(name.child_value());
+            if (found == tokens.end()) continue;
+            if (std::ranges::any_of(found->second, [&](auto entry) { return same_xml(token, entry); })) {
+                inherited = true;
+                break;
+            }
+            for (auto entry : found->second) {
+                poll();
+                const std::string_view preset_type = entry.attribute("class").value();
+                if (type == preset_type || type.empty() || preset_type.empty()) return false;
+            }
+        }
+        if (inherited) root.remove_child(token);
+        token = next;
+    }
+    for (const auto *program : {"renderFunction", "renderBass", "renderBassOffset"}) {
+        if (!root.child(program) && baseline.child(program)) root.append_child(program);
+    }
+    return true;
+}
+
+void convert_chord_list(pugi::xml_node score_node, const Score &score, std::optional<ElementId> score_id, bool embedded,
+                        pugi::xml_document *sidecar, std::vector<ExportWarning> &warnings) {
+    const auto &list = *score.chord_list();
+    if (!list.custom_chord_list() ||
+        (list.empty() && list.fonts.empty() && !list.has_symbols() && list.chord_token_list.empty() && !list.loaded() &&
+         list.render_list_function.empty() && list.render_list_bass.empty() && list.render_list_bass_offset.empty()))
+        return;
+    if (!legacy_chord_list(list)) {
+        unsupported(score_node, "custom chord list render actions or missing root program", score_id, warnings);
+        return;
+    }
+
+    pugi::xml_document inline_list;
+    auto root = serialize_chord_list(list, sidecar ? *sidecar : inline_list);
+    // The archive loader reads its sidecar before configuring the ScoreText alias.
     if (!sidecar) {
+        if (!project_inline_chord_list(root, score, embedded)) {
+            unsupported(score_node, "inline custom chord list conflicting with the 4.7.6 preset", score_id, warnings);
+            return;
+        }
         auto chord_list = score_node.child("Style").append_copy(root);
         chord_list.set_name("ChordList");
         chord_list.remove_attribute("version");
     }
+}
+
+bool legacy_excerpt_tracks(pugi::xml_node score_node, const Score &score) {
+    if (!score_node.child("Tracklist")) return true;
+
+    const auto *master = score.master_score();
+    const auto source_track_count = master->nstaves() * voices;
+    const auto destination_track_count = score.nstaves() * voices;
+    if (auto *budget = muse::io::active_write_budget;
+        budget && !budget->charge(destination_track_count * sizeof(track_idx_t) + master->nstaves()))
+        throw muse::io::WriteBudgetStop{};
+    std::vector<track_idx_t> source_tracks(destination_track_count, muse::nidx);
+    for (auto entry : score_node.children("Tracklist")) {
+        poll();
+        const auto src = entry.attribute("sTrack").as_ullong(muse::nidx);
+        const auto dst = entry.attribute("dstTrack").as_ullong(muse::nidx);
+        if (src >= source_track_count || dst >= destination_track_count || source_tracks[dst] != muse::nidx) return false;
+        source_tracks[dst] = src;
+    }
+
+    // The 4.7.6 reader initially allocates staff IDs in file order. It applies
+    // Tracklist to those IDs, then reconciles IDs from links and rebuilds tracks.
+    std::vector<bool> assigned(master->nstaves(), false);
+    for (const auto *staff : score.staves()) {
+        poll();
+        const auto local = staff->idx();
+        auto linked = local;
+        if (const auto *links = staff->links()) {
+            for (const auto *item : *links) {
+                poll();
+                if (item->score() != master) continue;
+                const auto index = static_cast<const Staff *>(item)->idx();
+                if (assigned[index]) continue;
+                assigned[index] = true;
+                linked = index;
+                break;
+            }
+        }
+
+        const auto first = local * voices;
+        auto next = first;
+        if (linked < master->nstaves()) {
+            for (voice_idx_t voice = 0; voice < voices; ++voice) {
+                if (local < master->nstaves() && source_tracks[next] != first + voice) continue;
+                if (source_tracks[next] != linked * voices + voice) return false;
+                ++next;
+            }
+        }
+        for (; next < first + voices; ++next)
+            if (source_tracks[next] != muse::nidx) return false;
+    }
+    return true;
 }
 
 void convert_bracket(pugi::xml_node bracket, std::optional<ElementId> score_id, std::vector<ExportWarning> &warnings) {
@@ -355,15 +513,6 @@ void convert_bracket(pugi::xml_node bracket, std::optional<ElementId> score_id, 
 }
 
 using ParenthesisAliases = ankerl::unordered_dense::map<std::string, pugi::xml_node>;
-
-bool same_xml(pugi::xml_node left, pugi::xml_node right) {
-    poll();
-    return std::string_view(left.name()) == right.name() && std::string_view(left.value()) == right.value() &&
-           std::ranges::equal(
-               left.attributes(), right.attributes(),
-               [](auto a, auto b) { return std::string_view(a.name()) == b.name() && std::string_view(a.value()) == b.value(); }) &&
-           std::ranges::equal(left.children(), right.children(), same_xml);
-}
 
 void merge_parentheses(pugi::xml_node kept, pugi::xml_node duplicate, ParenthesisAliases &aliases, std::optional<ElementId> score_id,
                        std::vector<ExportWarning> &warnings) {
@@ -871,7 +1020,10 @@ void warn_active_instrument_groups(const Score &score, std::vector<ExportWarning
                 previous = nullptr;
                 continue;
             }
-            if (!part->show() || part->visible_staves_count() == 0) continue;
+            if (!part->show() || part->visible_staves_count() == 0) {
+                if (previous && previous->id() != instrument->id()) previous = nullptr;
+                continue;
+            }
             if (previous && previous->id() == instrument->id() && enabled(instrument->group())) {
                 grouped[previous_index] = true;
                 grouped[index] = true;
@@ -1034,6 +1186,8 @@ Result<ExportOutput> export_score(const music::EngineContext &context, const mus
         auto current = score_nodes[index];
         auto &source_score = *source_scores[index];
         const auto current_id = source_score.eid().is_valid() ? std::optional(from_engine(source_score.eid())) : score_id;
+        if (index != 0 && !legacy_excerpt_tracks(current, source_score))
+            unsupported(current, "embedded excerpt Tracklist that changes when read by 4.7.6", current_id, warnings);
         ScoreFeatures features;
         auto source_part = source_score.parts().begin();
         for (auto part : current.children("Part")) {
@@ -1059,7 +1213,8 @@ Result<ExportOutput> export_score(const music::EngineContext &context, const mus
         if (source_part != source_score.parts().end()) throw std::runtime_error("part count changed during serialization");
         convert_notation(current, source_score, current_id, features, aliases, warnings);
         convert_style(current, source_score, current_id, features, warnings);
-        convert_chord_list(current, source_score, current_id, index == 0 && format == "mscz" ? &chord_sidecar : nullptr, warnings);
+        convert_chord_list(current, source_score, current_id, index != 0, index == 0 && format == "mscz" ? &chord_sidecar : nullptr,
+                           warnings);
         for (auto part : current.children("Part")) part.remove_child("eid");
     }
     if (!aliases.empty()) rebase_parenthesis_links(root, aliases);

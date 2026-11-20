@@ -28,6 +28,7 @@
 #include "global/io/buffer.h"
 #include "global/io/file.h"
 #include "global/io/fileinfo.h"
+#include "global/io/writebudget.h"
 #include "global/types/textscan.h"
 #include "log.h"
 #include "mscore.h"
@@ -443,6 +444,12 @@ static void write_render_list(XmlWriter &xml, const std::vector<RenderActionPtr>
     String s;
 
     for (const RenderActionPtr &a : al) {
+        if (auto *budget = active_write_budget) {
+            // Include the growing UTF-16 string and the writer's escaped and encoded copies.
+            const auto units =
+                a->action_type() == RenderAction::RenderActionType::SET ? static_cast<const RenderActionSet &>(*a).text().size() : 64;
+            if (!budget->charge((static_cast<uint64_t>(units) + 1) * 32)) throw WriteBudgetStop{};
+        }
         if (!s.is_empty()) {
             s += u" ";
         }
@@ -534,7 +541,7 @@ void ChordToken::write(XmlWriter &xml) const {
         case ChordTokenClass::EXTENSION: attrs.push_back({"class", "extension"}); break;
         case ChordTokenClass::MODIFIER: attrs.push_back({"class", "modifier"}); break;
         case ChordTokenClass::TYPE: attrs.push_back({"class", "type"}); break;
-        case ChordTokenClass::ACCIDENTAL: attrs.push_back({"accidental", "type"}); break;
+        case ChordTokenClass::ACCIDENTAL: attrs.push_back({"class", "accidental"}); break;
         default: break;
     }
     xml.start_element("token", attrs);
@@ -2114,28 +2121,36 @@ void ChordList::read(XmlReader &e, int msc_version) {
 //---------------------------------------------------------
 
 void ChordList::write(XmlWriter &xml) const {
-    int font_idx = 0;
-    for (const ChordFont &f : fonts) {
+    using SymbolBucket = std::vector<const ChordSymbol *>;
+    auto *budget = active_write_budget;
+    if (budget && !budget->charge(static_cast<uint64_t>(fonts.size()) * sizeof(SymbolBucket))) throw WriteBudgetStop{};
+    std::vector<SymbolBucket> symbols_by_font(fonts.size());
+    for (const auto &[name, symbol] : symbols_) {
+        if (budget && !budget->charge(2 * sizeof(const ChordSymbol *))) throw WriteBudgetStop{};
+        const auto font_idx = static_cast<std::size_t>(symbol.font_idx);
+        if (font_idx < fonts.size()) symbols_by_font[font_idx].push_back(&symbol);
+    }
+    for (std::size_t font_idx = 0; font_idx < fonts.size(); ++font_idx) {
+        if (budget && !budget->poll()) throw WriteBudgetStop{};
+        const auto &f = fonts[font_idx];
         xml.start_element("font", {{"id", font_idx}, {"family", f.family}});
         xml.tag("mag", f.mag);
-        for (const auto &p : symbols_) {
-            const ChordSymbol &s = p.second;
-            if (s.font_idx == font_idx) {
-                if (s.code.is_null()) {
-                    xml.tag("sym", {{"name", s.name}, {"value", s.value}});
-                } else {
-                    // write hex numbers with a "0x" prefix, so they can convert back properly on read
-                    xml.tag("sym", {{"name", s.name}, {"code", u"0x" + String::number(s.code.unicode(), 16)}});
-                }
+        for (const auto *entry : symbols_by_font[font_idx]) {
+            if (budget && !budget->poll()) throw WriteBudgetStop{};
+            const auto &s = *entry;
+            if (s.code.is_null()) {
+                xml.tag("sym", {{"name", s.name}, {"value", s.value}});
+            } else {
+                xml.tag("sym", {{"name", s.name}, {"code", u"0x" + String::number(s.code.unicode(), 16)}});
             }
         }
         xml.end_element();
-        ++font_idx;
     }
     if (auto_adjust_) {
         xml.tag("autoAdjust", {{"mag", nmag_}, {"adjust", nadjust_}});
     }
     for (const ChordToken &t : chord_token_list) {
+        if (budget && !budget->poll()) throw WriteBudgetStop{};
         t.write(xml);
     }
     if (!render_list_root.empty()) {
@@ -2151,6 +2166,7 @@ void ChordList::write(XmlWriter &xml) const {
         write_render_list(xml, render_list_bass_offset, "renderBassOffset");
     }
     for (const auto &p : *this) {
+        if (budget && !budget->poll()) throw WriteBudgetStop{};
         const ChordDescription &cd = p.second;
         cd.write(xml);
     }
