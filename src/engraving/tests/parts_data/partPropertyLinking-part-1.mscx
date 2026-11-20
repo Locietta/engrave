@@ -65,6 +65,7 @@
           <Dynamic>
             <subtype>mf</subtype>
             <velocity>80</velocity>
+            <direction>up</direction>
             <eid>aaghvP0J+AP_aaghvP0J+AP</eid>
             <linkedTo>5USWn+CX3NG_KeqBR9+ubGN</linkedTo>
             <positionLinkedToMaster>0</positionLinkedToMaster>

@@ -950,7 +950,7 @@ PropertyValue EngravingItem::get_property(Pid property_id) const {
         case Pid::SELECTED: return selected();
         case Pid::OFFSET: return PropertyValue::from_value(offset_);
         case Pid::MIN_DISTANCE: return min_distance_;
-        case Pid::PLACEMENT: return EngravingItem::placement();
+        case Pid::PLACEMENT: return has_voice_assignment_properties() ? placement() : EngravingItem::placement();
         case Pid::AUTOPLACE: return autoplace();
         case Pid::Z: return z();
         case Pid::SYSTEM_FLAG: return system_flag();
@@ -1199,6 +1199,15 @@ bool EngravingItem::element_applies_to_track(const track_idx_t ref_track) const 
     return element_applies_to_track(track(), ref_track, voice_assignment, part());
 }
 
+PlacementV EngravingItem::directed_placement() const {
+    switch (get_property(Pid::DIRECTION).value<DirectionV>()) {
+        case DirectionV::UP: return PlacementV::ABOVE;
+        case DirectionV::DOWN: return PlacementV::BELOW;
+        case DirectionV::AUTO: break;
+    }
+    return EngravingItem::placement();
+}
+
 void EngravingItem::set_placement_based_on_voice_assignment(DirectionV styled_direction) {
     set_placement(placement_based_on_voice_assignment(styled_direction));
 }
@@ -1390,6 +1399,14 @@ PropertyPropagation EngravingItem::property_propagation(const EngravingItem *des
 }
 
 void EngravingItem::undo_change_property(Pid pid, const PropertyValue &val, PropertyFlags ps) {
+    if (pid == Pid::PLACEMENT && has_voice_assignment_properties()) {
+        // Layout places these items from DIRECTION, and the writer stores only
+        // DIRECTION for them; TRead maps a <placement> onto it the same way.
+        const PropertyFlags flags = property_flags(Pid::DIRECTION);
+        undo_change_property(Pid::DIRECTION, val.value<PlacementV>() == PlacementV::ABOVE ? DirectionV::UP : DirectionV::DOWN,
+                             flags == PropertyFlags::STYLED ? PropertyFlags::UNSTYLED : flags);
+        return;
+    }
     if (pid == Pid::AUTOPLACE && (val.to_bool() == true && !autoplace())) {
         // Switching autoplacement on. Save user-defined
         // placement properties to undo stack.
