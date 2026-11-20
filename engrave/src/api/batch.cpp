@@ -61,7 +61,9 @@ void warn_mismatched_ties(MasterScore &master, const std::vector<mu::engraving::
         const Note *note = mu::engraving::to_note(object);
         for (const Tie *tie : {note->tie_back(), note->tie_for()}) {
             if (!tie || !tie->start_note() || !tie->end_note() || tie->start_note()->ppitch() == tie->end_note()->ppitch()) continue;
-            if (std::ranges::find(reported, tie) != reported.end()) continue;
+            const bool duplicate = std::ranges::any_of(
+                reported, [&](const Tie *prev) { return prev == tie || (prev->links() && prev->links() == tie->links()); });
+            if (duplicate) continue;
             reported.push_back(tie);
             out.push_back({Severity::WARNING,
                            std::format("tie {} now joins notes {} and {}, which have different pitches; MusicXML and 4.70 exports cannot "

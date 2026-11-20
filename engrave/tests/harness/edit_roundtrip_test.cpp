@@ -1,9 +1,11 @@
 #include <algorithm>
 #include <cstddef>
 #include <filesystem>
+#include <fstream>
 #include <limits>
 #include <memory>
 #include <optional>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -338,6 +340,129 @@ TEST(MismatchedTie, EditsThatLeaveNoMismatchedTieDoNotWarn) {
     const auto recolored = document->edit({{SetProperty{id("J_J"), "color", engrave::Color{0, 0, 255}}}});
     ASSERT_TRUE(recolored) << recolored.error().message;
     EXPECT_TRUE(recolored->diagnostics.empty());
+}
+
+std::string read_file_text(const std::filesystem::path &path) {
+    std::ifstream in(path, std::ios::binary);
+    std::ostringstream out;
+    out << in.rdbuf();
+    return out.str();
+}
+
+std::vector<std::byte> to_bytes(std::string_view text) {
+    std::vector<std::byte> bytes(text.size());
+    std::ranges::transform(text, bytes.begin(), [](char ch) { return static_cast<std::byte>(static_cast<unsigned char>(ch)); });
+    return bytes;
+}
+
+TEST(MismatchedTie, PitchEditWarnsForAsymmetricLinkedTieAndDeduplicatesSymmetric) {
+    // Symmetric linked tie: master + linked staff both have linked ties -> single deduplicated warning.
+    {
+        auto document = open("linked_parts.mscx");
+        ASSERT_TRUE(document);
+        const auto result = document->edit({{SetPitch{id("I_I"), 74}}});
+        ASSERT_TRUE(result) << result.error().message;
+        const auto warnings = tie_warnings(*result);
+        ASSERT_EQ(warnings.size(), 1u);
+        EXPECT_TRUE(warnings.front().contains("J_J")) << warnings.front();
+        EXPECT_TRUE(warnings.front().contains("I_I")) << warnings.front();
+        EXPECT_TRUE(warnings.front().contains("L_L")) << warnings.front();
+    }
+
+    // Asymmetric linked tie: drop the excerpt (<Score> nested inside master <Score>) and
+    // Staff 1's tie (I_I -> L_L) while keeping Staff 2's tie as a standalone tie on the
+    // linked copy. Repitching untied I_I still changes Staff 2's linked note and must warn
+    // about Staff 2's mismatched tie.
+    std::string xml = read_file_text(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "tests/data/inputs/golden/linked_parts.mscx");
+    ASSERT_FALSE(xml.empty());
+    const auto first_score = xml.find("<Score>");
+    ASSERT_NE(first_score, std::string::npos);
+    const auto excerpt_score = xml.find("<Score>", first_score + 1);
+    ASSERT_NE(excerpt_score, std::string::npos);
+    const auto excerpt_end = xml.find("</Score>", excerpt_score);
+    ASSERT_NE(excerpt_end, std::string::npos);
+    xml.erase(excerpt_score, excerpt_end + std::string_view("</Score>").size() - excerpt_score);
+    for (int i = 0; i < 2; ++i) {
+        const auto start = xml.find("<Spanner type=\"Tie\">");
+        ASSERT_NE(start, std::string::npos);
+        const auto end = xml.find("</Spanner>", start);
+        ASSERT_NE(end, std::string::npos);
+        xml.erase(start, end + std::string_view("</Spanner>").size() - start);
+    }
+    const auto link_tag = xml.find("<linkedTo>J_J</linkedTo>");
+    ASSERT_NE(link_tag, std::string::npos);
+    xml.erase(link_tag, std::string_view("<linkedTo>J_J</linkedTo>").size());
+
+    auto document = g_engine->open(to_bytes(xml), {.format = Format::MSCX});
+    ASSERT_TRUE(document) << document.error().message;
+    const auto result = (*document)->edit({{SetPitch{id("I_I"), 74}}});
+    ASSERT_TRUE(result) << result.error().message;
+    const auto warnings = tie_warnings(*result);
+    ASSERT_EQ(warnings.size(), 1u);
+    EXPECT_FALSE(warnings.front().contains("I_I")) << warnings.front();
+}
+
+TEST(VoicePlacement, CenteredDynamicWithHiddenEmptyStaffResolvesAfterLayout) {
+    std::string xml = read_file_text(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) /
+                                     "src/importexport/mnx/tests/data/project_examples/dynamicsKbdVoices_ref.mscx");
+    ASSERT_FALSE(xml.empty());
+    const auto style_pos = xml.find("<Style>");
+    ASSERT_NE(style_pos, std::string::npos);
+    xml.insert(style_pos + std::string_view("<Style>").size(),
+               "\n      <hideEmptyStaves>1</hideEmptyStaves>\n      <dontHideStavesInFirstSystem>0</dontHideStavesInFirstSystem>");
+    const auto staff1_decl = xml.find("<eid>D_D</eid>");
+    ASSERT_NE(staff1_decl, std::string::npos);
+    xml.insert(staff1_decl + std::string_view("<eid>D_D</eid>").size(), "\n        <hideWhenEmpty>on</hideWhenEmpty>");
+
+    // Make Staff 1 empty across both measures so system layout hides it, and make l_l a
+    // staff-wide centered dynamic (otherwise currentVoiceOnly voice 0 stays above voice 1).
+    const auto staff1_start = xml.find("<Staff id=\"1\">");
+    const auto staff1_end = xml.find("</Staff>", staff1_start);
+    ASSERT_NE(staff1_start, std::string::npos);
+    ASSERT_NE(staff1_end, std::string::npos);
+    xml.replace(staff1_start, staff1_end - staff1_start,
+                "<Staff id=\"1\">"
+                "<Measure><eid>F_F</eid><voice><TimeSig><eid>I_I</eid><sigN>4</sigN><sigD>4</sigD></TimeSig>"
+                "<Rest><durationType>measure</durationType><duration>4/4</duration></Rest></voice></Measure>"
+                "<Measure><eid>T_T</eid><voice>"
+                "<Rest><durationType>measure</durationType><duration>4/4</duration></Rest></voice></Measure>");
+    const auto l_l_pos = xml.find("<eid>l_l</eid>");
+    ASSERT_NE(l_l_pos, std::string::npos);
+    const auto va_pos = xml.rfind("<voiceAssignment>currentVoiceOnly</voiceAssignment>", l_l_pos);
+    ASSERT_NE(va_pos, std::string::npos);
+    xml.replace(va_pos, std::string_view("<voiceAssignment>currentVoiceOnly</voiceAssignment>").size(),
+                "<voiceAssignment>allInStaff</voiceAssignment>");
+
+    auto document = g_engine->open(to_bytes(xml), {.format = Format::MSCX});
+    ASSERT_TRUE(document) << document.error().message;
+
+    // Pre-layout reflects score-wide Staff::show(); layout hides empty Staff 1 on system 1.
+    const auto dynamic = id("l_l");
+    const auto before = (*document)->get(dynamic, {"placement"});
+    ASSERT_TRUE(before) << before.error().message;
+    EXPECT_EQ(std::get<Enum>(before->front().value).token, "above");
+
+    const auto after = (*document)->query({.types = {"Dynamic"}, .props = {"placement"}, .layout_boxes = true});
+    ASSERT_TRUE(after) << after.error().message;
+    const auto found = std::ranges::find(after->elements, dynamic, &ElementInfo::id);
+    ASSERT_NE(found, after->elements.end());
+    ASSERT_EQ(found->props.size(), 1u);
+    EXPECT_EQ(std::get<Enum>(found->props.front().value).token, "below");
+}
+
+TEST(RestLayout, ZeroLineDistanceLaysOutWithoutUndefinedConversion) {
+    std::string xml = read_file_text(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) /
+                                     "src/importexport/mnx/tests/data/project_examples/dynamicsKbdVoices_ref.mscx");
+    ASSERT_FALSE(xml.empty());
+    const auto staff_type = xml.find("<name>stdNormal</name>");
+    ASSERT_NE(staff_type, std::string::npos);
+    xml.insert(staff_type + std::string_view("<name>stdNormal</name>").size(), "\n          <lineDistance>0</lineDistance>");
+
+    auto document = g_engine->open(to_bytes(xml), {.format = Format::MSCX});
+    ASSERT_TRUE(document) << document.error().message;
+    const auto laid_out_rests = (*document)->query({.types = {"Rest"}, .layout_boxes = true});
+    ASSERT_TRUE(laid_out_rests) << laid_out_rests.error().message;
+    EXPECT_FALSE(laid_out_rests->elements.empty());
 }
 
 } // namespace

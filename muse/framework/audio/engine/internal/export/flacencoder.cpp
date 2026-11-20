@@ -24,6 +24,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstdlib>
 #include <vector>
 
 #include "FLAC++/encoder.h"
@@ -112,19 +113,38 @@ bool FlacEncoder::begin(const samples_t total_samples_number) {
     }
 
     flac_->metadata.clear();
-    FLAC__StreamMetadata_VorbisComment_Entry entry;
     auto &metadata = flac_->metadata.blocks;
     metadata[0] = FLAC__metadata_object_new(FLAC__METADATA_TYPE_VORBIS_COMMENT);
     metadata[1] = FLAC__metadata_object_new(FLAC__METADATA_TYPE_PADDING);
-    FLAC__metadata_object_vorbiscomment_entry_from_name_value_pair(&entry, "ARTIST", "Some Artist");
-    FLAC__metadata_object_vorbiscomment_append_comment(metadata[0], entry, /*copy=*/false);
-    FLAC__metadata_object_vorbiscomment_entry_from_name_value_pair(&entry, "YEAR", "1984");
-    FLAC__metadata_object_vorbiscomment_append_comment(metadata[0], entry, /*copy=*/false);
+    if (!metadata[0] || !metadata[1]) {
+        flac_->metadata.clear();
+        return false;
+    }
+
+    auto append_comment = [&](const char *field_name, const char *field_value) {
+        FLAC__StreamMetadata_VorbisComment_Entry entry{};
+        if (!FLAC__metadata_object_vorbiscomment_entry_from_name_value_pair(&entry, field_name, field_value)) {
+            return false;
+        }
+        if (!FLAC__metadata_object_vorbiscomment_append_comment(metadata[0], entry, /*copy=*/false)) {
+            std::free(entry.entry);
+            return false;
+        }
+        return true;
+    };
+    if (!append_comment("ARTIST", "Some Artist") || !append_comment("YEAR", "1984")) {
+        flac_->metadata.clear();
+        return false;
+    }
 
     metadata[1]->length = 1234; /* set the padding length */
-    stream.set_metadata(metadata.data(), static_cast<uint32_t>(metadata.size()));
+    if (!stream.set_metadata(metadata.data(), static_cast<uint32_t>(metadata.size()))) {
+        flac_->metadata.clear();
+        return false;
+    }
 
     if (stream.init() != FLAC__STREAM_ENCODER_INIT_STATUS_OK) {
+        flac_->metadata.clear();
         return false;
     }
 

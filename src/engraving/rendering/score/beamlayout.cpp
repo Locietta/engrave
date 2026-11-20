@@ -22,6 +22,8 @@
 #include "beamlayout.h"
 
 #include <algorithm>
+#include <cfloat>
+#include <cmath>
 #include <limits>
 #include <set>
 #include <unordered_map>
@@ -835,12 +837,25 @@ void BeamLayout::vertical_adjust_beamed_rests(Rest *rest, Beam *beam, LayoutCont
     const double rest_to_beam_clearance =
         up ? beam_shape.vertical_clearance(rest_shape, min_beam_to_rest_x_dist) : rest_shape.vertical_clearance(beam_shape);
     const double line_distance = rest->staff()->line_distance(rest->tick()) * spatium;
+    if (line_distance <= 0.0 || !std::isfinite(line_distance)) {
+        return;
+    }
 
-    // vertical_clearance() returns double::max() when shapes do not overlap horizontally.
-    const double clamped_clearance =
-        std::clamp(std::ceil(rest_to_beam_clearance / line_distance), static_cast<double>(std::numeric_limits<int>::min()),
-                   static_cast<double>(std::numeric_limits<int>::max()));
-    int clearance_in_steps = static_cast<int>(clamped_clearance);
+    // vertical_clearance() returns DBL_MAX when shapes do not overlap horizontally.
+    if (rest_to_beam_clearance == DBL_MAX || !std::isfinite(rest_to_beam_clearance)) {
+        return;
+    }
+
+    auto clamp_to_int = [](double value) -> int {
+        if (std::isnan(value)) {
+            return 0;
+        }
+        constexpr double k_min = static_cast<double>(std::numeric_limits<int>::min());
+        constexpr double k_max = static_cast<double>(std::numeric_limits<int>::max());
+        return static_cast<int>(std::clamp(value, k_min, k_max));
+    };
+
+    int clearance_in_steps = clamp_to_int(std::ceil(rest_to_beam_clearance / line_distance));
     up ? rest->vertical_clearance().set_above(clearance_in_steps) : rest->vertical_clearance().set_below(clearance_in_steps);
 
     if (rest_to_beam_clearance > rest_to_beam_padding) {
@@ -850,7 +865,10 @@ void BeamLayout::vertical_adjust_beamed_rests(Rest *rest, Beam *beam, LayoutCont
     const bool rest_is_locked = rest->vertical_clearance().locked();
     if (!rest_is_locked) {
         double overlap = (rest_to_beam_padding - rest_to_beam_clearance);
-        int line_moves = ceil(overlap / line_distance);
+        int line_moves = clamp_to_int(std::ceil(overlap / line_distance));
+        if (line_moves == std::numeric_limits<int>::min()) {
+            line_moves = std::numeric_limits<int>::max();
+        }
         line_moves *= up ? 1 : -1;
         double y_move = line_moves * line_distance;
         rest->mutldata()->move_y(y_move);
