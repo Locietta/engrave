@@ -190,18 +190,20 @@ std::vector<EngravingObject *> CmdState::take_postponed_deletions() {
     return result;
 }
 
-static void delete_postponed(CmdState &cmd_state) {
-    for (EngravingObject *e : cmd_state.take_postponed_deletions()) {
-        if (e->is_system()) {
-            System *s = to_system(e);
-            std::list<SpannerSegment *> spanners = s->spanner_segments();
-            for (SpannerSegment *ss : spanners) {
-                if (ss->system() == s) {
-                    ss->move_to_system(nullptr);
+void CmdState::flush_postponed_deletions() {
+    while (auto batch = take_postponed_deletions(); !batch.empty()) {
+        for (EngravingObject *e : batch) {
+            if (e->is_system()) {
+                System *s = to_system(e);
+                std::list<SpannerSegment *> spanners = s->spanner_segments();
+                for (SpannerSegment *ss : spanners) {
+                    if (ss->system() == s) {
+                        ss->move_to_system(nullptr);
+                    }
                 }
             }
+            delete e;
         }
-        delete e;
     }
 }
 
@@ -230,7 +232,7 @@ void MasterScore::update(bool reset_cmd_state, NormalizeMode mode) {
         return;
     }
 
-    delete_postponed(cmd_state_);
+    cmd_state_.flush_postponed_deletions();
     normalize_document(*this, {.mode = mode});
 
     if (cmd_state_.layout_range()) invalidate_layouts(cmd_state_.start_tick(), cmd_state_.end_tick());

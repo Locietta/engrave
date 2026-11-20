@@ -2582,13 +2582,13 @@ void MusicXmlParserPass2::part() {
     unended_tie_notes_.clear();
 
     if (has_drumset_) {
-        Drumset *drumset = new Drumset;
+        auto drumset = std::make_unique<Drumset>();
         const MusicXmlInstruments &instruments_after_pass2 = pass1_.get_instruments(id);
-        init_drumset(drumset, instruments_after_pass2);
+        init_drumset(drumset.get(), instruments_after_pass2);
         // set staff type to percussion if incorrectly imported as pitched staff
         // Note: part has been read, staff type already set based on clef type and staff-details
         // but may be incorrect for a percussion staff that does not use a percussion clef
-        set_staff_type_percussion(part, drumset);
+        set_staff_type_percussion(part, drumset.get());
     }
 
     bool show_part = false;
@@ -3140,6 +3140,7 @@ void MusicXmlParserPass2::measure(const String &part_id, const Fraction time) {
               });
     for (MusicXmlDelayedDirectionElement *direction : delayed_directions) {
         add_elem_offset(direction->element(), direction->track(), direction->placement(), direction->measure(), direction->tick());
+        delete direction;
     }
 
     // TODO:

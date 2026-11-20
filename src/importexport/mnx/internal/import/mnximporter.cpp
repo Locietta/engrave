@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <array>
 #include <exception>
+#include <memory>
 #include <string_view>
 #include <vector>
 
@@ -91,14 +92,14 @@ static const model::Sound *find_sound(const model::Root &root, std::string_view 
     return nullptr;
 }
 
-static Drumset *create_drumset(const model::Root &root, size_t part_idx,
-                               std::map<std::pair<size_t, std::string>, int> &kit_component_to_midi) {
+static std::unique_ptr<Drumset> create_drumset(const model::Root &root, size_t part_idx,
+                                               std::map<std::pair<size_t, std::string>, int> &kit_component_to_midi) {
     const model::Part &mnx_part = root.parts[part_idx];
     if (!mnx_part.kit) {
         return nullptr;
     }
 
-    Drumset *drumset = new Drumset();
+    auto drumset = std::make_unique<Drumset>();
     Drumset *default_drumset = mu::engraving::sm_drumset;
     for (int i = 0; i < ::mu::engraving::drum_instruments; ++i) {
         drumset->drum(i) = DrumInstrument(String(), NoteHeadGroup::HEAD_INVALID, 0, DirectionV::AUTO);
@@ -210,9 +211,9 @@ static std::optional<model::PartTransposition> load_instrument(const model::Root
     // Initialize drumset
     if (mnx_part.kit) {
         instrument->set_use_drumset(true);
-        Drumset *drumset = create_drumset(root, part_idx, kit_component_to_midi);
+        auto drumset = create_drumset(root, part_idx, kit_component_to_midi);
         if (drumset) {
-            instrument->set_drumset(drumset);
+            instrument->set_drumset(drumset.get());
             instrument->channel(0)->set_bank(128);
         }
     } else {

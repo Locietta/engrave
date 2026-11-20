@@ -196,6 +196,7 @@ struct CmdState {
 
     void delete_later(EngravingObject *e);
     std::vector<EngravingObject *> take_postponed_deletions();
+    void flush_postponed_deletions();
 
     bool locked() const { return locked_; }
 
