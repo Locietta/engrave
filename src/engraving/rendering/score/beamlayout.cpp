@@ -321,7 +321,9 @@ void BeamLayout::layout1(Beam *item, LayoutContext &ctx) {
 
     item->set_slope(0.0);
 
-    for (ChordRest *cr : item->rendered_elements()) {
+    // Chord relayout can detach the entire beam if a member suppresses its stem.
+    for (size_t i = 0; i < item->rendered_elements().size(); ++i) {
+        ChordRest *cr = item->rendered_elements()[i];
         bool prev_up = cr->up();
         ChordLayout::compute_up(cr, ctx);
         if (cr->is_chord() && cr->up() != prev_up) {
