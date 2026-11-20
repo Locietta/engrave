@@ -205,6 +205,7 @@ void test_repeat_lifetimes(const char *assets) {
         master->invalidate_repeat_list();
         master->update_repeat_list(false);
         expect(repeat.utick2tick(3 * bar) == 2 * bar, "Rebuilding repeats lost the second ending");
+        master->ensure_layout();
         expect(music::render_score(context, master, "pdf", 0).starts_with("%PDF-"), "Repeated score PDF rendering failed");
     }
     std::cout << "Three context and document lifecycles passed, including instrument replacement, excerpt cloning, and repeat playback\n";
