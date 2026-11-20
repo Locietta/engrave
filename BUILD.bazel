@@ -1,6 +1,6 @@
 load("@engrave_config//:defs.bzl", "ENGRAVE_SOURCE_ROOT", "ENGRAVING_TESTS_DATA_ROOT")
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
-load("//bazel:defs.bzl", "ENGINE_COPTS", "ENGINE_LINKOPTS", "ENGINE_PLATFORM_DEFINES", "cc_pch", "win_manifest_library")
+load("//bazel:defs.bzl", "ENGINE_COPTS", "ENGINE_LINKOPTS", "ENGINE_PLATFORM_DEFINES", "cc_pch", "staged_binary_group", "win_manifest_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -688,7 +688,7 @@ cc_binary(
     ] + WIN_MANIFEST_DEPS,
 )
 
-filegroup(
+staged_binary_group(
     name = "engine_tests",
     srcs = [
         ":archive_test",

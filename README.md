@@ -71,6 +71,9 @@ bazelisk build --config=release //:engrave
 - `--//bazel:pch=false`: Disable binary precompiled headers for `//:engraving` (enabled by default).
 - `--//bazel:playback_harness=true`: Enable opt-in playback capture instrumentation (`ENGRAVE_PLAYBACK_HARNESS`).
 
+The `sanitize` profile enables ASan and fatal UBSan on Linux and Windows
+x86-64. ASan enables LSan on Linux x86-64. Windows x86-64 has no LSan support.
+
 ## Asset Installation
 
 Runtime assets (SMuFL music fonts, text fonts, instrument templates, engraving styles, and MPE profiles) are installed using `tools/install_assets.py`. The installer reads committed Git blobs to preserve exact bytes regardless of local line-ending settings.

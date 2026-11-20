@@ -132,6 +132,20 @@ cc_pch = rule(
     toolchains = use_cc_toolchain(),
 )
 
+def staged_binary_group(name, srcs):
+    # Bazel filegroups do not forward their sources' named output groups.
+    runtime = name + "_runtime"
+    native.filegroup(
+        name = runtime,
+        srcs = srcs,
+        output_group = "runtime_dynamic_libraries",
+        visibility = ["//visibility:private"],
+    )
+    native.filegroup(
+        name = name,
+        srcs = srcs + [":" + runtime],
+    )
+
 def _win_manifest_asm_impl(ctx):
     out = ctx.actions.declare_file(ctx.label.name + ".s")
     manifest_bytes = ctx.file.manifest
