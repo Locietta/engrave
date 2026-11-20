@@ -244,6 +244,9 @@ TEST(VoicePlacement, AutomaticPlacementReadsStyleAndRepeatedResetIsANoOp) {
     ASSERT_FALSE(styled->rejection) << styled->rejection->error.message;
     EXPECT_EQ(token(*document, dynamic, "direction"), "auto");
     EXPECT_EQ(token(*document, dynamic, "placement"), "above");
+    const auto dynamic_prop = document->get(dynamic, {"placement"});
+    ASSERT_TRUE(dynamic_prop);
+    EXPECT_FALSE(dynamic_prop->front().styled);
     const auto layout = laid_out(*document, {"Dynamic"});
     EXPECT_EQ(side_of_notes(layout, dynamic), Side::ABOVE);
     EXPECT_EQ(token(*document, dynamic, "placement"), "above");
@@ -255,6 +258,25 @@ TEST(VoicePlacement, AutomaticPlacementReadsStyleAndRepeatedResetIsANoOp) {
         EXPECT_EQ(reset->revision, styled->revision);
         EXPECT_EQ(token(*document, dynamic, "placement"), "above");
     }
+}
+
+TEST(VoicePlacement, CenteredDynamicPlacementMatchesBeforeAndAfterLayout) {
+    auto document = g_engine->open(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) /
+                                   "src/importexport/mnx/tests/data/project_examples/dynamicsKbdVoices_ref.mscx");
+    ASSERT_TRUE(document) << document.error().message;
+    const auto dynamic = id("l_l");
+    const auto before = (*document)->get(dynamic, {"placement"});
+    ASSERT_TRUE(before);
+    EXPECT_EQ(std::get<Enum>(before->front().value).token, "above");
+    EXPECT_FALSE(before->front().styled);
+
+    const auto after = (*document)->query({.types = {"Dynamic"}, .props = {"placement"}, .layout_boxes = true});
+    ASSERT_TRUE(after) << after.error().message;
+    const auto found = std::ranges::find(after->elements, dynamic, &ElementInfo::id);
+    ASSERT_NE(found, after->elements.end());
+    ASSERT_EQ(found->props.size(), 1u);
+    EXPECT_EQ(std::get<Enum>(found->props.front().value).token, "above");
+    EXPECT_FALSE(found->props.front().styled);
 }
 
 std::vector<std::string> tie_warnings(const engrave::EditResult &result) {
