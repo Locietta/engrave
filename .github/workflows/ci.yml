@@ -43,9 +43,11 @@ jobs:
           python -m pip install -r tests/requirements.txt
           python -m pip install -e .
 
-      - name: Asset installer and Bazel MCP checks
+      - name: Asset installer, PID generator, and Bazel MCP checks
         run: |
           python tools/test_install_assets.py
+          python tools/test_gen_pid_support.py
+          python tools/gen_pid_support.py --check
           python tools/test_bazel_server_mcp.py
 
       - name: Golden comparator and inventory mutations

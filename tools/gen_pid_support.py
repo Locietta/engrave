@@ -250,11 +250,53 @@ def parse_constructor_types(sources):
     return found
 
 
+def _read_string_literal(text, start):
+    """Read the C++ string literal at or after `start`, skipping whitespace and comments."""
+    i = start
+    n = len(text)
+    while i < n:
+        c = text[i]
+        if c.isspace():
+            i += 1
+        elif c == "/" and i + 1 < n and text[i + 1] == "/":
+            i += 2
+            while i < n and text[i] != "\n":
+                i += 1
+        elif c == "/" and i + 1 < n and text[i + 1] == "*":
+            end = text.find("*/", i + 2)
+            if end == -1:
+                raise ValueError("unterminated block comment")
+            i = end + 2
+        elif c == '"':
+            i += 1
+            chars = []
+            while i < n and text[i] != '"':
+                if text[i] == "\\" and i + 1 < n:
+                    i += 1
+                chars.append(text[i])
+                i += 1
+            if i >= n:
+                raise ValueError("unterminated string literal")
+            return "".join(chars)
+        else:
+            raise ValueError(f"expected string literal at offset {i}")
+    raise ValueError("expected string literal before end of file")
+
+
+def parse_type_names_text(text):
+    """ElementType member -> xml name, parsed from TConv's element_types initializer."""
+    stripped = strip_code(text)
+    begin, end = blocks(stripped, stripped.index("element_types ="))
+    names = {}
+    for match in re.finditer(r"\{\s*ElementType::(\w+)\s*,", stripped[begin + 1 : end]):
+        names[match.group(1)] = _read_string_literal(text, begin + 1 + match.end())
+    return names
+
+
 def parse_type_names(root):
     """ElementType member -> xml name, from TConv's element type table."""
     text = (root / "src" / "engraving" / "types" / "typesconv.cpp").read_text(encoding="utf-8")
-    begin, end = blocks(strip_code(text), text.index("element_types ="))
-    return dict(re.findall(r'^\s*\{\s*ElementType::(\w+),\s*"([^"]*)"', text[begin + 1 : end], re.M))
+    return parse_type_names_text(text)
 
 
 def parse_pid_names(root):
