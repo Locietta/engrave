@@ -949,12 +949,12 @@ bool TRead::read_properties(Instrument *item, XmlReader &e, ReadContext &ctx, Pa
     } else if (tag == "useDrumset") {
         item->set_use_drumset(e.read_int());
         if (item->use_drumset()) {
-            item->set_drumset(new Drumset(*sm_drumset));
+            item->set_drumset(sm_drumset);
         }
     } else if (tag == "Drum") {
         // if we see one of this tags, a custom drumset will be created
         if (!item->drumset()) {
-            item->set_drumset(new Drumset(*sm_drumset));
+            item->set_drumset(sm_drumset);
         }
         if (!(*custom_drumset)) {
             const_cast<Drumset *>(item->drumset())->clear();
@@ -964,7 +964,7 @@ bool TRead::read_properties(Instrument *item, XmlReader &e, ReadContext &ctx, Pa
     } else if (tag == "percussionPanelColumns") {
         // if we see one of these tags, a custom drumset will be created
         if (!item->drumset()) {
-            item->set_drumset(new Drumset(*sm_drumset));
+            item->set_drumset(sm_drumset);
         }
         if (!(*custom_drumset)) {
             const_cast<Drumset *>(item->drumset())->clear();

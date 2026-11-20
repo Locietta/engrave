@@ -136,6 +136,9 @@ struct MusicXmlConfiguration;
 
 struct MusicXmlParserPass1 {
     MusicXmlParserPass1(engraving::Score *score, const MusicXmlConfiguration &configuration, MusicXmlLogger *logger);
+    MusicXmlParserPass1(const MusicXmlParserPass1 &) = delete;
+    MusicXmlParserPass1 &operator=(const MusicXmlParserPass1 &) = delete;
+    ~MusicXmlParserPass1();
 
     const MusicXmlConfiguration *configuration() const { return &configuration_; }
 

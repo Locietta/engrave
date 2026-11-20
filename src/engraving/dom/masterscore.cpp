@@ -101,6 +101,7 @@ MasterScore::~MasterScore() {
         project_.lock()->master_score_ = nullptr;
     }
 
+    cmd_state_.flush_postponed_deletions();
     transaction_manager_->cleanup_detached();
     delete expanded_repeat_list_;
     delete non_expanded_repeat_list_;

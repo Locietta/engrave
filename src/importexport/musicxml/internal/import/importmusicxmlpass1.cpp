@@ -349,6 +349,8 @@ MusicXmlParserPass1::MusicXmlParserPass1(Score *score, const MusicXmlConfigurati
     // nothing
 }
 
+MusicXmlParserPass1::~MusicXmlParserPass1() { muse::delete_all(credits_); }
+
 //---------------------------------------------------------
 //   addError
 //---------------------------------------------------------

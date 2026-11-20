@@ -633,6 +633,12 @@ void PageLayout::layout_page(LayoutContext &ctx, Page *page, double rest_height,
 void PageLayout::distribute_staves(LayoutContext &ctx, Page *page, double footer_padding, bool squeeze_to_fit) {
     VerticalGapDataList vgdl;
 
+    struct GapListCleanup {
+        VerticalGapDataList &list;
+
+        ~GapListCleanup() { list.delete_all(); }
+    } cleanup{vgdl};
+
     // Find and classify all gaps between staves.
     int ngaps{0};
     double prev_y_bottom{page->tm()};
@@ -829,7 +835,6 @@ void PageLayout::distribute_staves(LayoutContext &ctx, Page *page, double footer
         SystemHeaderLayout::layout_brackets_vertical(system, ctx);
         SystemHeaderLayout::set_instrument_names_vertical_pos(system, ctx);
     }
-    vgdl.delete_all();
 }
 
 void PageLayout::layout_system_dividers(LayoutContext &ctx, Page *page) {
