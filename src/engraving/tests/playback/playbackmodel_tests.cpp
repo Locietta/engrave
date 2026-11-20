@@ -108,6 +108,7 @@ TEST_F(EngravingPlaybackModelTests, SimpleRepeat) {
 
     // [THEN] Amount of events does match expectations
     EXPECT_EQ(result.size(), expected_size);
+    delete score;
 }
 
 /**
@@ -141,6 +142,7 @@ TEST_F(EngravingPlaybackModelTests, Two_Ending_Repeat) {
 
     // [THEN] Amount of events does match expectations
     EXPECT_EQ(result.size(), expected_size);
+    delete score;
 }
 
 /**
@@ -224,6 +226,7 @@ TEST_F(EngravingPlaybackModelTests, Repeat_And_Tremolo) {
     }
 
     EXPECT_EQ(timestamp_count, expected_size_per_timestamp.size());
+    delete score;
 }
 
 /**
@@ -267,6 +270,7 @@ TEST_F(EngravingPlaybackModelTests, Repeat_Tempo_Changes_And_Tie) {
 
     // [THEN] The amount of note events matches expectations
     EXPECT_EQ(note_event_count, 1);
+    delete score;
 }
 
 /**
@@ -300,6 +304,7 @@ TEST_F(EngravingPlaybackModelTests, Da_Capo_Al_Fine) {
 
     // [THEN] Amount of events does match expectations
     EXPECT_EQ(result.size(), expected_size);
+    delete score;
 }
 
 /**
@@ -334,6 +339,7 @@ TEST_F(EngravingPlaybackModelTests, Dal_Segno_Al_Coda) {
 
     // [THEN] Amount of events does match expectations
     EXPECT_EQ(result.size(), expected_size);
+    delete score;
 }
 
 /**
@@ -367,6 +373,7 @@ TEST_F(EngravingPlaybackModelTests, Dal_Segno_Al_Fine) {
 
     // [THEN] Amount of events does match expectations
     EXPECT_EQ(result.size(), expected_size);
+    delete score;
 }
 
 /**
@@ -400,6 +407,7 @@ TEST_F(EngravingPlaybackModelTests, Da_Capo_Al_Coda) {
 
     // [THEN] Amount of events does match expectations
     EXPECT_EQ(result.size(), expected_size);
+    delete score;
 }
 
 /**
@@ -477,6 +485,7 @@ TEST_F(EngravingPlaybackModelTests, Spanners) {
             EXPECT_EQ(articulation.second.meta.timestamp + articulation.second.meta.overall_duration, expected_articulation.to);
         }
     }
+    delete score;
 }
 
 /**
@@ -607,6 +616,7 @@ TEST_F(EngravingPlaybackModelTests, Pizz_To_Arco_Technique) {
     const mpe::NoteEvent &fourth_note_event = std::get<mpe::NoteEvent>(result.at(1500000).at(0));
     EXPECT_EQ(fourth_note_event.expression_ctx().articulations.size(), 1);
     EXPECT_TRUE(fourth_note_event.expression_ctx().articulations.contains(ArticulationType::STANDARD));
+    delete score;
 }
 
 /**
@@ -680,6 +690,7 @@ TEST_F(EngravingPlaybackModelTests, FallbackToStandardArticulation) {
             EXPECT_GT(note_event.arrangement_ctx().actual_duration, 0);
         }
     }
+    delete score;
 }
 
 /**
@@ -715,6 +726,7 @@ TEST_F(EngravingPlaybackModelTests, Single_Measure_Repeat) {
 
     // [THEN] Amount of events does match expectations
     EXPECT_EQ(result.size(), expected_size);
+    delete score;
 }
 
 /**
@@ -750,6 +762,7 @@ TEST_F(EngravingPlaybackModelTests, Multi_Measure_Repeat) {
 
     // [THEN] Amount of events does match expectations
     EXPECT_EQ(result.size(), expected_size);
+    delete score;
 }
 
 //! See: https://github.com/musescore/MuseScore/issues/29051
@@ -859,6 +872,7 @@ TEST_F(EngravingPlaybackModelTests, SimpleRepeat_Changes_Notification) {
     changes.changed_types = {ElementType::PEDAL};
     score->master_score()->notify_changes(changes);
     EXPECT_EQ(model.resolve_track_playback_data(track_id).origin_events.size(), expected_event_count);
+    delete score;
 }
 
 /**
@@ -981,6 +995,7 @@ TEST_F(EngravingPlaybackModelTests, TempoChangesDuringNotes) {
 
     // [THEN] Number of events matches expectations
     ASSERT_EQ(index, expected_durations.size());
+    delete score;
 }
 
 /**
@@ -1213,6 +1228,7 @@ TEST_F(EngravingPlaybackModelTests, Note_Entry_Playback_Chord) {
 
     // [WHEN] User has clicked on the first note
     check_events(model.trigger_events_for_items({third_chord}, ::quarter_note_duration));
+    delete score;
 }
 
 /**
@@ -1278,6 +1294,7 @@ TEST_F(EngravingPlaybackModelTests, Playback_Setup_Data_MultiInstrument) {
             EXPECT_EQ(result.setup_data, expected_setup_data.at(instrument_id));
         }
     }
+    delete score;
 }
 
 /**
