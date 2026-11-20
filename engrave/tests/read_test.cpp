@@ -7025,12 +7025,6 @@ TEST(Read, ChordLineLegacySourceSurvivesLayoutAndCacheReplacement) {
         EXPECT_EQ(line->ldata()->path, line->legacy_absolute_path());
         for (const std::string native : {"5.00", "4.70"}) {
             const auto saved = (*document)->export_score({.format = engrave::Format::MSCX, .native_version = native});
-            if (native == "4.70") {
-                // The existing compatibility codec rejects ChordLine, including legacy Path.
-                ASSERT_FALSE(saved);
-                EXPECT_NE(saved.error().message.find("ChordLine"), std::string::npos);
-                continue;
-            }
             ASSERT_TRUE(saved) << saved.error().message;
             auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
             ASSERT_TRUE(reopened) << reopened.error().message;
