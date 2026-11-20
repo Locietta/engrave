@@ -796,6 +796,46 @@ TEST(Export470, IndexesPercussionParenthesisBeforeUntiedUnison) {
     EXPECT_EQ(xml.select_node("//NoteParenGroup/Notes/NoteIdx").node().text().as_int(-1), 0);
 }
 
+TEST(Export470, UsesInitialStaffTypeForParenthesisOrdinals) {
+    using namespace mu::engraving;
+    for (const bool starts_percussion : {false, true}) {
+        SCOPED_TRACE(starts_percussion);
+        auto source = connector_score(std::format(R"(<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>
+            <Measure><StaffTypeChange><StaffType group="{}"/></StaffTypeChange>
+            <voice><Chord><durationType>whole</durationType>
+                <Note><eid>D_D</eid><pitch>36</pitch><tpc>14</tpc></Note>
+                <Note><eid>E_E</eid><pitch>42</pitch><tpc>20</tpc></Note>
+                <NoteParenGroup><Notes><NoteEID>E_E</NoteEID></Notes></NoteParenGroup>
+            </Chord></voice></Measure>)",
+                                                  starts_percussion ? "pitched" : "percussion"),
+                                      "<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>", "");
+        if (starts_percussion)
+            source.replace(source.find("group=\"pitched\""), std::string_view("group=\"pitched\"").size(), "group=\"percussion\"");
+        // Drum lines put pitch 42 first, while pitched insertion puts pitch 36 first.
+        source.insert(source.find("<instrumentId>"),
+                      R"(<useDrumset>1</useDrumset><Drum pitch="36"><name>Bass Drum</name><head>normal</head><line>-1</line></Drum>
+                         <Drum pitch="42"><name>Hi-Hat</name><head>cross</head><line>7</line></Drum>)");
+        const auto document = g_engine->open(as_bytes(source));
+        ASSERT_TRUE(document) << document.error().message;
+        const auto *staff = master_of(**document).staff(0);
+        ASSERT_EQ(staff->staff_type(Fraction(0, 1))->is_drum_staff(), starts_percussion);
+        ASSERT_EQ(staff->staff_type(Fraction(1, 1))->is_drum_staff(), !starts_percussion);
+        const auto legacy = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+        ASSERT_TRUE(legacy) << legacy.error().message;
+        pugi::xml_document xml;
+        ASSERT_TRUE(parse_export(xml, *legacy));
+        EXPECT_EQ(xml.select_node("//NoteParenGroup/Notes/NoteIdx").node().text().as_int(-1), starts_percussion ? 0 : 1);
+        const auto reopened = g_engine->open(legacy->bytes);
+        ASSERT_TRUE(reopened) << reopened.error().message;
+        const auto *registry = master_of(**reopened).eid_register();
+        const auto *plain = to_note(registry->item_from_eid(EID::from_std_string(std::string_view("D_D"))));
+        const auto *parenthesized = to_note(registry->item_from_eid(EID::from_std_string(std::string_view("E_E"))));
+        ASSERT_TRUE(plain && parenthesized);
+        EXPECT_FALSE(plain->parenthesis_info());
+        EXPECT_TRUE(parenthesized->parenthesis_info());
+    }
+}
+
 TEST(Export470, RefusesSparseBeamFragmentsAndNestedImages) {
     for (const bool image : {false, true}) {
         SCOPED_TRACE(image);
@@ -1333,6 +1373,29 @@ TEST(Export470, RefusesSpatiumDependentTextLineOverride) {
     EXPECT_NE(result.error().message.find("TextLine/textSizeIsSpatiumDependent"), std::string::npos);
 }
 
+TEST(Export470, PreservesSpatiumDependentPedalTextOverride) {
+    using namespace mu::engraving;
+    constexpr std::string_view rest = "<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>";
+    const auto source =
+        connector_score(rest, rest,
+                        R"(<Pedal><eid>D_D</eid><track>0</track><track2>0</track2><startTick>0/1</startTick><ticks>1/2</ticks>
+            <beginText>Ped.</beginText><textSizeIsSpatiumDependent>0</textSizeIsSpatiumDependent></Pedal>)");
+    const auto document = g_engine->open(as_bytes(source));
+    ASSERT_TRUE(document) << document.error().message;
+    const auto legacy = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+    ASSERT_TRUE(legacy) << legacy.error().message;
+    EXPECT_TRUE(legacy->warnings.empty());
+    pugi::xml_document xml;
+    ASSERT_TRUE(parse_export(xml, *legacy));
+    EXPECT_EQ(xml.select_node("//Pedal/textSizeIsSpatiumDependent").node().text().as_int(-1), 0);
+    const auto reopened = g_engine->open(legacy->bytes);
+    ASSERT_TRUE(reopened) << reopened.error().message;
+    const auto *item = master_of(**reopened).eid_register()->item_from_eid(EID::from_std_string(std::string_view("D_D")));
+    ASSERT_TRUE(item && item->is_pedal());
+    EXPECT_FALSE(item->get_property(Pid::TEXT_SIZE_SPATIUM_DEPENDENT).to_bool());
+    EXPECT_EQ(item->property_flags(Pid::TEXT_SIZE_SPATIUM_DEPENDENT), PropertyFlags::UNSTYLED);
+}
+
 TEST(Export470, RejectsMismatchedNoteConnectorEndpoints) {
     auto document = open_path(write470_fixture().parent_path() / "staff_type_change_tie.mscx");
     ASSERT_TRUE(document);
@@ -1476,6 +1539,15 @@ TEST(Export470, RebasesLinkedStartsToTheFirstEmittedMember) {
     const auto find = [](const MasterScore &score, std::string_view id) {
         return score.eid_register()->item_from_eid(EID::from_std_string(id));
     };
+    const auto expect_span = [](const EngravingObject *item, const Score *score, Fraction start, Fraction end, track_idx_t track) {
+        ASSERT_TRUE(item && item->is_pedal());
+        const auto *span = to_spanner(item);
+        EXPECT_EQ(span->score(), score);
+        EXPECT_EQ(span->tick(), start);
+        EXPECT_EQ(span->tick2(), end);
+        EXPECT_EQ(span->track(), track);
+        EXPECT_EQ(span->track2(), track);
+    };
     const auto &original = master_of(**document);
     const auto *main = find(original, "L_L");
     ASSERT_TRUE(main && main->links());
@@ -1498,12 +1570,16 @@ TEST(Export470, RebasesLinkedStartsToTheFirstEmittedMember) {
     const auto *first = find(full, "M_M");
     ASSERT_TRUE(first && first->links());
     ASSERT_EQ(first->links()->size(), 4u);
-    for (const auto [id, in_excerpt] : {std::pair{"L_L", false}, {"N_N", true}, {"O_O", true}}) {
-        const auto *member = find(full, id);
-        ASSERT_TRUE(member && member->is_spanner());
-        EXPECT_EQ(member->score(), in_excerpt ? full.excerpts()[0]->excerpt_score() : &full);
-        EXPECT_EQ(member->links(), first->links()) << id;
-    }
+    const auto *master_member = find(full, "L_L");
+    const auto *excerpt_left = find(full, "N_N");
+    const auto *excerpt_right = find(full, "O_O");
+    ASSERT_TRUE(master_member && excerpt_left && excerpt_right);
+    for (const auto *member : {master_member, excerpt_left, excerpt_right}) EXPECT_EQ(member->links(), first->links());
+    const auto *embedded = full.excerpts()[0]->excerpt_score();
+    expect_span(first, &full, {0, 1}, {1, 2}, 1);
+    expect_span(master_member, &full, {1, 1}, {3, 2}, 0);
+    expect_span(excerpt_left, embedded, {0, 1}, {1, 2}, 0);
+    expect_span(excerpt_right, embedded, {0, 1}, {1, 2}, 1);
     const auto standalone = (*document)->export_score_with_warnings(
         {.format = engrave::Format::MSCX, .score = {*engrave::element_id_from_string("F_F")}, .native_version = "4.70"});
     ASSERT_TRUE(standalone) << standalone.error().message;
@@ -1516,20 +1592,27 @@ TEST(Export470, RebasesLinkedStartsToTheFirstEmittedMember) {
     ASSERT_TRUE(left && right && left->links());
     EXPECT_EQ(left->links()->size(), 2u);
     EXPECT_EQ(left->links(), right->links());
+    expect_span(left, &part, {0, 1}, {1, 2}, 0);
+    expect_span(right, &part, {0, 1}, {1, 2}, 1);
 }
 
 TEST(Export470, PadsSparseLineSegmentsWithTheirDomSubtypes) {
-    constexpr std::string_view rests = R"(<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>
-                                          <Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>
-                                          <Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>)";
+    using namespace mu::engraving;
+    constexpr std::string_view rest = "<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>";
+    constexpr std::string_view system = R"(<Measure><voice><Rest><durationType>measure</durationType></Rest></voice>
+        <LayoutBreak><subtype>line</subtype></LayoutBreak></Measure>)";
+    const auto first_staff = std::format("{}{}{}", system, system, rest);
+    const auto second_staff = std::format("{}{}{}", rest, rest, rest);
     for (const bool has_subtype : {true, false}) {
         SCOPED_TRACE(has_subtype);
-        const auto source =
-            connector_score(rests, rests,
+        auto source =
+            connector_score(first_staff, second_staff,
                             std::format(
                                 R"(<Pedal><eid>D_D</eid><track>0</track><track2>0</track2><startTick>0/1</startTick><ticks>3/1</ticks>
             <Segment no="2">{}<offset x="1.25" y="-0.5"/></Segment></Pedal>)",
                                 has_subtype ? "<subtype>3</subtype>" : ""));
+        // With a zero style position, the 4.70 absolute and 5.00 relative offsets coincide.
+        source.insert(source.find("<Division>"), R"(<Style><pedalPosBelow x="0" y="0"/></Style>)");
         const auto document = g_engine->open(as_bytes(source));
         ASSERT_TRUE(document) << document.error().message;
         const auto legacy = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
@@ -1547,6 +1630,20 @@ TEST(Export470, PadsSparseLineSegmentsWithTheirDomSubtypes) {
                 EXPECT_FALSE(segment.child("subtype"));
             EXPECT_EQ(bool(segment.child("offset")), i == 2);
         }
+        const auto reopened = g_engine->open(legacy->bytes);
+        ASSERT_TRUE(reopened) << reopened.error().message;
+        auto &score = master_of(**reopened);
+        const auto *item = score.eid_register()->item_from_eid(EID::from_std_string(std::string_view("D_D")));
+        ASSERT_TRUE(item && item->is_pedal());
+        const auto *pedal = to_spanner(item);
+        for (const auto ordinal : {0u, 1u})
+            EXPECT_FALSE(pedal->authored_overrides.find({AuthoredChildRole::SPANNER_SEGMENT, ordinal}, Pid::OFFSET));
+        const auto *offset = pedal->authored_overrides.find({AuthoredChildRole::SPANNER_SEGMENT, 2}, Pid::OFFSET);
+        ASSERT_TRUE(offset);
+        EXPECT_EQ(offset->value, PropertyValue(muse::PointF(1.25, -0.5)));
+        score.do_layout();
+        ASSERT_EQ(pedal->spanner_segments().size(), 3u);
+        EXPECT_EQ(pedal->spanner_segments()[2]->offset(), muse::PointF(1.25, -0.5) * score.style().spatium());
     }
 }
 
