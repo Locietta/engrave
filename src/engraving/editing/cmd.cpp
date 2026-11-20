@@ -191,7 +191,7 @@ std::vector<EngravingObject *> CmdState::take_postponed_deletions() {
 }
 
 void CmdState::flush_postponed_deletions() {
-    while (auto batch = take_postponed_deletions(); !batch.empty()) {
+    for (auto batch = take_postponed_deletions(); !batch.empty(); batch = take_postponed_deletions()) {
         for (EngravingObject *e : batch) {
             if (e->is_system()) {
                 System *s = to_system(e);
