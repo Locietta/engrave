@@ -311,6 +311,8 @@ Measure::~Measure() {
     if (is_mm_rest() || !ldata()->segments.empty()) {
         if (auto *store = score()->layout_data_store()) store->retire_measure_borrowers(*this);
     }
+    // Tear down layout-owned segments and mm-rest while MeasureBase is still alive.
+    release_layout_data();
     for (Segment *s = first(); s;) {
         Segment *ns = s->next();
         delete s;

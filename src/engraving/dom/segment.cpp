@@ -444,18 +444,22 @@ Segment::~Segment() {
     if (!ldata()->generated.empty()) {
         if (auto *store = score()->layout_data_store()) store->retire_measure_borrowers(*measure());
     }
-    for (EngravingItem *e : elist_) {
+    // Tear down layout-owned copies and generated items while Segment is still alive.
+    release_layout_data();
+    for (EngravingItem *&e : elist_) {
         if (!e) {
             continue;
         }
+        EngravingItem *item = e;
+        e = nullptr;
 
-        Staff *staff = e->staff();
+        Staff *staff = item->staff();
 
-        if (e->is_time_sig() && staff) {
-            staff->remove_time_sig(to_time_sig(e));
+        if (item->is_time_sig() && staff) {
+            staff->remove_time_sig(to_time_sig(item));
         }
 
-        delete e;
+        delete item;
     }
 
     muse::delete_all(annotations_);
