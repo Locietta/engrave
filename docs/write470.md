@@ -98,7 +98,12 @@ struct ExportOutput {
   representation, so part EIDs are omitted.
 - **Excerpt selections**: Selecting an excerpt via `ExportOptions::score`
   exports a standalone 4.70 score preserving its parts, style, and linked
-  elements.
+  elements. Master exports retain attached excerpts with their names, track
+  maps, initial part IDs, and effective styles.
+- **Custom chord lists**: MSCX stores the definitions in `Style/ChordList`.
+  MSCZ stores the top-level definitions in a versioned `chordlist.xml`
+  sidecar and keeps each attached excerpt's custom definitions in its own
+  style.
 
 ## 3. Degraded Features (Exported with Warnings)
 
@@ -122,6 +127,12 @@ Output is refused with `ErrorCode::UNSUPPORTED` when constructs have no defined
 | `B470_INVALID_TIE`         | Cannot write 4.70: tied notes have different pitches.           | `kind: "tie"` with tie EID; else nearest addressable ancestor's kind and EID; else `kind: "tie"` with deterministic locator |
 | `B470_UNSUPPORTED_FEATURE` | Cannot write 4.70: the source feature has no defined downgrade. | Owning source object kind and EID                                                                                           |
 | `B470_UNSUPPORTED_TARGET`  | Cannot write the requested score version.                       | `kind: "request"`, `id: "version:<requested value>"`                                                                        |
+
+Authored automation curves are refused. Curves generated from the score are
+reconstructed by the reader. Custom chord lists with render actions that
+cannot be serialized faithfully, or without a root render program, are also
+refused. Static staff labels are projected into instrument names, while staff
+type changes that alter those labels require a refusal.
 
 ### Tie Warning Identities and Locators
 

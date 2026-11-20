@@ -196,7 +196,10 @@ void Excerpt::set_tracks_mapping(const TracksMap &tracks_mapping) {
     }
 
     tracks_mapping_ = tracks_mapping;
+    sync_voice_visibility();
+}
 
+void Excerpt::sync_voice_visibility() {
     const Score *score = excerpt_score();
     if (!score) {
         return;
@@ -543,7 +546,6 @@ void MasterScore::init_parts(Excerpt *excerpt) {
             //! In fact, excerpts are just viewers for the master score
             excerpt_staff->set_id(linked_master_staff->id());
             excerpt_part->set_id(master_part->id());
-
             assigned_staves_ids.insert(linked_master_staff->id());
 
             // For instruments with multiple staves, every staff will point to the
@@ -557,9 +559,10 @@ void MasterScore::init_parts(Excerpt *excerpt) {
         }
     }
 
-    if (excerpt->tracks_mapping().empty()) { // SHOULDN'T HAPPEN, protected in the UI, but it happens during read-in!!!
-        excerpt->update_tracks_mapping();
-    }
+    // Parsed tracks preceded staff ID reconciliation. Apply them to the right
+    // staves before deriving tracks from their voice visibility.
+    if (!excerpt->tracks_mapping_.empty()) excerpt->sync_voice_visibility();
+    excerpt->update_tracks_mapping();
 }
 
 void MasterScore::init_empty_excerpt(Excerpt *excerpt) {

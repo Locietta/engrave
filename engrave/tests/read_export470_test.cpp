@@ -1,6 +1,7 @@
 #include <pugixml.hpp>
 
 #include "engrave/src/score/write470_spanners.h"
+#include "engraving/dom/chordlist.h"
 #include "read_test_fixture.h"
 
 using namespace read_test;
@@ -851,6 +852,221 @@ TEST(Export470, PreservesUserAndCourtesyAccidentalsAcrossATie) {
             EXPECT_EQ(accidental->role(), AccidentalRole::USER);
             EXPECT_EQ(accidental->accidental_type(), AccidentalType::SHARP);
             EXPECT_EQ(static_cast<int>(accidental->bracket()), note == end ? 1 : 0);
+        }
+    }
+}
+
+TEST(Export470, RetainsAttachedExcerptTracklistsNamesAndStyles) {
+    auto document = open_path(write470_fixture().parent_path() / "attached_tracklists.mscx");
+    ASSERT_TRUE(document);
+    for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
+        const auto result = document->export_score_with_warnings({.format = format, .native_version = "4.70"});
+        ASSERT_TRUE(result) << result.error().message;
+        EXPECT_TRUE(result->warnings.empty());
+        const auto reopened = g_engine->open(result->bytes, {.format = format});
+        ASSERT_TRUE(reopened) << reopened.error().message;
+        const auto &excerpts = master_of(**reopened).excerpts();
+        ASSERT_EQ(excerpts.size(), 2u);
+        for (const auto &[index, eid, name, track, distance] :
+             {std::tuple{0u, "F_F", "Upper winds", 1u, 7.25}, std::tuple{1u, "I_I", "Lower winds", 6u, 8.5}}) {
+            const auto &excerpt = *excerpts[index];
+            const auto &score = *excerpt.excerpt_score();
+            EXPECT_EQ(excerpt.name().to_std_string(), name);
+            EXPECT_EQ(excerpt.initial_part_id().to_uint64(), index + 1);
+            EXPECT_EQ(score.eid().to_std_string(), eid);
+            EXPECT_DOUBLE_EQ(score.style().style_v(mu::engraving::Sid::STAFF_DISTANCE).value<mu::engraving::Spatium>().val(), distance);
+            const auto &tracks = excerpts[index]->tracks_mapping();
+            ASSERT_EQ(tracks.size(), 1u);
+            EXPECT_EQ(tracks.begin()->first, track);
+            EXPECT_EQ(tracks.begin()->second, 0u);
+        }
+    }
+}
+
+TEST(Export470, RetainsCustomChordDefinitionsAndArchiveSidecar) {
+    auto document = open_path(write470_fixture().parent_path() / "custom_chordlist.mscx");
+    ASSERT_TRUE(document);
+    for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
+        const auto result = document->export_score_with_warnings({.format = format, .native_version = "4.70"});
+        ASSERT_TRUE(result) << result.error().message;
+        EXPECT_TRUE(result->warnings.empty());
+        pugi::xml_document xml;
+        pugi::xml_node root;
+        if (format == engrave::Format::MSCX) {
+            ASSERT_TRUE(parse_export(xml, *result));
+            root = xml.child("museScore").child("Score").child("Style").child("ChordList");
+        } else {
+            muse::ByteArray bytes(reinterpret_cast<const uint8_t *>(result->bytes.data()), result->bytes.size());
+            auto buffer = muse::io::Buffer::opened(muse::io::IODevice::READ_ONLY, &bytes);
+            muse::ZipReader zip(&buffer);
+            const auto sidecar = zip.file_data("chordlist.xml");
+            ASSERT_TRUE(xml.load_buffer(sidecar.const_data(), sidecar.size()));
+            root = xml.child("museScore");
+            EXPECT_STREQ(root.attribute("version").value(), "4.70");
+        }
+        ASSERT_TRUE(root);
+        EXPECT_STREQ(root.child("renderRoot").child_value(), ":n :a");
+        const auto symbol = root.select_node("font/sym[@name='diamond']").node();
+        EXPECT_STREQ(symbol.attribute("value").value(), "◇");
+        EXPECT_STREQ(root.select_node("token[name='diamond']/render").node().child_value(), "diamond");
+        EXPECT_STREQ(root.select_node("chord[@id='801']/name").node().child_value(), "altDiamond");
+        const auto reopened = g_engine->open(result->bytes, {.format = format});
+        ASSERT_TRUE(reopened) << reopened.error().message;
+        const auto &list = *master_of(**reopened).chord_list();
+        EXPECT_TRUE(list.custom_chord_list());
+        EXPECT_TRUE(list.auto_adjust());
+        EXPECT_DOUBLE_EQ(list.nominal_adjust(), 0.125);
+        EXPECT_DOUBLE_EQ(list.nominal_mag(), 1.1);
+        const auto custom = list.symbol(muse::String(u"diamond"));
+        EXPECT_EQ(custom.value.to_std_string(), "◇");
+        ASSERT_LT(static_cast<std::size_t>(custom.font_idx), list.fonts.size());
+        EXPECT_DOUBLE_EQ(list.fonts[custom.font_idx].mag, 1.25);
+        const auto *description = list.description(801);
+        ASSERT_TRUE(description);
+        EXPECT_EQ(description->names.front().to_std_string(), "altDiamond");
+    }
+}
+
+TEST(Export470, RefusesCustomChordActionsThatCannotBeSerialized) {
+    auto document = open_path(write470_fixture().parent_path() / "custom_chordlist.mscx");
+    ASSERT_TRUE(document);
+    using namespace mu::engraving;
+    auto &description = master_of(*document).chord_list()->at(801);
+    description.render_list.push_back(std::make_shared<RenderActionMoveTextWidth>(u"diamond"));
+    for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
+        const auto result = document->export_score_with_warnings({.format = format, .native_version = "4.70"});
+        ASSERT_FALSE(result);
+        ASSERT_EQ(result.error().export_warnings.size(), 1u);
+        EXPECT_EQ(result.error().export_warnings[0].code, "B470_UNSUPPORTED_FEATURE");
+        EXPECT_NE(result.error().message.find("custom chord list"), std::string::npos);
+    }
+}
+
+TEST(Export470, ExportsGeneratedAutomationButRefusesAuthoredPoints) {
+    using namespace mu::engraving;
+    auto document = open_path(write470_fixture());
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    master.init_automation();
+    EXPECT_TRUE(document->export_score({.format = engrave::Format::MSCZ, .native_version = "4.70"}));
+    AutomationPoint point;
+    point.value.out_value = normalize_tempo(BeatsPerSecond(3.0));
+    AutomationPointEdits edits{{480, AutomationPointEdit::SetPoint{point}}};
+    master.apply_automation_points(tempo_key, edits);
+    ASSERT_FALSE(master.automation_data()->curve(tempo_key).at(480).generated);
+    for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
+        const auto result = document->export_score_with_warnings({.format = format, .native_version = "4.70"});
+        ASSERT_FALSE(result);
+        ASSERT_EQ(result.error().export_warnings.size(), 1u);
+        EXPECT_EQ(result.error().export_warnings[0].code, "B470_UNSUPPORTED_FEATURE");
+        EXPECT_NE(result.error().message.find("authored automation"), std::string::npos);
+        ASSERT_TRUE(result.error().export_warnings[0].object);
+        EXPECT_EQ(result.error().export_warnings[0].object->id, master.eid().to_std_string());
+    }
+}
+
+TEST(Export470, StripsDormantChordLineControlsAndRefusesActiveOffsets) {
+    const std::string_view rest = "<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>";
+    for (const bool active : {false, true}) {
+        SCOPED_TRACE(active);
+        const auto source = connector_score(std::format(R"(<Measure><voice><Chord><durationType>whole</durationType>
+              <Note><pitch>60</pitch><tpc>14</tpc></Note>
+              <ChordLine><subtype>1</subtype><straight>1</straight>
+                <o1 x="0" y="0"/><o2 x="0.5" y="1"/><o3 x="0.25" y="-1"/><o4 x="{}" y="0"/>
+              </ChordLine></Chord></voice></Measure>)",
+                                                        active ? "1" : "0"),
+                                            rest, "");
+        const auto document = g_engine->open(as_bytes(source));
+        ASSERT_TRUE(document) << document.error().message;
+        const auto result = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+        if (active) {
+            ASSERT_FALSE(result);
+            EXPECT_NE(result.error().message.find("ChordLine/o4"), std::string::npos);
+        } else {
+            ASSERT_TRUE(result) << result.error().message;
+            pugi::xml_document xml;
+            ASSERT_TRUE(parse_export(xml, *result));
+            const auto line = xml.select_node("//ChordLine").node();
+            ASSERT_TRUE(line);
+            EXPECT_TRUE(line.child("straight").text().as_bool());
+            for (const auto *field : {"o1", "o2", "o3", "o4"}) EXPECT_FALSE(line.child(field));
+        }
+    }
+}
+
+TEST(Export470, RefusesActiveHarmonyAndMeasureRepeatFields) {
+    const auto corpus = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "tests/data/inputs/golden";
+    for (const auto &[parent, field] :
+         std::array{std::pair{"Harmony", "excludeVerticalAlign"}, std::pair{"MeasureRepeat", "measureRepeatNumberOffset"}}) {
+        SCOPED_TRACE(field);
+        const bool harmony = std::string_view(parent) == "Harmony";
+        auto source = harmony ? read_text(write470_fixture()) : read_text(corpus / "layout_elements.mscx");
+        const auto version = source.find("version=\"4.70\"");
+        if (version != std::string::npos) source.replace(version, std::string_view("version=\"4.70\"").size(), "version=\"5.00\"");
+        if (harmony) source.insert(source.find("<Chord>"), "<Harmony><harmonyInfo><root>14</root></harmonyInfo></Harmony>");
+        const auto at = source.find(std::format("<{}>", parent));
+        ASSERT_NE(at, std::string::npos);
+        source.insert(at + std::strlen(parent) + 2, std::format("<{0}>1</{0}>", field));
+        const auto document = g_engine->open(as_bytes(source));
+        ASSERT_TRUE(document) << document.error().message;
+        const auto result = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+        ASSERT_FALSE(result);
+        EXPECT_NE(result.error().message.find(std::format("{}/{}", parent, field)), std::string::npos);
+    }
+}
+
+TEST(Export470, RefusesUnprojectableChangesToStaffNames) {
+    for (const auto *change :
+         {"<instrumentLabelVisibility>short</instrumentLabelVisibility>", "<StaffLabel><longName>Solo</longName></StaffLabel>", ""}) {
+        SCOPED_TRACE(change);
+        auto source = connector_score(std::format(R"(<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>
+                <Measure><StaffTypeChange><eid>D_D</eid><StaffType group="pitched">{}</StaffType></StaffTypeChange>
+                <voice><Rest><durationType>measure</durationType></Rest></voice></Measure>)",
+                                                  change),
+                                      "<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>"
+                                      "<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>",
+                                      "");
+        // The final case resets an initially forced label back to AUTO.
+        if (*change == 0) {
+            auto pos = source.find("<StaffType group=\"pitched\"/>");
+            ASSERT_NE(pos, std::string::npos);
+            source.replace(pos, std::string_view("<StaffType group=\"pitched\"/>").size(),
+                           "<StaffType group=\"pitched\"><instrumentLabelVisibility>long</instrumentLabelVisibility></StaffType>");
+        }
+        const auto document = g_engine->open(as_bytes(source));
+        ASSERT_TRUE(document) << document.error().message;
+        const auto result = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+        ASSERT_FALSE(result);
+        ASSERT_EQ(result.error().export_warnings.size(), 1u) << result.error().message;
+        EXPECT_EQ(result.error().export_warnings[0].code, "B470_UNSUPPORTED_FEATURE");
+        ASSERT_TRUE(result.error().export_warnings[0].object);
+        EXPECT_EQ(result.error().export_warnings[0].object->id, "D_D");
+    }
+}
+
+TEST(Export470, RefusesActivePartialLyricCentering) {
+    for (const auto *policy : {"auto", "on"}) {
+        SCOPED_TRACE(policy);
+        const auto source = connector_score(
+            R"(<Measure><voice><Chord><durationType>half</durationType><Note><pitch>60</pitch><tpc>14</tpc></Note></Chord>
+               <Chord><durationType>half</durationType><Note><pitch>61</pitch><tpc>21</tpc></Note></Chord></voice></Measure>)",
+            "<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>",
+            std::format(R"(<PartialLyricsLine><eid>D_D</eid><track>0</track><startTick>0/1</startTick><ticks>1/2</ticks>
+                <centerBetweenStaves>{}</centerBetweenStaves></PartialLyricsLine>)",
+                        policy));
+        const auto document = g_engine->open(as_bytes(source));
+        ASSERT_TRUE(document) << document.error().message;
+        const auto result = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+        if (std::string_view(policy) == "on") {
+            ASSERT_FALSE(result);
+            EXPECT_NE(result.error().message.find("PartialLyricsLine/centerBetweenStaves"), std::string::npos);
+        } else {
+            ASSERT_TRUE(result) << result.error().message;
+            pugi::xml_document xml;
+            ASSERT_TRUE(parse_export(xml, *result));
+            const auto line = xml.select_node("//PartialLyricsLine").node();
+            ASSERT_TRUE(line);
+            EXPECT_FALSE(line.child("centerBetweenStaves"));
         }
     }
 }
