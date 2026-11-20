@@ -59,7 +59,6 @@ void LyricsLayout::layout(Lyrics *item, LayoutContext &ctx) {
     // 1) string of numbers and non-word characters at start of syllable
     // 2) at least one other character (indicating start of actual lyric)
     // 3) string of non-word characters at end of syllable
-    //QRegularExpression leadingPattern("(^[\\d\\W]+)([^\\d\\W]+)");
 
     const String text = item->plain_text();
     String leading;

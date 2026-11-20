@@ -1979,7 +1979,7 @@ void TDraw::draw(const MMRest *item, Painter *painter, const PaintOptions &opt) 
 
         // draw horizontal line
         double h_bar_thickness = item->style().style_absolute(Sid::MM_REST_H_BAR_THICKNESS) * mag;
-        if (h_bar_thickness) { // don't draw at all if 0, QPainter interprets 0 pen width differently
+        if (h_bar_thickness) {
             pen.set_width_f(h_bar_thickness);
             painter->set_pen(pen);
             double half_h_bar_thickness = h_bar_thickness * .5;
@@ -1997,7 +1997,7 @@ void TDraw::draw(const MMRest *item, Painter *painter, const PaintOptions &opt) 
 
         // draw vertical lines
         double v_stroke_thickness = item->style().style_absolute(Sid::MM_REST_H_BAR_V_STROKE_THICKNESS) * mag;
-        if (v_stroke_thickness) { // don't draw at all if 0, QPainter interprets 0 pen width differently
+        if (v_stroke_thickness) {
             pen.set_width_f(v_stroke_thickness);
             painter->set_pen(pen);
             double half_v_stroke_height = item->style().style_absolute(Sid::MM_REST_H_BAR_V_STROKE_HEIGHT) * .5 * mag;
@@ -2259,9 +2259,9 @@ void TDraw::draw(const SlurSegment *item, Painter *painter, const PaintOptions &
     Pen pen(item->cur_color(opt));
     double mag = item->staff() ? item->staff()->staff_mag(item->slur()->tick()) : 1.0;
 
-    //Replace generic Qt dash patterns with improved equivalents to show true dots (keep in sync with tie.cpp)
-    std::vector<double> dotted = {0.01, 1.99}; // tighter than Qt PenStyle::DotLine equivalent - would be { 0.01, 2.99 }
-    std::vector<double> dashed = {3.00, 3.00}; // Compensating for caps. Qt default PenStyle::DashLine is { 4.0, 2.0 }
+    // Keep the dot spacing and cap compensation in sync with tie.cpp.
+    std::vector<double> dotted = {0.01, 1.99}; // Short marks render as round dots.
+    std::vector<double> dashed = {3.00, 3.00}; // Equal nominal lengths account for the cap extension.
     std::vector<double> wide_dashed = {5.00, 6.00};
 
     switch (item->slur_tie()->style_type()) {
@@ -2694,9 +2694,9 @@ void TDraw::draw(const TieSegment *item, Painter *painter, const PaintOptions &o
 
     Pen pen(pen_color);
     double mag = item->staff() ? item->staff()->staff_mag(item->tie()->tick()) : 1.0;
-    //Replace generic Qt dash patterns with improved equivalents to show true dots (keep in sync with slur.cpp)
-    std::vector<double> dotted = {0.01, 1.99}; // tighter than Qt PenStyle::DotLine equivalent - would be { 0.01, 2.99 }
-    std::vector<double> dashed = {3.00, 3.00}; // Compensating for caps. Qt default PenStyle::DashLine is { 4.0, 2.0 }
+    // Keep the dot spacing and cap compensation in sync with slur.cpp.
+    std::vector<double> dotted = {0.01, 1.99}; // Short marks render as round dots.
+    std::vector<double> dashed = {3.00, 3.00}; // Equal nominal lengths account for the cap extension.
     std::vector<double> wide_dashed = {5.00, 6.00};
 
     switch (item->slur_tie()->style_type()) {

@@ -593,7 +593,7 @@ void TextBlock::remove_empty_fragment() {
 //      column is the column relative to the start of the TextBlock.
 //    outputs:
 //      rcol will be the column relative to the start of the TextFragment that the input column is in.
-//      ridx will be the QChar index into TextFragment's text String relative to the start of that TextFragment.
+//      ridx is the UTF-16 code unit offset from the start of that TextFragment.
 //
 
 std::list<TextFragment>::iterator TextBlock::fragment(int column, int *rcol, int *ridx) {

@@ -83,11 +83,9 @@ struct CairoPainter {
 
     double device_logical_dpi() const;
 
-    /*! setTransform() installs the complete world*viewport matrix, matching
-     *  QPainterProvider.  muse::draw::Painter already composes window/viewport
-     *  and passes the result here.  For direct users, window/viewport set
-     *  before the first setTransform() are composed automatically; after an
-     *  explicit transform the matrix is authoritative.
+    /*! Painter supplies the full world * viewport matrix. Direct users can set
+     *  the window and viewport for automatic composition until the first
+     *  set_transform() call makes the explicit matrix authoritative.
      */
     void set_transform(const Transform &transform);
     const Transform &transform() const;

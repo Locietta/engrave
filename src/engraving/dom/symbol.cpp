@@ -152,12 +152,7 @@ FSymbol::FSymbol(const FSymbol &s) : BSymbol(s) {
     code_ = s.code_;
 }
 
-//---------------------------------------------------------
-//   toString
-// FSymbol is a single code point but code points above 2^16 cannot be
-// represented by a single Char, hence we return a String instead. Char
-// and String use the UTF-16 encoding internally (like QChar, QString).
-//---------------------------------------------------------
+// A supplementary code point requires two UTF-16 code units, so return a String.
 
 String FSymbol::to_string() const { return String::from_ucs4(code_); }
 

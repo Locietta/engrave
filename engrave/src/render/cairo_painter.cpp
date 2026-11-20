@@ -615,8 +615,7 @@ CairoPainter::Impl::Impl(cairo_t *context, const music::RuntimeFontsDatabase &fo
     state.pen = Pen();
     state.brush = Brush(BrushStyle::NO_BRUSH);
 
-    // Adopt a transform the caller applied to the cairo_t before handing it
-    // over, mirroring QPainterProvider's initial transform read.
+    // Preserve the caller's existing transform on the supplied Cairo context.
     cairo_matrix_t initial_matrix;
     cairo_get_matrix(cr, &initial_matrix);
     const bool identity_matrix = initial_matrix.xx == 1.0 && initial_matrix.yx == 0.0 && initial_matrix.xy == 0.0 &&
@@ -795,9 +794,8 @@ void CairoPainter::Impl::set_transform(const Transform &transform) {
         return;
     }
 
-    // Once an explicit transform has been accepted as the complete matrix, it
-    // stays authoritative.  This matches QPainterProvider and prevents double
-    // composition when Painter subsequently calls setWindow()/setViewport().
+    // Keep the explicit matrix authoritative so subsequent window or viewport
+    // changes from Painter do not apply the viewport transformation twice.
     state.world_transform = transform;
     state.transform = transform;
     state.transform_explicit = true;
@@ -930,8 +928,6 @@ void CairoPainter::Impl::apply_pen() {
     if (!is_finite(width) || width < 0.0) {
         width = 0.0;
     }
-    // Cairo interprets a zero line width as a one-device-pixel hairline, which
-    // matches Qt's cosmetic pen behaviour.
     cairo_set_line_width(cr, width);
 
     switch (state.pen.cap_style()) {
@@ -947,7 +943,7 @@ void CairoPainter::Impl::apply_pen() {
         case PenJoinStyle::ROUND_JOIN: cairo_set_line_join(cr, CAIRO_LINE_JOIN_ROUND); break;
         default: throw std::runtime_error("CairoPainter: unsupported pen join style");
     }
-    // QPen's default miter limit is 2.0; Cairo's default is 10.0.
+    // The score uses a tighter miter limit than Cairo's default.
     cairo_set_miter_limit(cr, 2.0);
 
     switch (state.pen.style()) {
@@ -964,10 +960,9 @@ void CairoPainter::Impl::apply_pen() {
                 break;
             }
 
-            // QPen dash patterns are expressed in multiples of the pen width.
-            // Cairo expects user-space lengths.  A zero width is a cosmetic pen:
-            // its pattern is effectively in device pixels, so convert through the
-            // current CTM scale.
+            // Dash lengths are in pen-width units. Convert them to user-space
+            // lengths for Cairo. For a zero-width pen, convert device pixels
+            // using the current transformation scale.
             double unit = width;
             if (!(unit > 0.0)) {
                 cairo_matrix_t ctm;
@@ -1925,7 +1920,7 @@ void CairoPainter::Impl::draw_tiled_pixmap(const RectF &rect, const Pixmap &pm, 
     cairo_rectangle(cr, r.x(), r.y(), r.width(), r.height());
     cairo_clip(cr);
 
-    // Qt anchors the tile at rectangle.topLeft() + offset.
+    // Measure the tile offset from the rectangle's top-left corner.
     cairo_translate(cr, r.x() + offset.x(), r.y() + offset.y());
     cairo_scale(cr, scale_x, scale_y);
 
@@ -1999,10 +1994,8 @@ double CairoPainter::device_logical_dpi() const { return impl_->dpi; }
 void CairoPainter::set_transform(const Transform &transform) { impl_->set_transform(transform); }
 
 const Transform &CairoPainter::transform() const {
-    // Matches QPainterProvider: return the world transform last supplied via
-    // setTransform().  When muse::draw::Painter supplies a complete
-    // world*viewport matrix this is that matrix; for direct users it is the
-    // world part before window/viewport composition.
+    // Painter supplies the combined world * viewport matrix. Direct users see
+    // the world transform before any automatic window or viewport composition.
     return impl_->state.world_transform;
 }
 

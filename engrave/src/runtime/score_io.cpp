@@ -269,7 +269,7 @@ std::string export_native_score(const EngineContext &context, const ScoreProject
             if (options.excerpt_id == -1) {
                 success = project->write_mscz(writer);
             } else {
-                // Same upstream writer/style logic as MscSaver::exportPart, without a Qt thumbnail.
+                // Excerpt archives use the export style and inherit master metadata unless the excerpt overrides it.
                 auto effective_tags = project->master_score()->meta_tags();
                 for (const auto &[key, value] : score->meta_tags()) effective_tags.insert_or_assign(key, value);
                 ByteArray style_data, score_data;

@@ -106,8 +106,8 @@ io::PathT append_name(const io::PathT &directory, const std::string &name) {
     return io::PathT(std::move(path));
 }
 
-// QDir::cleanPath equivalent: '/'-separated, redundant separators and '.' dropped,
-// ".." resolved lexically (never above the root, drive or UNC share), symlinks
+// Uses '/' separators and drops redundant separators and '.', with
+// '..' resolved lexically (never above the root, drive or UNC share), symlinks
 // untouched, no trailing separator. Resource paths keep their ":/" form.
 std::string clean_path_string(std::string path) {
 #ifdef _WIN32
@@ -472,7 +472,7 @@ NativeFileSystem::Target NativeFileSystem::resolve(const io::PathT &path) const 
                 return target;
             }
 
-            // Qt cleans resource paths, so ":/" and "://" name the same root (fret.cpp uses "://data/...").
+            // ":/" and "://" name the same resource root. Fret diagrams use "://data/...".
             const std::size_t start = raw.find_first_not_of('/', 1);
             fs::path relative = fs::u8path(start == std::string::npos ? std::string() : raw.substr(start));
             if (relative.is_absolute() || relative.has_root_name() || relative.has_root_directory()) {
@@ -878,8 +878,7 @@ RetVal<uint64_t> NativeFileSystem::available_space(const io::PathT &path) const 
         return result;
     }
 
-    // QStorageInfo treats a missing path as an invalid storage, so an error here
-    // means "not there" as much as "cannot query".
+    // Missing paths and storage query failures both report an invalid storage.
     std::error_code ec;
     const fs::space_info space = fs::space(target.path, ec);
     if (ec) {
@@ -1185,8 +1184,7 @@ io::PathT NativeFileSystem::absolute_file_path(const io::PathT &file_path) const
 }
 
 io::PathT NativeFileSystem::clean_path(const io::PathT &file_path) const {
-    // Lexical only: QDir::cleanPath never touches the disk, so an invalid or
-    // missing path is still cleaned instead of rejected.
+    // Lexical cleanup also works for invalid paths and paths that do not exist.
     return io::PathT(clean_path_string(file_path.to_std_string()));
 }
 
@@ -1212,8 +1210,8 @@ io::PathT NativeFileSystem::sym_link_target(const io::PathT &file_path) const {
     if (ec) {
         return {};
     }
-    // QFileInfo::symLinkTarget reports an absolute path; read_symlink returns the
-    // stored target, which is relative to the link's own directory.
+    // Resolve relative targets against the link's parent so callers receive an
+    // absolute path.
     if (link.is_relative()) {
         link = target.path.parent_path() / link;
     }

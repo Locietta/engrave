@@ -781,13 +781,6 @@ static void set_part_instruments(MusicXmlLogger *logger, const XmlStreamReader *
  */
 namespace xmlpass2 {
 static String text2syms(const String &t, const EngravingFontsProvider &fonts, bool is_dolet = false) {
-    //QTime time;
-    //time.start();
-
-    // first create a map from symbol (Unicode) text to symId
-    // note that this takes about 1 msec on a Core i5,
-    // caching does not gain much
-
     EngravingFontPtr sf = fonts.fallback_font();
     std::map<String, SymId> map;
     size_t max_string_size = 0; // maximum string size found
@@ -808,9 +801,6 @@ static String text2syms(const String &t, const EngravingFontsProvider &fonts, bo
         map.insert({u"$", SymId::SEGNO});
         map.insert({u"Ø", SymId::CODA});
     }
-
-    //LOGD("text2syms map count %d maxsz %d filling time elapsed: %d ms",
-    //       map.size(), maxStringSize, time.elapsed());
 
     // then look for matches
     String in = t;
@@ -841,7 +831,6 @@ static String text2syms(const String &t, const EngravingFontsProvider &fonts, bo
         }
     }
 
-    //LOGD("text2syms total time elapsed: %d ms, res '%s'", time.elapsed(), muPrintable(res));
     return res;
 }
 } // namespace xmlpass2

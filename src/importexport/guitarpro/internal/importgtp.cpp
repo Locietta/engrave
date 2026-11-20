@@ -1851,14 +1851,8 @@ GuitarPro::ReadNoteResult GuitarPro1::read_note(int string, Note *note) {
 
                 //TODO: Add a 'slide' guitar effect when implemented
             } else if (transition == 2 && fret_number >= 0 && fret_number <= 255 && fret_number != gn->fret()) {
-                /*QList<PitchValue> points;
-                points.append(PitchValue(0,0, false));
-                points.append(PitchValue(60,(fretNumber-gn->fret())*100, false));
-
-                Bend* b = Factory::createBend(note->score());
-                b->setPoints(points);
-                b->setTrack(gn->track());
-                gn->add(b);*/
+                // A grace bend would interpolate from the grace fret to the target
+                // fret, with one semitone of pitch change per fret.
             } else if (transition == 3) {
                 // TODO:
                 //     major: replace with a 'hammer-on' guitar effect when implemented

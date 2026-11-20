@@ -28,8 +28,6 @@
 
 using namespace muse::draw;
 
-//! NOTE Perhaps in the future we need to add something like ISvgRenderer
-
 SvgRenderer::SvgRenderer(const ByteArray &data) : data_(data) {}
 
 SvgRenderer::~SvgRenderer() {}

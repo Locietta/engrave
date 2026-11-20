@@ -466,10 +466,8 @@ PropertyValue BarLine::property_default(Pid property_id) const {
 
     switch (property_id) {
         case Pid::BARLINE_TYPE:
-            // dynamic default values are a bad idea: writing to xml the value maybe omitted resulting in
-            //    wrong values on read (as the default may be different on read)
-            //                  if (segment() && segment()->measure() && !segment()->measure()->nextMeasure())
-            //                        return QVariant::fromValue(BarLineType::END);
+            // Keep the XML default independent of measure position. The writer can
+            // omit default-valued properties, and the reader must recover the same value.
             return PropertyValue::from_value(BarLineType::NORMAL);
 
         case Pid::BARLINE_SPAN: return staff() ? staff()->bar_line_span() : false;
