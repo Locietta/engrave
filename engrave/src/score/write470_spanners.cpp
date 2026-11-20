@@ -393,7 +393,10 @@ bool clean_line_segments(pugi::xml_node body, const Spanner &dom, AuthoredChildR
 }
 
 std::string clean_body(pugi::xml_node body, const Spanner &spanner, int receiver_track, const ScoreIndex &index) {
-    if (body.child("textSizeIsSpatiumDependent")) return std::string(body.name()) + "/textSizeIsSpatiumDependent";
+    // 4.7.6 reads this property only through these spanners' styled-property readers.
+    constexpr std::array styled_text_size_types{"HairPin"sv, "Ottava"sv, "Pedal"sv, "Volta"sv};
+    if (body.child("textSizeIsSpatiumDependent") && !std::ranges::contains(styled_text_size_types, tag(body)))
+        return std::string(body.name()) + "/textSizeIsSpatiumDependent";
     for (const char *field : {"startTick", "track2", "startElement", "endElement", "ticks", "ticks_f"}) body.remove_child(field);
     if (auto track = body.child("track"); track && track.text().as_int(-1) == receiver_track) body.remove_child(track);
     if (spanner.is_guitar_bend()) {
