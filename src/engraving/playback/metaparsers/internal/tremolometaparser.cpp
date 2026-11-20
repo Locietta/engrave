@@ -66,8 +66,8 @@ void TremoloSingleMetaParser::do_parse(const EngravingItem *item, const Renderin
 
     int overall_duration_ticks = ctx.nominal_duration_ticks;
 
-    const mpe::ArticulationPattern &pattern = ctx.profile->pattern(type);
-    if (pattern.empty()) {
+    const auto &pattern = ctx.profile->pattern_ptr(type);
+    if (!pattern || pattern->empty()) {
         return;
     }
 
@@ -103,8 +103,8 @@ void TremoloTwoMetaParser::do_parse(const EngravingItem *item, const RenderingCo
         overall_duration_ticks = tremolo->chord1()->actual_ticks().ticks() + tremolo->chord2()->actual_ticks().ticks();
     }
 
-    const mpe::ArticulationPattern &pattern = ctx.profile->pattern(type);
-    if (pattern.empty()) {
+    const auto &pattern = ctx.profile->pattern_ptr(type);
+    if (!pattern || pattern->empty()) {
         return;
     }
 

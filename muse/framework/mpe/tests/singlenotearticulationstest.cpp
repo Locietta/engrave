@@ -77,7 +77,7 @@ TEST_F(MpeSingleNoteArticulationsTest, StandardPattern) {
 
     ArticulationMeta standard_meta;
     standard_meta.type = ArticulationType::STACCATO;
-    standard_meta.pattern = scope;
+    standard_meta.pattern = std::make_shared<const ArticulationPattern>(scope);
     standard_meta.timestamp = nominal_timestamp_;
     standard_meta.overall_duration = nominal_duration_;
 
@@ -121,7 +121,7 @@ TEST_F(MpeSingleNoteArticulationsTest, StaccatoPattern) {
     //         occupied range is from 0% to 100%
     ArticulationMeta staccato_meta;
     staccato_meta.type = ArticulationType::STACCATO;
-    staccato_meta.pattern = scope;
+    staccato_meta.pattern = std::make_shared<const ArticulationPattern>(scope);
     staccato_meta.timestamp = nominal_timestamp_;
     staccato_meta.overall_duration = nominal_duration_;
 
@@ -163,7 +163,7 @@ TEST_F(MpeSingleNoteArticulationsTest, AccentPattern) {
     //         occupied range is from 0% to 100%
     ArticulationMeta accent_meta;
     accent_meta.type = ArticulationType::ACCENT;
-    accent_meta.pattern = scope;
+    accent_meta.pattern = std::make_shared<const ArticulationPattern>(scope);
     accent_meta.timestamp = nominal_timestamp_;
     accent_meta.overall_duration = nominal_duration_;
 
@@ -215,7 +215,7 @@ TEST_F(MpeSingleNoteArticulationsTest, AccentPattern_Nominal_MezzoForte) {
     //         occupied range is from 0% to 100%
     ArticulationMeta accent_meta;
     accent_meta.type = ArticulationType::ACCENT;
-    accent_meta.pattern = scope;
+    accent_meta.pattern = std::make_shared<const ArticulationPattern>(scope);
     accent_meta.timestamp = nominal_timestamp_;
     accent_meta.overall_duration = nominal_duration_;
 
@@ -275,7 +275,7 @@ TEST_F(MpeSingleNoteArticulationsTest, PocoTenuto) {
     //         occupied range is from 0% to 100%
     ArticulationMeta staccato_meta;
     staccato_meta.type = ArticulationType::STACCATO;
-    staccato_meta.pattern = staccato_scope;
+    staccato_meta.pattern = std::make_shared<const ArticulationPattern>(staccato_scope);
     staccato_meta.timestamp = nominal_timestamp_;
     staccato_meta.overall_duration = nominal_duration_;
 
@@ -284,7 +284,7 @@ TEST_F(MpeSingleNoteArticulationsTest, PocoTenuto) {
 
     ArticulationMeta tenuto_meta;
     tenuto_meta.type = ArticulationType::TENUTO;
-    tenuto_meta.pattern = tenuto_scope;
+    tenuto_meta.pattern = std::make_shared<const ArticulationPattern>(tenuto_scope);
     tenuto_meta.timestamp = nominal_timestamp_;
     tenuto_meta.overall_duration = nominal_duration_;
 
@@ -329,7 +329,7 @@ TEST_F(MpeSingleNoteArticulationsTest, QuickFall) {
     //         occupied range is from 0% to 100%
     ArticulationMeta quick_fall_meta;
     quick_fall_meta.type = ArticulationType::QUICK_FALL;
-    quick_fall_meta.pattern = quick_fall_scope;
+    quick_fall_meta.pattern = std::make_shared<const ArticulationPattern>(quick_fall_scope);
     quick_fall_meta.timestamp = nominal_timestamp_;
     quick_fall_meta.overall_duration = nominal_duration_;
 
@@ -375,7 +375,7 @@ TEST_F(MpeSingleNoteArticulationsTest, Scoop) {
     //         occupied range is from 0% to 100%
     ArticulationMeta scoop_meta;
     scoop_meta.type = ArticulationType::SCOOP;
-    scoop_meta.pattern = scope;
+    scoop_meta.pattern = std::make_shared<const ArticulationPattern>(scope);
     scoop_meta.timestamp = nominal_timestamp_;
     scoop_meta.overall_duration = nominal_duration_;
 

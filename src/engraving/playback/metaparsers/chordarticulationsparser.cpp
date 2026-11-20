@@ -207,8 +207,8 @@ void ChordArticulationsParser::parse_tapping(const Chord *chord, const Rendering
         return;
     }
 
-    const mpe::ArticulationPattern &pattern = ctx.profile->pattern(type);
-    if (pattern.empty()) {
+    const auto &pattern = ctx.profile->pattern_ptr(type);
+    if (!pattern || pattern->empty()) {
         return;
     }
 
@@ -216,8 +216,8 @@ void ChordArticulationsParser::parse_tapping(const Chord *chord, const Rendering
 }
 
 void ChordArticulationsParser::parse_breath(const Chord *chord, const RenderingContext &ctx, mpe::ArticulationMap &result) {
-    const mpe::ArticulationPattern &pattern = ctx.profile->pattern(ArticulationType::BREATH);
-    if (pattern.empty()) {
+    const auto &pattern = ctx.profile->pattern_ptr(ArticulationType::BREATH);
+    if (!pattern || pattern->empty()) {
         return;
     }
 

@@ -48,16 +48,18 @@ ArticulationPattern pattern_with(PitchPattern pitch, ExpressionPattern expressio
 
 ArticulationPattern blank_pattern() { return pattern_with(PitchPattern(), ExpressionPattern()); }
 
-void add_articulation(ArticulationMap &map, const ArticulationType type, const ArticulationPattern &pattern, const timestamp_t timestamp,
+void add_articulation(ArticulationMap &map, const ArticulationType type, ArticulationPattern pattern, const timestamp_t timestamp,
                       const duration_t duration) {
-    map.emplace(type, ArticulationAppliedData(ArticulationMeta(type, pattern, timestamp, duration), 0, hundred_percent));
+    map.emplace(type, ArticulationAppliedData(
+                          ArticulationMeta(type, std::make_shared<const ArticulationPattern>(std::move(pattern)), timestamp, duration), 0,
+                          hundred_percent));
 }
 
 mpe::NoteEvent make_note(ArticulationMap articulations, const timestamp_t timestamp = 0, const duration_t duration = quarter_note_duration,
                          const PitchCurve &pitch_curve = {}) {
     articulations.pre_calculate_average_data();
     return mpe::NoteEvent(timestamp, duration, 0, 0, pitch_level(PitchClass::C, 4), dynamic_level_from_type(mpe::DynamicType::NATURAL),
-                          articulations, 2.0, 0.f, pitch_curve);
+                          std::move(articulations), 2.0, 0.f, pitch_curve);
 }
 
 mpe::NoteEvent make_typed_note(const std::vector<ArticulationType> &types) {

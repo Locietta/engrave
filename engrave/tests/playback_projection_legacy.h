@@ -110,8 +110,9 @@ struct LegacyProjection {
         put("\n");
         put("dynamics {}\n", data.dynamics.size());
         for (const auto &[layer, points] : data.dynamics) {
-            put("layer {} {}\n", static_cast<unsigned long long>(layer), points.size());
-            for (const auto &[at, point] : points) {
+            put("layer {} {}\n", static_cast<unsigned long long>(layer), points ? points->size() : 0);
+            if (!points) continue;
+            for (const auto &[at, point] : *points) {
                 put("point {} {} {:016x}", at, point.in_value.index(), std::bit_cast<std::uint64_t>(point.out_value.raw()));
                 if (const auto *v = std::get_if<muse::mpe::AutomationPoint::ExplicitArrival>(&point.in_value)) {
                     put(" {:016x} {:016x} {:016x}", std::bit_cast<std::uint64_t>(v->value.raw()),

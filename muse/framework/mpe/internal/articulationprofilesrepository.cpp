@@ -214,7 +214,7 @@ void ArticulationProfilesRepository::save_profile(const io::PathT &path, const A
 
     std::vector<std::pair<std::string, std::vector<Segment>>> patterns;
     for (const auto &[type, pattern] : profile_ptr->data()) {
-        patterns.emplace_back(articulation_type_to_string(type).to_std_string(), write_pattern(pattern));
+        patterns.emplace_back(articulation_type_to_string(type).to_std_string(), write_pattern(*pattern));
     }
     std::stable_sort(patterns.begin(), patterns.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
     for (auto &[name, pattern] : patterns) profile.patterns.insert_or_assign(std::move(name), std::move(pattern));

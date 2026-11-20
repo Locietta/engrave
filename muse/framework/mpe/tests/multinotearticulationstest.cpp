@@ -106,7 +106,7 @@ TEST_F(MpeMultiNoteArticulationsTest, StandardPattern) {
 
     ArticulationMeta meta;
     meta.type = ArticulationType::STANDARD;
-    meta.pattern = pattern;
+    meta.pattern = std::make_shared<const ArticulationPattern>(pattern);
     meta.timestamp = initial_data_.at(0).nominal_timestamp;
     meta.overall_duration = initial_data_.at(0).nominal_duration;
 
@@ -167,7 +167,7 @@ TEST_F(MpeMultiNoteArticulationsTest, GlissandoPattern) {
 
     ArticulationMeta glissando_meta;
     glissando_meta.type = ArticulationType::DISCRETE_GLISSANDO;
-    glissando_meta.pattern = glissando_scope;
+    glissando_meta.pattern = std::make_shared<const ArticulationPattern>(glissando_scope);
     glissando_meta.timestamp = initial_data_.at(0).nominal_timestamp;
     glissando_meta.overall_duration = initial_data_.at(0).nominal_duration + initial_data_.at(1).nominal_duration;
 
@@ -176,13 +176,13 @@ TEST_F(MpeMultiNoteArticulationsTest, GlissandoPattern) {
 
     ArticulationMeta third_note_standard_meta;
     third_note_standard_meta.type = ArticulationType::STANDARD;
-    third_note_standard_meta.pattern = standard_scope;
+    third_note_standard_meta.pattern = std::make_shared<const ArticulationPattern>(standard_scope);
     third_note_standard_meta.timestamp = initial_data_.at(2).nominal_timestamp;
     third_note_standard_meta.overall_duration = initial_data_.at(0).nominal_duration;
 
     ArticulationMeta fourth_note_standard_meta;
     fourth_note_standard_meta.type = ArticulationType::STANDARD;
-    fourth_note_standard_meta.pattern = standard_scope;
+    fourth_note_standard_meta.pattern = std::make_shared<const ArticulationPattern>(standard_scope);
     fourth_note_standard_meta.timestamp = initial_data_.at(3).nominal_timestamp;
     fourth_note_standard_meta.overall_duration = initial_data_.at(0).nominal_duration;
 
@@ -264,7 +264,7 @@ TEST_F(MpeMultiNoteArticulationsTest, CrescendoPattern) {
 
     ArticulationMeta crescendo_meta;
     crescendo_meta.type = ArticulationType::DISCRETE_GLISSANDO;
-    crescendo_meta.pattern = crescendo_scope;
+    crescendo_meta.pattern = std::make_shared<const ArticulationPattern>(crescendo_scope);
     crescendo_meta.timestamp = initial_data_.at(0).nominal_timestamp;
     crescendo_meta.overall_duration = initial_data_.at(1).nominal_timestamp + initial_data_.at(1).nominal_duration;
     crescendo_meta.overall_dynamic_changes_range = dynamic_level_diff;

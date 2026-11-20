@@ -69,7 +69,7 @@ void PlaybackEventsRenderer::render_fixed_note_event(const Note *note, const mpe
     }
 
     NominalNoteCtx note_ctx(note, ctx);
-    result.emplace_back(build_note_event(note_ctx));
+    result.emplace_back(build_note_event(std::move(note_ctx)));
 }
 
 // The legacy map sink is the one this unit owns; other sinks instantiate in their own units

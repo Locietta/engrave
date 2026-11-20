@@ -1017,14 +1017,17 @@ TEST(AudioInternal, BoundedStableSortAndDedupCancellation) {
         data.origin_events[0].emplace_back(muse::mpe::NoteEvent(std::move(arr), std::move(pitch), std::move(expr)));
 
         // Non-flat curve spanning 100,000 steps of 30,000 us (~24.4x the 4,096-sample poll stride), plus a second layer.
-        auto &curve0 = data.dynamics[0];
+        muse::mpe::DynamicAutomationMap curve0;
         curve0[0] = muse::mpe::AutomationPoint{muse::mpe::AutomationPoint::ArrivalFromPrevious{}, muse::real_t(0.1)};
         curve0[30000ULL * 100000ULL] =
             muse::mpe::AutomationPoint{muse::mpe::AutomationPoint::ExplicitArrival{muse::real_t(0.9), {}}, muse::real_t(0.9)};
-        auto &curve1 = data.dynamics[1];
+        muse::mpe::DynamicAutomationMap curve1;
         curve1[0] = muse::mpe::AutomationPoint{muse::mpe::AutomationPoint::ArrivalFromPrevious{}, muse::real_t(0.2)};
         curve1[30000ULL * 50000ULL] =
             muse::mpe::AutomationPoint{muse::mpe::AutomationPoint::ExplicitArrival{muse::real_t(0.8), {}}, muse::real_t(0.8)};
+
+        data.dynamics.emplace(0, std::make_shared<const muse::mpe::DynamicAutomationMap>(std::move(curve0)));
+        data.dynamics.emplace(1, std::make_shared<const muse::mpe::DynamicAutomationMap>(std::move(curve1)));
 
         ExposedSequencer seq;
         seq.init(setup, muse::midi::Program{0, 0}, true, k_fluid_channel_count);

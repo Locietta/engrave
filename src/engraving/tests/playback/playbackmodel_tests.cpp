@@ -473,7 +473,7 @@ TEST_F(EngravingPlaybackModelTests, Spanners) {
 
         EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
 
-        const ArticulationMap::PairType &articulation = *note_event.expression_ctx().articulations.cbegin();
+        const ArticulationMap::value_type &articulation = *note_event.expression_ctx().articulations.cbegin();
 
         const ExpectedArticulation &expected_articulation = expected_articulations[i];
 
@@ -519,7 +519,7 @@ TEST_F(EngravingPlaybackModelTests, Dynamics) {
 
     const DynamicAutomationLayers &dynamics = model.resolve_track_playback_data(part->id(), part->instrument_id()).dynamics;
     ASSERT_FALSE(dynamics.empty());
-    const DynamicAutomationMap &dynamic_curve = dynamics.begin()->second;
+    const DynamicAutomationMap &dynamic_curve = *dynamics.begin()->second;
 
     // dynamics is now a sparse curve resolved on read (mirrors Volume/Pan automation), not a pre-baked dense
     // map -- resolve levels via evaluateCurveAt instead of exact-key lookup.
@@ -981,7 +981,7 @@ TEST_F(EngravingPlaybackModelTests, TempoChangesDuringNotes) {
                 // [THEN] Expect Pedal to be present
                 EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
 
-                const ArticulationMap::PairType &articulation = *note_event.expression_ctx().articulations.cbegin();
+                const ArticulationMap::value_type &articulation = *note_event.expression_ctx().articulations.cbegin();
 
                 // and have same length as note
                 EXPECT_EQ(articulation.first, ArticulationType::PEDAL);

@@ -306,7 +306,7 @@ void OrnamentsRenderer::apply_tied_notes_duration(const Note *note, const Articu
 void OrnamentsRenderer::convert(const ArticulationType type, const DisclosurePattern &pattern, NominalNoteCtx &&note_ctx,
                                 mpe::PlaybackEventList &result) {
     if (note_ctx.chord_ctx.nominal_duration_ticks <= pattern.boundaries.low_tempo_duration_ticks) {
-        result.emplace_back(build_note_event(note_ctx));
+        result.emplace_back(build_note_event(std::move(note_ctx)));
         return;
     }
 
@@ -369,7 +369,7 @@ void OrnamentsRenderer::create_events(const ArticulationType type, NominalNoteCt
 
             update_articulation_boundaries(type, sub_note_ctx.timestamp, sub_note_ctx.duration, sub_note_ctx.articulations);
 
-            result.emplace_back(build_note_event(sub_note_ctx));
+            result.emplace_back(build_note_event(std::move(sub_note_ctx)));
 
             note_ctx.timestamp += duration_step;
         }

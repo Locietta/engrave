@@ -51,7 +51,7 @@ inline muse::mpe::ArticulationMap make_standard_articulation_map(const muse::mpe
 
     IF_ASSERT_FAILED(profile) { return {}; }
 
-    ArticulationMeta meta(ArticulationType::STANDARD, profile->pattern(ArticulationType::STANDARD), timestamp, duration, 0, 0);
+    ArticulationMeta meta(ArticulationType::STANDARD, profile->pattern_ptr(ArticulationType::STANDARD), timestamp, duration, 0, 0);
 
     ArticulationMap articulations;
     articulations.emplace(ArticulationType::STANDARD, mpe::ArticulationAppliedData(std::move(meta), 0, mpe::hundred_percent));
@@ -73,10 +73,10 @@ inline muse::mpe::NoteEvent build_metronome_event(const TimeSigFrac &time_sig, c
                                                                         :
                                                                         pitch_level(PitchClass::F, 5); // low wood block
 
-    const ArticulationMap articulations = make_standard_articulation_map(profile, actual_timestamp, duration);
+    ArticulationMap articulations = make_standard_articulation_map(profile, actual_timestamp, duration);
 
-    return mpe::NoteEvent(actual_timestamp, duration, 0, 0, event_pitch_level, dynamic_level_from_type(mpe::DynamicType::MF), articulations,
-                          bps);
+    return mpe::NoteEvent(actual_timestamp, duration, 0, 0, event_pitch_level, dynamic_level_from_type(mpe::DynamicType::MF),
+                          std::move(articulations), bps);
 }
 } // namespace renderer_detail
 

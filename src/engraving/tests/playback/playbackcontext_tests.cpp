@@ -46,7 +46,7 @@ static void expect_levels_match(const DynamicAutomationLayers &actual_layers,
     EXPECT_FALSE(actual_layers.empty());
     for (const auto &layer : actual_layers) {
         for (const auto &[timestamp, expected_level] : expected_dynamics) {
-            const dynamic_level_t actual_level = dynamic_level_from_normalized(evaluate_curve_at(layer.second, timestamp));
+            const dynamic_level_t actual_level = dynamic_level_from_normalized(evaluate_curve_at(*layer.second, timestamp));
             EXPECT_EQ(actual_level, expected_level) << "at timestamp " << timestamp;
         }
     }
@@ -54,7 +54,7 @@ static void expect_levels_match(const DynamicAutomationLayers &actual_layers,
 
 static void expect_level_near(const DynamicAutomationLayers &actual_layers, timestamp_t timestamp, dynamic_level_t expected_level) {
     for (const auto &layer : actual_layers) {
-        const dynamic_level_t actual_level = dynamic_level_from_normalized(evaluate_curve_at(layer.second, timestamp));
+        const dynamic_level_t actual_level = dynamic_level_from_normalized(evaluate_curve_at(*layer.second, timestamp));
         EXPECT_LE(std::abs(actual_level - expected_level), 1) << "at timestamp " << timestamp;
     }
 }
@@ -260,7 +260,7 @@ TEST_F(EngravingPlaybackContextTests, Dynamics_OnDifferentVoices) {
         ASSERT_TRUE(actual_it != actual_layers.end());
 
         for (const auto &[timestamp, expected_level] : expected_levels) {
-            const dynamic_level_t actual_level = dynamic_level_from_normalized(evaluate_curve_at(actual_it->second, timestamp));
+            const dynamic_level_t actual_level = dynamic_level_from_normalized(evaluate_curve_at(*actual_it->second, timestamp));
             EXPECT_EQ(actual_level, expected_level) << "layer " << layer_idx << " at timestamp " << timestamp;
         }
     }

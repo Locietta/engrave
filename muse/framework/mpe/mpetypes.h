@@ -27,17 +27,17 @@
 #include <cstddef>
 #include <map>
 #include <math.h>
+#include <memory>
 #include <stdint.h>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
+#include "global/flatmap.h"
 #include "sortedrange.h"
 #include "soundid.h"
 #include "types/enumset.h"
 #include "types/number.h"
-#include "types/sharedflatmap.h"
-#include "types/sharedhashmap.h"
-#include "types/sharedmap.h"
 
 #ifdef C
 #undef C
@@ -118,7 +118,7 @@ float velocity_fraction(const Curve &curve) {
 }
 
 template <typename T>
-struct ValuesCurve : public SharedFlatMap<duration_percentage_t, T> {
+struct ValuesCurve : public FlatMap<duration_percentage_t, T> {
     std::pair<duration_percentage_t, T> amplitude_value_point() const { return ::muse::mpe::amplitude_value_point(*this); }
 
     T max_amplitude_level() const { return ::muse::mpe::max_amplitude_level(*this); }
@@ -483,7 +483,7 @@ struct ArticulationPatternSegment {
     ArticulationPatternSegment() = default;
 
     ArticulationPatternSegment(ArrangementPattern &&arrangement, PitchPattern &&pitch, ExpressionPattern &&expression)
-        : arrangement_pattern(arrangement), pitch_pattern(pitch), expression_pattern(expression) {}
+        : arrangement_pattern(arrangement), pitch_pattern(std::move(pitch)), expression_pattern(std::move(expression)) {}
 
     bool operator==(const ArticulationPatternSegment &other) const {
         return arrangement_pattern == other.arrangement_pattern && pitch_pattern == other.pitch_pattern &&
@@ -491,46 +491,59 @@ struct ArticulationPatternSegment {
     }
 };
 
-using ArticulationPattern = SharedFlatMap<duration_percentage_t, ArticulationPatternSegment>;
+using ArticulationPattern = FlatMap<duration_percentage_t, ArticulationPatternSegment>;
+using ArticulationPatternPtr = std::shared_ptr<const ArticulationPattern>;
+
+inline const ArticulationPattern &pattern_or_empty(const ArticulationPatternPtr &pattern) {
+    static const ArticulationPattern empty_pattern;
+    return pattern ? *pattern : empty_pattern;
+}
 
 struct ArticulationsProfile {
     std::vector<ArticulationFamily> supported_families;
 
-    const ArticulationPattern &pattern(const ArticulationType type, const ArticulationType fallback = ArticulationType::UNDEFINED) const {
+    const ArticulationPatternPtr &pattern_ptr(const ArticulationType type,
+                                              const ArticulationType fallback = ArticulationType::UNDEFINED) const {
         auto search = patterns_.find(type);
-        if (search == patterns_.cend() && fallback != ArticulationType::UNDEFINED) {
+        if (search == patterns_.end() && fallback != ArticulationType::UNDEFINED) {
             search = patterns_.find(fallback);
         }
 
-        if (search == patterns_.cend()) {
-            static const ArticulationPattern empty_pattern;
-            return empty_pattern;
-        }
-
-        return search->second;
+        static const ArticulationPatternPtr missing;
+        return search == patterns_.end() ? missing : search->second;
     }
 
-    void set_pattern(const ArticulationType type, const ArticulationPattern &scope) { patterns_.insert_or_assign(type, scope); }
+    const ArticulationPattern &pattern(const ArticulationType type, const ArticulationType fallback = ArticulationType::UNDEFINED) const {
+        return pattern_or_empty(pattern_ptr(type, fallback));
+    }
+
+    void set_pattern(const ArticulationType type, ArticulationPattern pattern) {
+        patterns_.insert_or_assign(type, std::make_shared<const ArticulationPattern>(std::move(pattern)));
+    }
 
     void remove_pattern(const ArticulationType type) { patterns_.erase(type); }
 
-    const SharedFlatMap<ArticulationType, ArticulationPattern> &data() const { return patterns_; }
+    const FlatMap<ArticulationType, ArticulationPatternPtr> &data() const { return patterns_; }
 
     bool contains(const ArticulationType type) const { return patterns_.find(type) != patterns_.cend(); }
 
     bool is_valid() const { return !patterns_.empty(); }
 
-    bool operator==(const ArticulationsProfile &other) const { return patterns_ == other.patterns_; }
+    bool operator==(const ArticulationsProfile &other) const {
+        return std::equal(
+            patterns_.begin(), patterns_.end(), other.patterns_.begin(), other.patterns_.end(),
+            [](const auto &a, const auto &b) { return a.first == b.first && (a.second == b.second || *a.second == *b.second); });
+    }
 
 private:
-    SharedFlatMap<ArticulationType, ArticulationPattern> patterns_;
+    FlatMap<ArticulationType, ArticulationPatternPtr> patterns_;
 };
 
 using ArticulationsProfilePtr = std::shared_ptr<ArticulationsProfile>;
 
 struct ArticulationMeta {
     ArticulationType type = ArticulationType::UNDEFINED;
-    ArticulationPattern pattern;
+    ArticulationPatternPtr pattern;
 
     timestamp_t timestamp = 0;
     duration_t overall_duration = 0;
@@ -541,15 +554,16 @@ struct ArticulationMeta {
 
     ArticulationMeta(const ArticulationType input_type) : type(input_type) {}
 
-    ArticulationMeta(const ArticulationType input_type, const ArticulationPattern &input_pattern, const timestamp_t input_timestamp,
+    ArticulationMeta(const ArticulationType input_type, ArticulationPatternPtr input_pattern, const timestamp_t input_timestamp,
                      const duration_t input_duration, const pitch_level_t overall_pitch_range = 0,
                      const dynamic_level_t overall_dynamic_range = 0)
-        : type(input_type), pattern(input_pattern), timestamp(input_timestamp), overall_duration(input_duration),
+        : type(input_type), pattern(std::move(input_pattern)), timestamp(input_timestamp), overall_duration(input_duration),
           overall_pitch_changes_range(overall_pitch_range), overall_dynamic_changes_range(overall_dynamic_range) {}
 
     bool operator==(const ArticulationMeta &other) const {
-        return type == other.type && pattern == other.pattern && timestamp == other.timestamp &&
-               overall_duration == other.overall_duration && overall_pitch_changes_range == other.overall_pitch_changes_range &&
+        return type == other.type && (pattern == other.pattern || pattern_or_empty(pattern) == pattern_or_empty(other.pattern)) &&
+               timestamp == other.timestamp && overall_duration == other.overall_duration &&
+               overall_pitch_changes_range == other.overall_pitch_changes_range &&
                overall_dynamic_changes_range == other.overall_dynamic_changes_range;
     }
 
@@ -558,12 +572,8 @@ struct ArticulationMeta {
     bool has_end() const { return overall_duration != mpe::infinite_duration; }
 };
 
-using ArticulationMetaMap = SharedHashMap<ArticulationType, ArticulationMeta>;
-
 struct ArticulationAppliedData {
     ArticulationMeta meta;
-
-    ArticulationPatternSegment applied_pattern_segment;
 
     duration_percentage_t occupied_from_value = 0;
     duration_percentage_t occupied_to_value = ::muse::mpe::hundred_percent;
@@ -586,7 +596,7 @@ struct ArticulationAppliedData {
     }
 
     bool operator==(const ArticulationAppliedData &other) const {
-        return meta == other.meta && applied_pattern_segment == other.applied_pattern_segment &&
+        return meta == other.meta && applied_pattern_segment() == other.applied_pattern_segment() &&
                occupied_from_value == other.occupied_from_value && occupied_to_value == other.occupied_to_value &&
                occupied_pitch_changes_range == other.occupied_pitch_changes_range &&
                occupied_dynamic_changes_range == other.occupied_dynamic_changes_range;
@@ -596,12 +606,13 @@ struct ArticulationAppliedData {
         occupied_from_value = from;
         occupied_to_value = to;
 
-        if (meta.pattern.empty()) {
+        const auto &pattern = pattern_or_empty(meta.pattern);
+        if (pattern.empty()) {
             return;
         }
 
         if (occupied_from_value == 0 && occupied_to_value == ::muse::mpe::hundred_percent) {
-            applied_pattern_segment = meta.pattern.cbegin()->second;
+            segment_index_ = 0;
             occupied_pitch_changes_range = meta.overall_pitch_changes_range;
             occupied_dynamic_changes_range = meta.overall_dynamic_changes_range;
             return;
@@ -612,20 +623,23 @@ struct ArticulationAppliedData {
         occupied_dynamic_changes_range =
             static_cast<pitch_level_t>(static_cast<float>(meta.overall_dynamic_changes_range) * occupied_factor);
 
-        const auto &lower = meta.pattern.lower_bound(occupied_from_value);
-
-        if (lower != meta.pattern.cend()) {
-            applied_pattern_segment = lower->second;
-        } else {
-            applied_pattern_segment = meta.pattern.cbegin()->second;
-        }
+        const auto lower = pattern.lower_bound(occupied_from_value);
+        segment_index_ = lower == pattern.end() ? 0 : lower - pattern.begin();
     }
+
+    const ArticulationPatternSegment &applied_pattern_segment() const {
+        static const ArticulationPatternSegment empty_segment;
+        const auto &pattern = pattern_or_empty(meta.pattern);
+        return pattern.empty() ? empty_segment : (pattern.begin() + segment_index_)->second;
+    }
+
+private:
+    // The selected segment lives in the immutable pattern owned by meta.
+    ArticulationPattern::difference_type segment_index_ = 0;
 };
 
-//! Ordered by ascending ArticulationType, which is the canonical precedence order of every decision that
-//! iterates the map (averaging fallback, per-note emission, ornament/tremolo/arpeggio choice).
-//! Flat backing preserves the normalized precedence order.
-struct ArticulationMap : public SharedFlatMap<ArticulationType, ArticulationAppliedData> {
+//! Ascending ArticulationType determines precedence for averaging fallbacks, per-note emission, and articulation selection.
+struct ArticulationMap : public FlatMap<ArticulationType, ArticulationAppliedData> {
     static constexpr size_t expected_size = (::muse::mpe::hundred_percent / ::muse::mpe::ten_percent) + 1;
 
     void update_occupied_range(const ArticulationType type, const duration_percentage_t input_occupied_from,
@@ -665,7 +679,7 @@ struct ArticulationMap : public SharedFlatMap<ArticulationType, ArticulationAppl
 
         if (size() == 1) {
             const ArticulationAppliedData &art_data = cbegin()->second;
-            const ArticulationPatternSegment &segment = art_data.applied_pattern_segment;
+            const ArticulationPatternSegment &segment = art_data.applied_pattern_segment();
             average_duration_factor_ = segment.arrangement_pattern.duration_factor_value;
             average_timestamp_offset_ = segment.arrangement_pattern.timestamp_offset_value;
             average_max_amplitude_level_ = segment.expression_pattern.max_amplitude_level();
@@ -714,7 +728,7 @@ private:
     };
 
     void sum_up_data(const ArticulationAppliedData &applied_articulation, ParamsSum &out) {
-        const ArticulationPatternSegment &segment = applied_articulation.applied_pattern_segment;
+        const ArticulationPatternSegment &segment = applied_articulation.applied_pattern_segment();
 
         out.duration_factor_value += segment.arrangement_pattern.duration_factor_value;
         out.timestamp_offset_value += segment.arrangement_pattern.timestamp_offset_value;
@@ -732,7 +746,6 @@ private:
             !exp_pattern.dynamic_offset_map.empty() && exp_pattern.max_amplitude_level() != dynamic_level_from_type(DynamicType::NATURAL);
 
         if (has_meaningful_dynamic_offset) {
-            // begin() detaches once; the loop changes values only, never keys or size.
             auto out_it = out.dynamic_offset_map.begin();
             auto seg_it = exp_pattern.dynamic_offset_map.cbegin();
 
@@ -748,7 +761,6 @@ private:
         const bool has_meaningful_pitch_offset = !pitch_pattern.pitch_offset_map.empty() && pitch_pattern.max_amplitude_level() != 0;
 
         if (has_meaningful_pitch_offset) {
-            // begin() detaches once; the loop changes values only, never keys or size.
             auto out_it = out.pitch_offset_map.begin();
             auto seg_it = pitch_pattern.pitch_offset_map.cbegin();
 
@@ -777,7 +789,7 @@ private:
             // dynamic change. Otherwise two articulations without an expression pattern (the default in the
             // 5.0 profiles) produce a non-empty all-zero average map, and noteVelocity() then reads a maximum
             // amplitude level of 0 instead of falling back to the nominal dynamic level.
-            const ExpressionPattern &exp_pattern = it->second.applied_pattern_segment.expression_pattern;
+            const ExpressionPattern &exp_pattern = it->second.applied_pattern_segment().expression_pattern;
             const bool has_meaningful_dynamic_offset = !exp_pattern.dynamic_offset_map.empty() &&
                                                        exp_pattern.max_amplitude_level() != dynamic_level_from_type(DynamicType::NATURAL);
 
@@ -785,11 +797,11 @@ private:
                 dynamic_changes_count++;
             }
 
-            if (it->second.applied_pattern_segment.pitch_pattern.max_amplitude_level() != 0) {
+            if (it->second.applied_pattern_segment().pitch_pattern.max_amplitude_level() != 0) {
                 pitch_changes_count++;
             }
 
-            if (it->second.applied_pattern_segment.arrangement_pattern.timestamp_offset_value != 0) {
+            if (it->second.applied_pattern_segment().arrangement_pattern.timestamp_offset_value != 0) {
                 timestamp_changes_count++;
             }
         }
@@ -808,9 +820,9 @@ private:
                 average_dynamic_offset_map_.insert_or_assign(pair.first, pair.second / dynamic_changes_count);
             }
         } else if (dynamic_changes_count == 0) {
-            average_max_amplitude_level_ = cbegin()->second.applied_pattern_segment.expression_pattern.max_amplitude_level();
+            average_max_amplitude_level_ = cbegin()->second.applied_pattern_segment().expression_pattern.max_amplitude_level();
             average_dynamic_range_ = cbegin()->second.meta.overall_dynamic_changes_range;
-            average_dynamic_offset_map_ = cbegin()->second.applied_pattern_segment.expression_pattern.dynamic_offset_map;
+            average_dynamic_offset_map_ = cbegin()->second.applied_pattern_segment().expression_pattern.dynamic_offset_map;
         }
 
         if (pitch_changes_count > 0) {
@@ -821,7 +833,7 @@ private:
             }
         } else if (pitch_changes_count == 0) {
             average_pitch_range_ = cbegin()->second.meta.overall_pitch_changes_range;
-            average_pitch_offset_map_ = cbegin()->second.applied_pattern_segment.pitch_pattern.pitch_offset_map;
+            average_pitch_offset_map_ = cbegin()->second.applied_pattern_segment().pitch_pattern.pitch_offset_map;
         }
     }
 

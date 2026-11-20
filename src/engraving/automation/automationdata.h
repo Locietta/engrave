@@ -34,10 +34,10 @@ struct AutomationData {
     bool is_empty() const;
 
     //! NOTE: full replacement; any existing key absent from the argument is removed
-    void set_curves(const AutomationCurveMap &curves);
+    void set_curves(AutomationCurveMap curves);
 
     //! NOTE: replaces only the given curves, keeping all others; keys absent from the argument are untouched
-    void replace_curves(const AutomationCurveMap &curves);
+    void replace_curves(AutomationCurveMap curves);
 
     //! NOTE: writes, moves, or erases points in one batch, per each edit's SetPoint/MovePoint/ErasePoint
     void edit_points(const AutomationCurveKey &key, const AutomationPointEdits &edits);

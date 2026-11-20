@@ -250,8 +250,7 @@ DynamicAutomationLayers PlaybackContext::dynamic_level_layers(const track_idx_t 
     }
 
     DynamicAutomationLayers result;
-    const AutomationCurve *last_curve = nullptr;
-    DynamicAutomationMap last_level_map;
+    muse::FlatMap<const AutomationCurve *, std::shared_ptr<const DynamicAutomationMap>> converted;
 
     for (track_idx_t track_idx = track_from; track_idx < track_to; ++track_idx) {
         if (checkpoint) checkpoint();
@@ -260,10 +259,9 @@ DynamicAutomationLayers PlaybackContext::dynamic_level_layers(const track_idx_t 
             continue;
         }
 
-        if (curve != last_curve) {
-            last_level_map = DynamicAutomationMap{};
-            last_curve = curve;
-            auto hint = last_level_map.end();
+        auto [entry, inserted] = converted.try_emplace(curve);
+        if (inserted) {
+            DynamicAutomationMap levels;
 
             // AutomationCurve ticks are always in expanded utick space, regardless of the Play Repeats setting
             const TempoTimeline &expanded_timeline = score_->tempo_timeline(/*expandRepeats*/ true);
@@ -271,16 +269,17 @@ DynamicAutomationLayers PlaybackContext::dynamic_level_layers(const track_idx_t 
             if (curve->cbegin()->first > 0) {
                 AutomationPoint natural_point;
                 natural_point.value.out_value = real_t(::mu::engraving::natural_dynamic_level) / real_t(::muse::mpe::max_dynamic_level);
-                hint = last_level_map.insert(hint, {expanded_timeline.utick2utime(0) * 1000000, natural_point.value});
+                levels.insert(levels.end(), {expanded_timeline.utick2utime(0) * 1000000, natural_point.value});
             }
 
             for (const auto &[tick, point] : *curve) {
                 if (checkpoint) checkpoint();
-                hint = last_level_map.insert(hint, {expanded_timeline.utick2utime(tick) * 1000000, point.value});
+                levels.insert(levels.end(), {expanded_timeline.utick2utime(tick) * 1000000, point.value});
             }
+            entry->second = std::make_shared<const DynamicAutomationMap>(std::move(levels));
         }
 
-        result[static_cast<layer_idx_t>(track_idx)] = last_level_map;
+        result.emplace_hint(result.end(), static_cast<layer_idx_t>(track_idx), entry->second);
     }
 
     return result;

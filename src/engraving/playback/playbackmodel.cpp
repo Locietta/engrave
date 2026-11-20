@@ -83,14 +83,19 @@ struct LegacyStore {
     }
 
     template <class Walk>
-    void apply_context(const InstrumentTrackId &track_id, const PlaybackPartData &data, const Walk &walk) {
+    void apply_context(const InstrumentTrackId &track_id, PlaybackPartData &data, const Walk &walk, bool last_track) {
         PlaybackData &playback_data = track(track_id);
-        playback_data.dynamics = data.dynamics;
 #ifdef ENGRAVE_PLAYBACK_HARNESS
         if (flat) {
             freeze_dynamics(flat->track(track_id), data.dynamics, flat->progress);
         }
 #endif
+
+        if (last_track) {
+            playback_data.dynamics = std::move(data.dynamics);
+        } else {
+            playback_data.dynamics = data.dynamics;
+        }
 
         std::set<timestamp_t> new_event_timestamps;
 

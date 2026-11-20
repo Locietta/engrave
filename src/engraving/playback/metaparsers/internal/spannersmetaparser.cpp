@@ -122,8 +122,8 @@ void SpannersMetaParser::do_parse(const EngravingItem *item, const RenderingCont
         return;
     }
 
-    const mpe::ArticulationPattern &pattern = spanner_ctx.profile->pattern(type);
-    if (pattern.empty()) {
+    const auto &pattern = spanner_ctx.profile->pattern_ptr(type);
+    if (!pattern || pattern->empty()) {
         return;
     }
 
