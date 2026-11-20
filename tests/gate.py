@@ -145,7 +145,7 @@ def main():
     p.add_argument(
         "--pixi-manifest",
         type=Path,
-        help="pixi.toml whose default environment provides cairo and zlib (default: the engine source's)",
+        help="pixi.toml whose default environment provides cairo, freetype, and zlib (default: the engine source's)",
     )
     p.add_argument("-j", "--jobs", type=int, default=8, help="Compile jobs (default: 8)")
     p.add_argument(
@@ -274,7 +274,11 @@ def main():
         ],
     )
     if not a.skip_build:
-        if not env_prefix.is_dir():
+        native_root = env_prefix / "Library" if (env_prefix / "Library").is_dir() else env_prefix
+        ft_ready = (
+            (native_root / "include/ft2build.h").is_file() or (native_root / "include/freetype2/ft2build.h").is_file()
+        ) and (native_root / "lib" / ("freetype.lib" if sys.platform == "win32" else "libfreetype.so")).is_file()
+        if not env_prefix.is_dir() or not ft_ready:
             run("pixi-install", ["pixi", "install", "--locked", "--manifest-path", manifest])
         bazel = _find_bazel(env_prefix)
         a.repo_cache.mkdir(parents=True, exist_ok=True)
