@@ -1143,6 +1143,13 @@ TEST(Export470, UsesInitialStaffTypeForLegacyNoteOrdinals) {
     const auto *staff = source.staff(0);
     ASSERT_FALSE(staff->is_tab_staff(Fraction(0, 1)));
     ASSERT_TRUE(staff->is_tab_staff(Fraction(1, 1)));
+    const auto source_note = [&](std::string_view id) { return to_note(source.eid_register()->item_from_eid(EID::from_std_string(id))); };
+    const auto *high = source_note("E_E");
+    const auto *low = source_note("F_F");
+    ASSERT_TRUE(high && low);
+    ASSERT_EQ(high->chord(), low->chord());
+    ASSERT_GT(high->pitch(), low->pitch());
+    ASSERT_GT(high->string(), low->string());
     const auto legacy = document->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
     ASSERT_TRUE(legacy) << legacy.error().message;
     pugi::xml_document xml;

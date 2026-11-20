@@ -12,13 +12,15 @@
     </Part>
     <Staff id="1">
       <Measure>
-        <voice><Chord><durationType>whole</durationType>
-          <Note><eid>C_C</eid><pitch>64</pitch><tpc>18</tpc></Note>
-        </Chord></voice>
+        <voice><Rest><durationType>measure</durationType></Rest></voice>
       </Measure>
       <Measure>
         <StaffTypeChange><eid>D_D</eid><StaffType group="tablature"><lines>6</lines></StaffType></StaffTypeChange>
-        <voice><Chord><durationType>whole</durationType>
+        <voice>
+          <Chord><durationType>half</durationType>
+            <Note><eid>C_C</eid><pitch>64</pitch><tpc>18</tpc><string>3</string><fret>14</fret></Note>
+          </Chord>
+          <Chord><durationType>half</durationType>
           <Note><eid>E_E</eid><pitch>64</pitch><tpc>18</tpc><string>3</string><fret>14</fret>
             <Tie><eid>G_G</eid><startElement>C_C</startElement><endElement>E_E</endElement><track>0</track></Tie>
           </Note>

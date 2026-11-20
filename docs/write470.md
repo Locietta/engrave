@@ -132,8 +132,9 @@ Output is refused with `ErrorCode::UNSUPPORTED` when constructs have no defined
 | `B470_UNSUPPORTED_FEATURE` | Cannot write 4.70: the source feature has no defined downgrade. | Owning source object kind and EID                                                                                           |
 | `B470_UNSUPPORTED_TARGET`  | Cannot write the requested score version.                       | `kind: "request"`, `id: "version:<requested value>"`                                                                        |
 
-Refusals include unmappable endpoints, unknown spanner types, authored text-line
-size scaling and slur or tie masking, active newer tremolo and chord-line
+Refusals include unmappable endpoints, unknown spanner types, text-line size
+overrides outside the legacy hairpin, ottava, pedal, and volta readers, slur
+or tie masking, active newer tremolo and chord-line
 properties, and authored automation curves. The reader reconstructs generated
 automation curves from the score. Custom chord lists require a root render
 program and representable render actions. Static staff labels are projected into
