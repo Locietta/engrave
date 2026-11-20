@@ -21,6 +21,8 @@
  */
 #include "beamlayout.h"
 
+#include <algorithm>
+#include <limits>
 #include <set>
 #include <unordered_map>
 
@@ -834,7 +836,11 @@ void BeamLayout::vertical_adjust_beamed_rests(Rest *rest, Beam *beam, LayoutCont
         up ? beam_shape.vertical_clearance(rest_shape, min_beam_to_rest_x_dist) : rest_shape.vertical_clearance(beam_shape);
     const double line_distance = rest->staff()->line_distance(rest->tick()) * spatium;
 
-    int clearance_in_steps = std::ceil(rest_to_beam_clearance / line_distance);
+    // vertical_clearance() returns double::max() when shapes do not overlap horizontally.
+    const double clamped_clearance =
+        std::clamp(std::ceil(rest_to_beam_clearance / line_distance), static_cast<double>(std::numeric_limits<int>::min()),
+                   static_cast<double>(std::numeric_limits<int>::max()));
+    int clearance_in_steps = static_cast<int>(clamped_clearance);
     up ? rest->vertical_clearance().set_above(clearance_in_steps) : rest->vertical_clearance().set_below(clearance_in_steps);
 
     if (rest_to_beam_clearance > rest_to_beam_padding) {

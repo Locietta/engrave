@@ -476,7 +476,9 @@ struct AsciiStringView {
         return std::string_view(data_, size_);
     }
 
-    inline bool operator==(const AsciiStringView &s) const { return size_ == s.size_ && std::memcmp(data_, s.data_, size_) == 0; }
+    inline bool operator==(const AsciiStringView &s) const {
+        return size_ == s.size_ && (size_ == 0 || std::memcmp(data_, s.data_, size_) == 0);
+    }
 
     inline bool operator!=(const AsciiStringView &s) const { return !this->operator==(s); }
 
@@ -486,7 +488,7 @@ struct AsciiStringView {
 
     inline bool operator==(const char *s) const {
         size_t sz = (s ? std::char_traits<char>::length(s) : 0);
-        return size_ == sz && (s ? std::memcmp(data_, s, size_) == 0 : true);
+        return size_ == sz && (size_ == 0 || std::memcmp(data_, s, size_) == 0);
     }
 
     inline bool operator!=(const char *s) const { return !this->operator==(s); }
@@ -495,7 +497,7 @@ struct AsciiStringView {
         if (size_ != s.size_) {
             return size_ < s.size_;
         }
-        return std::memcmp(data_, s.data_, size_) < 0;
+        return size_ > 0 && std::memcmp(data_, s.data_, size_) < 0;
     }
 
     const char *ascii() const;

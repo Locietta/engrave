@@ -1615,8 +1615,8 @@ const std::vector<RenderActionPtr> &ParsedChord::render_list(const ChordList *cl
     }
 
     size_t mod_idx = 0;
-    const double mod_list_size = modifier_list_.size();
-    const size_t final_mod_idx = mod_list_size - 1;
+    const size_t mod_list_size = modifier_list_.size();
+    const size_t final_mod_idx = mod_list_size > 0 ? mod_list_size - 1 : 0;
     const bool stack_modifiers_enabled = modifier_list_.size() > 1 && stacked;
     const bool super_script_enabled = !stack_modifiers_enabled && cl->chord_preset() == ChordStylePreset::JAZZ;
 
@@ -1654,7 +1654,7 @@ const std::vector<RenderActionPtr> &ParsedChord::render_list(const ChordList *cl
         if (stack_sus_or_add && stack_modifier && mod_idx == 0) {
             cur_mod.remove(sus_add_regex);
         }
-        const bool modifier_end = cur_mod.ends_with(n) && mod_idx != final_mod_idx;
+        const bool modifier_end = cur_mod.ends_with(n) && mod_idx < final_mod_idx;
 
         std::vector<RenderActionPtr> rl;
         std::vector<ChordToken> defined_tokens;
@@ -1685,8 +1685,8 @@ const std::vector<RenderActionPtr> &ParsedChord::render_list(const ChordList *cl
 
         // build render list
         // check for adjustments
-        double y_adjust =
-            adjust ? cl->position(tok.names, stack_modifier, super_script_modifier, ctc, final_mod_idx - mod_idx, mod_list_size) : 0.0;
+        const size_t remaining_mods = final_mod_idx > mod_idx ? final_mod_idx - mod_idx : 0;
+        double y_adjust = adjust ? cl->position(tok.names, stack_modifier, super_script_modifier, ctc, remaining_mods, mod_list_size) : 0.0;
 
         // Modifier behaviour
         if (tok.token_class == ChordTokenClass::MODIFIER) {

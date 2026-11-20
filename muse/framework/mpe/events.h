@@ -195,7 +195,7 @@ private:
 
         dynamic_level_t actual_dynamic_level = nominal_dynamic_level + amplification_diff;
 
-        if (actual_dynamic_level == articulation_dynamic_level) {
+        if (articulation_dynamic_level == 0 || actual_dynamic_level == articulation_dynamic_level) {
             return;
         }
 
