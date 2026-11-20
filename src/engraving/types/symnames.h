@@ -21,9 +21,6 @@
  */
 #pragma once
 
-#include <array>
-#include <map>
-
 #include "symid.h"
 #include "types/string.h"
 #include "types/translatablestring.h"
@@ -38,15 +35,5 @@ struct SymNames {
     static SymId sym_id_by_name(const muse::String &name, SymId def = SymId::NO_SYM);
     static SymId sym_id_by_old_name(const muse::AsciiStringView &old_name);
     static SymId sym_id_by_user_name(const muse::String &user_name);
-
-private:
-    static void load_name_to_sym_id_hash();
-
-    static const std::array<muse::AsciiStringView, size_t(SymId::LAST_SYM) + 1> s_sym_names;
-    static const std::array<muse::TranslatableString, size_t(SymId::LAST_SYM) + 1> s_sym_user_names;
-
-    //! Will be initialized when first used
-    static std::map<muse::AsciiStringView, SymId> s_name_to_sym_id_hash;
-    static const std::map<muse::AsciiStringView, SymId> s_old_name_to_sym_id_hash;
 };
 } // namespace mu::engraving

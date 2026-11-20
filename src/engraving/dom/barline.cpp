@@ -22,6 +22,8 @@
 
 #include "barline.h"
 
+#include <array>
+
 #include "../types/symnames.h"
 #include "articulation.h"
 #include "log.h"
@@ -45,24 +47,31 @@ using namespace muse::draw;
 using namespace mu::engraving;
 using namespace mu::engraving::read400;
 
-const std::vector<BarLineTableItem> BarLine::bar_line_table{
-    {BarLineType::NORMAL, SymNames::user_name_for_sym_id(SymId::BARLINE_SINGLE)},
-    {BarLineType::DOUBLE, SymNames::user_name_for_sym_id(SymId::BARLINE_DOUBLE)},
-    {BarLineType::START_REPEAT, SymNames::user_name_for_sym_id(SymId::REPEAT_LEFT)},
-    {BarLineType::END_REPEAT, SymNames::user_name_for_sym_id(SymId::REPEAT_RIGHT)},
-    {BarLineType::BROKEN, SymNames::user_name_for_sym_id(SymId::BARLINE_DASHED)},
-    {BarLineType::END, SymNames::user_name_for_sym_id(SymId::BARLINE_FINAL)},
-    {BarLineType::END_START_REPEAT, SymNames::user_name_for_sym_id(SymId::REPEAT_RIGHT_LEFT)},
-    {BarLineType::DOTTED, SymNames::user_name_for_sym_id(SymId::BARLINE_DOTTED)},
-    {BarLineType::REVERSE_END, SymNames::user_name_for_sym_id(SymId::BARLINE_REVERSE_FINAL)},
-    {BarLineType::HEAVY, SymNames::user_name_for_sym_id(SymId::BARLINE_HEAVY)},
-    {BarLineType::DOUBLE_HEAVY, SymNames::user_name_for_sym_id(SymId::BARLINE_HEAVY_HEAVY)},
+namespace {
+struct BarLineTableItem {
+    BarLineType type;
+    SymId label;
 };
 
+constexpr auto bar_line_table = std::to_array<BarLineTableItem>({
+    {BarLineType::NORMAL, SymId::BARLINE_SINGLE},
+    {BarLineType::DOUBLE, SymId::BARLINE_DOUBLE},
+    {BarLineType::START_REPEAT, SymId::REPEAT_LEFT},
+    {BarLineType::END_REPEAT, SymId::REPEAT_RIGHT},
+    {BarLineType::BROKEN, SymId::BARLINE_DASHED},
+    {BarLineType::END, SymId::BARLINE_FINAL},
+    {BarLineType::END_START_REPEAT, SymId::REPEAT_RIGHT_LEFT},
+    {BarLineType::DOTTED, SymId::BARLINE_DOTTED},
+    {BarLineType::REVERSE_END, SymId::BARLINE_REVERSE_FINAL},
+    {BarLineType::HEAVY, SymId::BARLINE_HEAVY},
+    {BarLineType::DOUBLE_HEAVY, SymId::BARLINE_HEAVY_HEAVY},
+});
+} // namespace
+
 String BarLine::translated_user_type_name(BarLineType t) {
-    for (const auto &i : ::mu::engraving::BarLine::bar_line_table) {
+    for (const auto &i : bar_line_table) {
         if (i.type == t) {
-            return i.user_name.translated();
+            return SymNames::translated_user_name_for_sym_id(i.label);
         }
     }
     return String();
@@ -481,9 +490,9 @@ EngravingItem *BarLine::next_segment_element() {
 }
 
 muse::TranslatableString BarLine::subtype_user_name() const {
-    for (const auto &i : ::mu::engraving::BarLine::bar_line_table) {
+    for (const auto &i : bar_line_table) {
         if (i.type == bar_line_type()) {
-            return i.user_name;
+            return SymNames::user_name_for_sym_id(i.label);
         }
     }
     return TranslatableString();
