@@ -8,6 +8,7 @@
 #include <iterator>
 #include <limits>
 #include <optional>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -355,13 +356,19 @@ bool project_inline_chord_list(pugi::xml_node root, const Score &score, bool emb
 
     ankerl::unordered_dense::map<std::string_view, pugi::xml_node> symbols;
     ankerl::unordered_dense::map<std::string_view, std::vector<pugi::xml_node>> tokens;
+    std::vector<pugi::xml_node> unmatched_fonts;
+    std::set<pugi::xml_node> unmatched_tokens;
     for (auto font : baseline.children("font")) {
+        poll();
+        unmatched_fonts.push_back(font);
         for (auto symbol : font.children("sym")) {
             poll();
             symbols.try_emplace(symbol.attribute("name").value(), symbol);
         }
     }
     for (auto token : baseline.children("token")) {
+        poll();
+        unmatched_tokens.insert(token);
         for (auto name : token.children("name")) {
             poll();
             tokens[name.child_value()].push_back(token);
@@ -375,14 +382,18 @@ bool project_inline_chord_list(pugi::xml_node root, const Score &score, bool emb
             const auto next_symbol = symbol.next_sibling("sym");
             if (const auto found = symbols.find(symbol.attribute("name").value()); found != symbols.end()) {
                 if (!same_xml(symbol, found->second) || !same_chord_font(font, found->second.parent())) return false;
+                symbols.erase(found);
                 font.remove_child(symbol);
             }
             symbol = next_symbol;
         }
-        if (!font.child("sym") && std::ranges::any_of(baseline.children("font"), [&](auto entry) {
-                poll();
-                return same_chord_font(font, entry);
-            })) {
+        const auto inherited = std::ranges::find_if(unmatched_fonts, [&](auto entry) {
+            poll();
+            return same_chord_font(font, entry);
+        });
+        const bool inherited_font = inherited != unmatched_fonts.end();
+        if (inherited_font) unmatched_fonts.erase(inherited);
+        if (inherited_font && !font.child("sym")) {
             root.remove_child(font);
         } else {
             const auto index = font.attribute("id").as_ullong();
@@ -399,10 +410,12 @@ bool project_inline_chord_list(pugi::xml_node root, const Score &score, bool emb
             poll();
             const auto found = tokens.find(name.child_value());
             if (found == tokens.end()) continue;
-            if (std::ranges::any_of(found->second, [&](auto entry) { return same_xml(token, entry); })) {
+            for (auto entry : found->second) {
+                if (!same_xml(token, entry)) continue;
                 inherited = true;
-                break;
+                if (unmatched_tokens.erase(entry)) break;
             }
+            if (inherited) break;
             for (auto entry : found->second) {
                 poll();
                 const std::string_view preset_type = entry.attribute("class").value();
@@ -412,6 +425,8 @@ bool project_inline_chord_list(pugi::xml_node root, const Score &score, bool emb
         if (inherited) root.remove_child(token);
         token = next;
     }
+    // Omitted entries would reappear from the preloaded preset.
+    if (!symbols.empty() || !unmatched_fonts.empty() || !unmatched_tokens.empty()) return false;
     for (const auto *program : {"renderFunction", "renderBass", "renderBassOffset"}) {
         if (!root.child(program) && baseline.child(program)) root.append_child(program);
     }
@@ -548,7 +563,10 @@ void convert_note_indices(pugi::xml_node chord, const Score &score, std::optiona
         return;
     }
     auto notes = legacy_notes(chord, *source, poll);
-    sort_legacy_percussion_notes(notes, *source, poll);
+    if (!sort_legacy_percussion_notes(notes, *source, poll)) {
+        unsupported(chord, "NoteParenGroup on percussion unisons with ambiguous incoming ties", score_id, warnings);
+        return;
+    }
 
     struct Group {
         pugi::xml_node xml;
@@ -1009,27 +1027,32 @@ void warn_active_instrument_groups(const Score &score, std::vector<ExportWarning
     ticks.erase(std::unique(ticks.begin(), ticks.end()), ticks.end());
     std::vector<bool> grouped(score.parts().size(), false);
     for (const auto tick : ticks) {
-        const Instrument *previous = nullptr;
-        std::size_t previous_index = 0;
+        const Instrument *group_start = nullptr;
+        std::size_t group_start_index = 0;
         for (std::size_t index = 0; index < grouped.size(); ++index) {
             poll();
             const auto *part = score.parts()[index];
             const auto *instrument = part->instrument(mu::engraving::Fraction::from_ticks(tick));
             const auto &label = instrument->instrument_label();
             if (part->is_shared_part() || !label.allow_group_name()) {
-                previous = nullptr;
+                group_start = nullptr;
                 continue;
             }
-            if (!part->show() || part->visible_staves_count() == 0) {
-                if (previous && previous->id() != instrument->id()) previous = nullptr;
-                continue;
+            if (group_start) {
+                const auto &start_label = group_start->instrument_label();
+                if (group_start->id() != instrument->id() ||
+                    (label.use_custom_group_name() && (label.custom_name_long_group() != start_label.custom_name_long_group() ||
+                                                       label.custom_name_short_group() != start_label.custom_name_short_group())))
+                    group_start = nullptr;
             }
-            if (previous && previous->id() == instrument->id() && enabled(instrument->group())) {
-                grouped[previous_index] = true;
+            if (!part->show() || part->visible_staves_count() == 0) continue;
+            if (!group_start) {
+                group_start = instrument;
+                group_start_index = index;
+            } else if (enabled(instrument->group())) {
+                grouped[group_start_index] = true;
                 grouped[index] = true;
             }
-            previous = instrument;
-            previous_index = index;
         }
     }
     for (std::size_t index = 0; index < grouped.size(); ++index) {

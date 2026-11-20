@@ -28,7 +28,7 @@ struct LegacyNote {
 };
 
 std::vector<LegacyNote> legacy_notes(pugi::xml_node chord, const mu::engraving::Chord &dom, void (*poll)());
-void sort_legacy_percussion_notes(std::vector<LegacyNote> &notes, const mu::engraving::Chord &dom, void (*poll)());
+bool sort_legacy_percussion_notes(std::vector<LegacyNote> &notes, const mu::engraving::Chord &dom, void (*poll)());
 bool is_legacy_connector(std::string_view type, std::string_view receiver);
 std::vector<ConnectorIssue> reconstruct_connectors(pugi::xml_node root, std::span<mu::engraving::Score *const> scores, void (*poll)());
 

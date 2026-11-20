@@ -205,17 +205,27 @@ std::vector<LegacyNote> legacy_notes(pugi::xml_node chord, const Chord &dom, voi
     return notes;
 }
 
-void sort_legacy_percussion_notes(std::vector<LegacyNote> &notes, const Chord &dom, void (*poll)()) {
+bool sort_legacy_percussion_notes(std::vector<LegacyNote> &notes, const Chord &dom, void (*poll)()) {
     // 4.7.6 resolves the group while the chord is still on the tick-zero dummy segment.
     const Fraction initial_tick(0, 1);
-    if (dom.staff()->staff_type(initial_tick)->group() != StaffGroup::PERCUSSION) return;
+    if (dom.staff()->staff_type(initial_tick)->group() != StaffGroup::PERCUSSION) return true;
     const auto *drumset = dom.part()->instrument(initial_tick)->drumset();
+    const LegacyNote *previous_tied = nullptr;
     for (auto &entry : notes) {
         poll();
         if (!drumset || !drumset->is_valid(entry.pitch))
             entry.line = 0;
         else if (!entry.note->fixed())
             entry.line = drumset->line(entry.pitch);
+        if (const auto *tie = entry.note->tie_back()) {
+            // Pitched insertion keeps unisons adjacent. The legacy comparator
+            // is non-strict for two partial ties and can dereference a missing
+            // start note if it compares a partial tie to a full tie.
+            if (previous_tied && previous_tied->pitch == entry.pitch &&
+                (tie->is_partial_tie() || previous_tied->note->tie_back()->is_partial_tie()))
+                return false;
+            previous_tied = &entry;
+        }
     }
     std::sort(notes.begin(), notes.end(), [&](const LegacyNote &left, const LegacyNote &right) {
         poll();
@@ -224,13 +234,13 @@ void sort_legacy_percussion_notes(std::vector<LegacyNote> &notes, const Chord &d
         const auto *left_tie = left.note->tie_back();
         const auto *right_tie = right.note->tie_back();
         if (!left_tie || !right_tie) return left_tie && !right_tie;
-        if (left_tie->is_partial_tie() || right_tie->is_partial_tie()) return !left_tie->is_partial_tie() && right_tie->is_partial_tie();
         const auto *start = left_tie->start_note();
         const auto *other_start = right_tie->start_note();
         if (!start || !other_start) return start && !other_start;
         if (start->chord() == other_start->chord()) return start->unison_index() < other_start->unison_index();
         return start->chord()->is_before(other_start->chord());
     });
+    return true;
 }
 
 namespace {

@@ -796,6 +796,55 @@ TEST(Export470, IndexesPercussionParenthesisBeforeUntiedUnison) {
     EXPECT_EQ(xml.select_node("//NoteParenGroup/Notes/NoteIdx").node().text().as_int(-1), 0);
 }
 
+TEST(Export470, RefusesPercussionParenthesesOnUnisonsWithConflictingIncomingTies) {
+    using namespace mu::engraving;
+    auto source = connector_score(
+        R"(<Measure><voice><Chord><durationType>half</durationType>
+           <Note><eid>D_D</eid><pitch>36</pitch><tpc>14</tpc></Note></Chord>
+           <Chord><durationType>half</durationType>
+           <Note><eid>E_E</eid><pitch>36</pitch><tpc>14</tpc></Note>
+           <Note><eid>F_F</eid><pitch>36</pitch><tpc>14</tpc></Note>
+           <NoteParenGroup><Notes><NoteEID>F_F</NoteEID></Notes></NoteParenGroup>
+           </Chord></voice></Measure>)",
+        "<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>", "");
+    source.replace(source.find("group=\"pitched\""), std::string_view("group=\"pitched\"").size(), "group=\"percussion\"");
+    source.insert(source.find("<instrumentId>"), R"(<useDrumset>1</useDrumset><Drum pitch="36"><head>normal</head><line>7</line></Drum>)");
+    for (const bool full_tie : {false, true}) {
+        SCOPED_TRACE(full_tie);
+        const auto document = g_engine->open(as_bytes(source));
+        ASSERT_TRUE(document) << document.error().message;
+        auto &master = master_of(**document);
+        const auto find_note = [&](std::string_view eid) {
+            return to_note(master.eid_register()->item_from_eid(EID::from_std_string(eid)));
+        };
+        auto *first = find_note("D_D");
+        auto *left = find_note("E_E");
+        auto *right = find_note("F_F");
+        ASSERT_TRUE(first && left && right);
+        for (auto *note : {left, right}) {
+            if (full_tie && note == left) {
+                auto *tie = Factory::create_tie(first);
+                tie->set_note_span(first, note);
+                master.add_element(tie);
+                tie->assign_new_eid();
+                ASSERT_EQ(note->tie_back(), tie);
+            } else {
+                auto *tie = Factory::create_partial_tie(note);
+                tie->set_partial_spanner_direction(PartialSpannerDirection::INCOMING);
+                tie->set_end_note(note);
+                note->add(tie);
+                tie->assign_new_eid();
+                ASSERT_EQ(note->incoming_partial_tie(), tie);
+            }
+        }
+        const auto result = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+        ASSERT_FALSE(result);
+        ASSERT_EQ(result.error().export_warnings.size(), 1u) << result.error().message;
+        EXPECT_EQ(result.error().export_warnings.front().code, "B470_UNSUPPORTED_FEATURE");
+        EXPECT_NE(result.error().message.find("percussion unisons with ambiguous incoming ties"), std::string::npos);
+    }
+}
+
 TEST(Export470, UsesInitialStaffTypeForParenthesisOrdinals) {
     using namespace mu::engraving;
     for (const bool starts_percussion : {false, true}) {
@@ -913,6 +962,35 @@ TEST(Export470, HiddenDifferentInstrumentSeparatesGroupNames) {
     const auto result = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
     ASSERT_TRUE(result) << result.error().message;
     EXPECT_TRUE(result->warnings.empty());
+}
+
+TEST(Export470, HiddenDifferentCustomNameSeparatesSameInstrumentGroups) {
+    const auto source = R"(<museScore version="5.00"><Score><eid>A_A</eid><Division>480</Division>
+        <Style><windsNameByGroup>1</windsNameByGroup></Style>
+        <Part id="1"><eid>P_P</eid><Staff><eid>B_B</eid><StaffType group="pitched"/></Staff>
+            <Instrument id="flute"><instrumentId>wind.flutes.flute</instrumentId></Instrument></Part>
+        <Part id="2"><eid>Q_Q</eid><Staff><eid>C_C</eid><StaffType group="pitched"/></Staff>
+            <show>0</show><Instrument id="flute"><instrumentId>wind.flutes.flute</instrumentId>
+                <InstrumentLabel><useCustomGroupName>1</useCustomGroupName><customNameShortGroup>Solo</customNameShortGroup></InstrumentLabel>
+            </Instrument></Part>
+        <Part id="3"><eid>R_R</eid><Staff><eid>D_D</eid><StaffType group="pitched"/></Staff>
+            <Instrument id="flute"><instrumentId>wind.flutes.flute</instrumentId></Instrument></Part>
+        <Staff id="1"><Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure></Staff>
+        <Staff id="2"><Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure></Staff>
+        <Staff id="3"><Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure></Staff>
+        </Score></museScore>)";
+    const auto document = g_engine->open(as_bytes(source));
+    ASSERT_TRUE(document) << document.error().message;
+    const auto &parts = master_of(**document).parts();
+    ASSERT_EQ(parts.size(), 3u);
+    ASSERT_TRUE(parts[0]->show() && !parts[1]->show() && parts[2]->show());
+    const auto result = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+    ASSERT_TRUE(result) << result.error().message;
+    ASSERT_EQ(result->warnings.size(), 1u);
+    const auto &warning = result->warnings.front();
+    EXPECT_EQ(warning.code, "B470_INSTRUMENT_GROUP_NAME_DROPPED");
+    ASSERT_TRUE(warning.object);
+    EXPECT_EQ(warning.object->id, "Q_Q");
 }
 
 TEST(Export470, PreservesUserAndCourtesyAccidentalsAcrossATie) {
@@ -1091,6 +1169,52 @@ TEST(Export470, RefusesInlinePresetCollisionButAllowsArchiveSidecar) {
     const auto sharp = master_of(**reopened).chord_list()->token(u"#", ChordTokenClass::ACCIDENTAL);
     ASSERT_EQ(sharp.render_list.size(), 1u);
     EXPECT_EQ(static_cast<const RenderActionSet &>(*sharp.render_list.front()).text().to_std_string(), "diamond");
+}
+
+TEST(Export470, RefusesInlinePresetOmissionsButAllowsArchiveSidecar) {
+    auto document = open_path(write470_fixture().parent_path() / "custom_chordlist.mscx");
+    ASSERT_TRUE(document);
+    const auto export_archive = [&] {
+        return document->export_score_with_warnings({.format = engrave::Format::MSCZ, .native_version = "4.70"});
+    };
+    const auto read_sidecar = [](const auto &archive) {
+        muse::ByteArray bytes(reinterpret_cast<const uint8_t *>(archive.bytes.data()), archive.bytes.size());
+        auto buffer = muse::io::Buffer::opened(muse::io::IODevice::READ_ONLY, &bytes);
+        return muse::ZipReader(&buffer).file_data("chordlist.xml");
+    };
+    const auto baseline = export_archive();
+    ASSERT_TRUE(baseline) << baseline.error().message;
+    const auto original = read_sidecar(*baseline);
+    for (const auto *xpath :
+         {"/museScore/font/sym[@name='triangle']", "/museScore/token[@class='accidental'][name='#']", "/museScore/font[@class='type']"}) {
+        SCOPED_TRACE(xpath);
+        pugi::xml_document xml;
+        ASSERT_TRUE(xml.load_buffer(original.const_data(), original.size()));
+        const auto omission = xml.select_node(xpath).node();
+        ASSERT_TRUE(omission.parent().remove_child(omission));
+        std::ostringstream stream;
+        xml.save(stream);
+        const auto source = stream.str();
+        muse::ByteArray bytes(reinterpret_cast<const uint8_t *>(source.data()), source.size());
+        auto buffer = muse::io::Buffer::opened(muse::io::IODevice::READ_ONLY, &bytes);
+        auto &list = *master_of(*document).chord_list();
+        list.unload();
+        ASSERT_TRUE(list.read(&buffer));
+
+        const auto inline_result = document->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+        ASSERT_FALSE(inline_result);
+        ASSERT_EQ(inline_result.error().export_warnings.size(), 1u);
+        EXPECT_EQ(inline_result.error().export_warnings.front().code, "B470_UNSUPPORTED_FEATURE");
+        EXPECT_NE(inline_result.error().message.find("inline custom chord list"), std::string::npos);
+        const auto archive = export_archive();
+        ASSERT_TRUE(archive) << archive.error().message;
+        EXPECT_TRUE(archive->warnings.empty());
+        const auto sidecar = read_sidecar(*archive);
+        ASSERT_TRUE(xml.load_buffer(sidecar.const_data(), sidecar.size()));
+        EXPECT_FALSE(xml.select_node(xpath));
+        const auto reopened = g_engine->open(archive->bytes, {.format = engrave::Format::MSCZ});
+        ASSERT_TRUE(reopened) << reopened.error().message;
+    }
 }
 
 TEST(Export470, RetainsCustomChordFontsAndSymbolsWithoutDescriptions) {
