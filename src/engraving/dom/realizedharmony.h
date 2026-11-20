@@ -92,7 +92,7 @@ private:
     Voicing voicing_ = Voicing::AUTO;
     HDuration duration_ = HDuration::INVALID;
 
-    //whether or not the current notes QMap is up to date
+    // Cached notes must be regenerated when the harmony changes.
     bool dirty_ = false;
     bool literal_ = false; //use all notes when possible and do not add any notes
 };

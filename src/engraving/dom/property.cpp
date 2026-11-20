@@ -948,7 +948,6 @@ String property_to_string(Pid id, const PropertyValue &value, bool mscx) {
             case PType::STRING: {
                 return value.value<String>();
             }
-            // TODO: support QVariant::Rect and QVariant::RectF?
             default: break;
         }
     }

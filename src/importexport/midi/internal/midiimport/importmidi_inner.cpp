@@ -259,9 +259,8 @@ muse::String decode_with_fallback(const std::string &text, const std::string &ch
         return from_single_byte(text, false);
     }
 
-    // A real multi-codec backend (ICU or libiconv) is required for the full
-    // QTextCodec surface.  Until then, never guess an arbitrary encoding:
-    // prefer strict UTF-8 and otherwise preserve Latin-1/Windows-1252 bytes.
+    // For unsupported character sets, try strict UTF-8 and otherwise retain
+    // a byte-wise Windows-1252 decoding.
     LOGW() << "MIDI import: unsupported charset" << charset << "in the build; using UTF-8/Windows-1252 fallback";
     if (muse::UtfCodec::is_valid_utf8(text)) {
         return muse::String::from_utf8(text);

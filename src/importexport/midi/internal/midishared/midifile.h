@@ -27,9 +27,7 @@
 
 #include "io/iodevice.h"
 
-//! NOTE: midievent.h still uses the Qt typedef `uchar`; provide the same
-//! type without pulling Qt into the MIDI core. Redefining it is harmless if
-//! the typedef is already visible.
+//! Keep the MIDI event header's byte type available before including it.
 using uchar = unsigned char;
 
 #include "../midishared/midievent.h"

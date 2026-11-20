@@ -75,7 +75,6 @@ enum class BrushStyle { // brush style
 
 enum class FillRule { ODD_EVEN_FILL, WINDING_FILL };
 
-// Keep in sync with Qt::AlignmentFlag (https://doc.qt.io/qt-6/qt.html#AlignmentFlag-enum)
 enum AlignmentFlag {
     ALIGN_LEFT = 0x0001,
     ALIGN_LEADING = ALIGN_LEFT,
@@ -90,10 +89,8 @@ enum AlignmentFlag {
     ALIGN_BOTTOM = 0x0040,
     ALIGN_V_CENTER = 0x0080,
     ALIGN_BASELINE = 0x0100,
-    // Note that 0x100 will clash with Qt::TextSingleLine = 0x100 due to what the comment above
-    // this enum declaration states. However, since Qt::AlignBaseline is only used by layouts,
-    // it doesn't make sense to pass Qt::AlignBaseline to QPainter::drawText(), so there
-    // shouldn't really be any ambiguity between the two overlapping enum values.
+    // Baseline alignment is for layout only. Text drawing interprets the same
+    // bit as TEXT_SINGLE_LINE when alignment and text flags are combined.
     ALIGN_VERTICAL_MASK = ALIGN_TOP | ALIGN_BOTTOM | ALIGN_V_CENTER | ALIGN_BASELINE,
 
     ALIGN_CENTER = ALIGN_V_CENTER | ALIGN_H_CENTER
@@ -102,7 +99,6 @@ enum AlignmentFlag {
 DECLARE_FLAGS(Alignment, AlignmentFlag)
 DECLARE_OPERATORS_FOR_FLAGS(Alignment)
 
-// Keep in sync with Qt::TextFlag (https://doc.qt.io/qt-6/qt.html#TextFlag-enum)
 enum TextFlag {
     TEXT_SINGLE_LINE = 0x0100,
     TEXT_DONT_CLIP = 0x0200,

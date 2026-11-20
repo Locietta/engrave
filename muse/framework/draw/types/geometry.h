@@ -130,9 +130,8 @@ struct PointX {
 
 
 private:
-    //! NOTE We should not swap fields
-    //! We should not add new fields
-    //! If we really need to do this, then we need to change the implementation of QPainterProvider
+    // Keep the two-coordinate layout used by Painter::draw_lines() when it
+    // treats consecutive point pairs as line segments.
     NumberT<T> x_;
     NumberT<T> y_;
 };

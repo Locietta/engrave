@@ -12,8 +12,8 @@ namespace music {
 //! typed entry for the MIDI/KAR importer.
 //!
 //! `bytes` is the complete Standard MIDI File (SMF 0/1) image, including
-//! karaoke lyric/text meta events.  No filesystem path or Qt type crosses this
-//! boundary.  On success the score has parts, measures, notes, lyrics, keys,
+//! karaoke lyric/text meta events. The caller supplies the file bytes in memory.
+//! On success the score has parts, measures, notes, lyrics, keys,
 //! tempo and chord symbols populated by the ordinary MuseScore MIDI-import
 //! pipeline; the caller remains responsible for layout/setup.
 //!

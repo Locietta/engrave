@@ -340,7 +340,6 @@ PropertyValue Ambitus::property_default(Pid id) const {
         case Pid::FBPARENTHESIS4: return int(estimate_ranges().bottom_pitch / ::mu::engraving::pitch_delta_octave) - 1;
         default: return EngravingItem::property_default(id);
     }
-    //return QVariant();
 }
 
 EngravingItem *Ambitus::next_segment_element() { return segment()->first_in_next_segments(staff_idx()); }

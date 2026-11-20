@@ -427,8 +427,6 @@ FontsEngine::RequireFace *FontsEngine::font_face(const Font &f, bool is_symbol_m
     //! NOTE This font is required
     FaceKey require_key = face_key_for_metrics_font(f);
 
-    //! NOTE If pixelSize is not set, then specify the default
-    //! (this is the default pixelSize in Qt)
     if (!(require_key.pixel_size > 0)) {
         require_key.pixel_size = ::default_pixel_size;
     }

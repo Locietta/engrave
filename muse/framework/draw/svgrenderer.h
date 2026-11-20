@@ -27,6 +27,7 @@
 #include "types/geometry.h"
 
 namespace muse::draw {
+//! Parses intrinsic SVG dimensions. Visual SVG rendering is unsupported.
 struct SvgRenderer {
     SvgRenderer(const ByteArray &data);
     ~SvgRenderer();
