@@ -56,7 +56,7 @@ Capabilities can be queried programmatically via `Engine::capabilities()`.
 - **Python** 3 and **Git** (for asset installation and manifest verification)
 - **[Pixi](https://pixi.sh/)**: Cairo, FreeType, and zlib are conda-forge builds pinned in `pixi.toml` / `pixi.lock`. Run `pixi install --locked` once; `bazel/deps.bzl` exposes them as `@pixi_deps//:cairo`, `@pixi_deps//:freetype`, and `@pixi_deps//:zlib`. A superproject consuming `@engrave` via Bzlmod supplies its own Pixi prefix via `--repo_env=ENGRAVE_PIXI_PREFIX=...`. Windows binaries need `.pixi/envs/default/Library/bin` on `PATH` at run time; Linux binaries load `.pixi/envs/default/lib`.
 
-All other C/C++ third-party dependencies (HarfBuzz, libflac, LAME, libopus, libopusenc, fdk-aac, pugixml, utfcpp, picojson, glaze, proxy, amc, unordered_dense, GoogleTest) are fetched from hash-pinned archives in `MODULE.bazel` (`bazel/deps.bzl`) and built via `bazel/third_party/*.BUILD.bazel`. `glaze` is the engine's only JSON library.
+All other C/C++ third-party dependencies (HarfBuzz, libflac, LAME, libopus, libopusenc, fdk-aac, pugixml, utfcpp, glaze, proxy, amc, unordered_dense, GoogleTest) are fetched from hash-pinned archives in `MODULE.bazel` (`bazel/deps.bzl`) and built via `bazel/third_party/*.BUILD.bazel`. `glaze` is the engine's only JSON library.
 
 ### Build Commands (Windows and Linux)
 

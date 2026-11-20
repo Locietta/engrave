@@ -5,6 +5,7 @@
 #include <iterator>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 
 #include "engrave/src/runtime/engine_context.h"
 #include "engrave/src/runtime/score_io.h"
@@ -56,6 +57,31 @@ int main(int argc, char **argv) {
             if (found->second.muted) ++muted_tracks;
         }
         expect(muted_tracks == 1, "MSCZ soloMuteState.mute was not applied");
+
+        {
+            constexpr std::string_view settings = R"({
+                "master":{"volumeDb":"-6","balance":0.25},
+                "tracks":[
+                    {"partId":1,"instrumentId":"piano"},
+                    {"partId":"1","instrumentId":"piano","out":{"volumeDb":-6.125,"balance":2},
+                     "soloMuteState":{"solo":1,"mute":true}},
+                    {"partId":"1","instrumentId":"piano","out":{"volumeDb":12}}
+                ]
+            })";
+            muse::ByteArray zip_bytes;
+            muse::io::Buffer buffer(&zip_bytes);
+            expect(buffer.open(muse::io::IODevice::WRITE_ONLY), "Cannot open zip buffer");
+            muse::ZipWriter writer(&buffer);
+            writer.add_file("audiosettings.json", muse::ByteArray(settings.data(), settings.size()));
+            writer.close();
+
+            const auto mix = music::score_audio_mix_defaults(std::string(zip_bytes.const_char(), zip_bytes.size()));
+            expect(mix.master.volume_db == 0.0 && mix.master.balance == 0.25, "Invalid master setting must leave valid fields intact");
+            expect(mix.tracks.size() == 1, "Invalid and duplicate track IDs must be ignored");
+            const auto &output = mix.tracks.at({"1", "piano"});
+            expect(output.volume_db == -6.125 && output.balance == 0.0, "Track defaults must preserve valid decimal gain");
+            expect(output.muted && !output.solo, "Solo and mute settings must be boolean");
+        }
 
         music::AudioMix forced;
         forced.tracks.push_back({0, music::AudioOutputParams{}});

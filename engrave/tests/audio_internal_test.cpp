@@ -1435,3 +1435,34 @@ TEST(AudioInternal, LookedUpProfileFailureRemainsCachedAfterRepair) {
     // The repaired file really is readable; only the default-family cache retains null.
     EXPECT_TRUE(resources.repository.load_profile(muse::io::PathT(":/mpe/resources/general_strings_articulations_profile.json")));
 }
+
+TEST(AudioInternal, ArticulationProfileJsonKeepsValidFieldsWhenSomeAreMalformed) {
+    using namespace muse::mpe;
+    ProfileResourceFixture resources;
+    const auto path = resources.root / "mpe/resources/general_strings_articulations_profile.json";
+    const muse::io::PathT resource(":/mpe/resources/general_strings_articulations_profile.json");
+    std::ofstream(path) << "{";
+    EXPECT_FALSE(resources.repository.load_profile(resource));
+
+    std::ofstream(path) << R"({
+        "supportedFamilies":["StringsArticulation",false],
+        "patterns":{"Staccato":[
+            {"patternPosition":-1.5,"arrangementPattern":{"durationFactor":5123.5,"timestampOffset":"bad"},
+             "pitchPattern":{"pitchOffsets":[{"offsetPosition":2.5,"offsetValue":-4.5},{"offsetPosition":3,"offsetValue":5}]},
+             "expressionPattern":{"dynamicOffsets":false}},
+            {"patternPosition":-2,"arrangementPattern":{"durationFactor":1}}
+        ]}
+    })";
+    const auto profile = resources.repository.load_profile(resource);
+    ASSERT_TRUE(profile);
+    EXPECT_EQ(profile->supported_families, (std::vector{ArticulationFamily::STRINGS, ArticulationFamily::UNDEFINED}));
+    const auto &pattern = profile->pattern(ArticulationType::STACCATO);
+    ASSERT_EQ(pattern.size(), 1u);
+    ASSERT_TRUE(pattern.contains(-2));
+    const auto &segment = pattern.at(-2);
+    EXPECT_EQ(segment.arrangement_pattern.duration_factor_value, 5124);
+    EXPECT_EQ(segment.arrangement_pattern.timestamp_offset_value, 0);
+    ASSERT_TRUE(segment.pitch_pattern.pitch_offset_map.contains(3));
+    EXPECT_EQ(segment.pitch_pattern.pitch_offset_map.at(3), -5);
+    EXPECT_TRUE(segment.expression_pattern.dynamic_offset_map.empty());
+}

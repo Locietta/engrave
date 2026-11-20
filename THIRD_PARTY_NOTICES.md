@@ -221,7 +221,6 @@ The standalone Bazel build compiles the following third-party dependencies from 
 | **fdk-aac**                   | 2.0.3          | Fraunhofer FDK AAC License       | AAC audio export                                                                                                    |
 | **pugixml**                   | 1.15           | MIT License                      | XML parsing (MusicXML, MSCX, metadata)                                                                              |
 | **utfcpp**                    | 4.1.1          | Boost Software License 1.0       | UTF-8 conversion routines                                                                                           |
-| **picojson**                  | commit 111c9be | 2-Clause BSD License             | JSON parsing for audio settings and styles                                                                          |
 | **zlib** (conda-forge, Pixi)  | 1.3.2          | zlib License                     | Compression for MSCZ and MXL zip archives                                                                           |
 | **glaze**                     | 9.1.0          | MIT License                      | JSON DOM and parsing for the engine's metadata, semantic dumps, positions and sniffing, and reading and writing MNX |
 | **proxy** (ngcpp/proxy)       | 4.1.0          | MIT License                      | Type-erased audio encoder seam                                                                                      |

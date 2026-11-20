@@ -30,7 +30,7 @@
 #include "engravingfontsprovider.h"
 #include "io/file.h"
 #include "log.h"
-#include "serialization/json.h"
+#include "serialization/json_fields.h"
 #include "smufl.h"
 #include "types/symnames.h"
 
@@ -39,6 +39,20 @@ using namespace muse;
 using namespace muse::io;
 using namespace muse::draw;
 using namespace mu::engraving;
+
+namespace json = muse::json;
+
+struct EngravingFont::Metadata {
+    glz::generic_sorted anchors;
+    glz::generic_sorted alternates;
+    glz::generic_sorted defaults;
+
+    struct glaze {
+        using T = Metadata;
+        static constexpr auto value =
+            glz::object("glyphsWithAnchors", &T::anchors, "glyphsWithAlternates", &T::alternates, "engravingDefaults", &T::defaults);
+    };
+};
 
 // =============================================
 // ScoreFont
@@ -116,21 +130,17 @@ void EngravingFont::ensure_load() {
     const ByteArray metadata = metadata_device_->read_all();
     metadata_device_->close();
 
-    std::string error;
-    const JsonObject metadata_json = JsonDocument::from_json(metadata, &error).root_object();
-    if (!error.empty()) {
-        LOGE() << "Json parse error in glyph metadata of " << name_ << ", error: " << error;
-        return;
-    }
-    if (!metadata_json.is_valid()) {
-        LOGE() << "No valid JSON object in glyph metadata of " << name_;
+    const auto source = json::text(metadata);
+    Metadata parsed;
+    if (const auto error = glz::read<json::IgnoreUnknown{}>(parsed, source)) {
+        LOGE() << "Invalid glyph metadata for " << name_ << ": " << glz::format_error(error, source);
         return;
     }
 
-    load_glyphs_with_anchors(metadata_json.value("glyphsWithAnchors").to_object());
+    load_glyphs_with_anchors(parsed);
     load_composed_glyphs();
-    load_stylistic_alternates(metadata_json.value("glyphsWithAlternates").to_object());
-    load_engraving_defaults(metadata_json.value("engravingDefaults").to_object());
+    load_stylistic_alternates(parsed);
+    load_engraving_defaults(parsed);
 
     loaded_ = true;
 }
@@ -298,54 +308,33 @@ static const struct GlyphWithAlternates {
     {std::string("timeSigCut3"), std::string("timeSigCut3Narrow"), SymId::TIME_SIG_CUT3_NARROW},
 };
 
-void EngravingFont::load_stylistic_alternates(const JsonObject &glyphs_with_alternates_object) {
-    if (!glyphs_with_alternates_object.is_valid()) {
-        return;
-    }
-
-    bool ok;
+void EngravingFont::load_stylistic_alternates(const Metadata &metadata) {
     for (const GlyphWithAlternates &glyph : ::glyphs_with_alternates) {
-        if (glyphs_with_alternates_object.contains(glyph.key)) {
-            const JsonArray alternates_array = glyphs_with_alternates_object.value(glyph.key).to_object().value("alternates").to_array();
+        const auto *glyph_entry = json::find(metadata.alternates, glyph.key);
+        if (!glyph_entry) continue;
 
-            JsonValue val;
-            for (size_t i = 0; i < alternates_array.size(); ++i) {
-                JsonValue v = alternates_array.at(i);
-                if (v.to_object().value("name").to_std_string() == glyph.alternate_key) {
-                    val = v;
-                    break;
-                }
-            }
+        const auto &alternates = json::member(*glyph_entry, "alternates").get_array();
+        for (const auto &alternate : alternates) {
+            if (json::get_or_empty<std::string>(json::member(alternate, "name")) != glyph.alternate_key) continue;
 
-            if (!val.is_null()) {
-                JsonObject sym_obj = val.to_object();
-                Sym &sym = this->sym(glyph.alternate_sym_id);
+            bool ok;
+            Smufl::Code code;
+            const auto &main = json::get_or_empty<std::string>(json::member(alternate, "codepoint"));
+            const auto smufl_code = String::from_std_string(main).mid(2).to_u_int(&ok, 16);
+            if (ok) code.smufl_code = smufl_code;
 
-                Smufl::Code code;
-                char32_t smufl_code = sym_obj.value("codepoint").to_string().mid(2).to_u_int(&ok, 16);
-                if (ok) {
-                    code.smufl_code = smufl_code;
-                }
+            const auto &other = json::get_or_empty<std::string>(json::member(alternate, "alternateCodepoint"));
+            const auto music_sym_block_code = String::from_std_string(other).mid(2).to_u_int(&ok, 16);
+            if (ok) code.music_sym_block_code = music_sym_block_code;
 
-                char32_t music_sym_block_code = sym_obj.value("alternateCodepoint").to_string().mid(2).to_u_int(&ok, 16);
-                if (ok) {
-                    code.music_sym_block_code = music_sym_block_code;
-                }
-
-                if (code.smufl_code || code.music_sym_block_code) {
-                    compute_metrics(sym, code);
-                }
-            }
+            if (code.smufl_code || code.music_sym_block_code) compute_metrics(sym(glyph.alternate_sym_id), code);
+            break;
         }
     }
 }
 
-void EngravingFont::load_glyphs_with_anchors(const JsonObject &glyphs_with_anchors) {
-    if (!glyphs_with_anchors.is_valid()) {
-        return;
-    }
-
-    for (const std::string &sym_name : glyphs_with_anchors.keys()) {
+void EngravingFont::load_glyphs_with_anchors(const Metadata &metadata) {
+    for (const auto &[sym_name, anchors] : json::object(metadata.anchors)) {
         SymId sym_id = SymNames::sym_id_by_name(sym_name);
 
         if (sym_id == SymId::NO_SYM) {
@@ -364,11 +353,6 @@ void EngravingFont::load_glyphs_with_anchors(const JsonObject &glyphs_with_ancho
         }
 
         Sym &sym = this->sym(sym_id);
-        const JsonObject anchors = glyphs_with_anchors.value(sym_name).to_object();
-        if (!anchors.is_valid()) {
-            continue;
-        }
-
         static const std::unordered_map<std::string, SmuflAnchorId> smufl_anchor_id_names{
             {"stemDownNW", SmuflAnchorId::STEM_DOWN_NW},      {"stemUpSE", SmuflAnchorId::STEM_UP_SE},
             {"stemDownSW", SmuflAnchorId::STEM_DOWN_SW},      {"stemUpNW", SmuflAnchorId::STEM_UP_NW},
@@ -377,31 +361,29 @@ void EngravingFont::load_glyphs_with_anchors(const JsonObject &glyphs_with_ancho
             {"opticalCenter", SmuflAnchorId::OPTICAL_CENTER},
         };
 
-        for (const std::string &anchor_id : anchors.keys()) {
+        for (const auto &[anchor_id, coords] : json::object(anchors)) {
             const auto search = smufl_anchor_id_names.find(anchor_id);
             if (search == smufl_anchor_id_names.cend()) {
-                //LOGD() << "Unhandled SMuFL anchorId: " << anchorId;
                 continue;
             }
 
-            const JsonArray arr = anchors.value(anchor_id).to_array();
-            const double x = arr.at(0).to_double();
-            const double y = arr.at(1).to_double();
+            const auto &arr = coords.get_array();
+            const double x = json::get_or_empty<double>(arr.at(0));
+            const double y = json::get_or_empty<double>(arr.at(1));
             const double default_spatium = StyleDef::style_values[static_cast<size_t>(Sid::SPATIUM)].default_value.to_double();
             sym.smufl_anchors[search->second] = PointF(x, -y) * default_spatium;
         }
     }
 }
 
-void EngravingFont::load_engraving_defaults(const JsonObject &engraving_defaults_object) {
-    if (!engraving_defaults_object.is_valid()) {
-        return;
-    }
+void EngravingFont::load_engraving_defaults(const Metadata &metadata) {
+    if (!metadata.defaults.is_object()) return;
+    const auto &defaults = metadata.defaults.get_object();
 
     struct EngravingDefault {
         std::vector<Sid> sids;
 
-        // If a childKey is not specified in `engravingDefaultsObject`,
+        // If a childKey is not specified in `the font metadata`,
         // it will receive the value for the key of `this` EngravingDefault.
         // This is done for compatibility with fonts made for older SMuFL versions:
         // in newer versions, some settings have been split into two.
@@ -455,26 +437,27 @@ void EngravingFont::load_engraving_defaults(const JsonObject &engraving_defaults
             }
 
             for (const std::string &child_key : search->second.child_keys) {
-                if (!engraving_defaults_object.contains(child_key)) {
+                if (!defaults.contains(child_key)) {
                     apply_engraving_default(child_key, value);
                 }
             }
         }
     };
 
-    for (const std::string &key : engraving_defaults_object.keys()) {
+    for (const auto &[key, field] : defaults) {
+        const double number = json::get_or_empty<double>(field);
         if (key == "textEnclosureThickness") {
-            text_enclosure_thickness_ = engraving_defaults_object.value(key).to_double();
+            text_enclosure_thickness_ = number;
             continue;
         }
 
         if (key == "beamSpacing") {
-            bool value = engraving_defaults_object.value(key).to_double() > 0.75;
+            bool value = number > 0.75;
             engraving_defaults_.insert({Sid::USE_WIDE_BEAMS, value});
             continue;
         }
 
-        apply_engraving_default(key, engraving_defaults_object.value(key).to_double());
+        apply_engraving_default(key, number);
     }
 
     engraving_defaults_.insert({Sid::MUSICAL_TEXT_FONT, String(u"%1 Text").arg(String::from_std_string(family_))});

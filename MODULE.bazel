@@ -22,7 +22,6 @@ use_repo(
     "libopus",
     "libopusenc",
     "ngcpp_proxy",
-    "picojson",
     "pixi_deps",
     "pugixml",
     "unordered_dense",

@@ -26,11 +26,8 @@
 //
 // The JSON field schema follows upstream. Untyped header text is recognized
 // from source font size, alignment and order, without display positions.
-// QJsonArray/QJsonObject are replaced
-// by the engine's JSON arrays/objects and QString by muse::String/std::string. The
-// notation/audio-settings dependency: track descriptions come from
-// score_audio_track_info(), which lists every InstrumentTrackId and the
-// chord-symbol pseudo track.
+// Track descriptions include every InstrumentTrackId and the chord-symbol
+// pseudo track.
 
 #include "score_metadata.h"
 
@@ -390,8 +387,7 @@ SortedJson parts_json_array(const Score *score) {
 
 SortedJson page_format_json(const MStyle &style) {
     SortedJson format = make_object<SortedJson>();
-    // Upstream stores round(...) as a QJson double; QJsonDocument serializes a
-    // whole value without a fractional part, so int keeps the existing output.
+    // The metadata schema reports whole points rounded from the style dimensions.
     format["height"] = static_cast<int>(std::round(style.style_d(Sid::PAGE_HEIGHT) * ::mu::engraving::inch));
     format["width"] = static_cast<int>(std::round(style.style_d(Sid::PAGE_WIDTH) * ::mu::engraving::inch));
     format["twosided"] = bool_to_string(style.style_b(Sid::PAGE_TWOSIDED));

@@ -34,10 +34,6 @@
 #include "style/sid.h"
 #include "types/symid.h"
 
-namespace muse {
-struct JsonObject;
-} // namespace muse
-
 namespace muse::draw {
 struct FontProvider;
 struct Painter;
@@ -112,10 +108,11 @@ private:
         bool is_compound() const { return !sub_symbol_ids.empty(); }
     };
 
-    void load_glyphs_with_anchors(const muse::JsonObject &glyphs_with_anchors);
+    struct Metadata;
+    void load_glyphs_with_anchors(const Metadata &metadata);
     void load_composed_glyphs();
-    void load_stylistic_alternates(const muse::JsonObject &glyphs_with_alternates_object);
-    void load_engraving_defaults(const muse::JsonObject &engraving_defaults_object);
+    void load_stylistic_alternates(const Metadata &metadata);
+    void load_engraving_defaults(const Metadata &metadata);
     void compute_metrics(Sym &sym, const Smufl::Code &code);
 
     void construct_shape_with_cutouts(Shape &shape, SymId id);
