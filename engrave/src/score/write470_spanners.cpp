@@ -13,12 +13,15 @@
 
 #include "engraving/dom/authoredoverride.h"
 #include "engraving/dom/chord.h"
+#include "engraving/dom/drumset.h"
 #include "engraving/dom/guitarbend.h"
+#include "engraving/dom/instrument.h"
 #include "engraving/dom/linkedobjects.h"
 #include "engraving/dom/location.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
 #include "engraving/dom/note.h"
+#include "engraving/dom/part.h"
 #include "engraving/dom/slur.h"
 #include "engraving/dom/staff.h"
 #include "engraving/dom/tie.h"
@@ -175,38 +178,71 @@ void index_owner(ScoreIndex &index, const EngravingItem *item, pugi::xml_node xm
     require(index.owners.emplace(item, Owner{xml, key}).second, "Duplicate 5.00 endpoint owner");
 }
 
-void index_notes(ScoreIndex &index, pugi::xml_node chord, const Chord &dom, Location key) {
-    struct ReadNote {
-        const Note *dom;
-        pugi::xml_node xml;
-        int pitch, string, line;
-    };
+} // namespace
 
-    charge(dom.notes().size() * (sizeof(ReadNote) + 2 * sizeof(void *)));
-    std::vector<ReadNote> notes;
+std::vector<LegacyNote> legacy_notes(pugi::xml_node chord, const Chord &dom, void (*poll)()) {
+    charge(dom.notes().size() * (sizeof(LegacyNote) + 2 * sizeof(void *)));
+    std::vector<LegacyNote> notes;
     notes.reserve(dom.notes().size());
     const bool tab = dom.staff()->is_tab_staff(dom.tick());
     for (auto xml : chord.children("Note")) {
-        index.poll();
-        const auto *item = source_object(xml, index.score);
+        poll();
+        const auto *item = source_object(xml, *dom.score());
         require(item && item->is_note() && to_note(item)->chord() == &dom, "5.00 note does not match its chord");
         const auto *note = to_note(item);
-        const ReadNote entry{note, xml, note->pitch(), note->string(),
-                             xml.child("fixed").text().as_bool() ? xml.child("fixedLine").text().as_int() :
-                                                                   xml.child("line").text().as_int(invalid_line)};
+        const LegacyNote entry{note, xml, note->pitch(), note->string(),
+                               xml.child("fixed").text().as_bool() ? xml.child("fixedLine").text().as_int() :
+                                                                     xml.child("line").text().as_int(invalid_line)};
         // The legacy reader inserts after the first matching pitch/line, even if more unisons follow it.
-        auto insert = std::find_if(notes.begin(), notes.end(), [&](const ReadNote &other) {
-            index.poll();
+        auto insert = std::find_if(notes.begin(), notes.end(), [&](const LegacyNote &other) {
+            poll();
             return tab ? entry.string > other.string : entry.pitch <= other.pitch;
         });
         if (!tab && insert != notes.end() && insert->pitch == entry.pitch && entry.line >= insert->line) ++insert;
         notes.insert(insert, entry);
-        index.notes.push_back(note);
     }
+    return notes;
+}
+
+void sort_legacy_percussion_notes(std::vector<LegacyNote> &notes, const Chord &dom, void (*poll)()) {
+    // 4.7.6 applies drum lines immediately before resolving a group's indices.
+    if (dom.staff()->staff_type_for_element(&dom)->group() != StaffGroup::PERCUSSION) return;
+    const auto *drumset = dom.part()->instrument(dom.tick())->drumset();
+    for (auto &entry : notes) {
+        poll();
+        if (!drumset || !drumset->is_valid(entry.pitch))
+            entry.line = 0;
+        else if (!entry.note->fixed())
+            entry.line = drumset->line(entry.pitch);
+    }
+    std::sort(notes.begin(), notes.end(), [&](const LegacyNote &left, const LegacyNote &right) {
+        poll();
+        if (left.line != right.line) return left.line > right.line;
+        if (left.pitch != right.pitch) return left.pitch < right.pitch;
+        const auto *left_tie = left.note->tie_back();
+        const auto *right_tie = right.note->tie_back();
+        const auto *start = left_tie ? left_tie->start_note() : nullptr;
+        const auto *other_start = right_tie ? right_tie->start_note() : nullptr;
+        if (!start || !other_start) return start && !other_start;
+        if (start->chord() == other_start->chord()) return start->unison_index() < other_start->unison_index();
+        return start->chord()->is_before(other_start->chord());
+    });
+}
+
+namespace {
+
+void index_notes(ScoreIndex &index, pugi::xml_node chord, const Chord &dom, Location key) {
+    for (auto xml : chord.children("Note")) {
+        index.poll();
+        const auto *item = source_object(xml, index.score);
+        require(item && item->is_note() && to_note(item)->chord() == &dom, "5.00 note does not match its chord");
+        index.notes.push_back(to_note(item));
+    }
+    const auto notes = legacy_notes(chord, dom, index.poll);
     for (std::size_t ordinal = 0; ordinal < notes.size(); ++ordinal) {
         index.poll();
         key.set_note(static_cast<int>(ordinal));
-        index_owner(index, notes[ordinal].dom, notes[ordinal].xml, key);
+        index_owner(index, notes[ordinal].note, notes[ordinal].xml, key);
     }
 }
 

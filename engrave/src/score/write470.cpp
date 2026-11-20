@@ -14,6 +14,7 @@
 #include <utility>
 #include <vector>
 
+#include <ankerl/unordered_dense.h>
 #include <pugixml.hpp>
 
 #include "engrave/src/api/handles.h"
@@ -277,26 +278,112 @@ void convert_bracket(pugi::xml_node bracket, std::optional<ElementId> score_id, 
     staff.remove_child(bracket);
 }
 
-void convert_note_indices(pugi::xml_node chord, const Score &score, std::optional<ElementId> score_id,
+using ParenthesisAliases = ankerl::unordered_dense::map<std::string, pugi::xml_node>;
+
+bool same_xml(pugi::xml_node left, pugi::xml_node right) {
+    poll();
+    return std::string_view(left.name()) == right.name() && std::string_view(left.value()) == right.value() &&
+           std::ranges::equal(
+               left.attributes(), right.attributes(),
+               [](auto a, auto b) { return std::string_view(a.name()) == b.name() && std::string_view(a.value()) == b.value(); }) &&
+           std::ranges::equal(left.children(), right.children(), same_xml);
+}
+
+void merge_parentheses(pugi::xml_node kept, pugi::xml_node duplicate, ParenthesisAliases &aliases, std::optional<ElementId> score_id,
+                       std::vector<ExportWarning> &warnings) {
+    for (auto paren : duplicate.children("Parenthesis")) {
+        poll();
+        const auto direction = [](pugi::xml_node node) { return std::string_view(node.child_value("horizontalDirection")) == "right"; };
+        auto existing = kept.find_child(
+            [&](pugi::xml_node node) { return std::string_view(node.name()) == "Parenthesis" && direction(node) == direction(paren); });
+        if (!existing) {
+            kept.insert_copy_before(paren, kept.child("Notes"));
+            continue;
+        }
+        for (auto field : paren.children()) {
+            poll();
+            if (field.type() != pugi::node_element) continue;
+            auto original = existing.child(field.name());
+            if (!original)
+                existing.append_copy(field);
+            else if (std::string_view(field.name()) == "eid")
+                aliases.emplace(field.child_value(), existing);
+            else if (!same_xml(original, field))
+                unsupported(paren, "duplicate NoteParenGroup with conflicting parenthesis properties", score_id, warnings);
+        }
+    }
+}
+
+void convert_note_indices(pugi::xml_node chord, const Score &score, std::optional<ElementId> score_id, ParenthesisAliases &aliases,
                           std::vector<ExportWarning> &warnings) {
     const auto *object = source_item(chord, score);
-    score.master_score()->eid_register()->item_from_eid(EID::from_std_string(std::string_view(chord.child_value("eid"))));
     const auto *source = object && object->is_chord() ? static_cast<const Chord *>(object) : nullptr;
-    for (auto group : chord.children("NoteParenGroup")) {
+    if (!source) {
+        unsupported(chord, "NoteParenGroup without a source chord", score_id, warnings);
+        return;
+    }
+    auto notes = legacy_notes(chord, *source, poll);
+    sort_legacy_percussion_notes(notes, *source, poll);
+
+    struct Group {
+        pugi::xml_node xml;
+        std::vector<std::size_t> members;
+    };
+
+    std::vector<Group> groups;
+    std::vector<std::size_t> covering(notes.size(), 0);
+    for (auto group = chord.child("NoteParenGroup"); group;) {
+        const auto next = group.next_sibling("NoteParenGroup");
+        std::vector<std::size_t> members;
         for (auto note : group.child("Notes").children("NoteEID")) {
             poll();
-            const auto eid = EID::from_std_string(std::string_view(note.child_value()));
-            if (source && eid.is_valid()) {
-                const auto &notes = source->notes();
-                const auto found = std::find_if(notes.begin(), notes.end(), [&](const Note *element) { return element->eid() == eid; });
-                if (found != notes.end()) {
-                    note.set_name("NoteIdx");
-                    note.text().set(static_cast<unsigned>(found - notes.begin()));
-                    continue;
-                }
+            const std::string_view eid = note.child_value();
+            const auto found = std::find_if(notes.begin(), notes.end(), [&](const LegacyNote &entry) {
+                poll();
+                return entry.xml.child_value("eid") == eid;
+            });
+            if (found == notes.end()) {
+                unsupported(group, "NoteParenGroup/NoteEID", score_id, warnings);
+                continue;
             }
-            unsupported(group, "NoteParenGroup/NoteEID", score_id, warnings);
+            const auto index = static_cast<std::size_t>(found - notes.begin());
+            members.push_back(index);
+            note.set_name("NoteIdx");
+            note.text().set(index);
         }
+        std::sort(members.begin(), members.end());
+        members.erase(std::unique(members.begin(), members.end()), members.end());
+        const auto existing = std::find_if(members.begin(), members.end(), [&](std::size_t index) { return covering[index] != 0; });
+        if (members.empty()) {
+            unsupported(group, "empty NoteParenGroup", score_id, warnings);
+        } else if (existing == members.end()) {
+            for (auto index : members) covering[index] = groups.size() + 1;
+            groups.push_back({group, std::move(members)});
+        } else if (const auto &kept = groups[covering[*existing] - 1]; kept.members == members) {
+            merge_parentheses(kept.xml, group, aliases, score_id, warnings);
+            chord.remove_child(group);
+        } else {
+            unsupported(group, "overlapping NoteParenGroups with different note sets", score_id, warnings);
+        }
+        group = next;
+    }
+}
+
+void rebase_parenthesis_links(pugi::xml_node node, const ParenthesisAliases &aliases) {
+    poll();
+    for (auto child = node.first_child(); child;) {
+        const auto next = child.next_sibling();
+        if (std::string_view(child.name()) == "linkedTo") {
+            if (const auto found = aliases.find(child.child_value()); found != aliases.end()) {
+                if (found->second == node)
+                    node.remove_child(child);
+                else
+                    child.text().set(found->second.child_value("eid"));
+            }
+        } else if (child.type() == pugi::node_element) {
+            rebase_parenthesis_links(child, aliases);
+        }
+        child = next;
     }
 }
 
@@ -454,7 +541,7 @@ void convert_style(pugi::xml_node score_node, Score &score, std::optional<Elemen
 }
 
 void convert_notation(pugi::xml_node node, const Score &score, std::optional<ElementId> score_id, ScoreFeatures &features,
-                      std::vector<ExportWarning> &warnings) {
+                      ParenthesisAliases &aliases, std::vector<ExportWarning> &warnings) {
     poll();
     const std::string_view name = node.name();
     const std::string_view parent = node.parent().name();
@@ -466,7 +553,7 @@ void convert_notation(pugi::xml_node node, const Score &score, std::optional<Ele
     features.dashed_bars |= name == "BarLine" && std::string_view(node.child_value("subtype")) == "dashed";
 
     if (name == "Chord" && node.child("NoteParenGroup")) {
-        convert_note_indices(node, score, score_id, warnings);
+        convert_note_indices(node, score, score_id, aliases, warnings);
     } else if (name == "Spanner") {
         if (!is_legacy_connector(node.attribute("type").value(), parent) || node.first_attribute().next_attribute())
             unsupported(node, "Spanner type or attributes", score_id, warnings);
@@ -493,17 +580,19 @@ void convert_notation(pugi::xml_node node, const Score &score, std::optional<Ele
         }
     }
 
+    unsigned fragment_index = 0;
     for (auto child = node.first_child(); child;) {
         poll();
         const auto next = child.next_sibling();
         const std::string_view field = child.name();
         if (child.type() == pugi::node_element && !one_of(field, {"Score", "Style"})) {
             const bool note_endpoint = name == "Note" && (child.child("startElement") || child.child("endElement"));
-            if (note_endpoint || !allowed_child(node, field)) {
+            if (note_endpoint || field == "Image" || !allowed_child(node, field)) {
                 unsupported(child, std::string(name) + "/" + std::string(field), score_id, warnings);
             } else if (name == "Staff" && field == "BracketItem") {
                 convert_bracket(child, score_id, warnings);
-            } else if (field == "maskSlurTie" || (name == "ChordLine" && one_of(field, {"o1", "o2", "o3", "o4"}))) {
+            } else if (field == "maskSlurTie" || (name == "ChordLine" && one_of(field, {"o1", "o2", "o3", "o4"})) ||
+                       (name == "TremoloTwoChord" && field == "StemDirection")) {
                 unsupported(child, std::string(name) + "/" + std::string(field), score_id, warnings);
             } else if ((name == "Harmony" && field == "excludeVerticalAlign") ||
                        (name == "MeasureRepeat" && field == "measureRepeatNumberOffset")) {
@@ -513,17 +602,22 @@ void convert_notation(pugi::xml_node node, const Score &score, std::optional<Ele
                     unsupported(child, std::string(name) + "/" + std::string(field), score_id, warnings);
             } else if (one_of(name, {"Beam", "TremoloTwoChord"}) && field == "Fragment") {
                 // The current writer marks only fragments for the opposite direction.
-                if (child.attribute("direction"))
+                if (child.attribute("direction")) {
                     node.remove_child(child);
-                else
+                } else {
+                    if (const auto ordinal = child.attribute("no");
+                        ordinal && ordinal.as_uint(std::numeric_limits<unsigned>::max()) != fragment_index)
+                        unsupported(child, "nonconsecutive Beam/Fragment overrides", score_id, warnings);
                     child.remove_attribute("no");
+                    ++fragment_index;
+                }
             } else if (name == "StaffType" && one_of(field, {"StaffLabel", "instrumentLabelVisibility"})) {
                 if (parent == "StaffTypeChange")
                     unsupported(child, "StaffTypeChange/StaffType/" + std::string(field), score_id, warnings);
                 else
                     node.remove_child(child);
             } else {
-                convert_notation(child, score, score_id, features, warnings);
+                convert_notation(child, score, score_id, features, aliases, warnings);
             }
         }
         child = next;
@@ -586,7 +680,21 @@ void remove_xml_indentation(pugi::xml_node node) {
     }
 }
 
-void convert_degradations(pugi::xml_node node, std::vector<ExportWarning> &warnings) {
+ExportWarning instrument_group_warning(std::string part_eid) {
+    return {"B470_INSTRUMENT_GROUP_NAME_DROPPED", "Instrument group-name override was removed.",
+            ExportWarningObject{"part", std::move(part_eid)}};
+}
+
+std::string instrument_owner_id(pugi::xml_node instrument, const Score &score) {
+    const auto owner = instrument.parent();
+    if (std::string_view(owner.name()) == "Part") return owner.child_value("eid");
+    const auto *item = source_item(owner, score);
+    if (item && item->is_instrument_change()) return static_cast<const InstrumentChange *>(item)->part()->eid().to_std_string();
+    if (item && item->is_staff_state()) return static_cast<const StaffState *>(item)->part()->eid().to_std_string();
+    throw std::invalid_argument("4.70 instrument label has no owning part");
+}
+
+void convert_degradations(pugi::xml_node node, const Score &score, std::vector<ExportWarning> &warnings) {
     for (auto child = node.first_child(); child;) {
         poll();
         auto next = child.next_sibling();
@@ -620,15 +728,57 @@ void convert_degradations(pugi::xml_node node, std::vector<ExportWarning> &warni
             bool changed = false;
             for (const char *field : {"allowGroupName", "customNameLongGroup", "customNameShortGroup", "useCustomGroupName"})
                 changed = child.remove_child(field) || changed;
-            if (changed)
-                warnings.push_back(
-                    {"B470_INSTRUMENT_GROUP_NAME_DROPPED", "Instrument group-name override was removed.", source_object(child, {})});
+            if (changed) warnings.push_back(instrument_group_warning(instrument_owner_id(node, score)));
         }
         if (remove)
             node.remove_child(child);
         else
-            convert_degradations(child, warnings);
+            convert_degradations(child, score, warnings);
         child = next;
+    }
+}
+
+void warn_active_instrument_groups(const Score &score, std::vector<ExportWarning> &warnings) {
+    const auto enabled = [&](const String &group) {
+        const Sid sid = (group == "woodwinds" || group == "brass") ? Sid::WINDS_NAME_BY_GROUP :
+                        group == "vocals"                          ? Sid::VOCALS_NAME_BY_GROUP :
+                        group == "strings"                         ? Sid::STRINGS_NAME_BY_GROUP :
+                                                                     Sid::OTHERS_NAME_BY_GROUP;
+        return score.style().style_b(sid);
+    };
+    std::vector<int> ticks{0};
+    for (const auto *part : score.parts()) {
+        for (const auto &[tick, instrument] : part->instruments()) {
+            poll();
+            if (tick > 0) ticks.push_back(tick);
+        }
+    }
+    std::sort(ticks.begin(), ticks.end());
+    ticks.erase(std::unique(ticks.begin(), ticks.end()), ticks.end());
+    std::vector<bool> grouped(score.parts().size(), false);
+    for (const auto tick : ticks) {
+        const Instrument *previous = nullptr;
+        std::size_t previous_index = 0;
+        for (std::size_t index = 0; index < grouped.size(); ++index) {
+            poll();
+            const auto *part = score.parts()[index];
+            const auto *instrument = part->instrument(mu::engraving::Fraction::from_ticks(tick));
+            const auto &label = instrument->instrument_label();
+            if (part->is_shared_part() || !label.allow_group_name()) {
+                previous = nullptr;
+                continue;
+            }
+            if (!part->show() || part->visible_staves_count() == 0) continue;
+            if (previous && previous->id() == instrument->id() && enabled(instrument->group())) {
+                grouped[previous_index] = true;
+                grouped[index] = true;
+            }
+            previous = instrument;
+            previous_index = index;
+        }
+    }
+    for (std::size_t index = 0; index < grouped.size(); ++index) {
+        if (grouped[index]) warnings.push_back(instrument_group_warning(score.parts()[index]->eid().to_std_string()));
     }
 }
 
@@ -755,28 +905,8 @@ Result<ExportOutput> export_score(const music::EngineContext &context, const mus
     if (!root || !score_node) throw std::runtime_error("engine output has no score");
     remove_xml_indentation(root);
     std::vector<ExportWarning> degraded;
-    convert_degradations(root, degraded);
-    // The old reader forces these switches off. Warn on every applicable
-    // instrument in a potential multi-part group when enabled. Single-part
-    // scores have no group-name behavior to project in this bounded mapping.
-    for (auto *source_score : source_scores) {
-        for (auto *part : source_score->parts()) {
-            for ([[maybe_unused]] const auto &[tick, instrument] : part->instruments()) {
-                const auto group = instrument->group();
-                const auto matches = std::count_if(source_score->parts().begin(), source_score->parts().end(),
-                                                   [&](const Part *other) { return other->instrument()->id() == instrument->id(); });
-                if (matches < 2) continue;
-                const Sid group_style = (group == "woodwinds" || group == "brass") ? Sid::WINDS_NAME_BY_GROUP :
-                                        group == "vocals"                          ? Sid::VOCALS_NAME_BY_GROUP :
-                                        group == "strings"                         ? Sid::STRINGS_NAME_BY_GROUP :
-                                                                                     Sid::OTHERS_NAME_BY_GROUP;
-                if (source_score->style().style_b(group_style)) {
-                    degraded.push_back({"B470_INSTRUMENT_GROUP_NAME_DROPPED", "Instrument group-name override was removed.",
-                                        ExportWarningObject{"part", to_string(from_engine(part->eid()))}});
-                }
-            }
-        }
-    }
+    convert_degradations(root, master, degraded);
+    for (const auto *source_score : source_scores) warn_active_instrument_groups(*source_score, degraded);
     std::vector<pugi::xml_node> score_nodes{score_node};
     for (std::size_t i = 0; i < score_nodes.size(); ++i)
         for (auto excerpt : score_nodes[i].children("Score")) score_nodes.push_back(excerpt);
@@ -792,6 +922,7 @@ Result<ExportOutput> export_score(const music::EngineContext &context, const mus
         warnings.insert(warnings.begin(), degraded.begin(), degraded.end());
         return refused(std::move(warnings));
     }
+    ParenthesisAliases aliases;
     for (std::size_t index = 0; index < score_nodes.size(); ++index) {
         auto current = score_nodes[index];
         auto &source_score = *source_scores[index];
@@ -819,10 +950,11 @@ Result<ExportOutput> export_score(const music::EngineContext &context, const mus
             legacy_track_name.text().set(part_dom.part_name().to_std_string().c_str());
         }
         if (source_part != source_score.parts().end()) throw std::runtime_error("part count changed during serialization");
-        convert_notation(current, source_score, current_id, features, warnings);
+        convert_notation(current, source_score, current_id, features, aliases, warnings);
         convert_style(current, source_score, current_id, features, warnings);
         for (auto part : current.children("Part")) part.remove_child("eid");
     }
+    if (!aliases.empty()) rebase_parenthesis_links(root, aliases);
     for (auto child : root.children()) {
         if (child.type() == pugi::node_element && !allowed_child(root, child.name())) unsupported(child, child.name(), score_id, warnings);
     }

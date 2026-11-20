@@ -467,11 +467,14 @@ TEST(Export470, NamesAnEmbeddedExcerptInStyleRefusal) {
 }
 
 TEST(Export470, RefusesFiveOnlyTremolos) {
-    for (const auto *subtype : {"r128", "c256"}) {
+    for (const auto *subtype : {"r128", "r256", "c128", "c256", "c16"}) {
+        SCOPED_TRACE(subtype);
         auto source = read_text(write470_fixture().parent_path() / "ties.mscx");
         const std::string tag = subtype[0] == 'r' ? "TremoloSingleChord" : "TremoloTwoChord";
+        const bool authored_direction = std::string_view(subtype) == "c16";
         source.replace(source.find("version=\"4.70\""), std::string_view("version=\"4.70\"").size(), "version=\"5.00\"");
-        source.insert(source.find("<Note>"), "<" + tag + "><subtype>" + subtype + "</subtype></" + tag + ">");
+        source.insert(source.find("<Note>"), std::format("<{0}><subtype>{1}</subtype>{2}</{0}>", tag, subtype,
+                                                         authored_direction ? "<StemDirection>up</StemDirection>" : ""));
         // The legacy connector fixture serves only as the source of two half-note chords.
         for (auto pos = source.find("<Spanner"); pos != std::string::npos; pos = source.find("<Spanner")) {
             const auto end = source.find("</Spanner>", pos) + std::string_view("</Spanner>").size();
@@ -483,7 +486,7 @@ TEST(Export470, RefusesFiveOnlyTremolos) {
         ASSERT_FALSE(result) << subtype;
         EXPECT_EQ(result.error().code, ErrorCode::UNSUPPORTED);
         ASSERT_EQ(result.error().export_warnings.size(), 1u);
-        EXPECT_NE(result.error().message.find(subtype), std::string::npos);
+        EXPECT_NE(result.error().message.find(authored_direction ? "TremoloTwoChord/StemDirection" : subtype), std::string::npos);
     }
 }
 
@@ -684,6 +687,173 @@ bool parse_export(pugi::xml_document &xml, const engrave::ExportOutput &result) 
 }
 
 } // namespace
+
+TEST(Export470, CombinesDuplicateGhostNoteGroupsAndRebasesBothLinks) {
+    const auto corpus = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "tests/data/inputs/golden";
+    auto document = open_path(corpus / "ghost_note.mscx");
+    ASSERT_TRUE(document);
+    const auto result = document->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+    ASSERT_TRUE(result) << result.error().message;
+    EXPECT_TRUE(result->warnings.empty());
+    pugi::xml_document xml;
+    ASSERT_TRUE(parse_export(xml, *result));
+    const auto groups = xml.select_nodes("//NoteParenGroup");
+    ASSERT_EQ(groups.size(), 2u);
+    const auto left = groups[0].node().child("Parenthesis");
+    const auto right = left.next_sibling("Parenthesis");
+    EXPECT_STREQ(left.child_value("eid"), "xuRxhYhEgwC_JMh0LQIeg2P");
+    EXPECT_STREQ(right.child_value("eid"), "elgMPb24DwF_uHOs8mN13FO");
+    const auto linked = groups[1].node().child("Parenthesis");
+    EXPECT_STREQ(linked.child_value("linkedTo"), left.child_value("eid"));
+    EXPECT_STREQ(linked.next_sibling("Parenthesis").child_value("linkedTo"), right.child_value("eid"));
+}
+
+TEST(Export470, RefusesDifferentParenthesisGroupsSharingANote) {
+    const auto source = connector_score(
+        R"(<Measure><voice><Chord><durationType>whole</durationType>
+            <Note><eid>D_D</eid><pitch>60</pitch><tpc>14</tpc></Note>
+            <Note><eid>E_E</eid><pitch>64</pitch><tpc>18</tpc></Note>
+            <NoteParenGroup><Notes><NoteEID>D_D</NoteEID></Notes></NoteParenGroup>
+            <NoteParenGroup><Notes><NoteEID>E_E</NoteEID><NoteEID>D_D</NoteEID></Notes></NoteParenGroup>
+            </Chord></voice></Measure>)",
+        "<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>", "");
+    const auto document = g_engine->open(as_bytes(source));
+    ASSERT_TRUE(document) << document.error().message;
+    const auto result = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+    ASSERT_FALSE(result);
+    ASSERT_EQ(result.error().export_warnings.size(), 1u);
+    EXPECT_EQ(result.error().export_warnings[0].code, "B470_UNSUPPORTED_FEATURE");
+    EXPECT_NE(result.error().message.find("overlapping NoteParenGroups"), std::string::npos);
+}
+
+TEST(Export470, IndexesParenthesesInLegacyUnisonAndPercussionOrder) {
+    for (const bool drums : {false, true}) {
+        SCOPED_TRACE(drums);
+        const std::string first_notes =
+            drums ? "<Note><eid>D_D</eid><pitch>36</pitch><tpc>14</tpc></Note><Note><eid>E_E</eid><pitch>42</pitch><tpc>20</tpc></Note>" :
+                    "<Note><eid>D_D</eid><pitch>60</pitch><tpc>14</tpc></Note><Note><eid>F_F</eid><pitch>60</pitch><tpc>14</tpc></Note>"
+                    "<Note><eid>E_E</eid><pitch>60</pitch><tpc>14</tpc></Note>";
+        auto source =
+            connector_score("<Measure><voice><Chord><durationType>whole</durationType>" + first_notes +
+                                "<NoteParenGroup><Notes><NoteEID>E_E</NoteEID></Notes></NoteParenGroup></Chord></voice></Measure>",
+                            "<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>", "");
+        if (drums) {
+            source.replace(source.find("group=\"pitched\""), std::string_view("group=\"pitched\"").size(), "group=\"percussion\"");
+            source.insert(source.find("<instrumentId>"),
+                          R"(<useDrumset>1</useDrumset><Drum pitch="36"><head>normal</head><line>7</line></Drum>
+                             <Drum pitch="42"><head>cross</head><line>-1</line></Drum>)");
+        }
+        const auto document = g_engine->open(as_bytes(source));
+        ASSERT_TRUE(document) << document.error().message;
+        const auto result = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+        ASSERT_TRUE(result) << result.error().message;
+        pugi::xml_document xml;
+        ASSERT_TRUE(parse_export(xml, *result));
+        const auto notes = xml.select_nodes("//Chord/Note");
+        ASSERT_EQ(notes.size(), drums ? 2u : 3u);
+        if (!drums) {
+            EXPECT_STREQ(notes[0].node().child_value("eid"), "D_D");
+            EXPECT_STREQ(notes[1].node().child_value("eid"), "E_E");
+            EXPECT_STREQ(notes[2].node().child_value("eid"), "F_F");
+        }
+        const auto indices = xml.select_nodes("//NoteParenGroup/Notes/NoteIdx");
+        ASSERT_EQ(indices.size(), 1u);
+        EXPECT_EQ(indices[0].node().text().as_int(-1), drums ? 1 : 2);
+    }
+}
+
+TEST(Export470, RefusesSparseBeamFragmentsAndNestedImages) {
+    for (const bool image : {false, true}) {
+        SCOPED_TRACE(image);
+        const auto source =
+            connector_score(image ? R"(<VBox><Image><path>missing.png</path><eid>D_D</eid></Image></VBox>
+                       <Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>)" :
+                                    R"(<Measure><voice><Beam><eid>D_D</eid><Fragment no="1"><y1>2</y1><y2>3</y2></Fragment></Beam>
+                       <Chord><BeamMode>begin</BeamMode><durationType>eighth</durationType><Note><pitch>60</pitch><tpc>14</tpc></Note></Chord>
+                       <Chord><BeamMode>end</BeamMode><durationType>eighth</durationType><Note><pitch>62</pitch><tpc>16</tpc></Note></Chord>
+                       <Rest><durationType>half</durationType><dots>1</dots></Rest></voice></Measure>)",
+                            "<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>", "");
+        const auto document = g_engine->open(as_bytes(source));
+        ASSERT_TRUE(document) << document.error().message;
+        const auto result = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+        ASSERT_FALSE(result);
+        ASSERT_EQ(result.error().export_warnings.size(), 1u) << result.error().message;
+        EXPECT_EQ(result.error().export_warnings[0].code, "B470_UNSUPPORTED_FEATURE");
+        EXPECT_NE(result.error().message.find(image ? "VBox/Image" : "nonconsecutive Beam/Fragment"), std::string::npos);
+    }
+}
+
+TEST(Export470, AttributesInstrumentChangeGroupNamesToTheOwningParts) {
+    const auto source = R"(<museScore version="5.00"><Score><eid>A_A</eid><Division>480</Division>
+        <Style><windsNameByGroup>1</windsNameByGroup></Style>
+        <Part id="1"><eid>P_P</eid><Staff><eid>B_B</eid><StaffType group="pitched"/></Staff>
+            <Instrument id="oboe"><instrumentId>wind.reed.oboe</instrumentId><trackName>Oboe</trackName></Instrument></Part>
+        <Part id="2"><eid>Q_Q</eid><Staff><eid>C_C</eid><StaffType group="pitched"/></Staff>
+            <Instrument id="flute"><instrumentId>wind.flutes.flute</instrumentId><trackName>Flute</trackName></Instrument></Part>
+        <Staff id="1"><Measure><voice><Rest><durationType>half</durationType></Rest>
+            <InstrumentChange><eid>D_D</eid><text>To flute</text><Instrument id="flute">
+                <instrumentId>wind.flutes.flute</instrumentId><trackName>Flute</trackName></Instrument></InstrumentChange>
+            <Rest><durationType>half</durationType></Rest></voice></Measure></Staff>
+        <Staff id="2"><Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure></Staff>
+        </Score></museScore>)";
+    for (const bool authored : {false, true}) {
+        SCOPED_TRACE(authored);
+        std::string xml(source);
+        if (authored)
+            xml.insert(xml.find("<trackName>Flute</trackName>", xml.find("<InstrumentChange>")),
+                       "<InstrumentLabel><useCustomGroupName>1</useCustomGroupName><customNameLongGroup>Winds</customNameLongGroup></"
+                       "InstrumentLabel>");
+        const auto document = g_engine->open(as_bytes(xml));
+        ASSERT_TRUE(document) << document.error().message;
+        const auto result = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+        ASSERT_TRUE(result) << result.error().message;
+        ASSERT_EQ(result->warnings.size(), 2u);
+        for (const auto &[index, id] : std::array{std::pair{0u, "P_P"}, std::pair{1u, "Q_Q"}}) {
+            const auto &warning = result->warnings[index];
+            EXPECT_EQ(warning.code, "B470_INSTRUMENT_GROUP_NAME_DROPPED");
+            ASSERT_TRUE(warning.object);
+            EXPECT_EQ(warning.object->kind, "part");
+            EXPECT_EQ(warning.object->id, id);
+        }
+    }
+}
+
+TEST(Export470, PreservesUserAndCourtesyAccidentalsAcrossATie) {
+    auto source = read_text(write470_fixture().parent_path() / "ties.mscx");
+    for (const auto &[id, accidental] :
+         std::array{std::pair{"G_G", "<Accidental><role>1</role><subtype>sharp</subtype></Accidental>"},
+                    std::pair{"J_J", "<Accidental><role>1</role><subtype>sharp</subtype><bracket>1</bracket></Accidental>"}}) {
+        const auto pitch = source.find("<pitch>60</pitch>", source.find(std::format("<eid>{}</eid>", id)));
+        ASSERT_NE(pitch, std::string::npos);
+        source.replace(pitch, std::string_view("<pitch>60</pitch>").size(), std::string(accidental) + "<pitch>61</pitch>");
+        const auto tpc = source.find("<tpc>14</tpc>", pitch);
+        ASSERT_NE(tpc, std::string::npos);
+        source.replace(tpc, std::string_view("<tpc>14</tpc>").size(), "<tpc>21</tpc>");
+    }
+    const auto document = g_engine->open(as_bytes(source));
+    ASSERT_TRUE(document) << document.error().message;
+    for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
+        const auto result = (*document)->export_score_with_warnings({.format = format, .native_version = "4.70"});
+        ASSERT_TRUE(result) << result.error().message;
+        EXPECT_TRUE(result->warnings.empty());
+        const auto reopened = g_engine->open(result->bytes, {.format = format});
+        ASSERT_TRUE(reopened) << reopened.error().message;
+        using namespace mu::engraving;
+        const auto *registry = master_of(**reopened).eid_register();
+        const auto *start = to_note(registry->item_from_eid(EID::from_std_string(std::string_view("G_G"))));
+        const auto *end = to_note(registry->item_from_eid(EID::from_std_string(std::string_view("J_J"))));
+        ASSERT_TRUE(start && end && start->tie_for());
+        EXPECT_EQ(start->tie_for()->end_note(), end);
+        for (const auto *note : {start, end}) {
+            EXPECT_EQ(note->pitch(), 61);
+            const auto *accidental = note->accidental();
+            ASSERT_TRUE(accidental);
+            EXPECT_EQ(accidental->role(), AccidentalRole::USER);
+            EXPECT_EQ(accidental->accidental_type(), AccidentalType::SHARP);
+            EXPECT_EQ(static_cast<int>(accidental->bracket()), note == end ? 1 : 0);
+        }
+    }
+}
 
 TEST(Export470, ReconstructsCrossMeasureStaffVoiceGraceAndUnisonEndpoints) {
     using namespace mu::engraving;
