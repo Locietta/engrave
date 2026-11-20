@@ -45,9 +45,19 @@ private:
 
     static bool do_load_style(MStyle *style, const muse::io::PathT &file_path);
 
+    struct LegacyStyleCache {
+        MStyle style;
+        bool loaded = false;
+    };
+
     MStyle base_style_;    // builtin initial style
     MStyle default_style_; // builtin modified by preferences
     std::unique_ptr<MStyle> default_style_for_parts_;
+    LegacyStyleCache legacy_v450_;
+    LegacyStyleCache legacy_v302_;
+    LegacyStyleCache legacy_v3_;
+    LegacyStyleCache legacy_v2_;
+    LegacyStyleCache legacy_v1_;
 };
 } // namespace mu::engraving
 
