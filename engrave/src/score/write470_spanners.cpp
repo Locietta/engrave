@@ -184,7 +184,8 @@ std::vector<LegacyNote> legacy_notes(pugi::xml_node chord, const Chord &dom, voi
     charge(dom.notes().size() * (sizeof(LegacyNote) + 2 * sizeof(void *)));
     std::vector<LegacyNote> notes;
     notes.reserve(dom.notes().size());
-    const bool tab = dom.staff()->is_tab_staff(dom.tick());
+    // 4.7.6 adds the notes while the chord is still on the tick-zero dummy segment.
+    const bool tab = dom.staff()->staff_type(Fraction(0, 1))->is_tab_staff();
     for (auto xml : chord.children("Note")) {
         poll();
         const auto *item = source_object(xml, *dom.score());
@@ -368,15 +369,17 @@ bool clean_line_segments(pugi::xml_node body, const Spanner &dom, AuthoredChildR
                     if (ordinal >= segments.size()) return false;
                 } else {
                     const auto *subtype = table->find(key, Pid::SUBTYPE);
-                    if (!subtype || ordinal >= index.measures.size()) return false;
-                    const auto kind = static_cast<SpannerSegmentType>(subtype->value.to_int());
-                    if (kind != SpannerSegmentType::END && kind != SpannerSegmentType::MIDDLE) return false;
+                    if (ordinal >= index.measures.size()) return false;
+                    if (subtype) {
+                        const auto kind = static_cast<SpannerSegmentType>(subtype->value.to_int());
+                        if (kind != SpannerSegmentType::END && kind != SpannerSegmentType::MIDDLE) return false;
+                    }
                 }
             }
             for (; next < ordinal; ++next) {
                 index.poll();
                 charge(256);
-                // A verified continuation also establishes the pre-layout prefix of the line.
+                // The legacy reader appends segments in file order, so fill the missing prefix.
                 const auto subtype = !segments.empty() ? segments[next]->spanner_segment_type() :
                                      next == 0         ? SpannerSegmentType::BEGIN :
                                                          SpannerSegmentType::MIDDLE;
@@ -390,6 +393,7 @@ bool clean_line_segments(pugi::xml_node body, const Spanner &dom, AuthoredChildR
 }
 
 std::string clean_body(pugi::xml_node body, const Spanner &spanner, int receiver_track, const ScoreIndex &index) {
+    if (body.child("textSizeIsSpatiumDependent")) return std::string(body.name()) + "/textSizeIsSpatiumDependent";
     for (const char *field : {"startTick", "track2", "startElement", "endElement", "ticks", "ticks_f"}) body.remove_child(field);
     if (auto track = body.child("track"); track && track.text().as_int(-1) == receiver_track) body.remove_child(track);
     if (spanner.is_guitar_bend()) {
