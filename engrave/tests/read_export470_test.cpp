@@ -1,3 +1,6 @@
+#include <pugixml.hpp>
+
+#include "engrave/src/score/write470_spanners.h"
 #include "read_test_fixture.h"
 
 using namespace read_test;
@@ -663,4 +666,293 @@ TEST(Export470, PartNumericIdsSurviveButPartEidsHaveNoLegacyField) {
     auto reopened = g_engine->open(result->bytes, {.format = engrave::Format::MSCX});
     ASSERT_TRUE(reopened);
     EXPECT_EQ(master_of(**reopened).parts().size(), 4u);
+}
+
+namespace {
+
+std::string connector_score(std::string_view first_staff, std::string_view second_staff, std::string_view spanners) {
+    return std::format(R"(<museScore version="5.00"><Score><eid>A_A</eid><Division>480</Division>
+        <Part id="1"><Staff><eid>B_B</eid><StaffType group="pitched"/></Staff>
+        <Staff><eid>C_C</eid><StaffType group="pitched"/></Staff><Instrument id="piano">
+        <instrumentId>keyboard.piano</instrumentId><Channel><program value="0"/></Channel>
+        </Instrument></Part><Staff id="1">{}</Staff><Staff id="2">{}</Staff><SpannerMap>{}</SpannerMap></Score></museScore>)",
+                       first_staff, second_staff, spanners);
+}
+
+bool parse_export(pugi::xml_document &xml, const engrave::ExportOutput &result) {
+    return bool(xml.load_buffer(result.bytes.data(), result.bytes.size()));
+}
+
+} // namespace
+
+TEST(Export470, ReconstructsCrossMeasureStaffVoiceGraceAndUnisonEndpoints) {
+    using namespace mu::engraving;
+    const auto source = connector_score(
+        R"(<Measure><voice>
+              <Chord><eid>D_D</eid><acciaccatura/><durationType>eighth</durationType>
+                <Note><eid>E_E</eid><pitch>60</pitch><tpc>14</tpc></Note></Chord>
+              <Chord><eid>F_F</eid><durationType>whole</durationType>
+                <Note><eid>G_G</eid><pitch>62</pitch><tpc>16</tpc></Note></Chord>
+            </voice></Measure><Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>)",
+        R"(<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>
+            <Measure><voice><Rest><durationType>measure</durationType></Rest></voice><voice>
+              <Chord><eid>H_H</eid><durationType>whole</durationType>
+                <Note><eid>I_I</eid><pitch>60</pitch><tpc>14</tpc>
+                  <Tie><eid>K_K</eid><startElement>E_E</startElement><endElement>I_I</endElement><track>0</track></Tie></Note>
+                <Note><eid>J_J</eid><pitch>60</pitch><tpc>14</tpc></Note>
+                <Note><eid>L_L</eid><pitch>60</pitch><tpc>14</tpc></Note>
+              </Chord></voice></Measure>)",
+        R"(<Slur><eid>M_M</eid><startElement>F_F</startElement><endElement>H_H</endElement><track>0</track></Slur>)");
+    auto document = g_engine->open(as_bytes(source));
+    ASSERT_TRUE(document) << document.error().message;
+    auto *source_registry = master_of(**document).eid_register();
+    auto *target = to_note(source_registry->item_from_eid(EID::from_std_string(std::string_view("I_I"))));
+    ASSERT_TRUE(target);
+    auto &source_unisons = target->chord()->notes();
+    ASSERT_EQ(source_unisons.size(), 3u);
+    const auto tied = std::ranges::find(source_unisons, target);
+    ASSERT_NE(tied, source_unisons.end());
+    // Make the tied note the second equal key on the wire, which the reader inserts third.
+    std::iter_swap(tied, source_unisons.begin() + 1);
+    auto legacy = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+    ASSERT_TRUE(legacy) << legacy.error().message;
+    pugi::xml_document xml;
+    ASSERT_TRUE(parse_export(xml, *legacy));
+    const auto tie = xml.select_node("//Note[eid='E_E']/Spanner[@type='Tie']/next/location").node();
+    ASSERT_TRUE(tie);
+    EXPECT_EQ(tie.child("staves").text().as_int(), 1);
+    EXPECT_EQ(tie.child("voices").text().as_int(), 1);
+    EXPECT_EQ(tie.child("measures").text().as_int(), 1);
+    const auto unisons = xml.select_nodes("//Chord[eid='H_H']/Note");
+    ASSERT_EQ(unisons.size(), 3u);
+    ASSERT_STREQ(unisons[1].node().child_value("eid"), "I_I");
+    EXPECT_EQ(tie.child("notes").text().as_int(), 2);
+    const auto reverse = xml.select_node("//Note[eid='I_I']/Spanner[@type='Tie']/prev/location").node();
+    ASSERT_TRUE(reverse.child("grace"));
+    EXPECT_EQ(reverse.child("grace").text().as_int(-1), 0);
+    EXPECT_EQ(reverse.child("notes").text().as_int(), -2);
+    const auto slur = xml.select_node("//Chord[eid='F_F']/Spanner[@type='Slur']/next/location").node();
+    ASSERT_TRUE(slur);
+    EXPECT_EQ(slur.child("staves").text().as_int(), 1);
+    EXPECT_EQ(slur.child("voices").text().as_int(), 1);
+    EXPECT_EQ(slur.child("measures").text().as_int(), 1);
+    auto reopened = g_engine->open(legacy->bytes);
+    ASSERT_TRUE(reopened) << reopened.error().message;
+    const auto *registry = master_of(**reopened).eid_register();
+    const auto *end = to_note(registry->item_from_eid(EID::from_std_string(std::string_view("I_I"))));
+    ASSERT_TRUE(end && end->tie_back_non_partial());
+    EXPECT_EQ(end->tie_back_non_partial()->start_note()->eid().to_std_string(), "E_E");
+    const auto *span = to_slur(registry->item_from_eid(EID::from_std_string(std::string_view("M_M"))));
+    ASSERT_TRUE(span && span->end_element());
+    EXPECT_EQ(span->end_element()->eid().to_std_string(), "H_H");
+}
+
+TEST(Export470, PreservesCursorForInteriorMovesAndCreatesAnEmptyVoiceAnchor) {
+    using namespace mu::engraving;
+    const auto source = connector_score(
+        R"(<Measure><voice>
+              <Chord><eid>D_D</eid><durationType>half</durationType><Note><pitch>60</pitch><tpc>14</tpc></Note></Chord>
+              <Chord><eid>E_E</eid><durationType>half</durationType><Note><pitch>62</pitch><tpc>16</tpc></Note></Chord>
+            </voice></Measure>)",
+        R"(<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>)",
+        R"(<HairPin><eid>F_F</eid><subtype>0</subtype><track>0</track><track2>0</track2><startTick>1/8</startTick><ticks>3/8</ticks></HairPin>
+            <Ottava><eid>G_G</eid><subtype>8va</subtype><track>2</track><track2>2</track2><startTick>0/1</startTick><ticks>3/4</ticks></Ottava>)");
+    auto document = g_engine->open(as_bytes(source));
+    ASSERT_TRUE(document) << document.error().message;
+    auto &master = master_of(**document);
+    auto *anchor = to_chord(master.eid_register()->item_from_eid(EID::from_std_string(std::string_view("D_D"))));
+    ASSERT_TRUE(anchor);
+    auto *partial = Factory::create_slur(master.dummy());
+    std::ignore = partial->assign_new_eid();
+    partial->set_partial_spanner_direction(PartialSpannerDirection::OUTGOING);
+    partial->set_tick(anchor->tick());
+    partial->set_tick2(anchor->tick());
+    partial->set_track(anchor->track());
+    partial->set_track2(anchor->track());
+    partial->set_start_element(anchor);
+    partial->set_end_element(anchor);
+    const AuthoredChildKey segment{AuthoredChildRole::SPANNER_SEGMENT};
+    partial->authored_overrides.set_carrier({segment, ElementType::SLUR_SEGMENT});
+    partial->authored_overrides.set({segment, Pid::SLUR_UOFF1, muse::PointF(0.5, -1)});
+    master.add_spanner(partial, false);
+    const auto legacy = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+    ASSERT_TRUE(legacy) << legacy.error().message;
+    pugi::xml_document xml;
+    ASSERT_TRUE(parse_export(xml, *legacy));
+    const auto measure = xml.select_node("//Score/Staff[@id='1']/Measure").node();
+    auto first = measure.child("voice");
+    auto second = first.next_sibling("voice");
+    auto third = second.next_sibling("voice");
+    ASSERT_TRUE(third);
+    EXPECT_FALSE(second.first_child());
+    EXPECT_STREQ(third.first_child().name(), "location");
+    EXPECT_EQ(third.first_child().child("timeTick").text().as_int(), 1);
+    EXPECT_FALSE(third.first_child().child("fractions"));
+    const auto start = first.select_node("Spanner[@type='HairPin'][next]").node();
+    ASSERT_TRUE(start);
+    EXPECT_STREQ(start.previous_sibling().child_value("fractions"), "-3/8");
+    EXPECT_STREQ(start.next_sibling().child_value("fractions"), "3/8");
+    const auto slur = first.select_node("Chord[eid='D_D']/Spanner[@type='Slur'][next]").node();
+    ASSERT_TRUE(slur);
+    EXPECT_STREQ(slur.child("Slur").child_value("partialSpannerDirection"), "outgoing");
+    EXPECT_TRUE(slur.child("Slur").child("SlurSegment").attribute("no"));
+    ASSERT_TRUE(slur.child("next").child("location"));
+    EXPECT_FALSE(slur.child("next").child("location").first_child());
+    ASSERT_TRUE(slur.next_sibling("Spanner").child("prev").child("location"));
+    const auto reopened = g_engine->open(legacy->bytes);
+    ASSERT_TRUE(reopened) << reopened.error().message;
+    const auto expected = music::semantic_dump(&master_of(**document));
+    const auto actual = music::semantic_dump(&master_of(**reopened));
+    EXPECT_TRUE(music::json_equal(actual["events"], expected["events"]));
+}
+
+TEST(Export470, ValidatesAndTranslatesAllGuitarBendTokens) {
+    const auto path = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "tests/data/inputs/golden/bend.gp";
+    auto document = open_path(path);
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    const auto native = document->export_score({.format = engrave::Format::MSCX});
+    ASSERT_TRUE(native) << native.error().message;
+    constexpr std::array tokens{"bend", "pre-bend", "grace-note-bend", "slight-bend", "dive", "pre-dive", "dip", "scoop", "unknown"};
+    for (std::size_t i = 0; i < tokens.size(); ++i) {
+        SCOPED_TRACE(tokens[i]);
+        pugi::xml_document xml;
+        ASSERT_TRUE(xml.load_buffer(native->data(), native->size()));
+        auto bend = xml.select_node("//Note/GuitarBend").node();
+        ASSERT_TRUE(bend);
+        bend.child("guitarBendType").text().set(tokens[i]);
+        std::array<mu::engraving::Score *, 1> scores{&master};
+        const auto issues = engrave::write470::reconstruct_connectors(xml.child("museScore"), scores, [] {});
+        if (i == tokens.size() - 1) {
+            ASSERT_EQ(issues.size(), 1u);
+            EXPECT_EQ(issues.front().detail, "GuitarBend/guitarBendType");
+        } else {
+            ASSERT_TRUE(issues.empty());
+            EXPECT_STREQ(bend.parent().attribute("type").value(), "GuitarBend");
+            EXPECT_EQ(bend.child("guitarBendType").text().as_int(-1), i);
+        }
+    }
+}
+
+TEST(Export470, RebasesLinkedStartsToTheFirstEmittedMember) {
+    constexpr std::string_view rests = R"(<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>
+                                          <Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>)";
+    // The DOM main is on the lower track, but its receiver is in the second measure.
+    const auto source =
+        connector_score(rests, rests,
+                        R"(<Pedal><eid>D_D</eid><track>0</track><track2>0</track2><startTick>1/1</startTick><ticks>1/2</ticks></Pedal>
+            <Pedal><eid>E_E</eid><linkedTo>D_D</linkedTo><track>1</track><track2>1</track2><startTick>0/1</startTick><ticks>1/2</ticks></Pedal>)");
+    const auto document = g_engine->open(as_bytes(source));
+    ASSERT_TRUE(document) << document.error().message;
+    const auto legacy = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+    ASSERT_TRUE(legacy) << legacy.error().message;
+    pugi::xml_document xml;
+    ASSERT_TRUE(parse_export(xml, *legacy));
+    const auto starts = xml.select_nodes("//Spanner[@type='Pedal']/Pedal");
+    ASSERT_EQ(starts.size(), 2u);
+    EXPECT_STREQ(starts[0].node().child_value("eid"), "E_E");
+    EXPECT_STREQ(starts[1].node().child_value("eid"), "D_D");
+    EXPECT_FALSE(starts[0].node().child("linkedTo"));
+    EXPECT_STREQ(starts[1].node().child_value("linkedTo"), "E_E");
+}
+
+TEST(Export470, PadsSparseLineSegmentsWithTheirDomSubtypes) {
+    constexpr std::string_view rests = R"(<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>
+                                          <Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>
+                                          <Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>)";
+    const auto source =
+        connector_score(rests, rests,
+                        R"(<Pedal><eid>D_D</eid><track>0</track><track2>0</track2><startTick>0/1</startTick><ticks>3/1</ticks>
+            <Segment no="2"><subtype>3</subtype><offset x="1.25" y="-0.5"/></Segment></Pedal>)");
+    const auto document = g_engine->open(as_bytes(source));
+    ASSERT_TRUE(document) << document.error().message;
+    const auto legacy = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+    ASSERT_TRUE(legacy) << legacy.error().message;
+    pugi::xml_document xml;
+    ASSERT_TRUE(parse_export(xml, *legacy));
+    const auto segments = xml.select_nodes("//Pedal/Segment");
+    ASSERT_EQ(segments.size(), 3u);
+    for (std::size_t i = 0; i < segments.size(); ++i) {
+        const auto segment = segments[i].node();
+        EXPECT_FALSE(segment.attribute("no"));
+        EXPECT_EQ(segment.child("subtype").text().as_int(), i + 1);
+        EXPECT_EQ(bool(segment.child("offset")), i == 2);
+    }
+}
+
+TEST(Export470, RetainsGoldenLineFamiliesAndInlineLaissezVib) {
+    using namespace mu::engraving;
+    const auto corpus = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "tests/data/inputs/golden";
+    for (const auto &[file, tag] : std::array{std::pair{"layout_elements.mscx", "Glissando"}, std::pair{"coverage.musicxml", "LaissezVib"},
+                                              std::pair{"repeat_with_2_voltas.mscx", "Volta"}}) {
+        SCOPED_TRACE(file);
+        auto document = open_path(corpus / file);
+        ASSERT_TRUE(document);
+        const auto legacy = document->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+        ASSERT_TRUE(legacy) << legacy.error().message;
+        pugi::xml_document xml;
+        ASSERT_TRUE(parse_export(xml, *legacy));
+        const auto bodies = xml.select_nodes((std::string("//") + tag).c_str());
+        ASSERT_FALSE(bodies.empty());
+        for (const auto body : bodies) {
+            const auto node = body.node();
+            if (std::string_view(tag) == "LaissezVib") {
+                EXPECT_STREQ(node.parent().name(), "Note");
+            } else {
+                EXPECT_STREQ(node.parent().attribute("type").value(), tag);
+                EXPECT_STREQ(node.parent().parent().name(), std::string_view(tag) == "Volta" ? "voice" : "Note");
+            }
+        }
+        auto reopened = g_engine->open(legacy->bytes);
+        ASSERT_TRUE(reopened) << reopened.error().message;
+        if (std::string_view(tag) == "Volta") {
+            const auto &score = master_of(**reopened);
+            int count = 0;
+            for (const auto &[key, spanner] : score.spanner_map().map()) {
+                if (!spanner->is_volta()) continue;
+                ++count;
+                const auto *end = to_measure(spanner->end_element());
+                ASSERT_TRUE(end);
+                EXPECT_EQ(spanner->tick2(), end->end_tick());
+            }
+            EXPECT_EQ(count, 2);
+        }
+    }
+}
+
+TEST(Export470, RoutesInteriorAndFinalVoltaEndsToDifferentMeasureCoordinates) {
+    using mu::engraving::Fraction;
+    constexpr std::string_view first = R"(<Measure><eid>D_D</eid><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>
+                                           <Measure><eid>E_E</eid><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>)";
+    constexpr std::string_view second = R"(<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>
+                                            <Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>)";
+    const auto source = connector_score(
+        first, second,
+        R"(<Volta><eid>F_F</eid><startElement>D_D</startElement><endElement>D_D</endElement><track>0</track><endings>1</endings></Volta>
+            <Volta><eid>G_G</eid><startElement>E_E</startElement><endElement>E_E</endElement><track>0</track><endings>2</endings></Volta>)");
+    auto document = g_engine->open(as_bytes(source));
+    ASSERT_TRUE(document) << document.error().message;
+    const auto legacy = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+    ASSERT_TRUE(legacy) << legacy.error().message;
+    pugi::xml_document xml;
+    ASSERT_TRUE(parse_export(xml, *legacy));
+    const auto ends = xml.select_nodes("//voice/Spanner[@type='Volta'][prev]");
+    ASSERT_EQ(ends.size(), 2u);
+    for (const auto end : ends) EXPECT_STREQ(end.node().parent().parent().child_value("eid"), "E_E");
+    const auto interior = ends[0].node().child("prev").child("location");
+    EXPECT_EQ(interior.child("measures").text().as_int(), -1);
+    EXPECT_FALSE(interior.child("fractions"));
+    const auto final = ends[1].node().child("prev").child("location");
+    EXPECT_FALSE(final.child("measures"));
+    EXPECT_STREQ(final.child_value("fractions"), "-1/1");
+    auto reopened = g_engine->open(legacy->bytes);
+    ASSERT_TRUE(reopened) << reopened.error().message;
+    const auto &score = master_of(**reopened);
+    const auto *registry = score.eid_register();
+    for (const auto &[eid, tick] :
+         std::array{std::pair{std::string_view("F_F"), Fraction{1, 1}}, std::pair{std::string_view("G_G"), Fraction{2, 1}}}) {
+        const auto *object = registry->item_from_eid(mu::engraving::EID::from_std_string(eid));
+        ASSERT_TRUE(object && object->is_volta());
+        EXPECT_EQ(to_spanner(object)->tick2(), tick);
+    }
 }

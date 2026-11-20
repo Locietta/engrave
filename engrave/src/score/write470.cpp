@@ -11,7 +11,6 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -24,7 +23,6 @@
 #include "engraving/dom/excerpt.h"
 #include "engraving/dom/instrchange.h"
 #include "engraving/dom/instrument.h"
-#include "engraving/dom/location.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
 #include "engraving/dom/note.h"
@@ -38,6 +36,7 @@
 #include "engraving/style/style.h"
 #include "global/io/buffer.h"
 #include "global/io/writebudget.h"
+#include "write470_spanners.h"
 #include <engrave/testing/write470.h>
 
 namespace engrave::testing {
@@ -239,10 +238,11 @@ bool allowed_child(pugi::xml_node parent, std::string_view child) {
     if (name == "Staff" && std::string_view(parent.parent().name()) == "Score")
         return one_of(child, {"Measure", "VBox", "HBox", "TBox", "FBox"});
     if (name == "voice") return notation_item(child) || one_of(child, {"Spanner", "location", "tick", "endTuplet"});
-    if (name == "Spanner") return one_of(child, {"Tie", "Pedal", "next", "prev"});
-    if (name == "Tie" || name == "Pedal") return one_of(child, {"eid", "linkedTo"});
+    if (name == "Spanner") return one_of(child, {"next", "prev"}) || child == parent.attribute("type").value();
+    if (name == "Note" && one_of(child, {"PartialTie", "LaissezVib", "Spanner"})) return true;
+    if (name == "Lyrics" && child == "LyricsLine") return true;
     if (name == "next" || name == "prev") return child == "location";
-    if (name == "location") return one_of(child, {"fractions", "measures", "voices", "staves", "notes", "grace"});
+    if (name == "location") return one_of(child, {"fractions", "measures", "voices", "staves", "notes", "grace", "timeTick"});
     if (one_of(child,
                {"SpannerMap", "ChordList", "Automation",        "Tie",     "PartialTie", "LaissezVib", "LaissezVibrer",     "Glissando",
                 "GuitarBend", "NoteLine",  "PartialLyricsLine", "Slur",    "Pedal",      "HairPin",    "Hairpin",           "Volta",
@@ -259,114 +259,6 @@ void unsupported(pugi::xml_node node, std::string detail, std::optional<ElementI
 const EngravingObject *source_item(pugi::xml_node node, const Score &score) {
     if (const auto eid = node_id(node)) return score.master_score()->eid_register()->item_from_eid(to_engine(*eid));
     return nullptr;
-}
-
-bool is_simple_tie_location(pugi::xml_node start, pugi::xml_node end, const Score &score, int quarters) {
-    const auto *first = source_item(start, score);
-    const auto *last = source_item(end, score);
-    if (!first || !first->is_note() || !last || !last->is_note()) return false;
-    auto delta = Location::for_element(static_cast<const Note *>(last), false);
-    delta.to_relative(Location::for_element(static_cast<const Note *>(first), false));
-    return delta.staff() == 0 && delta.voice() == 0 && delta.measure() == 0 && delta.note() == 0 &&
-           delta.grace_index() == Location::relative().grace_index() && delta.frac() == mu::engraving::Fraction(quarters, 4);
-}
-
-bool is_chord_at(pugi::xml_node node, const Score &score, const mu::engraving::Fraction &tick) {
-    const auto *item = source_item(node, score);
-    return item && item->is_chord() && static_cast<const Chord *>(item)->tick() == tick;
-}
-
-// Translate only checked endpoint forms. Unrecognized properties remain in
-// the tree, where the structural guard rejects them before publishing bytes.
-void convert_connections(pugi::xml_node score, const Score &source_score) {
-    struct Position {
-        pugi::xml_node chord, note, voice;
-        int half;
-    };
-
-    std::vector<Position> positions;
-    for (auto staff : score.children("Staff")) {
-        poll();
-        for (auto measure : staff.children("Measure")) {
-            for (auto voice : measure.children("voice")) {
-                int half = 0;
-                for (auto chord : voice.children()) {
-                    poll();
-                    const std::string_view duration = chord.child_value("durationType");
-                    if (std::string_view(chord.name()) == "Rest") {
-                        if (!one_of(duration, {"quarter", "half", "whole"})) break;
-                        half += duration == "quarter" ? 1 : duration == "half" ? 2 : 4;
-                        continue;
-                    }
-                    if (std::string_view(chord.name()) != "Chord") continue;
-                    if (!one_of(duration, {"quarter", "half", "whole"})) break;
-                    for (auto note : chord.children("Note")) positions.push_back({chord, note, voice, half});
-                    half += duration == "quarter" ? 1 : duration == "half" ? 2 : 4;
-                }
-            }
-        }
-    }
-    const auto connection = [](pugi::xml_node parent, const char *type, const char *direction, int halves) {
-        auto spanner = parent.append_child("Spanner");
-        spanner.append_attribute("type") = type;
-        auto location = spanner.append_child(direction).append_child("location");
-        location.append_child("fractions").text().set((std::to_string(halves) + "/4").c_str());
-        return spanner;
-    };
-    for (auto end : positions) {
-        poll();
-        for (auto tie = end.note.child("Tie"); tie;) {
-            auto next = tie.next_sibling("Tie");
-            const auto start = std::find_if(positions.begin(), positions.end(), [&](const Position &p) {
-                return std::string_view(p.note.child_value("eid")) == tie.child_value("startElement");
-            });
-            bool checked = !tie.first_attribute();
-            for (auto field : tie.children())
-                if (!one_of(field.name(), {"startElement", "endElement", "eid", "track", "linkedTo"})) checked = false;
-            if (checked && start != positions.end() && start->voice == end.voice && end.half > start->half &&
-                std::string_view(tie.child_value("endElement")) == end.note.child_value("eid") &&
-                is_simple_tie_location(start->note, end.note, source_score, end.half - start->half)) {
-                auto forward = connection(start->note, "Tie", "next", end.half - start->half);
-                auto legacy = forward.prepend_child("Tie");
-                if (auto eid = tie.child("eid")) legacy.append_copy(eid);
-                if (auto link = tie.child("linkedTo")) legacy.append_copy(link);
-                connection(end.note, "Tie", "prev", start->half - end.half);
-                end.note.remove_child(tie);
-            }
-            tie = next;
-        }
-    }
-    auto map = score.child("SpannerMap");
-    for (auto pedal = map.child("Pedal"); pedal;) {
-        poll();
-        auto next = pedal.next_sibling("Pedal");
-        bool checked = !pedal.first_attribute();
-        for (auto field : pedal.children()) {
-            if (!one_of(field.name(), {"continueTextPlace", "endTextPlace", "track", "track2", "startTick", "ticks", "eid"}))
-                checked = false;
-            if (one_of(field.name(), {"continueTextPlace", "endTextPlace"}) && std::string_view(field.child_value()) != "auto")
-                checked = false;
-        }
-        if (checked && std::string_view(pedal.child_value("track")) == "0" && std::string_view(pedal.child_value("track2")) == "0" &&
-            std::string_view(pedal.child_value("startTick")) == "0/1" && std::string_view(pedal.child_value("ticks")) == "1/2" &&
-            !positions.empty() && std::string_view(score.child("Staff").attribute("id").value()) == "1" &&
-            positions.front().voice == score.child("Staff").child("Measure").child("voice") && positions.front().half == 0 &&
-            is_chord_at(positions.front().chord, source_score, {0, 1})) {
-            auto start = positions.front();
-            const auto end =
-                std::find_if(positions.begin(), positions.end(), [&](const Position &p) { return p.voice == start.voice && p.half == 2; });
-            if (end != positions.end() && is_chord_at(end->chord, source_score, {1, 2})) {
-                auto first = connection(start.voice, "Pedal", "next", 2);
-                first.prepend_child("Pedal").append_copy(pedal.child("eid"));
-                start.voice.insert_move_before(first, start.chord);
-                auto last = connection(end->voice, "Pedal", "prev", -2);
-                end->voice.insert_move_before(last, end->chord);
-                map.remove_child(pedal);
-            }
-        }
-        pedal = next;
-    }
-    if (map && !map.first_child()) score.remove_child(map);
 }
 
 void convert_bracket(pugi::xml_node bracket, std::optional<ElementId> score_id, std::vector<ExportWarning> &warnings) {
@@ -497,7 +389,7 @@ struct ScoreFeatures {
     bool force_names = false;
 };
 
-bool five_only_style_is_inactive(std::string_view name, const ScoreFeatures &features) {
+bool five_only_style_is_inactive(std::string_view name, const ScoreFeatures &features, const MStyle &style) {
     // These styles configure features already projected by the part, bracket,
     // and label conversions.
     if (name.starts_with("groupBracket") || name.starts_with("staveSharing") || name.starts_with("sharedOnStaff") ||
@@ -515,8 +407,8 @@ bool five_only_style_is_inactive(std::string_view name, const ScoreFeatures &fea
     if (name == "lyricsAutoCenterOnGrandStaff") return !features.lyrics || !features.grand_staff;
     if (name == "lyricsAutoCenterOnVocalStaves") return !features.lyrics || !features.vocal_staves;
     if (name == "dynamicsHairpinsAutoCenterOnVocalStaves") return !features.dynamics || !features.vocal_staves;
-    if (name == "maskSlurs") return !features.slurs;
-    if (name == "maskTies") return !features.ties;
+    if (name == "maskSlurs") return !features.slurs || !style.has_explicit_value(Sid::MASK_SLURS);
+    if (name == "maskTies") return !features.ties || !style.has_explicit_value(Sid::MASK_TIES);
     return false;
 }
 
@@ -548,7 +440,7 @@ void convert_style(pugi::xml_node score_node, Score &score, std::optional<Elemen
             } else if (name == "defaultsVersion") {
                 child.text().set("470");
             } else if (!known->legacy) {
-                if (!five_only_style_is_inactive(name, features) && !style_matches(child, *known))
+                if (!five_only_style_is_inactive(name, features, score.style()) && !style_matches(child, *known))
                     unsupported(score_node, "style " + std::string(name), score_id, warnings);
                 style.remove_child(child);
             }
@@ -567,8 +459,8 @@ void convert_notation(pugi::xml_node node, const Score &score, std::optional<Ele
     const std::string_view name = node.name();
     const std::string_view parent = node.parent().name();
     features.lyrics |= name == "Lyrics";
-    features.slurs |= name == "Slur";
-    features.ties |= name == "Tie";
+    features.slurs |= one_of(name, {"Slur", "HammerOnPullOff"});
+    features.ties |= one_of(name, {"Tie", "PartialTie", "LaissezVib"});
     features.dynamics |= one_of(name, {"Dynamic", "Expression", "HairPin"}) ||
                          (name == "Spanner" && std::string_view(node.attribute("type").value()) == "Pedal");
     features.dashed_bars |= name == "BarLine" && std::string_view(node.child_value("subtype")) == "dashed";
@@ -576,8 +468,7 @@ void convert_notation(pugi::xml_node node, const Score &score, std::optional<Ele
     if (name == "Chord" && node.child("NoteParenGroup")) {
         convert_note_indices(node, score, score_id, warnings);
     } else if (name == "Spanner") {
-        const char *expected = parent == "Note" ? "Tie" : "Pedal";
-        if (std::string_view(node.attribute("type").value()) != expected || node.first_attribute().next_attribute())
+        if (!is_legacy_connector(node.attribute("type").value(), parent) || node.first_attribute().next_attribute())
             unsupported(node, "Spanner type or attributes", score_id, warnings);
     } else if (one_of(name, {"rootCase", "bassCase"}) && parent == "Harmony") {
         constexpr std::array cases{"auto"sv, "capital"sv, "lower"sv, "upper"sv};
@@ -891,62 +782,15 @@ Result<ExportOutput> export_score(const music::EngineContext &context, const mus
         for (auto excerpt : score_nodes[i].children("Score")) score_nodes.push_back(excerpt);
     if (source_scores.size() != score_nodes.size()) throw std::runtime_error("excerpt count changed during serialization");
     for (std::size_t index = 0; index < score_nodes.size(); ++index) strip_neutral_masks(score_nodes[index], *source_scores[index]);
-    if (!score.is_master()) {
-        // Reuse the engine's legacy location calculation, including grace-note
-        // indices. Resolve only endpoints actually emitted by standalone 5.00.
-        const auto notes = score_node.select_nodes(".//Note");
-        std::unordered_map<std::string, Note *> source_notes;
-        std::unordered_map<std::string, pugi::xml_node> emitted_notes;
-        for (auto *object : document_objects(master)) {
-            poll();
-            if (object->is_note() && static_cast<Note *>(object)->score() == &score)
-                source_notes.emplace(object->eid().to_std_string(), static_cast<Note *>(object));
-        }
-        for (auto match : notes) emitted_notes.emplace(match.node().child_value("eid"), match.node());
-        for (auto match : notes) {
-            poll();
-            auto end_xml = match.node();
-            for (auto tie = end_xml.child("Tie"); tie;) {
-                auto next = tie.next_sibling("Tie");
-                bool checked = !tie.first_attribute();
-                for (auto field : tie.children())
-                    if (!one_of(field.name(), {"startElement", "endElement", "eid", "track", "linkedTo"})) checked = false;
-                const auto found_end = source_notes.find(end_xml.child_value("eid"));
-                Note *end = found_end == source_notes.end() ? nullptr : found_end->second;
-                auto *source_tie = end ? end->tie_back() : nullptr;
-                const auto found_start = emitted_notes.find(tie.child_value("startElement"));
-                const auto start_xml = found_start == emitted_notes.end() ? pugi::xml_node{} : found_start->second;
-                if (checked && source_tie && source_tie->start_note() && start_xml &&
-                    source_tie->start_note()->eid().to_std_string() == tie.child_value("startElement") &&
-                    std::string_view(end_xml.child_value("eid")) == tie.child_value("endElement")) {
-                    const auto connect = [](pugi::xml_node parent, const char *direction, Note *from, Note *to) {
-                        auto relative = Location::for_element(to, false);
-                        relative.to_relative(Location::for_element(from, false));
-                        auto spanner = parent.append_child("Spanner");
-                        spanner.append_attribute("type") = "Tie";
-                        auto location = spanner.append_child(direction).append_child("location");
-                        const auto integer = [&](const char *name, int value, int neutral = 0) {
-                            if (value != neutral) location.append_child(name).text().set(value);
-                        };
-                        integer("staves", relative.staff());
-                        integer("voices", relative.voice());
-                        integer("measures", relative.measure());
-                        integer("notes", relative.note());
-                        integer("grace", relative.grace_index(), Location::relative().grace_index());
-                        if (!relative.frac().is_zero())
-                            location.append_child("fractions").text().set(relative.frac().reduced().to_string().to_std_string().c_str());
-                        return spanner;
-                    };
-                    auto forward = connect(start_xml, "next", source_tie->start_note(), end);
-                    auto legacy = forward.prepend_child("Tie");
-                    for (const char *field : {"eid", "linkedTo"})
-                        if (auto value = tie.child(field)) legacy.append_copy(value);
-                    connect(end_xml, "prev", end, source_tie->start_note());
-                    end_xml.remove_child(tie);
-                }
-                tie = next;
-            }
-        }
+    auto connector_issues = reconstruct_connectors(root, source_scores, poll);
+    for (auto &[node, detail] : connector_issues) {
+        auto owner = node;
+        while (owner && std::string_view(owner.name()) != "Score") owner = owner.parent();
+        unsupported(node, std::move(detail), owner ? node_id(owner) : score_id, warnings);
+    }
+    if (!connector_issues.empty()) {
+        warnings.insert(warnings.begin(), degraded.begin(), degraded.end());
+        return refused(std::move(warnings));
     }
     for (std::size_t index = 0; index < score_nodes.size(); ++index) {
         auto current = score_nodes[index];
@@ -975,7 +819,6 @@ Result<ExportOutput> export_score(const music::EngineContext &context, const mus
             legacy_track_name.text().set(part_dom.part_name().to_std_string().c_str());
         }
         if (source_part != source_score.parts().end()) throw std::runtime_error("part count changed during serialization");
-        convert_connections(current, source_score);
         convert_notation(current, source_score, current_id, features, warnings);
         convert_style(current, source_score, current_id, features, warnings);
         for (auto part : current.children("Part")) part.remove_child("eid");

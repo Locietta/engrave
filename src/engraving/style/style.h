@@ -83,6 +83,9 @@ struct MStyle {
     double default_spatium() const;
 
     bool is_default(Sid idx) const;
+
+    bool has_explicit_value(Sid idx) const { return idx != Sid::NOSTYLE && values_[size_t(idx)].is_valid(); }
+
     void set_default_style_version(const int defaults_version);
     int default_style_version() const;
 
