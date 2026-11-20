@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <format>
 #include <initializer_list>
 #include <iterator>
 #include <limits>
@@ -12,6 +13,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -543,8 +545,14 @@ void convert_bracket(pugi::xml_node bracket, const Score &score, std::optional<E
     legacy.append_attribute("span") = bracket.child_value("bracketSpan");
     legacy.append_attribute("col") = bracket.child_value("level");
     legacy.append_attribute("visible") = bracket.child("visible") ? bracket.child_value("visible") : "1";
-    if (source->color() != source->property_default(Pid::COLOR).value<muse::Color>())
-        legacy.append_attribute("color") = source->color().to_string().c_str();
+    const auto color = source->color();
+    if (color != source->property_default(Pid::COLOR).value<muse::Color>()) {
+        // The 4.70 bracket reader treats eight hex digits as ARGB.
+        const auto rgb = color.alpha() == 255 ?
+                             std::format("#{:02x}{:02x}{:02x}", color.red(), color.green(), color.blue()) :
+                             std::format("#{:02x}{:02x}{:02x}{:02x}", color.alpha(), color.red(), color.green(), color.blue());
+        legacy.append_attribute("color") = rgb.c_str();
+    }
     staff.remove_child(bracket);
 }
 
@@ -950,8 +958,10 @@ bool valid_tie_locator(std::string_view id) {
 }
 
 void normalize_warnings(std::vector<ExportWarning> &warnings) {
+    ankerl::unordered_dense::set<std::tuple<std::string, std::string, std::string, std::string>> seen;
     std::vector<ExportWarning> unique;
     for (auto &w : warnings) {
+        poll();
         if (!w.object || w.object->kind.empty() || w.object->id.empty()) throw std::invalid_argument("4.70 source warning has no identity");
         const auto &id = w.object->id;
         bool valid = (w.object->kind == "tie" && valid_tie_locator(id)) || (w.object->kind == "request" && id.starts_with("version:"));
@@ -967,11 +977,7 @@ void normalize_warnings(std::vector<ExportWarning> &warnings) {
             valid = valid || element_id_from_string(id).has_value();
         if (!valid) throw std::invalid_argument("4.70 source warning has an invalid identity");
         if (w.code == "B470_UNSUPPORTED_FEATURE") w.message = "Cannot write 4.70: the source feature has no defined downgrade.";
-        const auto same = [&](const ExportWarning &v) {
-            return v.code == w.code && v.message == w.message && v.object && w.object && v.object->kind == w.object->kind &&
-                   v.object->id == w.object->id;
-        };
-        if (std::none_of(unique.begin(), unique.end(), same)) unique.push_back(std::move(w));
+        if (seen.emplace(w.code, w.object->kind, id, w.message).second) unique.push_back(std::move(w));
     }
     warnings = std::move(unique);
 }
@@ -1104,7 +1110,9 @@ void warn_active_instrument_groups(const Score &score, std::vector<ExportWarning
 Result<ExportOutput> refused(std::vector<ExportWarning> warnings) {
     Error error{ErrorCode::UNSUPPORTED, "this score contains content the 4.70 writer cannot yet convert"};
     for (auto &warning : warnings) {
-        error.message += "\n" + warning.message;
+        poll();
+        error.message += '\n';
+        error.message += warning.message;
         if (warning.code == "B470_UNSUPPORTED_FEATURE")
             warning.message = "Cannot write 4.70: the source feature has no defined downgrade.";
         else if (warning.code == "B470_SHARED_PART_DROPPED")
