@@ -257,6 +257,7 @@ std::string export_native_score(const EngineContext &context, const ScoreProject
             for (const auto &[key, value] : score->meta_tags()) effective_tags.insert_or_assign(key, value);
             engraving::rw::WriteInOutData inout(score);
             inout.ctx.set_standalone(true);
+            inout.ctx.set_inline_style(true);
             inout.ctx.metadata_override = &effective_tags;
             success = engraving::rw::RWRegister::writer()->write_score(score, &buffer, &inout);
         } else {
@@ -278,6 +279,8 @@ std::string export_native_score(const EngineContext &context, const ScoreProject
                 score->style().write(&style_buffer);
                 engraving::rw::WriteInOutData inout(score);
                 inout.ctx.set_standalone(options.standalone_score);
+                // Only the score file of this archive is kept for an MSCX.
+                inout.ctx.set_inline_style(format == "mscx" && options.standalone_score);
                 inout.ctx.metadata_override = &effective_tags;
                 success = engraving::rw::RWRegister::writer()->write_score(score, &score_buffer, &inout);
                 writer.write_style_file(style_data);

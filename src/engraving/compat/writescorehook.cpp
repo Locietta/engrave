@@ -31,7 +31,15 @@ using namespace mu::engraving::compat;
 using namespace mu::engraving::write;
 
 void WriteScoreHook::on_write_style302(Score *score, XmlWriter &xml, bool inline_style) {
-    bool is_write_style = inline_style;
+    if (inline_style) {
+        // A standalone file has no style file beside it. Its reader starts from the
+        // current defaults, while an optimized style omits values that equal the
+        // defaults of the score's defaultsVersion, so every value is written.
+        score->style().save(xml, false);
+        return;
+    }
+
+    bool is_write_style = false;
 
     //! NOTE If not the master score, because the Excerpts (parts) have not yet been write to separate files
     if (!score->is_master()) {
