@@ -14,7 +14,6 @@ use_repo(
     "amc",
     "engrave_config",
     "fdk_aac",
-    "freetype",
     "glaze",
     "gtest",
     "harfbuzz",

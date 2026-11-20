@@ -117,9 +117,9 @@ cc_library(
     includes = ["muse/framework/draw"],
     deps = [
         ":muse_global",
-        "@freetype",
         "@harfbuzz",
         "@pixi_deps//:cairo",
+        "@pixi_deps//:freetype",
     ],
 )
 

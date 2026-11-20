@@ -208,11 +208,11 @@ build dependencies are explicitly marked as such.
 
 ## 3. External Dependencies Managed by Bazel and Pixi
 
-The standalone Bazel build compiles the following third-party dependencies from the hash-pinned upstream archives in `bazel/deps.bzl` (`bazel/third_party/*.BUILD.bazel`), and takes cairo and zlib from the conda-forge builds pinned in `pixi.lock`:
+The standalone Bazel build compiles the following third-party dependencies from the hash-pinned upstream archives in `bazel/deps.bzl` (`bazel/third_party/*.BUILD.bazel`), and takes cairo, FreeType, and zlib from the conda-forge builds pinned in `pixi.lock`:
 
-| Package                       | Pinned Version | Typical Upstream License         | Usage in engrave                                                                                                    |
-| ----------------------------- | -------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| **FreeType**                  | 2.14.1         | FreeType License (FTL) / GPL-2.0 | Font glyph loading and metrics                                                                                      |
+| Package                          | Pinned Version | Typical Upstream License         | Usage in engrave                                                                                                    |
+| -------------------------------- | -------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **FreeType** (conda-forge, Pixi) | 2.14.3         | FreeType License (FTL) / GPL-2.0 | Font glyph loading and metrics (shared with Cairo)                                                                  |
 | **HarfBuzz**                  | 12.3.0         | MIT License                      | Text and music font shaping                                                                                         |
 | **FLAC (libflac)**            | 1.4.3          | BSD-3-Clause / GPL               | Lossless audio export                                                                                               |
 | **LAME**                      | 3.100          | LGPL-2.0-or-later                | MP3 audio export                                                                                                    |
