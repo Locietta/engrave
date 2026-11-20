@@ -7,7 +7,7 @@ Executes upstream test suites:
 
 Parses GoogleTest console output, summarizes pass/fail statistics, and exits
 with non-zero if any test suite fails. The pinned inventory is asserted exactly
-(220 engraving playback tests in 10 suites, 24 MPE tests in 4 suites); zero tests,
+(231 engraving playback tests in 11 suites, 24 MPE tests in 4 suites); zero tests,
 a changed count, an unexpected skip or a disabled test also fail the lane. With
 an explicit ``--filter`` the subset size is unknown but zero tests, skips and
 disabled tests still fail.
@@ -37,7 +37,7 @@ from engrave_testing.paths import REPO_ROOT
 # or gains a skip/disable, so the numbers in docs/dev/validation.md cannot drift
 # from what is executed. Update this table together with the pinned engine.
 EXPECTED_SUITES = {
-    "engraving_playback_tests": {"total": 220, "test_suites": 10},
+    "engraving_playback_tests": {"total": 231, "test_suites": 11},
     "mpe_tests": {"total": 24, "test_suites": 4},
 }
 # Tests that may legitimately be skipped/disabled without failing the lane. The

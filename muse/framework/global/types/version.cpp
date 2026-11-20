@@ -101,9 +101,9 @@ Version::Version(const String &version_str) {
 
 Version::Version(const std::string &version_str) : Version(String::from_std_string(version_str)) {}
 
-int Version::major() const { return major_; }
+int(Version::major)() const { return major_; }
 
-int Version::minor() const { return minor_; }
+int(Version::minor)() const { return minor_; }
 
 int Version::patch() const { return patch_; }
 
@@ -140,12 +140,12 @@ String Version::to_string() const {
 std::string Version::to_std_string() const { return to_string().to_std_string(); }
 
 bool Version::operator<(const Version &other) const {
-    if (major_ > other.major()) {
+    if (major_ > other.major_) {
         return false;
-    } else if (major_ == other.major()) {
-        if (minor_ > other.minor()) {
+    } else if (major_ == other.major_) {
+        if (minor_ > other.minor_) {
             return false;
-        } else if (minor_ == other.minor()) {
+        } else if (minor_ == other.minor_) {
             if (patch_ > other.patch()) {
                 return false;
             } else if (patch_ == other.patch()) {
@@ -187,7 +187,7 @@ bool Version::operator<(const Version &other) const {
 }
 
 bool Version::operator==(const Version &other) const {
-    return major_ == other.major() && minor_ == other.minor() && patch_ == other.patch() && suffix_ == other.suffix() &&
+    return major_ == other.major_ && minor_ == other.minor_ && patch_ == other.patch() && suffix_ == other.suffix() &&
            suffix_version_ == other.suffix_version();
 }
 

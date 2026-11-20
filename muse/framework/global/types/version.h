@@ -33,8 +33,9 @@ struct Version {
     Version(const String &version_str);
     Version(const std::string &version_str);
 
-    int major() const;
-    int minor() const;
+    // Parentheses prevent substitution by the device-number macros in sys/sysmacros.h.
+    int(major)() const;
+    int(minor)() const;
     int patch() const;
 
     const String &suffix() const;
