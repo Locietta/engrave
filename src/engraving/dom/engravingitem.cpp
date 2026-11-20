@@ -1147,6 +1147,8 @@ const Staff *EngravingItem::staff_to_center_against(bool above, const System *sy
     if (system) {
         other_idx = above ? system->prev_visible_staff(this_idx) : system->next_visible_staff(this_idx);
     } else if (score()) {
+        // Before layout creates System/SysStaff visibility (e.g. hide-empty-staves),
+        // fall back to score-wide Staff::show(). Layout-backed queries refine this once laid out.
         const auto &staves = score()->staves();
         if (above) {
             for (staff_idx_t i = this_idx; i > 0; --i) {

@@ -22,6 +22,11 @@
 
 #include "restlayout.h"
 
+#include <algorithm>
+#include <cfloat>
+#include <cmath>
+#include <limits>
+
 #include "beamlayout.h"
 #include "chordlayout.h"
 #include "dom/beam.h"
@@ -38,6 +43,17 @@ using namespace muse;
 using namespace mu::engraving;
 
 namespace mu::engraving::rendering::score {
+namespace {
+int clamp_to_int(double value) {
+    if (std::isnan(value)) {
+        return 0;
+    }
+    constexpr double k_min = static_cast<double>(std::numeric_limits<int>::min());
+    constexpr double k_max = static_cast<double>(std::numeric_limits<int>::max());
+    return static_cast<int>(std::clamp(value, k_min, k_max));
+}
+} // namespace
+
 void RestLayout::layout_rest(const Rest *item, Rest::LayoutData *ldata, const LayoutContext &ctx) {
     if (item->is_gap()) {
         if (item->debug_draw_gap()) {
@@ -209,6 +225,9 @@ void RestLayout::resolve_rest_vs_chord(std::vector<Rest *> &rests, std::vector<C
     int lines = staff->lines(tick);
     double spatium = staff->spatium(tick);
     double line_distance = staff->line_distance(tick) * spatium;
+    if (line_distance <= 0.0 || !std::isfinite(line_distance)) {
+        return;
+    }
 
     for (Rest *rest : rests) {
         if (!rest->visible() || !rest->autoplace()) {
@@ -246,8 +265,11 @@ void RestLayout::resolve_rest_vs_chord(std::vector<Rest *> &rests, std::vector<C
                 min_rest_to_chord_clearance = 0.0;
             }
 
+            if (clearance == DBL_MAX || !std::isfinite(clearance)) {
+                continue;
+            }
             double margin = clearance - min_rest_to_chord_clearance;
-            int margin_in_steps = floor(margin / line_distance);
+            int margin_in_steps = clamp_to_int(std::floor(margin / line_distance));
             if (rest_above) {
                 rest_vertical_clearance.set_below(margin_in_steps);
             } else {
@@ -263,11 +285,11 @@ void RestLayout::resolve_rest_vs_chord(std::vector<Rest *> &rests, std::vector<C
             bool use_half_space_steps = (out_above_staff || out_below_staff) && !is_whole_or_half;
             double y_move;
             if (use_half_space_steps) {
-                int steps = ceil(std::abs(margin) / (line_distance / 2));
+                int steps = clamp_to_int(std::ceil(std::abs(margin) / (line_distance / 2)));
                 y_move = steps * line_distance / 2 * up_sign;
                 rest->mutldata()->move_y(y_move);
             } else {
-                int steps = ceil(std::abs(margin) / line_distance);
+                int steps = clamp_to_int(std::ceil(std::abs(margin) / line_distance));
                 y_move = steps * line_distance * up_sign;
                 rest->mutldata()->move_y(y_move);
             }
@@ -290,6 +312,9 @@ void RestLayout::resolve_rest_vs_rest(std::vector<Rest *> &rests, const Staff *s
     Fraction tick = segment->tick();
     double spatium = staff->spatium(tick);
     double line_distance = staff->line_distance(tick) * spatium;
+    if (line_distance <= 0.0 || !std::isfinite(line_distance)) {
+        return;
+    }
     int lines = staff->lines(tick);
     const double min_rest_to_rest_clearance = 0.55 * spatium;
 
@@ -321,8 +346,11 @@ void RestLayout::resolve_rest_vs_rest(std::vector<Rest *> &rests, const Staff *s
         } else {
             clearance = shape2.vertical_clearance(shape1);
         }
+        if (clearance == DBL_MAX || !std::isfinite(clearance)) {
+            continue;
+        }
         double margin = clearance - min_rest_to_rest_clearance;
-        int margin_in_steps = floor(margin / line_distance);
+        int margin_in_steps = clamp_to_int(std::floor(margin / line_distance));
         if (first_above) {
             rest1_clearance.set_below(margin_in_steps);
             rest2_clearance.set_above(margin_in_steps);
@@ -335,7 +363,7 @@ void RestLayout::resolve_rest_vs_rest(std::vector<Rest *> &rests, const Staff *s
             continue;
         }
 
-        int steps = ceil(std::abs(margin) / line_distance);
+        int steps = clamp_to_int(std::ceil(std::abs(margin) / line_distance));
         // Move the two rests away from each other
         int step1 = floor(double(steps) / 2);
         int step2 = ceil(double(steps) / 2);
@@ -627,6 +655,9 @@ void RestLayout::check_full_measure_rest_collisions(const System *system, Layout
 
             const double spatium = full_measure_rest->spatium();
             const double line_dist = full_measure_rest->staff()->line_distance(full_measure_rest->tick()) * spatium;
+            if (line_dist <= 0.0 || !std::isfinite(line_dist)) {
+                continue;
+            }
             const double min_horizontal_distance = 4 * spatium;
             const double min_vert_clearance = 0.75 * spatium;
 
@@ -634,9 +665,12 @@ void RestLayout::check_full_measure_rest_collisions(const System *system, Layout
             double vertical_clearance = align_above ? rest_shape.vertical_clearance(measure_shape, min_horizontal_distance) :
                                                       measure_shape.vertical_clearance(rest_shape, min_horizontal_distance);
 
+            if (vertical_clearance == DBL_MAX || !std::isfinite(vertical_clearance)) {
+                continue;
+            }
             if (vertical_clearance < min_vert_clearance) {
                 double diff = min_vert_clearance - vertical_clearance;
-                int step_moves = std::ceil(diff / line_dist);
+                int step_moves = clamp_to_int(std::ceil(diff / line_dist));
                 double y_move = step_moves * line_dist;
                 full_measure_rest->mutldata()->move_y(align_above ? -y_move : y_move);
                 update_symbol(full_measure_rest, full_measure_rest->mutldata());
