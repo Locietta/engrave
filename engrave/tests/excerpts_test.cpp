@@ -13,9 +13,13 @@
 #include "engrave/src/score/score_metadata.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/chordline.h"
+#include "engraving/dom/instrchange.h"
+#include "engraving/dom/instrtemplate.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
 #include "engraving/dom/part.h"
+#include "engraving/dom/repeatlist.h"
+#include "engraving/dom/segment.h"
 #include "engraving/dom/text.h"
 #include "engraving/engravingproject.h"
 #include "engraving/playback/metaparsers/chordarticulationsparser.h"
@@ -136,6 +140,76 @@ void test_chordline_playback(const music::EngineContext &context, const std::fil
     check_chordline_playback(music::select_score(reopened_master, 0), enabled, "reopened excerpt");
 }
 
+void test_instrument_lifetimes(const music::EngineContext &context) {
+    using namespace mu::engraving;
+    auto project = music::load_native_score(context, fixture, "musicxml");
+    auto *master = project->master_score();
+    auto *part = master->parts().front();
+    auto *old_playback = master->playback_channel(part->instrument()->channel(0));
+    const auto *flute = search_template(u"flute");
+    expect(flute != nullptr, "Flute missing from catalog");
+    part->init_from_instr_template(flute);
+    old_playback->set_program(42);
+    master->rebuild_midi_mapping();
+    expect(part->instrument()->channel(0)->program() == 73, "Replacing violin with flute lost its MIDI program");
+
+    auto *segment = master->first_measure()->find_segment(SegmentType::CHORD_REST, Fraction(0, 1));
+    expect(segment != nullptr, "Missing chord segment in fixture");
+    Instrument change(u"clarinet");
+    change.channel(0)->set_program(71);
+    auto *annotation = new InstrumentChange(change, segment);
+    annotation->set_track(0);
+    segment->add(annotation);
+    expect(part->instrument(segment->tick())->channel(0)->program() == 71, "Instrument change did not enter the part timeline");
+    segment->remove(annotation);
+    expect(part->instrument(segment->tick())->channel(0)->program() == 73, "Removing change did not restore the flute");
+    segment->add(annotation);
+    expect(part->instrument(segment->tick())->channel(0)->program() == 71, "Reinserting change lost its clarinet channel");
+    master->rebuild_midi_mapping();
+
+    expect(music::generate_score_excerpts(master), "Missing instrument-change excerpt");
+    auto *excerpt_part = music::select_score(master, 0)->parts().front();
+    expect(excerpt_part->instrument()->channel(0)->program() == 73, "Excerpt lost the initial flute");
+    expect(excerpt_part->instrument(segment->tick())->channel(0)->program() == 71, "Excerpt lost the clarinet change");
+    part->instrument()->channel(0)->set_program(74);
+    expect(excerpt_part->instrument()->channel(0)->program() == 73, "Excerpt shares the master's primary instrument");
+}
+
+void test_repeat_lifetimes(const char *assets) {
+    using namespace mu::engraving;
+    const char *endings = R"(<score-partwise version="4.0"><part-list>
+<score-part id="P1"><part-name>Flute</part-name></score-part>
+</part-list><part id="P1">
+<measure number="1"><attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+<barline location="left"><repeat direction="forward"/></barline>
+<note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><type>whole</type></note></measure>
+<measure number="2"><barline location="left"><ending number="1" type="start"/></barline>
+<note><pitch><step>D</step><octave>4</octave></pitch><duration>4</duration><type>whole</type></note>
+<barline location="right"><ending number="1" type="stop"/><repeat direction="backward"/></barline></measure>
+<measure number="3"><barline location="left"><ending number="2" type="start"/></barline>
+<note><pitch><step>E</step><octave>4</octave></pitch><duration>4</duration><type>whole</type></note>
+<barline location="right"><ending number="2" type="stop"/></barline></measure>
+</part></score-partwise>)";
+    for (int iteration = 0; iteration < 3; ++iteration) {
+        music::EngineContext context(assets);
+        test_instrument_lifetimes(context);
+        auto project = music::load_native_score(context, endings, "musicxml");
+        auto *master = project->master_score();
+        const int bar = Fraction(1, 1).ticks();
+        const auto &repeat = master->expanded_repeat_list();
+        expect(repeat.ticks() == 4 * bar, "Repeated score must play four measures");
+        for (int played = 0; played < 4; ++played) {
+            const int written[] = {0, 1, 0, 2};
+            expect(repeat.utick2tick(played * bar) == written[played] * bar, "Alternate ending played in the wrong order");
+        }
+        master->invalidate_repeat_list();
+        master->update_repeat_list(false);
+        expect(repeat.utick2tick(3 * bar) == 2 * bar, "Rebuilding repeats lost the second ending");
+        expect(music::render_score(context, master, "pdf", 0).starts_with("%PDF-"), "Repeated score PDF rendering failed");
+    }
+    std::cout << "Three context and document lifecycles passed, including instrument replacement, excerpt cloning, and repeat playback\n";
+}
+
 } // namespace
 
 int main(int argc, char **argv) {
@@ -143,6 +217,7 @@ int main(int argc, char **argv) {
         if (argc != 3) throw std::invalid_argument("Usage: excerpts_test ASSETS OUTPUT_DIRECTORY");
         const auto out = std::filesystem::absolute(std::filesystem::u8path(argv[2]));
         std::filesystem::create_directories(out);
+        test_repeat_lifetimes(argv[1]);
         music::EngineContext context(argv[1]);
         test_chordline_playback(context, out, false);
         test_chordline_playback(context, out, true);

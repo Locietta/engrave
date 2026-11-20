@@ -1097,7 +1097,7 @@ static void reregister_instrument_changes(Score *score) {
                     instr = to_staff_state(annotation)->instrument();
                 }
                 if (instr) {
-                    annotation->part()->set_instrument(instr, seg.tick());
+                    annotation->part()->set_instrument_at(*instr, seg.tick());
                 }
             }
         }

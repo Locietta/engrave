@@ -859,7 +859,7 @@ void Segment::add(EngravingItem *el) {
             if (to_staff_state(el)->staff_state_type() == StaffStateType::INSTRUMENT) {
                 StaffState *ss = to_staff_state(el);
                 Part *part = el->part();
-                part->set_instrument(ss->instrument(), tick());
+                part->set_instrument_at(*ss->instrument(), tick());
             }
             annotations_.push_back(el);
             break;
@@ -867,7 +867,7 @@ void Segment::add(EngravingItem *el) {
         case ElementType::INSTRUMENT_CHANGE: {
             InstrumentChange *is = to_instrument_change(el);
             Part *part = is->part();
-            part->set_instrument(is->instrument(), tick());
+            part->set_instrument_at(*is->instrument(), tick());
             annotations_.push_back(el);
             break;
         }

@@ -815,7 +815,7 @@ void TRead::read(Instrument *item, XmlReader &e, ReadContext &ctx, Part *part) {
     bool custom_drumset = false;
     bool read_single_note_dynamics = false;
 
-    item->clear_channels(); // remove default channel
+    item->clear_channels();
     item->set_id(e.attribute("id"));
     while (e.read_next_start_element()) {
         const AsciiStringView tag(e.name());
@@ -830,10 +830,10 @@ void TRead::read(Instrument *item, XmlReader &e, ReadContext &ctx, Part *part) {
     item->update_instrument_id();
 
     if (item->channel().empty()) { // for backward compatibility
-        InstrChannel *fallback_channel = new InstrChannel;
+        auto fallback_channel = std::make_unique<InstrChannel>();
         fallback_channel->set_name(String::from_utf8(InstrChannel::default_name));
         fallback_channel->set_program(item->recognize_midi_program());
-        item->append_channel(fallback_channel);
+        item->append_channel(std::move(fallback_channel));
     } else if (item->channel(0)->program() == -1) {
         item->channel(0)->set_program(item->recognize_midi_program());
     }
@@ -918,9 +918,9 @@ bool TRead::read_properties(Instrument *item, XmlReader &e, ReadContext &ctx, Pa
         read(&a, e);
         item->add_midi_articulation(a);
     } else if (tag == "Channel" || tag == "channel") {
-        InstrChannel *a = new InstrChannel;
-        read(a, e, ctx, part, track_id);
-        item->append_channel(a);
+        auto channel = std::make_unique<InstrChannel>();
+        read(channel.get(), e, ctx, part, track_id);
+        item->append_channel(std::move(channel));
     } else if (tag == "clef") { // sets both transposing and concert clef
         int idx = e.int_attribute("staff", 1) - 1;
         ClefType ct = TConv::from_xml(e.read_ascii_text(), ClefType::G);
@@ -3268,9 +3268,9 @@ bool TRead::read_properties(Part *p, XmlReader &e, ReadContext &ctx) {
         p->score()->append_staff(staff);
         TRead::read(staff, e, ctx);
     } else if (tag == "Instrument") {
-        Instrument *instr = new Instrument;
-        read(instr, e, ctx, p);
-        p->set_instrument(instr, Fraction(-1, 1));
+        auto instr = std::make_unique<Instrument>();
+        read(instr.get(), e, ctx, p);
+        p->set_instrument(std::move(instr));
     } else if (tag == "name") {
         p->instrument()->set_long_name(e.read_text());
     } else if (tag == "color") {

@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <memory>
 #include <vector>
 
 #include "../types/types.h"
@@ -67,13 +68,13 @@ public:
     static const Fraction main_instrument_tick;
 
     Part(Score *score = nullptr, ElementType type = ElementType::PART);
+    Part(const Part &) = delete;
+    Part &operator=(const Part &) = delete;
     ~Part() override;
     void init_from_instr_template(const InstrumentTemplate *);
 
     const muse::ID &id() const;
     void set_id(const muse::ID &id);
-
-    Part *clone() const;
 
     size_t nstaves() const;
     size_t visible_staves_count() const;
@@ -133,13 +134,10 @@ public:
     Instrument *instrument(Fraction = {-1, 1});
     const Instrument *instrument(Fraction = {-1, 1}) const;
     const Instrument *instrument_by_id(const String &id) const;
-    void set_instrument(Instrument *, Fraction = {-1, 1}); // transfer ownership
-    void set_instrument(Instrument *, int tick);
-    void set_instrument(const Instrument &&, Fraction = {-1, 1});
-    void set_instrument(const Instrument &, Fraction = {-1, 1});
-    void set_instruments(const InstrumentList &instruments);
+    void set_instrument(std::unique_ptr<Instrument>);
+    void set_instrument(const Instrument &);
+    void set_instrument_at(Instrument &, const Fraction &);
     void remove_instrument(Instrument *, const Fraction &);
-    void remove_non_primary_instruments();
     const InstrumentList &instruments() const;
 
     const std::map<int, StringTunings *> &string_tunings() const { return string_tunings_; }
@@ -205,6 +203,8 @@ private:
 
     static String plain_part_name(const Instrument *instrument);
 
+    std::unique_ptr<Instrument> primary_instrument_;
+    // Timed entries borrow from score annotations and follow their add/remove operations.
     InstrumentList instruments_;
     std::vector<Staff *> staves_;
     muse::ID id_ = ::mu::engraving::invalid_id; ///< used for MusicXML import

@@ -112,11 +112,10 @@ void mu::engraving::insert_measure_chain(MeasureBase *fm, MeasureBase *lm, bool 
         score->update_ticks_and_time_sig_map();
         score->insert_time(fm->tick(), lm->end_tick() - fm->tick(), old_segments);
 
-        // move ownership of Instrument back to part
         for (Segment *s = fs; s && s != ls; s = s->next1()) {
             for (EngravingItem *e : s->annotations()) {
                 if (e->is_instrument_change()) {
-                    e->part()->set_instrument(to_instrument_change(e)->instrument(), s->tick());
+                    e->part()->set_instrument_at(*to_instrument_change(e)->instrument(), s->tick());
                 }
             }
         }

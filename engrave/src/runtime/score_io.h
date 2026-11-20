@@ -19,10 +19,6 @@ struct UnsupportedScoreVersion : std::runtime_error {
 };
 
 using ScoreProject = std::shared_ptr<mu::engraving::EngravingProject>;
-// The first step of EngineContext: validates the resources (std::invalid_argument,
-// retryable), then claims the process for its one engine and routes diagnostics
-// to stderr.
-void initialize_native_runtime(const std::string &assets);
 ScoreProject load_native_score(const EngineContext &context, const std::string &bytes, const std::string &format,
                                bool transaction_snapshot = false);
 // Loads the .mscx of an MSCX directory (score_style.mss and META-INF/ beside

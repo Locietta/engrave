@@ -1,5 +1,6 @@
 #include "engine_context.h"
 
+#include <atomic>
 #include <cstdio>
 #include <filesystem>
 #include <stdexcept>
@@ -22,7 +23,6 @@
 #include "mpe/internal/articulationprofilesrepository.h"
 #include "resource_filesystem.h"
 #include "runtime_assets.h"
-#include "score_io.h"
 
 namespace music {
 using namespace muse;
@@ -31,6 +31,8 @@ using namespace muse::draw;
 using namespace mu::engraving;
 
 namespace {
+std::atomic<bool> s_context_active = false;
+
 // The built-in text, music and tablature faces and their defaults (upstream's
 // EngravingModule::onInit).
 void register_builtin_fonts(music::RuntimeFontsDatabase &fdb, EngravingFontsProvider &engraving_fonts) {
@@ -124,6 +126,7 @@ struct EngineContext::Impl {
     std::unique_ptr<mu::iex::musicxml::MusicXmlConfiguration> music_xml;
     std::unique_ptr<EngravingContextConfiguration> context_configuration;
     EngravingServices engraving;
+    bool catalog_started = false;
 
     void teardown() noexcept;
 };
@@ -131,6 +134,7 @@ struct EngineContext::Impl {
 // Reverse of the constructor; tolerates a partially built context.
 void EngineContext::Impl::teardown() noexcept {
     try {
+        if (catalog_started) clear_instrument_templates();
         engraving = EngravingServices();
         context_configuration.reset();
         music_xml.reset();
@@ -154,8 +158,12 @@ void EngineContext::Impl::teardown() noexcept {
 }
 
 EngineContext::EngineContext(const std::string &assets, const std::string &cache_root) : impl_(std::make_unique<Impl>()) {
-    // Validates the resources and claims the process; diagnostics go to stderr.
-    initialize_native_runtime(assets);
+    if (!std::filesystem::is_regular_file(std::filesystem::u8path(assets) / "engraving/instruments/instruments.xml")) {
+        throw std::invalid_argument("Missing native resources: " + assets);
+    }
+    if (s_context_active.exchange(true)) {
+        throw std::runtime_error("Only one active engine context per process is supported");
+    }
     Impl &d = *impl_;
     try {
         d.file_system = std::make_unique<NativeFileSystem>(std::filesystem::u8path(assets));
@@ -187,9 +195,11 @@ EngineContext::EngineContext(const std::string &assets, const std::string &cache
 
         d.music_xml->init();
 
+        d.catalog_started = true;
         load_instrument_templates(":/engraving/instruments/instruments.xml");
     } catch (...) {
         d.teardown();
+        s_context_active = false;
         throw;
     }
 }
@@ -197,6 +207,7 @@ EngineContext::EngineContext(const std::string &assets, const std::string &cache
 EngineContext::~EngineContext() {
     audio_.reset();
     impl_->teardown();
+    s_context_active = false;
 }
 
 io::NativeFileSystem &EngineContext::file_system() const { return *impl_->file_system; }

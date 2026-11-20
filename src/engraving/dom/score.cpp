@@ -141,6 +141,7 @@ static void mark_instruments_as_primary(std::vector<Part *> &parts) {
 }
 
 Score::Score(const EngravingServices &services) : EngravingObject(ElementType::SCORE, nullptr), services_(services), selection_(this) {
+    score_ = this;
     Score::valid_scores.insert(this);
     master_score_ = nullptr;
 

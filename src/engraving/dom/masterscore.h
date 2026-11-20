@@ -77,7 +77,6 @@ private:
     std::unique_ptr<InstrChannel> articulation_;
     signed char port_ = 0;
     signed char channel_ = 0;
-    InstrChannel *master_channel_ = nullptr;
     PartChannelSettingsLink link_;
 };
 
