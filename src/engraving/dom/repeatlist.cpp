@@ -836,7 +836,7 @@ void RepeatList::unwind() {
                             } else if ((*repeat_list_element_it)->repeat_list_element_type == RepeatListElementType::VOLTA_END) {
                                 active_volta = to_volta((*repeat_list_element_it)->element);
                             }
-                        } while ((*repeat_list_element_it) != start_repeat_reference);
+                        } while (repeat_list_element_it->get() != start_repeat_reference);
                         ++playback_count;
                         continue; // Force evaluation of the start repeat
                     }
@@ -903,7 +903,7 @@ void RepeatList::unwind() {
                                         RepeatListElementList::const_iterator find_repeat_it = repeat_list_element_it;
                                         do {
                                             --find_repeat_it;
-                                        } while ((*find_repeat_it) != start_repeat_reference);
+                                        } while (find_repeat_it->get() != start_repeat_reference);
                                         ++find_repeat_it; // Start volta analysis past this start repeat
                                         Volta const *volta_reference = nullptr;
                                         int processed_repeat_count = 1;
@@ -965,7 +965,7 @@ void RepeatList::unwind() {
                                 // Use the continueAt target as repeat reference if it wasn't this measure already
                                 // Check for measure is required as REPEAT_START is processed before a marker
                                 // see test::repeat23 m12
-                                start_repeat_reference = *(continue_at.second);
+                                start_repeat_reference = continue_at.second->get();
                             }
 
                             // We've arrived at the target marker
