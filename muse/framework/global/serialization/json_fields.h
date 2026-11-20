@@ -5,6 +5,7 @@
 
 #include <cmath>
 #include <limits>
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -51,12 +52,14 @@ const auto &array(const J &value) {
 }
 
 template <class J>
-int rounded_int(const J &value) {
-    const double rounded = std::round(get_or_empty<double>(value));
+std::optional<int> rounded_int(const J &value) {
+    const auto *number = value.template get_if<double>();
+    if (!number) return std::nullopt;
+    const double rounded = std::round(*number);
     if (rounded >= std::numeric_limits<int>::min() && rounded <= std::numeric_limits<int>::max()) {
         return static_cast<int>(rounded);
     }
-    return std::numeric_limits<int>::min();
+    return std::nullopt;
 }
 
 struct PrettyPrint : glz::opts {

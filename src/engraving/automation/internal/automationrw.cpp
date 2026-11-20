@@ -24,7 +24,7 @@
 
 #include <charconv>
 #include <cmath>
-#include <limits>
+#include <cstdint>
 
 #include <glaze/json/write.hpp>
 
@@ -87,6 +87,14 @@ struct Curve {
     };
 };
 
+muse::ID read_id(const glz::generic &field) {
+    const auto &text = json::get_or_empty<std::string>(field);
+    std::uint64_t value = 0;
+    const auto end = text.data() + text.size();
+    const auto [next, error] = std::from_chars(text.data(), end, value);
+    return error == std::errc{} && next == end ? muse::ID(value) : muse::ID{};
+}
+
 AutomationCurveKey read_key(const glz::generic &curve) {
     const auto &type_name = json::get_or_empty<std::string>(json::member(curve, "type"));
     AutomationType type = AutomationType::UNKNOWN;
@@ -99,13 +107,14 @@ AutomationCurveKey read_key(const glz::generic &curve) {
 
     if (const auto *part = json::find(curve, "partId")) {
         return AutomationCurveKey::instrument(
-            type, {muse::ID(json::get_or_empty<std::string>(*part)),
-                   muse::String::from_std_string(json::get_or_empty<std::string>(json::member(curve, "instrumentId")))});
+            type, {read_id(*part), muse::String::from_std_string(json::get_or_empty<std::string>(json::member(curve, "instrumentId")))});
     }
     if (const auto *staff = json::find(curve, "staffId")) {
         std::optional<size_t> voice_idx;
-        if (const auto *voice = json::find(curve, "voiceId")) voice_idx = static_cast<size_t>(json::rounded_int(*voice));
-        return AutomationCurveKey::staff(type, muse::ID(json::get_or_empty<std::string>(*staff)), voice_idx);
+        if (const auto voice = json::rounded_int(json::member(curve, "voiceId")); voice && *voice >= 0) {
+            voice_idx = static_cast<size_t>(*voice);
+        }
+        return AutomationCurveKey::staff(type, read_id(*staff), voice_idx);
     }
     return AutomationCurveKey::global(type);
 }
@@ -120,8 +129,9 @@ AutomationPoint read_point(const glz::generic &source) {
         point.value.in_value = AutomationPoint::ArrivalFromPrevious{};
     } else {
         AutomationPoint::Ease ease;
-        if (const auto *controls = json::find(source, "ease"); controls && !controls->get_array().empty()) {
-            const auto &control = controls->get_array().front();
+        const auto &controls = json::array(json::member(source, "ease"));
+        if (!controls.empty()) {
+            const auto &control = controls.front();
             ease.t = number(control, "t");
             ease.value = number(control, "value");
         }
@@ -148,10 +158,7 @@ AutomationPoint read_point(const glz::generic &source) {
 glz::raw_json automation_number(double value) {
     if (!std::isfinite(value)) throw std::overflow_error("Non-finite automation point");
     if (std::abs(value) < 0x1p53 && std::trunc(value) == value) {
-        const int integer = value >= std::numeric_limits<int>::min() && value <= std::numeric_limits<int>::max() ?
-                                static_cast<int>(value) :
-                                std::numeric_limits<int>::min();
-        return {std::to_string(integer)};
+        return {std::to_string(static_cast<std::int64_t>(value))};
     }
 
     // A fixed decimal can need all 309 significant integer digits of a double.
@@ -218,15 +225,15 @@ void AutomationRW::read(AutomationData &data, const muse::ByteArray &bytes) {
     AutomationCurveMap curves;
     for (const auto &entry : parsed->get_array()) {
         const AutomationCurveKey key = read_key(entry);
-        IF_ASSERT_FAILED(key.is_valid()) { continue; }
+        if (!key.is_valid()) continue;
 
-        const auto &points = json::member(entry, "points").get_array();
-        if (points.empty()) continue;
-
-        AutomationCurve &curve = curves[key];
+        const auto &points = json::array(json::member(entry, "points"));
         for (const auto &point : points) {
-            const utick_t tick = json::rounded_int(json::member(point, "tick"));
-            curve.try_emplace(curve.end(), tick, read_point(point));
+            const auto tick = json::rounded_int(json::member(point, "tick"));
+            if (!tick) continue;
+
+            AutomationCurve &curve = curves[key];
+            curve.try_emplace(curve.end(), *tick, read_point(point));
         }
     }
 

@@ -122,9 +122,9 @@ std::map<String, std::vector<SymId>> Smufl::read_smufl_ranges_json() {
         return ranges;
     }
 
-    for (const auto &[name, range] : parsed->get_object()) {
+    for (const auto &[name, range] : json::object(*parsed)) {
         const String desc = String::from_std_string(json::get_or_empty<std::string>(json::member(range, "description")));
-        const auto &glyphs = json::member(range, "glyphs").get_array();
+        const auto &glyphs = json::array(json::member(range, "glyphs"));
 
         if (glyphs.empty()) {
             continue;
