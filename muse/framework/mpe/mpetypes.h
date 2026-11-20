@@ -25,10 +25,11 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <cstdint>
+#include <limits>
 #include <map>
 #include <math.h>
 #include <memory>
-#include <stdint.h>
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
@@ -46,8 +47,8 @@
 
 namespace muse::mpe {
 // common
-using usecs_t = int64_t; // microseconds
-using percentage_t = int32_t;
+using usecs_t = std::int64_t; // microseconds
+using percentage_t = std::int32_t;
 constexpr percentage_t one_percent = 100;
 constexpr percentage_t fifty_percent = ::muse::mpe::one_percent * 50;
 constexpr percentage_t hundred_percent = ::muse::mpe::one_percent * 100;
@@ -65,9 +66,9 @@ constexpr inline percentage_t percentage_from_factor(const float factor) {
 using timestamp_t = usecs_t;
 using duration_t = usecs_t;
 using duration_percentage_t = percentage_t;
-using voice_layer_idx_t = uint8_t;
-using staff_layer_idx_t = uint32_t;
-using layer_idx_t = uint32_t;
+using voice_layer_idx_t = std::uint8_t;
+using staff_layer_idx_t = std::uint32_t;
+using layer_idx_t = std::uint32_t;
 
 static constexpr duration_t infinite_duration = std::numeric_limits<duration_t>::max();
 
@@ -729,14 +730,19 @@ private:
     }
 
     struct ParamsSum {
-        int duration_factor_value = 0;
-        int timestamp_offset_value = 0;
-        int max_amplitude_level = 0;
-        int pitch_range = 0;
-        int dynamic_range = 0;
-        ValuesCurve<int> pitch_offset_map;
-        ValuesCurve<int> dynamic_offset_map;
+        std::int64_t duration_factor_value = 0;
+        std::int64_t timestamp_offset_value = 0;
+        std::int64_t max_amplitude_level = 0;
+        std::int64_t pitch_range = 0;
+        std::int64_t dynamic_range = 0;
+        ValuesCurve<std::int64_t> pitch_offset_map;
+        ValuesCurve<std::int64_t> dynamic_offset_map;
     };
+
+    template <typename T>
+    static T clamped_average(std::int64_t sum, int count) {
+        return static_cast<T>(std::clamp<std::int64_t>(sum / count, std::numeric_limits<T>::min(), std::numeric_limits<T>::max()));
+    }
 
     void sum_up_data(const ArticulationAppliedData &applied_articulation, ParamsSum &out) {
         const ArticulationPatternSegment &segment = applied_articulation.applied_pattern_segment();
@@ -817,18 +823,19 @@ private:
             }
         }
 
-        average_duration_factor_ = params_sum.duration_factor_value / count;
+        average_duration_factor_ = clamped_average<duration_percentage_t>(params_sum.duration_factor_value, count);
 
         if (timestamp_changes_count > 0) {
-            average_timestamp_offset_ = params_sum.timestamp_offset_value / timestamp_changes_count;
+            average_timestamp_offset_ = clamped_average<duration_percentage_t>(params_sum.timestamp_offset_value, timestamp_changes_count);
         }
 
         if (dynamic_changes_count > 0) {
-            average_max_amplitude_level_ = params_sum.max_amplitude_level / dynamic_changes_count;
-            average_dynamic_range_ = params_sum.dynamic_range / dynamic_changes_count;
+            average_max_amplitude_level_ = clamped_average<dynamic_level_t>(params_sum.max_amplitude_level, dynamic_changes_count);
+            average_dynamic_range_ = clamped_average<dynamic_level_t>(params_sum.dynamic_range, dynamic_changes_count);
 
             for (const auto &pair : params_sum.dynamic_offset_map) {
-                average_dynamic_offset_map_.insert_or_assign(pair.first, pair.second / dynamic_changes_count);
+                average_dynamic_offset_map_.insert_or_assign(pair.first,
+                                                             clamped_average<dynamic_level_t>(pair.second, dynamic_changes_count));
             }
         } else if (dynamic_changes_count == 0) {
             average_max_amplitude_level_ = cbegin()->second.applied_pattern_segment().expression_pattern.max_amplitude_level();
@@ -837,10 +844,10 @@ private:
         }
 
         if (pitch_changes_count > 0) {
-            average_pitch_range_ = params_sum.pitch_range / pitch_changes_count;
+            average_pitch_range_ = clamped_average<pitch_level_t>(params_sum.pitch_range, pitch_changes_count);
 
             for (const auto &pair : params_sum.pitch_offset_map) {
-                average_pitch_offset_map_.insert_or_assign(pair.first, pair.second / pitch_changes_count);
+                average_pitch_offset_map_.insert_or_assign(pair.first, clamped_average<pitch_level_t>(pair.second, pitch_changes_count));
             }
         } else if (pitch_changes_count == 0) {
             average_pitch_range_ = cbegin()->second.meta.overall_pitch_changes_range;

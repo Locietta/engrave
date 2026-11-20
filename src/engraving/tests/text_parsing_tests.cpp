@@ -169,6 +169,12 @@ TEST(TextParsing, MusicXmlTempoSubstitutionUsesCurrentFont) {
     EXPECT_EQ(dotted_multiline,
               u"<sym>metNoteQuarterUp</sym> = 60\n<sym>metNote8thUp</sym><sym>space</sym><sym>metAugmentationDot</sym> = 120");
 
+    String incomplete_line = u"q =\ne = 120";
+    const auto incomplete_line_tempo = mx::substitute_tempo_note(incomplete_line, true, u"");
+    ASSERT_TRUE(incomplete_line_tempo);
+    EXPECT_DOUBLE_EQ(*incomplete_line_tempo, 60.0);
+    EXPECT_EQ(incomplete_line, u"q =\n<sym>metNote8thUp</sym> = 120");
+
     String words = u"q = 120";
     EXPECT_FALSE(mx::substitute_tempo_note(words, false, u"MetTimes Plain"));
     EXPECT_EQ(words, u"q = 120");
