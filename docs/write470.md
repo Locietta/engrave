@@ -69,7 +69,7 @@ struct ExportOutput {
 - **Refused export**: No bytes are produced (`bytes` is empty), and
   `Error::export_warnings` reports the blocking elements.
 
-## 2. Bounded Supported Subset
+## 2. Supported Score Features
 
 - **Instruments and staves.** The writer preserves instrument IDs, ranges,
   transposition, MIDI channels and actions, drum maps, string tunings, and
@@ -78,8 +78,9 @@ struct ExportOutput {
   transposition and numbering into the label text and places individual staff
   labels with the legacy placement indices where those indices exist.
 - **Notation.** Shared clefs, keys, time signatures, chords, rests, tuplets,
-  beams, accidentals, text, lyrics, harmony, ornaments, and measure-level
-  markings retain their legacy representation. Harmony cases use the legacy
+  beams, text, lyrics, harmony, ornaments, and measure-level markings retain
+  their legacy representation. Generated, user-authored, and courtesy
+  accidentals use 4.70 accidental symbols. Harmony cases use the legacy
   integer encoding, and note-parenthesis groups use chord-local note indices.
   Legacy single- and two-chord tremolos are supported. Active newer tremolo
   subtypes and authored chord-line control offsets refuse the downgrade.
@@ -89,8 +90,11 @@ struct ExportOutput {
   segment/measure endpoints, including cross-staff and cross-voice connections,
   grace notes, and the final barline. The writer preserves inline partial ties,
   laissez vibrer ties, tapping half-slurs and authored lyrics lines. Relocated
-  starts retain their element IDs, authored segment edits and links to earlier
-  members. Unmappable endpoints and unknown spanner types refuse export.
+  starts retain their element IDs and authored segment edits. Line segment
+  overrides use positional entries, with neutral entries filling gaps in the
+  sequence. Links point to the first member written in the master or selected
+  excerpt. Note connector offsets and parenthesis indices follow the reader's
+  chord ordering, including after a staff-type change.
 - **Brackets.** Normal brackets, braces, square brackets and lines use
   legacy types 0 through 3.
 - **Identities**: Serialized musical, staff, and score EIDs supported by the
@@ -128,11 +132,12 @@ Output is refused with `ErrorCode::UNSUPPORTED` when constructs have no defined
 | `B470_UNSUPPORTED_FEATURE` | Cannot write 4.70: the source feature has no defined downgrade. | Owning source object kind and EID                                                                                           |
 | `B470_UNSUPPORTED_TARGET`  | Cannot write the requested score version.                       | `kind: "request"`, `id: "version:<requested value>"`                                                                        |
 
-Authored automation curves are refused. Curves generated from the score are
-reconstructed by the reader. Custom chord lists with render actions that
-cannot be serialized faithfully, or without a root render program, are also
-refused. Static staff labels are projected into instrument names, while staff
-type changes that alter those labels require a refusal.
+Refusals include unmappable endpoints, unknown spanner types, authored text-line
+size scaling and slur or tie masking, active newer tremolo and chord-line
+properties, and authored automation curves. The reader reconstructs generated
+automation curves from the score. Custom chord lists require a root render
+program and representable render actions. Static staff labels are projected into
+instrument names. Staff type changes that alter those labels require a refusal.
 
 ### Tie Warning Identities and Locators
 
