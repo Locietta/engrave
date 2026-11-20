@@ -104,7 +104,7 @@ struct Profile {
     };
 };
 
-int integer(const ProfileInput &object, std::string_view key) { return json::rounded_int(json::member(object, key)); }
+int integer(const ProfileInput &object, std::string_view key) { return json::rounded_int(json::member(object, key)).value_or(0); }
 
 template <class Map>
 void read_offsets(Map &dest, const ProfileInput &source) {

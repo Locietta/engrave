@@ -1386,10 +1386,10 @@ namespace {
 struct ProfileResourceFixture {
     std::filesystem::path root = std::filesystem::temp_directory_path() /
                                  ("engrave-profile-repair-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
-    muse::io::NativeFileSystem files{root};
+    muse::io::NativeFileSystem files{root / "assets"};
     muse::mpe::ArticulationProfilesRepository repository{files};
 
-    ProfileResourceFixture() { std::filesystem::create_directories(root / "mpe/resources"); }
+    ProfileResourceFixture() { std::filesystem::create_directories(root / "assets/mpe/resources"); }
 
     ~ProfileResourceFixture() {
         std::error_code error;
@@ -1397,7 +1397,7 @@ struct ProfileResourceFixture {
     }
 
     void provide(const char *family) {
-        std::ofstream file(root / "mpe/resources" / (std::string("general_") + family + "_articulations_profile.json"));
+        std::ofstream file(root / "assets/mpe/resources" / (std::string("general_") + family + "_articulations_profile.json"));
         file << R"({"supportedFamilies":[],"patterns":{}})";
         ASSERT_TRUE(file.good());
     }
@@ -1439,7 +1439,7 @@ TEST(AudioInternal, LookedUpProfileFailureRemainsCachedAfterRepair) {
 TEST(AudioInternal, ArticulationProfileJsonKeepsValidFieldsWhenSomeAreMalformed) {
     using namespace muse::mpe;
     ProfileResourceFixture resources;
-    const auto path = resources.root / "mpe/resources/general_strings_articulations_profile.json";
+    const auto path = resources.root / "assets/mpe/resources/general_strings_articulations_profile.json";
     const muse::io::PathT resource(":/mpe/resources/general_strings_articulations_profile.json");
     std::ofstream(path) << "{";
     EXPECT_FALSE(resources.repository.load_profile(resource));
@@ -1465,4 +1465,69 @@ TEST(AudioInternal, ArticulationProfileJsonKeepsValidFieldsWhenSomeAreMalformed)
     ASSERT_TRUE(segment.pitch_pattern.pitch_offset_map.contains(3));
     EXPECT_EQ(segment.pitch_pattern.pitch_offset_map.at(3), -5);
     EXPECT_TRUE(segment.expression_pattern.dynamic_offset_map.empty());
+}
+
+TEST(AudioInternal, ArticulationProfileSaveWritesSchemaAndReloads) {
+    using namespace muse::mpe;
+    ProfileResourceFixture resources;
+    const auto path = resources.root / "saved.json";
+    const muse::io::PathT output(path.string());
+    ArticulationPatternSegment segment;
+    segment.arrangement_pattern = {7000, -1200};
+    segment.pitch_pattern.pitch_offset_map.emplace(0, -50);
+    segment.pitch_pattern.pitch_offset_map.emplace(10000, 75);
+    segment.expression_pattern.dynamic_offset_map.emplace(2500, -100);
+    auto profile = resources.repository.create_new();
+    profile->supported_families = {ArticulationFamily::STRINGS};
+    profile->set_pattern(ArticulationType::STACCATO, {{1250, segment}});
+    resources.repository.save_profile(output, profile);
+
+    std::ifstream saved(path, std::ios::binary);
+    ASSERT_TRUE(saved.is_open());
+    const std::string actual{std::istreambuf_iterator<char>(saved), std::istreambuf_iterator<char>()};
+    EXPECT_EQ(actual, R"({
+  "patterns": {
+    "Staccato": [
+      {
+        "arrangementPattern": {
+          "durationFactor": 7000,
+          "timestampOffset": -1200
+        },
+        "expressionPattern": {
+          "dynamicOffsets": [
+            {
+              "offsetPosition": 2500,
+              "offsetValue": -100
+            }
+          ]
+        },
+        "patternPosition": 1250,
+        "pitchPattern": {
+          "pitchOffsets": [
+            {
+              "offsetPosition": 0,
+              "offsetValue": -50
+            },
+            {
+              "offsetPosition": 10000,
+              "offsetValue": 75
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "supportedFamilies": [
+    "StringsArticulation"
+  ]
+}
+)");
+
+    const auto reloaded = resources.repository.load_profile(output);
+    ASSERT_TRUE(reloaded);
+    EXPECT_EQ(reloaded->supported_families, (std::vector{ArticulationFamily::STRINGS}));
+    const auto &pattern = reloaded->pattern(ArticulationType::STACCATO);
+    ASSERT_EQ(pattern.size(), 1u);
+    ASSERT_TRUE(pattern.contains(1250));
+    EXPECT_EQ(pattern.at(1250), segment);
 }

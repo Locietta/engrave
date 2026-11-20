@@ -313,7 +313,7 @@ void EngravingFont::load_stylistic_alternates(const Metadata &metadata) {
         const auto *glyph_entry = json::find(metadata.alternates, glyph.key);
         if (!glyph_entry) continue;
 
-        const auto &alternates = json::member(*glyph_entry, "alternates").get_array();
+        const auto &alternates = json::array(json::member(*glyph_entry, "alternates"));
         for (const auto &alternate : alternates) {
             if (json::get_or_empty<std::string>(json::member(alternate, "name")) != glyph.alternate_key) continue;
 
@@ -367,9 +367,10 @@ void EngravingFont::load_glyphs_with_anchors(const Metadata &metadata) {
                 continue;
             }
 
-            const auto &arr = coords.get_array();
-            const double x = json::get_or_empty<double>(arr.at(0));
-            const double y = json::get_or_empty<double>(arr.at(1));
+            const auto &arr = json::array(coords);
+            if (arr.size() < 2) continue;
+            const double x = json::get_or_empty<double>(arr[0]);
+            const double y = json::get_or_empty<double>(arr[1]);
             const double default_spatium = StyleDef::style_values[static_cast<size_t>(Sid::SPATIUM)].default_value.to_double();
             sym.smufl_anchors[search->second] = PointF(x, -y) * default_spatium;
         }
@@ -378,7 +379,7 @@ void EngravingFont::load_glyphs_with_anchors(const Metadata &metadata) {
 
 void EngravingFont::load_engraving_defaults(const Metadata &metadata) {
     if (!metadata.defaults.is_object()) return;
-    const auto &defaults = metadata.defaults.get_object();
+    const auto &defaults = json::object(metadata.defaults);
 
     struct EngravingDefault {
         std::vector<Sid> sids;
