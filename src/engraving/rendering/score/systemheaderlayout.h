@@ -50,6 +50,7 @@ struct SystemHeaderLayout {
     static void set_instrument_names_horizontal_pos(System *system);
     static void set_group_brackets_horizontal_pos(System *system);
     static void set_instrument_names(System *system, LayoutContext &ctx);
+    static String formatted_instrument_name(const Instrument &instrument, const MStyle &style, bool long_names);
 
     static String format_shared_voice_label(const std::vector<const Instrument *> &instruments, bool trailing_dot_single,
                                             bool trailing_dot_multiple, int hyphen_limit);

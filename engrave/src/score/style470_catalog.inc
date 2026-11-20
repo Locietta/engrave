@@ -1,4 +1,4 @@
-// 5.00 values produced from the independently verified 4.70 header fixture.
+// Legacy entries are used for membership only. The other entries carry the neutral values.
 // 5.00 score_style.mss SHA-256: 26edb913f5eb08e98b44b466e757212d17a392dd523aae57dd3f337cf6013498
 // Legacy tag membership: 4.7.6 score_style.mss SHA-256 a576d47056d96270dc3ebafd6c430a95efe715841c9b0fe4af2d93396408754c.
     {"accentShowTabCommon", "1", "", true},

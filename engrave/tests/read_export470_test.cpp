@@ -53,13 +53,11 @@ TEST(Export470, SelectedExcerptIsStandaloneAndBounded) {
         ASSERT_FALSE(limited);
         EXPECT_EQ(limited.error().code, ErrorCode::RESOURCE_LIMIT);
     }
-    // Selection still goes through the structural guard.
     ASSERT_TRUE(document->edit({{engrave::SetStyle{selection, "staffDistance", 9.0}}}));
-    auto refused = document->export_score_with_warnings({.score = selection, .native_version = "4.70"});
-    ASSERT_FALSE(refused);
-    EXPECT_EQ(refused.error().code, ErrorCode::UNSUPPORTED);
-    ASSERT_FALSE(refused.error().export_warnings.empty());
-    EXPECT_EQ(refused.error().export_warnings.front().code, "B470_UNSUPPORTED_FEATURE");
+    auto styled = document->export_score_with_warnings({.format = engrave::Format::MSCX, .score = selection, .native_version = "4.70"});
+    ASSERT_TRUE(styled) << styled.error().message;
+    const std::string xml(reinterpret_cast<const char *>(styled->bytes.data()), styled->bytes.size());
+    EXPECT_NE(xml.find("<staffDistance>9</staffDistance>"), std::string::npos);
 }
 
 TEST(Export470, WarningIdentifiersAreStableAndDistinct) {
@@ -279,36 +277,211 @@ TEST(Export470, ConvertsPageLocksWithStableObjectWarnings) {
 }
 
 TEST(Export470, RefusesANonNeutralFiveOnlyStyle) {
-    auto document = open_path(write470_fixture());
+    auto document = open_path(write470_fixture().parent_path() / "ties.mscx");
     ASSERT_TRUE(document);
     auto &master = master_of(*document);
     const auto score_id = engrave::from_engine(master.eid());
-    master.style().set(mu::engraving::Sid::MIN_SYSTEM_DISTANCE, mu::engraving::Spatium(99.0));
+    master.style().set(mu::engraving::Sid::MASK_TIES, true);
     const auto result = document->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
     ASSERT_FALSE(result);
     EXPECT_EQ(result.error().code, ErrorCode::UNSUPPORTED);
     ASSERT_EQ(result.error().export_warnings.size(), 1u);
     const auto &warning = result.error().export_warnings.front();
     EXPECT_EQ(warning.code, "B470_UNSUPPORTED_FEATURE");
-    EXPECT_NE(result.error().message.find("minSystemDistance"), std::string::npos);
+    EXPECT_NE(result.error().message.find("maskTies"), std::string::npos);
     ASSERT_TRUE(warning.object);
     EXPECT_EQ(warning.object->id, engrave::to_string(score_id));
-    EXPECT_DOUBLE_EQ(master.style().style_s(mu::engraving::Sid::MIN_SYSTEM_DISTANCE).val(), 99.0);
+    EXPECT_TRUE(master.style().style_b(mu::engraving::Sid::MASK_TIES));
 }
 
 TEST(Export470, DeduplicatesUnmappedStylesWithoutPublishing) {
-    auto document = open_path(write470_fixture());
-    ASSERT_TRUE(document);
-    auto &master = master_of(*document);
-    master.style().set(mu::engraving::Sid::MIN_SYSTEM_DISTANCE, mu::engraving::Spatium(99.0));
-    master.style().set(mu::engraving::Sid::MAX_SYSTEM_DISTANCE, mu::engraving::Spatium(100.0));
-    const auto result = document->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+    auto source = read_text(write470_fixture());
+    source.insert(source.find("</voice>"), "<BarLine><subtype>dashed</subtype></BarLine>");
+    auto document = g_engine->open(as_bytes(source));
+    ASSERT_TRUE(document) << document.error().message;
+    auto &master = master_of(**document);
+    master.style().set(mu::engraving::Sid::DASH_BAR_DASH, mu::engraving::Spatium(1.2));
+    master.style().set(mu::engraving::Sid::DASH_BAR_GAP, mu::engraving::Spatium(1.3));
+    const auto result = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
     ASSERT_FALSE(result);
     EXPECT_EQ(result.error().code, ErrorCode::UNSUPPORTED);
     ASSERT_EQ(result.error().export_warnings.size(), 1u);
     EXPECT_EQ(result.error().export_warnings.front().code, "B470_UNSUPPORTED_FEATURE");
-    EXPECT_NE(result.error().message.find("minSystemDistance"), std::string::npos);
-    EXPECT_NE(result.error().message.find("maxSystemDistance"), std::string::npos);
+    EXPECT_NE(result.error().message.find("dashBarDash"), std::string::npos);
+    EXPECT_NE(result.error().message.find("dashBarGap"), std::string::npos);
+}
+
+TEST(Export470, PreservesEffectiveLegacyStyle) {
+    using namespace mu::engraving;
+    auto document = open_path(write470_fixture());
+    ASSERT_TRUE(document);
+    auto &style = master_of(*document).style();
+    style.set(Sid::PAGE_WIDTH, 9.5);
+    style.set(Sid::PAGE_ODD_LEFT_MARGIN, 1.125);
+    style.set(Sid::SPATIUM, 7.25);
+    style.set(Sid::HEADER_FONT_FACE, muse::String(u"FreeSerif"));
+    style.set(Sid::LONG_INSTRUMENT_ALIGN, Align{AlignH::LEFT, AlignV::VCENTER});
+    style.set(Sid::SHORT_INSTRUMENT_ALIGN, Align{AlignH::RIGHT, AlignV::BASELINE});
+    style.set(Sid::HIDE_EMPTY_STAVES, true);
+    style.set(Sid::MIN_SYSTEM_DISTANCE, Spatium(12.25));
+    style.set(Sid::MAX_SYSTEM_DISTANCE, Spatium(18.5));
+    style.set(Sid::MASK_TIES, true);
+    const auto exported = document->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+    ASSERT_TRUE(exported) << exported.error().message;
+    EXPECT_TRUE(exported->warnings.empty());
+    const std::string xml(reinterpret_cast<const char *>(exported->bytes.data()), exported->bytes.size());
+    for (const char *field :
+         {"<defaultsVersion>470</defaultsVersion>", "<pageWidth>9.5</pageWidth>", "<pageOddLeftMargin>1.125</pageOddLeftMargin>",
+          "<headerFontFace>FreeSerif</headerFontFace>", "<longInstrumentAlign>left,center</longInstrumentAlign>",
+          "<shortInstrumentAlign>right,baseline</shortInstrumentAlign>", "<hideEmptyStaves>1</hideEmptyStaves>",
+          "<minSystemDistance>12.25</minSystemDistance>", "<maxSystemDistance>18.5</maxSystemDistance>"})
+        EXPECT_NE(xml.find(field), std::string::npos) << field;
+    EXPECT_EQ(xml.find("<maskTies>"), std::string::npos);
+    const auto reopened = g_engine->open(exported->bytes);
+    ASSERT_TRUE(reopened) << reopened.error().message;
+    EXPECT_NEAR(master_of(**reopened).style().spatium(), 7.25, 0.0001);
+}
+
+TEST(Export470, PreservesBlankGrandStaffPiano) {
+    auto document = g_engine->create_document({.template_id = "Piano"});
+    ASSERT_TRUE(document) << document.error().message;
+    const auto exported = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+    ASSERT_TRUE(exported) << exported.error().message;
+    EXPECT_TRUE(exported->warnings.empty());
+    const std::string xml(reinterpret_cast<const char *>(exported->bytes.data()), exported->bytes.size());
+    for (const auto *field :
+         {"<bracket type=\"1\" span=\"2\" col=\"0\" visible=\"1\"", "<defaultClef>F</defaultClef>", "<durationType>measure</durationType>"})
+        EXPECT_NE(xml.find(field), std::string::npos) << field;
+    auto reopened = g_engine->open(exported->bytes);
+    ASSERT_TRUE(reopened) << reopened.error().message;
+    const auto source = music::semantic_dump(&master_of(**document));
+    const auto *treble = master_of(**reopened).staff(0);
+    const auto *bass = master_of(**reopened).staff(1);
+    ASSERT_NE(treble, nullptr);
+    ASSERT_NE(bass, nullptr);
+    EXPECT_EQ(treble->default_clef_type().concert_clef, mu::engraving::ClefType::G);
+    EXPECT_EQ(bass->default_clef_type().concert_clef, mu::engraving::ClefType::F);
+    const auto actual = music::semantic_dump(&master_of(**reopened));
+    for (const char *key : {"parts", "measures", "events"}) EXPECT_TRUE(music::json_equal(actual[key], source[key])) << key;
+}
+
+TEST(Export470, PreservesPairedSharpPitchEditInBothFormats) {
+    auto source = read_text(write470_fixture().parent_path() / "ties.mscx");
+    for (std::size_t pos = 0; (pos = source.find("<pitch>60</pitch>", pos)) != std::string::npos; ++pos)
+        source.replace(pos, std::string_view("<pitch>60</pitch>").size(), "<pitch>71</pitch>");
+    for (std::size_t pos = 0; (pos = source.find("<tpc>14</tpc>", pos)) != std::string::npos; ++pos)
+        source.replace(pos, std::string_view("<tpc>14</tpc>").size(), "<tpc>19</tpc>");
+    auto document = g_engine->open(as_bytes(source));
+    ASSERT_TRUE(document) << document.error().message;
+    const auto first = *engrave::element_id_from_string("G_G");
+    const auto second = *engrave::element_id_from_string("J_J");
+    ASSERT_TRUE((*document)->edit({{engrave::SetPitch{first, 73, 21}, engrave::SetPitch{second, 73, 21}}}));
+    for (const auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
+        const auto exported = (*document)->export_score_with_warnings({.format = format, .native_version = "4.70"});
+        ASSERT_TRUE(exported) << exported.error().message;
+        EXPECT_TRUE(exported->warnings.empty());
+        if (format == engrave::Format::MSCX) {
+            const std::string xml(reinterpret_cast<const char *>(exported->bytes.data()), exported->bytes.size());
+            EXPECT_NE(xml.find("<subtype>accidentalSharp</subtype>"), std::string::npos);
+        }
+        const auto reopened = g_engine->open(exported->bytes, {.format = format});
+        ASSERT_TRUE(reopened) << reopened.error().message;
+        auto *registry = master_of(**reopened).eid_register();
+        auto *start = static_cast<mu::engraving::Note *>(registry->item_from_eid(engrave::to_engine(first)));
+        auto *end = static_cast<mu::engraving::Note *>(registry->item_from_eid(engrave::to_engine(second)));
+        ASSERT_NE(start, nullptr);
+        ASSERT_NE(end, nullptr);
+        for (const auto *note : {start, end}) {
+            EXPECT_EQ(note->pitch(), 73);
+            EXPECT_EQ(note->tpc(), 21);
+        }
+        ASSERT_NE(start->accidental(), nullptr);
+        EXPECT_EQ(start->accidental()->accidental_type(), mu::engraving::AccidentalType::SHARP);
+        ASSERT_NE(end->tie_back(), nullptr);
+        EXPECT_EQ(end->tie_back()->start_note(), start);
+    }
+}
+
+TEST(Export470, PreservesCommonNotationAndHarmonyCases) {
+    auto source = read_text(write470_fixture());
+    source.replace(source.find("version=\"4.70\""), std::string_view("version=\"4.70\"").size(), "version=\"5.00\"");
+    source.insert(source.find("</Style>"), "<lyricsStackingOrder>0</lyricsStackingOrder>");
+    source.insert(source.find("<Part "), R"(<Order id="custom"><name>Test order</name></Order>)");
+    source.insert(source.find("<Measure>"), "<VBox><height>10</height><Text><style>title</style><text>Title</text></Text></VBox>");
+    source.insert(source.find("<TimeSig>"), "<KeySig><concertKey>-1</concertKey></KeySig>");
+    const auto first_chord = source.find("<Chord>");
+    const auto after_chord = source.find("</Chord>") + std::string_view("</Chord>").size();
+    source.replace(first_chord, after_chord - first_chord, R"(
+        <Harmony><rootCase>auto</rootCase><bassCase>capital</bassCase><harmonyInfo><root>15</root><bass>14</bass></harmonyInfo></Harmony>
+        <Dynamic><subtype>mf</subtype></Dynamic>
+        <Tempo><tempo>1.5</tempo><text>Andante</text></Tempo>
+        <Tuplet><normalNotes>2</normalNotes><actualNotes>3</actualNotes><baseNote>eighth</baseNote></Tuplet>
+        <Chord><durationType>eighth</durationType><Articulation><subtype>articStaccatoAbove</subtype></Articulation>
+          <Lyrics><text>word</text><centerBetweenStaves>off</centerBetweenStaves></Lyrics><Note><pitch>65</pitch><tpc>13</tpc></Note></Chord>
+        <Chord><durationType>eighth</durationType><Note><pitch>67</pitch><tpc>15</tpc></Note></Chord>
+        <Chord><durationType>eighth</durationType><Note><pitch>69</pitch><tpc>17</tpc></Note></Chord>
+        <endTuplet/>
+        <Harmony><rootCase>lower</rootCase><bassCase>upper</bassCase><harmonyInfo><root>14</root><bass>15</bass></harmonyInfo></Harmony>
+        <Rest><durationType>half</durationType><dots>1</dots></Rest>)");
+    auto document = g_engine->open(as_bytes(source));
+    ASSERT_TRUE(document) << document.error().message;
+    const auto exported = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+    ASSERT_TRUE(exported) << exported.error().message;
+    EXPECT_TRUE(exported->warnings.empty());
+    const std::string xml(reinterpret_cast<const char *>(exported->bytes.data()), exported->bytes.size());
+    for (const char *field :
+         {"<Order id=\"custom\"", "<VBox>", "<concertKey>-1</concertKey>", "<Tuplet>", "<endTuplet", "<Dynamic>", "<tempo>1.5</tempo>",
+          "<text>Andante</text>", "<Articulation>", "<Lyrics>", "<centerBetweenStaves>off</centerBetweenStaves>", "<rootCase>-1</rootCase>",
+          "<rootCase>1</rootCase>", "<bassCase>2</bassCase>"})
+        EXPECT_NE(xml.find(field), std::string::npos) << field;
+    auto reopened = g_engine->open(exported->bytes);
+    ASSERT_TRUE(reopened) << reopened.error().message;
+    std::vector<mu::engraving::NoteCaseType> root_cases, bass_cases;
+    for (const auto *item : engrave::document_objects(master_of(**reopened))) {
+        if (!item->is_harmony()) continue;
+        const auto *harmony = static_cast<const mu::engraving::Harmony *>(item);
+        root_cases.push_back(harmony->root_case());
+        bass_cases.push_back(harmony->bass_case());
+    }
+    using enum mu::engraving::NoteCaseType;
+    EXPECT_EQ(root_cases, (std::vector{AUTO, LOWER}));
+    EXPECT_EQ(bass_cases, (std::vector{CAPITAL, UPPER}));
+}
+
+TEST(Export470, NamesAnEmbeddedExcerptInStyleRefusal) {
+    auto document = open_path(write470_fixture().parent_path() / "excerpts.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *excerpt = master.excerpts().front()->excerpt_score();
+    excerpt->style().set(mu::engraving::Sid::MASK_TIES, true);
+    const auto result = document->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+    ASSERT_FALSE(result);
+    ASSERT_EQ(result.error().export_warnings.size(), 1u) << result.error().message;
+    const auto &warning = result.error().export_warnings.front();
+    EXPECT_EQ(warning.code, "B470_UNSUPPORTED_FEATURE");
+    ASSERT_TRUE(warning.object);
+    EXPECT_EQ(warning.object->id, excerpt->eid().to_std_string());
+}
+
+TEST(Export470, RefusesFiveOnlyTremolos) {
+    for (const auto *subtype : {"r128", "c256"}) {
+        auto source = read_text(write470_fixture().parent_path() / "ties.mscx");
+        const std::string tag = subtype[0] == 'r' ? "TremoloSingleChord" : "TremoloTwoChord";
+        source.replace(source.find("version=\"4.70\""), std::string_view("version=\"4.70\"").size(), "version=\"5.00\"");
+        source.insert(source.find("<Note>"), "<" + tag + "><subtype>" + subtype + "</subtype></" + tag + ">");
+        // The legacy connector fixture serves only as the source of two half-note chords.
+        for (auto pos = source.find("<Spanner"); pos != std::string::npos; pos = source.find("<Spanner")) {
+            const auto end = source.find("</Spanner>", pos) + std::string_view("</Spanner>").size();
+            source.erase(pos, end - pos);
+        }
+        const auto document = g_engine->open(as_bytes(source));
+        ASSERT_TRUE(document) << document.error().message;
+        const auto result = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+        ASSERT_FALSE(result) << subtype;
+        EXPECT_EQ(result.error().code, ErrorCode::UNSUPPORTED);
+        ASSERT_EQ(result.error().export_warnings.size(), 1u);
+        EXPECT_NE(result.error().message.find(subtype), std::string::npos);
+    }
 }
 
 TEST(Export470, StaveLabelsSurviveDefaultExportAndReopen) {

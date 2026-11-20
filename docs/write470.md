@@ -71,20 +71,20 @@ struct ExportOutput {
 
 ## 2. Bounded Supported Subset
 
-The 4.70 exporter fails closed on anything outside its independently verified
-subset of 5.00 notation (`engrave/src/score/write470.cpp`):
-
-- **Instruments**: `piano` or `flute` instrument IDs only (`flute` requires
-  pitch ranges `minPitchP=59`, `maxPitchP=98`, `minPitchA=60`, `maxPitchA=93`).
-- **Staves and clefs**: Standard pitched staves (`group="pitched"`,
-  `name="stdNormal"`) and G clefs (`concertClefType="G"`,
-  `transposingClefType="G"`). Bass clef and other clef types are refused.
-- **Time and key signatures**: 4/4 time (`sigN="4"`, `sigD="4"`) and C major
-  (`concertKey="0"`) only.
-- **Notes, rests, and durations**: Pitched notes, half rests, and whole/half/
-  quarter durations (`whole`, `half`, `quarter`). Eighth durations (`eighth`)
-  and grace forms (`appoggiatura`, `grace8after`) are accepted only in
-  standalone excerpts.
+- **Instruments and staves.** The writer preserves instrument IDs, ranges,
+  transposition, MIDI channels and actions, drum maps, string tunings, and
+  pitched, percussion, and tablature staves. Instrument changes and initial
+  instruments use legacy long and short names. The adapter renders effective
+  transposition and numbering into the label text and places individual staff
+  labels with the legacy placement indices where those indices exist.
+- **Notation.** Shared clefs, keys, time signatures, chords, rests, tuplets,
+  beams, accidentals, text, lyrics, harmony, ornaments, and measure-level
+  markings retain their legacy representation. Harmony cases use the legacy
+  integer encoding, and note-parenthesis groups use chord-local note indices.
+  Legacy single- and two-chord tremolos are supported. Active newer tremolo
+  subtypes and authored chord-line control offsets refuse the downgrade.
+- **Structure.** Score order, system objects, locks and dividers, layout
+  frames, repeats, and layout breaks are supported.
 - **Ties and spanners**: Same-voice, same-measure ties (including paired pitch
   edits). Note spanners must be `Tie`; non-note spanners must be `Pedal` in the
   strictly checked subset (no XML attributes; only `eid`, `track`, `track2`,
@@ -92,7 +92,8 @@ subset of 5.00 notation (`engrave/src/score/write470.cpp`):
   `endTextPlace`; `track="0"`, `track2="0"`, staff 1, `startTick="0/1"`,
   `ticks="1/2"`, spanning half-measure position 0 to 2). Other spanners, custom
   chord lists, and non-generated automation curves are refused.
-- **Braces**: Ordinary score braces (`bracket type="1"`).
+- **Brackets.** Normal brackets, braces, square brackets and lines use
+  legacy types 0 through 3.
 - **Identities**: Serialized musical, staff, and score EIDs supported by the
   mapping, plus legacy numeric part IDs. MuseScore 4.70 has no part EID
   representation, so part EIDs are omitted.
@@ -145,15 +146,17 @@ all five components plus the trailing `tieFor` field.
 
 ## 5. Style Compatibility Guard
 
-Style properties are checked against `engrave/src/score/style470_catalog.inc`:
+The writer saves each score's full effective style, including each embedded
+excerpt's style, and sets `defaultsVersion` to `470`. Canonical 4.7.6
+properties retain their values. This includes explicit instrument-name
+alignments, geometry, typography, and header and footer settings. The style
+catalog rejects unknown or repeated tags from the intermediate writer.
 
-- Sets `defaultsVersion` to `470`.
-- Omits neutral 5.00-only fields (`windsNameByGroup`, `vocalsNameByGroup`, and
-  default values for `lyricsStackingOrder`, `maskSlurs`, `maskTies`).
-- Preserves legacy header/footer options (`headerFirstPage`, empty header/footer
-  text, and `$C` center-footer macros in excerpts).
-- Any unrecognized or modified style value outside the catalogue causes
-  immediate refusal.
+Settings for dropped group brackets and stave sharing are omitted. Instrument
+name format settings are reflected in the emitted labels. Other 5.00-only
+settings are omitted when neutral or when the affected notation is absent. An
+active setting without a legacy representation, such as masking an existing
+tie, refuses export and names the owning score or excerpt.
 
 ## 6. Cooperative Cancellation and Budgets
 
