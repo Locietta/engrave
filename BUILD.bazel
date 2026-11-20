@@ -624,6 +624,7 @@ cc_binary(
         "engrave/tests/read_layoutdatastore_test.cpp",
         "engrave/tests/read_test.cpp",
         "engrave/tests/read_test_fixture.cpp",
+        "engrave/tests/static_tables_test.cpp",
     ] + glob(["engrave/tests/harness/**/*.cpp"]),
     copts = ENGINE_COPTS,
     local_defines = [TEST_SOURCE_ROOT_DEFINE],

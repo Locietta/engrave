@@ -48,11 +48,6 @@ static constexpr int barline_span_shor_t1_to = -2;
 static constexpr int barline_span_shor_t2_from = 1;
 static constexpr int barline_span_shor_t2_to = -1;
 
-struct BarLineTableItem {
-    BarLineType type;
-    const muse::TranslatableString &user_name;
-};
-
 //
 //   @P barLineType  enum  (BarLineType.NORMAL, .DOUBLE, .START_REPEAT, .END_REPEAT, .BROKEN, .END, .END_START_REPEAT, .DOTTED)
 
@@ -132,8 +127,6 @@ public:
     void set_selected(bool f) override;
 
     void style_changed() override;
-
-    static const std::vector<BarLineTableItem> bar_line_table;
 
     void calc_y();
 

@@ -21,39 +21,54 @@
  */
 #pragma once
 
-#include <unordered_map>
+#include <array>
+#include <optional>
 #include <utility>
 
 #include "engraving/types/types.h"
 
 namespace mu::engraving {
-// Normalized [0.0, 1.0] dynamic levels, aligned with MPE dynamic level percentages (5% steps starting at 17.5%)
-inline const std::unordered_map<DynamicType, real_t> ordinary_dynamic_values{
-    {DynamicType::N, 0.000},    {DynamicType::PPPPPP, 0.175}, {DynamicType::PPPPP, 0.225},  {DynamicType::PPPP, 0.275},
-    {DynamicType::PPP, 0.325},  {DynamicType::PP, 0.375},     {DynamicType::P, 0.425},      {DynamicType::MP, 0.475},
-    {DynamicType::MF, 0.525},   {DynamicType::F, 0.575},      {DynamicType::FF, 0.625},     {DynamicType::FFF, 0.675},
-    {DynamicType::FFFF, 0.725}, {DynamicType::FFFFF, 0.775},  {DynamicType::FFFFFF, 0.825},
-};
+// Normalized dynamic levels follow the MPE percentages, in 5% steps from 17.5%.
+constexpr std::optional<real_t> ordinary_dynamic_value(DynamicType type) {
+    constexpr std::array<double, 14> levels{
+        0.175, 0.225, 0.275, 0.325, 0.375, 0.425, 0.475, 0.525, 0.575, 0.625, 0.675, 0.725, 0.775, 0.825,
+    };
+    if (type == DynamicType::N) {
+        return real_t::make(0.000);
+    }
+    constexpr auto first = static_cast<size_t>(DynamicType::PPPPPP);
+    static_assert(static_cast<size_t>(DynamicType::FFFFFF) - first + 1 == levels.size());
+    const auto index = static_cast<size_t>(type) - first;
+    if (index < levels.size()) {
+        return real_t::make(levels[index]);
+    }
+    return std::nullopt;
+}
 
-inline const std::unordered_map<DynamicType, real_t> single_note_dynamic_values{
-    {DynamicType::SF, ::mu::engraving::ordinary_dynamic_values.at(DynamicType::F)},
-    {DynamicType::SFZ, ::mu::engraving::ordinary_dynamic_values.at(DynamicType::F)},
-    {DynamicType::SFF, ::mu::engraving::ordinary_dynamic_values.at(DynamicType::FF)},
-    {DynamicType::SFFZ, ::mu::engraving::ordinary_dynamic_values.at(DynamicType::FF)},
-    {DynamicType::SFFF, ::mu::engraving::ordinary_dynamic_values.at(DynamicType::FFF)},
-    {DynamicType::SFFFZ, ::mu::engraving::ordinary_dynamic_values.at(DynamicType::FFF)},
-    {DynamicType::RFZ, ::mu::engraving::ordinary_dynamic_values.at(DynamicType::F)},
-    {DynamicType::RF, ::mu::engraving::ordinary_dynamic_values.at(DynamicType::F)},
-};
+constexpr std::optional<real_t> single_note_dynamic_value(DynamicType type) {
+    switch (type) {
+        case DynamicType::SF:
+        case DynamicType::SFZ:
+        case DynamicType::RFZ:
+        case DynamicType::RF: return ordinary_dynamic_value(DynamicType::F);
+        case DynamicType::SFF:
+        case DynamicType::SFFZ: return ordinary_dynamic_value(DynamicType::FF);
+        case DynamicType::SFFF:
+        case DynamicType::SFFFZ: return ordinary_dynamic_value(DynamicType::FFF);
+        default: return std::nullopt;
+    }
+}
 
-inline const std::unordered_map<DynamicType, std::pair<real_t, real_t>> compound_dynamic_values{
-    {DynamicType::FP,
-     {::mu::engraving::ordinary_dynamic_values.at(DynamicType::F), ::mu::engraving::ordinary_dynamic_values.at(DynamicType::P)}},
-    {DynamicType::PF,
-     {::mu::engraving::ordinary_dynamic_values.at(DynamicType::P), ::mu::engraving::ordinary_dynamic_values.at(DynamicType::F)}},
-    {DynamicType::SFP,
-     {::mu::engraving::ordinary_dynamic_values.at(DynamicType::F), ::mu::engraving::ordinary_dynamic_values.at(DynamicType::P)}},
-    {DynamicType::SFPP,
-     {::mu::engraving::ordinary_dynamic_values.at(DynamicType::F), ::mu::engraving::ordinary_dynamic_values.at(DynamicType::PP)}},
-};
+constexpr std::optional<std::pair<real_t, real_t>> compound_dynamic_value(DynamicType type) {
+    constexpr real_t p = *ordinary_dynamic_value(DynamicType::P);
+    constexpr real_t pp = *ordinary_dynamic_value(DynamicType::PP);
+    constexpr real_t f = *ordinary_dynamic_value(DynamicType::F);
+    switch (type) {
+        case DynamicType::FP:
+        case DynamicType::SFP: return {{f, p}};
+        case DynamicType::PF: return {{p, f}};
+        case DynamicType::SFPP: return {{f, pp}};
+        default: return std::nullopt;
+    }
+}
 } // namespace mu::engraving

@@ -113,16 +113,16 @@ bool ScoreAutomationController::StaffRange::contains(const muse::ID &staff_id) c
 }
 
 static std::optional<real_t> dynamic_value(DynamicType type, bool start_value) {
-    if (auto it = ::mu::engraving::ordinary_dynamic_values.find(type); it != ::mu::engraving::ordinary_dynamic_values.end()) {
-        return it->second;
+    if (auto value = ordinary_dynamic_value(type)) {
+        return *value;
     }
 
-    if (auto it = ::mu::engraving::single_note_dynamic_values.find(type); it != ::mu::engraving::single_note_dynamic_values.end()) {
-        return it->second;
+    if (auto value = single_note_dynamic_value(type)) {
+        return *value;
     }
 
-    if (auto it = ::mu::engraving::compound_dynamic_values.find(type); it != ::mu::engraving::compound_dynamic_values.end()) {
-        return start_value ? it->second.first : it->second.second;
+    if (auto value = compound_dynamic_value(type)) {
+        return start_value ? value->first : value->second;
     }
 
     return std::nullopt;
@@ -660,21 +660,17 @@ void ScoreAutomationController::add_dynamic_points(const Dynamic *dynamic, int t
     DynamicInfo info;
     info.tick = tick;
 
-    if (auto ordinary_it = ::mu::engraving::ordinary_dynamic_values.find(dynamic_type);
-        ordinary_it != ::mu::engraving::ordinary_dynamic_values.end()) {
-        info.kind = DynamicInfo::Ordinary{ordinary_it->second};
-    } else if (auto single_note_it = ::mu::engraving::single_note_dynamic_values.find(dynamic_type);
-               single_note_it != ::mu::engraving::single_note_dynamic_values.end()) {
-        DynamicInfo::SingleNote single_note{single_note_it->second, std::nullopt};
+    if (auto ordinary = ordinary_dynamic_value(dynamic_type)) {
+        info.kind = DynamicInfo::Ordinary{*ordinary};
+    } else if (auto single_note = single_note_dynamic_value(dynamic_type)) {
+        DynamicInfo::SingleNote info_for_note{*single_note, std::nullopt};
         if (const Segment *next_seg = dynamic->segment()->next()) {
-            single_note.next_tick = next_seg->tick().ticks() + tick_offset;
+            info_for_note.next_tick = next_seg->tick().ticks() + tick_offset;
         }
-        info.kind = single_note;
-    } else if (auto compound_it = ::mu::engraving::compound_dynamic_values.find(dynamic_type);
-               compound_it != ::mu::engraving::compound_dynamic_values.end()) {
+        info.kind = info_for_note;
+    } else if (auto compound = compound_dynamic_value(dynamic_type)) {
         const BeatsPerSecond tempo = denormalize_tempo(current_tempo_at(*ctx.tempo_curve, tick)) * ctx.tempo_multiplier;
-        info.kind = DynamicInfo::Compound{compound_it->second.first, compound_it->second.second,
-                                          tick + dynamic->velocity_change_length(tempo).ticks()};
+        info.kind = DynamicInfo::Compound{compound->first, compound->second, tick + dynamic->velocity_change_length(tempo).ticks()};
     } else {
         MUSE_NOT_SUPPORTED;
         return;
@@ -802,8 +798,7 @@ void ScoreAutomationController::add_hairpin_points(const Hairpin *hairpin, int t
         const track_idx_t track_idx = hairpin->track();
         const Dynamic *start_dynamic =
             start_segment ? to_dynamic(start_segment->find_annotation(ElementType::DYNAMIC, track_idx, track_idx)) : nullptr;
-        if (start_dynamic && start_dynamic->play_dynamic() &&
-            muse::contains(::mu::engraving::compound_dynamic_values, start_dynamic->dynamic_type())) {
+        if (start_dynamic && start_dynamic->play_dynamic() && compound_dynamic_value(start_dynamic->dynamic_type())) {
             // The hairpin starts with a compound dynamic; we should start the hairpin after the transition is complete
             // This solution should be replaced once we have better infrastructure to see relations between Dynamics and Hairpins.
             const BeatsPerSecond tempo = denormalize_tempo(current_tempo_at(*ctx.tempo_curve, info.from)) * ctx.tempo_multiplier;
