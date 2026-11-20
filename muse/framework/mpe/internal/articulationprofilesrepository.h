@@ -20,8 +20,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef MUSE_MPE_ARTICULATIONPROFILESREPOSITORY_H
-#define MUSE_MPE_ARTICULATIONPROFILESREPOSITORY_H
+#pragma once
 
 #include <array>
 #include <optional>
@@ -29,7 +28,6 @@
 #include "engrave/src/runtime/resource_filesystem.h"
 #include "io/path.h"
 #include "mpe/mpetypes.h"
-#include "serialization/json.h"
 
 namespace muse::mpe {
 struct ArticulationProfilesRepository {
@@ -45,26 +43,9 @@ struct ArticulationProfilesRepository {
 private:
     io::NativeFileSystem *file_system() const { return &file_system_; }
 
-    std::vector<ArticulationFamily> supported_families_from_json(const JsonArray &array) const;
-    JsonArray supported_families_to_json(const std::vector<ArticulationFamily> &families) const;
-
-    ArticulationPattern patterns_scope_from_json(const JsonArray &array) const;
-    JsonArray patterns_scope_to_json(const ArticulationPattern &scope) const;
-
-    ArrangementPattern arrangement_pattern_from_json(const JsonObject &obj) const;
-    JsonObject arrangement_pattern_to_json(const ArrangementPattern &pattern) const;
-
-    PitchPattern pitch_pattern_from_json(const JsonObject &obj) const;
-    JsonObject pitch_pattern_to_json(const PitchPattern &pattern) const;
-
-    ExpressionPattern expression_pattern_from_json(const JsonObject &obj) const;
-    JsonObject expression_pattern_to_json(const ExpressionPattern &pattern) const;
-
     // optional preserves cached load failures (a cached nullptr is still a cache hit).
     mutable std::array<std::optional<ArticulationsProfilePtr>, static_cast<size_t>(SoundCategory::LAST)> default_profiles_;
 
     io::NativeFileSystem &file_system_;
 };
 } // namespace muse::mpe
-
-#endif // MUSE_MPE_ARTICULATIONPROFILESREPOSITORY_H

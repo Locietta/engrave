@@ -22,173 +22,211 @@
 
 #include "automationrw.h"
 
+#include <charconv>
+#include <cmath>
+#include <limits>
+
+#include <glaze/json/write.hpp>
+
 #include "engraving/automation/automationdata.h"
-#include "global/containers.h"
 #include "global/log.h"
-#include "global/serialization/json.h"
+#include "global/serialization/json_fields.h"
 
 using namespace mu::engraving;
 
-static const std::unordered_map<AutomationType, muse::String> automation_type_to_string{
-    {AutomationType::DYNAMICS, u"Dynamics"},
-    {AutomationType::TEMPO, u"Tempo"},
-    {AutomationType::VOLUME, u"Volume"},
-    {AutomationType::PAN, u"Pan"},
+namespace {
+
+namespace json = muse::json;
+
+constexpr std::pair<AutomationType, std::string_view> automation_types[]{
+    {AutomationType::DYNAMICS, "Dynamics"},
+    {AutomationType::TEMPO, "Tempo"},
+    {AutomationType::VOLUME, "Volume"},
+    {AutomationType::PAN, "Pan"},
 };
 
-static constexpr const char *type_key = "type";
-static constexpr const char *part_id_key = "partId";
-static constexpr const char *instrument_id_key = "instrumentId";
-static constexpr const char *staff_id_key = "staffId";
-static constexpr const char *voice_id_key = "voiceId";
-static constexpr const char *out_value_key = "outValue";
-static constexpr const char *in_value_key = "inValue";
-static constexpr const char *in_value_kind_key = "inValueKind";
-static constexpr const char *ease_key = "ease";
-static constexpr const char *control_point_t_key = "t";
-static constexpr const char *control_point_value_key = "value";
-static constexpr const char *item_id_key = "itemId";
-static constexpr const char *generated_key = "generated";
-static constexpr const char *tick_key = "tick";
-static constexpr const char *points_key = "points";
+constexpr std::string_view from_previous = "FromPrevious";
 
-static const std::string in_value_kind_from_previous = "FromPrevious";
+struct ControlPoint {
+    glz::raw_json t;
+    glz::raw_json value;
 
-static AutomationCurveKey read_key(const muse::JsonObject &obj) {
-    const AutomationType type = muse::key(::automation_type_to_string, obj.value(::type_key).to_string(), AutomationType::UNKNOWN);
+    struct glaze {
+        static constexpr auto value = glz::object("t", &ControlPoint::t, "value", &ControlPoint::value);
+    };
+};
 
-    if (obj.contains(::part_id_key)) {
-        InstrumentTrackId track_id;
-        track_id.part_id = muse::ID(obj.value(::part_id_key).to_string().to_std_string());
-        track_id.instrument_id = obj.value(::instrument_id_key).to_string();
-        return AutomationCurveKey::instrument(type, track_id);
-    }
+struct Point {
+    std::optional<std::array<ControlPoint, 1>> ease;
+    std::optional<bool> generated;
+    std::optional<glz::raw_json> in_value;
+    std::optional<std::string_view> in_value_kind;
+    std::optional<std::string> item_id;
+    glz::raw_json out_value;
+    utick_t tick = 0;
 
-    if (obj.contains(::staff_id_key)) {
-        const muse::ID staff_id(obj.value(::staff_id_key).to_string().to_std_string());
+    struct glaze {
+        using T = Point;
+        static constexpr auto value = glz::object("ease", &T::ease, "generated", &T::generated, "inValue", &T::in_value, "inValueKind",
+                                                  &T::in_value_kind, "itemId", &T::item_id, "outValue", &T::out_value, "tick", &T::tick);
+    };
+};
 
-        std::optional<size_t> voice_idx;
-        if (obj.contains(::voice_id_key)) {
-            voice_idx = static_cast<size_t>(obj.value(::voice_id_key).to_int());
+struct Curve {
+    std::optional<std::string> instrument_id;
+    std::optional<std::string> part_id;
+    std::vector<Point> points;
+    std::optional<std::string> staff_id;
+    std::string_view type;
+    std::optional<int> voice_id;
+
+    struct glaze {
+        using T = Curve;
+        static constexpr auto value = glz::object("instrumentId", &T::instrument_id, "partId", &T::part_id, "points", &T::points, "staffId",
+                                                  &T::staff_id, "type", &T::type, "voiceId", &T::voice_id);
+    };
+};
+
+AutomationCurveKey read_key(const glz::generic &curve) {
+    const auto &type_name = json::get_or_empty<std::string>(json::member(curve, "type"));
+    AutomationType type = AutomationType::UNKNOWN;
+    for (const auto &[candidate, name] : automation_types) {
+        if (name == type_name) {
+            type = candidate;
+            break;
         }
-
-        return AutomationCurveKey::staff(type, staff_id, voice_idx);
     }
 
+    if (const auto *part = json::find(curve, "partId")) {
+        return AutomationCurveKey::instrument(
+            type, {muse::ID(json::get_or_empty<std::string>(*part)),
+                   muse::String::from_std_string(json::get_or_empty<std::string>(json::member(curve, "instrumentId")))});
+    }
+    if (const auto *staff = json::find(curve, "staffId")) {
+        std::optional<size_t> voice_idx;
+        if (const auto *voice = json::find(curve, "voiceId")) voice_idx = static_cast<size_t>(json::rounded_int(*voice));
+        return AutomationCurveKey::staff(type, muse::ID(json::get_or_empty<std::string>(*staff)), voice_idx);
+    }
     return AutomationCurveKey::global(type);
 }
 
-static AutomationPoint read_point(const muse::JsonObject &obj) {
-    AutomationPoint point;
-    point.value.out_value = obj.value(::out_value_key).to_double();
+double number(const glz::generic &object, std::string_view key) { return json::get_or_empty<double>(json::member(object, key)); }
 
-    const std::string in_value_kind = obj.contains(::in_value_kind_key) ? obj.value(::in_value_kind_key).to_std_string() : std::string();
-    if (in_value_kind == ::in_value_kind_from_previous) {
+AutomationPoint read_point(const glz::generic &source) {
+    AutomationPoint point;
+    point.value.out_value = number(source, "outValue");
+
+    if (json::get_or_empty<std::string>(json::member(source, "inValueKind")) == from_previous) {
         point.value.in_value = AutomationPoint::ArrivalFromPrevious{};
     } else {
         AutomationPoint::Ease ease;
-        if (obj.contains(::ease_key)) {
-            // Array for forward-compat; only element 0 is used, since Ease only holds one point
-            const muse::JsonArray ease_array = obj.value(::ease_key).to_array();
-            if (!ease_array.empty()) {
-                const muse::JsonObject control_point_obj = ease_array.at(0).to_object();
-                ease.t = control_point_obj.value(::control_point_t_key).to_double();
-                ease.value = control_point_obj.value(::control_point_value_key).to_double();
-            }
+        if (const auto *controls = json::find(source, "ease"); controls && !controls->get_array().empty()) {
+            const auto &control = controls->get_array().front();
+            ease.t = number(control, "t");
+            ease.value = number(control, "value");
         }
-
-        const muse::real_t value = muse::real_t(obj.value(::in_value_key).to_double());
-        point.value.in_value = AutomationPoint::ExplicitArrival{value, ease};
+        point.value.in_value = AutomationPoint::ExplicitArrival{number(source, "inValue"), ease};
     }
 
-    if (obj.contains(::item_id_key)) {
-        point.item_id = EID::from_std_string(obj.value(::item_id_key).to_string().to_std_string());
+    if (const auto *item = json::find(source, "itemId")) {
+        point.item_id = EID::from_std_string(json::get_or_empty<std::string>(*item));
     }
-    if (obj.contains(::generated_key)) {
-        point.generated = obj.value(::generated_key).to_bool();
+    if (const auto *generated = json::find(source, "generated")) {
+        if (const auto *flag = generated->get_if<bool>())
+            point.generated = *flag;
+        else if (const auto *numeric = generated->get_if<double>())
+            point.generated = *numeric != 0;
+        else if (const auto *str = generated->get_if<std::string>())
+            point.generated = !str->empty();
+        else
+            point.generated = !generated->is_null();
     }
-
     return point;
 }
 
-static void write_key(const AutomationCurveKey &key, muse::JsonObject &obj) {
-    obj[::type_key] = muse::value(::automation_type_to_string, key.type);
-
-    if (const std::optional<InstrumentTrackId> track_id = key.track_id()) {
-        obj[::part_id_key] = track_id->part_id.to_std_string();
-        obj[::instrument_id_key] = track_id->instrument_id;
-        return;
+// Older MSCZ writers stored decimals with up to six places, without exponents.
+glz::raw_json automation_number(double value) {
+    if (!std::isfinite(value)) throw std::overflow_error("Non-finite automation point");
+    if (std::abs(value) < 0x1p53 && std::trunc(value) == value) {
+        const int integer = value >= std::numeric_limits<int>::min() && value <= std::numeric_limits<int>::max() ?
+                                static_cast<int>(value) :
+                                std::numeric_limits<int>::min();
+        return {std::to_string(integer)};
     }
 
-    if (const std::optional<muse::ID> staff_id = key.staff_id()) {
-        obj[::staff_id_key] = staff_id->to_std_string();
-
-        if (const std::optional<size_t> voice_idx = key.voice_idx()) {
-            obj[::voice_id_key] = static_cast<int>(*voice_idx);
-        }
-    }
+    // A fixed decimal can need all 309 significant integer digits of a double.
+    char buffer[320];
+    const auto [end, error] = std::to_chars(buffer, buffer + sizeof(buffer), value, std::chars_format::fixed, 6);
+    if (error != std::errc{}) throw std::overflow_error("Cannot write automation point");
+    const char *trimmed = end;
+    while (trimmed[-1] == '0') --trimmed;
+    if (trimmed[-1] == '.') --trimmed;
+    return {std::string(buffer, static_cast<size_t>(trimmed - buffer))};
 }
 
-static void write_point(const AutomationPoint &point, muse::JsonObject &obj) {
-    if (std::holds_alternative<AutomationPoint::ArrivalFromPrevious>(point.value.in_value)) {
-        obj[::in_value_kind_key] = ::in_value_kind_from_previous;
+Point write_point(utick_t tick, const AutomationPoint &point) {
+    Point result;
+    result.tick = tick;
+    result.out_value = automation_number(point.value.out_value.raw());
+    if (const auto *arrival = std::get_if<AutomationPoint::ExplicitArrival>(&point.value.in_value)) {
+        result.in_value = automation_number(arrival->value.raw());
+        if (!arrival->ease.is_none()) {
+            result.ease = std::array{ControlPoint{automation_number(arrival->ease.t.raw()), automation_number(arrival->ease.value.raw())}};
+        }
     } else {
-        const AutomationPoint::ExplicitArrival &explicit_arrival = std::get<AutomationPoint::ExplicitArrival>(point.value.in_value);
-        obj[::in_value_key] = explicit_arrival.value;
-        if (!explicit_arrival.ease.is_none()) {
-            muse::JsonObject control_point_obj;
-            control_point_obj[::control_point_t_key] = explicit_arrival.ease.t.raw();
-            control_point_obj[::control_point_value_key] = explicit_arrival.ease.value.raw();
-
-            muse::JsonArray ease_array;
-            ease_array << control_point_obj;
-            obj[::ease_key] = ease_array;
-        }
+        result.in_value_kind = from_previous;
     }
-
-    obj[::out_value_key] = point.value.out_value;
-
-    if (point.item_id.has_value()) {
-        obj[::item_id_key] = point.item_id->to_std_string();
-    }
-    if (point.generated) {
-        obj[::generated_key] = point.generated;
-    }
+    if (point.item_id) result.item_id = point.item_id->to_std_string();
+    if (point.generated) result.generated = true;
+    return result;
 }
 
-void AutomationRW::read(AutomationData &data, const muse::ByteArray &json) {
+Curve write_key(const AutomationCurveKey &key) {
+    Curve result;
+    for (const auto &[type, name] : automation_types) {
+        if (type == key.type) {
+            result.type = name;
+            break;
+        }
+    }
+    if (const auto track = key.track_id()) {
+        result.part_id = track->part_id.to_std_string();
+        result.instrument_id = track->instrument_id.to_std_string();
+    } else if (const auto staff = key.staff_id()) {
+        result.staff_id = staff->to_std_string();
+        if (const auto voice = key.voice_idx()) result.voice_id = static_cast<int>(*voice);
+    }
+    return result;
+}
 
-    if (json.empty()) {
+} // namespace
+
+void AutomationRW::read(AutomationData &data, const muse::ByteArray &bytes) {
+    if (bytes.empty()) return;
+
+    const auto source = json::text(bytes);
+    const auto parsed = glz::read_json<glz::generic>(source);
+    if (!parsed) {
+        LOGE() << "Failed to parse automation JSON: " << glz::format_error(parsed.error(), source);
         return;
     }
-
-    std::string err;
-    const muse::JsonDocument doc = muse::JsonDocument::from_json(json, &err);
-    if (!err.empty() || !doc.is_array()) {
-        LOGE() << "Failed to parse automation json: " << err;
+    if (!parsed->is_array()) {
+        LOGE() << "Automation JSON must contain an array";
         return;
     }
 
     AutomationCurveMap curves;
-
-    const muse::JsonArray root_array = doc.root_array();
-    for (size_t i = 0; i < root_array.size(); ++i) {
-        const muse::JsonObject curve_obj = root_array.at(i).to_object();
-        const AutomationCurveKey key = read_key(curve_obj);
+    for (const auto &entry : parsed->get_array()) {
+        const AutomationCurveKey key = read_key(entry);
         IF_ASSERT_FAILED(key.is_valid()) { continue; }
 
-        const muse::JsonArray point_array = curve_obj.value(::points_key).to_array();
-        if (point_array.empty()) {
-            continue;
-        }
+        const auto &points = json::member(entry, "points").get_array();
+        if (points.empty()) continue;
 
         AutomationCurve &curve = curves[key];
-        for (size_t j = 0; j < point_array.size(); ++j) {
-            const muse::JsonObject point_obj = point_array.at(j).to_object();
-            const AutomationPoint point = read_point(point_obj);
-            const utick_t tick = point_obj.value(::tick_key).to_int();
-            // Points are written in ascending tick order, so end() is always the right hint
-            curve.try_emplace(curve.end(), tick, point);
+        for (const auto &point : points) {
+            const utick_t tick = json::rounded_int(json::member(point, "tick"));
+            curve.try_emplace(curve.end(), tick, read_point(point));
         }
     }
 
@@ -196,30 +234,21 @@ void AutomationRW::read(AutomationData &data, const muse::ByteArray &json) {
 }
 
 muse::ByteArray AutomationRW::write(const AutomationData &data, bool write_generated) {
-
-    muse::JsonArray root_array;
+    std::vector<Curve> curves;
     for (const auto &[key, curve] : data.curves()) {
         IF_ASSERT_FAILED(key.is_valid()) { continue; }
 
-        muse::JsonArray point_array;
+        Curve entry = write_key(key);
         for (const auto &[tick, point] : curve) {
-            if (!write_generated && point.generated) {
-                continue;
-            }
-
-            muse::JsonObject point_obj;
-            point_obj[::tick_key] = tick;
-            write_point(point, point_obj);
-            point_array << point_obj;
+            if (write_generated || !point.generated) entry.points.push_back(write_point(tick, point));
         }
-
-        if (!point_array.empty()) {
-            muse::JsonObject curve_obj;
-            write_key(key, curve_obj);
-            curve_obj[::points_key] = point_array;
-            root_array << curve_obj;
-        }
+        if (!entry.points.empty()) curves.push_back(std::move(entry));
     }
 
-    return muse::JsonDocument(root_array).to_json();
+    auto text = glz::write<json::PrettyPrint{}>(curves);
+    if (!text) {
+        LOGE() << "Failed to write automation JSON: " << glz::format_error(text.error());
+        return {};
+    }
+    return json::serialized_bytes(std::move(*text));
 }

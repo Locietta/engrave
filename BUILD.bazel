@@ -71,7 +71,6 @@ cc_library(
     copts = ENGINE_COPTS,
     defines = ENGINE_PLATFORM_DEFINES,
     implementation_deps = [
-        "@picojson",
         "@pugixml",
         "@utfcpp",
     ],
@@ -136,6 +135,7 @@ cc_library(
     ),
     copts = ENGINE_COPTS,
     includes = ["muse/framework/mpe"],
+    implementation_deps = ["@glaze"],
     deps = [
         ":muse_global",
         "@amc",
@@ -203,6 +203,7 @@ cc_library(
         ],
         "//conditions:default": [],
     }),
+    implementation_deps = ["@glaze"],
     deps = [":engraving_headers"],
 )
 
@@ -605,6 +606,7 @@ cc_binary(
     name = "engrave_core_tests",
     srcs = [
         "engrave/tests/api_test.cpp",
+        "engrave/tests/automation_json_test.cpp",
         "engrave/tests/core_tests_main.cpp",
         "engrave/tests/describe_test.cpp",
         "engrave/tests/diagnostics_test.cpp",

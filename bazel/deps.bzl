@@ -398,15 +398,6 @@ def _engrave_deps_impl(_mctx):
         urls = ["https://github.com/nemtrif/utfcpp/archive/refs/tags/v4.1.1.tar.gz"],
     )
     http_archive(
-        name = "picojson",
-        build_file = Label("//bazel/third_party:picojson.BUILD.bazel"),
-        patch_args = ["-p1"],
-        patches = [Label("//bazel/third_party:picojson.patch")],
-        sha256 = "671f89832a17e9e71398f80c0a326afa2ebe81f4c26d5a9992e1fcd0888ae151",
-        strip_prefix = "picojson-111c9be5188f7350c2eac9ddaedd8cca3d7bf394",
-        urls = ["https://github.com/kazuho/picojson/archive/111c9be.tar.gz"],
-    )
-    http_archive(
         name = "pugixml",
         build_file = Label("//bazel/third_party:pugixml.BUILD.bazel"),
         sha256 = "655ade57fa703fb421c2eb9a0113b5064bddb145d415dd1f88c79353d90d511a",
