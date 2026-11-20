@@ -38,6 +38,10 @@ namespace muse::audio::encode {
 struct FlacMetadataGuard {
     std::array<FLAC__StreamMetadata *, 2> blocks{};
 
+    FlacMetadataGuard() = default;
+    FlacMetadataGuard(const FlacMetadataGuard &) = delete;
+    FlacMetadataGuard &operator=(const FlacMetadataGuard &) = delete;
+
     void clear() noexcept {
         for (FLAC__StreamMetadata *&block : blocks) {
             if (block) {
