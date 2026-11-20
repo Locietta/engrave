@@ -267,6 +267,7 @@ TEST_F(EngravingPartsTests, create_empty_part) {
             }
         }
     }
+    delete score;
 }
 
 TEST_F(EngravingPartsTests, createPart2) { test_part_creation(u"part-all"); }
@@ -617,6 +618,7 @@ TEST_F(EngravingPartsTests, partExclusion) {
 
     // Not applicable anymore because creating new elements creates new EIDs too
     //EXPECT_TRUE(ScoreComp::saveCompareScore(partScore, u"partExclusion-part-0.mscx", PARTS_DATA_DIR + u"partExclusion-part-0.mscx"));
+    delete master_score;
 }
 
 TEST_F(EngravingPartsTests, partPropertyLinking) {
@@ -656,6 +658,7 @@ TEST_F(EngravingPartsTests, partPropertyLinking) {
     test_item->undo_change_property(Pid::APPEARANCE_LINKED_TO_MASTER, true, PropertyFlags::NOSTYLE);
     EXPECT_TRUE(ScoreComp::save_compare_score(part_score, u"partPropertyLinking-part-0.mscx",
                                               ::parts_data_dir + u"partPropertyLinking-part-0.mscx"));
+    delete master_score;
 }
 
 TEST_F(EngravingPartsTests, partSpanners) { test_part_creation(u"part-spanners"); }
@@ -738,6 +741,7 @@ TEST_F(EngravingPartsTests, inputFromParts) {
     ASSERT_TRUE(score_segment);
     chord = to_chord(score_segment->element(staff2track(bassoon_staff) + voice));
     ASSERT_TRUE(chord);
+    delete score;
 }
 
 TEST_F(EngravingPartsTests, crossMeasureUpwardGlissExcerpt) {

@@ -129,6 +129,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, SingleNote_TenutoAccent) {
     EXPECT_EQ(event.expression_ctx().articulations.size(), 2);
     EXPECT_TRUE(event.expression_ctx().articulations.contains(ArticulationType::TENUTO));
     EXPECT_TRUE(event.expression_ctx().articulations.contains(ArticulationType::ACCENT));
+    delete score;
 }
 
 /**
@@ -175,6 +176,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, SingleNote_NoArticulations) {
     EXPECT_EQ(event.expression_ctx().nominal_dynamic_level, dynamic_level_from_type(mpe::DynamicType::NATURAL));
     EXPECT_EQ(event.expression_ctx().articulations.size(), 1);
     EXPECT_TRUE(event.expression_ctx().articulations.contains(ArticulationType::STANDARD));
+    delete score;
 }
 
 /**
@@ -234,6 +236,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, SingleNote_Trill_Modern) {
             }
         }
     }
+    delete score;
 }
 
 /**
@@ -271,6 +274,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, SingleNote_Unexpandable_Trill) {
     // [THEN] We expect that the only one note event will be rendered,
     //        since Trill consists of 32-nd note, we can't break down 32-nd principal note into smaller sub-notes
     EXPECT_EQ(result.size(), expected_trill_sub_notes_count);
+    delete score;
 }
 
 /**
@@ -338,6 +342,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, SingleNote_Trill_Baroque) {
             }
         }
     }
+    delete score;
 }
 
 /**
@@ -403,6 +408,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, SingleNote_Turn_Regular) {
             EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
         }
     }
+    delete score;
 }
 
 /**
@@ -468,6 +474,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, SingleNote_Turn_Inverted) {
             EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
         }
     }
+    delete score;
 }
 
 /**
@@ -535,6 +542,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, SingleNote_Turn_Inverted_Slash_Vari
             EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
         }
     }
+    delete score;
 }
 
 /**
@@ -597,6 +605,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, SingleNote_Upper_Mordent) {
             EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
         }
     }
+    delete score;
 }
 
 /**
@@ -659,6 +668,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, SingleNote_Lower_Mordent) {
             EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
         }
     }
+    delete score;
 }
 
 /**
@@ -720,6 +730,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, TwoNotes_Discrete_Glissando) {
             EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
         }
     }
+    delete score;
 }
 
 /**
@@ -874,6 +885,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, TwoNotes_Glissando_NoPlay) {
             EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
         }
     }
+    delete score;
 }
 
 /**
@@ -987,6 +999,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, TwoNotes_Discrete_Harp_Glissando) {
             EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
         }
     }
+    delete score;
 }
 
 /**
@@ -1181,6 +1194,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, SingleNote_Acciaccatura) {
             EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
         }
     }
+    delete score;
 }
 
 /**
@@ -1250,6 +1264,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, SingleNote_AcciaccaturaChord) {
             EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
         }
     }
+    delete score;
 }
 
 /**
@@ -1320,6 +1335,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, SingleNote_MultiAcciaccatura) {
             EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
         }
     }
+    delete score;
 }
 
 /**
@@ -1394,6 +1410,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, GraceNoteWithTiedNotes) {
             EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
         }
     }
+    delete score;
 }
 
 /**
@@ -1458,6 +1475,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, SingleNote_Appoggiatura_Post) {
             EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
         }
     }
+    delete score;
 }
 
 /**
@@ -1527,6 +1545,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, SingleNote_AppoggiaturaChord_Post) 
             EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
         }
     }
+    delete score;
 }
 
 /**
@@ -1599,6 +1618,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, SingleNote_MultiAppoggiatura_Post) 
             EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
         }
     }
+    delete score;
 }
 
 /**
@@ -1664,6 +1684,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, Chord_Arpeggio) {
             EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
         }
     }
+    delete score;
 }
 
 /**
@@ -1710,6 +1731,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, Chord_Arpeggio_Grace) {
             EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
         }
     }
+    delete score;
 }
 
 /**
@@ -1778,6 +1800,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, Chord_Arpeggio_Up) {
             EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
         }
     }
+    delete score;
 }
 
 /**
@@ -1849,6 +1872,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, Chord_Arpeggio_Up_TiedNotes) {
             EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
         }
     }
+    delete score;
 }
 
 /**
@@ -1917,6 +1941,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, Chord_Arpeggio_Down) {
             EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
         }
     }
+    delete score;
 }
 
 /**
@@ -1985,6 +2010,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, Chord_Arpeggio_Straight_Down) {
             EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
         }
     }
+    delete score;
 }
 
 /**
@@ -2053,6 +2079,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, Chord_Arpeggio_Straight_Up) {
             EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
         }
     }
+    delete score;
 }
 
 /**
@@ -2113,6 +2140,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, Chord_Arpeggio_Bracket) {
             EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
         }
     }
+    delete score;
 }
 
 /**
@@ -2247,6 +2275,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, Single_Note_Tremolo) {
             EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
         }
     }
+    delete score;
 }
 
 /**
@@ -2457,6 +2486,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, Single_Chord_Tremolo) {
             EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(note_idx));
         }
     }
+    delete score;
 }
 
 /**
@@ -2733,6 +2763,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, Two_Chords_Tremolo) {
             }
         }
     }
+    delete score;
 }
 
 /**
@@ -2821,6 +2852,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, Pauses) {
     }
 
     EXPECT_EQ(tnd_num, expected_tn_d_list.size());
+    delete score;
 }
 
 /**
