@@ -22,6 +22,8 @@
 #ifndef MU_ENGRAVING_DEFAULTSTYLE_H
 #define MU_ENGRAVING_DEFAULTSTYLE_H
 
+#include <memory>
+
 #include "global/io/path.h"
 #include "style.h"
 
@@ -45,7 +47,7 @@ private:
 
     MStyle base_style_;    // builtin initial style
     MStyle default_style_; // builtin modified by preferences
-    MStyle *default_style_for_parts_ = nullptr;
+    std::unique_ptr<MStyle> default_style_for_parts_;
 };
 } // namespace mu::engraving
 

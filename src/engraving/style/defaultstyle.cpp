@@ -56,6 +56,8 @@ static void apply_page_size_to_style(MStyle *style, const SizeF &page_size) {
 
 void DefaultStyle::init(const PathT &default_style_file_path, const PathT &part_style_file_path, const SizeF &default_page_size) {
     base_style_.precompute_values();
+    default_style_ = MStyle();
+    default_style_for_parts_.reset();
 
     {
         apply_page_size_to_style(&default_style_, default_page_size);
@@ -71,15 +73,14 @@ void DefaultStyle::init(const PathT &default_style_file_path, const PathT &part_
     }
 
     if (!part_style_file_path.empty()) {
-        default_style_for_parts_ = new MStyle();
+        default_style_for_parts_ = std::make_unique<MStyle>();
 
-        apply_page_size_to_style(default_style_for_parts_, default_page_size);
+        apply_page_size_to_style(default_style_for_parts_.get(), default_page_size);
 
-        bool ok = do_load_style(default_style_for_parts_, part_style_file_path);
+        bool ok = do_load_style(default_style_for_parts_.get(), part_style_file_path);
         if (!ok) {
             LOGW() << "Failed to load default part style file from " << part_style_file_path;
-            delete default_style_for_parts_;
-            default_style_for_parts_ = nullptr;
+            default_style_for_parts_.reset();
         } else {
             default_style_for_parts_->precompute_values();
         }
@@ -102,7 +103,7 @@ const MStyle &DefaultStyle::base_style() { return instance()->base_style_; }
 
 const MStyle &DefaultStyle::default_style() { return instance()->default_style_; }
 
-const MStyle *DefaultStyle::default_style_for_parts() { return instance()->default_style_for_parts_; }
+const MStyle *DefaultStyle::default_style_for_parts() { return instance()->default_style_for_parts_.get(); }
 
 const MStyle &DefaultStyle::resolve_style_defaults(const int defaults_version) {
     static auto loaded_style = [](MStyle &style, const String &path, bool &loaded_flag) -> const MStyle & {

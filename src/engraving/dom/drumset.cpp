@@ -288,7 +288,8 @@ DrumInstrumentVariant Drumset::find_variant(int p, const std::vector<Articulatio
 //---------------------------------------------------------
 
 void Drumset::init_drumset() {
-    sm_drumset = new Drumset;
+    static Drumset standard;
+    sm_drumset = &standard;
     for (int i = 0; i < ::mu::engraving::drum_instruments; ++i) {
         sm_drumset->drum(i).name.clear();
         sm_drumset->drum(i).notehead = NoteHeadGroup::HEAD_INVALID;

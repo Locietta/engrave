@@ -54,9 +54,9 @@ bool MidiArticulation::operator==(const MidiArticulation &i) const {
 
 Instrument::Instrument(String id) {
     id_ = id;
-    InstrChannel *a = new InstrChannel;
-    a->set_name(String::from_utf8(InstrChannel::default_name));
-    channel_.push_back(a);
+    auto channel = std::make_unique<InstrChannel>();
+    channel->set_name(String::from_utf8(InstrChannel::default_name));
+    append_channel(std::move(channel));
 
     min_pitch_a_ = ::mu::engraving::min_pitch;
     max_pitch_a_ = ::mu::engraving::max_pitch;
@@ -67,38 +67,19 @@ Instrument::Instrument(String id) {
     single_note_dynamics_ = true;
 }
 
-Instrument::Instrument(const Instrument &i) {
-    id_ = i.id_;
-    sound_id_ = i.sound_id_;
-    instrument_label_ = i.instrument_label_;
-    track_name_ = i.track_name_;
-    min_pitch_a_ = i.min_pitch_a_;
-    max_pitch_a_ = i.max_pitch_a_;
-    min_pitch_p_ = i.min_pitch_p_;
-    max_pitch_p_ = i.max_pitch_p_;
-    transpose_ = i.transpose_;
-    music_xml_id_ = i.music_xml_id_;
-    string_data_ = i.string_data_;
-    drumset_ = 0;
-    set_drumset(i.drumset_);
-    use_drumset_ = i.use_drumset_;
-    string_data_ = i.string_data_;
-    midi_actions_ = i.midi_actions_;
-    articulation_ = i.articulation_;
-    single_note_dynamics_ = i.single_note_dynamics_;
-    channel_.reserve(i.channel_.size());
-    for (InstrChannel *c : i.channel_) {
-        channel_.push_back(new InstrChannel(*c));
-    }
-    clef_type_ = i.clef_type_;
-    trait_ = i.trait_;
-    glissando_style_ = i.glissando_style_;
-}
+Instrument::Instrument(const Instrument &i) { *this = i; }
 
 void Instrument::operator=(const Instrument &i) {
-    muse::delete_all(channel_);
-    channel_.clear();
-    delete drumset_;
+    if (this == &i) {
+        return;
+    }
+
+    std::vector<std::unique_ptr<InstrChannel>> channels;
+    channels.reserve(i.channel_.size());
+    for (const InstrChannel *channel : i.channel_) {
+        channels.push_back(std::make_unique<InstrChannel>(*channel));
+    }
+    channel_.reserve(channels.size());
 
     id_ = i.id_;
     sound_id_ = i.sound_id_;
@@ -111,30 +92,40 @@ void Instrument::operator=(const Instrument &i) {
     transpose_ = i.transpose_;
     music_xml_id_ = i.music_xml_id_;
     string_data_ = i.string_data_;
-    drumset_ = 0;
-    set_drumset(i.drumset_);
-    use_drumset_ = i.use_drumset_;
-    string_data_ = i.string_data_;
     midi_actions_ = i.midi_actions_;
     articulation_ = i.articulation_;
     single_note_dynamics_ = i.single_note_dynamics_;
-    channel_.reserve(i.channel_.size());
-    for (InstrChannel *c : i.channel_) {
-        channel_.push_back(new InstrChannel(*c));
-    }
     clef_type_ = i.clef_type_;
     trait_ = i.trait_;
     glissando_style_ = i.glissando_style_;
+
+    set_drumset(i.drumset_);
+    use_drumset_ = i.use_drumset_;
+    clear_channels();
+    for (auto &channel : channels) {
+        append_channel(std::move(channel));
+    }
 }
 
-//---------------------------------------------------------
-//   ~Instrument
-//---------------------------------------------------------
-
 Instrument::~Instrument() {
-    muse::delete_all(channel_);
+    clear_channels();
     delete drumset_;
-    drumset_ = nullptr;
+}
+
+void Instrument::append_channel(std::unique_ptr<InstrChannel> channel) {
+    channel_.push_back(channel.get());
+    channel.release();
+}
+
+void Instrument::remove_channel(InstrChannel *channel) {
+    if (std::erase(channel_, channel)) {
+        delete channel;
+    }
+}
+
+void Instrument::clear_channels() {
+    muse::delete_all(channel_);
+    channel_.clear();
 }
 
 String Instrument::recognize_music_xml_id() const {
@@ -579,6 +570,7 @@ PartChannelSettingsLink::PartChannelSettingsLink(InstrChannel *main, InstrChanne
     // MIDI remapping.
 
     main->add_listener(this);
+    bound->add_listener(&bound_lifetime_);
 }
 
 //---------------------------------------------------------
@@ -608,6 +600,7 @@ PartChannelSettingsLink &PartChannelSettingsLink::operator=(PartChannelSettingsL
 
 void swap(PartChannelSettingsLink &l1, PartChannelSettingsLink &l2) {
     mu::engraving::swap(static_cast<ChannelListener &>(l1), static_cast<ChannelListener &>(l2));
+    mu::engraving::swap(l1.bound_lifetime_, l2.bound_lifetime_);
     using std::swap;
     swap(l1.main_, l2.main_);
     swap(l1.bound_, l2.bound_);
@@ -638,7 +631,11 @@ void PartChannelSettingsLink::apply_property(InstrChannel::Prop p, const InstrCh
 //   PartChannelSettingsLink::propertyChanged
 //---------------------------------------------------------
 
-void PartChannelSettingsLink::property_changed(InstrChannel::Prop p) { apply_property(p, main_, bound_); }
+void PartChannelSettingsLink::property_changed(InstrChannel::Prop p) {
+    if (auto *channel = bound_channel()) {
+        apply_property(p, main_, channel);
+    }
+}
 
 //---------------------------------------------------------
 //   channelIdx
@@ -824,14 +821,10 @@ void Instrument::set_use_drumset(bool val) {
 //---------------------------------------------------------
 
 void Instrument::set_drumset(const Drumset *ds) {
+    auto replacement = ds ? std::make_unique<Drumset>(*ds) : nullptr;
     delete drumset_;
-    if (ds) {
-        use_drumset_ = true;
-        drumset_ = new Drumset(*ds);
-    } else {
-        use_drumset_ = false;
-        drumset_ = 0;
-    }
+    drumset_ = replacement.release();
+    use_drumset_ = ds != nullptr;
 }
 
 size_t Instrument::cleff_type_count() const { return clef_type_.size(); }
@@ -981,17 +974,17 @@ Instrument Instrument::from_template(const InstrumentTemplate *templ) {
 
     instrument.set_midi_actions(templ->midi_actions);
     instrument.set_articulation(templ->midi_articulations);
-    instrument.channel_.clear();
+    instrument.clear_channels();
 
     for (const InstrChannel &c : templ->channel) {
-        instrument.channel_.push_back(new InstrChannel(c));
+        instrument.append_channel(std::make_unique<InstrChannel>(c));
     }
 
     if (instrument.channel_.empty()) {
-        InstrChannel *fallback_channel = new InstrChannel;
+        auto fallback_channel = std::make_unique<InstrChannel>();
         fallback_channel->set_name(String::from_utf8(InstrChannel::default_name));
         fallback_channel->set_program(instrument.recognize_midi_program());
-        instrument.channel_.push_back(fallback_channel);
+        instrument.append_channel(std::move(fallback_channel));
     }
 
     instrument.set_string_data(templ->string_data);

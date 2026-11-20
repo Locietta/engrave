@@ -65,10 +65,6 @@ EngravingObject::EngravingObject(const ElementType &type, EngravingObject *paren
     if (parent_) {
         do_set_score(parent_->score());
     }
-
-    if (type == ElementType::SCORE) {
-        score_ = static_cast<Score *>(this);
-    }
 }
 
 EngravingObject::EngravingObject(const EngravingObject &se) {

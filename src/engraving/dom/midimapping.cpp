@@ -183,7 +183,7 @@ void MasterScore::reorder_midi_mapping() {
         for (const auto &pair : part->instruments()) {
             const Instrument *instr = pair.second;
             for (InstrChannel *channel : instr->channel()) {
-                if (midi_mapping_[sequence_number].part() == part && midi_mapping_[sequence_number].master_channel_ == channel) {
+                if (midi_mapping_[sequence_number].part() == part && midi_mapping_[sequence_number].link_.bound_channel() == channel) {
                     sequence_number++;
                     continue;
                 }
@@ -219,7 +219,7 @@ void MasterScore::remove_deleted_midi_mapping() {
         for (const auto &pair : part->instruments()) {
             const Instrument *instr = pair.second;
             channel_exists = (midi_mapping_[index].articulation()->channel() != -1 &&
-                              muse::contains(instr->channel(), midi_mapping_[index].master_channel_) &&
+                              muse::contains(instr->channel(), midi_mapping_[index].link_.bound_channel()) &&
                               !(midi_mapping_[index].port() == -1 && midi_mapping_[index].channel() == -1));
             if (channel_exists) {
                 break;
@@ -281,7 +281,7 @@ void MasterScore::do_update_midi_mapping(int &maxport, std::set<int> &occupied_m
     bool channel_exists = false;
     for (const MidiMapping &mapping : midi_mapping_) {
         const bool valid_channel_index = channel->channel() >= 0 && channel->channel() < static_cast<int>(midi_mapping_.size());
-        if (channel == mapping.master_channel_ && valid_channel_index) {
+        if (channel == mapping.link_.bound_channel() && valid_channel_index) {
             channel_exists = true;
             break;
         }
@@ -340,16 +340,15 @@ void MasterScore::add_midi_mapping(InstrChannel *channel, Part *part, int midi_p
 
     MidiMapping mm;
     mm.part_ = part;
-    mm.master_channel_ = channel;
     mm.articulation_.reset(new InstrChannel(*channel));
-    mm.link_ = PartChannelSettingsLink(mm.articulation(), mm.master_channel_, /* excerpt */ false);
+    mm.link_ = PartChannelSettingsLink(mm.articulation(), channel, /* excerpt */ false);
 
     mm.port_ = midi_port;
     mm.channel_ = midi_channel;
 
     const int mscore_channel = int(midi_mapping_.size());
     mm.articulation_->set_channel(mscore_channel);
-    mm.master_channel_->set_channel(mscore_channel);
+    channel->set_channel(mscore_channel);
 
     midi_mapping_.push_back(std::move(mm));
 }

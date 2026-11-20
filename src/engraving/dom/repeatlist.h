@@ -23,6 +23,7 @@
 #ifndef MU_ENGRAVING_REPEATLIST_H
 #define MU_ENGRAVING_REPEATLIST_H
 
+#include <memory>
 #include <set>
 #include <vector>
 
@@ -34,7 +35,7 @@ struct Measure;
 struct Volta;
 struct Jump;
 struct RepeatListElement;
-using RepeatListElementList = std::vector<RepeatListElement *>;
+using RepeatListElementList = std::vector<std::unique_ptr<RepeatListElement>>;
 
 //---------------------------------------------------------
 //   RepeatSegment

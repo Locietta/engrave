@@ -56,7 +56,7 @@ const Fraction Part::main_instrument_tick = Fraction(-1, 1);
 Part::Part(Score *s, ElementType type) : EngravingObject(type, s) {
     show_ = true;
     soloist_ = false;
-    instruments_.set_instrument(new Instrument, -1); // default instrument
+    set_instrument(std::make_unique<Instrument>());
     prefer_sharp_flat_ = PreferSharpFlat::AUTO;
 }
 
@@ -80,8 +80,6 @@ void Part::init_from_instr_template(const InstrumentTemplate *t) { set_instrumen
 const ID &Part::id() const { return id_; }
 
 void Part::set_id(const ID &id) { id_ = id; }
-
-Part *Part::clone() const { return new Part(*this); }
 
 //---------------------------------------------------------
 //   staff
@@ -298,21 +296,14 @@ void Part::set_midi_channel(int ch, int port, const Fraction &tick) {
 //   setInstrument
 //---------------------------------------------------------
 
-void Part::set_instrument(Instrument *i, Fraction tick) { instruments_.set_instrument(i, tick.ticks()); }
-
-void Part::set_instrument(Instrument *i, int tick) { instruments_.set_instrument(i, tick); }
-
-void Part::set_instrument(const Instrument &&i, Fraction tick) { instruments_.set_instrument(new Instrument(i), tick.ticks()); }
-
-void Part::set_instrument(const Instrument &i, Fraction tick) { instruments_.set_instrument(new Instrument(i), tick.ticks()); }
-
-void Part::set_instruments(const InstrumentList &instruments) {
-    instruments_.clear();
-
-    for (auto it = instruments.begin(); it != instruments.end(); ++it) {
-        instruments_.set_instrument(it->second, it->first);
-    }
+void Part::set_instrument(std::unique_ptr<Instrument> instrument) {
+    instruments_.set_instrument(instrument.get(), main_instrument_tick.ticks());
+    primary_instrument_ = std::move(instrument);
 }
+
+void Part::set_instrument(const Instrument &instrument) { set_instrument(std::make_unique<Instrument>(instrument)); }
+
+void Part::set_instrument_at(Instrument &instrument, const Fraction &tick) { instruments_.set_instrument(&instrument, tick.ticks()); }
 
 //---------------------------------------------------------
 //   removeInstrument
@@ -329,21 +320,6 @@ void Part::remove_instrument(Instrument *instr, const Fraction &tick) {
         return;
     }
     instruments_.erase(i);
-}
-
-//---------------------------------------------------------
-//   removeNonPrimaryInstruments
-//---------------------------------------------------------
-
-void Part::remove_non_primary_instruments() {
-    auto it = instruments_.begin();
-    while (it != instruments_.end()) {
-        if (it->first != -1) {
-            it = instruments_.erase(it);
-            continue;
-        }
-        ++it;
-    }
 }
 
 //---------------------------------------------------------
@@ -599,8 +575,7 @@ void Part::insert_time(const Fraction &tick, const Fraction &len) {
     // move all instruments
 
     if (len < Fraction(0, 1)) {
-        // remove instruments between tickpos >= tick and tickpos < (tick+len)
-        // ownership goes back to class InstrumentChange()
+        // Drop timeline references in the removed range. Undo can reinsert their annotations.
 
         auto si = instruments_.lower_bound(tick.ticks());
         auto ei = instruments_.lower_bound((tick - len).ticks());
@@ -857,7 +832,6 @@ void Part::update_harmony_channels(bool is_do_on_instrument_changed, bool check_
             if (h_ch_idx != -1) {
                 InstrChannel *h_chan = instr->channel(h_ch_idx);
                 instr->remove_channel(h_chan);
-                delete h_chan;
                 if (is_do_on_instrument_changed) {
                     on_instrument_changed();
                 }
@@ -868,14 +842,14 @@ void Part::update_harmony_channels(bool is_do_on_instrument_changed, bool check_
 
     if (!harmony_channel() && harmony_count() > 0) {
         Instrument *instr = instrument();
-        InstrChannel *c = new InstrChannel(*instr->channel(0));
+        auto c = std::make_unique<InstrChannel>(*instr->channel(0));
         // default to program 0, which is piano in General MIDI
         c->set_program(0);
         if (c->bank() == 128) { // drumset?
             c->set_bank(0);
         }
         c->set_name(String::from_utf8(InstrChannel::harmony_name));
-        instr->append_channel(c);
+        instr->append_channel(std::move(c));
         on_instrument_changed();
     }
 }

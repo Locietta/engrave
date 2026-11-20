@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <memory>
 #include <vector>
 
 #include "../compat/midi/midicoreevent.h"
@@ -224,7 +225,7 @@ struct PartChannelSettingsLink final : private ChannelListener {
     PartChannelSettingsLink &operator=(const PartChannelSettingsLink &) = delete;
     PartChannelSettingsLink &operator=(PartChannelSettingsLink &&);
 
-    ~PartChannelSettingsLink() {}
+    InstrChannel *bound_channel() const { return bound_lifetime_.notifier() ? bound_ : nullptr; }
 
     friend void swap(PartChannelSettingsLink &, PartChannelSettingsLink &);
 
@@ -234,6 +235,12 @@ private:
     void property_changed(InstrChannel::Prop p) override;
 
     InstrChannel *main_ = nullptr;
+
+    // Either endpoint can be destroyed before a MIDI mapping is rebuilt.
+    struct BoundChannelListener : ChannelListener {
+        void property_changed(InstrChannel::Prop) override {}
+    } bound_lifetime_;
+
     InstrChannel *bound_ = nullptr;
     bool excerpt_ = false;
 };
@@ -344,11 +351,11 @@ struct Instrument {
 
     const std::vector<InstrChannel *> &channel() const { return channel_; }
 
-    void append_channel(InstrChannel *c) { channel_.push_back(c); }
+    void append_channel(std::unique_ptr<InstrChannel>);
 
-    void remove_channel(InstrChannel *c) { muse::remove(channel_, c); }
+    void remove_channel(InstrChannel *);
 
-    void clear_channels() { channel_.clear(); }
+    void clear_channels();
 
     void set_midi_actions(const std::vector<NamedEventList> &l) { midi_actions_ = l; }
 

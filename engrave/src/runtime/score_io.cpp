@@ -102,16 +102,6 @@ void finish_load(engraving::EngravingProject &project) {
 }
 } // namespace
 
-void initialize_native_runtime(const std::string &assets) {
-    static bool initialized = false;
-    if (initialized) throw std::runtime_error("Only one engine instance per process is supported");
-    const auto root = std::filesystem::u8path(assets);
-    if (!std::filesystem::is_regular_file(root / "engraving/instruments/instruments.xml"))
-        throw std::invalid_argument("Missing native resources: " + assets);
-    // Once engine state is built, a failed initialization cannot safely be retried.
-    initialized = true;
-}
-
 void apply_score_versions(engraving::MasterScore *score, const std::string &version, int revision, int msc_version) {
     if (!score) throw std::invalid_argument("Score version restore requires a master score");
     score->set_mscore_version(String::from_std_string(version));
