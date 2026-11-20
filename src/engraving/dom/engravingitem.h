@@ -664,6 +664,7 @@ public:
 protected:
     EngravingItem(const ElementType &type, EngravingObject *parent = nullptr, ElementFlags = ElementFlag::NOTHING);
     EngravingItem(const EngravingItem &, bool link = false);
+    void release_layout_data();
 
     int z_ = 0;
     Color color_; // element color attribute

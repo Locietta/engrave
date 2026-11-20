@@ -290,6 +290,12 @@ EngravingItem::EngravingItem(const EngravingItem &e, bool link) : EngravingObjec
     }
 }
 
+void EngravingItem::release_layout_data() {
+    if (layout_store_) {
+        layout_store_->erase(*this);
+    }
+}
+
 EngravingItem::~EngravingItem() {
     if (source_handle().is_valid() && score() && Score::is_alive(score()) && master_score() && Score::is_alive(master_score()))
         master_score()->eid_register()->touch(*this);

@@ -395,6 +395,9 @@ Chord::~Chord() {
     }
 
     delete arpeggio_;
+    // ChordBracket lives in ChordRest::el_ and calls chord() in ~Arpeggio().
+    muse::delete_all(el_);
+    el_.clear();
     muse::delete_all(grace_notes_);
     muse::delete_all(notes_);
     muse::delete_all(note_parens_);
