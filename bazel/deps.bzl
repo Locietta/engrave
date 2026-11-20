@@ -151,6 +151,30 @@ cc_library(
 )
 
 cc_import(
+    name = "freetype_import",
+    interface_library = "env/Library/lib/freetype.lib",
+    shared_library = "env/Library/bin/freetype.dll",
+)
+
+cc_library(
+    name = "freetype",
+    hdrs = glob(
+        [
+            "env/Library/include/ft2build.h",
+            "env/Library/include/freetype/**/*.h",
+            "env/Library/include/freetype2/**/*.h",
+        ],
+        allow_empty = True,
+    ),
+    includes = [
+        "env/Library/include",
+        "env/Library/include/freetype2",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [":freetype_import"],
+)
+
+cc_import(
     name = "zlib_import",
     interface_library = "env/Library/lib/zlib.lib",
     shared_library = "env/Library/bin/zlib.dll",
@@ -196,6 +220,31 @@ cc_library(
 )
 
 cc_import(
+    name = "freetype_import",
+    shared_library = "env/lib/libfreetype.so",
+)
+
+cc_library(
+    name = "freetype",
+    hdrs = glob(
+        [
+            "env/include/ft2build.h",
+            "env/include/freetype/**/*.h",
+            "env/include/freetype2/ft2build.h",
+            "env/include/freetype2/freetype/**/*.h",
+        ],
+        allow_empty = True,
+    ),
+    includes = [
+        "env/include",
+        "env/include/freetype2",
+    ],
+    linkopts = ["-Wl,-rpath,%s"],
+    visibility = ["//visibility:public"],
+    deps = [":freetype_import"],
+)
+
+cc_import(
     name = "zlib_import",
     shared_library = "env/lib/libz.so",
 )
@@ -211,7 +260,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [":zlib_import"],
 )
-""" % (lib_dir, lib_dir)
+""" % (lib_dir, lib_dir, lib_dir)
 
     rctx.file("BUILD.bazel", build_content)
 
@@ -363,16 +412,6 @@ def _engrave_deps_impl(_mctx):
         sha256 = "655ade57fa703fb421c2eb9a0113b5064bddb145d415dd1f88c79353d90d511a",
         strip_prefix = "pugixml-1.15",
         urls = ["https://github.com/zeux/pugixml/releases/download/v1.15/pugixml-1.15.tar.gz"],
-    )
-    http_archive(
-        name = "freetype",
-        build_file = Label("//bazel/third_party:freetype.BUILD.bazel"),
-        sha256 = "174d9e53402e1bf9ec7277e22ec199ba3e55a6be2c0740cb18c0ee9850fc8c34",
-        strip_prefix = "freetype-2.14.1",
-        urls = [
-            "https://downloads.sourceforge.net/project/freetype/freetype2/2.14.1/freetype-2.14.1.tar.gz",
-            "https://download.savannah.gnu.org/releases/freetype/freetype-2.14.1.tar.gz",
-        ],
     )
     http_archive(
         name = "harfbuzz",
