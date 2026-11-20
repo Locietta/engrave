@@ -24,6 +24,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <iterator>
 
 #include "automation/tempovalues.h"
@@ -33,7 +34,10 @@
 
 using namespace mu::engraving;
 
-static constexpr int min_tempo_resample_steps = 8;
+static constexpr std::int64_t min_tempo_resample_steps = 8;
+static constexpr std::int64_t max_tempo_resample_steps = 100'000;
+
+static double tick_delta(int to, int from) { return static_cast<double>(static_cast<std::int64_t>(to) - static_cast<std::int64_t>(from)); }
 
 static TempoValues resample_tempo_values(const AutomationCurve &tempo_curve) {
 
@@ -86,10 +90,10 @@ static TempoValues resample_tempo_values(const AutomationCurve &tempo_curve) {
             continue;
         }
 
-        const int segment_ticks = it->first - anchor_u_tick;
-        const int steps = std::max(::min_tempo_resample_steps, segment_ticks / Constants::division);
-        for (int s = 1; s < steps; ++s) {
-            const int utick = anchor_u_tick + segment_ticks * s / steps;
+        const std::int64_t segment_ticks = static_cast<std::int64_t>(it->first) - static_cast<std::int64_t>(anchor_u_tick);
+        const std::int64_t steps = std::clamp(segment_ticks / Constants::division, ::min_tempo_resample_steps, ::max_tempo_resample_steps);
+        for (std::int64_t s = 1; s < steps; ++s) {
+            const int utick = static_cast<int>(static_cast<std::int64_t>(anchor_u_tick) + (segment_ticks * s) / steps);
 
             while (authored_hint != authored.end() && authored_hint->first < utick) {
                 ++authored_hint;
@@ -146,7 +150,7 @@ void TempoTimeline::rebuild(const TempoValues &tempo_values, const PausesMap &pa
             double time = 0.0;
             if (!points_.empty()) {
                 const TempoTimePoint &prev = points_.back();
-                time = prev.time + double(utick - prev.utick) / (Constants::division * prev.bps);
+                time = prev.time + tick_delta(utick, prev.utick) / (Constants::division * prev.bps);
             }
             // Clamp to the valid tempo range so a zero/negative bps can't make time math divide by zero
             const double bps = std::clamp(vit->second, Constants::min_tempo.val, Constants::max_tempo.val);
@@ -161,7 +165,8 @@ void TempoTimeline::rebuild(const TempoValues &tempo_values, const PausesMap &pa
                 points_.push_back({utick, 0.0, Constants::default_tempo.val, 0.0});
             }
             const TempoTimePoint &prev = points_.back();
-            const double time = prev.utick == utick ? prev.time : prev.time + double(utick - prev.utick) / (Constants::division * prev.bps);
+            const double time =
+                prev.utick == utick ? prev.time : prev.time + tick_delta(utick, prev.utick) / (Constants::division * prev.bps);
             points_.push_back({utick, time + pit->second, prev.bps, pit->second});
             ++pit;
         }
@@ -179,7 +184,7 @@ double TempoTimeline::utick2utime(int utick) const {
     const size_t index = it == points_.begin() ? 0 : size_t(std::prev(it) - points_.begin());
 
     const TempoTimePoint &from = points_[index];
-    const double nominal_time = from.time + double(utick - from.utick) / (Constants::division * from.bps);
+    const double nominal_time = from.time + tick_delta(utick, from.utick) / (Constants::division * from.bps);
     return nominal_time / tempo_multiplier_.val;
 }
 

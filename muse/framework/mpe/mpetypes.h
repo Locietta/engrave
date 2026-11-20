@@ -29,6 +29,7 @@
 #include <math.h>
 #include <memory>
 #include <stdint.h>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -88,8 +89,18 @@ constexpr inline duration_percentage_t occupied_percentage(const timestamp_t tim
 //! NOTE: Curve is any key-sorted range of (duration_percentage_t, value) entries (see sortedrange.h)
 template <typename Curve>
 std::pair<duration_percentage_t, sorted_value_t<Curve>> amplitude_value_point(const Curve &curve) {
-    auto max = std::max_element(curve.begin(), curve.end(),
-                                [](const auto &f, const auto &s) { return std::abs(entry_value(f)) < std::abs(entry_value(s)); });
+    auto abs_magnitude = [](auto value) {
+        using Value = decltype(value);
+        if constexpr (std::is_signed_v<Value> && std::is_integral_v<Value>) {
+            using Unsigned = std::make_unsigned_t<Value>;
+            return value < 0 ? Unsigned(0) - static_cast<Unsigned>(value) : static_cast<Unsigned>(value);
+        } else {
+            return std::abs(value);
+        }
+    };
+    auto max = std::max_element(curve.begin(), curve.end(), [&](const auto &f, const auto &s) {
+        return abs_magnitude(entry_value(f)) < abs_magnitude(entry_value(s));
+    });
 
     if (max == curve.end()) {
         static const std::pair<duration_percentage_t, sorted_value_t<Curve>> empty{0, {}};

@@ -29,6 +29,7 @@
 #include <glaze/json/write.hpp>
 
 #include "engraving/automation/automationdata.h"
+#include "engraving/dom/mscore.h"
 #include "global/log.h"
 #include "global/serialization/json_fields.h"
 
@@ -111,7 +112,11 @@ AutomationCurveKey read_key(const glz::generic &curve) {
     }
     if (const auto *staff = json::find(curve, "staffId")) {
         std::optional<size_t> voice_idx;
-        if (const auto voice = json::rounded_int(json::member(curve, "voiceId")); voice && *voice >= 0) {
+        if (const auto *voice_field = json::find(curve, "voiceId")) {
+            const auto voice = json::rounded_int(*voice_field);
+            if (!voice || *voice < 0 || static_cast<size_t>(*voice) >= ::mu::engraving::voices) {
+                return {};
+            }
             voice_idx = static_cast<size_t>(*voice);
         }
         return AutomationCurveKey::staff(type, read_id(*staff), voice_idx);
@@ -230,7 +235,7 @@ void AutomationRW::read(AutomationData &data, const muse::ByteArray &bytes) {
         const auto &points = json::array(json::member(entry, "points"));
         for (const auto &point : points) {
             const auto tick = json::rounded_int(json::member(point, "tick"));
-            if (!tick) continue;
+            if (!tick || *tick < 0) continue;
 
             AutomationCurve &curve = curves[key];
             curve.try_emplace(curve.end(), *tick, read_point(point));
