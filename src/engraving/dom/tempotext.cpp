@@ -24,10 +24,10 @@
 
 #include <algorithm>
 #include <cmath>
-#include <unordered_map>
 
 #include "containers.h"
 #include "engraving/style/styletypes.h"
+#include "global/types/textscan.h"
 #include "log.h"
 #include "score.h"
 #include "segment.h"
@@ -69,18 +69,24 @@ TempoText::TempoText(DummyParentOr<Segment> parent)
 
 void TempoText::set_tempo_text_type(TempoTextType ttt) { tempo_text_type_ = ttt; }
 
-double TempoText::tempo_bpm() const {
-    //! NOTE: find tempo in format " = 180"
-    std::regex regex("\\s*=\\s*(\\d+[.]{0,1}\\d*)");
-    std::smatch match;
-    std::string stru8 = xml_text().to_std_string();
-    std::regex_search(stru8, match, regex);
-    if (match.empty() || match.size() < 1) {
-        return 0;
+static std::u16string_view tempo_number(std::u16string_view text) {
+    size_t size = muse::textscan::digit_count(text);
+    if (size != 0 && size < text.size() && text[size] == u'.') {
+        size += 1 + muse::textscan::digit_count(text.substr(size + 1));
     }
+    return text.substr(0, size);
+}
 
-    double tempo = String::from_std_string(match[1].str()).to_double();
-    return tempo;
+double TempoText::tempo_bpm() const {
+    const String xml = xml_text();
+    const auto text = xml.view();
+    for (auto eq = text.find(u'='); eq != text.npos; eq = text.find(u'=', eq + 1)) {
+        const auto number = tempo_number(muse::textscan::trim_ascii_start(text.substr(eq + 1)));
+        if (!number.empty()) {
+            return String(number).to_double();
+        }
+    }
+    return 0;
 }
 
 //---------------------------------------------------------
@@ -88,38 +94,54 @@ double TempoText::tempo_bpm() const {
 //---------------------------------------------------------
 
 struct TempoPattern {
-    const char *pattern;
-    double f;
-    TDuration d;
+    char16_t glyph;
+    double factor;
+    TDuration duration;
 
-    TempoPattern(const char *s, double v, DurationType val, int dots = 0) : pattern(s), f(v), d(val) { d.set_dots(dots); }
+    TempoPattern(char16_t glyph, double factor, DurationType type, int dots = 0) : glyph(glyph), factor(factor), duration(type) {
+        duration.set_dots(dots);
+    }
+
+    size_t match(std::u16string_view text) const {
+        if (text.empty() || text.front() != glyph) {
+            return 0;
+        }
+        auto tail = text.substr(1);
+        for (int i = 0; i < duration.dots(); ++i) {
+            tail = muse::textscan::trim_ascii_start(tail);
+            if (tail.empty() || tail.front() != u'\uECB7') {
+                return 0;
+            }
+            tail.remove_prefix(1);
+        }
+        return text.size() - tail.size();
+    }
 };
 
-// note: findTempoDuration requires the longer patterns to be before the shorter patterns in tp
-
-static const TempoPattern tp[] = {
-    TempoPattern("\uECA5\\s*\uECB7\\s*\uECB7", 1.75 / 60.0, DurationType::V_QUARTER, 2), // double dotted 1/4
-    TempoPattern("\uECA5\\s*\uECB7", 1.5 / 60.0, DurationType::V_QUARTER, 1),            // dotted 1/4
-    TempoPattern("\uECA5", 1.0 / 60.0, DurationType::V_QUARTER),                         // 1/4
-    TempoPattern("\uECA3\\s*\uECB7\\s*\uECB7", 1.75 / 30.0, DurationType::V_HALF, 2),    // double dotted 1/2
-    TempoPattern("\uECA3\\s*\uECB7", 1.5 / 30.0, DurationType::V_HALF, 1),               // dotted 1/2
-    TempoPattern("\uECA3", 1.0 / 30.0, DurationType::V_HALF),                            // 1/2
-    TempoPattern("\uECA7\\s*\uECB7\\s*\uECB7", 1.75 / 120.0, DurationType::V_EIGHTH, 2), // double dotted 1/8
-    TempoPattern("\uECA7\\s*\uECB7", 1.5 / 120.0, DurationType::V_EIGHTH, 1),            // dotted 1/8
-    TempoPattern("\uECA7", 1.0 / 120.0, DurationType::V_EIGHTH),                         // 1/8
-    TempoPattern("\uECA2\\s*\uECB7", 1.5 / 15.0, DurationType::V_WHOLE, 1),              // dotted whole
-    TempoPattern("\uECA2", 1.0 / 15.0, DurationType::V_WHOLE),                           // whole
-    TempoPattern("\uECA9\\s*\uECB7", 1.5 / 240.0, DurationType::V_16TH, 1),              // dotted 1/16
-    TempoPattern("\uECA9", 1.0 / 240.0, DurationType::V_16TH),                           // 1/16
-    TempoPattern("\uECAB\\s*\uECB7", 1.5 / 480.0, DurationType::V_32ND, 1),              // dotted 1/32
-    TempoPattern("\uECAB", 1.0 / 480.0, DurationType::V_32ND),                           // 1/32
-    TempoPattern("\uECA1", 1.0 / 7.5, DurationType::V_BREVE),                            // longa
-    TempoPattern("\uECA0", 1.0 / 7.5, DurationType::V_BREVE),                            // double whole
-    TempoPattern("\uECAD", 1.0 / 960.0, DurationType::V_64TH),                           // 1/64
-    TempoPattern("\uECAF", 1.0 / 1920.0, DurationType::V_128TH),                         // 1/128
-    TempoPattern("\uECB1", 1.0 / 3840.0, DurationType::V_256TH),                         // 1/256
-    TempoPattern("\uECB3", 1.0 / 7680.0, DurationType::V_512TH),                         // 1/512
-    TempoPattern("\uECB5", 1.0 / 15360.0, DurationType::V_1024TH),                       // 1/1024
+// Dotted patterns precede undotted patterns so a match includes the dots.
+static const TempoPattern tempo_patterns[] = {
+    TempoPattern(u'\uECA5', 1.75 / 60.0, DurationType::V_QUARTER, 2), // double dotted 1/4
+    TempoPattern(u'\uECA5', 1.5 / 60.0, DurationType::V_QUARTER, 1),  // dotted 1/4
+    TempoPattern(u'\uECA5', 1.0 / 60.0, DurationType::V_QUARTER),     // 1/4
+    TempoPattern(u'\uECA3', 1.75 / 30.0, DurationType::V_HALF, 2),    // double dotted 1/2
+    TempoPattern(u'\uECA3', 1.5 / 30.0, DurationType::V_HALF, 1),     // dotted 1/2
+    TempoPattern(u'\uECA3', 1.0 / 30.0, DurationType::V_HALF),        // 1/2
+    TempoPattern(u'\uECA7', 1.75 / 120.0, DurationType::V_EIGHTH, 2), // double dotted 1/8
+    TempoPattern(u'\uECA7', 1.5 / 120.0, DurationType::V_EIGHTH, 1),  // dotted 1/8
+    TempoPattern(u'\uECA7', 1.0 / 120.0, DurationType::V_EIGHTH),     // 1/8
+    TempoPattern(u'\uECA2', 1.5 / 15.0, DurationType::V_WHOLE, 1),    // dotted whole
+    TempoPattern(u'\uECA2', 1.0 / 15.0, DurationType::V_WHOLE),       // whole
+    TempoPattern(u'\uECA9', 1.5 / 240.0, DurationType::V_16TH, 1),    // dotted 1/16
+    TempoPattern(u'\uECA9', 1.0 / 240.0, DurationType::V_16TH),       // 1/16
+    TempoPattern(u'\uECAB', 1.5 / 480.0, DurationType::V_32ND, 1),    // dotted 1/32
+    TempoPattern(u'\uECAB', 1.0 / 480.0, DurationType::V_32ND),       // 1/32
+    TempoPattern(u'\uECA1', 1.0 / 7.5, DurationType::V_BREVE),        // longa
+    TempoPattern(u'\uECA0', 1.0 / 7.5, DurationType::V_BREVE),        // double whole
+    TempoPattern(u'\uECAD', 1.0 / 960.0, DurationType::V_64TH),       // 1/64
+    TempoPattern(u'\uECAF', 1.0 / 1920.0, DurationType::V_128TH),     // 1/128
+    TempoPattern(u'\uECB1', 1.0 / 3840.0, DurationType::V_256TH),     // 1/256
+    TempoPattern(u'\uECB3', 1.0 / 7680.0, DurationType::V_512TH),     // 1/512
+    TempoPattern(u'\uECB5', 1.0 / 15360.0, DurationType::V_1024TH),   // 1/1024
 };
 
 //---------------------------------------------------------
@@ -129,18 +151,16 @@ static const TempoPattern tp[] = {
 //    set len to the match length and dur to the duration value
 //---------------------------------------------------------
 
-int TempoText::find_tempo_duration(const String &s, int &len, TDuration &dur) {
+int TempoText::find_tempo_duration(std::u16string_view text, int &len, TDuration &dur) {
     len = 0;
     dur = TDuration();
-    std::string su8 = s.to_std_string();
-    for (const auto &i : tp) {
-        std::regex regex(i.pattern);
-        std::smatch match;
-        std::regex_search(su8, match, regex);
-        if (!match.empty()) {
-            len = static_cast<int>(String::from_std_string(match[0].str()).size());
-            dur = i.d;
-            return std::distance(su8.cbegin(), match[0].first);
+    for (const auto &pattern : tempo_patterns) {
+        for (auto pos = text.find(pattern.glyph); pos != text.npos; pos = text.find(pattern.glyph, pos + 1)) {
+            if (const size_t size = pattern.match(text.substr(pos))) {
+                len = static_cast<int>(size);
+                dur = pattern.duration;
+                return static_cast<int>(pos);
+            }
         }
     }
     return -1;
@@ -150,43 +170,41 @@ TDuration TempoText::duration() const {
     int dummy = 0;
     TDuration result;
 
-    find_tempo_duration(plain_text(), dummy, result);
+    find_tempo_duration(plain_text().view(), dummy, result);
 
     return result;
 }
 
-static const TempoPattern tp_sym[] = {
-    TempoPattern("<sym>metNoteQuarterUp</sym><sym>space</sym><sym>metAugmentationDot</sym><sym>metAugmentationDot</sym>", 1.75 / 60.0,
-                 DurationType::V_QUARTER, 2), // double dotted 1/4
-    TempoPattern("<sym>metNoteQuarterUp</sym><sym>space</sym><sym>metAugmentationDot</sym>", 1.5 / 60.0, DurationType::V_QUARTER,
-                 1),                                                                  // dotted 1/4
-    TempoPattern("<sym>metNoteQuarterUp</sym>", 1.0 / 60.0, DurationType::V_QUARTER), // 1/4
-    TempoPattern("<sym>metNoteHalfUp</sym><sym>space</sym><sym>metAugmentationDot</sym><sym>metAugmentationDot</sym>", 1.75 / 30.0,
-                 DurationType::V_HALF, 2), // double dotted 1/2
-    TempoPattern("<sym>metNoteHalfUp</sym><sym>space</sym><sym>metAugmentationDot</sym>", 1.5 / 30.0, DurationType::V_HALF,
-                 1),                                                            // dotted 1/2
-    TempoPattern("<sym>metNoteHalfUp</sym>", 1.0 / 30.0, DurationType::V_HALF), // 1/2
-    TempoPattern("<sym>metNote8thUp</sym><sym>space</sym><sym>metAugmentationDot</sym><sym>metAugmentationDot</sym>", 1.75 / 120.0,
-                 DurationType::V_EIGHTH, 2), // double dotted 1/8
-    TempoPattern("<sym>metNote8thUp</sym><sym>space</sym><sym>metAugmentationDot</sym>", 1.5 / 120.0, DurationType::V_EIGHTH,
-                 1),                                                              // dotted 1/8
-    TempoPattern("<sym>metNote8thUp</sym>", 1.0 / 120.0, DurationType::V_EIGHTH), // 1/8
-    TempoPattern("<sym>metNoteWhole</sym><sym>space</sym><sym>metAugmentationDot</sym>", 1.5 / 15.0, DurationType::V_WHOLE,
-                 1),                                                            // dotted whole
-    TempoPattern("<sym>metNoteWhole</sym>", 1.0 / 15.0, DurationType::V_WHOLE), // whole
-    TempoPattern("<sym>metNote16thUp</sym><sym>space</sym><sym>metAugmentationDot</sym>", 1.5 / 240.0, DurationType::V_16TH,
-                 1),                                                             // dotted 1/16
-    TempoPattern("<sym>metNote16thUp</sym>", 1.0 / 240.0, DurationType::V_16TH), // 1/16
-    TempoPattern("<sym>metNote32ndUp</sym><sym>space</sym><sym>metAugmentationDot</sym>", 1.5 / 480.0, DurationType::V_32ND,
-                 1),                                                                       // dotted 1/32
-    TempoPattern("<sym>metNote32ndUp</sym>", 1.0 / 480.0, DurationType::V_32ND),           // 1/32
-    TempoPattern("<sym>metNoteDoubleWholeSquare</sym>", 1.0 / 7.5, DurationType::V_BREVE), // longa
-    TempoPattern("<sym>metNoteDoubleWhole</sym>", 1.0 / 7.5, DurationType::V_BREVE),       // double whole
-    TempoPattern("<sym>metNote64thUp</sym>", 1.0 / 960.0, DurationType::V_64TH),           // 1/64
-    TempoPattern("<sym>metNote128thUp</sym>", 1.0 / 1920.0, DurationType::V_128TH),        // 1/128
-    TempoPattern("<sym>metNote256thUp</sym>", 1.0 / 3840.0, DurationType::V_256TH),        // 1/256
-    TempoPattern("<sym>metNote512thUp</sym>", 1.0 / 7680.0, DurationType::V_512TH),        // 1/512
-    TempoPattern("<sym>metNote1024thUp</sym>", 1.0 / 15360.0, DurationType::V_1024TH),     // 1/1024
+struct TempoMarkup {
+    std::u16string_view text;
+    TDuration duration;
+
+    TempoMarkup(std::u16string_view text, DurationType type, int dots = 0) : text(text), duration(type) { duration.set_dots(dots); }
+};
+
+static const TempoMarkup tempo_markups[] = {
+    {u"<sym>metNoteQuarterUp</sym><sym>space</sym><sym>metAugmentationDot</sym><sym>metAugmentationDot</sym>", DurationType::V_QUARTER, 2},
+    {u"<sym>metNoteQuarterUp</sym><sym>space</sym><sym>metAugmentationDot</sym>", DurationType::V_QUARTER, 1},
+    {u"<sym>metNoteQuarterUp</sym>", DurationType::V_QUARTER},
+    {u"<sym>metNoteHalfUp</sym><sym>space</sym><sym>metAugmentationDot</sym><sym>metAugmentationDot</sym>", DurationType::V_HALF, 2},
+    {u"<sym>metNoteHalfUp</sym><sym>space</sym><sym>metAugmentationDot</sym>", DurationType::V_HALF, 1},
+    {u"<sym>metNoteHalfUp</sym>", DurationType::V_HALF},
+    {u"<sym>metNote8thUp</sym><sym>space</sym><sym>metAugmentationDot</sym><sym>metAugmentationDot</sym>", DurationType::V_EIGHTH, 2},
+    {u"<sym>metNote8thUp</sym><sym>space</sym><sym>metAugmentationDot</sym>", DurationType::V_EIGHTH, 1},
+    {u"<sym>metNote8thUp</sym>", DurationType::V_EIGHTH},
+    {u"<sym>metNoteWhole</sym><sym>space</sym><sym>metAugmentationDot</sym>", DurationType::V_WHOLE, 1},
+    {u"<sym>metNoteWhole</sym>", DurationType::V_WHOLE},
+    {u"<sym>metNote16thUp</sym><sym>space</sym><sym>metAugmentationDot</sym>", DurationType::V_16TH, 1},
+    {u"<sym>metNote16thUp</sym>", DurationType::V_16TH},
+    {u"<sym>metNote32ndUp</sym><sym>space</sym><sym>metAugmentationDot</sym>", DurationType::V_32ND, 1},
+    {u"<sym>metNote32ndUp</sym>", DurationType::V_32ND},
+    {u"<sym>metNoteDoubleWholeSquare</sym>", DurationType::V_BREVE},
+    {u"<sym>metNoteDoubleWhole</sym>", DurationType::V_BREVE},
+    {u"<sym>metNote64thUp</sym>", DurationType::V_64TH},
+    {u"<sym>metNote128thUp</sym>", DurationType::V_128TH},
+    {u"<sym>metNote256thUp</sym>", DurationType::V_256TH},
+    {u"<sym>metNote512thUp</sym>", DurationType::V_512TH},
+    {u"<sym>metNote1024thUp</sym>", DurationType::V_1024TH},
 };
 
 //---------------------------------------------------------
@@ -195,13 +213,12 @@ static const TempoPattern tp_sym[] = {
 //---------------------------------------------------------
 
 String TempoText::duration2tempo_text_string(const TDuration dur) {
-    for (const TempoPattern &pa : ::mu::engraving::tp_sym) {
-        if (pa.d == dur) {
-            String res = String::from_utf8(pa.pattern);
-            return res;
+    for (const auto &markup : tempo_markups) {
+        if (markup.duration == dur) {
+            return String(markup.text);
         }
     }
-    return u"";
+    return {};
 }
 
 //---------------------------------------------------------
@@ -237,9 +254,6 @@ void TempoText::undo_change_property(Pid id, const PropertyValue &v, PropertyFla
 //---------------------------------------------------------
 
 void TempoText::update_tempo() {
-    // cache regexp, they are costly to create
-    static std::unordered_map<String, std::regex> regexps;
-    static std::unordered_map<String, std::regex> regexps2;
     String s = plain_text();
     s.replace(u",", u".");
     s.replace(u"<sym>space</sym>", u" ");
@@ -249,45 +263,39 @@ void TempoText::update_tempo() {
     s.replace(u"ca.", u"");
     s.replace(u"c.", u"");
     s.replace(u"approx.", u"");
-    std::string su8 = s.to_std_string();
-    for (const TempoPattern &pa : tp) {
-        String pattern = String::from_utf8(pa.pattern);
-        std::regex re;
-        if (!muse::contains(regexps, String::from_utf8(pa.pattern))) {
-            re = std::regex(String(u"%1\\s*=\\s*(\\d+[.]{0,1}\\d*)\\s*").arg(pattern).to_std_string());
-            regexps[pattern] = re;
-        }
-        re = muse::value(regexps, pattern);
-        std::smatch match;
-        std::regex_search(su8, match, re);
-        if (!match.empty()) {
-            if (match.size() == 2) {
-                BeatsPerSecond nt = BeatsPerSecond(String::from_std_string(match[1].str()).to_double() * pa.f);
-                if (is_relative_ || nt != tempo_) {
-                    undo_change_property(Pid::TEMPO, PropertyValue(nt), property_flags(Pid::TEMPO));
+    const auto text = s.view();
+    for (const TempoPattern &left : tempo_patterns) {
+        const TempoPattern *relative_right = std::end(tempo_patterns);
+        for (auto pos = text.find(left.glyph); pos != text.npos; pos = text.find(left.glyph, pos + 1)) {
+            const size_t length = left.match(text.substr(pos));
+            if (length == 0) {
+                continue;
+            }
+            auto right = muse::textscan::trim_ascii_start(text.substr(pos + length));
+            if (right.empty() || right.front() != u'=') {
+                continue;
+            }
+            right = muse::textscan::trim_ascii_start(right.substr(1));
+            if (const auto number = tempo_number(right); !number.empty()) {
+                const BeatsPerSecond tempo(String(number).to_double() * left.factor);
+                if (is_relative_ || tempo != tempo_) {
+                    undo_change_property(Pid::TEMPO, PropertyValue(tempo), property_flags(Pid::TEMPO));
                     relative_ = 1.0;
                     is_relative_ = false;
                 }
-                break;
+                return;
             }
-        } else {
-            for (const TempoPattern &pa2 : tp) {
-                String pattern2 = String::from_utf8(pa2.pattern);
-                String key = String(u"%1_%2").arg(pattern, pattern2);
-                std::regex re2;
-                if (!muse::contains(regexps2, key)) {
-                    re2 = std::regex(String(u"%1\\s*=\\s*%2\\s*").arg(pattern, pattern2).to_std_string());
-                    regexps2[key] = re2;
-                }
-                re2 = muse::value(regexps2, key);
-                std::smatch match2;
-                std::regex_search(su8, match2, re2);
-                if (!match2.empty()) {
-                    relative_ = pa2.f / pa.f;
-                    is_relative_ = true;
-                    return;
+            for (const TempoPattern *pattern = std::begin(tempo_patterns); pattern < relative_right; ++pattern) {
+                if (pattern->match(right)) {
+                    relative_right = pattern;
+                    break;
                 }
             }
+        }
+        if (relative_right != std::end(tempo_patterns)) {
+            relative_ = relative_right->factor / left.factor;
+            is_relative_ = true;
+            return;
         }
     }
 }
@@ -384,10 +392,10 @@ String TempoText::tempo_info() const {
     String text = plain_text();
     String first_part = text.split(u" = ").front();
     String second_part = text.split(u" = ").back();
-    int x1 = find_tempo_duration(first_part, len1, t1);
+    int x1 = find_tempo_duration(first_part.view(), len1, t1);
     int x2 = -1;
     if (relative_) {
-        x2 = find_tempo_duration(second_part, len2, t2);
+        x2 = find_tempo_duration(second_part.view(), len2, t2);
     }
 
     String info;

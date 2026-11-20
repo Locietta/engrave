@@ -239,8 +239,6 @@ struct InferredPercInstr {
 
 typedef std::vector<InferredPercInstr> InferredPercList;
 
-typedef std::map<engraving::String, std::pair<engraving::String, engraving::DurationType>> MetronomeTextMap;
-
 //---------------------------------------------------------
 //   MusicXmlParserLyric
 //---------------------------------------------------------

@@ -29,6 +29,7 @@
 #include <exception>
 #include <iomanip>
 #include <iterator>
+#include <limits>
 #include <sstream>
 #include <utility>
 
@@ -36,6 +37,7 @@
 
 #include "bytearray.h"
 #include "log.h"
+#include "textscan.h"
 
 using namespace muse;
 
@@ -242,6 +244,8 @@ void UtfCodec::replace_invalid(std::string_view src, std::string &dst) {
 String::String() = default;
 
 String::String(const char16_t *str) : data_(str ? str : u"") {}
+
+String::String(std::u16string_view str) : data_(str) {}
 
 String::String(const Char &ch) : data_(1, ch.unicode()) {}
 
@@ -509,33 +513,6 @@ std::u32string String::to_std_u32_string() const {
     return s32;
 }
 
-std::wstring String::to_std_w_string() const {
-    const std::u16string &u16 = const_str();
-    std::wstring ws;
-    ws.resize(u16.size());
-
-    static_assert(sizeof(wchar_t) >= sizeof(char16_t));
-
-    for (size_t i = 0; i < ws.size(); ++i) {
-        ws[i] = static_cast<wchar_t>(u16.at(i));
-    }
-
-    return ws;
-}
-
-const String String::from_std_w_string(const std::wstring &str) {
-    String s;
-    s.data_.resize(str.size());
-
-    static_assert(sizeof(wchar_t) >= sizeof(char16_t));
-
-    for (size_t i = 0; i < str.size(); ++i) {
-        s[i] = static_cast<char16_t>(str.at(i));
-    }
-
-    return s;
-}
-
 size_t String::size() const { return const_str().size(); }
 
 bool String::empty() const { return const_str().empty(); }
@@ -559,16 +536,6 @@ bool String::contains(const String &str, CaseSensitivity cs) const {
         std::transform(other.begin(), other.end(), other.begin(), [](char16_t c) { return Char::to_lower(c); });
         return self.find(other) != std::u16string::npos;
     }
-}
-
-bool String::contains(const std::wregex &re) const {
-    std::wstring ws = to_std_w_string();
-
-    auto words_begin = std::wsregex_iterator(ws.begin(), ws.end(), re);
-    if (words_begin != std::wsregex_iterator()) {
-        return true;
-    }
-    return false;
 }
 
 int String::count(const Char &ch) const {
@@ -745,69 +712,6 @@ StringList String::split(const String &str, SplitBehavior behavior) const {
     return out;
 }
 
-StringList String::split(const std::regex &re, SplitBehavior behavior) const {
-    std::string origin_u8;
-    UtfCodec::utf16to8(std::u16string_view(const_str()), origin_u8);
-    std::sregex_token_iterator iter(origin_u8.begin(), origin_u8.end(), re, -1);
-    std::sregex_token_iterator end;
-    std::vector<std::string> vec = {iter, end};
-
-    StringList out;
-    for (const std::string &s : vec) {
-        if (behavior == SplitBehavior::SKIP_EMPTY_PARTS && s.empty()) {
-            // skip
-            continue;
-        }
-
-        String sub;
-        UtfCodec::utf8to16(s, sub.data_);
-        out.push_back(std::move(sub));
-    }
-
-    return out;
-}
-
-StringList String::search(const std::regex &re, std::initializer_list<int> matches, SplitBehavior behavior) const {
-    std::string origin_u8;
-    UtfCodec::utf16to8(std::u16string_view(const_str()), origin_u8);
-    std::sregex_token_iterator iter(origin_u8.begin(), origin_u8.end(), re, matches);
-    std::sregex_token_iterator end;
-    std::vector<std::string> vec = {iter, end};
-
-    StringList out;
-    for (const std::string &s : vec) {
-        if (behavior == SplitBehavior::SKIP_EMPTY_PARTS && s.empty()) {
-            // skip
-            continue;
-        }
-        String sub;
-        UtfCodec::utf8to16(s, sub.data_);
-        out.push_back(std::move(sub));
-    }
-
-    return out;
-}
-
-StringList String::search(const std::wregex &re, std::initializer_list<int> matches, SplitBehavior behavior) const {
-    std::wstring ws = to_std_w_string();
-
-    std::wsregex_token_iterator iter(ws.begin(), ws.end(), re, matches);
-    std::wsregex_token_iterator end;
-    std::vector<std::wstring> vec = {iter, end};
-
-    StringList out;
-    for (const std::wstring &s : vec) {
-        if (behavior == SplitBehavior::SKIP_EMPTY_PARTS && s.empty()) {
-            // skip
-            continue;
-        }
-        String sub = String::from_std_w_string(s);
-        out.push_back(std::move(sub));
-    }
-
-    return out;
-}
-
 String &String::replace(const String &before, const String &after) {
     if (before == after) {
         return *this;
@@ -828,38 +732,6 @@ String &String::replace(char16_t before, char16_t after) {
             str[i] = after;
         }
     }
-    return *this;
-}
-
-String &String::replace(const std::regex &re, const String &after) {
-    std::string after_u8;
-    UtfCodec::utf16to8(std::u16string_view(after.const_str()), after_u8);
-
-    std::string origin_u8;
-    UtfCodec::utf16to8(std::u16string_view(const_str()), origin_u8);
-    std::string replased_u8 = std::regex_replace(origin_u8, re, after_u8);
-
-    std::u16string &sefl = data_;
-    sefl.clear();
-    UtfCodec::utf8to16(std::string_view(replased_u8), sefl);
-    return *this;
-}
-
-String &String::replace(const std::wregex &re, const String &after) {
-    std::wstring afterw;
-    afterw = after.to_std_w_string();
-
-    std::wstring originw;
-    originw = to_std_w_string();
-    std::wstring replacedw = std::regex_replace(originw, re, afterw);
-
-    data_.clear();
-    data_.resize(replacedw.size());
-
-    for (size_t i = 0; i < replacedw.size(); ++i) {
-        data_[i] = static_cast<char16_t>(replacedw.at(i));
-    }
-
     return *this;
 }
 
@@ -1026,19 +898,36 @@ String String::to_xml_escaped(const String &s) {
 String String::to_xml_escaped() const { return to_xml_escaped(*this); }
 
 String String::decode_xml_entities(const String &input_src) {
-    std::string src = input_src.to_std_string();
-    String ret = input_src;
-    static const std::regex re("&#([0-9]+);");
-
-    auto begin = std::sregex_iterator(src.begin(), src.end(), re);
-    auto end = std::sregex_iterator();
-    for (auto it = begin; it != end; ++it) {
-        std::smatch match = *it;
-        std::string str0 = match[0];
-        std::string str1 = match[1];
-        ret.replace(String::from_std_string(str0), String(Char(std::stoi(str1))));
+    const auto src = input_src.view();
+    size_t start = src.find(u"&#");
+    if (start == src.npos) {
+        return input_src;
     }
-    return ret;
+
+    String result;
+    result.data_.reserve(src.size());
+    size_t copied = 0;
+    while (start != src.npos) {
+        size_t end = start + 2;
+        int value = 0;
+        bool overflow = false;
+        while (end < src.size() && textscan::is_digit(src[end])) {
+            const int digit = src[end++] - u'0';
+            if (!overflow && value <= (std::numeric_limits<int>::max() - digit) / 10) {
+                value = value * 10 + digit;
+            } else {
+                overflow = true;
+            }
+        }
+        if (!overflow && end > start + 2 && end < src.size() && src[end] == u';') {
+            result.data_.append(src.substr(copied, start - copied));
+            result.data_.push_back(static_cast<char16_t>(value));
+            copied = ++end;
+        }
+        start = src.find(u"&#", end);
+    }
+    result.data_.append(src.substr(copied));
+    return result;
 }
 
 String String::to_lower() const {

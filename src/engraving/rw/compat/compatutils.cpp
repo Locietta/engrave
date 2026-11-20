@@ -754,14 +754,11 @@ void CompatUtils::map_header_footer_styles(MasterScore *score) {
         const TextStyle *page_number_text_style = text_style(TextStyleType::PAGE_NUMBER);
 
         //! NOTE: Keep in sync with Page::replaceTextMacros
-        const std::wregex copyright_search(LR"(\$[cC])");
-        const std::wregex page_number_search(LR"(\$[pPnN])");
-
         bool have_mapped_copyright = false;
         bool have_mapped_page_number = false;
         for (const Sid sid : header_footer_string_sids) {
             const String s = score->style().style_st(sid);
-            if (!have_mapped_copyright && s.contains(copyright_search)) {
+            if (!have_mapped_copyright && (s.contains(u"$c") || s.contains(u"$C"))) {
                 for (size_t i = 0; i < ::mu::engraving::text_style_size; ++i) {
                     const Sid header_footer_sid = header_footer_text_style->at(i).sid;
                     const PropertyValue pv = score->style().style_v(header_footer_sid);
@@ -770,7 +767,7 @@ void CompatUtils::map_header_footer_styles(MasterScore *score) {
                 }
                 have_mapped_copyright = true;
             }
-            if (!have_mapped_page_number && s.contains(page_number_search)) {
+            if (!have_mapped_page_number && (s.contains(u"$p") || s.contains(u"$P") || s.contains(u"$n") || s.contains(u"$N"))) {
                 for (size_t i = 0; i < ::mu::engraving::text_style_size; ++i) {
                     const Sid header_footer_sid = header_footer_text_style->at(i).sid;
                     const Sid page_number_sid = page_number_text_style->at(i).sid;

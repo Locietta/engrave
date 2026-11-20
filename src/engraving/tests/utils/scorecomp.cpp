@@ -24,12 +24,11 @@
 
 #include <algorithm>
 #include <cstdio>
-#include <map>
-#include <regex>
-#include <set>
 #include <string>
 #include <string_view>
 #include <vector>
+
+#include <ankerl/unordered_dense.h>
 
 #include "global/io/buffer.h"
 #include "global/serialization/textstream.h"
@@ -114,29 +113,71 @@ static std::vector<Edit> compute_diff(const std::vector<std::string_view> &lines
     return edits;
 }
 
-static ByteArray canonical_ids(const ByteArray &xml) {
-    const std::regex identity(
-        R"(<(eid|linkedTo|startElement|endElement|NoteEID|mmRestLast|startMeasure|endMeasure|sharedPart)>([A-Za-z0-9+/]+_[A-Za-z0-9+/]+)</\1>)");
-    std::map<std::string, size_t> ids;
-    const std::string source(xml.const_char(), xml.size());
-    std::set<std::string> defined;
-    for (std::sregex_iterator it(source.begin(), source.end(), identity), end; it != end; ++it)
-        if ((*it)[1].str() == "eid") defined.insert((*it)[2].str());
+ByteArray ScoreComp::canonical_ids(const ByteArray &xml) {
+    constexpr std::string_view tags[] = {
+        "eid", "linkedTo", "startElement", "endElement", "NoteEID", "mmRestLast", "startMeasure", "endMeasure", "sharedPart",
+    };
+    constexpr std::string_view alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    const std::string_view source(xml.const_char(), xml.size());
+
+    struct Identity {
+        size_t start;
+        size_t end;
+    };
+
+    std::vector<Identity> matches;
+    ankerl::unordered_dense::map<std::string_view, size_t> ids;
+    for (size_t opening = source.find('<'); opening != source.npos; opening = source.find('<', opening + 1)) {
+        const auto tag = std::ranges::find_if(tags, [&](auto candidate) {
+            const auto tail = source.substr(opening + 1);
+            return tail.starts_with(candidate) && tail.size() > candidate.size() && tail[candidate.size()] == '>';
+        });
+        if (tag == std::end(tags)) {
+            continue;
+        }
+
+        const size_t start = opening + tag->size() + 2;
+        const size_t separator = source.find_first_not_of(alphabet, start);
+        if (separator == source.npos || separator == start || source[separator] != '_') {
+            continue;
+        }
+        const size_t end = source.find_first_not_of(alphabet, separator + 1);
+        if (end == source.npos || end == separator + 1 || !source.substr(end).starts_with("</")) {
+            continue;
+        }
+        const auto closing = source.substr(end + 2);
+        if (!closing.starts_with(*tag) || closing.size() == tag->size() || closing[tag->size()] != '>') {
+            continue;
+        }
+
+        const auto value = source.substr(start, end - start);
+        matches.push_back({start, end});
+        if (*tag == "eid") {
+            ids.try_emplace(value, muse::nidx);
+        }
+        opening = end + tag->size() + 2;
+    }
+
+    if (ids.empty()) {
+        return xml;
+    }
+
     std::string result;
     size_t cursor = 0;
-    for (std::sregex_iterator it(source.begin(), source.end(), identity), end; it != end; ++it) {
-        const auto &match = *it;
-        result.append(source, cursor, match.position() - cursor);
-        const auto value = match[2].str();
-        if (match[1].str() != "eid" && !defined.contains(value))
-            result += match.str();
-        else {
-            const auto id = ids.try_emplace(value, ids.size()).first;
-            result += "<" + match[1].str() + ">id" + std::to_string(id->second) + "</" + match[1].str() + ">";
+    size_t next_id = 0;
+    for (const auto &match : matches) {
+        const auto id = ids.find(source.substr(match.start, match.end - match.start));
+        if (id == ids.end()) {
+            continue;
         }
-        cursor = match.position() + match.length();
+        if (id->second == muse::nidx) {
+            id->second = next_id++;
+        }
+        result.append(source.substr(cursor, match.start - cursor));
+        result += "id" + std::to_string(id->second);
+        cursor = match.end;
     }
-    result.append(source, cursor, source.size() - cursor);
+    result.append(source.substr(cursor));
     return ByteArray(result.data(), result.size());
 }
 

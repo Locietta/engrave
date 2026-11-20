@@ -28,6 +28,7 @@
 #include <cstdint>
 #include <memory>
 #include <set>
+#include <span>
 #include <utility>
 #include <vector>
 
@@ -101,11 +102,13 @@
 #include "engraving/rendering/score/tlayout.h"
 #include "engraving/types/symnames.h"
 #include "engraving/types/typesconv.h"
+#include "global/types/textscan.h"
 #include "importexport/musicxml/internal/musicxmlconfiguration.h"
 #include "importmusicxmllogger.h"
 #include "importmusicxmlnoteduration.h"
 #include "importmusicxmlnotepitch.h"
 #include "importmusicxmlpass1.h"
+#include "importmusicxmltext.h"
 #include "log.h"
 
 using namespace muse;
@@ -470,27 +473,84 @@ static void set_staff_type_percussion(Part *part, Drumset *drumset) {
     part->instrument()->channel(0)->set_bank(128);
 }
 
-static std::pair<String, String> process_instr_name(const String &name) {
-    // Make corrections so instruments match our names, then separate transpositions and remove unneeded info
-    String n = name;
-    n.replace(u"♭", u"b").replace(u"♯", u"#");
-    n.replace(u"Sax", u"Saxophone");
-    n.replace(u"Bari", u"Baritone");
-    std::pair<String, String> ret;
-    // Find transposition information
-    static const std::regex transposition_regex("(^|(?:\\s|\\u00A0))([ABCDEF][b#]?)((?:\\s|\\u00A0)|$)");
-    // Remove: ' in', part numbers '1, 2' which may be bracketed, any text after a slash
-    static const std::regex remove_regex("(?:\\s|\u00A0)in|(\\(?[0-9]([,](?:\\s|\u00A0)?)?)\\)?|\\.|(\\/.*)");
+struct TranspositionSpan {
+    size_t start;
+    size_t end;
+    std::u16string_view pitch;
+};
 
-    const StringList results = n.search(transposition_regex, {2});
-    if (!results.empty()) {
-        ret.second = convert_pitch_string_flats_and_sharps_to_unicode(results.front());
-        n.remove(transposition_regex);
+static std::optional<TranspositionSpan> find_transposition(std::u16string_view name, size_t from, bool accidental_required) {
+    for (size_t start = from; start < name.size(); ++start) {
+        size_t pitch = start;
+        if (textscan::is_musicxml_space(name[start])) {
+            ++pitch;
+        } else if (start != 0) {
+            continue;
+        }
+        if (pitch == name.size() || name[pitch] < u'A' || name[pitch] > u'F') {
+            continue;
+        }
+        size_t end = pitch + 1;
+        const std::u16string_view accidentals = accidental_required ? u"b#¯" : u"b#";
+        if (end < name.size() && accidentals.contains(name[end])) {
+            ++end;
+        } else if (accidental_required) {
+            continue;
+        }
+        const auto value = name.substr(pitch, end - pitch);
+        if (end == name.size() || textscan::is_musicxml_space(name[end])) {
+            return TranspositionSpan{start, std::min(end + 1, name.size()), value};
+        }
     }
-    n.remove(remove_regex);
-    ret.first = n.simplified();
+    return std::nullopt;
+}
 
-    return ret;
+std::pair<String, String> process_instr_name(const String &name) {
+    String normalized = name;
+    normalized.replace(u"♭", u"b").replace(u"♯", u"#");
+    normalized.replace(u"Sax", u"Saxophone").replace(u"Bari", u"Baritone");
+
+    const auto text = normalized.view();
+    String trait;
+    std::u16string without_pitch;
+    size_t copied = 0;
+    while (const auto match = find_transposition(text, copied, false)) {
+        if (trait.empty()) {
+            trait = convert_pitch_string_flats_and_sharps_to_unicode(String(match->pitch));
+        }
+        without_pitch.append(text.substr(copied, match->start - copied));
+        copied = match->end;
+    }
+    without_pitch.append(text.substr(copied));
+
+    std::u16string cleaned;
+    const std::u16string_view view(without_pitch);
+    for (size_t i = 0; i < view.size();) {
+        if (textscan::is_musicxml_space(view[i]) && view.substr(i + 1).starts_with(u"in")) {
+            i += 3;
+        } else if (view[i] == u'/') {
+            i = std::min(view.find_first_of(u"\r\n", i), view.size());
+        } else if (view[i] == u'.') {
+            ++i;
+        } else {
+            const size_t digit = i + (view[i] == u'(');
+            if (digit == view.size() || !textscan::is_digit(view[digit])) {
+                cleaned.push_back(view[i++]);
+                continue;
+            }
+            i = digit + 1;
+            if (i < view.size() && view[i] == u',') {
+                ++i;
+                if (i < view.size() && textscan::is_musicxml_space(view[i])) {
+                    ++i;
+                }
+            }
+            if (i < view.size() && view[i] == u')') {
+                ++i;
+            }
+        }
+    }
+    return {String(cleaned).simplified(), std::move(trait)};
 }
 
 //---------------------------------------------------------
@@ -2109,8 +2169,8 @@ static void cleanup_unterminated_tie(Tie *tie, const Score *score, bool fix_for_
  */
 
 static bool is_likely_incorrect_part_name(const String &part_name) {
-    static const std::wregex re(L"^P[0-9]+$");
-    return part_name.contains(re);
+    const auto text = part_name.view();
+    return text.size() > 1 && text.front() == u'P' && std::ranges::all_of(text.substr(1), textscan::is_digit);
 }
 
 //---------------------------------------------------------
@@ -2374,15 +2434,24 @@ static void create_time_tick(const Score *score, const Fraction &tick, const sta
 }
 
 static String replace_part_name_accidentals(const String &part_name) {
-    String name = part_name;
-    static const std::wregex re(L"((^|\\s|\\u00A0)[ABCDEF][b#\\u00AF]($|\\s|\\u00A0))");
-    StringList res = name.search(re, {1}, SplitBehavior::SKIP_EMPTY_PARTS);
-    if (!res.empty()) {
-        String transp = res.at(0).replace(u"b", u"♭").replace(u"¯", u"♭").replace(u"#", u"♯");
-        name.replace(re, transp);
-        return name;
+    const auto text = part_name.view();
+    auto match = find_transposition(text, 0, true);
+    if (!match) {
+        return part_name;
     }
-    return part_name;
+
+    String replacement(text.substr(match->start, match->end - match->start));
+    replacement.replace(u'b', u'♭').replace(u'¯', u'♭').replace(u'#', u'♯');
+    std::u16string result;
+    size_t copied = 0;
+    do {
+        result.append(text.substr(copied, match->start - copied));
+        result.append(replacement.view());
+        copied = match->end;
+        match = find_transposition(text, copied, true);
+    } while (match);
+    result.append(text.substr(copied));
+    return String(result);
 }
 
 //---------------------------------------------------------
@@ -3704,9 +3773,7 @@ void MusicXmlParserDirection::direction(const String &part_id, Measure *measure,
             if (can_add_tempo_text(score_, tick.ticks())) {
                 tpo_sound_ /= 60;
                 t = Factory::create_tempo_text(score_->dummy());
-                String raw_words_text = words_text_;
-                static const std::regex re("(<.*?>)");
-                raw_words_text.remove(re);
+                const String raw_words_text = strip_formatting_tags(words_text_);
                 String sep = !metro_text_.empty() && !raw_words_text.empty() && raw_words_text.back() != ' ' ? u" " : String();
                 t->set_xml_text(words_text_ + sep + metro_text_);
                 ((TempoText *) t)->set_tempo(tpo_sound_);
@@ -3790,9 +3857,8 @@ void MusicXmlParserDirection::direction(const String &part_id, Measure *measure,
                 }
             }
 
-            String fingering_str = words_text_;
-            static const std::regex xml_formating("(<.*?>)");
-            fingering_str.remove(xml_formating).remove(u'\u00A0');
+            String fingering_str = strip_formatting_tags(words_text_);
+            fingering_str.remove(u'\u00A0');
             if (is_likely_fingering(fingering_str)) {
                 logger_->log_debug_info(String(u"Inferring fingering: %1").arg(fingering_str));
                 t->set_xml_text(fingering_str);
@@ -3997,9 +4063,19 @@ bool MusicXmlParserDirection::is_likely_legally_downloaded(const Fraction &tick)
     if (!configuration()->infer_text_type()) {
         return false;
     }
-    return (tick + offset_ < Fraction(5, 1)) // Only early in the piece
-           && rehearsal_text_.empty() && metro_text_.empty() && tpo_sound_ < 0.1 &&
-           words_text_.contains(std::wregex(L"This music has been legally downloaded\\.(?:\\s|\\u00A0)Do not photocopy\\."));
+    if (tick + offset_ >= Fraction(5, 1) || !rehearsal_text_.empty() || !metro_text_.empty() || tpo_sound_ >= 0.1) {
+        return false;
+    }
+
+    constexpr std::u16string_view prefix = u"This music has been legally downloaded.";
+    const auto text = words_text_.view();
+    for (auto pos = text.find(prefix); pos != text.npos; pos = text.find(prefix, pos + prefix.size())) {
+        const auto tail = text.substr(pos + prefix.size());
+        if (!tail.empty() && textscan::is_musicxml_space(tail.front()) && tail.substr(1).starts_with(u"Do not photocopy.")) {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool MusicXmlParserDirection::is_likely_tempo_text(const track_idx_t track) const {
@@ -4027,10 +4103,7 @@ void MusicXmlParserDirection::handle_fraction() {
         return;
     }
 
-    String raw_words_text = words_text_;
-    static const std::regex re("(<.*?>)");
-    raw_words_text.remove(re);
-    raw_words_text = raw_words_text.simplified();
+    String raw_words_text = strip_formatting_tags(words_text_).simplified();
     //                         UTF-16 encoding: 0x00BC, 0x00BD, 0x00BE, 0x2150, 0x2151, 0x2152,  etc...
     static const std::array<String, 18> fracs{u"1/4", u"1/2", u"3/4", u"1/7", u"1/9", u"1/10", u"1/3", u"2/3", u"1/5",
                                               u"2/5", u"3/5", u"4/5", u"1/6", u"5/6", u"1/8",  u"3/8", u"5/8", u"7/8"};
@@ -4052,9 +4125,15 @@ bool MusicXmlParserDirection::is_likely_tempo_line(const track_idx_t track) cons
     }
 
     const String plain_text = MScoreTextToMusicXml::to_plain_text(words_text_.simplified());
-    static const std::wregex re(L"(^|(?:\\s|\u00A0))(accel|faster|mosso|rit|rubato|slower|stretto)", std::regex_constants::icase);
-
-    return plain_text.contains(re);
+    constexpr std::u16string_view keywords[] = {u"accel", u"faster", u"mosso", u"rit", u"rubato", u"slower", u"stretto"};
+    const auto text = plain_text.view();
+    for (size_t i = 0; i < text.size(); ++i) {
+        if ((i == 0 || textscan::is_musicxml_space(text[i - 1])) &&
+            std::ranges::any_of(keywords, [&](auto keyword) { return textscan::starts_with_ignore_case(text.substr(i), keyword); })) {
+            return true;
+        }
+    }
+    return false;
 }
 
 Text *MusicXmlParserDirection::add_text_to_header(const TextStyleType text_style_type) {
@@ -4389,60 +4468,145 @@ void MusicXmlParserDirection::other_direction() {
     }
 }
 
-static const String get_marker_id(const String &words) {
-    // Helper function to set the marker ID string
-    // eg. extract 'II' from 'To Coda II'
-    static const std::regex number("(i{0,3})");
-    const StringList nums = words.search(number, {1}, SplitBehavior::SKIP_EMPTY_PARTS);
-    if (!nums.empty()) {
-        return nums.at(0);
+static String get_marker_id(const String &words) {
+    const auto text = words.view();
+    const size_t first = text.find(u'i');
+    if (first == text.npos) {
+        return {};
     }
-    return String();
+    const size_t end = std::min(text.find_first_not_of(u'i', first), text.size());
+    return String(text.substr(first, std::min<size_t>(end - first, 3)));
+}
+
+static bool consume_prefix(std::u16string_view &text, std::u16string_view prefix) {
+    if (!text.starts_with(prefix)) {
+        return false;
+    }
+    text.remove_prefix(prefix.size());
+    return true;
+}
+
+static bool is_repeat_number(std::u16string_view text) { return text.size() <= 3 && text.find_first_not_of(u'i') == text.npos; }
+
+static bool is_parenthesized(std::u16string_view text) {
+    return text.starts_with(u'(') && text.ends_with(u')') && std::ranges::none_of(text, textscan::is_line_break);
+}
+
+static RepeatDirection parse_da_capo(std::u16string_view text) {
+    const bool full = consume_prefix(text, u"capo");
+    if (!full && !consume_prefix(text, u"c")) {
+        return {};
+    }
+    if (!full) {
+        consume_prefix(text, u".");
+    }
+    if (text.empty()) {
+        return {u"daCapo", {}, {}, {}};
+    }
+    if (!consume_prefix(text, u" ") && full) {
+        return {};
+    }
+    if (text == u"al fine") {
+        return {u"daCapoAlFine", {}, {}, {}};
+    }
+    if (consume_prefix(text, u"al coda")) {
+        consume_prefix(text, u" ");
+        if (is_repeat_number(text)) {
+            return {u"daCapoAlCoda", {}, {}, text};
+        }
+    }
+    return {};
+}
+
+static RepeatDirection parse_dal_segno(std::u16string_view text, bool allow_space_before_parenthesis) {
+    const auto original = text;
+    const bool full = consume_prefix(text, u"segno");
+    bool full_with_dot = false;
+    if (full) {
+        full_with_dot = consume_prefix(text, u".");
+    } else if (consume_prefix(text, u"s")) {
+        consume_prefix(text, u".");
+        consume_prefix(text, u"s");
+        consume_prefix(text, u".");
+    } else {
+        return {};
+    }
+    const auto segno = original.substr(0, original.size() - text.size());
+
+    if (text.ends_with(u" al fine")) {
+        text.remove_suffix(8);
+        consume_prefix(text, u" ");
+        const size_t length = std::min(text.find_first_not_of(u'i'), text.size());
+        const auto number = text.substr(0, length);
+        text.remove_prefix(length);
+        consume_prefix(text, u" ");
+        if (is_repeat_number(number) && (text.empty() || is_parenthesized(text))) {
+            return {u"dalSegnoAlFine", segno, number, {}};
+        }
+        return {};
+    }
+
+    constexpr std::u16string_view coda_suffix = u" al coda";
+    if (const size_t suffix = text.rfind(coda_suffix); suffix != text.npos) {
+        auto coda_number = text.substr(suffix + coda_suffix.size());
+        consume_prefix(coda_number, u" ");
+        if (!is_repeat_number(coda_number)) {
+            return {};
+        }
+
+        text = text.substr(0, suffix);
+        consume_prefix(text, u" ");
+        const size_t length = std::min(text.find_first_not_of(u'i'), text.size());
+        const auto segno_number = text.substr(0, length);
+        text.remove_prefix(length);
+        if (allow_space_before_parenthesis) {
+            consume_prefix(text, u" ");
+        }
+        if (is_repeat_number(segno_number) && (text.empty() || is_parenthesized(text))) {
+            return {u"dalSegnoAlCoda", segno, segno_number, coda_number};
+        }
+        return {};
+    }
+
+    consume_prefix(text, u" ");
+    return !full_with_dot && is_repeat_number(text) ? RepeatDirection{u"dalSegno", segno, text, {}} : RepeatDirection{};
+}
+
+RepeatDirection parse_repeat_direction(std::u16string_view text, bool allow_space_before_parenthesis) {
+    if (consume_prefix(text, u"da ")) {
+        return parse_da_capo(text);
+    }
+    if (consume_prefix(text, u"dal ") || consume_prefix(text, u"del ")) {
+        return parse_dal_segno(text, allow_space_before_parenthesis);
+    }
+    if (consume_prefix(text, u"d")) {
+        consume_prefix(text, u".");
+        consume_prefix(text, u" ");
+        if (auto repeat = parse_da_capo(text); !repeat.type.empty()) {
+            return repeat;
+        }
+        return parse_dal_segno(text, allow_space_before_parenthesis);
+    }
+    if (text == u"fine") {
+        return {u"fine", {}, {}, {}};
+    }
+
+    for (const std::u16string_view marker : {u"segno", u"to coda", u"coda"}) {
+        auto tail = text;
+        if (!consume_prefix(tail, marker)) {
+            continue;
+        }
+        consume_prefix(tail, marker == u"segno" ? u" segno" : u" coda");
+        consume_prefix(tail, u" ");
+        if (is_repeat_number(tail)) {
+            return {marker == u"to coda" ? u"toCoda" : marker, {}, {}, tail};
+        }
+    }
+    return {};
 }
 
 String MusicXmlParserDirection::match_repeat(const String &plain_words) const {
-    static const std::wregex da_capo(L"^(d\\.? ?|da )(c\\.?|capo)$");
-    static const std::wregex da_capo_al_fine(L"^(d\\.? ?|da )(c\\.? ?|capo )al fine$");
-    static const std::wregex da_capo_al_coda(L"^(d\\.? ?|da )(c\\.? ?|capo )al coda ?(i{0,3})?$");
-    static const std::wregex dal_segno(L"^(d\\.? ?|d[ae]l )(s\\.?s?\\.?|segno) ?(i{0,3})?$");
-    static const std::wregex dal_segno_al_fine(L"^(d\\.? ?|d[ae]l )(s\\.?s?\\.?|segno\\.?) ?(i{0,3})? ?(\\(.*\\))? al fine$");
-    static const std::wregex dal_segno_al_coda(L"^(d\\.? ?|d[ae]l )(s\\.?s?\\.?|segno\\.?) ?(i{0,3})? ?(\\(.*\\))? al coda ?(i{0,3})?$");
-    static const std::wregex fine(L"^fine$");
-    static const std::wregex segno(L"^segno( segno)? ?(i{0,3})?$");
-    static const std::wregex to_coda(L"^to coda( coda)? ?(i{0,3})?$");
-    static const std::wregex coda(L"^coda( coda)? ?(i{0,3})?$");
-
-    if (plain_words.contains(da_capo)) {
-        return u"daCapo";
-    }
-    if (plain_words.contains(da_capo_al_fine)) {
-        return u"daCapoAlFine";
-    }
-    if (plain_words.contains(da_capo_al_coda)) {
-        return u"daCapoAlCoda";
-    }
-    if (plain_words.contains(dal_segno)) {
-        return u"dalSegno";
-    }
-    if (plain_words.contains(dal_segno_al_fine)) {
-        return u"dalSegnoAlFine";
-    }
-    if (plain_words.contains(dal_segno_al_coda)) {
-        return u"dalSegnoAlCoda";
-    }
-    if (plain_words.contains(segno)) {
-        return u"segno";
-    }
-    if (plain_words.contains(fine)) {
-        return u"fine";
-    }
-    if (plain_words.contains(to_coda)) {
-        return u"toCoda";
-    }
-    if (plain_words.contains(coda)) {
-        return u"coda";
-    }
-    return String();
+    return String(parse_repeat_direction(plain_words.view()).type);
 }
 
 static void add_symbols_to_coda(String &words_string, const String &coda_id) {
@@ -4463,15 +4627,43 @@ static void add_symbols_to_coda(String &words_string, const String &coda_id) {
 //   isLikelyFingering
 //---------------------------------------------------------
 
-bool MusicXmlParserDirection::is_likely_fingering(const String &fingering_str) const {
-    if (!configuration()->infer_text_type()) {
+bool matches_fingering(std::u16string_view text) {
+    constexpr std::u16string_view symbols = u"012345pimac";
+    constexpr std::u16string_view dashes = u"-–";
+    const auto line_length = [&](std::u16string_view line) -> size_t {
+        size_t i = 0;
+        if (i < line.size() && dashes.contains(line[i])) {
+            ++i;
+        }
+        if (i < line.size() && textscan::is_musicxml_space(line[i])) {
+            ++i;
+        }
+        if (i == line.size() || !symbols.contains(line[i])) {
+            return 0;
+        }
+        ++i;
+        if (i + 1 < line.size() && dashes.contains(line[i]) && symbols.contains(line[i + 1])) {
+            i += 2;
+        }
+        return i;
+    };
+
+    const auto start = std::ranges::find_if_not(text, textscan::is_musicxml_space);
+    text.remove_prefix(start - text.begin());
+    size_t length = line_length(text);
+    if (length == 0) {
         return false;
     }
+    text.remove_prefix(length);
+    while (text.starts_with(u'\n') && (length = line_length(text.substr(1))) != 0) {
+        text.remove_prefix(length + 1);
+    }
+    return std::ranges::all_of(text, textscan::is_musicxml_space);
+}
 
-    // One or more newline-separated digits, possibly lead or trailed by whitespace
-    static const std::wregex re(L"^(?:\\s|\\u00A0)*[-–]?(?:\\s|\\u00A0)?[0-5pimac](?:[-–][0-5pimac])?(?:\n[-–]?(?:\\s|\\u00A0)?[0-5pimac](?"
-                                L":[-–][0-5pimac])?)*(?:\\s|\\u00A0)*$");
-    return fingering_str.contains(re) && rehearsal_text_.empty() && metro_text_.empty() && tpo_sound_ < 0.1;
+bool MusicXmlParserDirection::is_likely_fingering(const String &fingering_str) const {
+    return configuration()->infer_text_type() && rehearsal_text_.empty() && metro_text_.empty() && tpo_sound_ < 0.1 &&
+           matches_fingering(fingering_str.view());
 }
 
 //---------------------------------------------------------
@@ -4584,10 +4776,10 @@ void MusicXmlParserDirection::text_to_dynamic(String &text) {
         }
     }
     // We don't want to count a single 'm', 'r', 's' or 'z' as a whole dynamic
-    static const std::wregex single_char_dynamic = std::wregex(L"^[mrsz]$");
+    const bool single_char_dynamic = simplified_text.size() == 1 && std::u16string_view(u"mrsz").contains(simplified_text.view());
     // try to find a dynamic - xml representation or
     // if found add to dynamics list and set text to blank string
-    if (!simplified_text.contains(single_char_dynamic) && TConv::dynamic_valid(simplified_text.to_std_string())) {
+    if (!single_char_dynamic && TConv::dynamic_valid(simplified_text.to_std_string())) {
         DynamicType dt = TConv::from_xml(simplified_text.to_std_string(), DynamicType::OTHER);
         if (dt != DynamicType::OTHER) {
             dyna_velocity_ = String::number(round(Dynamic::dynamic_velocity(dt) / 0.9));
@@ -4659,7 +4851,6 @@ void MusicXmlParserDirection::add_inferred_tempo_line(const Fraction &tick) {
 
 static String find_detached_repeat_number(const Measure *measure, const track_idx_t track, const Fraction tick, const String &placement,
                                           DelayedDirectionsList &directions) {
-    static const std::wregex number(L"^(i{1,3})$");
     DelayedDirectionsList::iterator it;
 
     for (it = directions.begin(); it != directions.end(); ++it) {
@@ -4667,7 +4858,7 @@ static String find_detached_repeat_number(const Measure *measure, const track_id
         EngravingItem *el = dir->element();
         if (dir->track() == track && dir->tick() == tick && dir->placement() == placement && el->is_text_base()) {
             const String text = to_text_base(el)->plain_text();
-            if (text.to_lower().contains(number)) {
+            if (!text.empty() && text.size() <= 3 && text.view().find_first_not_of(u"iI") == std::u16string_view::npos) {
                 directions.erase(it);
                 delete el;
                 delete dir;
@@ -4681,7 +4872,7 @@ static String find_detached_repeat_number(const Measure *measure, const track_id
         for (EngravingItem *el : s->annotations()) {
             if (el->tick() == tick && el->track() == track && el->place_above() == (placement == u"above") && el->is_text_base()) {
                 const String text = to_text_base(el)->plain_text();
-                if (text.to_lower().contains(number)) {
+                if (!text.empty() && text.size() <= 3 && text.view().find_first_not_of(u"iI") == std::u16string_view::npos) {
                     s->remove_annotation(el);
                     delete el;
                     return u" " + text;
@@ -4690,19 +4881,6 @@ static String find_detached_repeat_number(const Measure *measure, const track_id
         }
     }
 
-    return String();
-}
-
-static String count_segno(const String &plain_words) {
-    // Count how many 's' in D.S. or D.S.S...
-    std::wsmatch matches;
-    const std::wstring str = plain_words.to_std_w_string();
-    static const std::wregex dal_segno_al_coda(L"^(d\\.? ?|d[ae]l )(s\\.?s?\\.?|segno\\.?) ?(i{0,3})?(\\(.*\\))? al coda ?(i{0,3})?$");
-    if (std::regex_search(str, matches, dal_segno_al_coda)) {
-        const String segno_group = String::from_std_w_string(matches.str(2)).to_lower();
-        const int count = segno_group.count('s');
-        return String::from_std_string(std::string(count, 'i'));
-    }
     return String();
 }
 
@@ -4745,19 +4923,15 @@ void MusicXmlParserDirection::handle_repeats(Measure *measure, const Fraction ti
     } else if (repeat == u"dalSegnoAlFine" || repeat == u"segno" || repeat == u"dalSegno") {
         segno_id_ = get_marker_id(plain_words);
     } else if (repeat == u"dalSegnoAlCoda") {
-        // Find numerals eg D.S I al Coda II
-        std::wsmatch matches;
-        std::wstring str = plain_words.to_std_w_string();
-        static const std::wregex dal_segno_al_coda(L"^(d\\.? ?|d[ae]l )(s\\.?s?\\.?|segno\\.?) ?(i{0,3})?(\\(.*\\))? al coda ?(i{0,3})?$");
-        if (std::regex_search(str, matches, dal_segno_al_coda)) {
-            segno_id_ = String::from_std_w_string(matches.str(3));
-            coda_id_ = String::from_std_w_string(matches.str(5));
+        const auto parts = parse_repeat_direction(plain_words.view(), false);
+        if (parts.type == u"dalSegnoAlCoda") {
+            segno_id_ = String(parts.segno_number);
+            coda_id_ = String(parts.coda_number);
+            if (segno_id_.empty()) {
+                const auto count = std::ranges::count(parts.segno_name, u's');
+                segno_id_ = String(std::u16string(count, u'i'));
+            }
         }
-    }
-
-    if ((repeat == u"dalSegno" || repeat == u"dalSegnoAlCoda") && segno_id_.empty()) {
-        // If no numeral, count how many 's' in D.S. or D.S.S...
-        segno_id_ = count_segno(plain_words);
     }
 
     if (!repeat.empty()) {
@@ -4910,14 +5084,44 @@ void MusicXmlParserDirection::handle_nmi_cmi(Measure *measure, const Fraction &t
     words_text_.replace(u"NmiCmi", u"N.C.");
 }
 
+static bool is_likely_chord_name(std::u16string_view text) {
+    if (text.empty() || !std::u16string_view(u"abcdefg").contains(text.front())) {
+        return false;
+    }
+    text.remove_prefix(1);
+    constexpr std::u16string_view accidentals = u"#b♯♭";
+    if (!text.empty() && accidentals.contains(text.front())) {
+        text.remove_prefix(1);
+        consume_prefix(text, u"\x03");
+    }
+    if (!consume_prefix(text, u"maj") && !consume_prefix(text, u"min")) {
+        consume_prefix(text, u"m");
+    }
+    if (!text.empty() && std::u16string_view(u"769").contains(text.front())) {
+        text.remove_prefix(1);
+    }
+    if (consume_prefix(text, u"add")) {
+        if (!text.empty() && accidentals.contains(text.front())) {
+            text.remove_prefix(1);
+        }
+        if (!consume_prefix(text, u"11")) {
+            consume_prefix(text, u"9");
+        }
+    } else if (consume_prefix(text, u"sus")) {
+        if (!text.empty() && (text.front() == u'2' || text.front() == u'4')) {
+            text.remove_prefix(1);
+        }
+    }
+    return text.empty() || is_parenthesized(text);
+}
+
 void MusicXmlParserDirection::handle_chord_sym(const Fraction &tick, HarmonyMap &harmony_map) {
     if (!configuration()->infer_text_type() || placement() == "below") {
         return;
     }
 
-    static const std::wregex re(L"^([abcdefg])(([#b♯♭])\3?)?(maj|min|m)?[769]?((add[#b♯♭]?(9|11|))|(sus[24]?))?(\\(.*\\))?$");
-    String plain_words = words_text_.simplified().to_lower();
-    if (!plain_words.contains(re)) {
+    const String plain_words = words_text_.simplified().to_lower();
+    if (!is_likely_chord_name(plain_words.view())) {
         return;
     }
 
@@ -4953,77 +5157,110 @@ void MusicXmlParserDirection::handle_chord_sym(const Fraction &tick, HarmonyMap 
     words_text_.clear();
 }
 
-void MusicXmlParserDirection::handle_tempo(String &words_string) {
-    if (!configuration()->infer_text_type()) {
-        return;
-    }
-
-    // Map Sibelius' representation of note types to their SMuFL counterparts and duration types
-    static const MetronomeTextMap sibelius_syms = {{u"y", {u"<sym>metNote32ndUp</sym>", DurationType::V_32ND}},
-                                                   {u"x", {u"<sym>metNote16thUp</sym>", DurationType::V_16TH}},
-                                                   {u"e", {u"<sym>metNote8thUp</sym>", DurationType::V_EIGHTH}},
-                                                   {u"q", {u"<sym>metNoteQuarterUp</sym>", DurationType::V_QUARTER}},
-                                                   {u"h", {u"<sym>metNoteHalfUp</sym>", DurationType::V_HALF}},
-                                                   {u"w", {u"<sym>metNoteWhole</sym>", DurationType::V_WHOLE}},
-                                                   {u"V", {u"<sym>metNoteDoubleWholeSquare</sym>", DurationType::V_BREVE}},
-                                                   {u"W", {u"<sym>metNoteDoubleWhole</sym>", DurationType::V_BREVE}}};
-
-    static const MetronomeTextMap met_times_syms = {
-        {u"Œ", {u"<sym>metNoteQuarterUp</sym>", DurationType::V_QUARTER}},
-        {u"Ó", {u"<sym>metNoteHalfUp</sym>", DurationType::V_HALF}},
+std::optional<double> substitute_tempo_note(String &words, bool sibelius, const String &font_family) {
+    struct TempoNote {
+        char16_t glyph;
+        std::u16string_view symbol;
+        DurationType duration;
     };
 
-    MetronomeTextMap text_map;
-    if (pass1_.sib_or_dolet()) {
-        text_map = sibelius_syms;
-    } else if (font_family_ == u"MetTimes Plain") {
-        text_map = met_times_syms;
-    }
-    if (text_map.empty()) {
-        return;
-    }
-    String substitutions;
-    for (auto &entry : text_map) {
-        substitutions.append(entry.first);
-    }
+    static constexpr TempoNote sibelius_notes[] = {
+        {u'y', u"<sym>metNote32ndUp</sym>", DurationType::V_32ND},
+        {u'x', u"<sym>metNote16thUp</sym>", DurationType::V_16TH},
+        {u'e', u"<sym>metNote8thUp</sym>", DurationType::V_EIGHTH},
+        {u'q', u"<sym>metNoteQuarterUp</sym>", DurationType::V_QUARTER},
+        {u'h', u"<sym>metNoteHalfUp</sym>", DurationType::V_HALF},
+        {u'w', u"<sym>metNoteWhole</sym>", DurationType::V_WHOLE},
+        {u'V', u"<sym>metNoteDoubleWholeSquare</sym>", DurationType::V_BREVE},
+        {u'W', u"<sym>metNoteDoubleWhole</sym>", DurationType::V_BREVE},
+    };
+    static constexpr TempoNote met_times_notes[] = {
+        {u'Œ', u"<sym>metNoteQuarterUp</sym>", DurationType::V_QUARTER},
+        {u'Ó', u"<sym>metNoteHalfUp</sym>", DurationType::V_HALF},
+    };
 
-    // Pick up any tempo markings which may have been exported as <words>
-    // eg. andante (q = c. 90)
-    // Sibelius uses a symbol font with the characters 'yxeqhVwW' each drawn as a different duration
-    // which we need to map to SMuFL syms
-    String plain_words = MScoreTextToMusicXml::to_plain_text(words_string.simplified());
-
-    static const std::wregex tempo(L".*([" + substitutions.to_std_w_string() + L"])(\\.?)(?:\\s|\\u00A0)*=[^0-9]*([0-9]+).*");
-    StringList tempo_matches = plain_words.search(tempo, {1, 2, 3}, SplitBehavior::SKIP_EMPTY_PARTS);
-
-    // Not a tempo
-    if (tempo_matches.size() < 2) {
-        return;
+    std::span<const TempoNote> notes;
+    if (sibelius) {
+        notes = sibelius_notes;
+    } else if (font_family == u"MetTimes Plain") {
+        notes = met_times_notes;
+    } else {
+        return std::nullopt;
     }
 
-    const String dur = tempo_matches.at(0);
-    const bool dot = tempo_matches.size() == 3;
-    const String val = tempo_matches.at(dot ? 2 : 1);
+    const String plain = MScoreTextToMusicXml::to_plain_text(words.simplified());
+    const auto text = plain.view();
+    const auto last_digit = text.find_last_of(u"0123456789");
+    if (last_digit == text.npos) {
+        return std::nullopt;
+    }
 
-    const String dot_str = dot ? u"<sym>space</sym><sym>metAugmentationDot</sym>" : u"";
+    std::optional<double> tempo;
+    std::u16string replacement;
+    std::u16string result;
+    size_t copied = 0;
+    for (size_t line = 0; line < last_digit;) {
+        const size_t line_end = std::ranges::find_if(text.substr(line), textscan::is_line_break) - text.begin();
+        size_t next = line_end + 1;
 
-    static const std::wregex replace(L"(.*)[" + substitutions.to_std_w_string() + L"]\\.?((?:\\s|\\u00A0)*=[^0-9]*[0-9]+.*)");
-    const String new_str = u"$1" + text_map.at(dur).first + dot_str + u"$2";
-    plain_words.replace(replace, new_str);
-    words_string = plain_words;
+        // Prefer the rightmost complete equation on the first matching line.
+        for (size_t cursor = std::min(line_end, last_digit); cursor > line;) {
+            const size_t pos = --cursor;
+            const auto note = std::ranges::find(notes, text[pos], &TempoNote::glyph);
+            if (note == notes.end()) {
+                continue;
+            }
+            const bool dotted = text[pos + 1] == u'.';
+            const size_t after_note = pos + 1 + dotted;
+            auto rhs = text.substr(after_note, last_digit - after_note + 1);
+            const auto eq = std::ranges::find_if_not(rhs, textscan::is_musicxml_space);
+            if (eq == rhs.end() || *eq != u'=') {
+                continue;
+            }
+            rhs.remove_prefix(eq - rhs.begin() + 1);
+            const auto digit = std::ranges::find_if(rhs, textscan::is_digit);
+            const size_t digit_start = digit - text.begin();
 
-    if (!val.empty() && !dur.empty()) {
-        bool ok;
-        double d = val.to_double(&ok);
-        TDuration duration = TDuration(text_map.at(dur).second);
-        duration.set_dots(dot);
+            if (replacement.empty()) {
+                // The first equation supplies the symbol and playback tempo for this direction.
+                replacement = note->symbol;
+                if (dotted) {
+                    replacement.append(u"<sym>space</sym><sym>metAugmentationDot</sym>");
+                }
+                rhs.remove_prefix(digit - rhs.begin());
+                bool ok = false;
+                const double bpm = String(rhs.substr(0, textscan::digit_count(rhs))).to_double(&ok);
+                TDuration duration(note->duration);
+                duration.set_dots(dotted);
+                if (ok && duration.is_valid()) {
+                    const auto fraction = duration.fraction();
+                    tempo = 4 * fraction.numerator() * bpm / fraction.denominator();
+                }
+            }
+            result.append(text.substr(copied, pos - copied));
+            result.append(replacement);
+            copied = after_note;
+            next = std::ranges::find_if(text.substr(digit_start), textscan::is_line_break) - text.begin() + 1;
+            break;
+        }
+        line = next;
+    }
+    if (copied != 0) {
+        result.append(text.substr(copied));
+        words = String(result);
+    }
+    return tempo;
+}
 
-        if (ok && duration.is_valid()) {
-            // convert fraction to beats per minute
-            tpo_metro_ = 4 * duration.fraction().numerator() * d / duration.fraction().denominator();
+void MusicXmlParserDirection::handle_tempo(String &words_string) {
+    if (configuration()->infer_text_type()) {
+        if (const auto tempo = substitute_tempo_note(words_string, pass1_.sib_or_dolet(), font_family_)) {
+            tpo_metro_ = *tempo;
         }
     }
 }
+
+static bool is_sticking_text(std::u16string_view text) { return !text.empty() && text.find_first_not_of(u"lrbLRB") == text.npos; }
 
 bool MusicXmlParserDirection::is_likely_sticking() {
     if (!configuration()->infer_text_type()) {
@@ -5031,8 +5268,7 @@ bool MusicXmlParserDirection::is_likely_sticking() {
     }
 
     String plain_words = MScoreTextToMusicXml::to_plain_text(words_text_.simplified());
-    static const std::wregex sticking(L"^[lrbLRB]+$");
-    return plain_words.contains(sticking) && rehearsal_text_.empty() && metro_text_.empty() && tpo_sound_ < 0.1;
+    return is_sticking_text(plain_words.view()) && rehearsal_text_.empty() && metro_text_.empty() && tpo_sound_ < 0.1;
 }
 
 bool MusicXmlParserDirection::is_likely_dynamic_range() const {
@@ -5040,12 +5276,10 @@ bool MusicXmlParserDirection::is_likely_dynamic_range() const {
         return false;
     }
 
-    String raw_words_text = words_text_.simplified();
-    static const std::regex re("(<.*?>)");
-    raw_words_text.remove(re);
+    const String raw_words_text = strip_formatting_tags(words_text_.simplified()).simplified();
 
     // If there are two dynamics and a hyphen in a single direction node, this is most likely something like "mp-f"
-    return (raw_words_text.simplified() == u"-" || raw_words_text.simplified() == u"—") && dynamics_list_.size() == 2;
+    return (raw_words_text == u"-" || raw_words_text == u"—") && dynamics_list_.size() == 2;
 }
 
 PlayingTechniqueType MusicXmlParserDirection::get_playing_technique() const {
@@ -5054,7 +5288,9 @@ PlayingTechniqueType MusicXmlParserDirection::get_playing_technique() const {
     }
 
     String plain_words = MScoreTextToMusicXml::to_plain_text(words_text_.simplified()).to_lower();
-    plain_words.remove(std::wregex(L"[\\.,;:]+")); // remove punctuation
+    for (const char16_t punctuation : std::u16string_view(u".,;:")) {
+        plain_words.remove(punctuation);
+    }
 
     // Ordered longest-first so specific phrases match before their substrings
     // (e.g. "without mute" before "mute", "con sord" before "ord")
@@ -5090,14 +5326,34 @@ void MusicXmlParserDirection::handle_drum_instrument(bool is_perc, Fraction tick
         return;
     }
 
-    String plain_words = words_text_;
-
-    static const std::regex to("to ", std::regex_constants::icase);
-    static const std::regex brackets("\\(.*\\)");
-    plain_words.remove(to);
-    plain_words.remove(brackets);
-
-    plain_words = MScoreTextToMusicXml::to_plain_text(plain_words.simplified());
+    std::u16string without_to;
+    const auto text = words_text_.view();
+    for (size_t i = 0; i < text.size();) {
+        if (textscan::starts_with_ignore_case(text.substr(i), u"to ")) {
+            i += 3;
+        } else {
+            without_to.push_back(text[i++]);
+        }
+    }
+    std::u16string without_parentheses;
+    const std::u16string_view view(without_to);
+    for (size_t line = 0; line < view.size();) {
+        const size_t end = std::min(view.find_first_of(u"\r\n", line), view.size());
+        const auto part = view.substr(line, end - line);
+        const size_t open = part.find(u'(');
+        const size_t close = part.rfind(u')');
+        if (open != part.npos && close != part.npos && open < close) {
+            without_parentheses.append(part.substr(0, open));
+            without_parentheses.append(part.substr(close + 1));
+        } else {
+            without_parentheses.append(part);
+        }
+        if (end != view.size()) {
+            without_parentheses.push_back(view[end]);
+        }
+        line = end + 1;
+    }
+    const String plain_words = MScoreTextToMusicXml::to_plain_text(String(without_parentheses).simplified());
 
     const InstrumentTemplate *it = search_template_for_instr_name_list({plain_words}, true, false);
 
@@ -8228,8 +8484,7 @@ bool MusicXmlParserLyric::is_likely_sticking(const String &text, const LyricsSyl
         return false;
     }
     String plain_words = MScoreTextToMusicXml::to_plain_text(text.simplified());
-    static const std::wregex sticking(L"^[lrbLRB]+$");
-    return plain_words.contains(sticking) && syllabic == LyricsSyllabic::SINGLE && !has_extend && !is_voice_staff_;
+    return is_sticking_text(plain_words.view()) && syllabic == LyricsSyllabic::SINGLE && !has_extend && !is_voice_staff_;
 }
 
 //---------------------------------------------------------

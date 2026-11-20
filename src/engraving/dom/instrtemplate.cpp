@@ -27,6 +27,7 @@
 #include "bracket.h"
 #include "containers.h"
 #include "drumset.h"
+#include "global/types/textscan.h"
 #include "io/file.h"
 #include "log.h"
 #include "rw/read460/tread.h"
@@ -873,10 +874,22 @@ const InstrumentTemplate *search_template_for_instr_name_list(const std::vector<
     }
 
     if (!best_match) {
-        static const std::wregex drumset_regex(L"drum ?(set|kit)", std::regex_constants::icase);
-
         for (const String &name : name_list) {
-            if (name.contains(drumset_regex)) {
+            const auto text = name.view();
+            const auto is_drumset = [&] {
+                for (size_t i = 0; i + 7 <= text.size(); ++i) {
+                    auto tail = text.substr(i);
+                    if (!muse::textscan::starts_with_ignore_case(tail, u"drum")) {
+                        continue;
+                    }
+                    tail.remove_prefix(tail[4] == u' ' ? 5 : 4);
+                    if (muse::textscan::starts_with_ignore_case(tail, u"set") || muse::textscan::starts_with_ignore_case(tail, u"kit")) {
+                        return true;
+                    }
+                }
+                return false;
+            };
+            if (is_drumset()) {
                 return search_template(u"drumset"); // Large Drum Kit
             }
 

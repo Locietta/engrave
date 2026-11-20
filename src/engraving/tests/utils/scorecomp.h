@@ -27,6 +27,7 @@
 
 namespace mu::engraving {
 struct ScoreComp {
+    static muse::ByteArray canonical_ids(const muse::ByteArray &xml);
     static bool save_compare_score(Score *, const String &save_name, const String &compare_with_local_path);
     static bool save_compare_mime_data(muse::ByteArray mime_data, const String &save_name, const String &compare_with_local_path);
     static bool compare_files(const String &full_path1, const String &full_path2);
