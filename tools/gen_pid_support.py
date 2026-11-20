@@ -253,7 +253,8 @@ def parse_constructor_types(sources):
 def parse_type_names(root):
     """ElementType member -> xml name, from TConv's element type table."""
     text = (root / "src" / "engraving" / "types" / "typesconv.cpp").read_text(encoding="utf-8")
-    return dict(re.findall(r'Item\{\s*ElementType::(\w+),\s*"([^"]*)"', text))
+    begin, end = blocks(strip_code(text), text.index("element_types ="))
+    return dict(re.findall(r'^\s*\{\s*ElementType::(\w+),\s*"([^"]*)"', text[begin + 1 : end], re.M))
 
 
 def parse_pid_names(root):
