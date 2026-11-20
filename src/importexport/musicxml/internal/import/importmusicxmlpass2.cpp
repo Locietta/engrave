@@ -5192,7 +5192,6 @@ std::optional<double> substitute_tempo_note(String &words, bool sibelius, const 
     size_t copied = 0;
     for (size_t line = 0; line < last_digit;) {
         const size_t line_end = std::ranges::find_if(text.substr(line), textscan::is_line_break) - text.begin();
-        size_t next = line_end + 1;
 
         // Prefer the rightmost complete equation on the first matching line.
         for (size_t cursor = std::min(line_end, last_digit); cursor > line;) {
@@ -5203,14 +5202,16 @@ std::optional<double> substitute_tempo_note(String &words, bool sibelius, const 
             }
             const bool dotted = text[pos + 1] == u'.';
             const size_t after_note = pos + 1 + dotted;
-            auto rhs = text.substr(after_note, last_digit - after_note + 1);
+            auto rhs = text.substr(after_note, line_end - after_note);
             const auto eq = std::ranges::find_if_not(rhs, textscan::is_musicxml_space);
             if (eq == rhs.end() || *eq != u'=') {
                 continue;
             }
             rhs.remove_prefix(eq - rhs.begin() + 1);
             const auto digit = std::ranges::find_if(rhs, textscan::is_digit);
-            const size_t digit_start = digit - text.begin();
+            if (digit == rhs.end()) {
+                continue;
+            }
 
             if (copied == 0) {
                 rhs.remove_prefix(digit - rhs.begin());
@@ -5229,10 +5230,9 @@ std::optional<double> substitute_tempo_note(String &words, bool sibelius, const 
                 result.append(u"<sym>space</sym><sym>metAugmentationDot</sym>");
             }
             copied = after_note;
-            next = std::ranges::find_if(text.substr(digit_start), textscan::is_line_break) - text.begin() + 1;
             break;
         }
-        line = next;
+        line = line_end + 1;
     }
     if (copied != 0) {
         result.append(text.substr(copied));

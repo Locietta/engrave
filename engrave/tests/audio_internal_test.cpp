@@ -1575,6 +1575,32 @@ TEST(AudioInternal, NoteEventHandlesIntMinExpressionOffsetFromProfile) {
     }
 }
 
+TEST(AudioInternal, NoteEventAveragesCombinedArticulationExpressionOffsets) {
+    using namespace muse::mpe;
+    const auto make_pattern = [](dynamic_level_t offset) {
+        ArticulationPatternSegment segment;
+        segment.arrangement_pattern.duration_factor_value = hundred_percent;
+        segment.expression_pattern.dynamic_offset_map.emplace(0, offset);
+        return std::make_shared<const ArticulationPattern>(ArticulationPattern{{0, std::move(segment)}});
+    };
+
+    constexpr duration_t duration = 100'000;
+    constexpr dynamic_level_t expected_average = -1073741825;
+    ArticulationMap applied;
+    applied.emplace(
+        ArticulationType::STACCATO,
+        ArticulationAppliedData({ArticulationType::STACCATO, make_pattern(std::numeric_limits<dynamic_level_t>::min()), 0, duration}, 0,
+                                hundred_percent));
+    applied.emplace(ArticulationType::MARCATO,
+                    ArticulationAppliedData({ArticulationType::MARCATO, make_pattern(-2), 0, duration}, 0, hundred_percent));
+    applied.update_occupied_range(ArticulationType::STACCATO, 0, hundred_percent / 2);
+
+    EXPECT_EQ(applied.average_max_amplitude_level(), expected_average);
+    EXPECT_EQ(applied.average_dynamic_offset_map().at(0), expected_average);
+    const NoteEvent note(0, duration, 0, 0, pitch_level(PitchClass::C, 4), dynamic_level_from_type(DynamicType::NATURAL), applied, 2.0);
+    EXPECT_EQ(note.expression_ctx().expression_curve.at(0), expected_average);
+}
+
 TEST(AudioInternal, DynamicAutomationLayersCompareByValue) {
     using namespace muse::mpe;
     auto make_layer = [](double out_val) {
