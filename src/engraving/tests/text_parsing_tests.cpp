@@ -26,6 +26,7 @@ TEST(TextParsing, DecimalXmlEntities) {
     EXPECT_EQ(String::decode_xml_entities(u"&#; &#x41; &amp; &#-1; &#65 &#１２;"), u"&#; &#x41; &amp; &#-1; &#65 &#１２;");
     EXPECT_EQ(String::decode_xml_entities(u"&#2147483648;&#999999999999999999999;&#67;"), u"&#2147483648;&#999999999999999999999;C");
     EXPECT_EQ(String::decode_xml_entities(u"&#38;#68;"), u"&#68;");
+    EXPECT_EQ(String::decode_xml_entities(u"&#38;#68; &#68;"), u"&#68; D");
     const auto zero = String::decode_xml_entities(u"a&#0;b");
     EXPECT_EQ(zero.view(), std::u16string_view(u"a\0b", 3));
 }
@@ -173,4 +174,12 @@ TEST(TextParsing, ScoreComparisonCanonicalizesDefinedIdentities) {
                              "<endElement>X_Y</endElement><eid>X_Y</NoteEID><eid>A_Z_Z</eid><eid>_Z</eid>"
                              "<eid attr='a'>Q_1</eid><id>Q_1</id>");
     EXPECT_EQ(ScoreComp::canonical_ids(xml), expected);
+}
+
+TEST(TextParsing, MusicXmlPlayingTechniqueStripsAllPunctuation) {
+    EXPECT_EQ(mx::infer_playing_technique(u"p.i.z.z."), PlayingTechniqueType::PIZZICATO);
+    EXPECT_EQ(mx::infer_playing_technique(u"<i>p.i.z.z.</i>"), PlayingTechniqueType::PIZZICATO);
+    EXPECT_EQ(mx::infer_playing_technique(u"c.o.n., s;o:r.d."), PlayingTechniqueType::MUTE);
+    EXPECT_EQ(mx::infer_playing_technique(u"without, mute..."), PlayingTechniqueType::OPEN);
+    EXPECT_EQ(mx::infer_playing_technique(u"palm.mute;"), PlayingTechniqueType::UNDEFINED);
 }

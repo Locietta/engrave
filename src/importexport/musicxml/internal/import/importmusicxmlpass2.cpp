@@ -23,12 +23,15 @@
 #include "importmusicxmlpass2.h"
 
 #include <algorithm>
+#include <array>
 #include <charconv>
 #include <cmath>
 #include <cstdint>
 #include <memory>
 #include <set>
 #include <span>
+#include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -5271,19 +5274,19 @@ bool MusicXmlParserDirection::is_likely_dynamic_range() const {
     return (raw_words_text == u"-" || raw_words_text == u"—") && dynamics_list_.size() == 2;
 }
 
-PlayingTechniqueType MusicXmlParserDirection::get_playing_technique() const {
-    if (!configuration()->infer_text_type()) {
-        return PlayingTechniqueType::UNDEFINED;
-    }
-
-    String plain_words = MScoreTextToMusicXml::to_plain_text(words_text_.simplified()).to_lower();
-    for (const char16_t punctuation : std::u16string_view(u".,;:")) {
-        plain_words.remove(punctuation);
+PlayingTechniqueType infer_playing_technique(const String &words_text) {
+    const String simplified = MScoreTextToMusicXml::to_plain_text(words_text.simplified()).to_lower();
+    std::u16string plain_words;
+    plain_words.reserve(simplified.size());
+    for (const char16_t ch : simplified.view()) {
+        if (ch != u'.' && ch != u',' && ch != u';' && ch != u':') {
+            plain_words.push_back(ch);
+        }
     }
 
     // Ordered longest-first so specific phrases match before their substrings
     // (e.g. "without mute" before "mute", "con sord" before "ord")
-    static const std::vector<std::pair<muse::String, PlayingTechniqueType>> text_to_play_technique_type{
+    static constexpr auto text_to_play_technique_type = std::to_array<std::pair<std::u16string_view, PlayingTechniqueType>>({
         {u"palm mute", PlayingTechniqueType::UNDEFINED}, {u"palmmute", PlayingTechniqueType::UNDEFINED},
         {u"without mute", PlayingTechniqueType::OPEN},   {u"distortion", PlayingTechniqueType::DISTORTION},
         {u"senza sord", PlayingTechniqueType::OPEN},     {u"harmonics", PlayingTechniqueType::HARMONICS},
@@ -5298,15 +5301,24 @@ PlayingTechniqueType MusicXmlParserDirection::get_playing_technique() const {
         {u"mute", PlayingTechniqueType::MUTE},           {u"pizz", PlayingTechniqueType::PIZZICATO},
         {u"sord", PlayingTechniqueType::MUTE},           {u"trem", PlayingTechniqueType::TREMOLO},
         {u"ord", PlayingTechniqueType::NATURAL},
-    };
+    });
 
-    for (const auto &technique : text_to_play_technique_type) {
-        if (plain_words.contains(technique.first)) {
-            return technique.second;
+    const std::u16string_view view(plain_words);
+    for (const auto &[phrase, technique] : text_to_play_technique_type) {
+        if (view.contains(phrase)) {
+            return technique;
         }
     }
 
     return PlayingTechniqueType::UNDEFINED;
+}
+
+PlayingTechniqueType MusicXmlParserDirection::get_playing_technique() const {
+    if (!configuration()->infer_text_type()) {
+        return PlayingTechniqueType::UNDEFINED;
+    }
+
+    return infer_playing_technique(words_text_);
 }
 
 void MusicXmlParserDirection::handle_drum_instrument(bool is_perc, Fraction tick) const {
