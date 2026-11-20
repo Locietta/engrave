@@ -206,9 +206,10 @@ std::vector<LegacyNote> legacy_notes(pugi::xml_node chord, const Chord &dom, voi
 }
 
 void sort_legacy_percussion_notes(std::vector<LegacyNote> &notes, const Chord &dom, void (*poll)()) {
-    // 4.7.6 applies drum lines immediately before resolving a group's indices.
-    if (dom.staff()->staff_type_for_element(&dom)->group() != StaffGroup::PERCUSSION) return;
-    const auto *drumset = dom.part()->instrument(dom.tick())->drumset();
+    // 4.7.6 resolves the group while the chord is still on the tick-zero dummy segment.
+    const Fraction initial_tick(0, 1);
+    if (dom.staff()->staff_type(initial_tick)->group() != StaffGroup::PERCUSSION) return;
+    const auto *drumset = dom.part()->instrument(initial_tick)->drumset();
     for (auto &entry : notes) {
         poll();
         if (!drumset || !drumset->is_valid(entry.pitch))
