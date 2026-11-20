@@ -4,6 +4,7 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -24,6 +25,7 @@ using engrave::ElementInfo;
 using engrave::Enum;
 using engrave::Format;
 using engrave::ResetProperty;
+using engrave::SetPitch;
 using engrave::SetProperty;
 using engrave::harness::find_id;
 
@@ -172,6 +174,70 @@ TEST(VoicePlacement, PlacementEditMovesDirectionItemsAboveAndSurvivesSaving) {
         EXPECT_EQ(token(*document, ids[i], "placement"), "below");
         EXPECT_EQ(side_of_notes(reset_layout, ids[i]), Side::BELOW);
     }
+}
+
+// Two notes, G_G and J_J, both pitch 60, joined by tie H_H; ties_mismatched.mscx
+// has J_J at pitch 62.
+std::unique_ptr<engrave::Document> open_ties(std::string_view name) {
+    auto document = g_engine->open(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "engrave/tests/data/write470" / name);
+    EXPECT_TRUE(document) << name << ": " << document.error().message;
+    return document ? std::move(*document) : nullptr;
+}
+
+ElementId id(std::string_view text) {
+    const auto parsed = engrave::element_id_from_string(text);
+    if (!parsed) throw std::invalid_argument(std::string(text) + " is not an element id");
+    return *parsed;
+}
+
+std::vector<std::string> tie_warnings(const engrave::EditResult &result) {
+    std::vector<std::string> warnings;
+    for (const auto &diagnostic : result.diagnostics)
+        if (diagnostic.severity == engrave::Severity::WARNING && diagnostic.message.contains("different pitches"))
+            warnings.push_back(diagnostic.message);
+    return warnings;
+}
+
+TEST(MismatchedTie, PitchEditOfOneTiedNoteCommitsAndWarns) {
+    auto document = open_ties("ties.mscx");
+    ASSERT_TRUE(document);
+    const auto result = document->edit({{SetPitch{id("G_G"), 62, 16}}});
+    ASSERT_TRUE(result) << result.error().message;
+    EXPECT_EQ(result->applied, 1u);
+    EXPECT_FALSE(result->rejection);
+    EXPECT_EQ(std::get<std::int64_t>(engrave::harness::property(*document, id("G_G"), "pitch")), 62);
+    const auto warnings = tie_warnings(*result);
+    ASSERT_EQ(warnings.size(), 1u);
+    for (const auto *named : {"H_H", "G_G", "J_J"}) EXPECT_TRUE(warnings.front().contains(named)) << warnings.front();
+}
+
+TEST(MismatchedTie, PitchEditOfBothTiedNotesInOneBatchDoesNotWarn) {
+    auto document = open_ties("ties.mscx");
+    ASSERT_TRUE(document);
+    const auto result = document->edit({{SetPitch{id("G_G"), 62, 16}, SetPitch{id("J_J"), 62, 16}}});
+    ASSERT_TRUE(result) << result.error().message;
+    EXPECT_EQ(result->applied, 2u);
+    EXPECT_TRUE(tie_warnings(*result).empty());
+}
+
+TEST(MismatchedTie, EditsThatLeaveNoMismatchedTieDoNotWarn) {
+    {
+        auto document = open_ties("ties_mismatched.mscx");
+        ASSERT_TRUE(document);
+        const auto recolored = document->edit({{SetProperty{id("G_G"), "color", engrave::Color{255, 0, 0}}}});
+        ASSERT_TRUE(recolored) << recolored.error().message;
+        EXPECT_EQ(recolored->revision, 2u);
+        EXPECT_TRUE(recolored->diagnostics.empty());
+        const auto repaired = document->edit({{SetPitch{id("J_J"), 60, 14}}});
+        ASSERT_TRUE(repaired) << repaired.error().message;
+        EXPECT_EQ(repaired->revision, 3u);
+        EXPECT_TRUE(tie_warnings(*repaired).empty());
+    }
+    auto document = open_ties("ties.mscx");
+    ASSERT_TRUE(document);
+    const auto recolored = document->edit({{SetProperty{id("J_J"), "color", engrave::Color{0, 0, 255}}}});
+    ASSERT_TRUE(recolored) << recolored.error().message;
+    EXPECT_TRUE(recolored->diagnostics.empty());
 }
 
 } // namespace

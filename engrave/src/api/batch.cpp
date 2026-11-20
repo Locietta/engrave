@@ -15,8 +15,10 @@
 #include "engraving/dom/engravingobject.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/mscore.h"
+#include "engraving/dom/note.h"
 #include "engraving/dom/score.h"
 #include "engraving/dom/tempotimeline.h"
+#include "engraving/dom/tie.h"
 #include "engraving/editing/cmd.h"
 #include "engraving/editing/transaction/transaction.h"
 #include "engraving/engravingproject.h"
@@ -33,6 +35,8 @@ using mu::engraving::EngravingObject;
 using mu::engraving::MasterScore;
 using mu::engraving::MScore;
 using mu::engraving::MsError;
+using mu::engraving::Note;
+using mu::engraving::Tie;
 
 std::unexpected<Error> fail(ErrorCode code, std::string message, std::optional<std::size_t> op = {}) {
     Error error{code, std::move(message), op};
@@ -43,6 +47,29 @@ std::unexpected<Error> fail(ErrorCode code, std::string message, std::optional<s
 bool engine_failed() { return MScore::error != MsError::MS_NO_ERROR && !MScore::error_is_warning; }
 
 bool engine_warned() { return MScore::error != MsError::MS_NO_ERROR && MScore::error_is_warning; }
+
+std::string id_text(const EngravingObject &object) { return object.eid().is_valid() ? to_string(from_engine(object.eid())) : "(no id)"; }
+
+// SetPitch moves only the note it names, so pairing a tie's ends is left to the
+// rest of the batch. A tie still joining two pitches when the batch ends stays
+// in the score, but MusicXML and 4.70 exports cannot keep it.
+void warn_mismatched_ties(MasterScore &master, const std::vector<mu::engraving::SourceHandle> &notes, std::vector<Diagnostic> &out) {
+    std::vector<const Tie *> reported;
+    for (const auto handle : notes) {
+        const EngravingObject *object = master.eid_register()->live_item(handle);
+        if (!object || !object->is_note()) continue;
+        const Note *note = mu::engraving::to_note(object);
+        for (const Tie *tie : {note->tie_back(), note->tie_for()}) {
+            if (!tie || !tie->start_note() || !tie->end_note() || tie->start_note()->ppitch() == tie->end_note()->ppitch()) continue;
+            if (std::ranges::find(reported, tie) != reported.end()) continue;
+            reported.push_back(tie);
+            out.push_back({Severity::WARNING,
+                           std::format("tie {} now joins notes {} and {}, which have different pitches; MusicXML and 4.70 exports cannot "
+                                       "keep it",
+                                       id_text(*tie), id_text(*tie->start_note()), id_text(*tie->end_note()))});
+        }
+    }
+}
 } // namespace
 
 Result<Target> EditContext::target(const Ref &ref) const {
@@ -96,6 +123,8 @@ Result<mu::engraving::Score *> EditContext::score(const ScoreSel &selection) con
 void EditContext::created(EngravingObject *object) {
     created_[op_].push_back(object ? master_.eid_register()->enroll(*object) : mu::engraving::SourceHandle{});
 }
+
+void EditContext::repitched(EngravingObject &note) { repitched_.push_back(master_.eid_register()->enroll(note)); }
 
 void EditContext::prepare_semantics() {
     bool pending = false;
@@ -220,6 +249,7 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps) {
             auto changes = manager->prepare_commit();
             if (check_engine({})) {
                 assign_missing_ids(master);
+                warn_mismatched_ties(master, context_.repitched_, result.diagnostics);
                 auto diff = batch_id_diff(master);
                 result.created = std::move(diff.created);
                 result.removed = std::move(diff.removed);
