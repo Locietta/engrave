@@ -26,6 +26,7 @@
 #include <cmath>
 #include <cstdint>
 #include <iterator>
+#include <limits>
 
 #include "automation/tempovalues.h"
 #include "global/log.h"
@@ -195,6 +196,9 @@ int TempoTimeline::utime2utick(double time) const {
     }
 
     const double nominal_secs = time * tempo_multiplier_.val;
+    if (std::isnan(nominal_secs)) {
+        return points_.front().utick;
+    }
 
     const auto it = std::upper_bound(points_.begin(), points_.end(), nominal_secs,
                                      [](double value, const TempoTimePoint &point) { return value < point.time; });
@@ -210,7 +214,13 @@ int TempoTimeline::utime2utick(double time) const {
     }
 
     const double elapsed = nominal_secs - from.time;
-    return from.utick + int(std::lround(elapsed * Constants::division * from.bps));
+    const double delta = elapsed * Constants::division * from.bps;
+    if (std::isnan(delta)) {
+        return from.utick;
+    }
+    const double tick = static_cast<double>(from.utick) + std::round(delta);
+    return static_cast<int>(
+        std::clamp(tick, static_cast<double>(std::numeric_limits<int>::min()), static_cast<double>(std::numeric_limits<int>::max())));
 }
 
 BeatsPerSecond TempoTimeline::tempo(int utick) const {

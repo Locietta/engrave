@@ -40,6 +40,9 @@ TEST(AutomationJson, ReadsLegacyFieldsAndWritesSixDecimalPlaces) {
 
     AutomationRW::read(data, muse::ByteArray("[{", 2));
     EXPECT_EQ(data.curve(tempo_key).size(), 2u);
+    const auto original_curves = data.curves();
+    AutomationRW::read(data, muse::ByteArray("[] garbage", 10));
+    EXPECT_EQ(data.curves(), original_curves);
     const auto bytes = AutomationRW::write(data, false);
     EXPECT_EQ(std::string_view(bytes.const_char(), bytes.size()), R"([
   {
@@ -67,10 +70,11 @@ TEST(AutomationJson, SkipsMalformedCurvesAndTicks) {
         {"type":"Dynamics","staffId":"17","voiceId":null,"points":[{"tick":0,"outValue":0.9}]},
         {"type":"Dynamics","staffId":"17","voiceId":-1,"points":[{"tick":10,"outValue":0.8}]},
         {"type":"Dynamics","staffId":"17","voiceId":4,"points":[{"tick":20,"outValue":0.7}]},
+        {"type":"Dynamics","staffId":"17","voiceId":1.5,"points":[{"tick":25,"outValue":0.65}]},
         {"type":"Dynamics","staffId":"17","voiceId":"bad","points":[{"tick":30,"outValue":0.6}]},
         {"type":"Dynamics","staffId":"17","voiceId":2147483648,"points":[{"tick":40,"outValue":0.5}]},
         {"type":"Dynamics","staffId":"17","points":[{"tick":100,"outValue":0.25}]},
-        {"type":"Tempo","points":[null,{},{"tick":-2.5,"outValue":5},{"tick":-2147483648,"outValue":6},
+        {"type":"Tempo","points":[null,{},{"tick":-0.25,"outValue":4},{"tick":-2.5,"outValue":5},{"tick":-2147483648,"outValue":6},
             {"tick":2147483648,"outValue":99},{"tick":12,"outValue":2,"inValue":1,"ease":null}]}
     ])";
     AutomationData data;
@@ -88,6 +92,7 @@ TEST(AutomationJson, SkipsMalformedCurvesAndTicks) {
     ASSERT_EQ(staff_curve.size(), 1u);
     ASSERT_TRUE(staff_curve.contains(100));
     EXPECT_DOUBLE_EQ(staff_curve.at(100).value.out_value.raw(), 0.25);
+    EXPECT_EQ(data.curves().size(), 2u);
 }
 
 TEST(AutomationJson, WritesScopedCurvesAndPreservesWideIntegers) {
@@ -182,6 +187,16 @@ TEST(AutomationJson, BoundaryTicksAreOverflowSafeInTimelineAndPlayback) {
     EXPECT_TRUE(std::isfinite(t_end));
     EXPECT_LT(t_start, t_mid);
     EXPECT_LT(t_mid, t_end);
+    EXPECT_EQ(timeline.utime2utick(t_start), k_min);
+    EXPECT_EQ(timeline.utime2utick(t_mid), 0);
+    EXPECT_EQ(timeline.utime2utick(t_end), k_max);
+
+    // Exercise an inverse conversion spanning more than INT_MAX ticks from a single anchor.
+    timeline.rebuild(TempoValues{{k_min, 2.0}, {k_max, 2.0}}, {});
+    EXPECT_EQ(timeline.utime2utick(timeline.utick2utime(0)), 0);
+    EXPECT_EQ(timeline.utime2utick(timeline.utick2utime(k_max - 1)), k_max - 1);
+    EXPECT_EQ(timeline.utime2utick(-std::numeric_limits<double>::infinity()), k_min);
+    EXPECT_EQ(timeline.utime2utick(std::numeric_limits<double>::infinity()), k_max);
 
     constexpr std::string_view xml = R"(<?xml version="1.0" encoding="UTF-8"?>
 <score-partwise version="4.0">

@@ -27,6 +27,7 @@ TEST(TextParsing, DecimalXmlEntities) {
     EXPECT_EQ(String::decode_xml_entities(u"&#2147483648;&#999999999999999999999;&#67;"), u"&#2147483648;&#999999999999999999999;C");
     EXPECT_EQ(String::decode_xml_entities(u"&#38;#68;"), u"&#68;");
     EXPECT_EQ(String::decode_xml_entities(u"&#38;#68; &#68;"), u"&#68; D");
+    EXPECT_EQ(String::decode_xml_entities(u"&#119070; &#55296; &#1114112;"), u"\U0001D11E &#55296; &#1114112;");
     const auto zero = String::decode_xml_entities(u"a&#0;b");
     EXPECT_EQ(zero.view(), std::u16string_view(u"a\0b", 3));
 }
@@ -159,7 +160,14 @@ TEST(TextParsing, MusicXmlTempoSubstitutionUsesCurrentFont) {
     const auto tempo = mx::substitute_tempo_note(multiline, true, u"");
     ASSERT_TRUE(tempo);
     EXPECT_DOUBLE_EQ(*tempo, 60.0);
-    EXPECT_EQ(multiline, u"<sym>metNoteQuarterUp</sym> = 60\n<sym>metNoteQuarterUp</sym> = 120");
+    EXPECT_EQ(multiline, u"<sym>metNoteQuarterUp</sym> = 60\n<sym>metNote8thUp</sym> = 120");
+
+    String dotted_multiline = u"q = 60\ne. = 120";
+    const auto dotted_tempo = mx::substitute_tempo_note(dotted_multiline, true, u"");
+    ASSERT_TRUE(dotted_tempo);
+    EXPECT_DOUBLE_EQ(*dotted_tempo, 60.0);
+    EXPECT_EQ(dotted_multiline,
+              u"<sym>metNoteQuarterUp</sym> = 60\n<sym>metNote8thUp</sym><sym>space</sym><sym>metAugmentationDot</sym> = 120");
 
     String words = u"q = 120";
     EXPECT_FALSE(mx::substitute_tempo_note(words, false, u"MetTimes Plain"));

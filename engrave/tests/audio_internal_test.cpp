@@ -1545,6 +1545,36 @@ TEST(AudioInternal, AmplitudeValuePointHandlesIntMinWithoutOverflow) {
     EXPECT_EQ(level, std::numeric_limits<dynamic_level_t>::min());
 }
 
+TEST(AudioInternal, NoteEventHandlesIntMinExpressionOffsetFromProfile) {
+    using namespace muse::mpe;
+    ProfileResourceFixture resources;
+    const auto path = resources.root / "assets/mpe/resources/general_strings_articulations_profile.json";
+    std::ofstream(path) << R"({
+        "patterns":{"Staccato":[{
+            "patternPosition":0,
+            "arrangementPattern":{"durationFactor":10000},
+            "expressionPattern":{"dynamicOffsets":[{"offsetPosition":0,"offsetValue":-2147483648}]}
+        }]}
+    })";
+    const auto profile = resources.repository.load_profile(muse::io::PathT(":/mpe/resources/general_strings_articulations_profile.json"));
+    ASSERT_TRUE(profile);
+    const auto &pattern = profile->pattern_ptr(ArticulationType::STACCATO);
+    ASSERT_TRUE(pattern);
+
+    constexpr duration_t duration = 100'000;
+    ArticulationMap applied;
+    applied.emplace(ArticulationType::STACCATO,
+                    ArticulationAppliedData({ArticulationType::STACCATO, pattern, 0, duration}, 0, hundred_percent));
+    applied.pre_calculate_average_data();
+
+    for (const auto dynamic : {DynamicType::NATURAL, DynamicType::PPPPPPPPP}) {
+        const NoteEvent note(0, duration, 0, 0, pitch_level(PitchClass::C, 4), dynamic_level_from_type(dynamic), applied, 2.0);
+        const auto &curve = note.expression_ctx().expression_curve;
+        ASSERT_EQ(curve.size(), 1u);
+        EXPECT_EQ(curve.at(0), std::numeric_limits<dynamic_level_t>::min());
+    }
+}
+
 TEST(AudioInternal, DynamicAutomationLayersCompareByValue) {
     using namespace muse::mpe;
     auto make_layer = [](double out_val) {

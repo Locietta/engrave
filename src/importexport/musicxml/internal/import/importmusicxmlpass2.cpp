@@ -5188,7 +5188,6 @@ std::optional<double> substitute_tempo_note(String &words, bool sibelius, const 
     }
 
     std::optional<double> tempo;
-    std::u16string replacement;
     std::u16string result;
     size_t copied = 0;
     for (size_t line = 0; line < last_digit;) {
@@ -5213,12 +5212,7 @@ std::optional<double> substitute_tempo_note(String &words, bool sibelius, const 
             const auto digit = std::ranges::find_if(rhs, textscan::is_digit);
             const size_t digit_start = digit - text.begin();
 
-            if (replacement.empty()) {
-                // The first equation supplies the symbol and playback tempo for this direction.
-                replacement = note->symbol;
-                if (dotted) {
-                    replacement.append(u"<sym>space</sym><sym>metAugmentationDot</sym>");
-                }
+            if (copied == 0) {
                 rhs.remove_prefix(digit - rhs.begin());
                 bool ok = false;
                 const double bpm = String(rhs.substr(0, textscan::digit_count(rhs))).to_double(&ok);
@@ -5230,7 +5224,10 @@ std::optional<double> substitute_tempo_note(String &words, bool sibelius, const 
                 }
             }
             result.append(text.substr(copied, pos - copied));
-            result.append(replacement);
+            result.append(note->symbol);
+            if (dotted) {
+                result.append(u"<sym>space</sym><sym>metAugmentationDot</sym>");
+            }
             copied = after_note;
             next = std::ranges::find_if(text.substr(digit_start), textscan::is_line_break) - text.begin() + 1;
             break;
