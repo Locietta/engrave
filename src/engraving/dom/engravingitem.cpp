@@ -1130,8 +1130,13 @@ const Staff *EngravingItem::staff_to_center_against(bool above, const System *sy
 
     if (!system) {
         if (is_spanner()) {
-            const Segment *start_seg = to_spanner(this)->start_segment();
-            system = start_seg ? start_seg->measure()->system() : nullptr;
+            if (is_layout_copy()) {
+                const Segment *start_seg = to_spanner(this)->start_segment();
+                system = start_seg ? start_seg->measure()->system() : nullptr;
+            } else if (const Measure *measure = score()->tick2measure(tick())) {
+                // Looking up a rendered spanner anchor can create a time-tick segment.
+                system = measure->system();
+            }
         } else {
             system = to_system(find_ancestor(ElementType::SYSTEM));
         }
@@ -1200,12 +1205,9 @@ bool EngravingItem::element_applies_to_track(const track_idx_t ref_track) const 
 }
 
 PlacementV EngravingItem::directed_placement() const {
-    switch (get_property(Pid::DIRECTION).value<DirectionV>()) {
-        case DirectionV::UP: return PlacementV::ABOVE;
-        case DirectionV::DOWN: return PlacementV::BELOW;
-        case DirectionV::AUTO: break;
-    }
-    return EngravingItem::placement();
+    const auto styled_direction =
+        score() ? style().style_v(Sid::DYNAMICS_HAIRPIN_VOICE_BASED_PLACEMENT).value<DirectionV>() : DirectionV::AUTO;
+    return placement_based_on_voice_assignment(styled_direction);
 }
 
 void EngravingItem::set_placement_based_on_voice_assignment(DirectionV styled_direction) {
@@ -1213,29 +1215,28 @@ void EngravingItem::set_placement_based_on_voice_assignment(DirectionV styled_di
 }
 
 PlacementV EngravingItem::placement_based_on_voice_assignment(DirectionV styled_direction) const {
+    const auto direction = get_property(Pid::DIRECTION).value<DirectionV>();
+    if (direction != DirectionV::AUTO) return direction == DirectionV::UP ? PlacementV::ABOVE : PlacementV::BELOW;
+    if (styled_direction != DirectionV::AUTO) return styled_direction == DirectionV::UP ? PlacementV::ABOVE : PlacementV::BELOW;
+
+    const Part *item_part = score() ? part() : nullptr;
+    if (!item_part || (!is_spanner() && !ownership_parent())) return EngravingItem::placement();
+
     PlacementV new_placement = PlacementV::BELOW;
-
-    DirectionV internal_direction_property = get_property(Pid::DIRECTION).value<DirectionV>();
-    const bool direction_is_auto = internal_direction_property == DirectionV::AUTO && styled_direction == DirectionV::AUTO;
     const bool center_between_staves = get_property(Pid::CENTER_BETWEEN_STAVES).value<AutoOnOff>() == AutoOnOff::ON;
-    const bool gap_above = direction_is_auto && center_between_staves && staff_to_center_against(true);
-    const bool gap_below = direction_is_auto && center_between_staves && staff_to_center_against(false);
+    const bool gap_above = center_between_staves && staff_to_center_against(true);
+    const bool gap_below = center_between_staves && staff_to_center_against(false);
 
-    if (internal_direction_property != DirectionV::AUTO) {
-        new_placement = internal_direction_property == DirectionV::UP ? PlacementV::ABOVE : PlacementV::BELOW;
-    } else if (styled_direction != DirectionV::AUTO) {
-        new_placement = styled_direction == DirectionV::UP ? PlacementV::ABOVE : PlacementV::BELOW;
-    } else if (center_between_staves && part()->nstaves() > 1 && (gap_above || gap_below)) {
-        bool is_on_last_staff_of_instrument = staff_idx() == part()->staves().back()->idx();
+    if (item_part->nstaves() > 1 && (gap_above || gap_below)) {
+        bool is_on_last_staff_of_instrument = staff_idx() == item_part->staves().back()->idx();
         new_placement = is_on_last_staff_of_instrument ? PlacementV::ABOVE : PlacementV::BELOW;
     } else {
         VoiceAssignment voice_assignment = get_property(Pid::VOICE_ASSIGNMENT).value<VoiceAssignment>();
         if (voice_assignment == VoiceAssignment::ALL_VOICE_IN_INSTRUMENT || voice_assignment == VoiceAssignment::ALL_VOICE_IN_STAFF) {
-            if (style().style_b(Sid::DYNAMICS_HAIRPINS_ABOVE_FOR_VOCAL_STAVES) &&
-                origin_part()->instrument(tick())->is_vocal_instrument()) {
-                new_placement = PlacementV::ABOVE;
-            } else {
-                new_placement = PlacementV::BELOW;
+            if (style().style_b(Sid::DYNAMICS_HAIRPINS_ABOVE_FOR_VOCAL_STAVES)) {
+                const Part *origin = origin_part();
+                const Instrument *instrument = origin ? origin->instrument(tick()) : nullptr;
+                if (instrument && instrument->is_vocal_instrument()) new_placement = PlacementV::ABOVE;
             }
         } else if (voice() == 0) {
             // Put above the staff only in case of multiple voices at this tick (similar to stem directions)
@@ -1246,15 +1247,16 @@ PlacementV EngravingItem::placement_based_on_voice_assignment(DirectionV styled_
                 start_tick = tick();
                 length = to_spanner(this)->ticks();
             } else if (const Segment *segment = to_segment(find_ancestor(ElementType::SEGMENT))) {
-                if (segment && segment->is_time_tick_type() && segment->measure() != measure) {
+                if (segment->is_time_tick_type() && segment->measure() != measure) {
                     // Edge case: this is a TimeTick segment at the end of previous measure. Happens only
                     // when dynamic is anchorToEndOfPrevious. In this case look for preceding segment.
                     segment = segment->prev1(SegmentType::DURATION);
-                    assert(segment);
-                    measure = segment->measure();
+                    if (segment) measure = segment->measure();
                 }
-                start_tick = segment->tick();
-                length = segment->ticks();
+                if (segment) {
+                    start_tick = segment->tick();
+                    length = segment->ticks();
+                }
             } else if (measure) {
                 start_tick = measure->tick();
                 length = measure->ticks();
@@ -1270,7 +1272,7 @@ PlacementV EngravingItem::placement_based_on_voice_assignment(DirectionV styled_
         }
     }
 
-    if (direction_is_auto && center_between_staves) {
+    if (center_between_staves) {
         /* If the preferred side has no staff to center against but the other side has one, place
          * the item on that side instead. If neither side has one, leave the placement alone: */
         const bool prefer_above = new_placement == PlacementV::ABOVE;

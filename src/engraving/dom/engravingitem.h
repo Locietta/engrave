@@ -659,8 +659,6 @@ public:
     virtual bool element_applies_to_track(const track_idx_t ref_track) const;
     void set_placement_based_on_voice_assignment(DirectionV styled_direction);
     PlacementV placement_based_on_voice_assignment(DirectionV styled_direction) const;
-    // Placement of a voice-assignment item without its layout: an explicit
-    // DIRECTION decides, as it does in placement_based_on_voice_assignment().
     PlacementV directed_placement() const;
     //! ---------------------
 

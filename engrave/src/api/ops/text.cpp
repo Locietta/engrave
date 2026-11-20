@@ -39,10 +39,12 @@ namespace engrave::api {
 namespace {
 
 using mu::engraving::Chord;
+using mu::engraving::DirectionV;
 using mu::engraving::ElementType;
 using mu::engraving::EngravingItem;
 using mu::engraving::EngravingObject;
 using mu::engraving::Pid;
+using mu::engraving::PlacementV;
 using mu::engraving::PropertyFlags;
 using mu::engraving::PropertyValue;
 using mu::engraving::Score;
@@ -128,6 +130,7 @@ constexpr Pair add_pairs[] = {
     {"Segment", "Fermata"},
     // Score::addText's DYNAMICS case (editing/edit.cpp), which attaches a Dynamic to its segment.
     {"Segment", "Dynamic"},
+    {"Segment", "Expression"},
     // Score::addText's STAFF case (editing/edit.cpp:763-771), and the reader's
     // StaffText (rw/read500/measureread.cpp:487-...).
     {"Segment", "StaffText"},
@@ -200,15 +203,15 @@ Result<std::vector<Setting>> settings(const std::vector<std::pair<std::string, V
     return settings;
 }
 
-// A property of the item being made, the way the engine's own creation paths set
-// one (ChangeProperty::flip, editing/editproperty.cpp:44-47: the value, then the
-// flags). A styled property that is given a value of its own stops following the
-// style. The item is not in the score yet, so this needs no command of its own: the
-// AddElement that follows owns it.
 void set_setting(EngravingItem &item, const Setting &setting) {
-    const PropertyFlags flags = item.property_flags(setting.pid);
-    item.set_property(setting.pid, setting.value);
-    item.set_property_flags(setting.pid, flags == PropertyFlags::STYLED ? PropertyFlags::UNSTYLED : flags);
+    auto [pid, value] = setting;
+    if (pid == Pid::PLACEMENT && item.has_voice_assignment_properties()) {
+        pid = Pid::DIRECTION;
+        value = value.value<PlacementV>() == PlacementV::ABOVE ? DirectionV::UP : DirectionV::DOWN;
+    }
+    const PropertyFlags flags = item.property_flags(pid);
+    item.set_property(pid, value);
+    item.set_property_flags(pid, flags == PropertyFlags::STYLED ? PropertyFlags::UNSTYLED : flags);
 }
 
 mu::engraving::TempoText *add_tempo_text(Score &score, Segment &segment, const std::string &text) {

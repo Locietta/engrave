@@ -383,10 +383,18 @@ static bool requests_spanner_relink(const EngravingObject &object, Pid id, const
            (id == Pid::POSITION_LINKED_TO_MASTER || id == Pid::APPEARANCE_LINKED_TO_MASTER) && value.to_bool();
 }
 
+static PropertyValue stored_property(const EngravingObject &object, Pid id) {
+    if (id == Pid::PLACEMENT && object.is_engraving_item()) {
+        const EngravingItem &item = *to_engraving_item(&object);
+        if (item.has_voice_assignment_properties()) return item.EngravingItem::placement();
+    }
+    return object.get_property(id);
+}
+
 static void change_property(EngravingObject *e, Pid t, const PropertyValue &st, PropertyFlags ps, bool reset_path = false) {
     const bool new_authored_entry = missing_beam_position_override(*e, t);
     if (reset_path || new_authored_entry || requests_spanner_relink(*e, t, st) ||
-        (e->is_chord_line() && t == Pid::PATH && to_chord_line(e)->has_source_offsets()) || e->get_property(t) != st ||
+        (e->is_chord_line() && t == Pid::PATH && to_chord_line(e)->has_source_offsets()) || stored_property(*e, t) != st ||
         e->property_flags(t) != ps) {
         if (e->is_bracket_item()) {
             BracketItem *bi = to_bracket_item(e);
@@ -451,7 +459,7 @@ void EngravingObject::undo_change_property(Pid id, const PropertyValue &v) { und
 void EngravingObject::undo_change_property(Pid id, const PropertyValue &v, PropertyFlags ps) {
     const bool changes_chord_line_path_source = is_chord_line() && id == Pid::PATH && to_chord_line(this)->has_source_offsets();
     const bool new_authored_entry = missing_beam_position_override(*this, id);
-    if ((get_property(id) == v) && (property_flags(id) == ps) && !changes_chord_line_path_source && !new_authored_entry &&
+    if ((stored_property(*this, id) == v) && (property_flags(id) == ps) && !changes_chord_line_path_source && !new_authored_entry &&
         !requests_spanner_relink(*this, id, v)) {
         return;
     }

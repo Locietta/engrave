@@ -187,8 +187,9 @@ Result<Step> prepare(EditContext &context, const SetPitch &op) {
         const auto [tpc1, tpc2] = spell(*note, pitch, tpc);
         if (!mu::engraving::tpc_is_valid(tpc1) || !mu::engraving::tpc_is_valid(tpc2))
             return invalid(std::format("the pitch cannot be spelled at this position as {}", pitch));
+        const bool changed = note->pitch() != pitch || note->tpc1() != tpc1 || note->tpc2() != tpc2;
         mu::engraving::EditNote::undo_change_pitch(note->score(), note, pitch, tpc1, tpc2);
-        context.repitched(*note);
+        if (changed) context.repitched(*note);
         return {};
     };
 }
