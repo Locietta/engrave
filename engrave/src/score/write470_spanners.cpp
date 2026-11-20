@@ -217,13 +217,10 @@ bool sort_legacy_percussion_notes(std::vector<LegacyNote> &notes, const Chord &d
             entry.line = 0;
         else if (!entry.note->fixed())
             entry.line = drumset->line(entry.pitch);
-        if (const auto *tie = entry.note->tie_back()) {
-            // Pitched insertion keeps unisons adjacent. The legacy comparator
-            // is non-strict for two partial ties and can dereference a missing
-            // start note if it compares a partial tie to a full tie.
-            if (previous_tied && previous_tied->pitch == entry.pitch &&
-                (tie->is_partial_tie() || previous_tied->note->tie_back()->is_partial_tie()))
-                return false;
+        // Only inline partial ties are attached before measure-end connector resolution.
+        if (entry.note->incoming_partial_tie()) {
+            // The legacy comparator is non-strict for two partial ties on a unison.
+            if (previous_tied && previous_tied->pitch == entry.pitch) return false;
             previous_tied = &entry;
         }
     }
@@ -231,14 +228,7 @@ bool sort_legacy_percussion_notes(std::vector<LegacyNote> &notes, const Chord &d
         poll();
         if (left.line != right.line) return left.line > right.line;
         if (left.pitch != right.pitch) return left.pitch < right.pitch;
-        const auto *left_tie = left.note->tie_back();
-        const auto *right_tie = right.note->tie_back();
-        if (!left_tie || !right_tie) return left_tie && !right_tie;
-        const auto *start = left_tie->start_note();
-        const auto *other_start = right_tie->start_note();
-        if (!start || !other_start) return start && !other_start;
-        if (start->chord() == other_start->chord()) return start->unison_index() < other_start->unison_index();
-        return start->chord()->is_before(other_start->chord());
+        return left.note->incoming_partial_tie() && !right.note->incoming_partial_tie();
     });
     return true;
 }
@@ -252,7 +242,10 @@ void index_notes(ScoreIndex &index, pugi::xml_node chord, const Chord &dom, Loca
         require(item && item->is_note() && to_note(item)->chord() == &dom, "5.00 note does not match its chord");
         index.notes.push_back(to_note(item));
     }
-    const auto notes = legacy_notes(chord, dom, index.poll);
+    auto notes = legacy_notes(chord, dom, index.poll);
+    // The parenthesis reader sorts the chord in place before resolving connectors.
+    // Ambiguous sorts are refused when converting the group itself.
+    if (chord.child("NoteParenGroup")) sort_legacy_percussion_notes(notes, dom, index.poll);
     for (std::size_t ordinal = 0; ordinal < notes.size(); ++ordinal) {
         index.poll();
         key.set_note(static_cast<int>(ordinal));
