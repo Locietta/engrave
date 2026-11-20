@@ -51,6 +51,9 @@ struct EditContext {
 
     // Records an element the running operation created, for OpRef and OpResult.
     void created(mu::engraving::EngravingObject *object);
+    // Records a note whose pitch the running operation changed; its ties are
+    // checked when the batch commits.
+    void repitched(mu::engraving::EngravingObject &note);
     // Explicit semantic dependency barrier. Invalidates cached targets.
     void prepare_semantics();
 
@@ -61,6 +64,7 @@ private:
     std::size_t op_ = 0;
     std::size_t epoch_ = 0; // advanced by every operation that changed more than properties
     std::vector<std::vector<mu::engraving::SourceHandle>> created_;
+    std::vector<mu::engraving::SourceHandle> repitched_;
 };
 
 // Applies an operation after all independent inputs have been prepared.
