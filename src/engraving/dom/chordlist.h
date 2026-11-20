@@ -502,6 +502,9 @@ public:
     bool write(const String &) const;
     bool write(muse::io::IODevice *device) const;
     bool loaded() const;
+
+    bool has_symbols() const { return !symbols_.empty(); }
+
     void unload();
 
     const ChordDescription *description(int id) const;
