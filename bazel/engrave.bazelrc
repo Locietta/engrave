@@ -11,4 +11,4 @@ build -c opt
 build:release -c opt
 build:releasedbg -c opt --copt=-g
 build:debug -c dbg
-build:asan -c dbg --copt=-O1 --features=asan
+build:sanitize -c dbg --copt=-O1 --features=asan --features=ubsan

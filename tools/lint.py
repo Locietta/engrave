@@ -66,7 +66,7 @@ def find_compile_commands(repo_root: Path) -> Path:
         repo_root / "build/release/compile_commands.json",
         repo_root / "build/debug/compile_commands.json",
         repo_root / "build/releasedbg/compile_commands.json",
-        repo_root / "build/asan/compile_commands.json",
+        repo_root / "build/sanitize/compile_commands.json",
         repo_root / "compile_commands.json",
     ]
     existing = [path for path in candidates if path.is_file()]

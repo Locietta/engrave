@@ -59,6 +59,8 @@ cc_library(
         "-msse2",
         "-w",
     ],
+    # LAME 3.100 uses signed left shifts that trigger fatal UBSan.
+    features = ["-ubsan"],
     implementation_deps = [":lame_private_hdrs"],
     includes = [
         "include",
