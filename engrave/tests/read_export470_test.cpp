@@ -725,24 +725,31 @@ TEST(Export470, CombinesDuplicateGhostNoteGroupsAndRebasesBothLinks) {
 
 TEST(Export470, RoundTripsAnAuthoredBraceColor) {
     constexpr auto rest = "<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>";
-    auto source = connector_score(rest, rest, "");
-    source.replace(source.find("version=\"5.00\""), std::string_view("version=\"5.00\"").size(), "version=\"4.70\"");
-    source.insert(source.find("</Staff>"), R"(<bracket type="1" span="2" col="0" visible="1" color="#234567"/>)");
-    const auto document = g_engine->open(as_bytes(source));
-    ASSERT_TRUE(document) << document.error().message;
-    const auto legacy = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
-    ASSERT_TRUE(legacy) << legacy.error().message;
-    EXPECT_TRUE(legacy->warnings.empty());
-    pugi::xml_document xml;
-    ASSERT_TRUE(parse_export(xml, *legacy));
-    EXPECT_STREQ(xml.select_node("//Part/Staff/bracket[@type='1'][@span='2']").node().attribute("color").value(), "#234567");
+    for (const auto &[color, alpha] : {std::pair{"#234567", 0xff}, std::pair{"#80234567", 0x80}}) {
+        SCOPED_TRACE(color);
+        auto source = connector_score(rest, rest, "");
+        source.replace(source.find("version=\"5.00\""), std::string_view("version=\"5.00\"").size(), "version=\"4.70\"");
+        source.insert(source.find("</Staff>"), std::format(R"(<bracket type="1" span="2" col="0" visible="1" color="{}"/>)", color));
+        const auto document = g_engine->open(as_bytes(source));
+        ASSERT_TRUE(document) << document.error().message;
+        const auto legacy = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+        ASSERT_TRUE(legacy) << legacy.error().message;
+        EXPECT_TRUE(legacy->warnings.empty());
+        pugi::xml_document xml;
+        ASSERT_TRUE(parse_export(xml, *legacy));
+        EXPECT_STREQ(xml.select_node("//Part/Staff/bracket[@type='1'][@span='2']").node().attribute("color").value(), color);
 
-    auto reopened = g_engine->open(legacy->bytes);
-    ASSERT_TRUE(reopened) << reopened.error().message;
-    const auto &brackets = master_of(**reopened).brackets(0);
-    ASSERT_FALSE(brackets.empty());
-    ASSERT_TRUE(brackets.front());
-    EXPECT_EQ(brackets.front()->color(), muse::Color(0x23, 0x45, 0x67));
+        auto reopened = g_engine->open(legacy->bytes);
+        ASSERT_TRUE(reopened) << reopened.error().message;
+        const auto &brackets = master_of(**reopened).brackets(0);
+        ASSERT_FALSE(brackets.empty());
+        ASSERT_TRUE(brackets.front());
+        const auto reopened_color = brackets.front()->color();
+        EXPECT_EQ(reopened_color.red(), 0x23);
+        EXPECT_EQ(reopened_color.green(), 0x45);
+        EXPECT_EQ(reopened_color.blue(), 0x67);
+        EXPECT_EQ(reopened_color.alpha(), alpha);
+    }
 }
 
 TEST(Export470, RefusesDifferentParenthesisGroupsSharingANote) {
