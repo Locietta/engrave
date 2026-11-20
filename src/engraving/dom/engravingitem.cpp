@@ -1142,12 +1142,28 @@ const Staff *EngravingItem::staff_to_center_against(bool above, const System *sy
         }
     }
 
-    if (!system) {
-        return nullptr;
-    }
-
     const staff_idx_t this_idx = this_staff->idx();
-    const staff_idx_t other_idx = above ? system->prev_visible_staff(this_idx) : system->next_visible_staff(this_idx);
+    staff_idx_t other_idx = muse::nidx;
+    if (system) {
+        other_idx = above ? system->prev_visible_staff(this_idx) : system->next_visible_staff(this_idx);
+    } else if (score()) {
+        const auto &staves = score()->staves();
+        if (above) {
+            for (staff_idx_t i = this_idx; i > 0; --i) {
+                if (staves[i - 1] && staves[i - 1]->show()) {
+                    other_idx = i - 1;
+                    break;
+                }
+            }
+        } else {
+            for (staff_idx_t i = this_idx + 1; i < staves.size(); ++i) {
+                if (staves[i] && staves[i]->show()) {
+                    other_idx = i;
+                    break;
+                }
+            }
+        }
+    }
     if (other_idx == muse::nidx) {
         return nullptr;
     }
