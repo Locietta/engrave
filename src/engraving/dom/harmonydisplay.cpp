@@ -105,8 +105,8 @@ struct DisplayBuilder {
         }
         if (tpc_is_valid(bass)) {
             const auto &commands = style.style_b(Sid::CHORD_BASS_NOTE_STAGGER) ? list->render_list_bass_offset : list->render_list_bass;
-            static const std::wregex pattern_69(L"6[,/]?9");
-            const bool is69 = info->text_name().contains(pattern_69);
+            const String name = info->text_name();
+            const bool is69 = name.contains(u"69") || name.contains(u"6,9") || name.contains(u"6/9");
             const bool modifier_stack = stacked && info->parsed_chord() && info->parsed_chord()->modifier_list().size() > 1;
             if (modifier_stack || is69)
                 render({std::make_shared<RenderActionMove>(0.05, 0.0)}, bass, spelling, bass_case, harmony.bass_scale());

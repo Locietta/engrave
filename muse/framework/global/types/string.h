@@ -23,7 +23,6 @@
 #define MUSE_GLOBAL_STRING_H
 
 #include <cstring>
-#include <regex>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -222,6 +221,7 @@ struct String {
 
     String();
     String(const char16_t *str);
+    explicit String(std::u16string_view str);
     String(const Char &ch);
     String(const Char *unicode, size_t size = muse::nidx);
 
@@ -301,12 +301,11 @@ struct String {
     std::string to_std_string() const;
     std::u16string to_std_u16_string() const;
 
+    std::u16string_view view() const { return data_; }
+
     static String from_ucs4(const char32_t *str, size_t size = muse::nidx);
     static String from_ucs4(char32_t chr);
     std::u32string to_std_u32_string() const;
-
-    std::wstring to_std_w_string() const;
-    static const String from_std_w_string(const std::wstring &str);
 
     size_t size() const;
     bool empty() const;
@@ -322,7 +321,6 @@ struct String {
 
     bool contains(const Char &ch) const;
     bool contains(const String &str, CaseSensitivity cs = CASE_SENSITIVE) const;
-    bool contains(const std::wregex &re) const;
     int count(const Char &ch) const;
     int count(const String &str) const;
     size_t index_of(const Char &ch, size_t from = 0) const;
@@ -338,20 +336,11 @@ struct String {
 
     StringList split(const Char &ch, SplitBehavior behavior = KEEP_EMPTY_PARTS) const;
     StringList split(const String &str, SplitBehavior behavior = KEEP_EMPTY_PARTS) const;
-    StringList split(const std::regex &re, SplitBehavior behavior = KEEP_EMPTY_PARTS) const;
-    StringList search(const std::regex &re, std::initializer_list<int> matches, SplitBehavior behavior = KEEP_EMPTY_PARTS) const;
-    StringList search(const std::wregex &re, std::initializer_list<int> matches, SplitBehavior behavior = KEEP_EMPTY_PARTS) const;
     String &replace(const String &before, const String &after);
     String &replace(char16_t before, char16_t after);
-    String &replace(const std::regex &re, const String &after);
-    String &replace(const std::wregex &re, const String &after);
     String &insert(size_t position, const String &str);
 
     String &remove(const String &str) { return replace(str, String()); }
-
-    String &remove(const std::regex &rx) { return replace(rx, String()); }
-
-    String &remove(const std::wregex &rx) { return replace(rx, String()); }
 
     String &remove(const Char &ch);
     String &remove(char16_t ch);

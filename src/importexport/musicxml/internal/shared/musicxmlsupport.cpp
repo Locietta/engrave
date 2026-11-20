@@ -41,6 +41,30 @@ using namespace muse;
 using namespace mu::engraving;
 
 namespace mu::iex::musicxml {
+
+String strip_formatting_tags(const String &text) {
+    const auto view = text.view();
+    std::u16string result;
+    size_t copied = 0;
+    size_t opening = view.find(u'<');
+    while (opening != view.npos) {
+        const size_t end = view.find_first_of(u">\r\n", opening + 1);
+        if (end == view.npos) {
+            break;
+        }
+        if (view[end] == u'>') {
+            result.append(view.substr(copied, opening - copied));
+            copied = end + 1;
+        }
+        opening = view.find(u'<', end + 1);
+    }
+    if (copied == 0) {
+        return text;
+    }
+    result.append(view.substr(copied));
+    return String(result);
+}
+
 //---------------------------------------------------------
 //   errorStringWithLocation
 //---------------------------------------------------------

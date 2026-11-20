@@ -45,6 +45,7 @@
 #include "engraving/style/style.h"
 #include "engraving/style/textstyle.h"
 #include "engraving/types/symnames.h"
+#include "global/types/textscan.h"
 #include "importexport/musicxml/internal/musicxmlconfiguration.h"
 #include "importmusicxmllogger.h"
 #include "importmusicxmlnoteduration.h"
@@ -684,8 +685,29 @@ static void add_text(VBox *vbx, Score *, const String &str_txt, const TextStyleT
 static bool override_text_style_for_composer(const String &credit_string) {
     // HACK: check if the string is likely to contain composer credit, so the proper text style can be applied.
     // TODO: introduce a flag to decide if we want to do this or not.
-    static const std::wregex re(L"\\s*((Words|Music|Lyrics).*)*by\\s+([A-Z][a-zA-Zö'’-]+\\s[A-Z][a-zA-Zös'’-]+.*)+");
-    return credit_string.contains(re);
+    const auto text = credit_string.view();
+    const auto name_length = [](std::u16string_view name) -> size_t {
+        if (name.empty() || !textscan::is_upper(name.front())) {
+            return 0;
+        }
+        const auto end = std::ranges::find_if_not(name.substr(1), [](char16_t c) {
+            return textscan::is_upper(c) || textscan::is_lower(c) || std::u16string_view(u"ö'’-").contains(c);
+        });
+        const size_t length = end - name.begin();
+        return length >= 2 ? length : 0;
+    };
+    for (size_t pos = text.find(u"by"); pos != text.npos; pos = text.find(u"by", pos + 2)) {
+        auto names = text.substr(pos + 2);
+        if (names.empty() || !textscan::is_space(names.front())) {
+            continue;
+        }
+        names = textscan::trim_ascii_start(names);
+        const size_t first = name_length(names);
+        if (first != 0 && first < names.size() && textscan::is_space(names[first]) && name_length(names.substr(first + 1))) {
+            return true;
+        }
+    }
+    return false;
 }
 
 //---------------------------------------------------------
@@ -863,23 +885,85 @@ static bool must_add_word_to_vbox(const String &credit_type) { return credit_typ
 //   isLikelySubtitleText
 //---------------------------------------------------------
 
-bool is_likely_subtitle_text(const String &text, const bool case_insensitive = true) {
-    std::regex::flag_type case_option = case_insensitive ? std::regex::icase : std::regex::ECMAScript;
-    return text.trimmed().contains(std::wregex(L"^[Ff]rom\\s+(?!$)", case_option)) ||
-           text.trimmed().contains(std::wregex(L"^Theme from\\s+(?!$)", case_option)) ||
-           text.trimmed().contains(std::wregex(L"(((Op\\.?\\s?\\d+)|(No\\.?\\s?\\d+))\\s?)+", case_option)) ||
-           text.trimmed().contains(std::wregex(L"\\(.*[Ff]rom\\s.*\\)", case_option));
+static bool starts_with(std::u16string_view text, std::u16string_view prefix, bool case_insensitive) {
+    return case_insensitive ? textscan::starts_with_ignore_case(text, prefix) : text.starts_with(prefix);
 }
 
-//---------------------------------------------------------
-//   isLikelyCreditText
-//---------------------------------------------------------
+static bool starts_with_from(std::u16string_view text, bool case_insensitive) {
+    return starts_with(text, u"From", case_insensitive) || text.starts_with(u"from");
+}
 
-bool is_likely_credit_text(const String &text, const bool case_insensitive = true) {
-    std::regex::flag_type case_option = case_insensitive ? std::regex::icase : std::regex::ECMAScript;
-    return text.trimmed().contains(
-               std::wregex(L"^((Words|Music|Lyrics|Composed),?(\\sand|\\s&amp;|\\s&)?\\s)*[Bb]y\\s+(?!$)", case_option)) ||
-           text.trimmed().contains(std::wregex(L"^(Traditional|Trad\\.)", case_option));
+bool is_likely_subtitle_text(const String &text, const bool case_insensitive) {
+    const String trimmed = text.trimmed();
+    const auto view = trimmed.view();
+    if ((starts_with_from(view, case_insensitive) && view.size() > 4 && textscan::is_space(view[4])) ||
+        (starts_with(view, u"Theme from", case_insensitive) && view.size() > 10 && textscan::is_space(view[10]))) {
+        return true;
+    }
+
+    bool in_parenthesis = false;
+    bool found_from = false;
+    for (size_t i = 0; i < view.size(); ++i) {
+        const auto tail = view.substr(i);
+        if (starts_with(tail, u"Op", case_insensitive) || starts_with(tail, u"No", case_insensitive)) {
+            auto number = tail.substr(2);
+            if (number.starts_with(u'.')) {
+                number.remove_prefix(1);
+            }
+            if (!number.empty() && textscan::is_space(number.front())) {
+                number.remove_prefix(1);
+            }
+            if (!number.empty() && textscan::is_digit(number.front())) {
+                return true;
+            }
+        }
+        if (textscan::is_line_break(view[i])) {
+            in_parenthesis = false;
+            found_from = false;
+        } else if (view[i] == u')' && found_from) {
+            return true;
+        } else if (view[i] == u'(') {
+            in_parenthesis = true;
+        } else if (in_parenthesis && tail.size() > 4 && starts_with_from(tail, case_insensitive) && textscan::is_space(tail[4])) {
+            found_from = true;
+            i += 4;
+        }
+    }
+    return false;
+}
+
+bool is_likely_credit_text(const String &text, const bool case_insensitive) {
+    const String trimmed = text.trimmed();
+    auto tail = trimmed.view();
+    if (starts_with(tail, u"Traditional", case_insensitive) || starts_with(tail, u"Trad.", case_insensitive)) {
+        return true;
+    }
+
+    constexpr std::u16string_view prefixes[] = {u"Words", u"Music", u"Lyrics", u"Composed"};
+    while (!tail.empty()) {
+        if (starts_with(tail, u"By", case_insensitive) || tail.starts_with(u"by")) {
+            return tail.size() > 2 && textscan::is_space(tail[2]);
+        }
+        const auto prefix = std::ranges::find_if(prefixes, [&](auto p) { return starts_with(tail, p, case_insensitive); });
+        if (prefix == std::end(prefixes)) {
+            return false;
+        }
+        tail.remove_prefix(prefix->size());
+        if (tail.starts_with(u',')) {
+            tail.remove_prefix(1);
+        }
+        if (tail.empty() || !textscan::is_space(tail.front())) {
+            return false;
+        }
+        tail.remove_prefix(1);
+        for (const std::u16string_view join : {u"and", u"&amp;", u"&"}) {
+            if (tail.size() > join.size() && starts_with(tail, join, case_insensitive) && textscan::is_space(tail[join.size()])) {
+                tail.remove_prefix(join.size() + 1);
+                break;
+            }
+        }
+    }
+    return false;
 }
 
 static bool is_likely_rights_text(const String &text) {
@@ -896,7 +980,10 @@ static bool is_likely_rights_text(const String &text) {
 static void infer_from_title(String &title, String &inferred_subtitle, String &inferred_credits) {
     StringList subtitle_lines;
     StringList credit_lines;
-    StringList title_lines = title.split(std::regex("\\n"));
+    StringList title_lines = title.split(u'\n');
+    if (title.view().ends_with(u'\n')) {
+        title_lines.pop_back();
+    }
     size_t nr_of_title_lines = title_lines.size();
     if (nr_of_title_lines == 1) {
         return;
@@ -995,10 +1082,7 @@ static VBox *add_credit_words(Score *score, const CreditWordsList &cr_words, con
             add_text2(vbox, score, w->words, tid, align);
         } else if (w->type == u"rights" && score->meta_tag(u"copyright").empty()) {
             // Add rights to footer, not a vbox
-            static const std::regex tag_re("(<.*?>)");
-            String rights = w->words;
-            rights.remove(tag_re);
-            score->set_meta_tag(u"copyright", rights);
+            score->set_meta_tag(u"copyright", strip_formatting_tags(w->words));
         }
     }
 

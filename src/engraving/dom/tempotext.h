@@ -95,7 +95,7 @@ public:
 
     TDuration duration() const;
 
-    static int find_tempo_duration(const String &s, int &len, TDuration &dur);
+    static int find_tempo_duration(std::u16string_view text, int &len, TDuration &dur);
     static String duration2tempo_text_string(const TDuration dur);
     static String duration2user_name(const TDuration t);
 

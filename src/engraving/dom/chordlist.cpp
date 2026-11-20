@@ -28,6 +28,7 @@
 #include "global/io/buffer.h"
 #include "global/io/file.h"
 #include "global/io/fileinfo.h"
+#include "global/types/textscan.h"
 #include "log.h"
 #include "mscore.h"
 #include "pitchspelling.h"
@@ -569,9 +570,14 @@ void ParsedChord::configure(const ChordList *cl) {
 //    needed for m(Maj9) et al
 //---------------------------------------------------------
 
+static String without_digits(const String &text) {
+    std::u16string result;
+    std::ranges::remove_copy_if(text.view(), std::back_inserter(result), muse::textscan::is_digit);
+    return String(result);
+}
+
 void ParsedChord::correct_xml_text(const String &s) {
-    String xml_text = xml_text_;
-    xml_text.remove(std::regex("[0-9]"));
+    String xml_text = without_digits(xml_text_);
     if (!s.empty()) {
         size_t pos = xml_text.last_index_of(u')');
         if (pos == muse::nidx) {
@@ -736,7 +742,7 @@ bool ParsedChord::parse(const String &s, const ChordList *cl, bool syntax_only, 
             }
             add_token(s.at(i), ChordTokenClass::TYPE);
         }
-    } else if (tok1.contains(std::wregex(L"[IVX]+"))) {
+    } else if (tok1.view().find_first_of(u"IVX") != std::u16string_view::npos) {
         // Get roman numerals
         for (i = 0; i < tok1.size(); i++) {
             add_token(tok1.at(i), ChordTokenClass::TYPE);
@@ -966,7 +972,7 @@ bool ParsedChord::parse(const String &s, const ChordList *cl, bool syntax_only, 
             suffix.append(s.at(i + j));
         }
 
-        if (suffix.contains(std::wregex(L"st|nd|rd|th"))) {
+        if (suffix == u"st" || suffix == u"nd" || suffix == u"rd" || suffix == u"th") {
             i += suffix_len;
         } else {
             suffix.clear();
@@ -1295,7 +1301,7 @@ bool ParsedChord::parse(const String &s, const ChordList *cl, bool syntax_only, 
         StringList alt_list = xml_degrees_.filter(u"alt");
         for (const String &d : alt_list) {
             String unalt(d);
-            unalt.replace(std::regex("alt[b#]"), u"add");
+            unalt.replace(u"altb", u"add").replace(u"alt#", u"add");
             if (xml_degrees_.remove_all(unalt)) {
                 String alt(d);
                 alt.replace(u"alt", u"add");
@@ -1622,10 +1628,9 @@ const std::vector<RenderActionPtr> &ParsedChord::render_list(const ChordList *cl
 
     // Special stack layout if there is a single 'add' or 'sus' with multiple degrees
     // Standard stack layout if there is only one
-    static const std::wregex sus_add_regex = std::wregex(L"sus|add");
     bool stack_sus_or_add = false;
     for (const String &mod : modifier_list_) {
-        if (!(stack_modifiers_enabled || super_script_enabled) || !mod.contains(sus_add_regex)) {
+        if (!(stack_modifiers_enabled || super_script_enabled) || !(mod.contains(u"sus") || mod.contains(u"add"))) {
             continue;
         }
         if (!stack_sus_or_add) {
@@ -1647,12 +1652,22 @@ const std::vector<RenderActionPtr> &ParsedChord::render_list(const ChordList *cl
             continue;
         }
 
-        const bool tok_is_sus_or_add = std::regex_match(n.to_std_w_string(), sus_add_regex);
+        const bool tok_is_sus_or_add = n == u"sus" || n == u"add";
         const bool stack_modifier = stack_modifiers_enabled && !(stack_sus_or_add && tok_is_sus_or_add);
         const bool super_script_modifier = super_script_enabled && !(stack_sus_or_add && tok_is_sus_or_add);
         String cur_mod = modifier_list_.size() > 1 ? modifier_list_.at(mod_idx) : u"";
         if (stack_sus_or_add && stack_modifier && mod_idx == 0) {
-            cur_mod.remove(sus_add_regex);
+            std::u16string degrees;
+            const auto modifier = cur_mod.view();
+            for (size_t i = 0; i < modifier.size();) {
+                const auto tail = modifier.substr(i);
+                if (tail.starts_with(u"sus") || tail.starts_with(u"add")) {
+                    i += 3;
+                } else {
+                    degrees.push_back(modifier[i++]);
+                }
+            }
+            cur_mod = String(degrees);
         }
         const bool modifier_end = cur_mod.ends_with(n) && mod_idx < final_mod_idx;
 
@@ -1759,9 +1774,7 @@ const std::vector<RenderActionPtr> &ParsedChord::render_list(const ChordList *cl
                 } else if (!cur_mod_starts_with_acc && next_mod_starts_with_acc &&
                            !n_is_paren) { // current line has no accidental, next line has accidental -> push before degree
                     render_list_.emplace_back(new RenderActionPush()); // and move by next line's accidental's width to align
-                    String next_acc = next_mod;
-                    static const std::wregex degree_regex = std::wregex(L"[0-9]+");
-                    next_acc.replace(degree_regex, u"");
+                    String next_acc = without_digits(next_mod);
                     // Apply scaling and use renderList to match the behavior of standard accidental rendering
                     render_list_.emplace_back(new RenderActionScale(cl->stacked_modifier_mag()));
                     const ChordToken acc_tok = cl->token(next_acc, ChordTokenClass::MODIFIER);

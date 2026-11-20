@@ -59,6 +59,8 @@ extern muse::String music_xml_accidental_text_to_char(const muse::String mxml_na
 extern engraving::SymId music_xml_string2acc_sym_id(const muse::String mxml_name, const muse::String smufl = {});
 extern engraving::AccidentalType microtonal_guess(double val);
 extern bool is_laissez_vibrer(const engraving::SymId id);
+muse::String strip_formatting_tags(const muse::String &text);
+
 extern muse::String error_string_with_location(int64_t byte_offset, const muse::String &error);
 extern muse::String check_at_end_element(const muse::XmlStreamReader &e, const muse::String &exp_name);
 

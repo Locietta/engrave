@@ -23,6 +23,7 @@
 #include "realizedharmony.h"
 
 #include "chordlist.h"
+#include "global/types/textscan.h"
 #include "harmony.h"
 #include "pitchspelling.h"
 #include "segment.h"
@@ -303,9 +304,9 @@ RealizedHarmony::PitchMap RealizedHarmony::get_intervals(int root_tpc, bool lite
             if (s.at(c).is_digit()) {
                 int alter = 0;
                 size_t cutoff = c;
-                String degree_string = s;
-                static const std::wregex not_digits = std::wregex(L"[^0-9]+");
-                degree_string.remove(not_digits);
+                std::u16string digits;
+                std::ranges::copy_if(s.view(), std::back_inserter(digits), muse::textscan::is_digit);
+                const String degree_string(digits);
                 int deg = degree_string.to_int();
                 //account for if the flat/sharp is stuck to the end of add
                 if (c) {

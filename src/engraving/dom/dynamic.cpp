@@ -25,6 +25,7 @@
 #include "../types/typesconv.h"
 #include "engraving/style/styletypes.h"
 #include "expression.h"
+#include "global/types/textscan.h"
 #include "hairpin.h"
 #include "log.h"
 #include "measure.h"
@@ -180,18 +181,48 @@ void Dynamic::set_dynamic_type(const String &tag) {
 
 std::pair<DynamicType, String> Dynamic::parse_dynamic_text(const String &tag) const {
     std::string utf8_tag = tag.to_std_string();
-    const std::regex dynamic_regex(R"((?:<sym>.*?</sym>)+|(?:\b)[fmnprsz]+(?:\b(?=[^>]|$)))");
-    auto begin = std::sregex_iterator(utf8_tag.begin(), utf8_tag.end(), dynamic_regex);
-    for (auto it = begin; it != std::sregex_iterator(); ++it) {
-        const std::smatch match = *it;
-        const std::string match_str = match.str();
-        size_t n = ::mu::engraving::Dynamic::dyn_list.size();
-        for (size_t i = 0; i < n; ++i) {
-            if (TConv::to_xml(DynamicType(i)).ascii() == match_str || ::mu::engraving::Dynamic::dyn_list[i].text == match_str) {
-                utf8_tag.replace(match.position(0), match.length(0), ::mu::engraving::Dynamic::dyn_list[i].text);
+    const std::string_view text(utf8_tag);
+    constexpr std::string_view symbols = "fmnprsz";
+    constexpr std::string_view open = "<sym>";
+    constexpr std::string_view close = "</sym>";
+
+    size_t line_end = 0;
+    size_t last_close = text.npos;
+    for (size_t start = 0; start < text.size();) {
+        if (start >= line_end) {
+            line_end = std::min(text.find_first_of("\r\n", start), text.size());
+            const auto line = text.substr(start, line_end - start);
+            const auto last = line.rfind(close);
+            last_close = last == line.npos ? text.npos : start + last;
+            if (start == line_end) {
+                ++start;
+                continue;
+            }
+        }
+        size_t end = start;
+        while (last_close != text.npos && end + open.size() <= last_close && text.substr(end).starts_with(open)) {
+            end = text.find(close, end + open.size()) + close.size();
+        }
+        if (end == start && symbols.contains(text[start]) && (start == 0 || !muse::textscan::is_word(text[start - 1]))) {
+            end = std::min(text.find_first_not_of(symbols, start), text.size());
+            if (end < text.size() && (text[end] == '>' || muse::textscan::is_word(text[end]))) {
+                start = end;
+                continue;
+            }
+        }
+        if (end == start) {
+            ++start;
+            continue;
+        }
+
+        const auto candidate = text.substr(start, end - start);
+        for (size_t i = 0; i < dyn_list.size(); ++i) {
+            if (TConv::to_xml(DynamicType(i)).ascii() == candidate || dyn_list[i].text == candidate) {
+                utf8_tag.replace(start, end - start, dyn_list[i].text);
                 return {DynamicType(i), String::from_std_string(utf8_tag)};
             }
         }
+        start = end;
     }
     return {DynamicType::OTHER, tag};
 }

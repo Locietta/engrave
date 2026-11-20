@@ -37,6 +37,7 @@
 
 #include <cassert>
 #include <math.h>
+#include <optional>
 #include <set>
 
 #include "../shared/musicxmlfonthandler.h"
@@ -128,6 +129,7 @@
 #include "global/realfn.h"
 #include "global/serialization/xmlstreamreader.h"
 #include "global/serialization/zipwriter.h"
+#include "global/types/textscan.h"
 #include "importexport/musicxml/internal/musicxmlconfiguration.h"
 #include "io/buffer.h"
 #include "io/file.h"
@@ -3600,14 +3602,17 @@ static void write_notehead(XmlWriter &xml, const Note *const note) {
 
     if (note->head_scheme() == NoteHeadScheme::HEAD_PITCHNAME || note->head_scheme() == NoteHeadScheme::HEAD_PITCHNAME_GERMAN ||
         note->head_scheme() == NoteHeadScheme::HEAD_SOLFEGE || note->head_scheme() == NoteHeadScheme::HEAD_SOLFEGE_FIXED) {
-        static const std::regex nameparts("^note([A-Z][a-z]*)(Sharp|Flat)?");
-        AsciiStringView notehead_name = SymNames::name_for_sym_id(note->note_head());
-        StringList matches = String::from_ascii(notehead_name.ascii()).search(nameparts, {1, 2}, SplitBehavior::SKIP_EMPTY_PARTS);
-        if (!matches.empty()) {
+        const std::string_view name = SymNames::name_for_sym_id(note->note_head());
+        if (name.starts_with("note") && name.size() > 4 && muse::textscan::is_upper(name[4])) {
+            const auto pitch = name.substr(4);
+            const size_t length = std::ranges::find_if_not(pitch.substr(1), muse::textscan::is_lower) - pitch.begin();
             xml.start_element("notehead-text");
-            xml.tag("display-text", matches.at(0));
-            if (matches.size() > 1) {
-                xml.tag("accidental-text", matches.at(1).to_lower());
+            xml.tag("display-text", String::from_utf8(pitch.substr(0, length)));
+            const auto suffix = pitch.substr(length);
+            if (suffix.starts_with("Sharp")) {
+                xml.tag("accidental-text", "sharp");
+            } else if (suffix.starts_with("Flat")) {
+                xml.tag("accidental-text", "flat");
             }
             xml.end_element();
         }
@@ -4339,30 +4344,21 @@ static void part_group_start(XmlWriter &xml, int number, const BracketItem *cons
 //---------------------------------------------------------
 //   findMetronome
 //---------------------------------------------------------
-static size_t index_of(const String &input_src, const std::wregex &re, size_t from, std::wsmatch *m) {
-    std::u16string u16 = input_src.to_std_u16_string();
-    std::wstring src;
-    src.resize(u16.size());
-
-    static_assert(sizeof(wchar_t) >= sizeof(char16_t));
-
-    for (size_t i = 0; i < u16.size(); ++i) {
-        src[i] = static_cast<wchar_t>(u16.at(i));
+static std::optional<std::u16string_view> after_metronome_equals(std::u16string_view text) {
+    text = muse::textscan::trim_ascii_start(text);
+    if (text.empty() || text.front() != u'=') {
+        return std::nullopt;
     }
+    return muse::textscan::trim_ascii_start(text.substr(1));
+}
 
-    auto begin = std::wsregex_iterator(src.begin(), src.end(), re);
-    auto end = std::wsregex_iterator();
-    for (auto it = begin; it != end; ++it) {
-        std::wsmatch match = *it;
-        size_t pos = src.find(match.str(), from);
-        if (pos != std::u16string::npos) {
-            if (m) {
-                *m = match;
-            }
-            return pos;
-        }
+static size_t metronome_number_length(std::u16string_view text) {
+    size_t length = muse::textscan::digit_count(text);
+    if (length > 0 && length + 1 < text.size() && (text[length] == u',' || text[length] == u'.') &&
+        muse::textscan::is_digit(text[length + 1])) {
+        length += 1 + muse::textscan::digit_count(text.substr(length + 1));
     }
-    return std::u16string::npos;
+    return length;
 }
 
 static bool find_metronome(const std::list<TextFragment> &list,
@@ -4380,7 +4376,7 @@ static bool find_metronome(const std::list<TextFragment> &list,
 
     int len1 = 0;
     TDuration dur;
-    int pos1 = TempoText::find_tempo_duration(words, len1, dur);
+    int pos1 = TempoText::find_tempo_duration(words.view(), len1, dur);
     if (pos1 == -1) {
         return false;
     }
@@ -4389,33 +4385,24 @@ static bool find_metronome(const std::list<TextFragment> &list,
     int metro_len = len1;
     metro_left = words.mid(pos1, len1);
 
-    static const std::wregex equation_reg_ex(L"\\s*=\\s*");
-    std::wsmatch equation_match;
-    size_t pos_eq = index_of(words, equation_reg_ex, pos1 + len1, &equation_match);
-
-    if (pos_eq != muse::nidx && int(pos_eq) == pos1 + len1) {
-        int len_eq = equation_match.length();
-        String s_after_eq = words.mid(pos_eq + len_eq);
+    const auto tail = words.view().substr(pos1 + len1);
+    if (const auto equation = after_metronome_equals(tail)) {
+        const auto right = *equation;
+        const int len_eq = static_cast<int>(tail.size() - right.size());
         int len3 = 0;
         TDuration dur3;
-        int pos3 = TempoText::find_tempo_duration(s_after_eq, len3, dur3);
+        int pos3 = TempoText::find_tempo_duration(right, len3, dur3);
         if (pos3 == -1) {
-            // did not find note, try to find a number
-            static const std::wregex number_reg_ex(L"\\d+([,\\.]{1}\\d+)?");
-            std::wsmatch number_match;
-            pos3 = static_cast<int>(index_of(s_after_eq, number_reg_ex, 0, &number_match));
-            if (pos3 != 0) {
-                pos3 = -1;
-            } else {
-                len3 = number_match.length();
+            len3 = static_cast<int>(metronome_number_length(right));
+            if (len3 != 0) {
+                pos3 = 0;
             }
         }
-        if (pos3 == 0) {
-            metro_right = s_after_eq.mid(0, len3);
-            metro_len = len1 + len_eq + len3;
-        } else {
+        if (pos3 != 0) {
             return false;
         }
+        metro_right = String(right.substr(0, len3));
+        metro_len = len1 + len_eq + len3;
     }
 
     if (metro_pos > 0 && words.at(metro_pos - 1) == '(') {
@@ -4489,11 +4476,11 @@ static void words_metronome(XmlWriter &xml, const MStyle &s, TextBase const *con
         xml.start_element_raw(tag_name);
         int len1 = 0;
         TDuration dur;
-        TempoText::find_tempo_duration(metro_left, len1, dur);
+        TempoText::find_tempo_duration(metro_left.view(), len1, dur);
         beat_unit(xml, dur);
 
         if (!metro_right.empty()) {
-            if (TempoText::find_tempo_duration(metro_right, len1, dur) != -1) {
+            if (TempoText::find_tempo_duration(metro_right.view(), len1, dur) != -1) {
                 beat_unit(xml, dur);
             } else {
                 xml.tag("per-minute", metro_right);
@@ -5429,40 +5416,37 @@ void ExportMusicXml::text_line(TextLineBase const *const tl, staff_idx_t staff, 
 static void write_words_and_symbols_xml(mu::engraving::XmlWriter &xml, const mu::engraving::String &words,
                                         const mu::engraving::String &attrs) {
     // Write symbols as separate elements, the rest as words.
-    static const std::wregex sym_regex(LR"(<sym>([^<>]+)</sym>)");
-    std::wstring wwords = words.to_std_w_string();
-    std::wsregex_iterator it(wwords.begin(), wwords.end(), sym_regex);
-    std::wsregex_iterator end;
+    const auto text = words.view();
+    constexpr std::u16string_view open = u"<sym>";
+    constexpr std::u16string_view close = u"</sym>";
     size_t last_pos = 0;
-    bool found_sym = false;
-    while (it != end) {
-        found_sym = true;
-        size_t match_pos = it->position();
-        size_t match_len = it->length();
-        // Text before <sym>
-        if (match_pos > last_pos) {
-            mu::engraving::String before = mu::engraving::String::from_std_w_string(wwords.substr(last_pos, match_pos - last_pos));
-            if (!before.trimmed().is_empty()) {
-                xml.tag_raw(u"words" + attrs, before.trimmed());
-            }
+    size_t pos = text.find(open);
+    while (pos != text.npos) {
+        const size_t name_pos = pos + open.size();
+        const size_t end = text.find_first_of(u"<>", name_pos);
+        if (end == text.npos) {
+            break;
         }
-        mu::engraving::String sym_name = mu::engraving::String::from_std_w_string((*it)[1].str());
-        if (!sym_name.trimmed().is_empty()) {
-            xml.tag_raw(u"symbol" + attrs, sym_name.trimmed());
+        if (end == name_pos || !text.substr(end).starts_with(close)) {
+            pos = text.find(open, end);
+            continue;
         }
-        last_pos = match_pos + match_len;
-        ++it;
+
+        const String before = String(text.substr(last_pos, pos - last_pos)).trimmed();
+        if (!before.empty()) {
+            xml.tag_raw(u"words" + attrs, before);
+        }
+        const String name = String(text.substr(name_pos, end - name_pos)).trimmed();
+        if (!name.empty()) {
+            xml.tag_raw(u"symbol" + attrs, name);
+        }
+        last_pos = end + close.size();
+        pos = text.find(open, last_pos);
     }
-    // Text after last <sym>
-    if (found_sym && last_pos < wwords.size()) {
-        mu::engraving::String after = mu::engraving::String::from_std_w_string(wwords.substr(last_pos));
-        if (!after.trimmed().is_empty()) {
-            xml.tag_raw(u"words" + attrs, after.trimmed());
-        }
-    }
-    // If no <sym> found
-    if (!found_sym) {
+    if (last_pos == 0) {
         xml.tag_raw(u"words" + attrs, words);
+    } else if (const String after = String(text.substr(last_pos)).trimmed(); !after.empty()) {
+        xml.tag_raw(u"words" + attrs, after);
     }
 }
 
@@ -7425,7 +7409,6 @@ static void part_list(XmlWriter &xml, Score *score, MusicXmlInstrumentMap &instr
 
         xml.start_element_raw(String(u"score-part id=\"P%1\"").arg(idx + 1));
         init_instr_map(instr_map, part->instruments(), score);
-        static const std::wregex acc(L"[♭♯]");
         XmlWriter::Attributes long_instrument_attributes;
         XmlWriter::Attributes short_instrument_attributes;
         // by default export the parts long name as part-name
@@ -7446,7 +7429,7 @@ static void part_list(XmlWriter &xml, Score *score, MusicXmlInstrumentMap &instr
         }
         xml.tag("part-name", long_instrument_attributes,
                 MScoreTextToMusicXml::to_plain_text(part_name).replace(u'♭', 'b').replace(u'♯', '#'));
-        if (part_name.contains(acc)) {
+        if (part_name.view().find_first_of(u"♭♯") != std::u16string_view::npos) {
             xml.start_element("part-name-display", long_instrument_attributes);
             write_display_name(xml, part_name);
             xml.end_element();
@@ -7457,7 +7440,7 @@ static void part_list(XmlWriter &xml, Score *score, MusicXmlInstrumentMap &instr
             }
             xml.tag("part-abbreviation", short_instrument_attributes,
                     MScoreTextToMusicXml::to_plain_text(part->short_name()).replace(u'♭', 'b').replace(u'♯', '#'));
-            if (part->short_name().contains(acc)) {
+            if (part->short_name().view().find_first_of(u"♭♯") != std::u16string_view::npos) {
                 xml.start_element("part-abbreviation-display", short_instrument_attributes);
                 write_display_name(xml, part->short_name());
                 xml.end_element();
@@ -8283,11 +8266,9 @@ bool ExportMusicXml::should_write_page_no(const Page *page) {
 
     auto macro_print_page_no = [&](Sid sid) -> bool {
         String text = style.style_st(sid);
-        std::wregex page_no = std::wregex(L"\\$([p|N|P])");
-        StringList results = text.search(page_no, {1}, SplitBehavior::SKIP_EMPTY_PARTS);
-
-        for (const String &s : results) {
-            Char c = s.at(0);
+        const auto view = text.view();
+        for (auto pos = view.find(u'$'); pos != view.npos && pos + 1 < view.size(); pos = view.find(u'$', pos + 1)) {
+            const char16_t c = view[pos + 1];
             if ((c == 'P') || (c == 'p' && page->page_number() > 0) ||
                 (c == 'N' && (page->page_number() + score_->page_number_offset() > 0 || score_->npages() > 1))) {
                 return true;
@@ -8841,16 +8822,18 @@ void ExportMusicXml::harmony(Harmony const *const h, FretDiagram const *const fd
             } break;
             case HarmonyType::ROMAN: {
                 int alter = 0;
-                static const std::wregex roman(L"(b|#)?([ivIV]+)");
-                if (text_name.contains(roman)) {
-                    StringList matches = text_name.search(roman, {1, 2});
+                const auto text = text_name.view();
+                constexpr std::u16string_view roman = u"ivIV";
+                const size_t start = text.find_first_of(roman);
+                if (start != text.npos) {
                     xml_.start_element("numeral");
-                    if (matches.at(0) == u"b") {
+                    if (start > 0 && text[start - 1] == u'b') {
                         alter = -1;
-                    } else if (matches.at(0) == u"#") {
+                    } else if (start > 0 && text[start - 1] == u'#') {
                         alter = 1;
                     }
-                    const String number_str = matches.at(1);
+                    const size_t end = std::min(text.find_first_not_of(roman, start), text.size());
+                    const String number_str(text.substr(start, end - start));
                     size_t harmony = 1;
                     if (number_str.contains(u"v", CaseSensitivity::CASE_INSENSITIVE)) {
                         if (number_str.starts_with(u"i", CaseSensitivity::CASE_INSENSITIVE)) {

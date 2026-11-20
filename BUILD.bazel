@@ -487,6 +487,7 @@ cc_binary(
         "src/engraving/tests/playback/playbackmodel_tests.cpp",
         "src/engraving/tests/repeat_tests.cpp",
         "src/engraving/tests/savehiddenparts_tests.cpp",
+        "src/engraving/tests/text_parsing_tests.cpp",
         "src/engraving/tests/utils/scorecomp.cpp",
         "src/engraving/tests/utils/scorerw.cpp",
         "src/engraving/tests/utils/testutils.cpp",
