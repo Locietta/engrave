@@ -1026,19 +1026,25 @@ String SystemHeaderLayout::formatted_instrument_name(System *system, Part *part,
         return result;
     }
 
+    return formatted_instrument_name(*instr, style, long_names);
+}
+
+String SystemHeaderLayout::formatted_instrument_name(const Instrument &instrument, const MStyle &style, bool long_names) {
+    const auto &label = instrument.instrument_label();
+    const bool trailing_dot = style.style_b(Sid::INSTRUMENT_NUMERALS_TRAILING_DOT_SINGLE);
     if (label.use_custom_name()) {
         return long_names ? label.custom_name_long() : label.custom_name_short();
     }
 
-    String instr_name = long_names ? instr->long_name() : instr->short_name();
+    String instr_name = long_names ? instrument.long_name() : instrument.short_name();
 
     bool show_transpo = long_names ? label.show_transposition_long() : label.show_transposition_short();
     show_transpo &=
         style.style_b(long_names ? Sid::INSTRUMENT_NAMES_SHOW_TRANSPOSITION_LONG : Sid::INSTRUMENT_NAMES_SHOW_TRANSPOSITION_SHORT);
-    String transposition = show_transpo ? instr->transposition() : String();
+    String transposition = show_transpo ? instrument.transposition() : String();
 
     bool show_number = long_names ? label.show_number_long() : label.show_number_short();
-    String number = instr->number() > 0 && show_number ? String::number(instr->number()) : String();
+    String number = instrument.number() > 0 && show_number ? String::number(instrument.number()) : String();
 
     InstrumentNamesFormat name_format =
         style.style_v(long_names ? Sid::INSTRUMENT_NAMES_FORMAT_LONG : Sid::INSTRUMENT_NAMES_FORMAT_SHORT).value<InstrumentNamesFormat>();

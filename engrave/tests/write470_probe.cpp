@@ -9,7 +9,8 @@
 
 int main(int argc, char **argv) {
     if (argc != 6 && argc != 7) {
-        std::fprintf(stderr, "usage: write470_probe ASSETS INPUT OUTPUT mscx|mscz default|4.70|5.00 [paired|one-end|excerpt]\n");
+        std::fprintf(stderr,
+                     "usage: write470_probe ASSETS INPUT OUTPUT mscx|mscz default|4.70|5.00 [paired|paired-sharp|one-end|excerpt]\n");
         return 1;
     }
     engrave::EngineOptions engine_options;
@@ -32,11 +33,14 @@ int main(int argc, char **argv) {
     } else if (argc == 7) {
         auto notes = (*document)->query({.types = {"Note"}});
         if (!notes || notes->elements.size() != 2) return 4;
+        const std::string mode(argv[6]);
+        const int pitch = mode == "paired-sharp" ? 73 : 62;
+        const int tpc = mode == "paired-sharp" ? 21 : 16;
         engrave::Batch batch;
-        batch.ops.push_back(engrave::SetPitch{notes->elements[0].id, 62, 16});
-        if (std::string(argv[6]) == "paired")
-            batch.ops.push_back(engrave::SetPitch{notes->elements[1].id, 62, 16});
-        else if (std::string(argv[6]) != "one-end")
+        batch.ops.push_back(engrave::SetPitch{notes->elements[0].id, pitch, tpc});
+        if (mode == "paired" || mode == "paired-sharp")
+            batch.ops.push_back(engrave::SetPitch{notes->elements[1].id, pitch, tpc});
+        else if (mode != "one-end")
             return 1;
         if (!(*document)->edit(batch)) return 4;
     }

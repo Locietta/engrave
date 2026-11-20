@@ -22,6 +22,7 @@
 #include "engraving/dom/chord.h"
 #include "engraving/dom/chordlist.h"
 #include "engraving/dom/excerpt.h"
+#include "engraving/dom/instrchange.h"
 #include "engraving/dom/instrument.h"
 #include "engraving/dom/location.h"
 #include "engraving/dom/masterscore.h"
@@ -29,8 +30,10 @@
 #include "engraving/dom/note.h"
 #include "engraving/dom/part.h"
 #include "engraving/dom/score.h"
+#include "engraving/dom/staff.h"
 #include "engraving/dom/tie.h"
 #include "engraving/infrastructure/mscwriter.h"
+#include "engraving/rendering/score/systemheaderlayout.h"
 #include "engraving/style/style.h"
 #include "global/io/buffer.h"
 #include "global/io/writebudget.h"
@@ -149,103 +152,107 @@ ExportWarningObject source_object(pugi::xml_node node, std::optional<ElementId> 
     throw std::invalid_argument("4.70 source warning has no addressable enclosing object");
 }
 
-std::string warning_code(std::string_view name) {
-    if (name == "SharedPart" || name == "sharedPart") return "B470_SHARED_PART_DROPPED";
-    if (name == "StaveSharingLabel") return "B470_STAVE_SHARING_LABEL_DROPPED";
-    if (name == "GroupBracket") return "B470_GROUP_BRACKET_DROPPED";
-    if (name == "Score") return "B470_UNSUPPORTED_FEATURE";
-    return "B470_UNSUPPORTED_FEATURE";
-}
-
-bool is_named_feature(pugi::xml_node node) {
-    const std::string_view name = node.name();
-    return name == "SharedPart" || name == "sharedPart" || name == "StaveSharingLabel" || name == "GroupBracket" ||
-           (name == "BracketItem" && std::string_view(node.child_value("type")) == "Group");
-}
-
-void inspect_features(pugi::xml_node node, std::optional<ElementId> inherited, std::vector<ExportWarning> &warnings) {
-    poll();
-    const auto object = node_id(node, inherited);
-    const std::string_view name = node.name();
-    if (name == "InstrumentLabel" && (node.child("allowGroupName") || node.child("customNameLongGroup") ||
-                                      node.child("customNameShortGroup") || node.child("useCustomGroupName"))) {
-        const auto id = object ? to_string(*object) : "";
-        if (std::none_of(warnings.begin(), warnings.end(), [&](const ExportWarning &w) {
-                return w.code == "B470_INSTRUMENT_GROUP_NAME_DROPPED" && w.object && w.object->id == id;
-            }))
-            warnings.push_back({"B470_INSTRUMENT_GROUP_NAME_DROPPED", "Instrument group-name override was removed.", object});
-        return;
-    }
-    if (name == "PageLocks") {
-        for (const auto lock : node.children("pageLock")) {
-            warnings.push_back(
-                {"B470_PAGE_LOCK_DROPPED", "Page lock was removed.",
-                 ExportWarningObject{"page_lock", std::string(lock.child_value("startMeasure")) + ".." + lock.child_value("endMeasure")}});
-        }
-        return;
-    }
-    if (is_named_feature(node)) {
-        // Associations refer to a SharedPart; only that source mapping owns a warning.
-        if (name == "sharedPart") return;
-        const auto code = name == "BracketItem" ? "B470_GROUP_BRACKET_DROPPED" : warning_code(name);
-        if (name == "BracketItem") {
-            warnings.push_back(
-                {code, "Group bracket was removed.",
-                 ExportWarningObject{"group_bracket", (object ? to_string(*object) : "") + ":" + node.child_value("level")}});
-        } else
-            warnings.push_back({code, "4.70 cannot represent " + std::string(name), object});
-    }
-    for (const auto child : node.children())
-        if (child.type() == pugi::node_element) inspect_features(child, object, warnings);
-}
-
 bool one_of(std::string_view value, std::initializer_list<std::string_view> candidates) {
     return std::find(candidates.begin(), candidates.end(), value) != candidates.end();
 }
 
-// This is a whitelist of the small subset whose 4.70 representation is
-// implemented here. It is intentionally not a general 5.00-to-4.70 rewrite.
-bool allowed(std::string_view parent, std::string_view child) {
-    if (parent.ends_with("/Spanner")) return one_of(child, {"Tie", "Pedal", "next", "prev"});
-    if (child == "linkedTo" && (parent.ends_with("/KeySig") || parent.ends_with("/TimeSig") || parent.ends_with("/Chord") ||
-                                parent.ends_with("/Note") || parent.ends_with("/Rest") || parent.ends_with("/Spanner/Tie")))
-        return true;
-    if (parent.ends_with("/voice/KeySig")) return one_of(child, {"eid", "concertKey"});
-    if (parent.ends_with("/voice/Rest")) return one_of(child, {"eid", "durationType"});
-    if (parent.ends_with("/Spanner/Tie") || parent.ends_with("/Spanner/Pedal")) return child == "eid";
-    if (parent.ends_with("/Spanner/next") || parent.ends_with("/Spanner/prev")) return child == "location";
-    if (parent.ends_with("/location")) return one_of(child, {"fractions", "measures", "voices", "staves", "notes"});
-    if (parent == "museScore") return one_of(child, {"programVersion", "programRevision", "Score"});
-    if (parent == "museScore/Score")
-        return one_of(child, {"eid", "name", "open", "Score", "Division", "Style", "showInvisible", "showUnprintable", "showFrames",
-                              "showMargins", "layoutMode", "metaTag", "Part", "Staff"});
-    if (parent == "museScore/Score/Part") return one_of(child, {"eid", "Staff", "Instrument", "show"});
-    if (parent == "museScore/Score/Part/Staff") return one_of(child, {"eid", "linkedTo", "StaffType", "barLineSpan", "bracket"});
-    if (parent == "museScore/Score/Part/Staff/StaffType") return child == "name";
-    if (parent == "museScore/Score/Part/Instrument")
-        return one_of(child,
-                      {"InstrumentLabel", "trackName", "instrumentId", "Channel", "minPitchP", "maxPitchP", "minPitchA", "maxPitchA"});
-    if (parent == "museScore/Score/Part/Instrument/InstrumentLabel") return one_of(child, {"longName", "shortName"});
-    if (parent == "museScore/Score/Part/Instrument/Channel") return one_of(child, {"program", "synti"});
-    if (parent == "museScore/Score/Staff") return child == "Measure";
-    if (parent == "museScore/Score/Staff/Measure") return one_of(child, {"eid", "voice"});
-    if (parent == "museScore/Score/Staff/Measure/voice") return one_of(child, {"Clef", "KeySig", "TimeSig", "Chord", "Rest", "Spanner"});
-    if (parent.ends_with("/voice/Clef")) return one_of(child, {"eid", "concertClefType", "transposingClefType", "isHeader"});
-    if (parent.ends_with("/voice/TimeSig")) return one_of(child, {"eid", "sigN", "sigD"});
-    if (parent.ends_with("/voice/Chord")) return one_of(child, {"eid", "durationType", "Note"});
-    if (parent.ends_with("/voice/Chord/Note")) return one_of(child, {"eid", "pitch", "tpc", "Spanner"});
-    return false;
+bool notation_item(std::string_view name) {
+    return one_of(name, {"Clef",
+                         "KeySig",
+                         "TimeSig",
+                         "Chord",
+                         "Rest",
+                         "Tuplet",
+                         "Beam",
+                         "Dynamic",
+                         "Tempo",
+                         "Text",
+                         "StaffText",
+                         "SystemText",
+                         "Expression",
+                         "RehearsalMark",
+                         "PlayTechAnnotation",
+                         "Lyrics",
+                         "Articulation",
+                         "Ornament",
+                         "Arpeggio",
+                         "Fermata",
+                         "BarLine",
+                         "Breath",
+                         "FretDiagram",
+                         "Harmony",
+                         "Fingering",
+                         "FiguredBass",
+                         "Sticking",
+                         "Ambitus",
+                         "Capo",
+                         "HarpPedalDiagram",
+                         "StaffTypeChange",
+                         "StaffState",
+                         "StringTunings",
+                         "Symbol",
+                         "FSymbol",
+                         "MeasureNumber",
+                         "MMRestRange",
+                         "PlayCountText",
+                         "Bend",
+                         "WhammyBar",
+                         "TremoloBar",
+                         "ChordLine",
+                         "InstrumentChange",
+                         "Marker",
+                         "Jump",
+                         "Spacer",
+                         "MeasureRepeat",
+                         "LayoutBreak"});
 }
 
-bool allowed_attribute(std::string_view path, std::string_view attr) {
-    if (path.ends_with("/Spanner")) return attr == "type";
-    if (path == "museScore/Score/Part/Staff/bracket") return one_of(attr, {"type", "span", "col", "visible"});
-    if (path == "museScore") return attr == "version";
-    if (path == "museScore/Score/Part" || path == "museScore/Score/Staff" || path == "museScore/Score/Part/Instrument") return attr == "id";
-    if (path == "museScore/Score/Part/Staff/StaffType") return attr == "group";
-    if (path == "museScore/Score/metaTag") return attr == "name";
-    if (path.ends_with("/Channel/program")) return attr == "value";
-    return false;
+bool allowed_child(pugi::xml_node parent, std::string_view child) {
+    const std::string_view name = parent.name();
+    if (name == "museScore") return one_of(child, {"programVersion", "programRevision", "Score"});
+    if (name == "Score")
+        return one_of(child, {"eid",
+                              "name",
+                              "open",
+                              "Score",
+                              "Division",
+                              "Style",
+                              "showInvisible",
+                              "showUnprintable",
+                              "showFrames",
+                              "showMargins",
+                              "layoutMode",
+                              "metaTag",
+                              "Part",
+                              "Staff",
+                              "Order",
+                              "SystemObjects",
+                              "SystemLocks",
+                              "SystemDividers",
+                              "Synthesizer",
+                              "page-offset",
+                              "markIrregularMeasures",
+                              "showSoundFlags",
+                              "Tracklist",
+                              "initialPartId"});
+    if (name == "Staff" && std::string_view(parent.parent().name()) == "Score")
+        return one_of(child, {"Measure", "VBox", "HBox", "TBox", "FBox"});
+    if (name == "voice") return notation_item(child) || one_of(child, {"Spanner", "location", "tick", "endTuplet"});
+    if (name == "Spanner") return one_of(child, {"Tie", "Pedal", "next", "prev"});
+    if (name == "Tie" || name == "Pedal") return one_of(child, {"eid", "linkedTo"});
+    if (name == "next" || name == "prev") return child == "location";
+    if (name == "location") return one_of(child, {"fractions", "measures", "voices", "staves", "notes", "grace"});
+    if (one_of(child,
+               {"SpannerMap", "ChordList", "Automation",        "Tie",     "PartialTie", "LaissezVib", "LaissezVibrer",     "Glissando",
+                "GuitarBend", "NoteLine",  "PartialLyricsLine", "Slur",    "Pedal",      "HairPin",    "Hairpin",           "Volta",
+                "Trill",      "Ottava",    "TextLine",          "Vibrato", "LetRing",    "PalmMute",   "GradualTempoChange"}))
+        return false;
+    return true;
+}
+
+void unsupported(pugi::xml_node node, std::string detail, std::optional<ElementId> score_id, std::vector<ExportWarning> &warnings) {
+    warnings.push_back(
+        {"B470_UNSUPPORTED_FEATURE", "4.70 conversion is not implemented for " + std::move(detail), source_object(node, score_id)});
 }
 
 // Translate only checked endpoint forms. Unrecognized properties remain in
@@ -337,102 +344,272 @@ void convert_connections(pugi::xml_node score) {
         pedal = next;
     }
     if (map && !map.first_child()) score.remove_child(map);
-    for (auto part : score.children("Part"))
-        for (auto staff : part.children("Staff")) {
-            for (auto bracket = staff.child("BracketItem"); bracket;) {
-                auto next = bracket.next_sibling("BracketItem");
-                bool checked = !bracket.first_attribute() && std::string_view(bracket.child_value("type")) == "Brace";
-                for (auto field : bracket.children())
-                    if (!one_of(field.name(), {"type", "bracketSpan", "level", "visible"})) checked = false;
-                if (checked) {
-                    auto legacy = staff.insert_child_before("bracket", bracket);
-                    legacy.append_attribute("type") = "1";
-                    legacy.append_attribute("span") = bracket.child_value("bracketSpan");
-                    legacy.append_attribute("col") = bracket.child_value("level");
-                    legacy.append_attribute("visible") = bracket.child("visible") ? bracket.child_value("visible") : "1";
-                    staff.remove_child(bracket);
-                }
-                bracket = next;
-            }
-        }
 }
 
-void inspect(pugi::xml_node node, const std::string &path, std::optional<ElementId> inherited, std::vector<ExportWarning> &warnings,
-             bool standalone_excerpt = false) {
+void convert_bracket(pugi::xml_node bracket, std::optional<ElementId> score_id, std::vector<ExportWarning> &warnings) {
+    constexpr std::array types{"Normal"sv, "Brace"sv, "Square"sv, "Line"sv};
+    const auto type = std::find(types.begin(), types.end(), bracket.child_value("type"));
+    if (type == types.end()) {
+        unsupported(bracket, "BracketItem/type", score_id, warnings);
+        return;
+    }
+    auto staff = bracket.parent();
+    auto legacy = staff.insert_child_before("bracket", bracket);
+    legacy.append_attribute("type") = static_cast<int>(type - types.begin());
+    legacy.append_attribute("span") = bracket.child_value("bracketSpan");
+    legacy.append_attribute("col") = bracket.child_value("level");
+    legacy.append_attribute("visible") = bracket.child("visible") ? bracket.child_value("visible") : "1";
+    staff.remove_child(bracket);
+}
+
+void convert_note_indices(pugi::xml_node chord, const Score &score, std::optional<ElementId> score_id,
+                          std::vector<ExportWarning> &warnings) {
+    const auto *object =
+        score.master_score()->eid_register()->item_from_eid(EID::from_std_string(std::string_view(chord.child_value("eid"))));
+    const auto *source = object && object->is_chord() ? static_cast<const Chord *>(object) : nullptr;
+    for (auto group : chord.children("NoteParenGroup")) {
+        for (auto note : group.child("Notes").children("NoteEID")) {
+            poll();
+            const auto eid = EID::from_std_string(std::string_view(note.child_value()));
+            if (source && eid.is_valid()) {
+                const auto &notes = source->notes();
+                const auto found = std::find_if(notes.begin(), notes.end(), [&](const Note *element) { return element->eid() == eid; });
+                if (found != notes.end()) {
+                    note.set_name("NoteIdx");
+                    note.text().set(static_cast<unsigned>(found - notes.begin()));
+                    continue;
+                }
+            }
+            unsupported(group, "NoteParenGroup/NoteEID", score_id, warnings);
+        }
+    }
+}
+
+bool neutral_mask(pugi::xml_node field, const Score &score) {
+    if (std::string_view(field.child_value()) == "auto") return true;
+    const Sid sid = std::string_view(field.parent().name()) == "Slur" ? Sid::MASK_SLURS : Sid::MASK_TIES;
+    return std::string_view(field.child_value()) == "off" && !score.style().style_b(sid);
+}
+
+void strip_neutral_masks(pugi::xml_node node, const Score &score) {
     poll();
-    const auto object = node_id(node, inherited);
-    for (const auto attr : node.attributes()) {
-        if (!allowed_attribute(path, attr.name()))
-            warnings.push_back({"B470_UNSUPPORTED_FEATURE", "4.70 conversion is not implemented for attribute " + path + "/@" + attr.name(),
-                                source_object(node, object)});
+    if (auto field = node.child("maskSlurTie"); field && neutral_mask(field, score)) node.remove_child(field);
+    for (auto child : node.children()) {
+        if (child.type() == pugi::node_element && std::string_view(child.name()) != "Score") strip_neutral_masks(child, score);
     }
-    // These values are intentionally limited to the independently checked
-    // piano/treble/4-4/whole-note subset; accepting arbitrary newer enum or
-    // instrument tokens would make an old reader's silent fallback unsafe.
-    const auto unsupported_value = [&](std::string_view value) {
-        warnings.push_back({"B470_UNSUPPORTED_FEATURE", "4.70 conversion is not implemented for " + path + " value " + std::string(value),
-                            source_object(node, object)});
+}
+
+void write_name(pugi::xml_node instrument, pugi::xml_node before, const char *tag, String name, int pos) {
+    if (name.empty()) return;
+    name.replace(u"\n", u"<br/>");
+    const auto value = name.to_std_string();
+    auto legacy = instrument.insert_child_before(tag, before);
+    if (pos) legacy.append_attribute("pos") = pos;
+    if (!legacy.append_buffer(value.data(), value.size(), pugi::parse_default | pugi::parse_fragment | pugi::parse_ws_pcdata))
+        throw std::runtime_error("invalid instrument label XML");
+}
+
+void convert_instrument(pugi::xml_node xml, const Instrument &instrument, const Part &part, const mu::engraving::Fraction &tick,
+                        std::optional<ElementId> score_id, std::vector<ExportWarning> &warnings) {
+    auto label = xml.child("InstrumentLabel");
+    if (!label) label = xml.prepend_child("InstrumentLabel");
+    const auto &style = part.score()->style();
+    const auto &staves = part.staves();
+    const bool hide_auto =
+        style.style_b(Sid::HIDE_INSTRUMENT_NAME_IF_ONE_INSTRUMENT) && part.score()->visible_part_count() <= 1 && !part.is_shared_part();
+    const auto hidden = [&](InstrumentLabelVisibility visibility) {
+        return visibility == InstrumentLabelVisibility::HIDE ||
+               (visibility == InstrumentLabelVisibility::AUTO && hide_auto &&
+                std::any_of(staves.begin(), staves.end(), [&](const Staff *staff) {
+                    const auto forced = staff->staff_type(tick)->instrument_label_visibility();
+                    return forced == InstrumentLabelVisibility::LONG || forced == InstrumentLabelVisibility::SHORT;
+                }));
     };
-    if (path == "museScore/Score/Part/Instrument" && std::string_view(node.attribute("id").value()) != "piano" &&
-        std::string_view(node.attribute("id").value()) != "flute")
-        unsupported_value(node.attribute("id").value());
-    if (path.starts_with("museScore/Score/Part/Instrument/")) {
-        const std::string_view field = node.name();
-        if (one_of(field, {"minPitchP", "maxPitchP", "minPitchA", "maxPitchA"})) {
-            const bool flute = std::string_view(node.parent().attribute("id").value()) == "flute";
-            const std::string_view expected = field == "minPitchP" ? "59" :
-                                              field == "maxPitchP" ? "98" :
-                                              field == "minPitchA" ? "60" :
-                                                                     "93";
-            if (!flute || node.child_value() != expected) unsupported_value(node.child_value());
+    for (const bool long_name : {true, false}) {
+        const char *tag = long_name ? "longName" : "shortName";
+        const auto name_type = long_name ? InstrumentLabelVisibility::LONG : InstrumentLabelVisibility::SHORT;
+        const auto primary_visibility =
+            staves.empty() ? InstrumentLabelVisibility::AUTO : staves.front()->staff_type(tick)->instrument_label_visibility();
+        if (!hidden(primary_visibility)) {
+            const bool use_long =
+                primary_visibility == InstrumentLabelVisibility::AUTO ? long_name : primary_visibility == InstrumentLabelVisibility::LONG;
+            auto value = rendering::score::SystemHeaderLayout::formatted_instrument_name(instrument, style, use_long);
+            const auto base_name = use_long ? instrument.long_name() : instrument.short_name();
+            const auto original = label.child(use_long ? "longName" : "shortName");
+            if (original && value == base_name) {
+                xml.insert_copy_before(original, label).set_name(tag);
+            } else {
+                write_name(xml, label, tag, std::move(value), original.attribute("pos").as_int());
+            }
+        }
+        for (std::size_t index = 0; index < staves.size(); ++index) {
+            poll();
+            const auto *staff_type = staves[index]->staff_type(tick);
+            const auto visibility = staff_type->instrument_label_visibility();
+            if (hidden(visibility)) continue;
+            const auto &staff_label = staff_type->staff_label();
+            const auto &value =
+                (visibility == InstrumentLabelVisibility::AUTO ? name_type : visibility) == InstrumentLabelVisibility::LONG ?
+                    staff_label.long_name() :
+                    staff_label.short_name();
+            // The legacy layout defines individual placements for the first three staves.
+            if (index < 3)
+                write_name(xml, label, tag, value, static_cast<int>(2 * index + 1));
+            else if (!value.empty())
+                unsupported(xml, "StaffLabel position", score_id, warnings);
         }
     }
-    if (path == "museScore/Score/Part/Staff/StaffType" && std::string_view(node.attribute("group").value()) != "pitched")
-        unsupported_value(node.attribute("group").value());
-    if (path == "museScore/Score/Part/Staff/StaffType/name" && std::string_view(node.child_value()) != "stdNormal")
-        unsupported_value(node.child_value());
-    if ((path.ends_with("/voice/Clef/concertClefType") || path.ends_with("/voice/Clef/transposingClefType")) &&
-        std::string_view(node.child_value()) != "G")
-        unsupported_value(node.child_value());
-    if (path.ends_with("/voice/TimeSig/sigN") && std::string_view(node.child_value()) != "4") unsupported_value(node.child_value());
-    if (path.ends_with("/voice/TimeSig/sigD") && std::string_view(node.child_value()) != "4") unsupported_value(node.child_value());
-    if ((path.ends_with("/voice/Chord/durationType") || path.ends_with("/voice/Rest/durationType")) &&
-        !one_of(node.child_value(), {"whole", "half", "quarter"}) &&
-        !(standalone_excerpt && std::string_view(node.child_value()) == "eighth"))
-        unsupported_value(node.child_value());
-    if (path.ends_with("/Spanner")) {
-        const std::string_view type = node.attribute("type").value();
-        const bool note = path.ends_with("/Note/Spanner");
-        if ((note && type != "Tie") || (!note && type != "Pedal")) unsupported_value(type);
+    xml.remove_child(label);
+}
+
+struct ScoreFeatures {
+    bool lyrics = false;
+    bool slurs = false;
+    bool ties = false;
+    bool dynamics = false;
+    bool dashed_bars = false;
+    bool grand_staff = false;
+    bool vocal_staves = false;
+    bool names = false;
+    bool force_names = false;
+};
+
+bool five_only_style_is_inactive(std::string_view name, const ScoreFeatures &features) {
+    // These styles configure features already projected by the part, bracket,
+    // and label conversions.
+    if (name.starts_with("groupBracket") || name.starts_with("staveSharing") || name.starts_with("sharedOnStaff") ||
+        name.starts_with("unisonLabel") ||
+        one_of(name, {"allowVoiceCrossing", "enableStaveSharing", "textForUnisonLabel", "windsNameByGroup", "vocalsNameByGroup",
+                      "stringsNameByGroup", "othersNameByGroup", "instrumentNamesAlignIncludeGroupBrackets",
+                      "instrumentNumeralsTrailingDotSingle"}) ||
+        name.starts_with("instrumentNamesFormat") || name.starts_with("instrumentNamesCustomFormat") ||
+        name.starts_with("instrumentNamesShowTransposition"))
+        return true;
+    if (name.starts_with("instrumentNumerals")) return true;
+    if (name.starts_with("instrumentNames")) return !features.names;
+    if (name.starts_with("dashBar")) return !features.dashed_bars;
+    if (name == "lyricsStackingOrder") return !features.lyrics || !features.dynamics;
+    if (name == "lyricsAutoCenterOnGrandStaff") return !features.lyrics || !features.grand_staff;
+    if (name == "lyricsAutoCenterOnVocalStaves") return !features.lyrics || !features.vocal_staves;
+    if (name == "dynamicsHairpinsAutoCenterOnVocalStaves") return !features.dynamics || !features.vocal_staves;
+    if (name == "maskSlurs") return !features.slurs;
+    if (name == "maskTies") return !features.ties;
+    return false;
+}
+
+void convert_style(pugi::xml_node score_node, Score &score, std::optional<ElementId> score_id, const ScoreFeatures &features,
+                   std::vector<ExportWarning> &warnings) {
+    // The native writer can omit excerpt properties that match the master.
+    // Write the effective style so the changed legacy defaults are explicit.
+    muse::ByteArray data;
+    muse::io::Buffer buffer(&data);
+    buffer.open(muse::io::IODevice::WRITE_ONLY);
+    if (!score.style().write(&buffer)) throw std::runtime_error("could not serialize score style");
+    buffer.close();
+    charge_xml(data.size());
+    pugi::xml_document xml;
+    if (!xml.load_buffer(data.const_data(), data.size(), pugi::parse_default | pugi::parse_ws_pcdata))
+        throw std::runtime_error("invalid style");
+    auto style = xml.child("museScore").child("Style");
+    std::array<bool, std::size(supported_styles)> seen{};
+    for (auto child = style.first_child(); child;) {
+        poll();
+        const auto next = child.next_sibling();
+        if (child.type() == pugi::node_element) {
+            const std::string_view name = child.name();
+            const auto *known = find_style(name);
+            if (!known) {
+                unsupported(score_node, "style " + std::string(name), score_id, warnings);
+            } else if (std::exchange(seen[known - std::begin(supported_styles)], true)) {
+                unsupported(score_node, "duplicate style " + std::string(name), score_id, warnings);
+            } else if (name == "defaultsVersion") {
+                child.text().set("470");
+            } else if (!known->legacy) {
+                if (!five_only_style_is_inactive(name, features) && !style_matches(child, *known))
+                    unsupported(score_node, "style " + std::string(name), score_id, warnings);
+                style.remove_child(child);
+            }
+        }
+        child = next;
     }
-    if (path == "museScore/Score/Part/Staff/bracket" && std::string_view(node.attribute("type").value()) != "1")
-        unsupported_value(node.attribute("type").value());
-    if (path.ends_with("/voice/KeySig/concertKey") && std::string_view(node.child_value()) != "0") unsupported_value(node.child_value());
-    if (standalone_excerpt && path.ends_with("/VBox/Text/style") && std::string_view(node.child_value()) != "instrument_excerpt")
-        unsupported_value(node.child_value());
-    if (standalone_excerpt && (path.ends_with("/appoggiatura") || path.ends_with("/grace8after")) &&
-        !std::string_view(node.child_value()).empty())
-        unsupported_value(node.child_value());
-    for (const auto child : node.children()) {
-        if (child.type() != pugi::node_element) continue;
-        const std::string name = child.name();
-        // The style is replaced with a separately checked, complete 4.70 style.
-        if (path == "museScore/Score" && name == "Style") continue;
-        if (path == "museScore/Score" && name == "PageLocks") {
-            continue;
+    if (!style.child("defaultsVersion")) style.prepend_child("defaultsVersion").text().set("470");
+    if (features.force_names && score.visible_part_count() == 1) style.child("hideInstrumentNameIfOneInstrument").text().set(false);
+    if (auto old = score_node.child("Style")) score_node.remove_child(old);
+    score_node.prepend_copy(style);
+}
+
+void convert_notation(pugi::xml_node node, const Score &score, std::optional<ElementId> score_id, ScoreFeatures &features,
+                      std::vector<ExportWarning> &warnings) {
+    poll();
+    const std::string_view name = node.name();
+    const std::string_view parent = node.parent().name();
+    features.lyrics |= name == "Lyrics";
+    features.slurs |= name == "Slur";
+    features.ties |= name == "Tie";
+    features.dynamics |= one_of(name, {"Dynamic", "Expression", "HairPin"}) ||
+                         (name == "Spanner" && std::string_view(node.attribute("type").value()) == "Pedal");
+    features.dashed_bars |= name == "BarLine" && std::string_view(node.child_value("subtype")) == "dashed";
+
+    if (name == "Chord" && node.child("NoteParenGroup")) {
+        convert_note_indices(node, score, score_id, warnings);
+    } else if (name == "Spanner") {
+        const char *expected = parent == "Note" ? "Tie" : "Pedal";
+        if (std::string_view(node.attribute("type").value()) != expected || node.first_attribute().next_attribute())
+            unsupported(node, "Spanner type or attributes", score_id, warnings);
+    } else if (one_of(name, {"rootCase", "bassCase"}) && parent == "Harmony") {
+        constexpr std::array cases{"auto"sv, "capital"sv, "lower"sv, "upper"sv};
+        const auto value = std::find(cases.begin(), cases.end(), node.child_value());
+        if (value == cases.end())
+            unsupported(node, "Harmony/" + std::string(name), score_id, warnings);
+        else
+            node.text().set(static_cast<int>(value - cases.begin()) - 1);
+    } else if (name == "subtype" && one_of(parent, {"TremoloSingleChord", "TremoloTwoChord"}) &&
+               one_of(node.child_value(), {"r128", "r256", "c128", "c256"})) {
+        unsupported(node, std::string(parent) + " subtype " + node.child_value(), score_id, warnings);
+    } else if (name == "InstrumentChange" && node.child("Instrument")) {
+        const auto *object =
+            score.master_score()->eid_register()->item_from_eid(EID::from_std_string(std::string_view(node.child_value("eid"))));
+        if (object && object->is_instrument_change()) {
+            const auto *change = static_cast<const InstrumentChange *>(object);
+            convert_instrument(node.child("Instrument"), *change->instrument(), *change->part(), change->tick(), score_id, warnings);
+        } else {
+            unsupported(node, "InstrumentChange/Instrument", score_id, warnings);
         }
-        const bool excerpt_field =
-            standalone_excerpt && ((path == "museScore/Score/Staff" && name == "VBox") ||
-                                   (path.ends_with("/VBox") && one_of(name, {"eid", "linkedTo", "height", "Text"})) ||
-                                   (path.ends_with("/VBox/Text") && one_of(name, {"eid", "style", "text"})) ||
-                                   (path.ends_with("/voice/Chord") && one_of(name, {"appoggiatura", "grace8after"})) ||
-                                   (path.ends_with("/location") && name == "grace"));
-        if (!allowed(path, name) && !excerpt_field) {
-            warnings.push_back(
-                {warning_code(name), "4.70 conversion is not implemented for " + path + "/" + name, source_object(child, object)});
-            continue;
+    }
+
+    for (auto child = node.first_child(); child;) {
+        poll();
+        const auto next = child.next_sibling();
+        const std::string_view field = child.name();
+        if (child.type() == pugi::node_element && !one_of(field, {"Score", "Style"})) {
+            if (!allowed_child(node, field)) {
+                unsupported(child, std::string(name) + "/" + std::string(field), score_id, warnings);
+            } else if (name == "Staff" && field == "BracketItem") {
+                convert_bracket(child, score_id, warnings);
+            } else if (field == "maskSlurTie" || (name == "ChordLine" && one_of(field, {"o1", "o2", "o3", "o4"}))) {
+                unsupported(child, std::string(name) + "/" + std::string(field), score_id, warnings);
+            } else if ((name == "Harmony" && field == "excludeVerticalAlign") ||
+                       (name == "MeasureRepeat" && field == "measureRepeatNumberOffset")) {
+                if (std::string_view(child.child_value()) == "false" || child.text().as_double(1.0) == 0.0)
+                    node.remove_child(child);
+                else
+                    unsupported(child, std::string(name) + "/" + std::string(field), score_id, warnings);
+            } else if (one_of(name, {"Beam", "TremoloTwoChord"}) && field == "Fragment") {
+                // The current writer marks only fragments for the opposite direction.
+                if (child.attribute("direction"))
+                    node.remove_child(child);
+                else
+                    child.remove_attribute("no");
+            } else if (name == "StaffType" && one_of(field, {"StaffLabel", "instrumentLabelVisibility"})) {
+                if (parent == "StaffTypeChange")
+                    unsupported(child, "StaffTypeChange/StaffType/" + std::string(field), score_id, warnings);
+                else
+                    node.remove_child(child);
+            } else {
+                convert_notation(child, score, score_id, features, warnings);
+            }
         }
-        inspect(child, name == "Score" ? "museScore/Score" : path + "/" + name, object, warnings, standalone_excerpt);
+        child = next;
     }
 }
 
@@ -477,7 +654,21 @@ void normalize_warnings(std::vector<ExportWarning> &warnings) {
     warnings = std::move(unique);
 }
 
-// Remove only explicitly mapped fields. Unknown siblings still reach inspect().
+// Keep authored whitespace in rich text while exposing structural children to the connector checks.
+void remove_xml_indentation(pugi::xml_node node) {
+    poll();
+    if (one_of(node.name(), {"text", "longName", "shortName", "transposition"})) return;
+    for (auto child = node.first_child(); child;) {
+        const auto next = child.next_sibling();
+        if (child.type() == pugi::node_element)
+            remove_xml_indentation(child);
+        else if (child.type() == pugi::node_pcdata && node.first_child() != node.last_child() &&
+                 std::string_view(child.value()).find_first_not_of(" \t\r\n") == std::string_view::npos)
+            node.remove_child(child);
+        child = next;
+    }
+}
+
 void convert_degradations(pugi::xml_node node, std::vector<ExportWarning> &warnings) {
     for (auto child = node.first_child(); child;) {
         poll();
@@ -496,7 +687,12 @@ void convert_degradations(pugi::xml_node node, std::vector<ExportWarning> &warni
             warnings.push_back({"B470_STAVE_SHARING_LABEL_DROPPED", "Stave-sharing label was removed.", source_object(child, {})});
             remove = true;
         } else if (name == "PageLocks") {
-            inspect_features(child, {}, warnings);
+            for (auto lock : child.children("pageLock")) {
+                poll();
+                warnings.push_back({"B470_PAGE_LOCK_DROPPED", "Page lock was removed.",
+                                    ExportWarningObject{"page_lock", std::string(lock.child_value("startMeasure")) + ".." +
+                                                                         lock.child_value("endMeasure")}});
+            }
             remove = true;
         } else if (name == "BracketItem" && std::string_view(child.child_value("type")) == "Group") {
             warnings.push_back(
@@ -635,10 +831,12 @@ Result<ExportOutput> export_score(const music::EngineContext &context, const mus
     poll();
     charge_xml(source.size());
     pugi::xml_document xml;
-    if (!xml.load_buffer(source.data(), source.size())) throw std::runtime_error("could not parse the engine's score output");
+    if (!xml.load_buffer(source.data(), source.size(), pugi::parse_default | pugi::parse_ws_pcdata))
+        throw std::runtime_error("could not parse the engine's score output");
     auto root = xml.child("museScore");
     auto score_node = root.child("Score");
     if (!root || !score_node) throw std::runtime_error("engine output has no score");
+    remove_xml_indentation(root);
     std::vector<ExportWarning> degraded;
     convert_degradations(root, degraded);
     // The old reader forces these switches off. Warn on every applicable
@@ -651,8 +849,11 @@ Result<ExportOutput> export_score(const music::EngineContext &context, const mus
                 const auto matches = std::count_if(source_score->parts().begin(), source_score->parts().end(),
                                                    [&](const Part *other) { return other->instrument()->id() == instrument->id(); });
                 if (matches < 2) continue;
-                if (((group == "woodwinds" || group == "brass") && source_score->style().style_b(Sid::WINDS_NAME_BY_GROUP)) ||
-                    (group == "vocals" && source_score->style().style_b(Sid::VOCALS_NAME_BY_GROUP))) {
+                const Sid group_style = (group == "woodwinds" || group == "brass") ? Sid::WINDS_NAME_BY_GROUP :
+                                        group == "vocals"                          ? Sid::VOCALS_NAME_BY_GROUP :
+                                        group == "strings"                         ? Sid::STRINGS_NAME_BY_GROUP :
+                                                                                     Sid::OTHERS_NAME_BY_GROUP;
+                if (source_score->style().style_b(group_style)) {
                     degraded.push_back({"B470_INSTRUMENT_GROUP_NAME_DROPPED", "Instrument group-name override was removed.",
                                         ExportWarningObject{"part", to_string(from_engine(part->eid()))}});
                 }
@@ -662,6 +863,8 @@ Result<ExportOutput> export_score(const music::EngineContext &context, const mus
     std::vector<pugi::xml_node> score_nodes{score_node};
     for (std::size_t i = 0; i < score_nodes.size(); ++i)
         for (auto excerpt : score_nodes[i].children("Score")) score_nodes.push_back(excerpt);
+    if (source_scores.size() != score_nodes.size()) throw std::runtime_error("excerpt count changed during serialization");
+    for (std::size_t index = 0; index < score_nodes.size(); ++index) strip_neutral_masks(score_nodes[index], *source_scores[index]);
     if (!score.is_master()) {
         // Reuse the engine's legacy location calculation, including grace-note
         // indices. Resolve only endpoints actually emitted by standalone 5.00.
@@ -719,80 +922,40 @@ Result<ExportOutput> export_score(const music::EngineContext &context, const mus
             }
         }
     }
-    for (auto item : score_nodes) convert_connections(item);
-    inspect(root, "museScore", {}, warnings, !score.is_master());
-
-    if (source_scores.size() != score_nodes.size()) throw std::runtime_error("excerpt count changed during serialization");
-    for (std::size_t score_index = 0; score_index < score_nodes.size(); ++score_index) {
-        muse::ByteArray current_style_data;
-        muse::io::Buffer current_style_buffer(&current_style_data);
-        current_style_buffer.open(muse::io::IODevice::WRITE_ONLY);
-        if (!source_scores[score_index]->style().write(&current_style_buffer))
-            throw std::runtime_error("could not serialize excerpt style");
-        current_style_buffer.close();
-        charge_xml(current_style_data.size());
-        pugi::xml_document current_style_xml;
-        if (!current_style_xml.load_buffer(current_style_data.const_data(), current_style_data.size()))
-            throw std::runtime_error("invalid style");
-        auto style = current_style_xml.child("museScore").child("Style");
-        std::size_t style_count = 0, unique_styles = 0;
-        std::array<bool, std::size(supported_styles)> seen_styles{};
-        // These 5.00-only knobs are irrelevant only when their target is absent.
-        // Group naming is deliberately projected to ordinary instrument names.
-        const bool no_lyrics = !root.select_node(".//Lyrics");
-        const bool no_slurs = !root.select_node(".//Slur");
-        const bool no_ties = !root.select_node(".//Tie");
-        for (auto child = style.first_child(); child;) {
+    for (std::size_t index = 0; index < score_nodes.size(); ++index) {
+        auto current = score_nodes[index];
+        auto &source_score = *source_scores[index];
+        const auto current_id = source_score.eid().is_valid() ? std::optional(from_engine(source_score.eid())) : score_id;
+        ScoreFeatures features;
+        auto source_part = source_score.parts().begin();
+        for (auto part : current.children("Part")) {
             poll();
-            const auto next = child.next_sibling();
-            if (child.type() != pugi::node_element) {
-                child = next;
-                continue;
+            if (source_part == source_score.parts().end()) throw std::runtime_error("part count changed during serialization");
+            const auto &part_dom = **source_part++;
+            const auto *instrument = part_dom.instrument();
+            features.grand_staff |= part_dom.nstaves() > 1;
+            features.vocal_staves |= instrument->group() == "vocals";
+            features.names |= !instrument->instrument_label().empty();
+            for (const auto *staff : part_dom.staves()) {
+                const auto *type = staff->staff_type(mu::engraving::Fraction(0, 1));
+                features.names |= !type->staff_label().empty();
+                const auto visibility = type->instrument_label_visibility();
+                features.force_names |= visibility == InstrumentLabelVisibility::LONG || visibility == InstrumentLabelVisibility::SHORT;
             }
-            const std::string_view name = child.name();
-            ++style_count;
-            const auto *known = find_style(name);
-            // Only values covered by the 4.70 control are accepted in this slice.
-            // In particular a 5.00 default can differ from 4.70 behavior.
-            const bool converted_style =
-                !child.first_attribute() &&
-                (
-                    // These legacy values have the same representation and meaning;
-                    // excerpts use an empty header/footer instead of the control's text.
-                    (name == "headerFirstPage" && one_of(child.child_value(), {"0", "1"})) ||
-                    (one_of(name, {"evenHeaderC", "oddHeaderC", "evenFooterL", "evenFooterC", "oddFooterL", "oddFooterC"}) &&
-                     std::string_view(child.child_value()).empty()) ||
-                    (one_of(name, {"evenFooterC", "oddFooterC"}) && std::string_view(child.child_value()) == "$C") ||
-                    (one_of(name, {"windsNameByGroup", "vocalsNameByGroup"}) && one_of(child.child_value(), {"0", "1"})) ||
-                    (name == "lyricsStackingOrder" && no_lyrics && one_of(child.child_value(), {"0", "1"})) ||
-                    (name == "maskSlurs" && no_slurs && one_of(child.child_value(), {"0", "1"})) ||
-                    (name == "maskTies" && no_ties && one_of(child.child_value(), {"0", "1"})));
-            if (!known || (!style_matches(child, *known) && !converted_style)) {
-                warnings.push_back(
-                    {"B470_UNSUPPORTED_FEATURE", "4.70 conversion is not implemented for style " + std::string(name), score_id});
-            }
-            if (known) {
-                const auto index = static_cast<std::size_t>(known - std::begin(supported_styles));
-                if (seen_styles[index])
-                    warnings.push_back(
-                        {"B470_UNSUPPORTED_FEATURE", "4.70 conversion encountered a duplicate style " + std::string(name), score_id});
-                else {
-                    seen_styles[index] = true;
-                    ++unique_styles;
-                }
-            }
-            if (name == "defaultsVersion" && known) {
-                child.text().set("470");
-            } else if (known && !known->legacy) {
-                style.remove_child(child);
-            }
-            child = next;
+            auto first_instrument = part.child("Instrument");
+            if (!first_instrument) throw std::runtime_error("serialized part has no instrument");
+            convert_instrument(first_instrument, *instrument, part_dom, mu::engraving::Fraction(0, 1), current_id, warnings);
+            auto legacy_track_name = part.insert_child_before("trackName", first_instrument);
+            legacy_track_name.text().set(part_dom.part_name().to_std_string().c_str());
         }
-        if (style_count != std::size(supported_styles) || unique_styles != std::size(supported_styles))
-            warnings.push_back({"B470_UNSUPPORTED_FEATURE", "4.70 conversion is not implemented for this style catalog", score_id});
-        auto current_score = score_nodes[score_index];
-        if (auto old = current_score.child("Style")) current_score.remove_child(old);
-        current_score.prepend_copy(style);
+        if (source_part != source_score.parts().end()) throw std::runtime_error("part count changed during serialization");
+        convert_connections(current);
+        convert_notation(current, source_score, current_id, features, warnings);
+        convert_style(current, source_score, current_id, features, warnings);
+        for (auto part : current.children("Part")) part.remove_child("eid");
+    }
+    for (auto child : root.children()) {
+        if (child.type() == pugi::node_element && !allowed_child(root, child.name())) unsupported(child, child.name(), score_id, warnings);
     }
     if (!warnings.empty()) {
         warnings.insert(warnings.begin(), degraded.begin(), degraded.end());
@@ -800,30 +963,6 @@ Result<ExportOutput> export_score(const music::EngineContext &context, const mus
     }
 
     warnings = std::move(degraded);
-
-    // 5.00 wraps instrument names in InstrumentLabel, while 4.70 reads them
-    // directly in Instrument. It also stores the part name on Part itself.
-    for (std::size_t index = 0; index < score_nodes.size(); ++index) {
-        auto current_score = score_nodes[index];
-        auto source_part = source_scores[index]->parts().begin();
-        for (auto part : current_score.children("Part")) {
-            if (source_part == source_scores[index]->parts().end()) throw std::runtime_error("part count changed during serialization");
-            auto first_instrument = part.child("Instrument");
-            if (!first_instrument) throw std::runtime_error("serialized part has no instrument");
-            for (auto instrument = first_instrument; instrument; instrument = instrument.next_sibling("Instrument")) {
-                if (auto label = instrument.child("InstrumentLabel")) {
-                    for (const auto name : label.children())
-                        if (name.type() == pugi::node_element) instrument.insert_copy_before(name, label);
-                    instrument.remove_child(label);
-                }
-            }
-            auto legacy_track_name = part.insert_child_before("trackName", first_instrument);
-            legacy_track_name.text().set((*source_part++)->part_name().to_std_string().c_str());
-            // 4.70 identifies parts by numeric id; EIDs on musical objects remain.
-            part.remove_child("eid");
-        }
-        if (source_part != source_scores[index]->parts().end()) throw std::runtime_error("part count changed during serialization");
-    }
     normalize_warnings(warnings);
     root.attribute("version").set_value("4.70");
 
