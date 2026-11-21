@@ -144,6 +144,7 @@ struct SlideImporter : mu::iex::guitarpro::GuitarPro3 {
     explicit SlideImporter(mu::engraving::MasterScore *s) : GuitarPro3(s, 300) { slurs.resize(s->nstaves(), nullptr); }
 
     using GuitarPro::create_slide;
+    using GuitarPro::create_slur;
     using GuitarPro::legato_slide;
     using GuitarPro::shift_slide;
 };
@@ -241,6 +242,17 @@ TEST(GuitarProImport, CreateSlideFindsPreviousChordAcrossOtherTracksAndSkipsMiss
     ASSERT_TRUE(slur && slur->is_slur());
     EXPECT_EQ(slur->start_element(), legato_start);
     EXPECT_EQ(slur->end_element(), legato_end);
+
+    importer.create_slur(true, 0, shift_start);
+    importer.create_slide(SlideImporter::legato_slide, after_rest, 0);
+    importer.create_slur(false, 0, shift_end);
+    ASSERT_EQ(master->spanner().size(), 2u);
+    const auto open_slur = master->spanner().find(shift_start->tick().ticks());
+    ASSERT_NE(open_slur, master->spanner().end());
+    ASSERT_TRUE(open_slur->second->is_slur());
+    EXPECT_EQ(open_slur->second->start_element(), shift_start);
+    EXPECT_EQ(open_slur->second->end_element(), shift_end);
+    EXPECT_EQ(open_slur->second->tick2(), shift_end->tick());
 
     ASSERT_TRUE((*opened)->render({.format = engrave::RenderFormat::SVG}));
 }

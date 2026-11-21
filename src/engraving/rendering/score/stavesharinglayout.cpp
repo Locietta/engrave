@@ -384,12 +384,14 @@ std::optional<SharedTrackMap> StaveSharingLayout::compute_track_map(const TrackG
     track_idx_t cur_shared_track = range.start_track;
     std::vector<bool> used_slots(range.end_track - range.start_track);
     const bool allow_crossing = ctx.style.style_b(Sid::ALLOW_VOICE_CROSSING);
-    const auto compatible = [&](track_idx_t slot, track_idx_t track) {
+    const auto compatible = [&](track_idx_t slot, const TrackGroup &group) {
         return std::ranges::all_of(track_map, [&](const auto &assignment) {
             const auto [origin, shared] = assignment;
             if (track2staff(shared) != track2staff(slot)) return true;
-            return shared < slot ? can_go_to_same_stave(origin, track, allow_crossing, ctx) :
-                                   can_go_to_same_stave(track, origin, allow_crossing, ctx);
+            return std::ranges::all_of(group, [&](track_idx_t track) {
+                return shared < slot ? can_go_to_same_stave(origin, track, allow_crossing, ctx) :
+                                       can_go_to_same_stave(track, origin, allow_crossing, ctx);
+            });
         });
     };
 
@@ -398,10 +400,12 @@ std::optional<SharedTrackMap> StaveSharingLayout::compute_track_map(const TrackG
             continue;
         }
 
+        const auto unison = unisons_map.find(track);
+        const auto &group = unison != unisons_map.end() ? unison->second : same_voice_map.at(track);
         while (cur_shared_track < range.end_track) {
             if (used_slots[cur_shared_track - range.start_track]) {
                 ++cur_shared_track;
-            } else if (!compatible(cur_shared_track, track)) {
+            } else if (!compatible(cur_shared_track, group)) {
                 cur_shared_track = track_zero_voice(cur_shared_track + ::mu::engraving::voices);
             } else {
                 break;
@@ -410,23 +414,16 @@ std::optional<SharedTrackMap> StaveSharingLayout::compute_track_map(const TrackG
         if (cur_shared_track >= range.end_track) {
             cur_shared_track = range.start_track;
             while (cur_shared_track < range.end_track &&
-                   (used_slots[cur_shared_track - range.start_track] || !compatible(cur_shared_track, track))) {
+                   (used_slots[cur_shared_track - range.start_track] || !compatible(cur_shared_track, group))) {
                 ++cur_shared_track;
             }
             if (cur_shared_track == range.end_track) return std::nullopt;
         }
         used_slots[cur_shared_track - range.start_track] = true;
 
-        if (muse::contains(unisons_map, track)) {
-            for (track_idx_t unison_track : unisons_map[track]) {
-                track_map[unison_track] = cur_shared_track;
-                assigned_tracks.insert(unison_track);
-            }
-        } else {
-            for (track_idx_t shared_voice_track : same_voice_map[track]) {
-                track_map[shared_voice_track] = cur_shared_track;
-                assigned_tracks.insert(shared_voice_track);
-            }
+        for (track_idx_t origin_track : group) {
+            track_map[origin_track] = cur_shared_track;
+            assigned_tracks.insert(origin_track);
         }
 
         track2voice(cur_shared_track) == 0 ? ++cur_shared_track :
@@ -1363,18 +1360,13 @@ void StaveSharingLayout::make_shared_chord_rests(StaveSharingContext &ctx) {
 }
 
 void StaveSharingLayout::make_shared_breaths(StaveSharingContext &ctx) {
-    std::vector<EngravingItem *> shared_breaths;
-
     for (Segment *seg : ctx.segments_to_update) {
+        if (!seg->is_breath_type()) continue;
         const SharedTrackMap &track_map = ctx.map_at_tick(seg->tick());
         if (track_map.empty()) continue;
         const auto start_origin_track = track_map.begin()->first;
         const auto end_origin_track = track_map.rbegin()->first;
         std::vector<EngravingItem *> shared_breaths;
-        if (!seg->is_breath_type()) {
-            continue;
-        }
-
         for (const auto &[origin_track, shared_track] : track_map) {
             Breath *origin_breath = to_breath(seg->effective_element(origin_track));
             if (!origin_breath) {
@@ -1577,7 +1569,6 @@ void StaveSharingLayout::make_shared_spanners(StaveSharingContext &ctx) {
         if (track_map.empty()) continue;
         const auto start_origin_track = track_map.begin()->first;
         const auto end_origin_track = track_map.rbegin()->first;
-        std::vector<EngravingItem *> shared_spanners;
         if (spanner->track() < start_origin_track || spanner->track() > end_origin_track) {
             continue;
         }
@@ -1625,7 +1616,7 @@ void StaveSharingLayout::make_shared_spanners(StaveSharingContext &ctx) {
 
         const auto old_assignment =
             shared_spanner->is_hairpin() ? to_hairpin(shared_spanner)->voice_assignment() : VoiceAssignment::ALL_VOICE_IN_INSTRUMENT;
-        shared_spanners.push_back(shared_spanner);
+        EngravingItem *const shared_spanners[]{shared_spanner};
         manage_voice_property_and_track_for_shared_items(shared_spanners, start_origin_track, end_origin_track, track_map);
         // Staff-anchored lines have one track. Preserve the line at its start staff,
         // using staff-wide voice assignment where the line supports it.
@@ -1674,7 +1665,8 @@ void StaveSharingLayout::make_stave_sharing_labels(StaveSharingContext &ctx) {
         }
 
         const TrackRange range = ctx.cur_shared_part->track_range();
-        manage_voice_property_and_track_for_shared_items({label}, range.start_track, range.end_track, track_map);
+        EngravingItem *const shared_labels[]{label};
+        manage_voice_property_and_track_for_shared_items(shared_labels, range.start_track, range.end_track, track_map);
         ctx.updated_stave_sharing_labels.push_back(label);
     }
 }
@@ -1847,7 +1839,7 @@ String StaveSharingLayout::format_instrument_change_lable(const InstrumentChange
     return prefix + u" " + origin_change->xml_text();
 }
 
-void StaveSharingLayout::manage_voice_property_and_track_for_shared_items(const std::vector<EngravingItem *> &shared_items,
+void StaveSharingLayout::manage_voice_property_and_track_for_shared_items(std::span<EngravingItem *const> shared_items,
                                                                           track_idx_t start_origin_track, track_idx_t end_origin_track,
                                                                           const SharedTrackMap &track_map) {
     for (EngravingItem *shared_item : shared_items) {

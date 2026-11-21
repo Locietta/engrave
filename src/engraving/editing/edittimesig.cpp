@@ -22,6 +22,7 @@
 
 #include "edittimesig.h"
 
+#include <algorithm>
 #include <map>
 #include <stdexcept>
 #include <tuple>
@@ -36,6 +37,7 @@
 #include "../dom/range.h"
 #include "../dom/score.h"
 #include "../dom/segment.h"
+#include "../dom/sharedpart.h"
 #include "../dom/sig.h"
 #include "../dom/slur.h"
 #include "../dom/staff.h"
@@ -232,6 +234,14 @@ bool EditTimeSig::rewrite_measures(Transaction &tx, Score *score, Measure *start
 
         Fraction tick1 = m1->tick();
         Fraction tick2 = m2->end_tick();
+        // The measure replacement shifts later events by the padding but removes events inside the old bars.
+        std::vector<std::pair<SharedPart *, AuthoredStaveSharingStates>> preserved_states;
+        for (auto *part : s->shared_parts()) {
+            const auto &states = part->authored_states();
+            const auto first = std::ranges::lower_bound(states, tick1, std::less<>{}, &AuthoredStaveSharingStates::value_type::first);
+            const auto last = std::ranges::lower_bound(states, tick2, std::less<>{}, &AuthoredStaveSharingStates::value_type::first);
+            if (first != last) preserved_states.emplace_back(part, AuthoredStaveSharingStates(first, last));
+        }
         auto spanners = s->spanner_map().find_overlapping(tick1.ticks(), tick2.ticks());
         for (auto i : spanners) {
             if (i.value->tick() >= tick1 && i.value->tick() < tick2) {
@@ -267,6 +277,9 @@ bool EditTimeSig::rewrite_measures(Transaction &tx, Score *score, Measure *start
         new_first_measure->set_prev(m1->prev());
         new_last_measure->set_next(m2->next());
         tx.change_measures(new_first_measure, new_last_measure, true);
+        for (const auto &[part, states] : preserved_states) {
+            for (const auto &[state_tick, state] : states) tx.change_stave_sharing_state(*part, state_tick, &state);
+        }
     }
     if (!fill.is_zero()) {
         score->undo_insert_time(end_measure->end_tick(), fill);

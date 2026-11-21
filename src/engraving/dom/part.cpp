@@ -22,6 +22,8 @@
 
 #include "part.h"
 
+#include <algorithm>
+
 #include "chordrest.h"
 #include "containers.h"
 #include "engraving/dom/dummyparent.h"
@@ -159,6 +161,8 @@ size_t Part::visible_staves_count() const {
 
     return result;
 }
+
+size_t Part::layout_visible_staves_count() const { return std::ranges::count_if(staves_, &Staff::layout_show); }
 
 const std::vector<Staff *> &Part::staves() const { return staves_; }
 

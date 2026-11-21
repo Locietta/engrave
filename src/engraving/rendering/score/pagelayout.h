@@ -28,6 +28,7 @@
 
 namespace mu::engraving {
 struct Page;
+struct Score;
 struct System;
 enum class SystemDividerType : unsigned char;
 } // namespace mu::engraving
@@ -37,7 +38,7 @@ struct PageLayout {
 
     static void get_next_page(LayoutContext &ctx);
     static void collect_page(LayoutContext &ctx, std::span<System *const> *fitted_systems = nullptr);
-    static void repair_shared_spanners(LayoutContext &ctx);
+    static void repair_shared_spanners(Score &score);
 
 private:
     static void layout_page(LayoutContext &ctx, Page *page, double rest_height, double footer_padding, bool squeeze_to_fit);

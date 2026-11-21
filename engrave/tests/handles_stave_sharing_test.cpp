@@ -4,6 +4,10 @@
 #include "engraving/dom/repeatlist.h"
 #include "engraving/dom/stavesharingchange.h"
 #include "engraving/dom/systemlockindicator.h"
+#include "engraving/editing/edittimesig.h"
+#include "engraving/rendering/score/layoutcontext.h"
+#include "engraving/rendering/score/pagelayout.h"
+#include "engraving/rendering/score/scorepageviewlayout.h"
 #include "handles_test_fixture.h"
 
 using namespace handles_test;
@@ -627,6 +631,85 @@ TEST(StaveSharingOutput, InsertAndRemoveTimeMovesAuthoredStates) {
     EXPECT_TRUE(part->authored_states().empty());
 }
 
+TEST(StaveSharingOutput, MeterRewritePreservesAuthoredStatesInMasterAndExcerpt) {
+    using namespace mu::engraving;
+    auto xml = read_text(g_source_root / "tests/data/inputs/stave-sharing.mscx");
+    const auto score_end = xml.find("</Score>");
+    const auto part_start = xml.find("<SharedPart>");
+    auto excerpt = xml.substr(part_start, score_end - part_start);
+    for (char id = 'A'; id <= 'G'; ++id) {
+        const auto old_eid = std::format("{}_{}", id, id);
+        const auto new_eid = std::format("{}_{}", id, static_cast<char>(id + ('a' - 'A')));
+        for (size_t pos = excerpt.find(old_eid); pos != std::string::npos; pos = excerpt.find(old_eid, pos + new_eid.size())) {
+            excerpt.replace(pos, old_eid.size(), new_eid);
+        }
+        if (std::string_view("BCEG").find(id) != std::string_view::npos) {
+            const auto eid_end = excerpt.find("</eid>", excerpt.find(new_eid)) + std::string_view("</eid>").size();
+            excerpt.insert(eid_end, std::format("<linkedTo>{}</linkedTo>", old_eid));
+        }
+    }
+    xml.insert(score_end, "<Score><name>Shared flutes</name><Division>480</Division>" + excerpt + "</Score>");
+    auto document = open_text(xml);
+    ASSERT_TRUE(document);
+
+    const AuthoredStaveSharingStates master_states{
+        {Fraction(0, 1), {{{8, 0}, {12, 1}}, false}},
+        {Fraction(1, 1), {{}, true}},
+    };
+    const AuthoredStaveSharingStates excerpt_states{
+        {Fraction(0, 1), {{{8, 4}, {12, 5}}, false}},
+        {Fraction(3, 4), {{}, true}},
+    };
+    auto &master = master_of(*document);
+    ASSERT_EQ(master.excerpts().size(), 1u);
+    auto *excerpt_score = master.excerpts().front()->excerpt_score();
+    ASSERT_EQ(master.shared_parts().size(), 1u);
+    ASSERT_EQ(excerpt_score->shared_parts().size(), 1u);
+    for (const auto &[tick, state] : master_states) master.shared_parts().front()->set_authored_state(tick, state);
+    for (const auto &[tick, state] : excerpt_states) excerpt_score->shared_parts().front()->set_authored_state(tick, state);
+
+    const auto expect_score = [&](engrave::Document &doc, const Fraction &bar_length, size_t bars) {
+        auto &score = master_of(doc);
+        ASSERT_EQ(score.excerpts().size(), 1u);
+        const auto expect_part = [&](Score &view, const AuthoredStaveSharingStates &expected) {
+            ASSERT_EQ(view.shared_parts().size(), 1u);
+            EXPECT_EQ(view.shared_parts().front()->authored_states(), expected);
+            size_t measures = 0;
+            for (auto *measure = view.first_measure(); measure; measure = measure->next_measure()) {
+                EXPECT_EQ(measure->ticks(), bar_length);
+                ++measures;
+            }
+            EXPECT_EQ(measures, bars);
+            EXPECT_EQ(view.end_tick(), Fraction(2, 1));
+        };
+        expect_part(score, master_states);
+        expect_part(*score.excerpts().front()->excerpt_score(), excerpt_states);
+    };
+
+    ASSERT_TRUE(document->checkpoint("before rewrite"));
+    auto *manager = master.transaction_manager();
+    manager->begin_transaction(muse::TranslatableString::untranslatable("rewrite meter"));
+    auto *first = master.first_measure();
+    auto *signature = Factory::create_time_sig(first->find_segment(SegmentType::TIME_SIG, first->tick()));
+    signature->set_sig(Fraction(2, 4));
+    EditTimeSig::add_time_sig(manager->current_or_dummy_transaction(), &master, first, 2, signature, false);
+    manager->end_transaction();
+    engrave::assign_missing_ids(master);
+    expect_score(*document, Fraction(1, 2), 4);
+
+    ASSERT_TRUE(document->checkpoint("after rewrite"));
+    ASSERT_TRUE(document->restore_checkpoint("before rewrite"));
+    expect_score(*document, Fraction(1, 1), 2);
+    ASSERT_TRUE(document->restore_checkpoint("after rewrite"));
+    expect_score(*document, Fraction(1, 2), 4);
+
+    const auto saved = document->export_score({.format = engrave::Format::MSCZ});
+    ASSERT_TRUE(saved);
+    auto reopened = g_engine->open(*saved);
+    ASSERT_TRUE(reopened);
+    expect_score(**reopened, Fraction(1, 2), 4);
+}
+
 TEST(StaveSharingOutput, StaffEditsRebaseAuthoredTracksAcrossCheckpointRestoreAndSave) {
     using namespace mu::engraving;
     auto xml = read_text(g_source_root / "tests/data/inputs/stave-sharing.mscx");
@@ -991,10 +1074,18 @@ TEST(StaveSharingOutput, RemovingSharedStaffKeepsIncompatibleOriginVoicesVisible
     master.cmd_remove_staff(1);
     manager->end_transaction();
     ASSERT_EQ(part->staves().size(), 1u);
+    // Keep the incompatible first measure in layout so it triggers suspension.
+    measure->set_exclude_from_numbering(true);
+    master.style().set(Sid::CREATE_MULTI_MEASURE_RESTS, true);
+    master.style().set(Sid::MIN_EMPTY_MEASURES, 1);
+    auto *second = measure->next_measure();
+    ASSERT_NE(second, nullptr);
     const auto cold = source_native(master);
     const auto objects = engrave::document_objects(master);
     for (int pass = 0; pass < 2; ++pass) {
         ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+        EXPECT_EQ(second->mm_rest(), nullptr);
+        EXPECT_EQ(second->covering_mm_rest_or_this(), second);
         EXPECT_FALSE(measure->system()->staff(0)->show());
         EXPECT_TRUE(measure->system()->staff(1)->show());
         EXPECT_TRUE(measure->system()->staff(2)->show());
@@ -1009,6 +1100,7 @@ TEST(StaveSharingOutput, RemovingSharedStaffKeepsIncompatibleOriginVoicesVisible
         master.invalidate_layout(measure->tick(), measure->end_tick());
     }
 
+    master.style().set(Sid::CREATE_MULTI_MEASURE_RESTS, false);
     fourth->set_pitch(70);
     fourth->set_tpc1(12);
     fourth->set_tpc2(12);
@@ -1193,6 +1285,68 @@ TEST(StaveSharingOutput, LateSlurSplitPublishesSegmentsOnAllThreePages) {
             }
         }
         master.invalidate_layout(third->tick(), third->end_tick());
+    }
+}
+
+TEST(StaveSharingOutput, LateTextLineExtensionRepairsEarlierSystemSegments) {
+    using namespace mu::engraving;
+    auto xml = read_text(g_source_root / "tests/data/inputs/stave-sharing.mscx");
+    for (int id = 1; id <= 4; ++id) {
+        const auto staff = xml.find(std::format(R"(<Staff id="{}">)", id));
+        const auto second = xml.find("<Measure>", xml.find("</Measure>", staff));
+        const auto end = xml.find("</Measure>", second) + std::string_view("</Measure>").size();
+        const auto bar = xml.substr(second, end - second);
+        xml.insert(end, bar + bar);
+        if (id == 1) {
+            auto pos = staff;
+            for (int i = 0; i < 3; ++i) {
+                pos = xml.find("<Measure>", pos) + std::string_view("<Measure>").size();
+                xml.insert(pos, "<LayoutBreak><subtype>page</subtype></LayoutBreak>");
+            }
+        }
+    }
+    auto document = open_text(xml);
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *first = master.first_measure();
+    auto *second = first->next_measure();
+    auto *third = second->next_measure();
+    auto *fourth = third->next_measure();
+    ASSERT_NE(fourth, nullptr);
+
+    auto *line = Factory::create_text_line(master.dummy());
+    line->set_track(8);
+    line->set_tick(first->tick());
+    line->set_tick2(third->tick() + Fraction(1, 2));
+    master.add_element(line);
+    line->assign_new_eid();
+    ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+
+    using namespace mu::engraving::rendering::score;
+    line->set_tick2(fourth->tick() + Fraction(1, 2));
+    auto *retained_system = first->system();
+    // A range pass can regenerate the line without laying out the retained first page.
+    master.cmd_state().lock();
+    master.layout_data_store()->retire_shared_auxiliary_output();
+    LayoutContext ctx(&master);
+    ScorePageViewLayout::layout_page_view(&master, ctx, third->tick(), fourth->end_tick());
+    const auto *partial = to_text_line(master.layout_copy(*line));
+    EXPECT_NE(partial, nullptr);
+    if (partial) EXPECT_FALSE(std::ranges::contains(partial->spanner_segments(), retained_system, &SpannerSegment::system));
+    PageLayout::repair_shared_spanners(master);
+    master.cmd_state().unlock();
+
+    EXPECT_EQ(first->system(), retained_system);
+    ASSERT_EQ(master.pages().size(), 4u);
+    const auto *copy = to_text_line(master.layout_copy(*line));
+    ASSERT_NE(copy, nullptr);
+    const std::array measures{first, second, third, fourth};
+    ASSERT_EQ(copy->nsegments(), measures.size());
+    for (size_t i = 0; i < measures.size(); ++i) {
+        const auto *segment = copy->spanner_segments()[i];
+        EXPECT_EQ(segment->system(), measures[i]->system());
+        EXPECT_EQ(segment->authored_child.ordinal, i);
+        EXPECT_GT(segment->ldata()->bbox().width(), 0.0);
     }
 }
 

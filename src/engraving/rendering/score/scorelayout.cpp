@@ -76,7 +76,7 @@ void ScoreLayout::layout_range(Score *score, const Fraction &st, const Fraction 
         stick = Fraction(0, 1);
     }
     if (etick < Fraction(0, 1) || etick == Fraction::max()) {
-        etick = score->last()->end_tick();
+        etick = score->end_tick();
     }
 
     // A source insertion can supersede output still borrowed by a reused
@@ -145,7 +145,7 @@ void ScoreLayout::layout_range(Score *score, const Fraction &st, const Fraction 
         sharing_output.suspended_shared_parts.clear();
         LayoutContext retry(score);
         retry.mut_state().set_is_layout_all(true);
-        ScorePageViewLayout::layout_page_view(score, retry, Fraction(0, 1), score->last()->end_tick());
+        ScorePageViewLayout::layout_page_view(score, retry, Fraction(0, 1), score->end_tick());
     }
 
     for (;;) {
@@ -164,9 +164,9 @@ void ScoreLayout::layout_range(Score *score, const Fraction &st, const Fraction 
         retire_segment_output();
         LayoutContext retry(score);
         retry.mut_state().set_is_layout_all(true);
-        ScorePageViewLayout::layout_page_view(score, retry, Fraction(0, 1), score->last()->end_tick());
+        ScorePageViewLayout::layout_page_view(score, retry, Fraction(0, 1), score->end_tick());
     }
-    PageLayout::repair_shared_spanners(ctx);
+    PageLayout::repair_shared_spanners(*score);
     ctx.mut_layout_data().prune_spanner_segments();
     ctx.mut_layout_data().for_each_output(
         [&](EngravingItem &item, EngravingItem::LayoutData &data) { TLayout::complete_item_shape(item, data, ctx.conf()); });

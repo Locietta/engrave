@@ -123,7 +123,8 @@ const RenderedStaveSharingState *SharedPart::rendered_state_at_tick(const Fracti
 }
 
 void SharedPart::set_rendered_state(const Fraction &tick, RenderedStaveSharingState state) {
-    score()->renderer()->layout_data_store(*score()).score_output().stave_sharing_states[this][tick] = std::move(state);
+    auto &states = score()->renderer()->layout_data_store(*score()).score_output().stave_sharing_states[this];
+    states.insert_or_assign(tick, std::move(state));
 }
 
 void SharedPart::remove_rendered_states(const Fraction &start_tick, const Fraction &end_tick) {

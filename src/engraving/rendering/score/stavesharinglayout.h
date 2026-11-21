@@ -21,6 +21,8 @@
  */
 #pragma once
 
+#include <span>
+
 #include "dom/sharedpart.h"
 #include "dom/stavesharinglabel.h"
 #include "layoutcontext.h"
@@ -112,7 +114,7 @@ private:
     static String format_instrument_change_lable(const InstrumentChange *origin_change, const InstrumentChange *shared_change,
                                                  const StaveSharingContext &ctx);
 
-    static void manage_voice_property_and_track_for_shared_items(const std::vector<EngravingItem *> &shared_items,
+    static void manage_voice_property_and_track_for_shared_items(std::span<EngravingItem *const> shared_items,
                                                                  track_idx_t start_origin_track, track_idx_t end_origin_track,
                                                                  const SharedTrackMap &track_map);
 

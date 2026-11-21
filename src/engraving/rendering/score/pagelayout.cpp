@@ -35,10 +35,12 @@
 #include "dom/factory.h"
 #include "dom/fingering.h"
 #include "dom/hairpin.h"
+#include "dom/line.h"
 #include "dom/measure.h"
 #include "dom/measurebase.h"
 #include "dom/note.h"
 #include "dom/page.h"
+#include "dom/pedal.h"
 #include "dom/score.h"
 #include "dom/segment.h"
 #include "dom/slur.h"
@@ -493,11 +495,17 @@ void PageLayout::layout_cross_staff_slurs(LayoutContext &ctx, System *system) {
     }
 }
 
-void PageLayout::repair_shared_spanners(LayoutContext &ctx) {
-    auto &store = ctx.mut_layout_data();
+void PageLayout::repair_shared_spanners(Score &score) {
+    const auto &systems = score.systems();
+    auto &pages = score.pages();
+    if (systems.empty() || pages.empty()) return;
+
+    auto &store = *score.layout_data_store();
     bool refit = false;
     for (auto *span : store.score_output().shared_spanners) {
-        if (!span->is_slur() && !span->is_hairpin()) continue;
+        // Note-anchored copies are laid out with their notes, outside the system spanner pass.
+        if (span->anchor() == Spanner::Anchor::NOTE || (!span->is_slur() && !span->is_s_line())) continue;
+        if (span->is_ottava() && span->staff()->staff_type()->is_tab_staff()) continue;
 
         std::optional<PlacementV> placement;
         if (span->is_hairpin()) {
@@ -509,11 +517,12 @@ void PageLayout::repair_shared_spanners(LayoutContext &ctx) {
         std::vector<System *> covered;
         bool stale = false;
         Fraction end = span->tick2();
-        for (auto *system : ctx.dom().systems()) {
+        const bool layout_on_end_boundary = span->is_slur() || (span->is_pedal() && to_pedal(span)->connect45_hook_to_next());
+        for (auto *system : systems) {
             const auto *first = system->first_measure();
             if (!first) continue;
             if (first->tick() > end) break;
-            if (span->tick() >= system->end_tick() || (span->is_hairpin() && end == first->tick() && span->tick() < first->tick()) ||
+            if (span->tick() >= system->end_tick() || (!layout_on_end_boundary && end == first->tick()) ||
                 !system->staff(span->staff_idx())->show()) {
                 continue;
             }
@@ -538,7 +547,7 @@ void PageLayout::repair_shared_spanners(LayoutContext &ctx) {
         for (auto *system : covered) {
             TLayout::get_next_layout_system_segment(span, system, [span]() -> SpannerSegment * {
                 return span->is_slur() ? static_cast<SpannerSegment *>(to_slur(span)->new_slur_tie_segment()) :
-                                         to_hairpin(span)->create_line_segment();
+                                         to_s_line(span)->create_line_segment();
             });
         }
         std::ranges::stable_sort(segments, {}, [](auto *segment) {
@@ -550,9 +559,8 @@ void PageLayout::repair_shared_spanners(LayoutContext &ctx) {
 
     // Shared output is final now. Rebuild the skylines in normal stacking
     // order, then fit the existing systems to pages using their new heights.
-    LayoutContext fit(ctx.mut_dom().score());
+    LayoutContext fit(&score);
     auto &state = fit.mut_state();
-    const auto &systems = fit.dom().systems();
     state.set_tick(systems.back()->end_tick());
     state.set_end_tick(state.tick());
     for (auto *system : systems) {
@@ -560,7 +568,6 @@ void PageLayout::repair_shared_spanners(LayoutContext &ctx) {
         SystemLayout::layout2(system, fit);
     }
 
-    auto &pages = fit.mut_dom().pages();
     for (auto *page : pages) {
         page->systems().clear();
         page->invalidate_bsp_tree();

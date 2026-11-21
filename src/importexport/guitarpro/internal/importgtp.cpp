@@ -671,8 +671,8 @@ void GuitarPro::create_slide(int sl, ChordRest *cr, int staff_idx, [[maybe_unuse
             * but the /correct/ notes need to check whether GP
             * supports multi-note gliss. I think it can in modern
             * versions */
-            Note *start_note = prev_chord->up_note();
-            Note *end_note = chord->up_note();
+            Note *start_note = prev_chord->notes().empty() ? nullptr : prev_chord->up_note();
+            Note *end_note = chord->notes().empty() ? nullptr : chord->up_note();
             if (start_note && end_note) {
                 Glissando *s = mu::engraving::Factory::create_glissando(start_note);
                 s->set_start_element(start_note);
@@ -689,12 +689,9 @@ void GuitarPro::create_slide(int sl, ChordRest *cr, int staff_idx, [[maybe_unuse
 
                 if (sl == ::mu::iex::guitarpro::GuitarPro::legato_slide) {
                     create_slur(true, staff_idx, prev_chord);
+                    create_slur(false, staff_idx, cr);
                 }
             }
-        }
-
-        if (sl == ::mu::iex::guitarpro::GuitarPro::legato_slide) {
-            create_slur(false, staff_idx, cr);
         }
     }
     // slide out downwards (fall)

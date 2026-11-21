@@ -257,7 +257,9 @@ void Transaction::change_stave_sharing_state(SharedPart &part, const Fraction &t
         std::upper_bound(states.begin(), states.end(), tick, [](const Fraction &value, const auto &entry) { return value < entry.first; });
     const auto end = next == states.end() ? part.score()->end_tick() : next->first;
     const auto range = part.track_range();
-    part.score()->set_layout(tick, end, track2staff(range.start_track), track2staff(range.end_track - 1));
+    if (range.start_track < range.end_track) {
+        part.score()->set_layout(tick, end, track2staff(range.start_track), track2staff(range.end_track - 1));
+    }
 }
 
 void Transaction::change_excerpt_membership(Excerpt *excerpt, bool adding) {

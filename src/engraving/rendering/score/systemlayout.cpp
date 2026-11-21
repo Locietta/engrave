@@ -1939,7 +1939,7 @@ void SystemLayout::layout_ties(Chord *ch, System *system, const Fraction &stick,
         }
         t = note->tie_back();
         if (t) {
-            if (note->incoming_partial_tie() || t->start_note()->tick() < stick) {
+            if (note->incoming_partial_tie() || (t->start_note() && t->start_note()->tick() < stick)) {
                 // A shared tie is created when its end note becomes available.
                 if (t->is_layout_copy() && t->start_note() && (t->segments_empty() || !t->segment_at(0)->system())) {
                     auto *start_system = t->start_note()->chord()->measure()->system();

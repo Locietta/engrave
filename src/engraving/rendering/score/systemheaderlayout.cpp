@@ -511,7 +511,7 @@ void SystemHeaderLayout::compute_instrument_names_width(System *system, LayoutCo
         const Staff *staff = ctx.dom().staff(staff_idx);
         Part *part = staff->part();
 
-        if (!part->layout_show() || std::ranges::count_if(part->staves(), &Staff::layout_show) == 0) {
+        if (!part->layout_show() || part->layout_visible_staves_count() == 0) {
             // We know that the part is hidden in the entire score so safe to skip
             continue;
         }
@@ -1352,7 +1352,7 @@ void SystemHeaderLayout::set_instrument_names(System *system, LayoutContext &ctx
     for (size_t staff_idx = 0; staff_idx < system->staves().size(); /*empty*/) {
         Part *part = ctx.dom().staff(staff_idx)->part();
         size_t part_nstaves = part->nstaves();
-        size_t visible_staves_count = std::ranges::count_if(part->staves(), &Staff::layout_show);
+        size_t visible_staves_count = part->layout_visible_staves_count();
 
         if (part->is_shared_part() && part->layout_show()) {
             set_shared_part_names(to_shared_part(part), staff_idx, system, ctx, tick);
@@ -1393,7 +1393,7 @@ void SystemHeaderLayout::set_shared_part_names(SharedPart *shared_part, staff_id
     InstrumentNameType type = resolve_instrument_name_type(visibility);
     bool hide_start_staff = visibility == InstrumentLabelVisibility::HIDE;
 
-    if (!shared_part->layout_show() || std::ranges::count_if(shared_part->staves(), &Staff::layout_show) == 0) {
+    if (!shared_part->layout_show() || shared_part->layout_visible_staves_count() == 0) {
         for (size_t rel_staff_idx = 0; rel_staff_idx < shared_part->nstaves(); ++rel_staff_idx) {
             size_t global_staff_idx = start_staff_idx + rel_staff_idx;
             update_name(system, global_staff_idx, ctx, String(), type, InstrumentNameRole::GROUP);
@@ -1508,7 +1508,7 @@ void SystemHeaderLayout::update_group_names(System *system, LayoutContext &ctx, 
                 continue;
             }
 
-            if (next_part->layout_show() && std::ranges::count_if(next_part->staves(), &Staff::layout_show) > 0) {
+            if (next_part->layout_show() && next_part->layout_visible_staves_count() > 0) {
                 parts_in_this_group.push_back(next_part);
                 next_label.set_use_custom_group_name(cur_label.use_custom_group_name());
                 next_label.set_custom_name_long_group(cur_label.custom_name_long_group());

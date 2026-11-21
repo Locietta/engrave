@@ -21,8 +21,7 @@
  */
 #pragma once
 
-#include <optional>
-
+#include "global/flatmap.h"
 #include "part.h"
 
 namespace mu::engraving {
@@ -45,7 +44,7 @@ struct RenderedStaveSharingState {
     bool operator==(const RenderedStaveSharingState &) const = default;
 };
 
-using RenderedStaveSharingStates = std::map<Fraction, RenderedStaveSharingState>;
+using RenderedStaveSharingStates = muse::FlatMap<Fraction, RenderedStaveSharingState>;
 
 struct SharedPart final : Part {
 private:

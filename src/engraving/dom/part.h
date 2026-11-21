@@ -78,6 +78,7 @@ public:
 
     size_t nstaves() const;
     size_t visible_staves_count() const;
+    size_t layout_visible_staves_count() const;
     const std::vector<Staff *> &staves() const;
     std::set<staff_idx_t> stave_idx_list() const;
     void append_staff(Staff *staff);

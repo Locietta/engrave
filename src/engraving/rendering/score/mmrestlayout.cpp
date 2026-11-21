@@ -351,7 +351,7 @@ bool MMRestLayout::valid_mm_rest_measure(const LayoutContext &ctx, const Measure
         }
         bool rest_found = false;
         for (track_idx_t track = 0; track < tracks; ++track) {
-            if ((track % ::mu::engraving::voices) == 0 && !ctx.dom().staff(track / ::mu::engraving::voices)->show()) {
+            if ((track % ::mu::engraving::voices) == 0 && !ctx.dom().staff(track / ::mu::engraving::voices)->layout_show()) {
                 track += ::mu::engraving::voices - 1;
                 continue;
             }
