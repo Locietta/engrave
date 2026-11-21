@@ -131,4 +131,6 @@ extern void update_percussion_notes(Chord *c, const Drumset *drumset);
 // Jianpu duration marks: augmentation lines after the digit, diminution beams under it.
 extern int jianpu_augmentation_lines_for_duration(const TDuration &duration);
 extern int jianpu_diminution_lines_for_duration(const TDuration &duration);
+// The augmentation dots of a duration that its augmentation lines do not already show.
+extern int jianpu_residual_dots(DurationType type, int dots);
 } // namespace mu::engraving

@@ -132,6 +132,8 @@ public:
         std::vector<NoteDot *> dots;
         std::vector<Rest *> merged_rests; // Rests from other voices that may be merged with this
         ld_field<SymId> sym = {"[Rest] sym", SymId::REST_QUARTER};
+        // The "0" of a Jianpu rest; its bbox also covers the dots and lines.
+        RectF jianpu_digit_box;
     };
     DECLARE_LAYOUTDATA_METHODS(Rest)
 

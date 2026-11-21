@@ -1318,12 +1318,13 @@ int BeamTremoloLayout::get_beam_count(const BeamBase::LayoutData *ldata, const s
 double BeamTremoloLayout::chord_beam_anchor_x(const BeamBase::LayoutData *ldata, const ChordRest *cr, ChordBeamAnchorType anchor_type) {
     double page_pos_x = ldata->trem ? ldata->trem->page_pos().x() : ldata->beam ? ldata->beam->page_pos().x() : 0.0;
     if (cr->on_jianpu_staff()) {
-        // A Jianpu beam spans the digit box, which has no stem.
+        // A Jianpu beam runs from the digit, which has no stem, to the right of the
+        // chord rest; an accidental left of the digit does not lengthen it.
         const double cr_pos_x = cr->page_pos().x() - page_pos_x;
         switch (anchor_type) {
             case ChordBeamAnchorType::START: return cr_pos_x;
-            case ChordBeamAnchorType::MIDDLE: return cr_pos_x + cr->ldata()->bbox().width() / 2;
-            case ChordBeamAnchorType::END: return cr_pos_x + cr->ldata()->bbox().width();
+            case ChordBeamAnchorType::MIDDLE: return cr_pos_x + cr->ldata()->bbox().right() / 2;
+            case ChordBeamAnchorType::END: return cr_pos_x + cr->ldata()->bbox().right();
         }
     }
     double stem_pos_x = StemLayout::stem_pos_x(cr) + cr->page_pos().x() - page_pos_x;

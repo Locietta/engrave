@@ -977,6 +977,10 @@ void BeamLayout::create_beam_segments(Beam *item, const LayoutContext &ctx, cons
     constexpr size_t no_last_chord = std::numeric_limits<size_t>::max();
     size_t num_cr = chord_rests.size();
     bool french_style_beams = ctx.conf().style_b(Sid::FRENCH_STYLE_BEAMS);
+    // A Jianpu rest is beamed like a chord, so none of the rest special cases apply.
+    const bool jianpu = item->on_jianpu_staff();
+    const auto beamed_like_chord = [jianpu](const ChordRest *cr) { return jianpu || cr->is_chord(); };
+    const auto unbeamed_rest = [jianpu](const ChordRest *cr) { return !jianpu && cr->is_rest(); };
     do {
         level_has_beam = false;
         ChordRest *start_cr = nullptr;
@@ -990,8 +994,7 @@ void BeamLayout::create_beam_segments(Beam *item, const LayoutContext &ctx, cons
             ChordRest *chord_rest = chord_rests[i];
             ChordRest *prev_chord_rest = i < 1 ? nullptr : chord_rests[i - 1];
 
-            // A Jianpu rest is beamed like a chord.
-            if (level < chord_rest->beams() && (!chord_rest->is_rest() || item->on_jianpu_staff())) {
+            if (level < chord_rest->beams() && !unbeamed_rest(chord_rest)) {
                 level_has_beam = true;
             }
             bool is_broken16 = false;
@@ -1002,7 +1005,7 @@ void BeamLayout::create_beam_segments(Beam *item, const LayoutContext &ctx, cons
             break_beam = is_broken16 || is_broken32;
             bool skip_rest = false;
             BeamMode beam_mode = chord_rest->beam_mode();
-            if (chord_rest->is_rest() && level >= chord_rest->beams() &&
+            if (unbeamed_rest(chord_rest) && level >= chord_rest->beams() &&
                 (beam_mode == BeamMode::MID || beam_mode == BeamMode::BEGIN16 || beam_mode == BeamMode::BEGIN32)) {
                 // if the level is lower than both the previous and next real chords, don't break here
                 size_t next_chord_index = i + 1;
@@ -1024,16 +1027,17 @@ void BeamLayout::create_beam_segments(Beam *item, const LayoutContext &ctx, cons
             }
             if ((level < chord_rest->beams() && !break_beam) || skip_rest) {
                 end_cr = chord_rest;
-                if (!start_cr || (start_cr->is_rest() && start_cr != item->rendered_elements().front())) {
+                if (!start_cr || (unbeamed_rest(start_cr) && start_cr != item->rendered_elements().front())) {
                     start_cr = chord_rest;
                 }
-            } else if (level >= chord_rest->beams() && chord_rest->is_rest() && !break_beam) {
+            } else if (level >= chord_rest->beams() && unbeamed_rest(chord_rest) && !break_beam) {
                 // This rest has duration longer than the beam value, but it may still go
                 // under the beam if the next chords or rests are beamed
                 continue;
             } else {
                 size_t beamlet_index = static_cast<size_t>(i) - 1;
-                if (last_chord_index < item->rendered_elements().size() && (chord_rest->is_rest() || (end_cr && end_cr->is_rest()))) {
+                if (!jianpu && last_chord_index < item->rendered_elements().size() &&
+                    (chord_rest->is_rest() || (end_cr && end_cr->is_rest()))) {
                     // we broke the beam on this chordrest, but the last cr of the beam segment can't end on a rest
                     // so it ends on lastChord
                     ChordRest *last_cr = to_chord_rest(item->rendered_elements()[last_chord_index]);
@@ -1044,31 +1048,33 @@ void BeamLayout::create_beam_segments(Beam *item, const LayoutContext &ctx, cons
                     }
                 }
                 if (start_cr && end_cr && level_has_beam) {
-                    if (start_cr == end_cr && start_cr->is_chord()) {
-                        bool is_beamlet_before = calc_is_beamlet_before(item, to_chord(start_cr), static_cast<int>(beamlet_index), level,
-                                                                        previous_break16, previous_break32);
-                        create_beamlet_segment(item, ctx, to_chord(start_cr), is_beamlet_before, level);
+                    if (start_cr == end_cr && beamed_like_chord(start_cr)) {
+                        // A Jianpu beamlet is full width either way (create_beamlet_segment).
+                        bool is_beamlet_before =
+                            !jianpu && calc_is_beamlet_before(item, to_chord(start_cr), static_cast<int>(beamlet_index), level,
+                                                              previous_break16, previous_break32);
+                        create_beamlet_segment(item, ctx, start_cr, is_beamlet_before, level);
                     } else if (start_cr != end_cr) {
                         create_beam_segment(item, start_cr, end_cr, level, french_style_beams);
                     }
                 }
-                bool set_cr = chord_rest && chord_rest->is_chord() && break_beam && level < chord_rest->beams();
+                bool set_cr = chord_rest && beamed_like_chord(chord_rest) && break_beam && level < chord_rest->beams();
                 start_cr = set_cr ? chord_rest : nullptr;
                 end_cr = set_cr ? chord_rest : nullptr;
             }
             previous_break16 = is_broken16;
             previous_break32 = is_broken32;
-            if (chord_rest && chord_rest->is_chord()) {
+            if (chord_rest && beamed_like_chord(chord_rest)) {
                 last_chord_index = i;
             }
         }
 
         // if the beam ends on the last chord
         if (start_cr && (end_cr || break_beam)) {
-            if ((start_cr == end_cr || !end_cr) && start_cr->is_chord()) {
+            if ((start_cr == end_cr || !end_cr) && beamed_like_chord(start_cr)) {
                 // this chord is either the last chord, or the first (followed by a rest)
                 bool is_before = !(start_cr == chord_rests.front());
-                create_beamlet_segment(item, ctx, to_chord(start_cr), is_before, level);
+                create_beamlet_segment(item, ctx, start_cr, is_before, level);
             } else {
                 create_beam_segment(item, start_cr, end_cr, level, french_style_beams);
             }

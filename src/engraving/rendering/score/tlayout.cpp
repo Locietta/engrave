@@ -3866,6 +3866,28 @@ void TLayout::layout_note(const Note *item, Note::LayoutData *ldata) {
 
         const double height = jianpu->jianpu_box_h() * item->mag_s();
         note_b_box = RectF(0, -height * .5, item->head_width(), height);
+        ldata->jianpu_digit_box = note_b_box;
+
+        Font digit_font(jianpu->jianpu_font());
+        digit_font.set_point_size_f(digit_font.point_size_f() * item->mag_s());
+        const FontMetrics digit_fm(digit_font);
+        // The digit is centred in the box and sits on its bottom.
+        ldata->jianpu_digit_baseline =
+            PointF(note_b_box.x() + (note_b_box.width() - digit_fm.width(ldata->jianpu_digit)) * .5, note_b_box.bottom());
+
+        // The accidental is smaller, above and left of the digit, so that the digit stays
+        // on the beams and dots.
+        ldata->jianpu_accidental_box = RectF();
+        if (!ldata->jianpu_accidental.is_empty()) {
+            Font acc_font(digit_font);
+            acc_font.set_point_size_f(digit_font.point_size_f() * Note::LayoutData::jianpu_accidental_mag);
+            const FontMetrics acc_fm(acc_font);
+            const double gap = acc_font.point_size_f() * 0.1;
+            ldata->jianpu_accidental_baseline = PointF(ldata->jianpu_digit_baseline.x() - acc_fm.width(ldata->jianpu_accidental) - gap,
+                                                       ldata->jianpu_digit_baseline.y() - digit_fm.ascent() * 0.5);
+            ldata->jianpu_accidental_box =
+                acc_fm.tight_bounding_rect(ldata->jianpu_accidental).translated(ldata->jianpu_accidental_baseline);
+        }
     } else {
         SymId nh = item->note_head();
         ldata->cached_notehead_sym.set_value(nh);
@@ -3891,10 +3913,15 @@ void TLayout::layout_note(const Note *item, Note::LayoutData *ldata) {
 
 void TLayout::fill_note_shape(const Note *item, Note::LayoutData *ldata) {
     LAYOUT_CALL_ITEM(item);
-    RectF note_b_box = ldata->bbox();
+    // A Jianpu shape restarts from the digit box, as the bbox already covers the marks.
+    const bool jianpu = item->on_jianpu_staff();
+    RectF note_b_box = jianpu ? ldata->jianpu_digit_box : ldata->bbox();
 
     Shape shape(Shape::Type::COMPOSITE);
     shape.add(note_b_box, item);
+    if (jianpu && ldata->jianpu_accidental_box.is_valid()) {
+        shape.add(ldata->jianpu_accidental_box, item);
+    }
 
     for (const NoteDot *dot : item->dots()) {
         if (!dot->add_to_skyline()) {

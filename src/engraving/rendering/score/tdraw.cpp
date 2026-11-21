@@ -2037,28 +2037,6 @@ void TDraw::draw(const MMRestRange *item, Painter *painter, const PaintOptions &
     draw_text_base(item, painter, opt);
 }
 
-// The accidental is drawn smaller, above and left of the digit, without moving the
-// digit off the beams and dots.
-static void draw_jianpu_accidental(Painter *painter, const Font &digit_font, const FontMetrics &digit_fm, const String &accidental,
-                                   double digit_start_x, double baseline_y) {
-    if (accidental.is_empty()) {
-        return;
-    }
-
-    static constexpr double jianpu_accidental_mag = 0.7;
-    Font acc_font(digit_font);
-    acc_font.set_point_size_f(digit_font.point_size_f() * jianpu_accidental_mag);
-    painter->set_font(acc_font);
-
-    FontMetrics acc_fm(acc_font);
-    const double gap = acc_font.point_size_f() * 0.1;
-    const double acc_x = digit_start_x - acc_fm.width(accidental) - gap;
-    const double acc_y = baseline_y - digit_fm.ascent() * 0.5;
-    painter->draw_text(PointF(acc_x, acc_y), accidental);
-
-    painter->set_font(digit_font);
-}
-
 void TDraw::draw(const Note *item, Painter *painter, const PaintOptions &opt) {
     TRACE_DRAW_ITEM;
     if (item->hidden()) {
@@ -2100,18 +2078,17 @@ void TDraw::draw(const Note *item, Painter *painter, const PaintOptions &opt) {
         const double y_offset = tab->fret_font_y_offset();
         painter->draw_text(PointF(start_pos_x, y_offset * item->mag_s()), item->fret_string());
     } else if (staff_type && item->on_jianpu_staff()) {
+        // Same fonts and positions as TLayout::layout_note measured.
         Font f(staff_type->jianpu_font());
         f.set_point_size_f(f.point_size_f() * item->mag_s());
+        if (!ldata->jianpu_accidental.is_empty()) {
+            Font acc_font(f);
+            acc_font.set_point_size_f(f.point_size_f() * Note::LayoutData::jianpu_accidental_mag);
+            painter->set_font(acc_font);
+            painter->draw_text(ldata->jianpu_accidental_baseline, ldata->jianpu_accidental);
+        }
         painter->set_font(f);
-
-        FontMetrics fm(f);
-        const String digit = item->jianpu_digit();
-        const double fw = fm.width(digit);
-        const double bw = ldata->bbox().width();
-        const double start_pos_x = ldata->bbox().x() + (bw - fw) * .5;
-        const double start_pos_y = ldata->bbox().bottom();
-        draw_jianpu_accidental(painter, f, fm, item->jianpu_accidental(), start_pos_x, start_pos_y);
-        painter->draw_text(PointF(start_pos_x, start_pos_y), digit);
+        painter->draw_text(ldata->jianpu_digit_baseline, ldata->jianpu_digit);
     }
     // NOT tablature
     else {
@@ -2311,7 +2288,7 @@ void TDraw::draw(const Rest *item, Painter *painter, const PaintOptions &opt) {
         Font f(staff_type->jianpu_font());
         f.set_point_size_f(f.point_size_f() * item->mag_s());
         painter->set_font(f);
-        painter->draw_text(PointF(ldata->bbox().x(), height * .5), String(u"0"));
+        painter->draw_text(PointF(ldata->jianpu_digit_box.x(), height * .5), String(u"0"));
         return;
     }
 

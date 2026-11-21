@@ -54,10 +54,51 @@ int clamp_to_int(double value) {
     constexpr double k_max = static_cast<double>(std::numeric_limits<int>::max());
     return static_cast<int>(std::clamp(value, k_min, k_max));
 }
+
+// Dots start start_x after the rest origin; visible ones keep the dot-note distance.
+void layout_rest_dots(const Rest *item, Rest::LayoutData *ldata, const LayoutContext &ctx, size_t count, double start_x, double y) {
+    while (ldata->dots.size() < count) {
+        auto *dot = Factory::create_note_dot(const_cast<Rest *>(item));
+        ldata->dots.push_back(dot);
+    }
+    while (ldata->dots.size() > count) {
+        LayoutDataStore::delete_layout_child(ldata->dots.back());
+        ldata->dots.pop_back();
+    }
+    double visible_x = start_x + ctx.conf().style_absolute(Sid::DOT_NOTE_DISTANCE) * item->mag();
+    double visible_dx = ctx.conf().style_absolute(Sid::DOT_DOT_DISTANCE) * item->mag();
+    double invisible_x = start_x;
+    for (NoteDot *dot : item->dot_list()) {
+
+        dot->set_track(item->track());
+        dot->set_visible(item->visible());
+        NoteDot::LayoutData *dotldata = dot->mutldata();
+        apply_authored_overrides(*dot);
+        TLayout::layout_note_dot(dot, dotldata);
+        if (dot->visible()) {
+            dotldata->set_pos(visible_x, y);
+            visible_x += visible_dx;
+        } else {
+            invisible_x += 0.1 * item->spatium();
+            dotldata->set_pos(invisible_x, y);
+            invisible_x += item->sym_width(SymId::AUGMENTATION_DOT) * dot->mag();
+        }
+    }
+}
 } // namespace
 
 void RestLayout::layout_rest(const Rest *item, Rest::LayoutData *ldata, const LayoutContext &ctx) {
+    const Staff *stf = item->staff();
+    const bool is_jianpu = stf && stf->is_jianpu_staff(item->tick());
+    // Layout data outlives a staff type change and a rest becoming a gap.
+    if ((item->is_gap() || !is_jianpu) && !item->jianpu_duration_lines().empty()) {
+        ChordLayout::resize_jianpu_duration_lines(const_cast<Rest *>(item), 0);
+    }
+
     if (item->is_gap()) {
+        if (is_jianpu) {
+            layout_rest_dots(item, ldata, ctx, 0, 0.0, 0.0);
+        }
         if (item->debug_draw_gap()) {
             ldata->sym = item->get_symbol(item->duration_type().type(), 16, 5);
             fill_shape(item, ldata, ctx.conf());
@@ -134,20 +175,11 @@ void RestLayout::layout_rest(const Rest *item, Rest::LayoutData *ldata, const La
         }
     }
 
-    const Staff *stf = item->staff();
-    if (stf && stf->is_jianpu_staff(item->tick())) {
+    if (is_jianpu) {
         ldata->sym = SymId::NO_SYM;
-        // A Jianpu rest is the digit "0": augmentation lines replace dots.
-        while (!ldata->dots.empty()) {
-            LayoutDataStore::delete_layout_child(ldata->dots.back());
-            ldata->dots.pop_back();
-        }
         layout_rest_for_jianpu(item, ldata, ctx);
         fill_shape(item, ldata, ctx.conf());
         return;
-    }
-    if (!item->jianpu_duration_lines().empty()) {
-        ChordLayout::resize_jianpu_duration_lines(const_cast<Rest *>(item), 0);
     }
 
     ldata->dotline = Rest::get_dotline(item->duration_type().type());
@@ -170,34 +202,8 @@ void RestLayout::layout_rest(const Rest *item, Rest::LayoutData *ldata, const La
         fill_shape(item, ldata, ctx.conf());
     }
 
-    while (ldata->dots.size() < size_t(item->dots())) {
-        auto *dot = Factory::create_note_dot(const_cast<Rest *>(item));
-        ldata->dots.push_back(dot);
-    }
-    while (ldata->dots.size() > size_t(item->dots())) {
-        LayoutDataStore::delete_layout_child(ldata->dots.back());
-        ldata->dots.pop_back();
-    }
-    double visible_x = item->sym_width_no_ledger_lines(ldata) + ctx.conf().style_absolute(Sid::DOT_NOTE_DISTANCE) * item->mag();
-    double visible_dx = ctx.conf().style_absolute(Sid::DOT_DOT_DISTANCE) * item->mag();
-    double invisible_x = item->sym_width_no_ledger_lines(ldata);
-    double y = item->dot_line() * item->spatium() * .5;
-    for (NoteDot *dot : item->dot_list()) {
-
-        dot->set_track(item->track());
-        dot->set_visible(item->visible());
-        NoteDot::LayoutData *dotldata = dot->mutldata();
-        apply_authored_overrides(*dot);
-        TLayout::layout_note_dot(dot, dotldata);
-        if (dot->visible()) {
-            dotldata->set_pos(visible_x, y);
-            visible_x += visible_dx;
-        } else {
-            invisible_x += 0.1 * item->spatium();
-            dotldata->set_pos(invisible_x, y);
-            invisible_x += item->sym_width(SymId::AUGMENTATION_DOT) * dot->mag();
-        }
-    }
+    layout_rest_dots(item, ldata, ctx, size_t(item->dots()), item->sym_width_no_ledger_lines(ldata),
+                     item->dot_line() * item->spatium() * .5);
     fill_shape(item, ldata, ctx.conf());
 }
 
@@ -234,17 +240,25 @@ void RestLayout::layout_rest_for_jianpu(const Rest *item, Rest::LayoutData *ldat
     const double width = fm.width(String(u"0")) / item->mag_s();
     const double height = st->jianpu_box_h() * item->mag_s();
 
-    ldata->set_bbox(RectF(0, -height * .5, width, height));
-    const int lines = jianpu_augmentation_lines_for_duration(item->duration_type());
+    ldata->jianpu_digit_box = RectF(0, -height * .5, width, height);
+    ldata->set_bbox(ldata->jianpu_digit_box);
+    // A rest that is not drawn shows none of its marks either.
+    const bool drawn = !item->should_not_be_drawn();
+    const int lines = drawn ? jianpu_augmentation_lines_for_duration(item->duration_type()) : 0;
     ChordLayout::resize_jianpu_duration_lines(const_cast<Rest *>(item), size_t(lines));
     for (int i = 0; i < lines; ++i) {
         JianpuDurationLine *line = item->jianpu_duration_lines()[i];
         line->set_track(track);
-        line->set_visible(staff_visible);
+        line->set_visible(staff_visible && item->visible());
         line->mutldata()->len = width;
         line->mutldata()->set_pos(hx + width * 1.2 * (i + 1), hy);
         TLayout::layout_jianpu_duration_line(line, ctx);
     }
+
+    // Dots the lines leave follow the last line, or the digit, centred on the digit.
+    const int dots = drawn ? jianpu_residual_dots(item->duration_type().type(), item->dots()) : 0;
+    const double dots_x = lines ? hx + width * 1.2 * lines + width : width;
+    layout_rest_dots(item, ldata, ctx, size_t(dots), dots_x, 0.0);
 }
 
 void RestLayout::resolve_vertical_rest_conflicts(LayoutContext &ctx, Segment *segment, staff_idx_t staff_idx) {
@@ -746,8 +760,11 @@ void RestLayout::fill_shape(const Rest *item, Rest::LayoutData *ldata) {
     if ((!item->is_gap() || item->debug_draw_gap()) && !item->should_not_be_drawn()) {
         shape.add(ChordLayout::chord_rest_shape(item));
         if (ldata->sym == SymId::NO_SYM && item->on_jianpu_staff()) {
-            // The Jianpu rest has no symbol; its box is the digit box from layout_rest_for_jianpu.
-            shape.add(ldata->bbox(), item);
+            shape.add(ldata->jianpu_digit_box, item);
+            // Lines hang off the rest horizontally but sit on the staff vertically.
+            for (const JianpuDurationLine *line : item->jianpu_duration_lines()) {
+                shape.add(line->shape().translated(line->pos() - PointF(0.0, ldata->pos().y())));
+            }
         } else {
             shape.add(item->sym_bbox(ldata->sym), item);
         }

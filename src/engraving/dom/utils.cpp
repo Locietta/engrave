@@ -22,6 +22,7 @@
 
 #include "utils.h"
 
+#include <algorithm>
 #include <cmath>
 #include <map>
 
@@ -1764,5 +1765,19 @@ int jianpu_diminution_lines_for_duration(const TDuration &duration) {
         case DurationType::V_1024TH: return 8;
         default: return 0;
     }
+}
+
+int jianpu_residual_dots(DurationType type, int dots) {
+    // A dot worth at least a quarter is one of the augmentation lines; a half's first
+    // dot is a quarter, a whole's first two dots are, and so on.
+    int dots_as_lines = 0;
+    switch (type) {
+        case DurationType::V_LONG: dots_as_lines = 4; break;
+        case DurationType::V_BREVE: dots_as_lines = 3; break;
+        case DurationType::V_WHOLE: dots_as_lines = 2; break;
+        case DurationType::V_HALF: dots_as_lines = 1; break;
+        default: break;
+    }
+    return std::max(0, dots - dots_as_lines);
 }
 } // namespace mu::engraving

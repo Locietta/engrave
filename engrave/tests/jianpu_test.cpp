@@ -7,11 +7,14 @@
 
 #include "draw/fontmetrics.h"
 #include "engrave/src/score/score_semantic.h"
+#include "engraving/dom/beam.h"
 #include "engraving/dom/jianpudurationline.h"
 #include "engraving/dom/jianpuoctavedot.h"
 #include "engraving/dom/key.h"
 #include "engraving/dom/keysig.h"
+#include "engraving/dom/notedot.h"
 #include "engraving/dom/pitchspelling.h"
+#include "engraving/dom/rest.h"
 #include "engraving/dom/stafftype.h"
 #include "engraving/dom/utils.h"
 #include "engraving/infrastructure/sourcehandle.h"
@@ -33,6 +36,39 @@ std::string jianpu_source_with(std::string_view before_first_chord) {
     if (at == std::string::npos) throw std::runtime_error("jianpu fixture has no chord");
     xml.insert(at, before_first_chord);
     return xml;
+}
+
+// The fixture's header and Jianpu staff around other measures.
+std::string jianpu_score(std::string_view measures) {
+    auto xml = read_text(jianpu_fixture());
+    const auto first = xml.find("<Measure>");
+    const auto end = xml.find("</Staff>", first);
+    if (first == std::string::npos || end == std::string::npos) throw std::runtime_error("jianpu fixture has no measures");
+    return xml.replace(first, end - first, measures);
+}
+
+// Starts a measure with a staff type change to the given <StaffType> markup.
+std::string staff_type_change(std::string_view type) { return std::format("<StaffTypeChange>{}</StaffTypeChange>", type); }
+
+constexpr std::string_view jianpu_type = "<StaffType group=\"jianpu\"><name>jianpu</name><lines>0</lines></StaffType>";
+constexpr std::string_view pitched_type = "<StaffType group=\"pitched\"><name>stdNormal</name></StaffType>";
+constexpr std::string_view four_four = "<TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>";
+
+// Chord and rest tags such as <dots> go before <durationType>, as the writer puts them.
+std::string chord(std::string_view duration, int pitch, int tpc, std::string_view chord_tags = "", std::string_view note_tags = "") {
+    return std::format("<Chord>{}<durationType>{}</durationType><Note>{}<pitch>{}</pitch><tpc>{}</tpc></Note></Chord>", chord_tags,
+                       duration, note_tags, pitch, tpc);
+}
+
+std::string rest(std::string_view duration, std::string_view tags = "") {
+    return std::format("<Rest>{}<durationType>{}</durationType></Rest>", tags, duration);
+}
+
+ChordRest *chord_rest_at(Score &score, Fraction tick, track_idx_t track = 0) {
+    Segment *segment = score.tick2segment(tick, true, SegmentType::CHORD_REST);
+    EngravingItem *item = segment ? segment->element(track) : nullptr;
+    if (!item || !item->is_chord_rest()) throw std::runtime_error(std::format("no chord rest at {}", tick.ticks()));
+    return to_chord_rest(item);
 }
 
 std::vector<ChordRest *> chord_rests(Score &score, track_idx_t track) {
@@ -83,6 +119,14 @@ TEST(Jianpu, AugmentationAndDiminutionLinesFollowTheDuration) {
         {DurationType::V_1024TH, 8},
     };
     for (const auto &[type, lines] : diminution) EXPECT_EQ(jianpu_diminution_lines_for_duration(TDuration(type)), lines) << int(type);
+
+    // A dot of a quarter or more is a line; a smaller one stays a dot. A dotted half is
+    // "- -", a double-dotted half "- -" and a dot for the remaining eighth.
+    const std::tuple<DurationType, int, int> residual[] = {
+        {DurationType::V_EIGHTH, 1, 1}, {DurationType::V_QUARTER, 1, 1}, {DurationType::V_QUARTER, 2, 2}, {DurationType::V_HALF, 1, 0},
+        {DurationType::V_HALF, 2, 1},   {DurationType::V_WHOLE, 2, 0},   {DurationType::V_WHOLE, 3, 1},   {DurationType::V_BREVE, 0, 0},
+    };
+    for (const auto &[type, dots, left] : residual) EXPECT_EQ(jianpu_residual_dots(type, dots), left) << int(type) << "/" << dots;
 }
 
 TEST(Jianpu, DigitsAndOctavesFollowTheTonicAndMode) {
@@ -277,11 +321,16 @@ TEST(Jianpu, LayoutDrawsDigitsDotsLinesAndRestsInsteadOfNoteheads) {
                 // The fixture's half rest is "0 -": one augmentation line after the zero.
                 const size_t lines = rest->duration_type().type() == DurationType::V_HALF ? 1 : 0;
                 ASSERT_EQ(rest->jianpu_duration_lines().size(), lines);
+                const double zero_width = muse::draw::FontMetrics(type->jianpu_font()).width(muse::String(u"0"));
+                EXPECT_DOUBLE_EQ(rest->ldata()->jianpu_digit_box.width(), zero_width);
                 for (const JianpuDurationLine *line : rest->jianpu_duration_lines()) {
                     ++lined;
-                    EXPECT_DOUBLE_EQ(line->ldata()->len, rest->ldata()->bbox().width());
-                    EXPECT_DOUBLE_EQ(line->ldata()->pos().x(), rest->ldata()->bbox().width() * 1.2);
+                    EXPECT_DOUBLE_EQ(line->ldata()->len, zero_width);
+                    EXPECT_DOUBLE_EQ(line->ldata()->pos().x(), zero_width * 1.2);
                     EXPECT_EQ(line->chord_rest(), rest);
+                    // The line takes space like the rest: its staff y is the rest's own.
+                    EXPECT_DOUBLE_EQ(line->pos().y(), rest->pos().y());
+                    EXPECT_GE(rest->shape().right(), line->pos().x() + line->ldata()->bbox().right());
                 }
                 continue;
             }
@@ -498,6 +547,236 @@ TEST(Jianpu, SvgDrawsTheFreeSansDigitsAndRests) {
     ASSERT_TRUE(png) << png.error().message;
     ASSERT_EQ(png->pages.size(), 1u);
     EXPECT_GT(png->pages.front().size(), 1000u);
+}
+
+TEST(Jianpu, RestsKeepTheDotsTheirLinesDoNotShow) {
+    auto document =
+        open_text(jianpu_score(std::format("<Measure><voice>{}{}{}{}{}{}</voice></Measure><Measure><voice>{}{}</voice></Measure>",
+                                           four_four, rest("quarter", "<dots>1</dots>"), rest("eighth", "<dots>1</dots>"), rest("16th"),
+                                           rest("quarter"), rest("eighth"), rest("half", "<dots>2</dots>"), rest("eighth"))));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    render(*document);
+
+    struct Expected {
+        Fraction tick;
+        size_t lines;
+        size_t dots;
+    };
+
+    // "0." for the dotted quarter and the dotted eighth; "0 - - ." for the 3.5
+    // quarters of the double-dotted half.
+    for (const auto &[tick, lines, dots] : {Expected{{0, 1}, 0, 1}, Expected{{3, 8}, 0, 1}, Expected{{1, 1}, 2, 1}}) {
+        SCOPED_TRACE(tick.ticks());
+        const auto *r = to_rest(chord_rest_at(master, tick));
+        ASSERT_EQ(r->jianpu_duration_lines().size(), lines);
+        ASSERT_EQ(r->dot_list().size(), dots);
+        double marks_right = r->ldata()->jianpu_digit_box.right();
+        for (const JianpuDurationLine *line : r->jianpu_duration_lines())
+            marks_right = std::max(marks_right, line->pos().x() + line->ldata()->bbox().right());
+        for (const NoteDot *dot : r->dot_list()) {
+            EXPECT_TRUE(dot->visible());
+            EXPECT_GT(dot->pos().x(), marks_right);
+            EXPECT_DOUBLE_EQ(dot->pos().y(), 0.0) << "on the centre line of the digit";
+            EXPECT_GT(r->shape().bbox().right(), dot->pos().x());
+        }
+    }
+}
+
+TEST(Jianpu, RestsInABeamGroupKeepTheirOwnUnderlines) {
+    constexpr std::string_view begin = "<BeamMode>begin</BeamMode>";
+    constexpr std::string_view mid = "<BeamMode>mid</BeamMode>";
+    // A sixteenth rest first, then one between a sixteenth and an eighth.
+    auto document = open_text(jianpu_score(std::format(
+        "<Measure><voice>{}{}{}{}{}{}</voice></Measure><Measure><voice>{}{}{}{}{}</voice></Measure>", four_four, rest("16th", begin),
+        chord("eighth", 62, 16, mid), chord("16th", 64, 18, mid), chord("quarter", 65, 13), chord("half", 67, 15),
+        chord("16th", 62, 16, begin), rest("16th", mid), chord("eighth", 64, 18, mid), chord("quarter", 65, 13), chord("half", 67, 15))));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    render(*document);
+
+    using Segments = std::vector<std::tuple<int, int, int>>;
+    const auto segments = [&](Fraction tick) {
+        Segments result;
+        const Beam *beam = chord_rest_at(master, tick)->beam();
+        if (!beam) {
+            ADD_FAILURE() << "no beam at " << tick.ticks();
+            return result;
+        }
+        for (const BeamSegment *segment : beam->beam_segments())
+            result.emplace_back(segment->level, segment->start_tick.ticks(), segment->end_tick.ticks());
+        std::ranges::sort(result);
+        return result;
+    };
+    // Ticks of 480 per quarter. Each underline level spans every chord or rest at
+    // least that short, and one alone gets a full-width underline.
+    EXPECT_EQ(segments({0, 1}), (Segments{{0, 0, 360}, {1, 0, 0}, {1, 360, 360}}));
+    EXPECT_EQ(segments({1, 1}), (Segments{{0, 1920, 2160}, {1, 1920, 2040}}));
+}
+
+TEST(Jianpu, VoiceBandsFollowTheStaffTypeOfEachMeasure) {
+    const auto voices = std::format("<voice>{}</voice><voice>{}</voice>", chord("whole", 67, 15), chord("whole", 60, 14));
+    const auto voices_after_time =
+        std::format("<voice>{}{}</voice><voice>{}</voice>", four_four, chord("whole", 67, 15), chord("whole", 60, 14));
+    const auto source = [&](bool jianpu_first, bool jianpu_second) {
+        const auto change = jianpu_first == jianpu_second ? std::string() : staff_type_change(jianpu_second ? jianpu_type : pitched_type);
+        auto xml = jianpu_score(std::format("<Measure>{}</Measure><Measure>{}{}</Measure>", voices_after_time, change, voices));
+        if (!jianpu_first) {
+            const auto start = xml.find("<StaffType group=\"jianpu\">");
+            const auto end = xml.find("</StaffType>", start) + std::string_view("</StaffType>").size();
+            xml.replace(start, end - start, pitched_type);
+        }
+        return xml;
+    };
+    const auto baseline = [](ChordRest *cr) { return to_chord(cr)->up_note()->ldata()->pos().y(); };
+
+    auto pitched = open_text(source(false, false));
+    ASSERT_TRUE(pitched);
+    render(*pitched);
+    for (const bool jianpu_first : {false, true}) {
+        SCOPED_TRACE(jianpu_first ? "Jianpu to pitched" : "pitched to Jianpu");
+        auto mixed = open_text(source(jianpu_first, !jianpu_first));
+        ASSERT_TRUE(mixed);
+        auto &master = master_of(*mixed);
+        render(*mixed);
+        ASSERT_EQ(master.first_measure()->system(), master.first_measure()->next_measure()->system());
+        const Fraction jianpu_tick = jianpu_first ? Fraction(0, 1) : Fraction(1, 1);
+        const Fraction pitched_tick = jianpu_first ? Fraction(1, 1) : Fraction(0, 1);
+        ASSERT_TRUE(master.staff(0)->is_jianpu_staff(jianpu_tick));
+        ASSERT_FALSE(master.staff(0)->is_jianpu_staff(pitched_tick));
+
+        EXPECT_GT(baseline(chord_rest_at(master, jianpu_tick, 1)) - baseline(chord_rest_at(master, jianpu_tick, 0)),
+                  master.style().style_absolute(Sid::JIANPU_VOICE_VERTICAL_DISTANCE));
+        // The pitched measure keeps its notes on their staff lines, as on a pitched staff.
+        for (const track_idx_t track : {track_idx_t(0), track_idx_t(1)})
+            EXPECT_DOUBLE_EQ(baseline(chord_rest_at(master, pitched_tick, track)),
+                             baseline(chord_rest_at(master_of(*pitched), pitched_tick, track)))
+                << track;
+    }
+}
+
+TEST(Jianpu, GeneratedMarksFollowTheVisibilityOfTheirOwners) {
+    // Pitch 72 in C is "1" with two dots above, and a half has one line.
+    auto document = open_text(jianpu_score(std::format("<Measure><voice>{}{}{}</voice></Measure><Measure><voice>{}{}</voice></Measure>",
+                                                       four_four, chord("half", 72, 14, "", "<visible>0</visible>"),
+                                                       rest("half", "<visible>0</visible>"), chord("half", 72, 14), rest("half"))));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    const auto marks_of = [](ChordRest *cr) {
+        std::vector<const EngravingItem *> marks(cr->jianpu_duration_lines().begin(), cr->jianpu_duration_lines().end());
+        if (cr->is_chord())
+            for (const Note *note : to_chord(cr)->notes())
+                marks.insert(marks.end(), note->jianpu_octave_dots().begin(), note->jianpu_octave_dots().end());
+        return marks;
+    };
+    render(*document);
+    ChordRest *hidden_chord = chord_rest_at(master, {0, 1});
+    ChordRest *hidden_rest = chord_rest_at(master, {1, 2});
+    ChordRest *shown_chord = chord_rest_at(master, {1, 1});
+    ChordRest *gap = chord_rest_at(master, {3, 2});
+    for (ChordRest *cr : {hidden_chord, shown_chord}) ASSERT_EQ(marks_of(cr).size(), 3u);
+    for (ChordRest *cr : {hidden_rest, gap}) ASSERT_EQ(marks_of(cr).size(), 1u);
+    for (ChordRest *cr : {hidden_chord, hidden_rest})
+        for (const EngravingItem *mark : marks_of(cr)) EXPECT_FALSE(mark->visible()) << mark->type_name();
+    for (ChordRest *cr : {shown_chord, gap})
+        for (const EngravingItem *mark : marks_of(cr)) EXPECT_TRUE(mark->visible()) << mark->type_name();
+
+    // A gap rest is not drawn; the marks of its layout as a rest go with it.
+    to_rest(gap)->set_gap(true);
+    master.invalidate_layout(Fraction(0, 1), Fraction(-1, 1));
+    render(*document);
+    EXPECT_TRUE(marks_of(gap).empty());
+    master.scan_elements([&](EngravingItem *item) {
+        if (item->is_jianpu_duration_line()) EXPECT_NE(to_jianpu_duration_line(item)->chord_rest(), gap);
+    });
+}
+
+TEST(Jianpu, AccidentalsTakeTheirSpaceBeforeTheDigit) {
+    std::string run;
+    for (int i = 0; i < 4; ++i) run += chord("32nd", 60, 14) + chord("32nd", 66, 20); // C, then F sharp: "♯4"
+    auto document = open_text(jianpu_score(
+        std::format("<Measure><voice>{}{}{}{}</voice></Measure>", four_four, run, chord("quarter", 64, 18), chord("half", 67, 15))));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    render(*document);
+
+    int sharps = 0;
+    const Note *previous = nullptr;
+    for (ChordRest *cr : chord_rests(master, 0)) {
+        const Note *note = to_chord(cr)->up_note();
+        const Note::LayoutData *ldata = note->ldata();
+        if (!ldata->jianpu_accidental.is_empty()) {
+            ++sharps;
+            EXPECT_EQ(ldata->jianpu_accidental, u"♯");
+            const RectF accidental = ldata->jianpu_accidental_box;
+            ASSERT_TRUE(accidental.is_valid());
+            EXPECT_LE(accidental.right(), ldata->jianpu_digit_baseline.x());
+            EXPECT_LE(note->shape().bbox().left(), accidental.left());
+            EXPECT_LE(cr->shape().bbox().left(), accidental.left() + note->pos().x());
+            // Spacing keeps the previous digit clear of the accidental.
+            ASSERT_NE(previous, nullptr);
+            EXPECT_LE(previous->page_pos().x() + previous->ldata()->jianpu_digit_box.right(), note->page_pos().x() + accidental.left());
+        }
+        // The digit draws in its own box, wherever the shape reaches.
+        EXPECT_DOUBLE_EQ(ldata->jianpu_digit_baseline.y(), ldata->jianpu_digit_box.bottom());
+        previous = note;
+    }
+    EXPECT_EQ(sharps, 4);
+}
+
+TEST(Jianpu, TablatureRelayoutDropsTheJianpuMarks) {
+    constexpr std::string_view guitar = R"(<?xml version="1.0" encoding="UTF-8"?>
+<museScore version="5.00"><Score><Division>480</Division>
+<Part id="1"><Staff><StaffType group="jianpu"><name>jianpu</name><lines>0</lines></StaffType></Staff>
+<Instrument id="classical-guitar"><instrumentId>strings.guitar.nylon</instrumentId>
+<StringData><frets>19</frets><string>40</string><string>45</string><string>50</string><string>55</string><string>59</string><string>64</string></StringData>
+</Instrument></Part>
+<Staff id="1"><Measure><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
+<Chord><durationType>half</durationType><Note><pitch>76</pitch><tpc>18</tpc><string>0</string><fret>12</fret></Note></Chord>
+<Rest><durationType>half</durationType></Rest>
+</voice></Measure></Staff></Score></museScore>)";
+    auto document = open_text(guitar);
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    render(*document);
+    auto *chord = to_chord(chord_rest_at(master, {0, 1}));
+    ChordRest *r = chord_rest_at(master, {1, 2});
+    ASSERT_FALSE(chord->up_note()->jianpu_octave_dots().empty());
+    ASSERT_EQ(chord->jianpu_duration_lines().size(), 1u);
+    ASSERT_EQ(r->jianpu_duration_lines().size(), 1u);
+
+    // The relayout reuses the layout data of the Jianpu pass.
+    master.staff(0)->set_staff_type(Fraction(0, 1), *StaffType::preset(StaffTypes::TAB_6COMMON));
+    master.invalidate_layout(Fraction(0, 1), Fraction(-1, 1));
+    render(*document);
+    ASSERT_TRUE(master.staff(0)->is_tab_staff(Fraction(0, 1)));
+    EXPECT_TRUE(chord->up_note()->jianpu_octave_dots().empty());
+    EXPECT_TRUE(chord->jianpu_duration_lines().empty());
+    EXPECT_TRUE(r->jianpu_duration_lines().empty());
+    master.scan_elements([](EngravingItem *item) { EXPECT_FALSE(item->is_jianpu_octave_dot() || item->is_jianpu_duration_line()); });
+}
+
+TEST(Jianpu, DraggedBeamDrawsFlatAndKeepsItsAuthoredEnds) {
+    auto xml = read_text(jianpu_fixture());
+    constexpr std::string_view beam_id = "<eid>A_E</eid>";
+    xml.insert(xml.find(beam_id) + beam_id.size(), "<Fragment><y1>1.25</y1><y2>2.5</y2></Fragment>");
+    auto document = open_text(xml);
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    const auto cold_native = native_captures(*document);
+    render(*document);
+
+    Beam *beam = chord_rests(master, 0).front()->beam();
+    ASSERT_NE(beam, nullptr);
+    const auto *dragged = beam->authored_overrides.find({AuthoredChildRole::BEAM_FRAGMENT}, Pid::BEAM_POS);
+    ASSERT_NE(dragged, nullptr);
+    EXPECT_DOUBLE_EQ(beam->slope(), 0.0);
+    ASSERT_FALSE(beam->beam_segments().empty());
+    for (const BeamSegment *segment : beam->beam_segments()) EXPECT_DOUBLE_EQ(segment->line.y1(), segment->line.y2());
+    const auto ends = dragged->value.value<PairF>();
+    EXPECT_DOUBLE_EQ(ends.first, 1.25);
+    EXPECT_DOUBLE_EQ(ends.second, 2.5);
+    EXPECT_EQ(native_captures(*document), cold_native);
 }
 
 TEST(Jianpu, DescribeListsTheJianpuKeySignatureProperties) {

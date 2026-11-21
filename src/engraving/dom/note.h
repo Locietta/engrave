@@ -524,6 +524,13 @@ public:
         // Jianpu display derived from pitch and key during layout; the note itself stays unchanged.
         String jianpu_digit;
         String jianpu_accidental;
+        // Measured with the fonts that draw them, in note coordinates. The shape bbox
+        // also covers dots and the accidental, so drawing anchors on these instead.
+        static constexpr double jianpu_accidental_mag = 0.7;
+        RectF jianpu_digit_box;
+        PointF jianpu_digit_baseline;
+        PointF jianpu_accidental_baseline;
+        RectF jianpu_accidental_box;
         std::vector<JianpuOctaveDot *> jianpu_octave_dots;
         std::optional<bool> visible;
         std::optional<bool> ghost;

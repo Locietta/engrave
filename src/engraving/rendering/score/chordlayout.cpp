@@ -221,7 +221,8 @@ void ChordLayout::layout_pitched(Chord *item, LayoutContext &ctx) {
                 jianpu_offset_y += jianpu_beam_offset(item, PlacementV::BELOW, ctx);
             }
 
-            jianpu_offset_y += note_ldata->bbox().height();
+            // The digit alone: the bbox may already cover marks the offsets above count.
+            jianpu_offset_y += note_ldata->jianpu_digit_box.height();
             jianpu_offset_y += ctx.conf().style_absolute(Sid::JIANPU_NUMBER_VERTICAL_DISTANCE) * item_mag;
         }
 
@@ -444,6 +445,12 @@ void ChordLayout::layout_tablature(Chord *item, LayoutContext &ctx) {
     double dot_note_distance = ctx.conf().style_absolute(Sid::DOT_NOTE_DISTANCE) * mag_value;
     double min_note_distance = ctx.conf().style_absolute(Sid::MIN_NOTE_DISTANCE) * mag_value;
     double min_tie_length = ctx.conf().style_absolute(Sid::MIN_TIE_LENGTH) * mag_value;
+
+    // Layout data outlives a change from a Jianpu staff type, and tablature lays out no Jianpu marks.
+    clear_jianpu_octave_dots(item);
+    if (!item->jianpu_duration_lines().empty()) {
+        resize_jianpu_duration_lines(item, 0);
+    }
 
     for (Chord *c : item->grace_notes()) {
         layout_tablature(c, ctx);
@@ -1762,14 +1769,15 @@ void ChordLayout::layout_jianpu_duration_lines(Chord *item, LayoutContext &ctx) 
     }
 
     const track_idx_t track = staff2track(idx);
-    const bool staff_visible = !staff->is_lines_invisible(tick);
+    const bool visible = !staff->is_lines_invisible(tick) && item->visible() &&
+                         std::ranges::any_of(item->notes(), [](const Note *n) { return n->display_visible(); });
     const double head_width = note->head_width();
     const double head_x = note->pos().x() + note->bbox_x_shift();
     const double lengthening_y = note->pos().y();
     for (int i = 0; i < lines; ++i) {
         JianpuDurationLine *line = item->jianpu_duration_lines()[i];
         line->set_track(track);
-        line->set_visible(staff_visible);
+        line->set_visible(visible);
         line->mutldata()->len = head_width;
         line->mutldata()->set_pos(head_x + head_width * 1.2 * (i + 1), lengthening_y);
         TLayout::layout_jianpu_duration_line(line, ctx);
@@ -1821,7 +1829,7 @@ void ChordLayout::layout_jianpu_octave_dots(Chord *item, LayoutContext &ctx) {
         for (int i = 0; i < dots; ++i) {
             JianpuOctaveDot *dot = note->jianpu_octave_dots()[i];
             dot->set_track(track);
-            dot->set_visible(staff_visible);
+            dot->set_visible(staff_visible && note->display_visible());
             JianpuOctaveDot::LayoutData *dot_ldata = dot->mutldata();
             dot_ldata->above = octave > 0;
             dot_ldata->len = max_x - min_x;
@@ -1832,15 +1840,21 @@ void ChordLayout::layout_jianpu_octave_dots(Chord *item, LayoutContext &ctx) {
 }
 
 // Jianpu separates voices by vertical bands (voice 1 on top) instead of stem
-// directions. The bands span the whole system so their height stays consistent
-// along the line.
+// directions. The bands span the system's Jianpu measures so their height stays
+// consistent along the line.
 void ChordLayout::layout_voice_offsets(System *system, staff_idx_t staff_idx, LayoutContext &ctx) {
     const Staff *staff = ctx.dom().staff(staff_idx);
-    if (!staff || !staff->layout_show()) {
+    if (!staff || !staff->layout_show() || !system) {
         return;
     }
-    const Measure *first_measure = system ? system->first_measure() : nullptr;
-    if (!first_measure || !staff->is_jianpu_staff(first_measure->tick())) {
+    // A staff type changes only at a measure start, so a measure is Jianpu or not as a whole.
+    std::vector<Measure *> jianpu_measures;
+    for (MeasureBase *mb : system->measures()) {
+        if (mb->is_measure() && staff->is_jianpu_staff(mb->tick())) {
+            jianpu_measures.push_back(to_measure(mb));
+        }
+    }
+    if (jianpu_measures.empty()) {
         return;
     }
 
@@ -1983,11 +1997,8 @@ void ChordLayout::layout_voice_offsets(System *system, staff_idx_t staff_idx, La
     std::array<double, voice_count> max_above{};
     std::array<double, voice_count> max_below{};
 
-    for (MeasureBase *mb : system->measures()) {
-        if (!mb->is_measure()) {
-            continue;
-        }
-        for (Segment *segment = to_measure(mb)->rendered_first(); segment; segment = segment->rendered_next()) {
+    for (Measure *measure : jianpu_measures) {
+        for (Segment *segment = measure->rendered_first(); segment; segment = segment->rendered_next()) {
             if (!segment->is_chord_rest_type()) {
                 continue;
             }
@@ -3031,22 +3042,10 @@ void ChordLayout::set_dot_relative_line(Note *note, int dot_move, LayoutContext 
     int cdots = static_cast<int>(note->chord()->dots());
     int ndots = static_cast<int>(note->dots().size());
 
-    // On Jianpu staves the augmentation lines already show the dots of the longer values.
-    int ddots = 0;
     if (note->staff()->is_jianpu_staff(note->chord()->tick())) {
-        if (note->chord()->up_note() == note) {
-            switch (note->chord()->duration_type().type()) {
-                case DurationType::V_LONG: ddots = 4; break;
-                case DurationType::V_BREVE: ddots = 3; break;
-                case DurationType::V_WHOLE: ddots = 2; break;
-                case DurationType::V_HALF: ddots = 1; break;
-                default: break;
-            }
-        } else {
-            cdots = 0; // only the up note shows dots
-        }
+        // Only the up note shows the dots that the augmentation lines leave.
+        cdots = note->chord()->up_note() == note ? jianpu_residual_dots(note->chord()->duration_type().type(), cdots) : 0;
     }
-    cdots = std::max(0, cdots - ddots);
 
     int n = cdots - ndots;
     for (int i = 0; i < n; ++i) {
