@@ -1115,6 +1115,22 @@ const std::array<StyleDef::StyleValue, size_t(Sid::STYLES)> StyleDef::style_valu
     {Sid::ARTICULATION_OFFSET, "articulationOffset", PointF()},
     {Sid::ARTICULATION_POSITION, "articulationPosition", AlignH::LEFT},
 
+    {Sid::JIANPU_NUMBER_FONT_FACE, "jianpuNumberFontFace", "FreeSans"},
+    {Sid::JIANPU_NUMBER_FONT_SIZE, "jianpuNumberFontSize", 9.0},
+    {Sid::JIANPU_NUMBER_LINE_SPACING, "jianpuNumberLineSpacing", 1.0},
+    {Sid::JIANPU_NUMBER_FONT_SPATIUM_DEPENDENT, "jianpuNumberFontSpatiumDependent", true},
+    {Sid::JIANPU_NUMBER_FONT_STYLE, "jianpuNumberFontStyle", int(FontStyle::NORMAL)},
+    {Sid::JIANPU_NUMBER_COLOR, "jianpuNumberColor", PropertyValue::from_value(Color::black)},
+    {Sid::JIANPU_NUMBER_ALIGN, "jianpuNumberAlign", Align(AlignH::LEFT, AlignV::BASELINE)},
+    {Sid::JIANPU_NUMBER_OFFSET, "jianpuNumberOffset", PointF()},
+    {Sid::JIANPU_NUMBER_FRAME_TYPE, "jianpuNumberFrameType", int(FrameType::NO_FRAME)},
+    {Sid::JIANPU_NUMBER_FRAME_PADDING, "jianpuNumberFramePadding", 0.2_sp},
+    {Sid::JIANPU_NUMBER_FRAME_WIDTH, "jianpuNumberFrameWidth", 0.1_sp},
+    {Sid::JIANPU_NUMBER_FRAME_ROUND, "jianpuNumberFrameRound", 0.0_sp},
+    {Sid::JIANPU_NUMBER_FRAME_FG_COLOR, "jianpuNumberFrameFgColor", PropertyValue::from_value(Color::black)},
+    {Sid::JIANPU_NUMBER_FRAME_BG_COLOR, "jianpuNumberFrameBgColor", PropertyValue::from_value(Color::transparent)},
+    {Sid::JIANPU_NUMBER_POSITION, "jianpuNumberPosition", AlignH::LEFT},
+
     {Sid::LONG_INSTRUMENT_FONT_FACE, "longInstrumentFontFace", "Edwin"},
     {Sid::LONG_INSTRUMENT_FONT_SIZE, "longInstrumentFontSize", 10.0},
     {Sid::LONG_INSTRUMENT_LINE_SPACING, "longInstrumentLineSpacing", 1.0},
@@ -2128,6 +2144,7 @@ const std::array<StyleDef::StyleValue, size_t(Sid::STYLES)> StyleDef::style_valu
     {Sid::HARP_PEDAL_TEXT_DIAGRAM_MUSICAL_SYMBOL_SIZE, "harpPedalTextDiagramMusicalSymbolSize", 8.0},
     {Sid::HEADER_MUSICAL_SYMBOL_SIZE, "headerMusicalSymbolSize", 9.0},
     {Sid::INSTRUMENT_CHANGE_MUSICAL_SYMBOL_SIZE, "instrumentChangeMusicalSymbolSize", 10.0},
+    {Sid::JIANPU_NUMBER_MUSICAL_SYMBOL_SIZE, "jianpuNumberMusicalSymbolSize", 9.0},
     {Sid::LET_RING_MUSICAL_SYMBOL_SIZE, "letRingMusicalSymbolSize", 10.0},
     {Sid::LH_GUITAR_FINGERING_MUSICAL_SYMBOL_SIZE, "lhGuitarFingeringMusicalSymbolSize", 8.0},
     {Sid::LONG_INSTRUMENT_MUSICAL_SYMBOL_SIZE, "longInstrumentMusicalSymbolSize", 10.0},
@@ -2259,6 +2276,15 @@ const std::array<StyleDef::StyleValue, size_t(Sid::STYLES)> StyleDef::style_valu
     {Sid::PALM_MUTE_BEGIN_FILLED_ARROW_WIDTH, "palmMuteBeginFilledArrowWidth", 0.85_sp},
     {Sid::PALM_MUTE_END_FILLED_ARROW_HEIGHT, "palmMuteEndFilledArrowHeight", 1.0_sp},
     {Sid::PALM_MUTE_END_FILLED_ARROW_WIDTH, "palmMuteEndFilledArrowWidth", 0.85_sp},
+
+    {Sid::JIANPU_NUMBER_VERTICAL_DISTANCE, "jianpuNumberVerticalDistance", 0.5_sp},
+    {Sid::JIANPU_VOICE_VERTICAL_DISTANCE, "jianpuVoiceVerticalDistance", 0.8_sp},
+    {Sid::JIANPU_OCTAVE_DOT_RADIUS, "jianpuOctaveDotRadius", 0.1_sp},
+    {Sid::JIANPU_OCTAVE_DOT_DISTANCE, "jianpuOctaveDotDistance", 0.3_sp},
+    {Sid::JIANPU_DIMINUTION_BEAM_THICKNESS, "jianpuDiminutionBeamThickness", 0.1_sp},
+    {Sid::JIANPU_DIMINUTION_BEAM_DISTANCE, "jianpuDiminutionBeamDistance", 0.3_sp},
+    {Sid::JIANPU_DIMINUTION_BEAM_PLACEMENT, "jianpuDiminutionBeamPlacement", PlacementV::BELOW},
+    {Sid::JIANPU_DURATION_LINE_THICKNESS, "jianpuDurationLineThickness", 0.1_sp},
 }};
 
 #undef styleDef

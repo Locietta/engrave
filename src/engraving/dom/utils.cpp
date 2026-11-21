@@ -1732,4 +1732,37 @@ Segment *Score::find_rendered_right_segment(const Fraction &tick, bool use_m_mre
     return 0;
 }
 
+int jianpu_augmentation_lines_for_duration(const TDuration &duration) {
+    // One line per extra quarter, and each dot adds half of the previous value.
+    const auto lines_by_dots = [&duration](int quarters) {
+        int lines = quarters - 1;
+        for (int dots = duration.dots(); dots > 0; --dots) {
+            quarters /= 2;
+            lines += quarters;
+        }
+        return lines;
+    };
+
+    switch (duration.type()) {
+        case DurationType::V_LONG: return lines_by_dots(16);
+        case DurationType::V_BREVE: return lines_by_dots(8);
+        case DurationType::V_WHOLE: return lines_by_dots(4);
+        case DurationType::V_HALF: return lines_by_dots(2);
+        default: return 0;
+    }
+}
+
+int jianpu_diminution_lines_for_duration(const TDuration &duration) {
+    switch (duration.type()) {
+        case DurationType::V_EIGHTH: return 1;
+        case DurationType::V_16TH: return 2;
+        case DurationType::V_32ND: return 3;
+        case DurationType::V_64TH: return 4;
+        case DurationType::V_128TH: return 5;
+        case DurationType::V_256TH: return 6;
+        case DurationType::V_512TH: return 7;
+        case DurationType::V_1024TH: return 8;
+        default: return 0;
+    }
+}
 } // namespace mu::engraving

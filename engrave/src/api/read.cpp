@@ -261,6 +261,7 @@ std::string_view staff_group(StaffGroup group) {
         case StaffGroup::STANDARD: return "pitched";
         case StaffGroup::PERCUSSION: return "percussion";
         case StaffGroup::TAB: return "tablature";
+        case StaffGroup::JIANPU: return "jianpu";
     }
     return "unknown";
 }

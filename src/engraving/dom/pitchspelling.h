@@ -26,6 +26,7 @@
 #include "types/string.h"
 
 namespace mu::engraving {
+struct KeySigEvent;
 struct MidiNote;
 struct Note;
 enum class Key : signed char;
@@ -130,6 +131,27 @@ extern int tpc2alter_by_key(int tpc, Key);
 extern int pitch2abs_step_by_key(int pitch, int tpc, Key, int &alter);
 extern int abs_step2pitch_by_key(int step, Key);
 extern int tpc2degree(int tpc, Key key);
+
+// The digit ("1".."7") and ASCII accidental ("#", "bb", ...) of a tpc relative to a
+// Jianpu tonic in a mode.
+struct JianpuSpelling {
+    String step_name;
+    String accidental;
+};
+
+struct JianpuKeyMapping {
+    KeyMode mode = KeyMode::MAJOR;
+    int tonic_tpc = Tpc::TPC_C;
+};
+
+extern int jianpu_tonic_tpc(Key relative_major_key, KeyMode mode);
+extern JianpuSpelling tpc2_jianpu(int tpc, int tonic_tpc, KeyMode mode);
+// Octave dots of a pitch: positive above, negative below the digit.
+extern int pitch2_jianpu_octave(int pitch, int tpc, int tonic_tpc, KeyMode mode);
+extern int pitch2_jianpu_octave(int pitch, int tpc, Key key, KeyMode mode);
+extern JianpuKeyMapping jianpu_key_mapping(const KeySigEvent &ks);
+extern String jianpu_key_label(const KeySigEvent &ks);
+extern String jianpu_accidental_mark(const String &acc_name);
 extern int tpc_interval(int start_tpc, int interval, int alter);
 extern int step2pitch_interval(int step, int alter);
 extern String tpc2_function(int tpc, Key key);

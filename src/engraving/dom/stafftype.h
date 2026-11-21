@@ -369,6 +369,16 @@ public:
     void set_fret_text_style(const TextStyleType &val);
     void set_fret_preset_idx(size_t idx);
     void set_fret_preset(const String &str);
+    void set_jianpu_text_style(const TextStyleType &val);
+    void set_jianpu_font_size(double val);
+
+    TextStyleType jianpu_text_style() const { return jianpu_text_style_; }
+
+    const muse::draw::Font &jianpu_font() const { return jianpu_font_; }
+
+    double jianpu_font_size() const { return jianpu_font_size_; }
+
+    double jianpu_box_h() const { return jianpu_box_h_; }
 
     bool is_tab_staff() const { return group_ == StaffGroup::TAB; }
 
@@ -397,6 +407,7 @@ private:
     double default_spatium() const;
     void set_duration_metrics();
     void set_fret_metrics();
+    void set_jianpu_metrics();
 
     static void init_tab_fonts();
 
@@ -469,7 +480,13 @@ private:
     // depends upon _onString, _useNumbers and the metrics of the fret font
     bool fret_use_text_style_ = false;
     TextStyleType fret_text_style_ = TextStyleType::TAB_FRET_NUMBER;
-    muse::draw::Font fret_font_; // font used to draw fret marks; cached for efficiency
+
+    // JIANPU: font and digit box height, derived from the text style once a score supplies the style.
+    TextStyleType jianpu_text_style_ = TextStyleType::JIANPU_NUMBER;
+    muse::draw::Font jianpu_font_;
+    double jianpu_font_size_ = 9.0; // points
+    double jianpu_box_h_ = 0.0;     // raster units
+    muse::draw::Font fret_font_;    // font used to draw fret marks; cached for efficiency
     TablatureFretFont fret_font_info_;
     size_t fret_preset_idx_ = 0; // the index of current fret font in fret font array
     double fret_y_offset_ = 0.0; // the vertical offset to draw fret marks with respect to the string lines;

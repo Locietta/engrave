@@ -71,6 +71,12 @@ static constexpr PropertyMetaData property_list[] = {
      MUSE_TRANSLATE_NOOP("engraving/propertyName", "show courtesy")},
     {Pid::KEYSIG_MODE, PType::KEY_MODE, PropertyGroup::APPEARANCE, false, "keysig_mode",
      MUSE_TRANSLATE_NOOP("engraving/propertyName", "key signature mode")},
+    {Pid::JIANPU_NUMBERING, PType::JIANPU_NUMBERING, PropertyGroup::APPEARANCE, false, "jianpuNumbering",
+     MUSE_TRANSLATE_NOOP("engraving/propertyName", "Jianpu numbering")},
+    {Pid::JIANPU_TONIC_KEY, PType::KEY, PropertyGroup::APPEARANCE, false, "jianpuTonicKey",
+     MUSE_TRANSLATE_NOOP("engraving/propertyName", "Jianpu tonal center")},
+    {Pid::JIANPU_TONIC_MODE, PType::KEY_MODE, PropertyGroup::APPEARANCE, false, "jianpuTonicMode",
+     MUSE_TRANSLATE_NOOP("engraving/propertyName", "Jianpu tonic mode")},
     {Pid::SLUR_STYLE_TYPE, PType::SLUR_STYLE_TYPE, PropertyGroup::APPEARANCE, false, "lineType",
      MUSE_TRANSLATE_NOOP("engraving/propertyName", "line type")},
     {Pid::PITCH, PType::INT, PropertyGroup::NONE, true, "pitch", MUSE_TRANSLATE_NOOP("engraving/propertyName", "pitch")},
@@ -867,6 +873,9 @@ bool property_link(Pid id) { return ::mu::engraving::property_list[size_t(id)].l
 bool property_link_same_score(Pid id) {
     assert(id < Pid::END);
     switch (id) {
+        case Pid::JIANPU_NUMBERING:
+        case Pid::JIANPU_TONIC_KEY:
+        case Pid::JIANPU_TONIC_MODE:
         case Pid::STAFF_BARLINE_SPAN:
         case Pid::STAFF_BARLINE_SPAN_FROM:
         case Pid::STAFF_BARLINE_SPAN_TO: return false;

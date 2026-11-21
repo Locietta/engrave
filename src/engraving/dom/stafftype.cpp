@@ -189,6 +189,10 @@ bool StaffType::operator==(const StaffType &st) const {
     equal &= (fret_use_text_style_ == st.fret_use_text_style_);
     equal &= (fret_text_style_ == st.fret_text_style_);
     equal &= (fret_preset_idx_ == st.fret_preset_idx_);
+    equal &= (jianpu_text_style_ == st.jianpu_text_style_);
+    equal &= (jianpu_font_ == st.jianpu_font_);
+    equal &= (jianpu_font_size_ == st.jianpu_font_size_);
+    equal &= (jianpu_box_h_ == st.jianpu_box_h_);
 
     return equal;
 }
@@ -242,6 +246,10 @@ bool StaffType::is_hidden_element_on_tab(Sid common_tab_style, Sid simple_tab_st
 }
 
 void StaffType::style_changed() {
+    if (group_ == StaffGroup::JIANPU) {
+        set_jianpu_text_style(jianpu_text_style_);
+    }
+
     if (!fret_use_text_style_) {
         return;
     }
@@ -298,6 +306,43 @@ void StaffType::set_fret_text_style(const TextStyleType &val) {
     set_fret_metrics();
 }
 
+void StaffType::set_jianpu_text_style(const TextStyleType &val) {
+    jianpu_text_style_ = val;
+    jianpu_font_ = Font();
+
+    for (const TextStyleProperty property : *text_style(jianpu_text_style_)) {
+        switch (property.type) {
+            case TextStylePropertyType::FONT_FACE: jianpu_font_.set_family(style().style_st(property.sid), Font::Type::TABLATURE); break;
+            case TextStylePropertyType::FONT_SIZE: jianpu_font_size_ = style().style_d(property.sid); break;
+            case TextStylePropertyType::FONT_STYLE: {
+                FontStyle f_style = style().style_v(property.sid).value<FontStyle>();
+                jianpu_font_.set_bold(f_style & FontStyle::BOLD);
+                jianpu_font_.set_italic(f_style & FontStyle::ITALIC);
+                jianpu_font_.set_underline(f_style & FontStyle::UNDERLINE);
+                jianpu_font_.set_strike(f_style & FontStyle::STRIKE);
+            } break;
+            default: continue;
+        }
+    }
+
+    set_jianpu_font_size(jianpu_font_size_);
+}
+
+void StaffType::set_jianpu_font_size(double val) {
+    jianpu_font_size_ = val;
+    jianpu_font_.set_point_size_f(val);
+    set_jianpu_metrics();
+}
+
+void StaffType::set_jianpu_metrics() {
+    // Like the TAB metrics, measured only once a score owns the type: presets need no font.
+    if (!score_ || group_ != StaffGroup::JIANPU) {
+        return;
+    }
+    FontMetrics fm(jianpu_font_);
+    jianpu_box_h_ = fm.tight_bounding_rect(u"01234567").height();
+}
+
 void StaffType::set_fret_preset_idx(size_t idx) {
     // Clear all previous formatting
     fret_font_ = Font();
@@ -338,9 +383,15 @@ void StaffType::set_fret_preset(const String &name) {
 
 void StaffType::set_score(Score *score) {
     score_ = score;
-    if (score_ && group_ == StaffGroup::TAB) {
+    if (!score_) {
+        return;
+    }
+
+    if (group_ == StaffGroup::TAB) {
         set_duration_metrics();
         set_fret_metrics();
+    } else if (group_ == StaffGroup::JIANPU) {
+        set_jianpu_text_style(jianpu_text_style_);
     }
 }
 
@@ -802,10 +853,11 @@ double StaffType::spatium() const { return style().spatium() * (is_small() ? sty
 //
 //=========================================================
 
-static const int default_preset[::mu::engraving::staff_group_max] = {
-    0, // default pitched preset is "stdNormal"
-    4, // default percussion preset is "perc5lines"
-    5  // default tab preset is "tab6StrCommon"
+static const StaffTypes default_preset[::mu::engraving::staff_group_max] = {
+    StaffTypes::STANDARD,    // default pitched preset is "stdNormal"
+    StaffTypes::PERC_5LINE,  // default percussion preset is "perc5lines"
+    StaffTypes::TAB_6COMMON, // default tab preset is "tab6StrCommon"
+    StaffTypes::JIANPU,
 };
 
 //---------------------------------------------------------
@@ -831,7 +883,7 @@ const StaffType *StaffType::preset_from_xml_name(const String &xml_name) {
 }
 
 const StaffType *StaffType::get_default_preset(StaffGroup grp) {
-    int idx_value = ::mu::engraving::default_preset[int(grp)];
+    int idx_value = static_cast<int>(::mu::engraving::default_preset[int(grp)]);
     return &presets_[idx_value];
 }
 
@@ -922,6 +974,8 @@ void StaffType::init_staff_types(const Color &default_color) {
         StaffType(StaffGroup::TAB, StaffTypes::TAB_10SIMPLE, 10, 0, 1.5, true, true, true, false, false, default_color,
                   u"MuseScore Tab Modern", false, true, u"MuseScore Tab Sans", TablatureSymbolRepeat::NEVER, false,
                   TablatureMinimStyle::NONE, true, false, true, false, false, false, true, false),
+
+        StaffType(StaffGroup::JIANPU, StaffTypes::JIANPU, 0, 0, 1, true, true, false, true, true, true, false, default_color),
     };
 }
 

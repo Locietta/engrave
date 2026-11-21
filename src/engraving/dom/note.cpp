@@ -51,6 +51,7 @@
 #include "fingering.h"
 #include "glissando.h"
 #include "guitarbend.h"
+#include "jianpuoctavedot.h"
 #include "laissezvib.h"
 #include "linkedobjects.h"
 #include "log.h"
@@ -1600,6 +1601,9 @@ void Note::scan_elements(std::function<void(EngravingItem *)> func) {
     for (NoteDot *dot : dots()) {
         func(dot);
     }
+    for (JianpuOctaveDot *dot : jianpu_octave_dots()) {
+        func(dot);
+    }
 }
 
 void Note::set_track(track_idx_t val) {
@@ -2703,11 +2707,19 @@ staff_idx_t Note::v_staff_idx() const {
 } // namespace mu::engraving
 
 namespace mu::engraving {
-Note::LayoutData::~LayoutData() { muse::delete_all(dots); }
+Note::LayoutData::~LayoutData() {
+    muse::delete_all(dots);
+    muse::delete_all(jianpu_octave_dots);
+}
 
 const std::vector<NoteDot *> &Note::dots() const {
     static const std::vector<NoteDot *> empty;
     return has_layout_data() ? ldata()->dots : empty;
+}
+
+const std::vector<JianpuOctaveDot *> &Note::jianpu_octave_dots() const {
+    static const std::vector<JianpuOctaveDot *> empty;
+    return has_layout_data() ? ldata()->jianpu_octave_dots : empty;
 }
 } // namespace mu::engraving
 

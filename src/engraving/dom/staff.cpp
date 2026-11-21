@@ -320,7 +320,8 @@ ClefTypeList Staff::clef_type(const Fraction &tick) const {
                 ct = staff_type(tick)->lines() <= 4 ? ClefTypeList(sct == ClefType::TAB ? ClefType::TAB4 : ClefType::TAB4_SERIF) :
                                                       ClefTypeList(sct == ClefType::TAB ? ClefType::TAB : ClefType::TAB_SERIF);
             } break;
-            case StaffGroup::STANDARD: ct = default_clef_type(); break;
+            case StaffGroup::STANDARD:
+            case StaffGroup::JIANPU: ct = default_clef_type(); break;
             case StaffGroup::PERCUSSION: ct = ClefTypeList(ClefType::PERC); break;
         }
     }
@@ -1210,6 +1211,8 @@ bool Staff::is_drum_staff(const Fraction &tick) const {
     //check for instrument instead of staffType (for pitched to unpitched instr. changes)
     return origin_part(tick)->instrument(tick)->use_drumset();
 }
+
+bool Staff::is_jianpu_staff(const Fraction &tick) const { return staff_type(tick)->type() == StaffTypes::JIANPU; }
 
 int Staff::lines(const Fraction &tick) const { return staff_type(tick)->lines(); }
 

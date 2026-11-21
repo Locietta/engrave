@@ -96,6 +96,8 @@ struct StaveSharingChange;
 struct SystemIndicatorIcon;
 struct InstrumentChange;
 struct InstrumentName;
+struct JianpuDurationLine;
+struct JianpuOctaveDot;
 struct Jump;
 struct KeySig;
 struct LayoutBreak;
@@ -511,6 +513,8 @@ public:
     CONVERT(is_tapping, TAPPING)
     CONVERT(is_tapping_half_slur, TAPPING_HALF_SLUR)
     CONVERT(is_tapping_half_slur_segment, TAPPING_HALF_SLUR_SEGMENT)
+    CONVERT(is_jianpu_octave_dot, JIANPU_OCTAVE_DOT)
+    CONVERT(is_jianpu_duration_line, JIANPU_DURATION_LINE)
 #undef CONVERT
 
     virtual bool is_engraving_item() const { return false; } // overridden in element.h
@@ -810,5 +814,7 @@ CONVERT(HammerOnPullOffText, to_hammer_on_pull_off_text, is_hammer_on_pull_off_t
 CONVERT(Tapping, to_tapping, is_tapping)
 CONVERT(TappingHalfSlur, to_tapping_half_slur, is_tapping_half_slur)
 CONVERT(TappingHalfSlurSegment, to_tapping_half_slur_segment, is_tapping_half_slur_segment)
+CONVERT(JianpuOctaveDot, to_jianpu_octave_dot, is_jianpu_octave_dot)
+CONVERT(JianpuDurationLine, to_jianpu_duration_line, is_jianpu_duration_line)
 #undef CONVERT
 } // namespace mu::engraving

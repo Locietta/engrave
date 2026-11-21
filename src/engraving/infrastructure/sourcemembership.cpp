@@ -43,6 +43,8 @@ bool source_object(const EngravingObject &item) {
             case ElementType::STEM_SLASH:
             case ElementType::HOOK:
             case ElementType::NOTEDOT:
+            case ElementType::JIANPU_OCTAVE_DOT:
+            case ElementType::JIANPU_DURATION_LINE:
             case ElementType::GUITAR_BEND_TEXT:
             case ElementType::GRACE_NOTES_GROUP:
             case ElementType::FIGURED_BASS_ITEM:

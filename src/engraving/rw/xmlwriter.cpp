@@ -221,6 +221,12 @@ void XmlWriter::tag_property(const AsciiStringView &name, PType type, const Prop
         case PType::KEY_MODE: {
             element(name, TConv::to_xml(data.value<KeyMode>()));
         } break;
+        case PType::KEY: {
+            element(name, TConv::to_xml(data.value<Key>()));
+        } break;
+        case PType::JIANPU_NUMBERING: {
+            element(name, TConv::to_xml(data.value<JianpuNumbering>()));
+        } break;
         case PType::TEXT_STYLE: {
             element(name, TConv::to_xml(data.value<TextStyleType>()));
         } break;

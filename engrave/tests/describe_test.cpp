@@ -289,7 +289,7 @@ TEST(ValueCodec, RejectsWhatDoesNotFitTheType) {
 
 TEST(Describe, ListsEveryImplementedTypeWithSortedProps) {
     const auto types = g_engine->describe();
-    EXPECT_EQ(types.size(), 148u) << "the TConv element types that a class declares";
+    EXPECT_EQ(types.size(), 150u) << "the TConv element types that a class declares";
     std::set<std::string> names;
     for (const auto &type : types) {
         EXPECT_TRUE(names.insert(type.type).second) << "duplicate type " << type.type;
@@ -376,6 +376,8 @@ TEST(Describe, DefaultStackingOrderIsPinned) {
     EXPECT_EQ(default_z(ElementType::CHORD), 12700);
     EXPECT_EQ(default_z(ElementType::DUMMY), 15300);
     EXPECT_EQ(default_z(ElementType::STAVE_SHARING_CHANGE), 15200);
+    EXPECT_EQ(default_z(ElementType::JIANPU_OCTAVE_DOT), 15200);
+    EXPECT_EQ(default_z(ElementType::JIANPU_DURATION_LINE), 15300);
 }
 
 TEST(Corpus, EveryPropertyOfEveryCorpusTypeReads) {

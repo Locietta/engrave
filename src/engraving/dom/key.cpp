@@ -168,6 +168,10 @@ bool KeySigEvent::operator==(const KeySigEvent &e) const {
     if (e.custom_ != custom_ || e.mode_ != mode_ || e.for_instrument_change_ != for_instrument_change_) {
         return false;
     }
+    if (e.jianpu_numbering_ != jianpu_numbering_ || e.jianpu_tonic_key_ != jianpu_tonic_key_ ||
+        e.jianpu_tonic_mode_ != jianpu_tonic_mode_) {
+        return false;
+    }
     if (custom_ && !is_atonal()) {
         if (e.custom_key_defs_.size() != custom_key_defs_.size()) {
             return false;

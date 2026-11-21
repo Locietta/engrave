@@ -113,7 +113,10 @@ EngravingObject *KeySig::property_delegate(Pid property_id) const {
         case Pid::KEY:
         case Pid::KEY_CONCERT:
         case Pid::SHOW_COURTESY:
-        case Pid::KEYSIG_MODE: {
+        case Pid::KEYSIG_MODE:
+        case Pid::JIANPU_NUMBERING:
+        case Pid::JIANPU_TONIC_KEY:
+        case Pid::JIANPU_TONIC_MODE: {
             Segment *this_seg = segment();
             Segment *next_ks_seg = this_seg ? this_seg->next1(SegmentType::KEY_SIG) : nullptr;
             if (next_ks_seg && next_ks_seg->tick() == this_seg->tick()) {
@@ -136,6 +139,9 @@ PropertyValue KeySig::get_property(Pid property_id) const {
         case Pid::KEY_CONCERT: return int(concert_key());
         case Pid::SHOW_COURTESY: return show_courtesy();
         case Pid::KEYSIG_MODE: return mode();
+        case Pid::JIANPU_NUMBERING: return jianpu_numbering();
+        case Pid::JIANPU_TONIC_KEY: return jianpu_tonic_key();
+        case Pid::JIANPU_TONIC_MODE: return jianpu_tonic_mode();
         case Pid::IS_COURTESY: return is_courtesy_value;
         default: return EngravingItem::get_property(property_id);
     }
@@ -169,6 +175,27 @@ bool KeySig::set_property(Pid property_id, const PropertyValue &v) {
                 return false;
             }
             set_mode(v.value<KeyMode>());
+            staff()->set_key(tick(), key_sig_event());
+            break;
+        case Pid::JIANPU_NUMBERING:
+            if (generated()) {
+                return false;
+            }
+            set_jianpu_numbering(v.value<JianpuNumbering>());
+            staff()->set_key(tick(), key_sig_event());
+            break;
+        case Pid::JIANPU_TONIC_KEY:
+            if (generated()) {
+                return false;
+            }
+            set_jianpu_tonic_key(v.value<Key>());
+            staff()->set_key(tick(), key_sig_event());
+            break;
+        case Pid::JIANPU_TONIC_MODE:
+            if (generated()) {
+                return false;
+            }
+            set_jianpu_tonic_mode(v.value<KeyMode>());
             staff()->set_key(tick(), key_sig_event());
             break;
         case Pid::IS_COURTESY: is_courtesy_value = v.to_bool(); break;
@@ -205,6 +232,9 @@ PropertyValue KeySig::property_default(Pid id) const {
         case Pid::KEY_CONCERT: return int(Key::INVALID);
         case Pid::SHOW_COURTESY: return true;
         case Pid::KEYSIG_MODE: return KeyMode::UNKNOWN;
+        case Pid::JIANPU_NUMBERING: return JianpuNumbering::FOLLOW_SCORE_KEY;
+        case Pid::JIANPU_TONIC_KEY: return Key::C;
+        case Pid::JIANPU_TONIC_MODE: return KeyMode::MAJOR;
         case Pid::IS_COURTESY: return false;
         default: return EngravingItem::property_default(id);
     }

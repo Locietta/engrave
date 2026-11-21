@@ -57,6 +57,8 @@
 #include "image.h"
 #include "instrchange.h"
 #include "instrumentname.h"
+#include "jianpudurationline.h"
+#include "jianpuoctavedot.h"
 #include "jump.h"
 #include "keysig.h"
 #include "laissezvib.h"
@@ -258,6 +260,8 @@ EngravingItem *Factory::do_create_item(ElementType type, DummyParentOr<Engraving
         case ElementType::PARTIAL_TIE: return new PartialTie(parent_of_type_or_dummy<Note>(parent_item, dummy));
         case ElementType::PARTIAL_LYRICSLINE: return new PartialLyricsLine(parent);
         case ElementType::PARENTHESIS: return new Parenthesis(parent);
+        case ElementType::JIANPU_DURATION_LINE: return new JianpuDurationLine(parent_of_type_or_dummy<ChordRest>(parent_item, dummy));
+        case ElementType::JIANPU_OCTAVE_DOT: return new JianpuOctaveDot(parent_of_type_or_dummy<Note>(parent_item, dummy));
 
         case ElementType::TEXTLINE_BASE:
         case ElementType::TEXTLINE_SEGMENT:

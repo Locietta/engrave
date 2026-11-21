@@ -26,6 +26,9 @@
 
 #include "pitchspelling.h"
 
+#include <array>
+#include <cstdlib>
+
 #include "key.h"
 #include "log.h"
 #include "translation.h"
@@ -409,6 +412,137 @@ int pitch2abs_step_by_key(int pitch, int tpc, Key key, int &alter) {
     int step = tpc2step(tpc);
     alter = tpc2alter_by_key(tpc, key);
     return octave * ::mu::engraving::step_delta_octave + step;
+}
+
+namespace {
+int jianpu_mode_degree_offset(KeyMode mode) {
+    switch (mode) {
+        case KeyMode::DORIAN: return 1;
+        case KeyMode::PHRYGIAN: return 2;
+        case KeyMode::LYDIAN: return 3;
+        case KeyMode::MIXOLYDIAN: return 4;
+        case KeyMode::AEOLIAN:
+        case KeyMode::MINOR: return 5;
+        case KeyMode::LOCRIAN: return 6;
+        case KeyMode::UNKNOWN:
+        case KeyMode::NONE:
+        case KeyMode::MAJOR:
+        case KeyMode::IONIAN: return 0;
+    }
+    return 0;
+}
+
+const std::array<int, 7> &jianpu_mode_intervals(KeyMode mode) {
+    static constexpr std::array<int, 7> ionian = {0, 2, 4, 5, 7, 9, 11};
+    static constexpr std::array<int, 7> dorian = {0, 2, 3, 5, 7, 9, 10};
+    static constexpr std::array<int, 7> phrygian = {0, 1, 3, 5, 7, 8, 10};
+    static constexpr std::array<int, 7> lydian = {0, 2, 4, 6, 7, 9, 11};
+    static constexpr std::array<int, 7> mixolydian = {0, 2, 4, 5, 7, 9, 10};
+    static constexpr std::array<int, 7> aeolian = {0, 2, 3, 5, 7, 8, 10};
+    static constexpr std::array<int, 7> locrian = {0, 1, 3, 5, 6, 8, 10};
+
+    switch (mode) {
+        case KeyMode::DORIAN: return dorian;
+        case KeyMode::PHRYGIAN: return phrygian;
+        case KeyMode::LYDIAN: return lydian;
+        case KeyMode::MIXOLYDIAN: return mixolydian;
+        case KeyMode::AEOLIAN:
+        case KeyMode::MINOR: return aeolian;
+        case KeyMode::LOCRIAN: return locrian;
+        case KeyMode::UNKNOWN:
+        case KeyMode::NONE:
+        case KeyMode::MAJOR:
+        case KeyMode::IONIAN: return ionian;
+    }
+    return ionian;
+}
+
+constexpr std::array<int, 7> major_scale_semitones = {0, 2, 4, 5, 7, 9, 11};
+
+int normalize_jianpu_alteration(int alteration) {
+    while (alteration > 6) {
+        alteration -= 12;
+    }
+    while (alteration < -6) {
+        alteration += 12;
+    }
+    return alteration;
+}
+} // namespace
+
+int jianpu_tonic_tpc(Key relative_major_key, KeyMode mode) {
+    const int degree_offset = jianpu_mode_degree_offset(mode);
+    const int relative_major_tpc = key2_tpc(relative_major_key);
+    const int relative_major_step = tpc2step(relative_major_tpc);
+    const int tonic_step = (relative_major_step + degree_offset) % ::mu::engraving::step_delta_octave;
+    const int relative_major_pitch = (major_scale_semitones[relative_major_step] + int(tpc2alter(relative_major_tpc)) + 12) % 12;
+    const int tonic_pitch = (relative_major_pitch + major_scale_semitones[degree_offset]) % 12;
+    const int tonic_alteration = normalize_jianpu_alteration(tonic_pitch - major_scale_semitones[tonic_step]);
+
+    return step2tpc(tonic_step, AccidentalVal(tonic_alteration));
+}
+
+JianpuSpelling tpc2_jianpu(int tpc, int tonic_tpc, KeyMode mode) {
+    static const String step_names = u"1234567";
+
+    tpc = clamp_enharmonic(tpc);
+    tonic_tpc = clamp_enharmonic(tonic_tpc);
+    const int tonic_step = tpc2step(tonic_tpc);
+    const int note_step = tpc2step(tpc);
+    const int scale_degree = (note_step - tonic_step + ::mu::engraving::step_delta_octave) % ::mu::engraving::step_delta_octave;
+    const int jianpu_degree = (jianpu_mode_degree_offset(mode) + scale_degree) % ::mu::engraving::step_delta_octave;
+
+    const int tonic_pitch = (major_scale_semitones[tonic_step] + int(tpc2alter(tonic_tpc)) + 12) % 12;
+    const int expected_pitch = (tonic_pitch + jianpu_mode_intervals(mode)[scale_degree]) % 12;
+    const int expected_alteration = normalize_jianpu_alteration(expected_pitch - major_scale_semitones[note_step]);
+    const int alteration = int(tpc2alter(tpc)) - expected_alteration;
+
+    JianpuSpelling spelling;
+    spelling.step_name = String(step_names.at(jianpu_degree));
+    const Char accidental = alteration < 0 ? Char(u'b') : Char(u'#');
+    for (int i = 0; i < std::abs(alteration); ++i) {
+        spelling.accidental.append(accidental);
+    }
+    return spelling;
+}
+
+int pitch2_jianpu_octave(int pitch, int tpc, int tonic_tpc, KeyMode mode) {
+    tonic_tpc = clamp_enharmonic(tonic_tpc);
+    tpc = clamp_enharmonic(tpc);
+    const int note_octave = (clamp_pitch_octaved(pitch) - int(tpc2alter(tpc))) / ::mu::engraving::pitch_delta_octave;
+    const int abs_step = note_octave * ::mu::engraving::step_delta_octave + tpc2step(tpc);
+    // Undotted digits start at the tonic's step in the C3 octave (pitch / 12 == 4).
+    const int tonic_abs_step = 4 * ::mu::engraving::step_delta_octave + tpc2step(tonic_tpc);
+    const int degree_one_offset =
+        (::mu::engraving::step_delta_octave - jianpu_mode_degree_offset(mode)) % ::mu::engraving::step_delta_octave;
+    const int relative_step = abs_step - tonic_abs_step - degree_one_offset;
+    return relative_step >= 0 ? relative_step / ::mu::engraving::step_delta_octave :
+                                (relative_step - ::mu::engraving::step_delta_octave + 1) / ::mu::engraving::step_delta_octave;
+}
+
+int pitch2_jianpu_octave(int pitch, int tpc, Key key, KeyMode mode) { return pitch2_jianpu_octave(pitch, tpc, key2_tpc(key), mode); }
+
+JianpuKeyMapping jianpu_key_mapping(const KeySigEvent &ks) {
+    if (ks.jianpu_numbering() == JianpuNumbering::CUSTOM) {
+        return {ks.jianpu_tonic_mode(), key2_tpc(ks.jianpu_tonic_key())};
+    }
+    return {ks.mode(), jianpu_tonic_tpc(ks.key(), ks.mode())};
+}
+
+String jianpu_accidental_mark(const String &acc_name) {
+    String mark = acc_name;
+    mark.replace(u"b", u"♭");
+    mark.replace(u"#", u"♯");
+    return mark;
+}
+
+// An UNKNOWN or atonal (NONE) mode under score-key numbering maps like major, as the
+// note digits do: a key signature alone cannot tell a major key from its relative minor.
+String jianpu_key_label(const KeySigEvent &ks) {
+    const JianpuKeyMapping mapping = jianpu_key_mapping(ks);
+    const int degree = jianpu_mode_degree_offset(mapping.mode) + 1;
+    const String tonic_name = jianpu_accidental_mark(tpc2name(mapping.tonic_tpc, NoteSpellingType::STANDARD, NoteCaseType::AUTO));
+    return String(u"%1=%2").arg(String::number(degree), tonic_name);
 }
 
 //---------------------------------------------------------

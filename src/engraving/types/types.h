@@ -229,6 +229,8 @@ enum class ElementType : unsigned char {
     TAPPING_HALF_SLUR,
     TAPPING_HALF_SLUR_SEGMENT,
     TAPPING_TEXT,
+    JIANPU_OCTAVE_DOT,
+    JIANPU_DURATION_LINE,
 
     STAVE_SHARING_CHANGE,
 
@@ -917,6 +919,7 @@ enum class TextStyleType : unsigned char {
     FRET_DIAGRAM_FRET_NUMBER,
     HARP_PEDAL_DIAGRAM,
     HARP_PEDAL_TEXT_DIAGRAM,
+    JIANPU_NUMBER,
 
     // Line-oriented styles
     TEXTLINE,
@@ -1046,6 +1049,12 @@ enum class CourtesyBarlineMode : char {
     DOUBLE_BEFORE_COURTESY = 2,
 };
 
+// How the tonic ("1") of a Jianpu staff is determined
+enum class JianpuNumbering : char {
+    FOLLOW_SCORE_KEY = 0, // tonic follows the actual key signature
+    CUSTOM = 1            // tonic and mode are selected independently
+};
+
 enum class FermataType : signed char { UNDEFINED = -1, VERY_SHORT, SHORT, SHORT_HENZE, NORMAL, LONG, LONG_HENZE, VERY_LONG };
 
 enum class ChordLineType : unsigned char { NOTYPE, FALL, DOIT, PLOP, SCOOP };
@@ -1155,8 +1164,8 @@ enum class MarkerType : unsigned char {
     USER
 };
 
-enum class StaffGroup : unsigned char { STANDARD, PERCUSSION, TAB };
-constexpr int staff_group_max = int(StaffGroup::TAB) + 1; // out of enum to avoid compiler complains about not handled switch cases
+enum class StaffGroup : unsigned char { STANDARD, PERCUSSION, TAB, JIANPU };
+constexpr int staff_group_max = int(StaffGroup::JIANPU) + 1; // out of enum to avoid compiler complains about not handled switch cases
 
 // keep in sync with the _presets initialization in StaffType::initStaffTypes() and _defaultPreset for legacy scores
 enum class StaffTypes : signed char {
@@ -1187,6 +1196,7 @@ enum class StaffTypes : signed char {
     TAB_8SIMPLE,
     TAB_9SIMPLE,
     TAB_10SIMPLE,
+    JIANPU,
     STAFF_TYPES,
     PERC_DEFAULT = StaffTypes::PERC_5LINE,
     TAB_DEFAULT = StaffTypes::TAB_6COMMON,

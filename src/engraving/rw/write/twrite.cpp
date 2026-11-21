@@ -2167,6 +2167,12 @@ void TWrite::write(const KeySig *item, XmlWriter &xml, WriteContext &ctx) {
         xml.tag("mode", TConv::to_xml(item->mode()));
     }
 
+    if (item->jianpu_numbering() != JianpuNumbering::FOLLOW_SCORE_KEY) {
+        xml.tag("jianpuNumbering", TConv::to_xml(item->jianpu_numbering()));
+        xml.tag("jianpuTonicKey", TConv::to_xml(item->jianpu_tonic_key()));
+        xml.tag("jianpuTonicMode", TConv::to_xml(item->jianpu_tonic_mode()));
+    }
+
     write_property(item, xml, Pid::SHOW_COURTESY);
     write_property(item, xml, Pid::IS_COURTESY);
 
@@ -2807,12 +2813,15 @@ void TWrite::write(const StaffType *item, XmlWriter &xml, WriteContext &ctx) {
     if (item->color() != ctx.configuration()->default_color()) {
         xml.tag_property(Pid::COLOR, item->color());
     }
-    if (item->group() == StaffGroup::STANDARD) {
+    if (item->group() == StaffGroup::STANDARD || item->group() == StaffGroup::JIANPU) {
         xml.tag("noteheadScheme", TConv::to_xml(item->note_head_scheme()), TConv::to_xml(NoteHeadScheme::HEAD_NORMAL));
+        if (item->group() == StaffGroup::JIANPU) {
+            xml.tag("jianpuTextStyle", TConv::to_xml(item->jianpu_text_style()));
+        }
     }
     xml.tag("instrumentLabelVisibility", TConv::to_xml(item->instrument_label_visibility()),
             TConv::to_xml(InstrumentLabelVisibility::AUTO));
-    if (item->group() == StaffGroup::STANDARD || item->group() == StaffGroup::PERCUSSION) {
+    if (item->group() == StaffGroup::STANDARD || item->group() == StaffGroup::JIANPU || item->group() == StaffGroup::PERCUSSION) {
         if (!item->gen_keysig()) {
             xml.tag("keysig", item->gen_keysig());
         }

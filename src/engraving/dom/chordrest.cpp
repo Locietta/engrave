@@ -40,6 +40,7 @@
 #include "harppedaldiagram.h"
 #include "hook.h"
 #include "instrchange.h"
+#include "jianpudurationline.h"
 #include "keysig.h"
 #include "log.h"
 #include "lyrics.h"
@@ -66,7 +67,15 @@ using namespace mu;
 using namespace mu::engraving;
 
 namespace mu::engraving {
-ChordRest::LayoutData::~LayoutData() { delete tab_dur; }
+ChordRest::LayoutData::~LayoutData() {
+    delete tab_dur;
+    muse::delete_all(jianpu_duration_lines);
+}
+
+const std::vector<JianpuDurationLine *> &ChordRest::jianpu_duration_lines() const {
+    static const std::vector<JianpuDurationLine *> empty;
+    return has_layout_data() ? ldata()->jianpu_duration_lines : empty;
+}
 
 ChordRest::ChordRest(const ElementType &type, DummyParentOr<Segment> parent) : DurationElement(type, parent) {
     staff_move_ = 0;
@@ -371,6 +380,9 @@ void ChordRest::process_siblings(std::function<void(EngravingItem *)> func) {
     if (tab_dur()) {
         func(tab_dur());
     }
+    for (JianpuDurationLine *line : jianpu_duration_lines()) {
+        func(line);
+    }
     for (Lyrics *l : lyrics_) {
         func(l);
     }
@@ -518,6 +530,9 @@ void ChordRest::scan_elements(std::function<void(EngravingItem *)> func) {
     }
     if (tab_dur()) {
         func(tab_dur());
+    }
+    for (JianpuDurationLine *line : jianpu_duration_lines()) {
+        func(line);
     }
 }
 

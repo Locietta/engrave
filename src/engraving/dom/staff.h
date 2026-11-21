@@ -200,6 +200,7 @@ public:
     bool is_pitched_staff(const Fraction &) const;
     bool is_tab_staff(const Fraction &) const;
     bool is_drum_staff(const Fraction &) const;
+    bool is_jianpu_staff(const Fraction &) const;
 
     int lines(const Fraction &) const;
     void set_lines(const Fraction &, int lines);

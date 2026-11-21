@@ -106,6 +106,8 @@ enum class PType : unsigned char {
     LINE_TYPE,
     HOOK_TYPE,
     KEY_MODE,
+    KEY,
+    JIANPU_NUMBERING,
     TEXT_STYLE,
     PLAYTECH_TYPE,
     TEMPOCHANGE_TYPE,
@@ -277,6 +279,10 @@ struct PropertyValue {
     PropertyValue(HookType v) : type_(PType::HOOK_TYPE), data_(make_data<HookType>(v)) {}
 
     PropertyValue(KeyMode v) : type_(PType::KEY_MODE), data_(make_data<KeyMode>(v)) {}
+
+    PropertyValue(Key v) : type_(PType::KEY), data_(make_data<Key>(v)) {}
+
+    PropertyValue(JianpuNumbering v) : type_(PType::JIANPU_NUMBERING), data_(make_data<JianpuNumbering>(v)) {}
 
     PropertyValue(TextStyleType v) : type_(PType::TEXT_STYLE), data_(make_data<TextStyleType>(v)) {}
 
@@ -542,6 +548,10 @@ private:
     static constexpr PType enum_type(HookType) { return PType::HOOK_TYPE; }
 
     static constexpr PType enum_type(KeyMode) { return PType::KEY_MODE; }
+
+    static constexpr PType enum_type(Key) { return PType::KEY; }
+
+    static constexpr PType enum_type(JianpuNumbering) { return PType::JIANPU_NUMBERING; }
 
     static constexpr PType enum_type(TextStyleType) { return PType::TEXT_STYLE; }
 

@@ -81,6 +81,19 @@ struct KeySigEvent {
 
     bool custom() const { return custom_; }
 
+    // Per key signature override of the Jianpu digit and mode mapping.
+    JianpuNumbering jianpu_numbering() const { return jianpu_numbering_; }
+
+    void set_jianpu_numbering(JianpuNumbering v) { jianpu_numbering_ = v; }
+
+    Key jianpu_tonic_key() const { return jianpu_tonic_key_; }
+
+    void set_jianpu_tonic_key(Key v) { jianpu_tonic_key_ = v; }
+
+    KeyMode jianpu_tonic_mode() const { return jianpu_tonic_mode_; }
+
+    void set_jianpu_tonic_mode(KeyMode v) { jianpu_tonic_mode_ = v; }
+
     bool is_valid() const { return key_ != Key::INVALID; }
 
     bool is_atonal() const { return mode_ == KeyMode::NONE; }
@@ -107,6 +120,10 @@ private:
     bool custom_ = false;
     bool for_instrument_change_ = false;
     std::vector<CustDef> custom_key_defs_;
+
+    JianpuNumbering jianpu_numbering_ = JianpuNumbering::FOLLOW_SCORE_KEY;
+    Key jianpu_tonic_key_ = Key::C;
+    KeyMode jianpu_tonic_mode_ = KeyMode::MAJOR;
 };
 
 //---------------------------------------------------------

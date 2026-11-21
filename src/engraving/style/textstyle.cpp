@@ -423,6 +423,27 @@ const TextStyle harp_pedal_text_diagram_text_style{
     }},
     {Sid::HARP_PEDAL_TEXT_DIAGRAM_OFFSET, Sid::HARP_PEDAL_TEXT_DIAGRAM_OFFSET}};
 
+const TextStyle jianpu_number_text_style{
+    {{
+        {TextStylePropertyType::FONT_FACE, Sid::JIANPU_NUMBER_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::JIANPU_NUMBER_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::JIANPU_NUMBER_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::JIANPU_NUMBER_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::JIANPU_NUMBER_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::JIANPU_NUMBER_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::JIANPU_NUMBER_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::JIANPU_NUMBER_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::JIANPU_NUMBER_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::JIANPU_NUMBER_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::JIANPU_NUMBER_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::JIANPU_NUMBER_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::JIANPU_NUMBER_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::JIANPU_NUMBER_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::JIANPU_NUMBER_POSITION, Pid::POSITION},
+    }},
+    {Sid::JIANPU_NUMBER_OFFSET, Sid::JIANPU_NUMBER_OFFSET}};
+
 const TextStyle long_instrument_text_style{
     {{
         {TextStylePropertyType::FONT_FACE, Sid::LONG_INSTRUMENT_FONT_FACE, Pid::FONT_FACE},
@@ -1657,6 +1678,7 @@ const TextStyle *text_style(TextStyleType idx) {
         case TextStyleType::FRET_DIAGRAM_FRET_NUMBER: return &::mu::engraving::fret_diagram_fret_number_style;
         case TextStyleType::HARP_PEDAL_DIAGRAM: return &::mu::engraving::harp_pedal_diagram_text_style;
         case TextStyleType::HARP_PEDAL_TEXT_DIAGRAM: return &::mu::engraving::harp_pedal_text_diagram_text_style;
+        case TextStyleType::JIANPU_NUMBER: return &::mu::engraving::jianpu_number_text_style;
 
         case TextStyleType::TEXTLINE: return &::mu::engraving::text_line_text_style;
         case TextStyleType::SYSTEM_TEXTLINE: return &::mu::engraving::system_text_line_text_style;

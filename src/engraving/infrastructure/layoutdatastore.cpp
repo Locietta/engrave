@@ -18,6 +18,8 @@
 #include "dom/guitarbend.h"
 #include "dom/hammeronpulloff.h"
 #include "dom/hook.h"
+#include "dom/jianpudurationline.h"
+#include "dom/jianpuoctavedot.h"
 #include "dom/ledgerline.h"
 #include "dom/lyrics.h"
 #include "dom/masterscore.h"
@@ -72,11 +74,13 @@ void add_layout_payload_children(const EngravingItem &owner, const EngravingItem
     if (owner.is_chord_rest()) {
         const auto *cr_data = static_cast<const ChordRest::LayoutData *>(&data);
         visit(cr_data->tab_dur);
+        for (const auto *line : cr_data->jianpu_duration_lines) visit(line);
     }
     switch (owner.type()) {
         case ElementType::NOTE: {
             const auto *note_data = static_cast<const Note::LayoutData *>(&data);
             for (const auto *dot : note_data->dots) visit(dot);
+            for (const auto *dot : note_data->jianpu_octave_dots) visit(dot);
             break;
         }
         case ElementType::REST:

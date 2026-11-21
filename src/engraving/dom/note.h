@@ -37,6 +37,7 @@ struct Accidental;
 struct AccidentalState;
 struct Chord;
 struct Factory;
+struct JianpuOctaveDot;
 struct NoteDot;
 struct Score;
 struct Spanner;
@@ -380,6 +381,12 @@ public:
 
     const std::vector<NoteDot *> &dots() const;
 
+    const std::vector<JianpuOctaveDot *> &jianpu_octave_dots() const;
+
+    String jianpu_digit() const { return has_layout_data() ? ldata()->jianpu_digit : String(); }
+
+    String jianpu_accidental() const { return has_layout_data() ? ldata()->jianpu_accidental : String(); }
+
     void update_accidental(AccidentalState *);
     void update_line();
     void set_nval(const NoteVal &, Fraction = {-1, 1});
@@ -514,6 +521,10 @@ public:
         DirectionV dot_position = DirectionV::AUTO;
         ~LayoutData() override;
         std::vector<NoteDot *> dots;
+        // Jianpu display derived from pitch and key during layout; the note itself stays unchanged.
+        String jianpu_digit;
+        String jianpu_accidental;
+        std::vector<JianpuOctaveDot *> jianpu_octave_dots;
         std::optional<bool> visible;
         std::optional<bool> ghost;
         ld_field<bool> use_tablature = {"[Note] useTablature", false};

@@ -310,6 +310,9 @@ PropertyValue TRead::read_property_value(Pid id, XmlReader &e, ReadContext &ctx)
         case PType::HOOK_TYPE: return PropertyValue(TConv::from_xml(e.read_ascii_text(), HookType::NONE));
 
         case PType::KEY_MODE: return PropertyValue(TConv::from_xml(e.read_ascii_text(), KeyMode::NONE));
+        case PType::KEY: return PropertyValue(TConv::from_xml(e.read_ascii_text(), Key::C));
+
+        case PType::JIANPU_NUMBERING: return PropertyValue(TConv::from_xml(e.read_ascii_text(), JianpuNumbering::FOLLOW_SCORE_KEY));
 
         case PType::TEXT_STYLE: return PropertyValue(TConv::from_xml(e.read_ascii_text(), TextStyleType::DEFAULT));
         case PType::SLUR_STYLE_TYPE: return SlurStyleType(e.read_int());
@@ -1237,6 +1240,12 @@ void TRead::read(KeySig *s, XmlReader &e, ReadContext &ctx) {
             sig.set_custom(true);
         } else if (tag == "mode") {
             sig.set_mode(TConv::from_xml(e.read_ascii_text(), KeyMode::UNKNOWN));
+        } else if (tag == "jianpuNumbering") {
+            sig.set_jianpu_numbering(TConv::from_xml(e.read_ascii_text(), JianpuNumbering::FOLLOW_SCORE_KEY));
+        } else if (tag == "jianpuTonicKey") {
+            sig.set_jianpu_tonic_key(TConv::from_xml(e.read_ascii_text(), Key::C));
+        } else if (tag == "jianpuTonicMode") {
+            sig.set_jianpu_tonic_mode(TConv::from_xml(e.read_ascii_text(), KeyMode::MAJOR));
         } else if (tag == "subtype") {
             subtype = e.read_int();
         } else if (tag == "forInstrumentChange") {
@@ -3939,6 +3948,8 @@ void TRead::read(StaffType *t, XmlReader &e, ReadContext &ctx) {
             t->set_fret_use_text_style(e.read_bool());
         } else if (tag == "fretTextStyle") {
             t->set_fret_text_style(TextStyleType(TConv::from_xml(e.read_ascii_text(), TextStyleType::TAB_FRET_NUMBER)));
+        } else if (tag == "jianpuTextStyle") {
+            t->set_jianpu_text_style(TextStyleType(TConv::from_xml(e.read_ascii_text(), TextStyleType::JIANPU_NUMBER)));
         } else if (tag == "symbolRepeat") {
             t->set_symbol_repeat((TablatureSymbolRepeat) e.read_int());
         } else if (tag == "linesThrough") {

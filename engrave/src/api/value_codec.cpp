@@ -147,6 +147,8 @@ ValueKind kind_of(PType type) noexcept {
         case PType::LINE_TYPE: return ValueKind::ENUM;
         case PType::HOOK_TYPE: return ValueKind::ENUM;
         case PType::KEY_MODE: return ValueKind::ENUM;
+        case PType::KEY: return ValueKind::ENUM;
+        case PType::JIANPU_NUMBERING: return ValueKind::ENUM;
         case PType::TEXT_STYLE: return ValueKind::ENUM;
         case PType::PLAYTECH_TYPE: return ValueKind::ENUM;
         case PType::TEMPOCHANGE_TYPE: return ValueKind::ENUM;
@@ -268,6 +270,15 @@ std::span<const std::string_view> enum_tokens(PType type) noexcept {
         case PType::KEY_MODE: {
             static constexpr std::string_view tokens[] = {"unknown", "none",       "major",   "minor",  "dorian", "phrygian",
                                                           "lydian",  "mixolydian", "aeolian", "ionian", "locrian"};
+            return tokens;
+        }
+        case PType::KEY: {
+            static constexpr std::string_view tokens[] = {"Cb", "Gb", "Db", "Ab", "Eb", "Bb", "F", "C",
+                                                          "G",  "D",  "A",  "E",  "B",  "F#", "C#"};
+            return tokens;
+        }
+        case PType::JIANPU_NUMBERING: {
+            static constexpr std::string_view tokens[] = {"followScoreKey", "custom"};
             return tokens;
         }
         case PType::LAYOUTBREAK_TYPE: {
@@ -523,6 +534,7 @@ std::span<const std::string_view> enum_tokens(PType type) noexcept {
                                                           "harp_pedal_diagram",
                                                           "harp_pedal_text_diagram",
                                                           "articulation",
+                                                          "jianpu_number",
                                                           "textline",
                                                           "system_textline",
                                                           "noteline",
@@ -683,6 +695,8 @@ Value to_value(PType type, const PropertyValue &value) {
         case PType::INSTRUMENT_NAMES_ALIGN: return Enum{token_of(TConv::to_xml(value.value<InstrumentNamesAlign>()))};
         case PType::INSTRUMENT_NAMES_FORMAT: return Enum{token_of(TConv::to_xml(value.value<InstrumentNamesFormat>()))};
         case PType::KEY_MODE: return Enum{token_of(TConv::to_xml(value.value<KeyMode>()))};
+        case PType::KEY: return Enum{token_of(TConv::to_xml(value.value<Key>()))};
+        case PType::JIANPU_NUMBERING: return Enum{token_of(TConv::to_xml(value.value<JianpuNumbering>()))};
         case PType::LAYOUTBREAK_TYPE: return Enum{token_of(TConv::to_xml(value.value<LayoutBreakType>()))};
         case PType::LINE_TYPE: return Enum{token_of(TConv::to_xml(value.value<LineType>()))};
         case PType::LH_TAPPING_SYMBOL: return Enum{token_of(TConv::to_xml(value.value<LHTappingSymbol>()))};
@@ -857,6 +871,17 @@ Result<PropertyValue> from_value(PType type, const Value &value) {
             return fail(ValueKind::ENUM);
         case PType::KEY_MODE:
             if (const auto *token = std::get_if<Enum>(&value)) return enum_value<KeyMode>(token->token, KeyMode::NONE);
+            return fail(ValueKind::ENUM);
+        case PType::KEY:
+            if (const auto *token = std::get_if<Enum>(&value)) {
+                // TConv names the engine's unset sentinel "invalid"; it is not a key a caller can pick.
+                if (token->token == "invalid") return std::unexpected(Error{ErrorCode::INVALID_ARGUMENT, "unknown token 'invalid'"});
+                return enum_value<Key>(token->token, Key::C);
+            }
+            return fail(ValueKind::ENUM);
+        case PType::JIANPU_NUMBERING:
+            if (const auto *token = std::get_if<Enum>(&value))
+                return enum_value<JianpuNumbering>(token->token, JianpuNumbering::FOLLOW_SCORE_KEY);
             return fail(ValueKind::ENUM);
         case PType::LAYOUTBREAK_TYPE:
             if (const auto *token = std::get_if<Enum>(&value)) return enum_value<LayoutBreakType>(token->token, LayoutBreakType::NOBREAK);

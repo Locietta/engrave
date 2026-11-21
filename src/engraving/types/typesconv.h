@@ -109,6 +109,12 @@ struct TConv {
     static AsciiStringView to_xml(KeyMode v);
     static KeyMode from_xml(const AsciiStringView &tag, KeyMode def);
 
+    static AsciiStringView to_xml(JianpuNumbering v);
+    static JianpuNumbering from_xml(const AsciiStringView &tag, JianpuNumbering def);
+
+    static AsciiStringView to_xml(Key v);
+    static Key from_xml(const AsciiStringView &tag, Key def);
+
     static const TranslatableString &user_name(TextStyleType v);
     static String translated_user_name(TextStyleType v);
     static AsciiStringView to_xml(TextStyleType v);

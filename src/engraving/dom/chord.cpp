@@ -857,7 +857,8 @@ bool Chord::should_have_stem() const {
     return !no_stem_ && duration_type().has_stem() &&
            !(duration_type().type() == DurationType::V_HALF && staff_type && staff_type->is_tab_staff() &&
              staff_type->minim_style() == TablatureMinimStyle::NONE) &&
-           !(measure() && measure()->stemless(staff_idx())) && !(staff_type && staff_type->is_tab_staff() && staff_type->stemless());
+           !(measure() && measure()->stemless(staff_idx())) && !(staff_type && staff_type->is_tab_staff() && staff_type->stemless()) &&
+           !(staff && staff->is_jianpu_staff(tick()));
 }
 
 bool Chord::should_have_hook() const { return should_have_stem() && duration_type().hooks() > 0 && !beam() && !tremolo_two_chord(); }

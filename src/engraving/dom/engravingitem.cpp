@@ -235,6 +235,8 @@ constexpr LegacyZ legacy_z[] = {
     {ElementType::TAPPING_HALF_SLUR, 149},
     {ElementType::TAPPING_HALF_SLUR_SEGMENT, 150},
     {ElementType::TAPPING_TEXT, 151},
+    {ElementType::JIANPU_OCTAVE_DOT, 152},
+    {ElementType::JIANPU_DURATION_LINE, 153},
     {ElementType::STAVE_SHARING_CHANGE, 152},
     {ElementType::ROOT_ITEM, 152},
     {ElementType::DUMMY, 153},
@@ -464,6 +466,11 @@ const StaffType *EngravingItem::staff_type() const {
 bool EngravingItem::on_tab_staff() const {
     const StaffType *stt = staff_type();
     return stt ? stt->is_tab_staff() : false;
+}
+
+bool EngravingItem::on_jianpu_staff() const {
+    const Staff *st = staff();
+    return st ? st->is_jianpu_staff(tick()) : false;
 }
 
 track_idx_t EngravingItem::track() const { return track_; }

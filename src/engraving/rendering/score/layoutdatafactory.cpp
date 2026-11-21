@@ -26,6 +26,8 @@
 #include "dom/harmony.h"
 #include "dom/indicatoricon.h"
 #include "dom/instrumentname.h"
+#include "dom/jianpudurationline.h"
+#include "dom/jianpuoctavedot.h"
 #include "dom/keysig.h"
 #include "dom/laissezvib.h"
 #include "dom/ledgerline.h"
@@ -151,6 +153,8 @@ decltype(auto) dispatch_layout_data(ElementType type, Action &&action) {
         case ElementType::TAPPING_HALF_SLUR_SEGMENT: return action.template operator()<SlurTieSegment::LayoutData>();
         case ElementType::HARMONY: return action.template operator()<Harmony::LayoutData>();
         case ElementType::INSTRUMENT_NAME: return action.template operator()<InstrumentName::LayoutData>();
+        case ElementType::JIANPU_DURATION_LINE: return action.template operator()<JianpuDurationLine::LayoutData>();
+        case ElementType::JIANPU_OCTAVE_DOT: return action.template operator()<JianpuOctaveDot::LayoutData>();
         case ElementType::KEYSIG: return action.template operator()<KeySig::LayoutData>();
         case ElementType::LAISSEZ_VIB_SEGMENT: return action.template operator()<LaissezVibSegment::LayoutData>();
         case ElementType::LEDGER_LINE: return action.template operator()<LedgerLine::LayoutData>();

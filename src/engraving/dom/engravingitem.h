@@ -289,6 +289,7 @@ public:
     bool has_staff() const;
     const StaffType *staff_type() const;
     bool on_tab_staff() const;
+    bool on_jianpu_staff() const;
     Part *part() const;
     Part *origin_part() const; // Delegates to an origin part for items in shared parts
 

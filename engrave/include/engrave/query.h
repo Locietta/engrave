@@ -61,7 +61,7 @@ struct StaffInfo {
     ElementId id;
     std::int32_t index = 0; // the score's staff index
     std::int32_t part = 0;  // index of the part in Outline::parts
-    std::string group;      // "pitched", "percussion" or "tablature"
+    std::string group;      // "pitched", "percussion", "tablature" or "jianpu"
     std::int32_t lines = 5;
     bool invisible = false;
 };

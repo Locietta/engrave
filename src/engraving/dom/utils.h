@@ -44,6 +44,7 @@ struct Selection;
 struct Spanner;
 struct Staff;
 struct System;
+struct TDuration;
 struct Tuplet;
 struct Volta;
 struct NoteVal;
@@ -126,4 +127,8 @@ extern std::vector<EngravingItem *> filter_target_elements(const Selection &sel,
 extern Lyrics *search_next_lyrics(Segment *s, staff_idx_t staff_idx, int verse, PlacementV p);
 extern bool note_is_before(const Note *n1, const Note *n2);
 extern void update_percussion_notes(Chord *c, const Drumset *drumset);
+
+// Jianpu duration marks: augmentation lines after the digit, diminution beams under it.
+extern int jianpu_augmentation_lines_for_duration(const TDuration &duration);
+extern int jianpu_diminution_lines_for_duration(const TDuration &duration);
 } // namespace mu::engraving

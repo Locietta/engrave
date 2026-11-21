@@ -34,6 +34,7 @@ enum class CrossMeasure : signed char { UNKNOWN = -1, NONE = 0, FIRST, SECOND };
 struct Articulation;
 struct BeamBase;
 struct BeamSegment;
+struct JianpuDurationLine;
 struct Lyrics;
 struct Measure;
 struct Score;
@@ -188,6 +189,8 @@ public:
 
     TabDurationSymbol *tab_dur() const { return has_layout_data() ? ldata()->tab_dur : nullptr; }
 
+    const std::vector<JianpuDurationLine *> &jianpu_duration_lines() const;
+
     bool is_below_cross_beam(const BeamBase *beam_base) const;
 
     bool has_following_jump_item() const;
@@ -196,6 +199,7 @@ public:
     struct LayoutData : public DurationElement::LayoutData {
         ~LayoutData() override;
         TabDurationSymbol *tab_dur = nullptr;
+        std::vector<JianpuDurationLine *> jianpu_duration_lines;
         bool melisma_end = false;
         std::optional<Beam *> rendered_beam;
         BeamSegment *beamlet = nullptr;

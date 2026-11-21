@@ -535,6 +535,8 @@ static constexpr auto element_types = std::to_array<ElementItem>({
      {"engraving", "tapping half slur segment(s)", nullptr, 1},
      {"engraving", "Tapping half slur segment(s)", nullptr, 1}},
     {ElementType::TAPPING_TEXT, "TappingText", {"engraving", "tapping text(s)", nullptr, 1}, {"engraving", "Tapping text(s)", nullptr, 1}},
+    {ElementType::JIANPU_OCTAVE_DOT, "JianpuOctaveDot", {"engraving", "jianpu octave dot"}, {"engraving", "Jianpu octave dot"}},
+    {ElementType::JIANPU_DURATION_LINE, "JianpuDurationLine", {"engraving", "jianpu duration line"}, {"engraving", "Jianpu duration line"}},
     {ElementType::STAVE_SHARING_CHANGE,
      "StaveSharingChange",
      {"engraving", "stave sharing change(s)", nullptr, 1},
@@ -1363,6 +1365,40 @@ AsciiStringView TConv::to_xml(KeyMode v) { return find_xml_tag_by_type<KeyMode>(
 
 KeyMode TConv::from_xml(const AsciiStringView &tag, KeyMode def) { return find_type_by_xml_tag<KeyMode>(::key_modes, tag, def); }
 
+static const std::vector<Item<JianpuNumbering>> jianpu_numberings = {
+    {JianpuNumbering::FOLLOW_SCORE_KEY, "followScoreKey"},
+    {JianpuNumbering::CUSTOM, "custom"},
+};
+
+AsciiStringView TConv::to_xml(JianpuNumbering v) { return find_xml_tag_by_type(::jianpu_numberings, v); }
+
+JianpuNumbering TConv::from_xml(const AsciiStringView &tag, JianpuNumbering def) {
+    return find_type_by_xml_tag(::jianpu_numberings, tag, def);
+}
+
+static const std::vector<Item<Key>> keys = {
+    {Key::INVALID, "invalid"},
+    {Key::C_B, "Cb"},
+    {Key::G_B, "Gb"},
+    {Key::D_B, "Db"},
+    {Key::A_B, "Ab"},
+    {Key::E_B, "Eb"},
+    {Key::B_B, "Bb"},
+    {Key::F, "F"},
+    {Key::C, "C"},
+    {Key::G, "G"},
+    {Key::D, "D"},
+    {Key::A, "A"},
+    {Key::E, "E"},
+    {Key::B, "B"},
+    {Key::F_S, "F#"},
+    {Key::C_S, "C#"},
+};
+
+AsciiStringView TConv::to_xml(Key v) { return find_xml_tag_by_type(::keys, v); }
+
+Key TConv::from_xml(const AsciiStringView &tag, Key def) { return find_type_by_xml_tag(::keys, tag, def); }
+
 static constexpr auto textstyle_types = std::to_array<LabeledItem<TextStyleType>>({
     {TextStyleType::DEFAULT, "default", {"engraving", "Default"}},
     {TextStyleType::TITLE, "title", {"engraving", "Title"}},
@@ -1420,6 +1456,7 @@ static constexpr auto textstyle_types = std::to_array<LabeledItem<TextStyleType>
     {TextStyleType::HARP_PEDAL_DIAGRAM, "harp_pedal_diagram", {"engraving", "Harp pedal diagram"}},
     {TextStyleType::HARP_PEDAL_TEXT_DIAGRAM, "harp_pedal_text_diagram", {"engraving", "Harp pedal text diagram"}},
     {TextStyleType::ARTICULATION, "articulation", {"engraving", "Articulation"}},
+    {TextStyleType::JIANPU_NUMBER, "jianpu_number", {"engraving", "Jianpu number"}},
 
     {TextStyleType::TEXTLINE, "textline", {"engraving", "Text line"}},
     {TextStyleType::SYSTEM_TEXTLINE, "system_textline", {"engraving", "System text line"}},
@@ -2598,10 +2635,11 @@ MarkerType TConv::from_xml(const AsciiStringView &tag, MarkerType def) {
     return def;
 }
 
-static const std::array<Item<StaffGroup>, 3> staffgroup_types = {{
+static const std::array<Item<StaffGroup>, 4> staffgroup_types = {{
     {StaffGroup::STANDARD, "pitched", muse::TranslatableString("engraving/staffgroup", "Standard")},
     {StaffGroup::PERCUSSION, "percussion", muse::TranslatableString("engraving/staffgroup", "Percussion")},
     {StaffGroup::TAB, "tablature", muse::TranslatableString("engraving/staffgroup", "Tablature")},
+    {StaffGroup::JIANPU, "jianpu", muse::TranslatableString("engraving/staffgroup", "Jianpu")},
 }};
 
 String TConv::translated_user_name(StaffGroup v) { return find_capitalized_user_name_by_type(::staffgroup_types, v).translated(); }
@@ -2612,7 +2650,7 @@ StaffGroup TConv::from_xml(const AsciiStringView &tag, StaffGroup def) {
     return find_type_by_xml_tag<StaffGroup>(::staffgroup_types, tag, def);
 }
 
-static const std::array<Item<StaffTypes>, 27> stafftypes_items = {{
+static const std::array<Item<StaffTypes>, 28> stafftypes_items = {{
     {StaffTypes::STANDARD, "stdNormal", muse::TranslatableString("engraving/stafftypes", "Standard")},
     {StaffTypes::PERC_1LINE, "perc1Line", muse::TranslatableString("engraving/stafftypes", "Perc. 1 line")},
     {StaffTypes::PERC_2LINE, "perc2Line", muse::TranslatableString("engraving/stafftypes", "Perc. 2 lines")},
@@ -2640,6 +2678,7 @@ static const std::array<Item<StaffTypes>, 27> stafftypes_items = {{
     {StaffTypes::TAB_8SIMPLE, "tab8StrSimple", muse::TranslatableString("engraving/stafftypes", "Tab. 8-str. simple")},
     {StaffTypes::TAB_9SIMPLE, "tab9StrSimple", muse::TranslatableString("engraving/stafftypes", "Tab. 9-str. simple")},
     {StaffTypes::TAB_10SIMPLE, "tab10StrSimple", muse::TranslatableString("engraving/stafftypes", "Tab. 10-str. simple")},
+    {StaffTypes::JIANPU, "jianpu", muse::TranslatableString("engraving/stafftypes", "Jianpu")},
 }};
 
 const TranslatableString &TConv::user_name(StaffTypes v) { return find_capitalized_user_name_by_type(::stafftypes_items, v); }
