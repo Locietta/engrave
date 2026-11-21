@@ -661,9 +661,10 @@ void GuitarPro::read_lyrics() {
 void GuitarPro::create_slide(int sl, ChordRest *cr, int staff_idx, [[maybe_unused]] Note *note) {
     // shift / legato slide
     if (sl == ::mu::iex::guitarpro::GuitarPro::shift_slide || sl == ::mu::iex::guitarpro::GuitarPro::legato_slide) {
-        Segment *prev_seg = cr->segment()->prev1(SegmentType::CHORD_REST);
+        Segment *seg = cr ? cr->segment() : nullptr;
+        Segment *prev_seg = seg ? seg->prev1_with_elems_on_track(cr->track(), SegmentType::CHORD_REST) : nullptr;
         EngravingItem *prev_elem = prev_seg ? prev_seg->element(cr->track()) : nullptr;
-        if (prev_elem && prev_elem->is_chord()) {
+        if (prev_elem && prev_elem->is_chord() && cr->is_chord()) {
             Chord *prev_chord = to_chord(prev_elem);
             Chord *chord = to_chord(cr);
             /** TODO we should not just take the top notes here
@@ -672,22 +673,23 @@ void GuitarPro::create_slide(int sl, ChordRest *cr, int staff_idx, [[maybe_unuse
             * versions */
             Note *start_note = prev_chord->up_note();
             Note *end_note = chord->up_note();
+            if (start_note && end_note) {
+                Glissando *s = mu::engraving::Factory::create_glissando(start_note);
+                s->set_start_element(start_note);
+                s->set_tick(prev_seg->tick());
+                s->set_track(start_note->track());
+                s->set_end_element(end_note);
+                s->set_tick2(chord->segment()->tick());
+                s->set_track2(end_note->track());
+                s->set_text(u"");
+                s->set_glissando_type(GlissandoType::STRAIGHT);
+                s->set_glissando_shift(sl == ::mu::iex::guitarpro::GuitarPro::shift_slide);
+                s->set_glissando_style(s->part()->instrument(s->tick())->glissando_style());
+                score->add_element(s);
 
-            Glissando *s = mu::engraving::Factory::create_glissando(start_note);
-            s->set_start_element(start_note);
-            s->set_tick(prev_seg->tick());
-            s->set_track(start_note->track());
-            s->set_end_element(end_note);
-            s->set_tick2(chord->segment()->tick());
-            s->set_track2(end_note->track());
-            s->set_text(u"");
-            s->set_glissando_type(GlissandoType::STRAIGHT);
-            s->set_glissando_shift(sl == ::mu::iex::guitarpro::GuitarPro::shift_slide);
-            s->set_glissando_style(s->part()->instrument(s->tick())->glissando_style());
-            score->add_element(s);
-
-            if (sl == ::mu::iex::guitarpro::GuitarPro::legato_slide) {
-                create_slur(true, staff_idx, prev_chord);
+                if (sl == ::mu::iex::guitarpro::GuitarPro::legato_slide) {
+                    create_slur(true, staff_idx, prev_chord);
+                }
             }
         }
 
