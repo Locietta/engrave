@@ -50,6 +50,7 @@
       <sharedOnStaffNumeralsHyphenEnable>1</sharedOnStaffNumeralsHyphenEnable>
       <sharedOnStaffNumeralsHyphenThreshold>1</sharedOnStaffNumeralsHyphenThreshold>
       <staveSharingInstrChangePlayerNum>1</staveSharingInstrChangePlayerNum>
+      <staveSharingChangeMinDistance>0.5</staveSharingChangeMinDistance>
       <windsNameByGroup>1</windsNameByGroup>
       <vocalsNameByGroup>1</vocalsNameByGroup>
       <stringsNameByGroup>0</stringsNameByGroup>
@@ -986,6 +987,21 @@
       <articulationFrameBgColor r="255" g="255" b="255" a="0"/>
       <articulationOffset x="0" y="0"/>
       <articulationPosition>left</articulationPosition>
+      <jianpuNumberFontFace>FreeSans</jianpuNumberFontFace>
+      <jianpuNumberFontSize>9</jianpuNumberFontSize>
+      <jianpuNumberLineSpacing>1</jianpuNumberLineSpacing>
+      <jianpuNumberFontSpatiumDependent>1</jianpuNumberFontSpatiumDependent>
+      <jianpuNumberFontStyle>0</jianpuNumberFontStyle>
+      <jianpuNumberColor r="0" g="0" b="0" a="255"/>
+      <jianpuNumberAlign>left,baseline</jianpuNumberAlign>
+      <jianpuNumberOffset x="0" y="0"/>
+      <jianpuNumberFrameType>0</jianpuNumberFrameType>
+      <jianpuNumberFramePadding>0.2</jianpuNumberFramePadding>
+      <jianpuNumberFrameWidth>0.1</jianpuNumberFrameWidth>
+      <jianpuNumberFrameRound>0</jianpuNumberFrameRound>
+      <jianpuNumberFrameFgColor r="0" g="0" b="0" a="255"/>
+      <jianpuNumberFrameBgColor r="255" g="255" b="255" a="0"/>
+      <jianpuNumberPosition>left</jianpuNumberPosition>
       <longInstrumentFontFace>Edwin</longInstrumentFontFace>
       <longInstrumentFontSize>10</longInstrumentFontSize>
       <longInstrumentLineSpacing>1</longInstrumentLineSpacing>
@@ -1931,6 +1947,7 @@
       <harpPedalTextDiagramMusicalSymbolSize>8</harpPedalTextDiagramMusicalSymbolSize>
       <headerMusicalSymbolSize>9</headerMusicalSymbolSize>
       <instrumentChangeMusicalSymbolSize>10</instrumentChangeMusicalSymbolSize>
+      <jianpuNumberMusicalSymbolSize>9</jianpuNumberMusicalSymbolSize>
       <letRingMusicalSymbolSize>10</letRingMusicalSymbolSize>
       <lhGuitarFingeringMusicalSymbolSize>8</lhGuitarFingeringMusicalSymbolSize>
       <longInstrumentMusicalSymbolSize>10</longInstrumentMusicalSymbolSize>
@@ -2059,6 +2076,14 @@
       <palmMuteBeginFilledArrowWidth>0.85</palmMuteBeginFilledArrowWidth>
       <palmMuteEndFilledArrowHeight>1</palmMuteEndFilledArrowHeight>
       <palmMuteEndFilledArrowWidth>0.85</palmMuteEndFilledArrowWidth>
+      <jianpuNumberVerticalDistance>0.5</jianpuNumberVerticalDistance>
+      <jianpuVoiceVerticalDistance>0.8</jianpuVoiceVerticalDistance>
+      <jianpuOctaveDotRadius>0.1</jianpuOctaveDotRadius>
+      <jianpuOctaveDotDistance>0.3</jianpuOctaveDotDistance>
+      <jianpuDiminutionBeamThickness>0.1</jianpuDiminutionBeamThickness>
+      <jianpuDiminutionBeamDistance>0.3</jianpuDiminutionBeamDistance>
+      <jianpuDiminutionBeamPlacement>1</jianpuDiminutionBeamPlacement>
+      <jianpuDurationLineThickness>0.1</jianpuDurationLineThickness>
       <spatium>1.75</spatium>
       </Style>
     <showInvisible>1</showInvisible>
