@@ -245,6 +245,10 @@ System *SystemLayout::collect_system(LayoutContext &ctx) {
                 system->remove_last_measure();
                 ctx.mut_state().cur_measure()->set_system(old_system);
             }
+            // The evicted measures' own system may not be rebuilt in this pass; re-align its Jianpu voices.
+            for (staff_idx_t staff_idx = 0; staff_idx < ctx.dom().nstaves(); ++staff_idx) {
+                ChordLayout::layout_voice_offsets(old_system, staff_idx, ctx);
+            }
 
             if (shared_track_map_changed) {
                 // The last added measure caused sharedTrackMap to change. Now we are removing that measure so we must restore it.
@@ -474,6 +478,11 @@ System *SystemLayout::collect_system(LayoutContext &ctx) {
             TLayout::layout_measure_base(cur_h_box, ctx);
             create_brackets = cur_h_box->create_system_header();
         }
+    }
+
+    // The system's measure set is final now: align its Jianpu voices.
+    for (staff_idx_t staff_idx = 0; staff_idx < ctx.dom().nstaves(); ++staff_idx) {
+        ChordLayout::layout_voice_offsets(system, staff_idx, ctx);
     }
 
     layout_system_elements(system, ctx);
@@ -1280,6 +1289,7 @@ void SystemLayout::layout_system_elements(System *system, LayoutContext &ctx) {
         ChordLayout::layout_articulations(c, ctx);
         ChordLayout::layout_articulations2(c, ctx);
         ChordLayout::layout_chord_base_fingering(c, system, ctx);
+        ChordLayout::layout_jianpu_duration_lines(c, ctx);
     }
 
     layout_tuplets(elements_to_layout.chord_rests, ctx);

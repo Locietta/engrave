@@ -58,6 +58,8 @@
 #include "dom/image.h"
 #include "dom/instrchange.h"
 #include "dom/instrumentname.h"
+#include "dom/jianpudurationline.h"
+#include "dom/jianpuoctavedot.h"
 #include "dom/jump.h"
 #include "dom/keysig.h"
 #include "dom/laissezvib.h"
@@ -203,6 +205,8 @@ void TDraw::draw_item(const EngravingItem *item, Painter *painter, const PaintOp
         case ElementType::INSTRUMENT_CHANGE: draw(item_cast<const InstrumentChange *>(item), painter, opt); break;
         case ElementType::INSTRUMENT_NAME: draw(item_cast<const InstrumentName *>(item), painter, opt); break;
 
+        case ElementType::JIANPU_DURATION_LINE: draw(item_cast<const JianpuDurationLine *>(item), painter, opt); break;
+        case ElementType::JIANPU_OCTAVE_DOT: draw(item_cast<const JianpuOctaveDot *>(item), painter, opt); break;
         case ElementType::JUMP: draw(item_cast<const Jump *>(item), painter, opt); break;
 
         case ElementType::KEYSIG: draw(item_cast<const KeySig *>(item), painter, opt); break;
@@ -1016,6 +1020,14 @@ void TDraw::draw(const Dynamic *item, Painter *painter, const PaintOptions &opt)
 
 void TDraw::draw(const Expression *item, Painter *painter, const PaintOptions &opt) { draw_text_base(item, painter, opt); }
 
+void TDraw::draw(const JianpuDurationLine *item, Painter *painter, const PaintOptions &opt) {
+    TRACE_DRAW_ITEM;
+
+    const JianpuDurationLine::LayoutData *ldata = item->ldata();
+    painter->set_pen(Pen(item->cur_color(opt), ldata->line_width, PenStyle::SOLID_LINE, PenCapStyle::FLAT_CAP));
+    painter->draw_line(LineF(0.0, 0.0, ldata->len, 0.0));
+}
+
 void TDraw::draw(const Fermata *item, Painter *painter, const PaintOptions &opt) {
     TRACE_DRAW_ITEM;
     painter->set_pen(item->cur_color(opt));
@@ -1820,6 +1832,17 @@ void TDraw::draw(const KeySig *item, Painter *painter, const PaintOptions &opt) 
     const KeySig::LayoutData *ldata = item->ldata();
 
     painter->set_pen(item->cur_color(opt));
+
+    if (item->staff() && item->staff()->is_jianpu_staff(item->tick())) {
+        if (ldata->jianpu_label.is_empty()) {
+            return;
+        }
+        Font f(item->staff()->staff_type_for_element(item)->jianpu_font());
+        f.set_point_size_f(f.point_size_f() * item->mag());
+        painter->set_font(f);
+        painter->draw_text(PointF(ldata->bbox().x(), ldata->bbox().bottom()), ldata->jianpu_label);
+        return;
+    }
     double spatium_value = item->spatium();
     double step = spatium_value * (item->staff() ? item->staff()->staff_type_for_element(item)->line_distance().val() * 0.5 : 0.5);
     int lines = item->staff() ? item->staff()->staff_type_for_element(item)->lines() : 5;
@@ -2014,6 +2037,28 @@ void TDraw::draw(const MMRestRange *item, Painter *painter, const PaintOptions &
     draw_text_base(item, painter, opt);
 }
 
+// The accidental is drawn smaller, above and left of the digit, without moving the
+// digit off the beams and dots.
+static void draw_jianpu_accidental(Painter *painter, const Font &digit_font, const FontMetrics &digit_fm, const String &accidental,
+                                   double digit_start_x, double baseline_y) {
+    if (accidental.is_empty()) {
+        return;
+    }
+
+    static constexpr double jianpu_accidental_mag = 0.7;
+    Font acc_font(digit_font);
+    acc_font.set_point_size_f(digit_font.point_size_f() * jianpu_accidental_mag);
+    painter->set_font(acc_font);
+
+    FontMetrics acc_fm(acc_font);
+    const double gap = acc_font.point_size_f() * 0.1;
+    const double acc_x = digit_start_x - acc_fm.width(accidental) - gap;
+    const double acc_y = baseline_y - digit_fm.ascent() * 0.5;
+    painter->draw_text(PointF(acc_x, acc_y), accidental);
+
+    painter->set_font(digit_font);
+}
+
 void TDraw::draw(const Note *item, Painter *painter, const PaintOptions &opt) {
     TRACE_DRAW_ITEM;
     if (item->hidden()) {
@@ -2054,6 +2099,19 @@ void TDraw::draw(const Note *item, Painter *painter, const PaintOptions &opt) {
         const double start_pos_x = ldata->bbox().x();
         const double y_offset = tab->fret_font_y_offset();
         painter->draw_text(PointF(start_pos_x, y_offset * item->mag_s()), item->fret_string());
+    } else if (staff_type && item->on_jianpu_staff()) {
+        Font f(staff_type->jianpu_font());
+        f.set_point_size_f(f.point_size_f() * item->mag_s());
+        painter->set_font(f);
+
+        FontMetrics fm(f);
+        const String digit = item->jianpu_digit();
+        const double fw = fm.width(digit);
+        const double bw = ldata->bbox().width();
+        const double start_pos_x = ldata->bbox().x() + (bw - fw) * .5;
+        const double start_pos_y = ldata->bbox().bottom();
+        draw_jianpu_accidental(painter, f, fm, item->jianpu_accidental(), start_pos_x, start_pos_y);
+        painter->draw_text(PointF(start_pos_x, start_pos_y), digit);
     }
     // NOT tablature
     else {
@@ -2111,6 +2169,16 @@ void TDraw::draw(const NoteDot *item, Painter *painter, const PaintOptions &opt)
 }
 
 void TDraw::draw(const NoteHead *item, Painter *painter, const PaintOptions &opt) { draw(static_cast<const Symbol *>(item), painter, opt); }
+
+void TDraw::draw(const JianpuOctaveDot *item, Painter *painter, const PaintOptions &opt) {
+    TRACE_DRAW_ITEM;
+
+    const JianpuOctaveDot::LayoutData *ldata = item->ldata();
+    const double radius = ldata->radius;
+    painter->set_pen(Pen(item->cur_color(opt)));
+    painter->set_brush(Brush(item->cur_color(opt)));
+    painter->draw_ellipse(PointF(ldata->len * 0.5, 0), radius, radius);
+}
 
 void TDraw::draw(const NoteLineSegment *item, Painter *painter, const PaintOptions &opt) {
     TRACE_DRAW_ITEM;
@@ -2236,6 +2304,16 @@ void TDraw::draw(const Rest *item, Painter *painter, const PaintOptions &opt) {
     const Rest::LayoutData *ldata = item->ldata();
 
     painter->set_pen(item->cur_color(opt));
+
+    if (item->staff() && item->staff()->is_jianpu_staff(item->tick())) {
+        const StaffType *staff_type = item->staff()->staff_type_for_element(item);
+        const double height = staff_type->jianpu_box_h() * item->mag_s();
+        Font f(staff_type->jianpu_font());
+        f.set_point_size_f(f.point_size_f() * item->mag_s());
+        painter->set_font(f);
+        painter->draw_text(PointF(ldata->bbox().x(), height * .5), String(u"0"));
+        return;
+    }
 
     if (DeadSlapped *ds = item->dead_slapped()) {
         draw(ds, painter, opt);

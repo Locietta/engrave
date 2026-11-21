@@ -21,7 +21,11 @@
  */
 #include "chordlayout.h"
 
+#include <algorithm>
+#include <array>
 #include <cfloat>
+#include <cmath>
+#include <cstdlib>
 
 #include "accidentalslayout.h"
 #include "arpeggiolayout.h"
@@ -39,6 +43,8 @@
 #include "dom/glissando.h"
 #include "dom/guitarbend.h"
 #include "dom/hook.h"
+#include "dom/jianpudurationline.h"
+#include "dom/jianpuoctavedot.h"
 #include "dom/ledgerline.h"
 #include "dom/lyrics.h"
 #include "dom/measure.h"
@@ -47,6 +53,7 @@
 #include "dom/page.h"
 #include "dom/parenthesis.h"
 #include "dom/part.h"
+#include "dom/pitchspelling.h"
 #include "dom/rest.h"
 #include "dom/score.h"
 #include "dom/segment.h"
@@ -81,6 +88,38 @@ using namespace mu::engraving::rendering::score;
 
 static constexpr Spatium stafftype_tab_defaultdotdist_x = 0.75_sp;
 
+static double jianpu_beam_offset(const Chord *chord, PlacementV placement, const LayoutContext &ctx) {
+    const Beam *beam = chord->beam();
+    if (!beam || ctx.conf().style_v(Sid::JIANPU_DIMINUTION_BEAM_PLACEMENT).value<PlacementV>() != placement) {
+        return 0.0;
+    }
+
+    const int lines = BeamTremoloLayout::stroke_count(beam->ldata(), chord);
+    const double distance = ctx.conf().style_absolute(Sid::JIANPU_DIMINUTION_BEAM_DISTANCE);
+    return (distance * lines) * chord->mag_s();
+}
+
+static void resize_jianpu_octave_dots(Note *note, size_t count) {
+    auto &dots = note->mutldata()->jianpu_octave_dots;
+    // Reserve ownership slots before parenting shells, as for ledger lines.
+    dots.reserve(count);
+    while (dots.size() < count) {
+        auto *dot = new JianpuOctaveDot(note);
+        dot->set_generated(true);
+        dots.push_back(dot);
+    }
+    while (dots.size() > count) {
+        LayoutDataStore::delete_layout_child(dots.back());
+        dots.pop_back();
+    }
+}
+
+static void clear_jianpu_octave_dots(const Chord *chord) {
+    for (Note *note : chord->notes()) {
+        if (!note->jianpu_octave_dots().empty()) resize_jianpu_octave_dots(note, 0);
+    }
+}
+
 void ChordLayout::layout(Chord *item, LayoutContext &ctx) {
     if (item->notes().empty()) {
         return;
@@ -99,9 +138,12 @@ void ChordLayout::layout_note_lines(const Chord *chord) {
     if (!staff) return;
     const StaffType *type = staff->staff_type_for_element(chord);
     if (type->is_tab_staff() || chord->origin_part()->instrument(chord->tick())->use_drumset()) return;
+    // Jianpu digits stack from the chord origin instead of sitting on staff lines.
+    const bool jianpu = staff->is_jianpu_staff(chord->tick());
     for (Note *note : chord->notes()) {
-        note->mutldata()->set_pos_y((note->get_property(Pid::LINE).to_int() + type->step_offset() * 2.0) * note->spatium() * .5 *
-                                    type->line_distance().val());
+        note->mutldata()->set_pos_y(jianpu ? 0.0 :
+                                             (note->get_property(Pid::LINE).to_int() + type->step_offset() * 2.0) * note->spatium() * .5 *
+                                                 type->line_distance().val());
     }
 }
 
@@ -136,8 +178,53 @@ void ChordLayout::layout_pitched(Chord *item, LayoutContext &ctx) {
     // https://github.com/musescore/MuseScore/issues/8970
     std::vector<Accidental *> chord_accidentals;
 
-    for (Note *note : item->notes()) {
-        TLayout::layout_note(note, note->mutldata());
+    const bool is_jianpu_staff = item->on_jianpu_staff();
+
+    std::vector<Note *> notes = item->notes();
+    if (is_jianpu_staff) {
+        std::reverse(notes.begin(), notes.end()); // highest pitch on top
+    }
+
+    // The Jianpu y origin is the centre of the digit, which starts half a spatium
+    // above the middle of the measure.
+    double jianpu_offset_y = upnote ? -upnote->spatium() * .5 * mag_value : 0.0;
+
+    // Grace digits sit above the main digit. The staff scale (not the grace scale)
+    // keeps the gap equal to a normal digit's box height.
+    if (is_jianpu_staff && item->is_grace() && item->staff()) {
+        jianpu_offset_y -= item->staff()->staff_type_for_element(item)->jianpu_box_h() * mag_value;
+    }
+
+    const double item_mag = item->mag();
+    for (Note *note : notes) {
+        Note::LayoutData *note_ldata = note->mutldata();
+        TLayout::layout_note(note, note_ldata);
+
+        if (is_jianpu_staff) {
+            const std::vector<JianpuOctaveDot *> &dots = note->jianpu_octave_dots();
+            // Dot to digit and beam to digit distances run from the dot or beam centre
+            // line to the digit box; dot and beam pitches are centre to centre.
+            const double dot_distance = ctx.conf().style_absolute(Sid::JIANPU_OCTAVE_DOT_DISTANCE) * item_mag;
+
+            if (note != upnote && !dots.empty() && dots.back()->ldata()->above) {
+                jianpu_offset_y += dots.size() * dot_distance;
+            }
+
+            // The digits of one chord stack vertically.
+            note_ldata->move_y(jianpu_offset_y);
+
+            if (!dots.empty() && !dots.back()->ldata()->above) {
+                jianpu_offset_y += dots.size() * dot_distance;
+            }
+
+            if (note == upnote) {
+                jianpu_offset_y += jianpu_beam_offset(item, PlacementV::BELOW, ctx);
+            }
+
+            jianpu_offset_y += note_ldata->bbox().height();
+            jianpu_offset_y += ctx.conf().style_absolute(Sid::JIANPU_NUMBER_VERTICAL_DISTANCE) * item_mag;
+        }
+
         double x1 = note->pos().x() + chord_x;
         double x2 = x1 + note->head_width();
         lll = std::max(lll, -x1);
@@ -1304,6 +1391,7 @@ void ChordLayout::update_ledger_lines(Chord *item, LayoutContext &ctx) {
     double line_distance = 1;
     bool staff_visible = true;
     int step_offset = 0; // for staff type changes with a step offset
+    bool is_jianpu = false;
 
     Segment *segment = item->segment();
 
@@ -1316,10 +1404,11 @@ void ChordLayout::update_ledger_lines(Chord *item, LayoutContext &ctx) {
         line_distance = st->line_distance(tick);
         staff_visible = !st->is_lines_invisible(tick);
         step_offset = st->staff_type(tick)->step_offset();
+        is_jianpu = st->is_jianpu_staff(tick);
     }
 
     // need ledger lines?
-    if (item->down_line() + step_offset <= line_below + 1 && item->up_line() + step_offset >= -1) {
+    if (is_jianpu || (item->down_line() + step_offset <= line_below + 1 && item->up_line() + step_offset >= -1)) {
         item->resize_ledger_lines_to(0);
         return;
     }
@@ -1637,7 +1726,361 @@ int ChordLayout::compute_auto_stem_direction(const std::vector<int> &note_distan
     return 0;
 }
 
-//---------------------------------------------------------
+void ChordLayout::resize_jianpu_duration_lines(ChordRest *item, size_t count) {
+    auto &lines = item->mutldata()->jianpu_duration_lines;
+    lines.reserve(count);
+    while (lines.size() < count) {
+        auto *line = new JianpuDurationLine(item);
+        line->set_generated(true);
+        lines.push_back(line);
+    }
+    while (lines.size() > count) {
+        LayoutDataStore::delete_layout_child(lines.back());
+        lines.pop_back();
+    }
+}
+
+void ChordLayout::layout_jianpu_duration_lines(Chord *item, LayoutContext &ctx) {
+    Segment *segment = item->segment();
+    if (!segment) {
+        return;
+    }
+    const Fraction tick = segment->tick();
+    const staff_idx_t idx = item->staff_idx() + item->staff_move();
+    const Staff *staff = ctx.dom().staff(idx);
+    const int lines = staff->is_jianpu_staff(tick) ? jianpu_augmentation_lines_for_duration(item->duration_type()) : 0;
+    if (lines == 0) {
+        if (!item->jianpu_duration_lines().empty()) resize_jianpu_duration_lines(item, 0);
+        return;
+    }
+
+    resize_jianpu_duration_lines(item, size_t(lines));
+
+    const Note *note = item->up_note();
+    if (!note) {
+        return;
+    }
+
+    const track_idx_t track = staff2track(idx);
+    const bool staff_visible = !staff->is_lines_invisible(tick);
+    const double head_width = note->head_width();
+    const double head_x = note->pos().x() + note->bbox_x_shift();
+    const double lengthening_y = note->pos().y();
+    for (int i = 0; i < lines; ++i) {
+        JianpuDurationLine *line = item->jianpu_duration_lines()[i];
+        line->set_track(track);
+        line->set_visible(staff_visible);
+        line->mutldata()->len = head_width;
+        line->mutldata()->set_pos(head_x + head_width * 1.2 * (i + 1), lengthening_y);
+        TLayout::layout_jianpu_duration_line(line, ctx);
+    }
+}
+
+void ChordLayout::layout_jianpu_octave_dots(Chord *item, LayoutContext &ctx) {
+    Segment *segment = item->segment();
+    if (!segment) {
+        return;
+    }
+    const Fraction tick = segment->tick();
+    const staff_idx_t idx = item->staff_idx() + item->staff_move();
+    const Staff *staff = ctx.dom().staff(idx);
+    if (!staff->is_jianpu_staff(tick)) {
+        clear_jianpu_octave_dots(item);
+        return;
+    }
+
+    const track_idx_t track = staff2track(idx);
+    const bool staff_visible = !staff->is_lines_invisible(tick);
+    const double height = staff->staff_type_for_element(item)->jianpu_box_h() * item->mag_s();
+    const JianpuKeyMapping mapping = jianpu_key_mapping(staff->key_sig_event(tick));
+    const double distance = ctx.conf().style_absolute(Sid::JIANPU_OCTAVE_DOT_DISTANCE) * item->mag_s();
+
+    for (Note *note : item->notes()) {
+        const int octave = pitch2_jianpu_octave(note->epitch(), note->tpc(), mapping.tonic_tpc, mapping.mode);
+        if (octave == 0) {
+            if (!note->jianpu_octave_dots().empty()) resize_jianpu_octave_dots(note, 0);
+            continue;
+        }
+
+        const int dots = std::abs(octave);
+        double offset_y = 0.0;
+        if (octave > 0) {
+            offset_y = -(height * .5 + dots * distance);
+        } else {
+            offset_y = height * .5 + distance;
+            if (note == item->up_note()) {
+                // Dots below the up note go under the diminution beam.
+                offset_y += jianpu_beam_offset(item, PlacementV::BELOW, ctx);
+            }
+        }
+
+        const double min_x = note->bbox_x_shift();
+        const double max_x = min_x + note->head_width();
+
+        resize_jianpu_octave_dots(note, size_t(dots));
+        for (int i = 0; i < dots; ++i) {
+            JianpuOctaveDot *dot = note->jianpu_octave_dots()[i];
+            dot->set_track(track);
+            dot->set_visible(staff_visible);
+            JianpuOctaveDot::LayoutData *dot_ldata = dot->mutldata();
+            dot_ldata->above = octave > 0;
+            dot_ldata->len = max_x - min_x;
+            dot_ldata->set_pos(min_x, offset_y + i * distance);
+            TLayout::layout_jianpu_octave_dot(dot, ctx);
+        }
+    }
+}
+
+// Jianpu separates voices by vertical bands (voice 1 on top) instead of stem
+// directions. The bands span the whole system so their height stays consistent
+// along the line.
+void ChordLayout::layout_voice_offsets(System *system, staff_idx_t staff_idx, LayoutContext &ctx) {
+    const Staff *staff = ctx.dom().staff(staff_idx);
+    if (!staff || !staff->layout_show()) {
+        return;
+    }
+    const Measure *first_measure = system ? system->first_measure() : nullptr;
+    if (!first_measure || !staff->is_jianpu_staff(first_measure->tick())) {
+        return;
+    }
+
+    // A voice aligns on the digits' own positions, not on dots or beams, so dots on
+    // some notes do not shift the line.
+    const auto baseline_top = [](EngravingItem *e) -> double {
+        if (e->is_chord()) {
+            return to_chord(e)->up_note()->ldata()->pos().y();
+        }
+        return e->ldata()->pos().y();
+    };
+    // Slurs are laid out after this pass; estimate their reach as slur_pos and
+    // compute_shoulder_height would.
+    const auto cr_system_x = [system](const ChordRest *cr, bool is_start) -> double {
+        if (cr->measure()->system() != system) {
+            return is_start ? 0.0 : system->width();
+        }
+        return cr->x() + cr->segment()->x() + cr->measure()->x();
+    };
+    const auto include_slur_extents = [&ctx, &cr_system_x](Chord *chord, double &top, double &bottom) {
+        std::vector<Slur *> slurs;
+        for (const std::set<Spanner *> *spanners : {&chord->starting_spanners(), &chord->ending_spanners()}) {
+            for (Spanner *spanner : *spanners) {
+                if (spanner->is_slur() && !muse::contains(slurs, to_slur(spanner))) {
+                    slurs.push_back(to_slur(spanner));
+                }
+            }
+        }
+
+        const double sp = chord->spatium();
+        for (Slur *slur : slurs) {
+            if (!slur->start_cr() || !slur->end_cr() || !slur->add_to_skyline()) {
+                continue;
+            }
+            SlurTieLayout::compute_up(slur, ctx);
+            const double length = std::max(cr_system_x(slur->end_cr(), false) - cr_system_x(slur->start_cr(), true), 0.0);
+            const double arc = 0.75 * std::sqrt(length / sp / 4.0) * sp;
+            const double reach = 0.9 * sp * chord->intrinsic_mag() + arc + ctx.conf().style_absolute(Sid::SLUR_MID_WIDTH);
+            if (slur->up()) {
+                top -= reach;
+            } else {
+                bottom += reach;
+            }
+        }
+    };
+    const auto extent_top = [&ctx, &include_slur_extents](EngravingItem *e) -> double {
+        if (!e->is_chord()) {
+            return e->ldata()->pos().y() + e->ldata()->bbox().top();
+        }
+        Chord *chord = to_chord(e);
+        double top = DBL_MAX;
+        double bottom = -DBL_MAX;
+        for (Note *note : chord->notes()) {
+            const double y = note->ldata()->pos().y();
+            top = std::min(top, y + note->ldata()->bbox().top());
+            for (JianpuOctaveDot *dot : note->jianpu_octave_dots()) {
+                if (dot->ldata()->above) {
+                    top = std::min(top, y + dot->ldata()->pos().y() + dot->ldata()->bbox().top());
+                }
+            }
+        }
+        include_slur_extents(chord, top, bottom);
+        return top - jianpu_beam_offset(chord, PlacementV::ABOVE, ctx);
+    };
+    const auto extent_bottom = [&ctx, &include_slur_extents](EngravingItem *e) -> double {
+        if (!e->is_chord()) {
+            return e->ldata()->pos().y() + e->ldata()->bbox().bottom();
+        }
+        Chord *chord = to_chord(e);
+        double bottom = -DBL_MAX;
+        double top = DBL_MAX;
+        bool up_note_has_below_dot = false;
+        for (Note *note : chord->notes()) {
+            const double y = note->ldata()->pos().y();
+            bottom = std::max(bottom, y + note->ldata()->bbox().bottom());
+            for (JianpuOctaveDot *dot : note->jianpu_octave_dots()) {
+                if (!dot->ldata()->above) {
+                    bottom = std::max(bottom, y + dot->ldata()->pos().y() + dot->ldata()->bbox().bottom());
+                    up_note_has_below_dot |= note == chord->up_note();
+                }
+            }
+        }
+        include_slur_extents(chord, top, bottom);
+        // A diminution beam below needs clearance, unless the up note's lower dot
+        // already sits under it (see layout_jianpu_octave_dots).
+        if (!up_note_has_below_dot) {
+            bottom += jianpu_beam_offset(chord, PlacementV::BELOW, ctx);
+        }
+        return bottom;
+    };
+    std::vector<SpannerSegment *> shifted_slur_segments;
+    const auto shift_chord_slurs = [system, &shifted_slur_segments](Chord *chord, double dy) {
+        for (const std::set<Spanner *> *spanners : {&chord->starting_spanners(), &chord->ending_spanners()}) {
+            for (Spanner *spanner : *spanners) {
+                if (!spanner->is_slur()) {
+                    continue;
+                }
+                for (SpannerSegment *segment : spanner->spanner_segments()) {
+                    if (segment->system() == system && !muse::contains(shifted_slur_segments, segment)) {
+                        shifted_slur_segments.push_back(segment);
+                        segment->mutldata()->move(PointF(0.0, dy));
+                    }
+                }
+            }
+        }
+    };
+    const auto shift_item = [&shift_chord_slurs](EngravingItem *e, double dy) {
+        if (e->is_chord()) {
+            Chord *chord = to_chord(e);
+            for (Note *note : chord->notes()) {
+                note->mutldata()->move_y(dy);
+            }
+            shift_chord_slurs(chord, dy);
+            for (Chord *grace : chord->grace_notes()) {
+                for (Note *note : grace->notes()) {
+                    note->mutldata()->move_y(dy);
+                }
+                shift_chord_slurs(grace, dy);
+                // slur_pos() later reads the grace chord's bbox, which comes from its shape.
+                fill_shape(grace, grace->mutldata());
+            }
+            // Duration lines hang off the chord, not the note, so they do not follow the notes.
+            for (JianpuDurationLine *line : chord->jianpu_duration_lines()) {
+                line->mutldata()->move_y(dy);
+            }
+            fill_shape(chord, chord->mutldata());
+        } else if (e->is_rest()) {
+            Rest *rest = to_rest(e);
+            rest->mutldata()->move_y(dy);
+            for (JianpuDurationLine *line : rest->jianpu_duration_lines()) {
+                line->mutldata()->move_y(dy);
+            }
+        }
+    };
+
+    // Per voice, its chord rests grouped by segment, and how far its content reaches
+    // above and below its baseline.
+    constexpr size_t voice_count = ::mu::engraving::voices;
+    std::array<std::vector<std::vector<EngravingItem *>>, voice_count> groups_by_voice;
+    std::array<double, voice_count> max_above{};
+    std::array<double, voice_count> max_below{};
+
+    for (MeasureBase *mb : system->measures()) {
+        if (!mb->is_measure()) {
+            continue;
+        }
+        for (Segment *segment = to_measure(mb)->rendered_first(); segment; segment = segment->rendered_next()) {
+            if (!segment->is_chord_rest_type()) {
+                continue;
+            }
+
+            std::array<std::vector<EngravingItem *>, voice_count> items_by_voice_here;
+            for (EngravingItem *e : segment->effective_elements()) {
+                if (e && e->is_chord_rest() && e->v_staff_idx() == staff_idx) {
+                    items_by_voice_here[e->voice()].push_back(e);
+                }
+            }
+
+            for (voice_idx_t voice = 0; voice < voice_count; ++voice) {
+                std::vector<EngravingItem *> &items = items_by_voice_here[voice];
+                double baseline = DBL_MAX;
+                double top = DBL_MAX;
+                double bottom = -DBL_MAX;
+                for (EngravingItem *e : items) {
+                    baseline = std::min(baseline, baseline_top(e));
+                    top = std::min(top, extent_top(e));
+                    bottom = std::max(bottom, extent_bottom(e));
+                }
+                if (baseline == DBL_MAX) {
+                    continue;
+                }
+                max_above[voice] = std::max(max_above[voice], baseline - top);
+                max_below[voice] = std::max(max_below[voice], bottom - baseline);
+                groups_by_voice[voice].push_back(std::move(items));
+            }
+        }
+    }
+
+    const auto present = [&groups_by_voice](voice_idx_t voice) { return !groups_by_voice[voice].empty(); };
+    voice_idx_t top_voice = 0;
+    while (top_voice < voice_count && !present(top_voice)) ++top_voice;
+    if (std::count_if(groups_by_voice.begin(), groups_by_voice.end(), [](const auto &groups) { return !groups.empty(); }) < 2) {
+        return;
+    }
+
+    // Absolute band positions start at the top voice's unshifted baseline.
+    double reference_top = DBL_MAX;
+    for (EngravingItem *e : groups_by_voice[top_voice].front()) {
+        reference_top = std::min(reference_top, baseline_top(e));
+    }
+    if (reference_top == DBL_MAX) {
+        return;
+    }
+
+    const double voice_distance = ctx.conf().style_absolute(Sid::JIANPU_VOICE_VERTICAL_DISTANCE);
+
+    // Each baseline clears the previous voice's reach below and its own reach above.
+    std::array<double, voice_count> band_target_top{};
+    double next_baseline = reference_top;
+    double previous_below = 0.0;
+    for (voice_idx_t voice = top_voice; voice < voice_count; ++voice) {
+        if (!present(voice)) {
+            continue;
+        }
+        if (voice != top_voice) {
+            next_baseline += previous_below + voice_distance + max_above[voice];
+        }
+        band_target_top[voice] = next_baseline;
+        previous_below = max_below[voice];
+    }
+
+    std::vector<Segment *> shifted_segments;
+    for (voice_idx_t voice = 0; voice < voice_count; ++voice) {
+        const double target_top = band_target_top[voice];
+        for (const std::vector<EngravingItem *> &segment_items : groups_by_voice[voice]) {
+            double top = DBL_MAX;
+            for (EngravingItem *e : segment_items) {
+                top = std::min(top, baseline_top(e));
+            }
+            if (top == DBL_MAX) {
+                continue;
+            }
+            const double dy = target_top - top;
+            if (muse::real_is_null(dy)) {
+                continue;
+            }
+            for (EngravingItem *e : segment_items) {
+                shift_item(e, dy);
+                Segment *segment = to_chord_rest(e)->segment();
+                if (!muse::contains(shifted_segments, segment)) shifted_segments.push_back(segment);
+            }
+        }
+    }
+
+    // Slur collision avoidance and skylines read the segment staff shape.
+    for (Segment *segment : shifted_segments) {
+        segment->create_shape(staff_idx);
+    }
+} //---------------------------------------------------------
+
 //   layoutSegmentElements
 //---------------------------------------------------------
 
@@ -2224,6 +2667,7 @@ void ChordLayout::layout_chords1(LayoutContext &ctx, Segment *segment, staff_idx
 
     const Staff *staff = ctx.dom().staff(staff_idx);
     const bool is_tab = staff->is_tab_staff(segment->tick());
+    const bool is_jianpu = staff->is_jianpu_staff(segment->tick());
     const track_idx_t start_track = staff_idx * ::mu::engraving::voices;
     const track_idx_t end_track = start_track + ::mu::engraving::voices;
     const Fraction tick = segment->tick();
@@ -2236,7 +2680,8 @@ void ChordLayout::layout_chords1(LayoutContext &ctx, Segment *segment, staff_idx
     const track_idx_t part_start_track = part_track_range_or_default.start_track;
     const track_idx_t part_end_track = part_track_range_or_default.end_track;
 
-    if (is_tab) {
+    if (is_tab || is_jianpu) {
+        // A Jianpu digit carries its accidental in its label instead of an Accidental glyph.
         skip_accidentals(segment, start_track, end_track);
     }
 
@@ -2279,7 +2724,10 @@ void ChordLayout::layout_chords1(LayoutContext &ctx, Segment *segment, staff_idx
         for (Chord *chord : pos_info.chords) {
             for (Chord *grace : chord->grace_notes()) {
                 AccidentalsLayout::layout_accidentals({grace}, ctx);
+                ChordLayout::layout_jianpu_octave_dots(grace, ctx);
             }
+            ChordLayout::layout_jianpu_duration_lines(chord, ctx);
+            ChordLayout::layout_jianpu_octave_dots(chord, ctx);
         }
     }
 
@@ -2464,7 +2912,9 @@ void ChordLayout::place_dots(const std::vector<Chord *> &chords, const std::vect
             }
         }
     }
-    if (!chord || (chord->staff()->is_tab_staff(chord->tick()) && !chord->staff()->staff_type(chord->tick())->stem_through())) {
+
+    Staff *staff = chord ? chord->staff() : nullptr;
+    if (!staff || (staff->is_tab_staff(chord->tick()) && !staff->staff_type(chord->tick())->stem_through())) {
         return;
     }
     std::vector<Note *> top_down_notes;
@@ -2474,7 +2924,7 @@ void ChordLayout::place_dots(const std::vector<Chord *> &chords, const std::vect
     get_note_list_for_dots(chord, top_down_notes, bottom_up_notes, anchored_dots);
 
     for (Note *note : notes) {
-        bool on_line = !(note->line() & 1);
+        bool on_line = !(note->line() & 1) && !staff->is_jianpu_staff(chord->tick());
         if (on_line) {
             std::unordered_map<int, Note *> already_added;
             bool finished = false;
@@ -2580,6 +3030,23 @@ void ChordLayout::set_dot_relative_line(Note *note, int dot_move, LayoutContext 
     int cdots = static_cast<int>(note->chord()->dots());
     int ndots = static_cast<int>(note->dots().size());
 
+    // On Jianpu staves the augmentation lines already show the dots of the longer values.
+    int ddots = 0;
+    if (note->staff()->is_jianpu_staff(note->chord()->tick())) {
+        if (note->chord()->up_note() == note) {
+            switch (note->chord()->duration_type().type()) {
+                case DurationType::V_LONG: ddots = 4; break;
+                case DurationType::V_BREVE: ddots = 3; break;
+                case DurationType::V_WHOLE: ddots = 2; break;
+                case DurationType::V_HALF: ddots = 1; break;
+                default: break;
+            }
+        } else {
+            cdots = 0; // only the up note shows dots
+        }
+    }
+    cdots = std::max(0, cdots - ddots);
+
     int n = cdots - ndots;
     for (int i = 0; i < n; ++i) {
         NoteDot *dot = Factory::create_note_dot(note);
@@ -2682,6 +3149,8 @@ void ChordLayout::layout_chords3(const std::vector<Chord *> &chords, const std::
     // Track dot position of voices on this stave and possible cross voices from above & below
     std::array<double, 3 * ::mu::engraving::voices> dot_pos{};
 
+    const bool is_jianpu = staff->is_jianpu_staff(tick);
+
     int n_notes = int(notes.size());
 
     for (int i = n_notes - 1; i >= 0; --i) {
@@ -2691,7 +3160,7 @@ void ChordLayout::layout_chords3(const std::vector<Chord *> &chords, const std::
         if (chord->dots()) {
             if (dot_position == DirectionV::AUTO && n_notes > 1 && note->display_visible() && !note->dots_hidden()) {
                 // resolve dot conflicts
-                int line = note->line();
+                int line = is_jianpu ? 0 : note->line();
                 Note *above = (i < n_notes - 1) ? notes[i + 1] : nullptr;
                 if (above && (!above->visible() || above->dots_hidden() || above->chord()->dots() == 0 ||
                               !Chord::combine_voice(chord, above->chord()))) {
@@ -2765,17 +3234,20 @@ void ChordLayout::layout_chords3(const std::vector<Chord *> &chords, const std::
         std::sort(chord_notes.begin(), chord_notes.end(), [](Note *n1, const Note *n2) -> bool { return n1->line() < n2->line(); });
         for (Note *note : chord_notes) {
             double note_x = 0.0;
-            if (note->ldata()->mirror()) {
-                if (up_value) {
-                    note_x = StemLayout::stem_pos_x(chord) - overlap_mirror;
-                } else {
-                    note_x = -note->head_body_width() + overlap_mirror;
+            // Jianpu digits are neither mirrored nor offset to a stem side.
+            if (!is_jianpu) {
+                if (note->ldata()->mirror()) {
+                    if (up_value) {
+                        note_x = StemLayout::stem_pos_x(chord) - overlap_mirror;
+                    } else {
+                        note_x = -note->head_body_width() + overlap_mirror;
+                    }
+                } else if (up_value) {
+                    note_x = chord->note_head_width() - note->head_body_width();
                 }
-            } else if (up_value) {
-                note_x = chord->note_head_width() - note->head_body_width();
             }
 
-            double ny = (note->line() + step_offset) * step_distance;
+            double ny = is_jianpu ? 0.0 : (note->line() + step_offset) * step_distance;
             if (note->ldata()->pos().y() != ny) {
                 note->mutldata()->set_pos_y(ny);
                 if (stem) {
@@ -3431,6 +3903,10 @@ void ChordLayout::fill_shape(const Chord *item, ChordRest::LayoutData *ldata) {
 
     for (const LedgerLine *l : item->ledger_lines()) {
         shape.add(l->shape().translate(l->pos()));
+    }
+
+    for (const JianpuDurationLine *line : item->jianpu_duration_lines()) {
+        shape.add(line->shape().translate(line->pos()));
     }
 
     if (beamlet && stem) {

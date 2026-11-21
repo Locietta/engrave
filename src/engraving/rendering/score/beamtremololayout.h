@@ -59,6 +59,7 @@ struct BeamTremoloLayout {
     static void extend_stem(const BeamBase::LayoutData *ldata, Chord *chord, double addition);
     static int min_stem_length(const ChordRest *cr, const BeamBase::LayoutData *ldata);
     static int stroke_count(const BeamBase::LayoutData *ldata, const ChordRest *cr);
+    static bool no_slope(const Beam *beam);
 
 private:
 
@@ -92,8 +93,6 @@ private:
                                       int interval, int desired_slant);
     static void add8th_space_slant(BeamBase::LayoutData *ldata, PointF &dictator_anchor, int dictator, int pointer, int beam_count,
                                    int interval, int target_line, bool flat);
-    static bool no_slope(const Beam *beam);
-
     static bool calculate_anchors_cross(const BeamBase *item, BeamBase::LayoutData *ldata, const LayoutConfiguration &conf);
     static bool compute_tremolo_up(const BeamBase::LayoutData *ldata);
 };

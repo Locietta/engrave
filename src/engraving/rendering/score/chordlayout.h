@@ -113,6 +113,11 @@ struct ChordLayout {
 
     static void layout_chord_base_fingering(Chord *chord, System *system, LayoutContext &ctx);
 
+    static void resize_jianpu_duration_lines(ChordRest *item, size_t count);
+    static void layout_jianpu_duration_lines(Chord *item, LayoutContext &ctx);
+    static void layout_jianpu_octave_dots(Chord *item, LayoutContext &ctx);
+    static void layout_voice_offsets(System *system, staff_idx_t staff_idx, LayoutContext &ctx);
+
     static void cross_measure_setup(Chord *chord, bool on, LayoutContext &ctx);
 
     static void check_start_end_slurs(Chord *chord, LayoutContext &ctx);

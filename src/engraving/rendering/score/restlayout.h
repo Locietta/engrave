@@ -59,5 +59,7 @@ private:
 
     static RestGroups compute_rest_groups(const System *system, LayoutContext &ctx);
     static InterruptionPoints compute_interruption_points(const Measure *measure, staff_idx_t staff_idx);
+
+    static void layout_rest_for_jianpu(const Rest *item, Rest::LayoutData *ldata, const LayoutContext &ctx);
 };
 } // namespace mu::engraving::rendering::score

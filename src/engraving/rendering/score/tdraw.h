@@ -82,6 +82,8 @@ struct IndicatorIcon;
 struct Image;
 struct InstrumentChange;
 struct InstrumentName;
+struct JianpuDurationLine;
+struct JianpuOctaveDot;
 struct Jump;
 
 struct KeySig;
@@ -240,6 +242,8 @@ private:
     static void draw(const InstrumentChange *item, muse::draw::Painter *painter, const PaintOptions &opt);
     static void draw(const InstrumentName *item, muse::draw::Painter *painter, const PaintOptions &opt);
 
+    static void draw(const JianpuDurationLine *item, muse::draw::Painter *painter, const PaintOptions &opt);
+    static void draw(const JianpuOctaveDot *item, muse::draw::Painter *painter, const PaintOptions &opt);
     static void draw(const Jump *item, muse::draw::Painter *painter, const PaintOptions &opt);
 
     static void draw(const KeySig *item, muse::draw::Painter *painter, const PaintOptions &opt);

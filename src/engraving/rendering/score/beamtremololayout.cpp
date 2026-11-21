@@ -27,6 +27,7 @@
 #include "../dom/beam.h"
 #include "../dom/chord.h"
 #include "../dom/chordrest.h"
+#include "../dom/jianpuoctavedot.h"
 #include "../dom/measure.h"
 #include "../dom/note.h"
 #include "../dom/score.h"
@@ -611,9 +612,20 @@ bool BeamTremoloLayout::calculate_anchors(const BeamBase *item, BeamBase::Layout
     bool has_chord_above_beam = false;
     bool has_chord_below_beam = false;
 
+    const bool is_jianpu_staff = item->on_jianpu_staff();
+    double beam_dot_stack = 0.0;
+    bool beam_above = false;
+    double beam_distance = 0.0;
+    double dot_distance = 0.0;
+
     for (auto chord_rest : chord_rests) {
         if (!start_cr) {
             start_cr = chord_rest;
+            if (is_jianpu_staff) {
+                beam_above = ctx.conf().style_v(Sid::JIANPU_DIMINUTION_BEAM_PLACEMENT).value<PlacementV>() == PlacementV::ABOVE;
+                beam_distance = ctx.conf().style_absolute(Sid::JIANPU_DIMINUTION_BEAM_DISTANCE) * start_cr->mag();
+                dot_distance = ctx.conf().style_absolute(Sid::JIANPU_OCTAVE_DOT_DISTANCE) * start_cr->mag();
+            }
         }
         end_cr = chord_rest;
         if (chord_rest->is_chord()) {
@@ -630,7 +642,35 @@ bool BeamTremoloLayout::calculate_anchors(const BeamBase *item, BeamBase::Layout
         } else {
             has_chord_above_beam = true;
         }
+
+        if (is_jianpu_staff && beam_above) {
+            // A beam above the digits clears the highest stack of beams and upper
+            // octave dots on any single chord.
+            int above_dots = 0;
+            if (chord_rest->is_chord()) {
+                const std::vector<JianpuOctaveDot *> &dots = to_chord(chord_rest)->up_note()->jianpu_octave_dots();
+                if (!dots.empty() && dots.front()->ldata()->above) {
+                    above_dots = static_cast<int>(dots.size());
+                }
+            }
+
+            const double beam_stack = stroke_count(ldata, chord_rest) * beam_distance;
+            beam_dot_stack = std::max(beam_dot_stack, beam_stack + above_dots * dot_distance);
+        }
     }
+
+    if (is_jianpu_staff) {
+        ldata->start_anchor = chord_beam_anchor(ldata, start_cr, ChordBeamAnchorType::START);
+        ldata->end_anchor = chord_beam_anchor(ldata, end_cr, ChordBeamAnchorType::END);
+
+        // The Jianpu y origin is the centre of the digit.
+        const double half_height = item->staff()->staff_type_for_element(item)->jianpu_box_h() * start_cr->mag() * .5;
+        const double offset_y = beam_above ? -(half_height + beam_dot_stack) : half_height + beam_distance;
+        ldata->start_anchor += PointF(0, offset_y);
+        ldata->end_anchor += PointF(0, offset_y);
+        return true;
+    }
+
     if (!start_chord) {
         // we were passed a vector of only rests. we don't support beams across only rests
         // this beam will be deleted in LayoutBeams
@@ -1039,7 +1079,10 @@ bool BeamTremoloLayout::calculate_anchors_cross(const BeamBase *item, BeamBase::
     return true;
 }
 
-bool BeamTremoloLayout::no_slope(const Beam *beam) { return beam && beam->no_slope(); }
+// A Jianpu beam left at the style default is horizontal, without changing the authored value.
+bool BeamTremoloLayout::no_slope(const Beam *beam) {
+    return beam && (beam->no_slope() || (beam->is_styled(Pid::BEAM_NO_SLOPE) && beam->on_jianpu_staff()));
+}
 
 int BeamTremoloLayout::get_target_staff_line(const BeamBase::LayoutData *ldata, const LayoutContext &ctx, const ChordRest *start_chord,
                                              const ChordRest *end_chord, const int staff_lines, const staff_idx_t beam_closest_staff_idx,
@@ -1076,7 +1119,7 @@ int BeamTremoloLayout::get_target_staff_line(const BeamBase::LayoutData *ldata, 
 int BeamTremoloLayout::compute_desired_slant(const BeamBase *item, const BeamBase::LayoutData *ldata,
                                              const BeamBase::NotePosition &start_pos, const BeamBase::NotePosition &end_pos,
                                              std::vector<Chord *> closest_chords_to_beam, int target_line, int dictator, int pointer) {
-    if (item->is_type(ElementType::BEAM) && item_cast<const Beam *>(item)->no_slope()) {
+    if (item->is_type(ElementType::BEAM) && no_slope(item_cast<const Beam *>(item))) {
         return 0;
     }
     int dictator_extension = target_line - dictator; // we need to make sure that beams extended to the middle line
@@ -1274,6 +1317,15 @@ int BeamTremoloLayout::get_beam_count(const BeamBase::LayoutData *ldata, const s
 
 double BeamTremoloLayout::chord_beam_anchor_x(const BeamBase::LayoutData *ldata, const ChordRest *cr, ChordBeamAnchorType anchor_type) {
     double page_pos_x = ldata->trem ? ldata->trem->page_pos().x() : ldata->beam ? ldata->beam->page_pos().x() : 0.0;
+    if (cr->on_jianpu_staff()) {
+        // A Jianpu beam spans the digit box, which has no stem.
+        const double cr_pos_x = cr->page_pos().x() - page_pos_x;
+        switch (anchor_type) {
+            case ChordBeamAnchorType::START: return cr_pos_x;
+            case ChordBeamAnchorType::MIDDLE: return cr_pos_x + cr->ldata()->bbox().width() / 2;
+            case ChordBeamAnchorType::END: return cr_pos_x + cr->ldata()->bbox().width();
+        }
+    }
     double stem_pos_x = StemLayout::stem_pos_x(cr) + cr->page_pos().x() - page_pos_x;
 
     if (!cr->is_chord() || !to_chord(cr)->stem()) {
@@ -1328,6 +1380,10 @@ double BeamTremoloLayout::chord_beam_anchor_y(const BeamBase::LayoutData *ldata,
     }
 
     const Chord *chord = to_chord(cr);
+    if (chord->on_jianpu_staff()) {
+        return chord->up_note()->page_pos().y();
+    }
+
     Note *note = cr->up() ? chord->down_note() : chord->up_note();
     PointF position = note->page_pos();
 

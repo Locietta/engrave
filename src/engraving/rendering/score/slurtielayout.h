@@ -105,6 +105,7 @@ private:
     static PointF compute_default_start_or_end_point(const Tie *tie, Grip start_or_end);
     static void correct_for_cross_staff(Tie *tie, SlurTiePos &s_pos, SpannerSegmentType type);
     static void force_horizontal(Tie *tie, SlurTiePos &s_pos);
+    static void correct_for_jianpu(Tie *item, SlurTiePos &s_pos);
     static void adjust_x(TieSegment *tie_segment, SlurTiePos &s_pos, Grip start_or_end);
     static void adjust_xfor_ledger_lines(TieSegment *tie_segment, bool start, Chord *chord, Note *note, const PointF &chord_system_pos,
                                          double padding, double &resulting_x);

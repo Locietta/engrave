@@ -52,6 +52,8 @@
 #include "../../dom/image.h"
 #include "../../dom/instrchange.h"
 #include "../../dom/instrumentname.h"
+#include "../../dom/jianpudurationline.h"
+#include "../../dom/jianpuoctavedot.h"
 #include "../../dom/jump.h"
 #include "../../dom/keysig.h"
 #include "../../dom/laissezvib.h"
@@ -246,6 +248,8 @@ struct TLayout {
     static void layout_instrument_change(const InstrumentChange *item, InstrumentChange::LayoutData *ldata);
     static void layout_instrument_name(const InstrumentName *item, InstrumentName::LayoutData *ldata);
 
+    static void layout_jianpu_duration_line(JianpuDurationLine *item, const LayoutContext &ctx);
+    static void layout_jianpu_octave_dot(JianpuOctaveDot *item, const LayoutContext &ctx);
     static void layout_jump(const Jump *item, Jump::LayoutData *ldata);
 
     static void layout_key_sig(const KeySig *item, KeySig::LayoutData *ldata, const LayoutConfiguration &conf);

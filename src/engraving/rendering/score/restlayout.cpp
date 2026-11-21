@@ -31,9 +31,11 @@
 #include "chordlayout.h"
 #include "dom/beam.h"
 #include "dom/factory.h"
+#include "dom/jianpudurationline.h"
 #include "dom/measure.h"
 #include "dom/staff.h"
 #include "dom/system.h"
+#include "dom/utils.h"
 #include "engraving/dom/dummyparent.h"
 #include "layoutdatastore.h"
 #include "log.h"
@@ -132,10 +134,25 @@ void RestLayout::layout_rest(const Rest *item, Rest::LayoutData *ldata, const La
         }
     }
 
+    const Staff *stf = item->staff();
+    if (stf && stf->is_jianpu_staff(item->tick())) {
+        ldata->sym = SymId::NO_SYM;
+        // A Jianpu rest is the digit "0": augmentation lines replace dots.
+        while (!ldata->dots.empty()) {
+            LayoutDataStore::delete_layout_child(ldata->dots.back());
+            ldata->dots.pop_back();
+        }
+        layout_rest_for_jianpu(item, ldata, ctx);
+        fill_shape(item, ldata, ctx.conf());
+        return;
+    }
+    if (!item->jianpu_duration_lines().empty()) {
+        ChordLayout::resize_jianpu_duration_lines(const_cast<Rest *>(item), 0);
+    }
+
     ldata->dotline = Rest::get_dotline(item->duration_type().type());
 
     double y_off = item->offset().y();
-    const Staff *stf = item->staff();
     const StaffType *st = stf ? stf->staff_type_for_element(item) : 0;
     double line_dist = st ? st->line_distance().val() : 1.0;
     int user_line = real_is_null(y_off) ? 0 : lrint(y_off / (line_dist * spatium));
@@ -192,7 +209,51 @@ void RestLayout::fill_shape(const Rest *item, Rest::LayoutData *ldata, const Lay
     }
 }
 
+void RestLayout::layout_rest_for_jianpu(const Rest *item, Rest::LayoutData *ldata, const LayoutContext &ctx) {
+    const Measure *measure = item->measure();
+    if (!measure) {
+        return;
+    }
+    const Fraction tick = measure->tick();
+    const Staff *staff = item->staff();
+    const StaffType *st = staff->staff_type_for_element(item);
+
+    // The Jianpu y origin is the centre of the digit, which starts half a spatium
+    // above the middle of the measure.
+    const double hy = -item->spatium() * .5 * item->mag();
+    const double hx = 0.0;
+    ldata->set_pos(hx, hy);
+
+    const track_idx_t track = staff2track(item->staff_idx() + item->staff_move());
+    const bool staff_visible = !staff->is_lines_invisible(tick);
+
+    muse::draw::Font font(item->staff_type()->jianpu_font());
+    font.set_point_size_f(font.point_size_f() * item->mag());
+
+    muse::draw::FontMetrics fm(font);
+    const double width = fm.width(String(u"0")) / item->mag_s();
+    const double height = st->jianpu_box_h() * item->mag_s();
+
+    ldata->set_bbox(RectF(0, -height * .5, width, height));
+    const int lines = jianpu_augmentation_lines_for_duration(item->duration_type());
+    ChordLayout::resize_jianpu_duration_lines(const_cast<Rest *>(item), size_t(lines));
+    for (int i = 0; i < lines; ++i) {
+        JianpuDurationLine *line = item->jianpu_duration_lines()[i];
+        line->set_track(track);
+        line->set_visible(staff_visible);
+        line->mutldata()->len = width;
+        line->mutldata()->set_pos(hx + width * 1.2 * (i + 1), hy);
+        TLayout::layout_jianpu_duration_line(line, ctx);
+    }
+}
+
 void RestLayout::resolve_vertical_rest_conflicts(LayoutContext &ctx, Segment *segment, staff_idx_t staff_idx) {
+    const Staff *staff_for_idx = ctx.dom().staff(staff_idx);
+    if (staff_for_idx && staff_for_idx->is_jianpu_staff(segment->tick())) {
+        // Jianpu rests stack in per-voice bands (ChordLayout::layout_voice_offsets) instead.
+        return;
+    }
+
     std::vector<Rest *> rests;
     std::vector<Chord *> chords;
 
@@ -684,7 +745,12 @@ void RestLayout::fill_shape(const Rest *item, Rest::LayoutData *ldata) {
 
     if ((!item->is_gap() || item->debug_draw_gap()) && !item->should_not_be_drawn()) {
         shape.add(ChordLayout::chord_rest_shape(item));
-        shape.add(item->sym_bbox(ldata->sym), item);
+        if (ldata->sym == SymId::NO_SYM && item->on_jianpu_staff()) {
+            // The Jianpu rest has no symbol; its box is the digit box from layout_rest_for_jianpu.
+            shape.add(ldata->bbox(), item);
+        } else {
+            shape.add(item->sym_bbox(ldata->sym), item);
+        }
         for (const NoteDot *dot : item->dot_list()) {
             if (dot->add_to_skyline()) {
                 shape.add(item->sym_bbox(SymId::AUGMENTATION_DOT).translated(dot->pos()), dot);
@@ -808,6 +874,10 @@ int RestLayout::compute_whole_or_breve_rest_offset(const Rest *item, int voice_o
 void RestLayout::update_symbol(const Rest *item, Rest::LayoutData *ldata) {
     Fraction t = item->tick();
     Staff *st = item->staff();
+    if (st->is_jianpu_staff(t)) {
+        return;
+    }
+
     double line_distance = st->line_distance(t) * item->spatium();
     int lines = st->lines(t);
 

@@ -63,6 +63,8 @@
 #include "dom/image.h"
 #include "dom/instrchange.h"
 #include "dom/instrumentname.h"
+#include "dom/jianpudurationline.h"
+#include "dom/jianpuoctavedot.h"
 #include "dom/jump.h"
 #include "dom/keysig.h"
 #include "dom/layoutbreak.h"
@@ -90,6 +92,7 @@
 #include "dom/part.h"
 #include "dom/pedal.h"
 #include "dom/pickscrape.h"
+#include "dom/pitchspelling.h"
 #include "dom/playtechannotation.h"
 #include "dom/rasgueado.h"
 #include "dom/rehearsalmark.h"
@@ -255,6 +258,8 @@ void TLayout::layout_item(EngravingItem *item, LayoutContext &ctx) {
         case ElementType::INSTRUMENT_NAME:
             layout_instrument_name(item_cast<const InstrumentName *>(item), static_cast<InstrumentName::LayoutData *>(ldata));
             break;
+        case ElementType::JIANPU_DURATION_LINE: layout_jianpu_duration_line(item_cast<JianpuDurationLine *>(item), ctx); break;
+        case ElementType::JIANPU_OCTAVE_DOT: layout_jianpu_octave_dot(item_cast<JianpuOctaveDot *>(item), ctx); break;
         case ElementType::JUMP: layout_jump(item_cast<const Jump *>(item), static_cast<Jump::LayoutData *>(ldata)); break;
         case ElementType::KEYSIG:
             layout_key_sig(item_cast<const KeySig *>(item), static_cast<KeySig::LayoutData *>(ldata), ctx.conf());
@@ -396,8 +401,8 @@ void TLayout::layout_accidental(const Accidental *item, Accidental::LayoutData *
     ldata->syms.clear();
 
     // TODO: remove Accidental in layout
-    // don't show accidentals for tab or slash notation
-    if (item->on_tab_staff() || (item->note() && item->note()->fixed())) {
+    // don't show accidentals for tab or slash notation; a Jianpu digit carries its accidental in its label
+    if (item->on_tab_staff() || item->on_jianpu_staff() || (item->note() && item->note()->fixed())) {
         ldata->set_is_skip_draw(true);
         return;
     }
@@ -1573,6 +1578,14 @@ void TLayout::layout_clef(const Clef *item, Clef::LayoutData *ldata, const Layou
         const Fraction tick = end_of_measure_clef && !item->is_trailer() ? item->tick() : clef_seg->measure()->tick();
 
         const Fraction tick_prev = tick - Fraction::eps();
+
+        if (item->staff()->is_jianpu_staff(tick)) {
+            // Jianpu shows no clef; set_bbox also clears the shape.
+            ldata->set_bbox(RectF());
+            ldata->sym_id = SymId::NO_SYM;
+            return;
+        }
+
         const StaffType *st = item->staff()->staff_type(tick);
         const StaffType *st_prev = !tick_prev.negative() ? item->staff()->staff_type(tick_prev) : nullptr;
         if (!show) {
@@ -3162,6 +3175,7 @@ void TLayout::layout_key_sig(const KeySig *item, KeySig::LayoutData *ldata, cons
 
     ldata->set_bbox(RectF());
     ldata->key_symbols.clear();
+    ldata->jianpu_label = String();
 
     const Staff *staff = item->staff();
     const StaffType *st_visibility = staff ? staff->staff_type(item->tick()) : nullptr;
@@ -3170,9 +3184,26 @@ void TLayout::layout_key_sig(const KeySig *item, KeySig::LayoutData *ldata, cons
     }
 
     const StaffType *st = item->staff_type();
+    double spatium = item->spatium();
+
+    if (staff && staff->is_jianpu_staff(item->tick())) {
+        // A Jianpu staff labels the tonic ("1=C") instead of drawing sharps and flats.
+        ldata->jianpu_label = jianpu_key_label(item->key_sig_event());
+
+        const double height = (st ? st->jianpu_box_h() : spatium) * item->mag();
+        double width = 0.0;
+        if (!ldata->jianpu_label.is_empty()) {
+            Font font(st ? st->jianpu_font() : Font());
+            font.set_point_size_f(font.point_size_f() * item->mag());
+            width = FontMetrics(font).width(ldata->jianpu_label);
+        }
+        ldata->set_pos_y(item->staff_offset_y());
+        ldata->set_bbox(0.0, -height * 0.5, width, height);
+        return;
+    }
+
     const Segment *s = item->segment();
     track_idx_t track = item->track();
-    double spatium = item->spatium();
     double step = spatium * (st ? st->line_distance().val() * 0.5 : 0.5);
 
     // determine current clef for this staff
@@ -3785,6 +3816,7 @@ void TLayout::layout_note(const Note *item, Note::LayoutData *ldata) {
     }
 
     bool use_tablature = item->staff() && item->staff()->is_tab_staff(item->chord()->tick());
+    bool use_jianpu = item->staff() && item->staff()->is_jianpu_staff(item->chord()->tick());
     ldata->use_tablature.set_value(use_tablature);
 
     RectF note_b_box;
@@ -3818,6 +3850,22 @@ void TLayout::layout_note(const Note *item, Note::LayoutData *ldata) {
         double height = item->dead_note() ? tab->dead_fret_box_h() : tab->fret_box_h();
 
         note_b_box = RectF(0, y * mags, w, height * mags);
+    } else if (use_jianpu) {
+        const Staff *st = item->staff();
+        const StaffType *jianpu = st->staff_type_for_element(item);
+
+        const JianpuKeyMapping mapping = jianpu_key_mapping(st->key_sig_event(item->chord()->tick()));
+        JianpuSpelling spelling = tpc2_jianpu(item->tpc(), mapping.tonic_tpc, mapping.mode);
+        const Tie *tie_back = item->tie_back_non_partial();
+        if (tie_back && tie_back->start_note()->tpc() == item->tpc()) {
+            // A tied continuation shows no accidental: the tied-from digit already does.
+            spelling.accidental = String();
+        }
+        ldata->jianpu_digit = spelling.step_name;
+        ldata->jianpu_accidental = jianpu_accidental_mark(spelling.accidental);
+
+        const double height = jianpu->jianpu_box_h() * item->mag_s();
+        note_b_box = RectF(0, -height * .5, item->head_width(), height);
     } else {
         SymId nh = item->note_head();
         ldata->cached_notehead_sym.set_value(nh);
@@ -3894,7 +3942,35 @@ void TLayout::fill_note_shape(const Note *item, Note::LayoutData *ldata) {
         }
     }
 
+    for (const JianpuOctaveDot *dot : item->jianpu_octave_dots()) {
+        shape.add(dot->ldata()->bbox().translated(dot->pos()), dot);
+    }
+
     ldata->set_shape(shape);
+}
+
+void TLayout::layout_jianpu_octave_dot(JianpuOctaveDot *item, const LayoutContext &ctx) {
+    LAYOUT_CALL_ITEM(item);
+    JianpuOctaveDot::LayoutData *ldata = item->mutldata();
+
+    const double mag = item->note()->mag();
+    ldata->set_mag(mag);
+    ldata->radius = ctx.conf().style_absolute(Sid::JIANPU_OCTAVE_DOT_RADIUS) * mag;
+    ldata->set_bbox(0, -ldata->radius, ldata->len, ldata->radius * 2);
+}
+
+void TLayout::layout_jianpu_duration_line(JianpuDurationLine *item, const LayoutContext &ctx) {
+    LAYOUT_CALL_ITEM(item);
+    JianpuDurationLine::LayoutData *ldata = item->mutldata();
+
+    const double mag = item->mag();
+    ldata->set_mag(mag);
+    ldata->line_width = ctx.conf().style_absolute(Sid::JIANPU_DURATION_LINE_THICKNESS) * mag;
+    if (item->staff()) {
+        item->set_color(item->staff()->staff_type(item->tick())->color());
+    }
+    const double half_width = ldata->line_width * .5;
+    ldata->set_bbox(0, -half_width, ldata->len, 2 * half_width);
 }
 
 void TLayout::layout_note_dot(const NoteDot *item, NoteDot::LayoutData *ldata) {

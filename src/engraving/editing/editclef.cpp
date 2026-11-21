@@ -151,7 +151,10 @@ void EditClef::undo_change_clef(Transaction &, Score *score, Staff *ostaff, Engr
 
         StaffType *staff_type = staff->staff_type(e->tick());
         StaffGroup staff_group = staff_type->group();
-        if (ClefInfo::staff_group(ct) != staff_group && !for_instrument_change) {
+        const StaffGroup clef_staff_group = ClefInfo::staff_group(ct);
+        // A Jianpu staff keeps the pitched clef that defines its notes' lines.
+        const bool compatible_jianpu_clef = staff_group == StaffGroup::JIANPU && clef_staff_group == StaffGroup::STANDARD;
+        if (clef_staff_group != staff_group && !compatible_jianpu_clef && !for_instrument_change) {
             continue;
         }
 
