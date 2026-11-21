@@ -866,6 +866,88 @@ TEST(Export470, ExcerptJianpuStyleFollowsTheExcerptStaves) {
     }));
 }
 
+// 4.7.6 has no jianpu_number text style, so it would draw such text or tablature
+// frets in another style; a master or an excerpt that refers to it is refused.
+TEST(Export470, RefusesJianpuNumberTextStyleReferences) {
+    const auto replace = [](std::string text, std::string_view from, std::string_view to) {
+        const auto at = text.find(from);
+        if (at == std::string::npos) throw std::runtime_error("fixture lacks " + std::string(from));
+        return text.replace(at, from.size(), to);
+    };
+    const auto five_00 = [&](const std::filesystem::path &path) {
+        return replace(read_text(path), "<museScore version=\"4.70\">", "<museScore version=\"5.00\">");
+    };
+    const auto staff_text = [](std::string_view style) {
+        return std::format("<StaffText><eid>ST_ST</eid><style>{}</style><text>1=C</text></StaffText>", style);
+    };
+    const auto minimal = five_00(write470_fixture());
+    const auto excerpts = five_00(write470_fixture().parent_path() / "excerpts.mscx");
+    const auto excerpt_text = [&](std::string_view style) {
+        std::string text = excerpts;
+        return text.insert(text.find("<Chord>", text.find("<eid>v_v</eid>")), staff_text(style));
+    };
+    const auto frets = [](std::string_view style) {
+        return std::format("<fretUseTextStyle>1</fretUseTextStyle><fretTextStyle>{}</fretTextStyle>", style);
+    };
+    const auto guitar = [](std::string_view initial_frets, std::string_view change_frets) {
+        const auto change =
+            change_frets.empty() ?
+                std::string() :
+                std::format("<StaffTypeChange><eid>J_J</eid><StaffType group=\"tablature\"><name>tab6StrCommon</name>{}</StaffType>"
+                            "</StaffTypeChange>",
+                            change_frets);
+        return std::format(R"(<?xml version="1.0" encoding="UTF-8"?>
+<museScore version="5.00"><Score><eid>A_A</eid><Division>480</Division>
+<Part id="1"><Staff><eid>B_B</eid><StaffType group="tablature"><name>tab6StrCommon</name>{}</StaffType></Staff>
+<Instrument id="classical-guitar"><instrumentId>strings.guitar.nylon</instrumentId>
+<StringData><frets>19</frets><string>40</string><string>45</string><string>50</string><string>55</string><string>59</string><string>64</string></StringData>
+</Instrument></Part>
+<Staff id="1"><Measure><eid>C_C</eid><voice><TimeSig><eid>D_D</eid><sigN>4</sigN><sigD>4</sigD></TimeSig>
+<Chord><eid>E_E</eid><durationType>whole</durationType><Note><eid>F_F</eid><pitch>64</pitch><tpc>18</tpc><string>0</string><fret>0</fret></Note></Chord>
+</voice></Measure><Measure><eid>G_G</eid>{}<voice>
+<Chord><eid>H_H</eid><durationType>whole</durationType><Note><eid>I_I</eid><pitch>64</pitch><tpc>18</tpc><string>0</string><fret>0</fret></Note></Chord>
+</voice></Measure></Staff></Score></museScore>)",
+                           initial_frets, change);
+    };
+
+    struct Case {
+        std::string label;
+        std::string refused;
+        std::string accepted;
+        std::string_view detail;
+    };
+
+    const std::vector<Case> cases{
+        {"master text", replace(minimal, "<Chord>", staff_text("jianpu_number") + "<Chord>"),
+         replace(minimal, "<Chord>", staff_text("expression") + "<Chord>"), "StaffText/style jianpu_number"},
+        {"excerpt text", excerpt_text("jianpu_number"), excerpt_text("expression"), "StaffText/style jianpu_number"},
+        {"tablature staff", guitar(frets("jianpu_number"), ""), guitar(frets("tab_fret_number"), ""),
+         "StaffType/fretTextStyle jianpu_number"},
+        {"tablature staff type change", guitar(frets("tab_fret_number"), frets("jianpu_number")),
+         guitar(frets("tab_fret_number"), frets("tab_fret_number")), "StaffType/fretTextStyle jianpu_number"},
+    };
+    for (const auto &test : cases) {
+        SCOPED_TRACE(test.label);
+        auto refused = g_engine->open(as_bytes(test.refused));
+        auto accepted = g_engine->open(as_bytes(test.accepted));
+        ASSERT_TRUE(refused) << refused.error().message;
+        ASSERT_TRUE(accepted) << accepted.error().message;
+        const auto native = (*refused)->export_score({.format = engrave::Format::MSCX});
+        ASSERT_TRUE(native);
+        EXPECT_NE(as_text(*native).find(">jianpu_number<"), std::string_view::npos);
+        for (const auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
+            const auto result = (*refused)->export_score_with_warnings({.format = format, .native_version = "4.70"});
+            ASSERT_FALSE(result);
+            EXPECT_EQ(result.error().code, ErrorCode::UNSUPPORTED);
+            ASSERT_EQ(result.error().export_warnings.size(), 1u) << result.error().message;
+            EXPECT_EQ(result.error().export_warnings.front().code, "B470_UNSUPPORTED_FEATURE");
+            EXPECT_NE(result.error().message.find(test.detail), std::string::npos) << result.error().message;
+            const auto control = (*accepted)->export_score_with_warnings({.format = format, .native_version = "4.70"});
+            EXPECT_TRUE(control) << control.error().message;
+        }
+    }
+}
+
 TEST(Export470, DropsAuthoredStaveSharingMapsAndGeneratedIndicators) {
     auto source = read_text(write470_fixture().parent_path() / "shared_parts.source.mscx");
     const auto shared = source.find("</SharedPart>");

@@ -69,6 +69,8 @@ using namespace std::literals;
 struct StyleEntry {
     std::string_view name, text, attributes;
     bool legacy;
+    // Pinned 4.70 bytes keep the blank line these stripped keys always left behind.
+    bool keeps_blank_line = false;
 };
 
 constexpr StyleEntry supported_styles[] = {
@@ -820,8 +822,8 @@ void convert_style(pugi::xml_node score_node, Score &score, std::optional<Elemen
             } else if (!known->legacy) {
                 if (!five_only_style_is_inactive(name, features, score.style()) && !style_matches(child, *known))
                     unsupported(score_node, "style " + std::string(name), score_id, warnings);
-                // Preserve the existing 4.70 whitespace when stripping a newly emitted key.
-                if ((name == "staveSharingChangeMinDistance" || name.starts_with("jianpu")) && next.type() == pugi::node_pcdata) {
+                // The line break after the key goes with it.
+                if (!known->keeps_blank_line && next.type() == pugi::node_pcdata) {
                     const auto whitespace = next;
                     next = next.next_sibling();
                     style.remove_child(whitespace);
@@ -881,13 +883,10 @@ void convert_notation(pugi::xml_node node, const Score &score, std::optional<Ele
         unsupported(node, "KeySig Jianpu numbering", score_id, warnings);
     } else if (name == "KeySig") {
         // Without a custom numbering the tonic is inactive, as inactive Jianpu styles are.
-        for (const auto *tag : {"jianpuTonicKey", "jianpuTonicMode"}) {
-            const auto child = node.child(tag);
-            if (!child) continue;
-            // The indentation before the tag goes with it, as in a file that never had it.
-            if (const auto indent = child.previous_sibling(); indent.type() == pugi::node_pcdata) node.remove_child(indent);
-            node.remove_child(child);
-        }
+        for (const auto *tag : {"jianpuTonicKey", "jianpuTonicMode"}) node.remove_child(tag);
+    } else if (one_of(name, {"style", "fretTextStyle"}) && std::string_view(node.child_value()) == "jianpu_number") {
+        // 4.7.6 has no Jianpu text style and would draw the text in another style.
+        unsupported(node, std::string(parent) + "/" + std::string(name) + " jianpu_number", score_id, warnings);
     } else if (name == "Score" && node.child("initialPartId").text().as_ullong() > std::numeric_limits<int>::max()) {
         unsupported(node, "initialPartId outside the legacy integer range", score_id, warnings);
     } else if (name == "Spanner") {

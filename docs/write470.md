@@ -140,6 +140,26 @@ automation curves from the score. Custom chord lists require a root render
 program and representable render actions. Static staff labels are projected into
 instrument names. Staff type changes that alter those labels require a refusal.
 
+4.7.6 has no Jianpu (numbered) notation, so these refuse the downgrade:
+
+- A Jianpu staff type, initial or in a `StaffTypeChange`
+  (`StaffType[@group="jianpu"]`). 4.7.6 would read a pitched staff without
+  lines.
+- A key signature with custom Jianpu numbering (`KeySig/jianpuNumbering`).
+  Under the default numbering, which follows the score key, the kept
+  `jianpuTonicKey` and `jianpuTonicMode` are inactive and are dropped.
+- A reference to the `jianpu_number` text style, from a text item
+  (`style`) or from tablature frets (`StaffType/fretTextStyle`), in the master
+  or an excerpt. 4.7.6 would draw it in another style.
+- Active `jianpu*` styles (section 5).
+
+### Dropped Stave-Sharing Data
+
+Without the shared part (`B470_SHARED_PART_DROPPED`), the authored maps
+(`SharedPart/StaveSharingState`) and the generated map indicators
+(`StaveSharingChange`) are removed with no warning of their own, as is the
+`staveSharingChangeMinDistance` style.
+
 ### Tie Warning Identities and Locators
 
 An invalid-tie warning never stringifies an invalid-EID sentinel:
@@ -170,10 +190,15 @@ catalog rejects unknown or repeated tags from the intermediate writer.
 
 Settings for dropped group brackets and stave sharing are omitted. Instrument
 name format settings are reflected in the emitted labels. Other 5.00-only
-settings are omitted when neutral or when the affected notation is absent.
+settings are omitted when neutral or when the affected notation is absent: the
+24 `jianpu*` styles are inactive in a score or excerpt without a Jianpu staff.
 Unspecified slur and tie masking uses the 4.70 default. An authored active
 setting without a legacy representation refuses export and names the owning
 score or excerpt.
+
+An omitted setting takes its line break with it. The 5.00-only settings that
+the writer omitted before the upstream 5.0 ports still leave a blank line, so
+earlier 4.70 output keeps its bytes; the style catalog marks them.
 
 ## 6. Cooperative Cancellation and Budgets
 
