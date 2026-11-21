@@ -3406,6 +3406,28 @@ void TRead::read(Part *p, XmlReader &e, ReadContext &ctx) {
     }
 }
 
+static void read_stave_sharing_state(SharedPart *part, XmlReader &e) {
+    bool valid_tick = false;
+    const Fraction tick = Fraction::from_string(e.attribute("tick"), &valid_tick);
+    AuthoredStaveSharingState state;
+    while (e.read_next_start_element()) {
+        const AsciiStringView tag(e.name());
+        if (tag == "isReset") {
+            state.is_reset = e.read_bool();
+        } else if (tag == "trackMap") {
+            const int origin = e.int_attribute("origin", -1);
+            const int shared = e.int_attribute("shared", -1);
+            if (origin >= 0 && shared >= 0) {
+                state.user_track_map.emplace(static_cast<track_idx_t>(origin), static_cast<track_idx_t>(shared));
+            }
+            e.skip_current_element();
+        } else {
+            e.unknown();
+        }
+    }
+    if (valid_tick && tick.is_valid() && !tick.negative()) part->set_authored_state(tick, std::move(state));
+}
+
 void TRead::read(SharedPart *p, XmlReader &e, ReadContext &ctx) {
     p->set_id(e.int_attribute("id", 0));
 
@@ -3413,6 +3435,8 @@ void TRead::read(SharedPart *p, XmlReader &e, ReadContext &ctx) {
         const AsciiStringView tag(e.name());
         if (tag == "sharedPartEnabled") {
             p->set_property(Pid::SHARED_PART_ENABLED, e.read_bool());
+        } else if (tag == "StaveSharingState") {
+            read_stave_sharing_state(p, e);
         } else if (!read_properties(p, e, ctx)) {
             e.unknown();
         }

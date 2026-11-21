@@ -24,18 +24,14 @@
 
 #include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
 #include "mscore.h"
-#include "system.h"
 
 using namespace mu::engraving;
 using namespace muse::draw;
 
-IndicatorIcon::IndicatorIcon(const ElementType &type, DummyParentOr<System> parent, ElementFlags flags)
-    : EngravingItem(type, parent, flags) {}
+IndicatorIcon::IndicatorIcon(const ElementType &type, EngravingObject *parent, ElementFlags flags) : EngravingItem(type, parent, flags) {}
 
 Font IndicatorIcon::font() const {
     Font font(configuration()->icons_font_family(), Font::Type::ICON);
     font.set_point_size_f(::mu::engraving::ui_icons_default_font_size * mag_s());
     return font;
 }
-
-Fraction IndicatorIcon::tick() const { return system() ? system()->end_tick() : Fraction(0, 1); }

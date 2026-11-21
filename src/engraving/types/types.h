@@ -230,6 +230,8 @@ enum class ElementType : unsigned char {
     TAPPING_HALF_SLUR_SEGMENT,
     TAPPING_TEXT,
 
+    STAVE_SHARING_CHANGE,
+
     ROOT_ITEM,
     DUMMY,
 
@@ -319,6 +321,7 @@ constexpr bool autoplace_applies_to_type(ElementType type) {
         case ElementType::TEMPO_TEXT:
         case ElementType::STAFF_TEXT:
         case ElementType::SYSTEM_TEXT:
+        case ElementType::STAVE_SHARING_CHANGE:
         case ElementType::STAVE_SHARING_LABEL:
         case ElementType::PLAY_COUNT_TEXT:
         case ElementType::PLAYTECH_ANNOTATION:

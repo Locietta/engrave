@@ -73,10 +73,12 @@
 #include "../dom/rest.h"
 #include "../dom/score.h"
 #include "../dom/segment.h"
+#include "../dom/sharedpart.h"
 #include "../dom/sig.h"
 #include "../dom/slur.h"
 #include "../dom/staff.h"
 #include "../dom/stafftext.h"
+#include "../dom/stavesharingchange.h"
 #include "../dom/stem.h"
 #include "../dom/sticking.h"
 #include "../dom/stringtunings.h"
@@ -864,6 +866,7 @@ void Score::delete_item(EngravingItem *el) {
             case ElementType::KEYSIG:
             case ElementType::MEASURE_NUMBER:
             case ElementType::SYSTEM_LOCK_INDICATOR:
+            case ElementType::STAVE_SHARING_CHANGE:
             case ElementType::PAGE_LOCK_INDICATOR:
             case ElementType::HAMMER_ON_PULL_OFF_TEXT:
             case ElementType::PLAY_COUNT_TEXT:
@@ -877,6 +880,11 @@ void Score::delete_item(EngravingItem *el) {
     Transaction &tx = transaction_manager()->current_or_dummy_transaction();
 
     switch (el->type()) {
+        case ElementType::STAVE_SHARING_CHANGE:
+            if (auto *part = el->part(); part && part->is_shared_part()) {
+                tx.change_stave_sharing_state(*to_shared_part(part), el->tick(), nullptr);
+            }
+            break;
         case ElementType::INSTRUMENT_NAME: {
             Part *part = el->part();
             InstrumentName *in = to_instrument_name(el);

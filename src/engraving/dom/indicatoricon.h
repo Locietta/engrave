@@ -29,11 +29,7 @@ namespace mu::engraving {
 struct IndicatorIcon : EngravingItem {
 
 public:
-    IndicatorIcon(const ElementType &type, DummyParentOr<System> parent, ElementFlags = ElementFlag::NOTHING);
-
-    IndicatorIcon *clone() const override { return new IndicatorIcon(*this); }
-
-    System *system() const { return to_system(ownership_parent()); }
+    IndicatorIcon(const ElementType &type, EngravingObject *parent, ElementFlags = ElementFlag::NOTHING);
 
     struct LayoutData : public EngravingItem::LayoutData {
         ld_field<RectF> range_rect = {"[IndicatorIcon] rangeRect", RectF()};
@@ -41,8 +37,6 @@ public:
     DECLARE_LAYOUTDATA_METHODS(IndicatorIcon)
 
     muse::draw::Font font() const;
-
-    Fraction tick() const override;
 
     virtual char16_t icon_code() const { return 0x000; }
 

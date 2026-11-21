@@ -103,41 +103,62 @@ Part *SharedPart::origin_part_for_staff(staff_idx_t shared_staff_idx, const Frac
 
 const SharedTrackMap &SharedPart::track_map_at_tick(const Fraction &tick) const {
     static const SharedTrackMap empty;
+    const auto *state = rendered_state_at_tick(std::max(tick, Fraction(0, 1)));
+    return state ? state->shared_track_map : empty;
+}
+
+const RenderedStaveSharingStates &SharedPart::rendered_states() const {
+    static const RenderedStaveSharingStates empty;
     const auto *store = score()->layout_data_store();
     if (!store) return empty;
-    const auto &maps = store->score_output().shared_track_maps;
-    const auto found = maps.find(this);
-    if (found == maps.end() || found->second.empty()) return empty;
-    const auto &track_maps_by_tick = found->second;
-    static constexpr Fraction tick_zero = Fraction(0, 1);
-
-    if (tick <= tick_zero) return track_maps_by_tick.begin()->second;
-
-    auto upper_bound_value = track_maps_by_tick.upper_bound(tick);
-    if (upper_bound_value == track_maps_by_tick.begin()) return empty;
-
-    --upper_bound_value;
-
-    return upper_bound_value->second;
+    const auto &by_part = store->score_output().stave_sharing_states;
+    const auto found = by_part.find(this);
+    return found == by_part.end() ? empty : found->second;
 }
 
-void SharedPart::set_track_map_at_tick(const SharedTrackMap &map, const Fraction &tick) {
-    score()->renderer()->layout_data_store(*score()).score_output().shared_track_maps[this][tick] = map;
+const RenderedStaveSharingState *SharedPart::rendered_state_at_tick(const Fraction &tick) const {
+    const auto &states = rendered_states();
+    const auto next = states.upper_bound(tick);
+    return next == states.begin() ? nullptr : &std::prev(next)->second;
 }
 
-void mu::engraving::SharedPart::remove_maps_between_ticks(const Fraction &start_tick, const Fraction &end_tick) {
-    auto &track_maps_by_tick = score()->renderer()->layout_data_store(*score()).score_output().shared_track_maps[this];
-    auto upper_bound_value = track_maps_by_tick.lower_bound(start_tick);
-    if (upper_bound_value == track_maps_by_tick.end()) {
-        return;
-    }
+void SharedPart::set_rendered_state(const Fraction &tick, RenderedStaveSharingState state) {
+    score()->renderer()->layout_data_store(*score()).score_output().stave_sharing_states[this][tick] = std::move(state);
+}
 
-    for (auto iter = upper_bound_value; iter != track_maps_by_tick.end();) {
-        if (iter->first >= end_tick) {
-            break;
-        }
-        iter = track_maps_by_tick.erase(iter);
+void SharedPart::remove_rendered_states(const Fraction &start_tick, const Fraction &end_tick) {
+    auto &states = score()->renderer()->layout_data_store(*score()).score_output().stave_sharing_states[this];
+    states.erase(states.lower_bound(start_tick), states.lower_bound(end_tick));
+}
+
+const AuthoredStaveSharingState *SharedPart::exact_authored_state(const Fraction &tick) const {
+    const auto it = std::ranges::lower_bound(authored_states_, tick, std::less<>{}, &AuthoredStaveSharingStates::value_type::first);
+    return it != authored_states_.end() && it->first == tick ? &it->second : nullptr;
+}
+
+void SharedPart::set_authored_state(const Fraction &tick, AuthoredStaveSharingState state) {
+    const auto it = std::ranges::lower_bound(authored_states_, tick, std::less<>{}, &AuthoredStaveSharingStates::value_type::first);
+    if (it != authored_states_.end() && it->first == tick) {
+        it->second = std::move(state);
+    } else {
+        authored_states_.emplace(it, tick, std::move(state));
     }
+}
+
+void SharedPart::remove_authored_state(const Fraction &tick) {
+    const auto it = std::ranges::lower_bound(authored_states_, tick, std::less<>{}, &AuthoredStaveSharingStates::value_type::first);
+    if (it != authored_states_.end() && it->first == tick) authored_states_.erase(it);
+}
+
+void SharedPart::insert_time_shared(const Fraction &tick, const Fraction &len) {
+    const auto first = std::ranges::lower_bound(authored_states_, tick, std::less<>{}, &AuthoredStaveSharingStates::value_type::first);
+    auto shift_from = first;
+    if (len.negative()) {
+        const auto last =
+            std::ranges::lower_bound(authored_states_, tick - len, std::less<>{}, &AuthoredStaveSharingStates::value_type::first);
+        shift_from = authored_states_.erase(first, last);
+    }
+    for (auto it = shift_from; it != authored_states_.end(); ++it) it->first += len;
 }
 
 bool SharedPart::is_same_instruments_at_tick(const Fraction &tick) {

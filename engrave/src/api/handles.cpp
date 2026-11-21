@@ -231,6 +231,7 @@ IdClass id_class(const EngravingObject &object) {
         case ElementType::GRACE_NOTES_GROUP:
         case ElementType::FIGURED_BASS_ITEM:
         case ElementType::PARENTHESIS:
+        case ElementType::STAVE_SHARING_CHANGE:
         case ElementType::ROOT_ITEM:
         case ElementType::DUMMY: return IdClass::LAYOUT;
         default: break;

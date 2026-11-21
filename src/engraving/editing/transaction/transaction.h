@@ -22,6 +22,7 @@ struct Segment;
 struct Measure;
 struct MeasureBase;
 struct NoteParenthesisInfo;
+struct AuthoredStaveSharingState;
 
 struct StyleValue {
     Sid id;
@@ -72,6 +73,7 @@ struct Transaction {
     void change_part_label(Fraction tick, Part *part, const String &value, bool long_name);
 
     void change_shared_origin(SharedPart *shared, Part *origin, bool connecting);
+    void change_stave_sharing_state(SharedPart &part, const Fraction &tick, const AuthoredStaveSharingState *state);
     void change_excerpt_membership(Excerpt *excerpt, bool adding);
 
     void insert_time(Score &score, Fraction tick, Fraction length, bool unmanaged = false);

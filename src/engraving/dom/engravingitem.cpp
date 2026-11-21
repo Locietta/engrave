@@ -235,6 +235,7 @@ constexpr LegacyZ legacy_z[] = {
     {ElementType::TAPPING_HALF_SLUR, 149},
     {ElementType::TAPPING_HALF_SLUR_SEGMENT, 150},
     {ElementType::TAPPING_TEXT, 151},
+    {ElementType::STAVE_SHARING_CHANGE, 152},
     {ElementType::ROOT_ITEM, 152},
     {ElementType::DUMMY, 153},
 };

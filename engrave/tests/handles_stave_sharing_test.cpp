@@ -1,4 +1,6 @@
 #include "engraving/dom/dummyparent.h"
+#include "engraving/dom/stavesharingchange.h"
+#include "engraving/dom/systemlockindicator.h"
 #include "handles_test_fixture.h"
 
 using namespace handles_test;
@@ -449,4 +451,175 @@ TEST(StaveSharingOutput, EditedUnisonRangeMatchesFullLayout) {
     ASSERT_TRUE(full) << full.error().message;
     EXPECT_EQ(range->pages, full->pages);
     EXPECT_EQ(source_native(master), saved);
+}
+
+TEST(StaveSharingOutput, UpstreamAuthoredVoiceCrossingSurvivesNativeRoundTrip) {
+    using namespace mu::engraving;
+    auto document = open_path(g_source_root / "tests/data/inputs/stave-sharing-12.mscz");
+    ASSERT_TRUE(document);
+    for (const auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
+        const auto saved = document->export_score({.format = format});
+        ASSERT_TRUE(saved) << saved.error().message;
+        auto reopened = g_engine->open(*saved, {.format = format});
+        ASSERT_TRUE(reopened) << reopened.error().message;
+        auto &master = master_of(**reopened);
+        ASSERT_EQ(master.shared_parts().size(), 1u);
+        auto *part = master.shared_parts().front();
+        const Fraction tick(8, 4);
+        const SharedTrackMap expected{{8, 1}, {12, 0}};
+        const auto *state = part->exact_authored_state(tick);
+        ASSERT_NE(state, nullptr);
+        EXPECT_FALSE(state->is_reset);
+        EXPECT_EQ(state->user_track_map, expected);
+        EXPECT_EQ(master.style().style_s(Sid::STAVE_SHARING_CHANGE_MIN_DISTANCE), 0.5_sp);
+
+        const auto cold = source_native(master);
+        const auto objects = engrave::document_objects(master);
+        const auto spanners = master.spanner_list();
+        auto *segment = master.tick2measure(tick)->find_segment(SegmentType::CHORD_REST, tick);
+        ASSERT_NE(segment, nullptr);
+        for (int cycle = 0; cycle < 2; ++cycle) {
+            auto rendered = (*reopened)->render({.format = engrave::RenderFormat::SVG});
+            ASSERT_TRUE(rendered) << rendered.error().message;
+            EXPECT_EQ(part->track_map_at_tick(tick), expected);
+            auto *first_voice = segment->effective_element(0);
+            auto *second_voice = segment->effective_element(1);
+            ASSERT_TRUE(first_voice && first_voice->is_chord());
+            ASSERT_TRUE(second_voice && second_voice->is_chord());
+            EXPECT_EQ(to_chord(first_voice)->up_note()->pitch(), 74);
+            EXPECT_EQ(to_chord(second_voice)->up_note()->pitch(), 77);
+
+            const auto items = segment->rendered_annotations();
+            const auto indicator = std::ranges::find_if(items, [](auto *item) { return item->is_stave_sharing_change(); });
+            ASSERT_NE(indicator, items.end());
+            EXPECT_TRUE((*indicator)->is_layout_copy());
+            EXPECT_FALSE(source_object(**indicator));
+            EXPECT_EQ(to_stave_sharing_change(*indicator)->icon_code(), char16_t(0xF499));
+            EXPECT_EQ(source_native(master), cold);
+            EXPECT_EQ(engrave::document_objects(master), objects);
+            EXPECT_EQ(master.spanner_list(), spanners);
+            master.layout_data_store()->clear();
+        }
+    }
+}
+
+TEST(StaveSharingOutput, ResetFillsVoiceOneWithoutReplacingTheSourceRest) {
+    using namespace mu::engraving;
+    auto xml = read_text(g_source_root / "tests/data/inputs/stave-sharing.mscx");
+    xml.insert(xml.find("</SharedPart>"),
+               R"(<StaveSharingState tick="0/1"><trackMap origin="8" shared="4"/><trackMap origin="12" shared="4"/></StaveSharingState>)"
+               R"(<StaveSharingState tick="1/2"><isReset>1</isReset></StaveSharingState>)");
+    xml.insert(xml.find("</Style>"), "<staveSharingChangeMinDistance>1.25</staveSharingChangeMinDistance>");
+    auto document = open_text(xml);
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *part = master.shared_parts().front();
+    const Fraction start_tick(0, 1);
+    const Fraction reset_tick(1, 2);
+    auto *measure = master.first_measure();
+    auto *start = measure->find_segment(SegmentType::CHORD_REST, start_tick);
+    auto *reset = measure->find_segment(SegmentType::CHORD_REST, reset_tick);
+    ASSERT_NE(start, nullptr);
+    ASSERT_NE(reset, nullptr);
+    auto *source_rest = to_rest(start->element(0));
+    ASSERT_TRUE(source_rest && source_rest->is_full_measure_rest());
+    const auto cold = source_native(master);
+    EXPECT_NE(cold.find("<isReset>1</isReset>"), std::string::npos);
+    EXPECT_NE(cold.find("<staveSharingChangeMinDistance>1.25</staveSharingChangeMinDistance>"), std::string::npos);
+    const auto rendered = document->render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(rendered) << rendered.error().message;
+    EXPECT_EQ(part->track_map_at_tick(start_tick), (SharedTrackMap{{8, 4}, {12, 4}}));
+    EXPECT_EQ(part->track_map_at_tick(reset_tick), (SharedTrackMap{{8, 0}, {12, 0}}));
+    auto *rest = start->effective_element(0);
+    ASSERT_TRUE(rest && rest->is_rest());
+    EXPECT_EQ(to_rest(rest)->actual_ticks(), reset_tick);
+    EXPECT_EQ(start->element(0), source_rest);
+    auto *chord = reset->effective_element(0);
+    ASSERT_TRUE(chord && chord->is_chord());
+    EXPECT_EQ(to_chord(chord)->up_note()->pitch(), 74);
+    const auto items = reset->rendered_annotations();
+    const auto indicator = std::ranges::find_if(items, [](auto *item) { return item->is_stave_sharing_change(); });
+    ASSERT_NE(indicator, items.end());
+    EXPECT_EQ(to_stave_sharing_change(*indicator)->icon_code(), char16_t(0xEF19));
+    EXPECT_EQ(source_native(master), cold);
+    EXPECT_EQ(cold.find("<StaveSharingChange>"), std::string::npos);
+
+    auto reopened = open_text(cold);
+    ASSERT_TRUE(reopened);
+    auto &saved = master_of(*reopened);
+    const auto *state = saved.shared_parts().front()->exact_authored_state(reset_tick);
+    ASSERT_NE(state, nullptr);
+    EXPECT_TRUE(state->is_reset);
+    EXPECT_EQ(saved.style().style_s(Sid::STAVE_SHARING_CHANGE_MIN_DISTANCE), 1.25_sp);
+
+    master.invalidate_layout(measure->tick(), measure->end_tick());
+    auto range = document->render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(range) << range.error().message;
+    EXPECT_EQ(range->pages, rendered->pages);
+    EXPECT_EQ(source_native(master), cold);
+}
+
+TEST(StaveSharingOutput, InvalidMapInLaterSystemFallsBackThere) {
+    using namespace mu::engraving;
+    auto xml = read_text(g_source_root / "tests/data/inputs/stave-sharing-three-systems.mscx");
+    xml.insert(xml.find("<Division>"), "<Style><enableStaveSharing>1</enableStaveSharing></Style>");
+    xml.insert(xml.find("</SharedPart>"),
+               R"(<StaveSharingState tick="0/1"><trackMap origin="12" shared="0"/><trackMap origin="16" shared="0"/>)"
+               R"(<trackMap origin="20" shared="0"/></StaveSharingState>)");
+    auto document = open_text(xml);
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    const auto cold = source_native(master);
+    auto rendered = document->render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(rendered) << rendered.error().message;
+    const auto *part = master.shared_parts().front();
+    const auto *first_measure = master.first_measure();
+    const auto *second_measure = first_measure->next_measure();
+    ASSERT_NE(first_measure->system(), second_measure->system());
+    EXPECT_EQ(part->track_map_at_tick(first_measure->tick()), (SharedTrackMap{{12, 0}, {16, 0}, {20, 0}}));
+    EXPECT_EQ(part->track_map_at_tick(second_measure->tick()), (SharedTrackMap{{12, 0}, {16, 1}, {20, 4}}));
+
+    const auto annotations = first_measure->first(SegmentType::CHORD_REST)->rendered_annotations();
+    const auto indicator = std::ranges::find_if(annotations, [](auto *item) { return item->is_stave_sharing_change(); });
+    ASSERT_NE(indicator, annotations.end());
+    EXPECT_EQ(to_stave_sharing_change(*indicator)->icon_code(), char16_t(0xF3CE));
+    EXPECT_EQ(source_native(master), cold);
+}
+
+TEST(StaveSharingOutput, DetachedIndicatorsAcceptDummyParents) {
+    using namespace mu::engraving;
+    auto document = open_path(g_source_root / "tests/data/inputs/stave-sharing.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *segment = master.first_measure()->first(SegmentType::CHORD_REST);
+    std::unique_ptr<StaveSharingChange> change(Factory::create_stave_sharing_change(master.dummy()));
+    change->set_track(0);
+    EXPECT_EQ(change->shared_part(), nullptr);
+    EXPECT_EQ(change->icon_code(), char16_t(0xF499));
+    change->set_ownership_parent(segment);
+    EXPECT_EQ(change->shared_part(), master.shared_parts().front());
+    change->set_ownership_parent(master.dummy());
+    EXPECT_EQ(change->tick(), Fraction(0, 1));
+    EXPECT_EQ(change->shared_part(), nullptr);
+
+    SystemLockIndicator lock(master.dummy(), nullptr);
+    EXPECT_EQ(lock.system(), nullptr);
+    EXPECT_EQ(lock.tick(), Fraction(0, 1));
+}
+
+TEST(StaveSharingOutput, InsertAndRemoveTimeMovesAuthoredStates) {
+    using namespace mu::engraving;
+    auto document = open_path(g_source_root / "tests/data/inputs/stave-sharing-12.mscz");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *part = master.shared_parts().front();
+    const Fraction old_tick(2, 1);
+    const Fraction shifted(9, 4);
+    master.insert_time(Fraction(1, 1), Fraction(1, 4), {});
+    EXPECT_EQ(part->exact_authored_state(old_tick), nullptr);
+    const auto *state = part->exact_authored_state(shifted);
+    ASSERT_NE(state, nullptr);
+    EXPECT_EQ(state->user_track_map, (SharedTrackMap{{8, 1}, {12, 0}}));
+    master.insert_time(old_tick, Fraction(-1, 2), {});
+    EXPECT_TRUE(part->authored_states().empty());
 }

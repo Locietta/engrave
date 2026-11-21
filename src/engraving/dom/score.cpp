@@ -82,6 +82,7 @@
 #include "scoreorder.h"
 #include "segment.h"
 #include "select.h"
+#include "sharedpart.h"
 #include "sig.h"
 #include "slur.h"
 #include "staff.h"
@@ -2619,6 +2620,7 @@ void Score::insert_time(const Fraction &tick, const Fraction &len, const std::ve
     }
     for (Part *part : parts()) {
         part->insert_time(tick, len);
+        if (part->is_shared_part()) to_shared_part(part)->insert_time_shared(tick, len);
     }
 
     on_time_inserted(tick, len, old_segments);

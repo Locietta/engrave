@@ -21,12 +21,30 @@
  */
 #pragma once
 
+#include <optional>
+
 #include "part.h"
 
 namespace mu::engraving {
 // Map from origin track to shared track
 using SharedTrackMap = std::map<track_idx_t, track_idx_t>;
 std::string dump(const SharedTrackMap &map);
+
+struct AuthoredStaveSharingState {
+    SharedTrackMap user_track_map;
+    bool is_reset = false;
+    bool operator==(const AuthoredStaveSharingState &) const = default;
+};
+
+using AuthoredStaveSharingStates = std::vector<std::pair<Fraction, AuthoredStaveSharingState>>;
+
+struct RenderedStaveSharingState {
+    SharedTrackMap shared_track_map;
+    bool is_user_map_valid = false;
+    bool operator==(const RenderedStaveSharingState &) const = default;
+};
+
+using RenderedStaveSharingStates = std::map<Fraction, RenderedStaveSharingState>;
 
 struct SharedPart final : Part {
 private:
@@ -54,8 +72,17 @@ public:
     bool show() const override;
 
     const SharedTrackMap &track_map_at_tick(const Fraction &tick) const;
-    void set_track_map_at_tick(const SharedTrackMap &map, const Fraction &tick);
-    void remove_maps_between_ticks(const Fraction &start_tick, const Fraction &end_tick);
+    const RenderedStaveSharingState *rendered_state_at_tick(const Fraction &tick) const;
+    const RenderedStaveSharingStates &rendered_states() const;
+    void set_rendered_state(const Fraction &tick, RenderedStaveSharingState state);
+    void remove_rendered_states(const Fraction &start_tick, const Fraction &end_tick);
+
+    const AuthoredStaveSharingStates &authored_states() const { return authored_states_; }
+
+    const AuthoredStaveSharingState *exact_authored_state(const Fraction &tick) const;
+    void set_authored_state(const Fraction &tick, AuthoredStaveSharingState state);
+    void remove_authored_state(const Fraction &tick);
+    void insert_time_shared(const Fraction &tick, const Fraction &len);
 
     bool is_same_instruments_at_tick(const Fraction &tick);
 
@@ -67,6 +94,7 @@ private:
     void compute_is_same_instruments();
     bool is_same_instruments_ = true;
 
+    AuthoredStaveSharingStates authored_states_;
     bool enabled_ = true;
     std::vector<Part *> origin_parts_;
 };

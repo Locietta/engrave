@@ -1421,6 +1421,7 @@
     {"staffUpperBorder", "7", "", true},
     {"startBarlineMultiple", "1", "", true},
     {"startBarlineSingle", "0", "", true},
+    {"staveSharingChangeMinDistance", "0.5", "", false},
     {"staveSharingInstrChangePlayerNum", "1", "", false},
     {"staveSharingLabelAlign", "left,baseline", "", false},
     {"staveSharingLabelColor", "", "a=255;b=0;g=0;r=0;", false},

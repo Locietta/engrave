@@ -27,7 +27,8 @@
 
 namespace mu::engraving::rendering::score {
 struct StaveSharingLayout {
-    static void update_stave_sharing_for_full_system(MeasureBase *first_mb, MeasureBase *last_mb, LayoutContext &ctx);
+    static bool update_stave_sharing_for_full_system(MeasureBase *first_mb, MeasureBase *last_mb, LayoutContext &ctx);
+    static void relayout_measures_on_track_map_changed(System *system, LayoutContext &ctx);
     static bool update_stave_sharing_for_last_added_measure(System *system, LayoutContext &ctx);
     static void update_notation_without_recomputing_track_map(Measure *measure, LayoutContext &ctx);
 
@@ -46,21 +47,25 @@ private:
         std::vector<Spanner *> overlapping_spanners;
 
         SharedPart *cur_shared_part = nullptr;
-        SharedTrackMap cur_track_map;
         std::unordered_set<Note *> shared_unison_notes;
         std::vector<StaveSharingLabel *> old_stave_sharing_labels;
         std::vector<StaveSharingLabel *> updated_stave_sharing_labels;
+        std::vector<StaveSharingChange *> obsolete_changes;
 
         Score *score = nullptr;
         LayoutContext &layout_ctx;
         const MStyle &style;
 
         StaveSharingContext(MeasureBase *first, MeasureBase *last, LayoutContext &ctx);
+        std::span<Segment *const> segments_in_range(std::span<Segment *const> segments) const;
+        const SharedTrackMap &map_at_tick(const Fraction &tick) const;
+        void collect_overlapping_spanners();
     };
 
     static void update_stave_sharing(StaveSharingContext &ctx);
 
     static void update_track_maps(StaveSharingContext &ctx);
+    static bool is_valid(const SharedTrackMap &map, StaveSharingContext &ctx);
     static SharedTrackMap compute_track_map(StaveSharingContext &ctx);
 
     static bool is_empty(track_idx_t track, StaveSharingContext &ctx);
@@ -81,7 +86,7 @@ private:
     static bool check_spanners_for_same_voice(track_idx_t prev_track, track_idx_t next_track, StaveSharingContext &ctx);
     static bool check_articulations_for_same_voice(Chord *chord1, Chord *chord2);
 
-    static bool can_go_to_same_stave(track_idx_t prev_track, track_idx_t next_track, StaveSharingContext &ctx);
+    static bool can_go_to_same_stave(track_idx_t prev_track, track_idx_t next_track, bool allow_voice_crossing, StaveSharingContext &ctx);
 
     static void update_notation(StaveSharingContext &ctx);
     static void compute_segments_to_update(StaveSharingContext &ctx);
@@ -100,6 +105,7 @@ private:
     static void make_shared_annotations(StaveSharingContext &ctx);
     static void make_shared_spanners(StaveSharingContext &ctx);
 
+    static void make_stave_sharing_changes(StaveSharingContext &ctx);
     static void make_stave_sharing_labels(StaveSharingContext &ctx);
     static bool unison_note_needs_label(Note *unison_note, bool &is_for_new_system, StaveSharingContext &ctx);
     static String format_unison_label(Note *unison_note, const SharedTrackMap &track_map, bool is_for_new_system,
@@ -112,6 +118,7 @@ private:
                                                                  const SharedTrackMap &track_map);
 
     static void cleanup(StaveSharingContext &ctx);
+    static void fill_rests_if_need(StaveSharingContext &ctx);
     static void add_measure_rests_if_need(StaveSharingContext &ctx);
 };
 } // namespace mu::engraving::rendering::score

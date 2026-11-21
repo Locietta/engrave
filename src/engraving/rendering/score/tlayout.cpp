@@ -104,6 +104,7 @@
 #include "dom/stafftext.h"
 #include "dom/stafftype.h"
 #include "dom/stafftypechange.h"
+#include "dom/stavesharingchange.h"
 #include "dom/stem.h"
 #include "dom/stemslash.h"
 #include "dom/sticking.h"
@@ -111,6 +112,7 @@
 #include "dom/symbol.h"
 #include "dom/system.h"
 #include "dom/systemdivider.h"
+#include "dom/systemindicatoricon.h"
 #include "dom/systemlockindicator.h"
 #include "dom/systemtext.h"
 #include "dom/tapping.h"
@@ -263,7 +265,10 @@ void TLayout::layout_item(EngravingItem *item, LayoutContext &ctx) {
             break;
         // TODO: case ElementType::STAFF_VISIBILTY_INDICATOR:
         case ElementType::SYSTEM_LOCK_INDICATOR:
-            layout_indicator_icon(item_cast<const IndicatorIcon *>(item), static_cast<IndicatorIcon::LayoutData *>(ldata));
+            layout_indicator_icon(to_system_indicator_icon(item), static_cast<IndicatorIcon::LayoutData *>(ldata));
+            break;
+        case ElementType::STAVE_SHARING_CHANGE:
+            layout_stave_sharing_change(to_stave_sharing_change(item), static_cast<IndicatorIcon::LayoutData *>(ldata));
             break;
         case ElementType::LET_RING: layout_let_ring(item_cast<LetRing *>(item), ctx); break;
         case ElementType::LET_RING_SEGMENT: layout_let_ring_segment(item_cast<LetRingSegment *>(item), ctx); break;
@@ -3382,7 +3387,16 @@ void TLayout::layout_layout_break(const LayoutBreak *item, LayoutBreak::LayoutDa
     ldata->set_shape(Shape(bbox, item));
 }
 
-void TLayout::layout_indicator_icon(const IndicatorIcon *item, IndicatorIcon::LayoutData *ldata) {
+void TLayout::layout_stave_sharing_change(const StaveSharingChange *item, IndicatorIcon::LayoutData *ldata) {
+    if (!item->configuration()->can_layout_icons()) return;
+
+    const FontMetrics metrics(item->font());
+    ldata->set_shape(Shape(metrics.bounding_rect(item->icon_code()), item));
+    ldata->set_pos(PointF(0.0, -2.5 * item->spatium()));
+    Autoplace::autoplace_segment_element(item, ldata, false);
+}
+
+void TLayout::layout_indicator_icon(const SystemIndicatorIcon *item, IndicatorIcon::LayoutData *ldata) {
     if (!item->configuration()->can_layout_icons()) {
         return;
     }
@@ -3444,7 +3458,7 @@ void TLayout::layout_indicator_icon(const IndicatorIcon *item, IndicatorIcon::La
     ldata->set_pos(PointF(x, -2.5 * spatium));
 
     // Ensure it goes behind notation and LayoutBreak
-    const_cast<IndicatorIcon *>(item)->set_z(-100);
+    const_cast<SystemIndicatorIcon *>(item)->set_z(-100);
 }
 
 static void layout_ledger_line(const LedgerLine *item, const LayoutContext &ctx, LedgerLine::LayoutData *ldata) {

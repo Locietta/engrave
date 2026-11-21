@@ -1023,6 +1023,11 @@ void convert_degradations(pugi::xml_node node, const Score &score, std::vector<E
                                 ExportWarningObject{"shared_part", child.child_value("eid")}});
             child.set_name("Part");
             child.remove_child("sharedPartEnabled");
+            for (auto state = child.child("StaveSharingState"); state; state = child.child("StaveSharingState")) {
+                child.remove_child(state);
+            }
+        } else if (name == "StaveSharingChange") {
+            remove = true;
         } else if (name == "sharedPart")
             remove = true;
         else if (name == "StaveSharingLabel") {

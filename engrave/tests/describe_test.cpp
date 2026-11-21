@@ -374,6 +374,7 @@ TEST(Describe, DefaultStackingOrderIsPinned) {
     EXPECT_EQ(default_z(ElementType::BAGPIPE_EMBELLISHMENT), 13300);
     EXPECT_EQ(default_z(ElementType::CHORD), 12700);
     EXPECT_EQ(default_z(ElementType::DUMMY), 15300);
+    EXPECT_EQ(default_z(ElementType::STAVE_SHARING_CHANGE), 15200);
 }
 
 TEST(Corpus, EveryPropertyOfEveryCorpusTypeReads) {

@@ -535,6 +535,10 @@ static constexpr auto element_types = std::to_array<ElementItem>({
      {"engraving", "tapping half slur segment(s)", nullptr, 1},
      {"engraving", "Tapping half slur segment(s)", nullptr, 1}},
     {ElementType::TAPPING_TEXT, "TappingText", {"engraving", "tapping text(s)", nullptr, 1}, {"engraving", "Tapping text(s)", nullptr, 1}},
+    {ElementType::STAVE_SHARING_CHANGE,
+     "StaveSharingChange",
+     {"engraving", "stave sharing change(s)", nullptr, 1},
+     {"engraving", "Stave sharing change(s)", nullptr, 1}},
     {ElementType::ROOT_ITEM, "RootItem", {nullptr, "root item"}, {nullptr, "Root item"}},
     {ElementType::DUMMY, "Dummy", {nullptr, "dummy"}, {nullptr, "Dummy"}},
 });

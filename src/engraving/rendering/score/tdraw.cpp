@@ -99,6 +99,7 @@
 #include "dom/stafftype.h"
 #include "dom/stafftypechange.h"
 #include "dom/staffvisibilityindicator.h"
+#include "dom/stavesharingchange.h"
 #include "dom/stavesharinglabel.h"
 #include "dom/stem.h"
 #include "dom/stemslash.h"
@@ -244,6 +245,7 @@ void TDraw::draw_item(const EngravingItem *item, Painter *painter, const PaintOp
         case ElementType::STAFF_LINES: draw(item_cast<const StaffLines *>(item), painter, opt); break;
         case ElementType::STAFF_STATE: draw(item_cast<const StaffState *>(item), painter, opt); break;
         case ElementType::STAFF_TEXT: draw(item_cast<const StaffText *>(item), painter, opt); break;
+        case ElementType::STAVE_SHARING_CHANGE: draw(to_stave_sharing_change(item), painter, opt); break;
         case ElementType::STAVE_SHARING_LABEL: draw(item_cast<const StaveSharingLabel *>(item), painter, opt); break;
         case ElementType::STAFFTYPE_CHANGE: draw(item_cast<const StaffTypeChange *>(item), painter, opt); break;
         case ElementType::STAFF_VISIBILITY_INDICATOR: draw(item_cast<const StaffVisibilityIndicator *>(item), painter, opt); break;

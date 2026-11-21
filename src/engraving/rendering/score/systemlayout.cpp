@@ -158,10 +158,17 @@ System *SystemLayout::collect_system(LayoutContext &ctx) {
 
         bool shared_track_map_changed = false;
         if (!system_lock) {
-            for (Part *p : ctx.dom().parts()) {
-                if (p->is_shared_part()) {
-                    SharedPart *sp = to_shared_part(p);
-                    prev_measure_state.shared_track_maps[sp] = sp->track_map_at_tick(ctx.mut_state().cur_measure()->tick());
+            prev_measure_state.stave_sharing_states.clear();
+            if (auto *mb = ctx.state().cur_measure(); mb->is_measure()) {
+                const auto start = mb->tick();
+                const auto end = to_measure(mb)->end_tick();
+                for (Part *p : ctx.dom().parts()) {
+                    if (!p->is_shared_part()) continue;
+                    auto *part = to_shared_part(p);
+                    const auto &states = part->rendered_states();
+                    const auto first = states.lower_bound(start);
+                    const auto last = states.lower_bound(end);
+                    prev_measure_state.stave_sharing_states.emplace_back(part, RenderedStaveSharingStates(first, last));
                 }
             }
 
@@ -241,7 +248,9 @@ System *SystemLayout::collect_system(LayoutContext &ctx) {
 
             if (shared_track_map_changed) {
                 // The last added measure caused sharedTrackMap to change. Now we are removing that measure so we must restore it.
-                StaveSharingLayout::update_stave_sharing_for_full_system(system->first(), system->last(), ctx);
+                if (StaveSharingLayout::update_stave_sharing_for_full_system(system->first(), system->last(), ctx)) {
+                    StaveSharingLayout::relayout_measures_on_track_map_changed(system, ctx);
+                }
             }
 
             break;
@@ -1352,6 +1361,10 @@ void SystemLayout::layout_system_elements(System *system, LayoutContext &ctx) {
         layout_harmonies(elements_to_layout.harmonies, system, ctx);
     }
 
+    for (EngravingItem *change : elements_to_layout.stave_sharing_changes) {
+        TLayout::layout_item(change, ctx);
+    }
+
     for (StaffTextBase *st : elements_to_layout.staff_text) {
         TLayout::layout_item(st, ctx);
     }
@@ -1533,6 +1546,7 @@ void SystemLayout::collect_elements_to_layout(Measure *measure, ElementsToLayout
                         elements.harmonies.push_back(h);
                     }
                     break;
+                case ElementType::STAVE_SHARING_CHANGE: elements.stave_sharing_changes.push_back(item); break;
                 case ElementType::STAFF_TEXT:
                 case ElementType::STAVE_SHARING_LABEL: elements.staff_text.push_back(to_staff_text_base(item)); break;
                 case ElementType::INSTRUMENT_CHANGE: elements.instr_changes.push_back(to_instrument_change(item)); break;
@@ -3069,17 +3083,19 @@ void SystemLayout::MeasureState::clear() {
     measure_pos = 0.0;
     element_positions.clear();
     element_widths.clear();
-    shared_track_maps.clear();
+    stave_sharing_states.clear();
 }
 
 void SystemLayout::MeasureState::restore_measure(LayoutContext &ctx) {
     bool map_changed = false;
     Fraction tick = measure->tick();
-    for (auto &[shared_part, shared_track_map] : shared_track_maps) {
-        if (shared_part->track_map_at_tick(tick) != shared_track_map) {
-            shared_part->set_track_map_at_tick(shared_track_map, tick);
-            map_changed = true;
-        }
+    const Fraction end_tick = measure->end_tick();
+    for (const auto &[part, saved] : stave_sharing_states) {
+        const auto &current = part->rendered_states();
+        if (std::equal(current.lower_bound(tick), current.lower_bound(end_tick), saved.begin(), saved.end())) continue;
+        part->remove_rendered_states(tick, end_tick);
+        for (const auto &[state_tick, state] : saved) part->set_rendered_state(state_tick, state);
+        map_changed = true;
     }
     if (map_changed) {
         StaveSharingLayout::update_notation_without_recomputing_track_map(measure, ctx);

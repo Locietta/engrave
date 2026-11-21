@@ -186,6 +186,7 @@ struct Factory {
     static std::shared_ptr<StaffTypeChange> make_staff_type_change(DummyParentOr<MeasureBase> parent);
 
     static StaffText *create_staff_text(DummyParentOr<Segment> parent, TextStyleType text_style_type = TextStyleType::STAFF);
+    static StaveSharingChange *create_stave_sharing_change(DummyParentOr<Segment> parent);
     static StaveSharingLabel *create_stave_sharing_label(DummyParentOr<Segment> parent,
                                                          TextStyleType text_style_type = TextStyleType::STAVE_SHARING);
 

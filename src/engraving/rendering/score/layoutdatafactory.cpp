@@ -173,6 +173,7 @@ decltype(auto) dispatch_layout_data(ElementType type, Action &&action) {
         case ElementType::SPACER: return action.template operator()<Spacer::LayoutData>();
         case ElementType::STAFF_STATE: return action.template operator()<StaffState::LayoutData>();
         case ElementType::STAFF_VISIBILITY_INDICATOR:
+        case ElementType::STAVE_SHARING_CHANGE:
         case ElementType::SYSTEM_LOCK_INDICATOR: return action.template operator()<IndicatorIcon::LayoutData>();
         case ElementType::STEM: return action.template operator()<Stem::LayoutData>();
         case ElementType::STEM_SLASH: return action.template operator()<StemSlash::LayoutData>();

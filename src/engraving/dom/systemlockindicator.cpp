@@ -31,7 +31,7 @@
 
 namespace mu::engraving {
 SystemLockIndicator::SystemLockIndicator(DummyParentOr<System> parent, const RangeLock *lock)
-    : IndicatorIcon(ElementType::SYSTEM_LOCK_INDICATOR, parent, ElementFlag::SYSTEM | ElementFlag::GENERATED), system_lock_(lock) {}
+    : SystemIndicatorIcon(ElementType::SYSTEM_LOCK_INDICATOR, parent, ElementFlag::SYSTEM | ElementFlag::GENERATED), system_lock_(lock) {}
 
 void SystemLockIndicator::set_selected(bool v) {
     EngravingItem::set_selected(v);

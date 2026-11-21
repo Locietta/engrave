@@ -673,6 +673,55 @@ TEST(Export470, EnabledFluteGroupingIsWarnedAndReopensDisabled) {
     }
 }
 
+TEST(Export470, StaveSharingChangeStyleIsInactiveWithoutSharedParts) {
+    auto plain = read_text(write470_fixture());
+    auto baseline = g_engine->open(as_bytes(plain));
+    ASSERT_TRUE(baseline);
+    const auto style = plain.find("</Style>");
+    ASSERT_NE(style, std::string::npos);
+    plain.insert(style, "<staveSharingChangeMinDistance>1.25</staveSharingChangeMinDistance>");
+    auto styled = g_engine->open(as_bytes(plain));
+    ASSERT_TRUE(styled);
+    const engrave::ExportOptions options{.format = engrave::Format::MSCX, .native_version = "4.70"};
+    auto before = (*baseline)->export_score_with_warnings(options);
+    auto after = (*styled)->export_score_with_warnings(options);
+    ASSERT_TRUE(before);
+    ASSERT_TRUE(after);
+    EXPECT_TRUE(after->warnings.empty());
+    EXPECT_EQ(after->bytes, before->bytes);
+}
+
+TEST(Export470, DropsAuthoredStaveSharingMapsAndGeneratedIndicators) {
+    auto source = read_text(write470_fixture().parent_path() / "shared_parts.source.mscx");
+    const auto shared = source.find("</SharedPart>");
+    ASSERT_NE(shared, std::string::npos);
+    source.insert(shared, R"(<StaveSharingState tick="0/1"><trackMap origin="4" shared="0"/></StaveSharingState>)"
+                          R"(<StaveSharingState tick="1/2"><isReset>1</isReset></StaveSharingState>)");
+    const auto voice = source.find("<voice>");
+    ASSERT_NE(voice, std::string::npos);
+    source.insert(voice + 7, "<StaveSharingChange/>");
+    const auto style = source.find("</Style>");
+    ASSERT_NE(style, std::string::npos);
+    source.insert(style, "<staveSharingChangeMinDistance>1.25</staveSharingChangeMinDistance>");
+    auto document = g_engine->open(as_bytes(source));
+    ASSERT_TRUE(document) << document.error().message;
+    for (const auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
+        auto result = (*document)->export_score_with_warnings({.format = format, .native_version = "4.70"});
+        ASSERT_TRUE(result) << result.error().message;
+        ASSERT_EQ(result->warnings.size(), 2u);
+        for (const auto &warning : result->warnings) EXPECT_EQ(warning.code, "B470_SHARED_PART_DROPPED");
+        if (format == engrave::Format::MSCX) {
+            const auto text = as_text(result->bytes);
+            for (const auto tag : {"StaveSharingState", "trackMap", "isReset", "StaveSharingChange", "staveSharingChangeMinDistance"}) {
+                EXPECT_EQ(text.find(tag), std::string_view::npos) << tag;
+            }
+        }
+        auto reopened = g_engine->open(result->bytes, {.format = format});
+        ASSERT_TRUE(reopened) << reopened.error().message;
+        EXPECT_EQ(master_of(**reopened).parts().size(), 4u);
+    }
+}
+
 TEST(Export470, PartNumericIdsSurviveButPartEidsHaveNoLegacyField) {
     auto document = open_path(write470_fixture().parent_path() / "shared_parts.source.mscx");
     ASSERT_TRUE(document);

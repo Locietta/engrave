@@ -2431,6 +2431,16 @@ void TWrite::write(const SharedPart *item, XmlWriter &xml, WriteContext &ctx) {
     write_item_eid(item, xml);
 
     xml.tag(property_name(Pid::SHARED_PART_ENABLED), item->get_property(Pid::SHARED_PART_ENABLED).to_bool());
+    const Fraction end_tick = item->score()->end_tick();
+    for (const auto &[tick, state] : item->authored_states()) {
+        if (tick >= end_tick) break;
+        xml.start_element("StaveSharingState", {{"tick", tick.to_string()}});
+        if (state.is_reset) xml.tag("isReset", true);
+        for (const auto &[origin, shared] : state.user_track_map) {
+            xml.tag("trackMap", {{"origin", origin}, {"shared", shared}});
+        }
+        xml.end_element();
+    }
 
     write_properties(item, xml, ctx);
 

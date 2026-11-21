@@ -97,6 +97,7 @@
 #include "stafftext.h"
 #include "stafftypechange.h"
 #include "staffvisibilityindicator.h"
+#include "stavesharingchange.h"
 #include "stavesharinglabel.h"
 #include "stem.h"
 #include "stemslash.h"
@@ -187,6 +188,7 @@ EngravingItem *Factory::do_create_item(ElementType type, DummyParentOr<Engraving
         case ElementType::MMREST_RANGE: return new MMRestRange(parent_of_type_or_dummy<Measure>(parent_item, dummy));
         case ElementType::INSTRUMENT_NAME: return new InstrumentName(parent_of_type_or_dummy<System>(parent_item, dummy));
         case ElementType::STAFF_TEXT: return new StaffText(parent_of_type_or_dummy<Segment>(parent_item, dummy));
+        case ElementType::STAVE_SHARING_CHANGE: return create_stave_sharing_change(parent_of_type_or_dummy<Segment>(parent_item, dummy));
         case ElementType::STAVE_SHARING_LABEL: return new StaveSharingLabel(parent_of_type_or_dummy<Segment>(parent_item, dummy));
         case ElementType::PLAY_COUNT_TEXT: return new PlayCountText(parent_of_type_or_dummy<Segment>(parent_item, dummy));
         case ElementType::PLAYTECH_ANNOTATION: return new PlayTechAnnotation(parent_of_type_or_dummy<Segment>(parent_item, dummy));
@@ -528,6 +530,8 @@ StaffText *Factory::create_staff_text(DummyParentOr<Segment> parent, TextStyleTy
 
     return staff_text;
 }
+
+StaveSharingChange *Factory::create_stave_sharing_change(DummyParentOr<Segment> parent) { return new StaveSharingChange(parent); }
 
 StaveSharingLabel *Factory::create_stave_sharing_label(DummyParentOr<Segment> parent, TextStyleType text_style_type) {
     StaveSharingLabel *stave_sharing_label = new StaveSharingLabel(parent, text_style_type);

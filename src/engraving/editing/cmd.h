@@ -39,6 +39,7 @@ enum class CommandType : signed char {
     CHANGE_PART,
     CONNECT_SHARED_PART,
     DISCONNECT_SHARED_PART,
+    CHANGE_STAVE_SHARING_STATE,
 
     INSERT_STAFF,
     REMOVE_STAFF,

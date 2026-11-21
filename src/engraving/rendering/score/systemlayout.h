@@ -97,7 +97,7 @@ private:
         double measure_pos = 0.0;
         std::map<EngravingItem *, PointF> element_positions;
         std::map<EngravingItem *, double> element_widths;
-        std::map<SharedPart *, SharedTrackMap> shared_track_maps;
+        std::vector<std::pair<SharedPart *, RenderedStaveSharingStates>> stave_sharing_states;
         bool cur_header = false;
         bool cur_trailer = false;
 
@@ -128,6 +128,7 @@ private:
         std::vector<HarpPedalDiagram *> harp_diagrams;
         std::vector<FretDiagram *> fret_diagrams;
         std::vector<StaffTextBase *> staff_text;
+        std::vector<EngravingItem *> stave_sharing_changes;
         std::vector<InstrumentChange *> instr_changes;
         std::vector<SystemText *> system_text;
         std::vector<EngravingItem *> play_tech_capo_string_tun_triplet_feel;

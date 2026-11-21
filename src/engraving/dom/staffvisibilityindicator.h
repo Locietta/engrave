@@ -22,15 +22,17 @@
 
 #pragma once
 
-#include "indicatoricon.h"
+#include "systemindicatoricon.h"
 
 namespace mu::engraving {
-struct StaffVisibilityIndicator : IndicatorIcon {
+struct StaffVisibilityIndicator : SystemIndicatorIcon {
 private:
     DECLARE_CLASSOF(ElementType::STAFF_VISIBILITY_INDICATOR)
 
 public:
     StaffVisibilityIndicator(DummyParentOr<System> parent);
+
+    StaffVisibilityIndicator *clone() const override { return new StaffVisibilityIndicator(*this); }
 
     char16_t icon_code() const override { return 0xF4AE; }
 };

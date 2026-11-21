@@ -239,7 +239,8 @@ struct TLayout {
     static void layout_harmony(Harmony *item, Harmony::LayoutData *ldata, const LayoutContext &ctx);
     static void layout_hook(const Hook *item, Hook::LayoutData *ldata);
 
-    static void layout_indicator_icon(const IndicatorIcon *item, IndicatorIcon::LayoutData *ldata);
+    static void layout_indicator_icon(const SystemIndicatorIcon *item, IndicatorIcon::LayoutData *ldata);
+    static void layout_stave_sharing_change(const StaveSharingChange *item, IndicatorIcon::LayoutData *ldata);
 
     static void layout_image(const Image *item, Image::LayoutData *ldata);
     static void layout_instrument_change(const InstrumentChange *item, InstrumentChange::LayoutData *ldata);

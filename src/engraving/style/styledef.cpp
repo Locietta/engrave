@@ -86,6 +86,7 @@ const std::array<StyleDef::StyleValue, size_t(Sid::STYLES)> StyleDef::style_valu
     {Sid::SHARED_ON_STAFF_NUMERALS_HYPHEN_ENABLE, "sharedOnStaffNumeralsHyphenEnable", true},
     {Sid::SHARED_ON_STAFF_NUMERALS_HYPHEN_THRESHOLD, "sharedOnStaffNumeralsHyphenThreshold", 1},
     {Sid::STAVE_SHARING_INSTR_CHANGE_PLAYER_NUM, "staveSharingInstrChangePlayerNum", true},
+    {Sid::STAVE_SHARING_CHANGE_MIN_DISTANCE, "staveSharingChangeMinDistance", 0.5_sp},
 
     {Sid::WINDS_NAME_BY_GROUP, "windsNameByGroup", true},
     {Sid::VOCALS_NAME_BY_GROUP, "vocalsNameByGroup", true},

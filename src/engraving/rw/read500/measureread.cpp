@@ -487,6 +487,9 @@ void MeasureRead::read_voice(Measure *measure, XmlReader &e, ReadContext &ctx, i
                 el->set_track(0); // original system object always goes on top
             }
             segment->add(el);
+        } else if (tag == "StaveSharingChange") {
+            // Indicators are rebuilt from the SharedPart's authored state.
+            e.skip_current_element();
         } else if (tag == "StaveSharingLabel" || tag == "Sticking" || tag == "SystemText" || tag == "PlayTechAnnotation" || tag == "Capo" ||
                    tag == "StringTunings" || tag == "RehearsalMark" || tag == "InstrumentChange" || tag == "StaffState" ||
                    tag == "FiguredBass" || tag == "HarpPedalDiagram") {

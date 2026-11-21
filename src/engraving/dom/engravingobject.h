@@ -92,6 +92,8 @@ struct HarpPedalDiagram;
 struct Hook;
 struct Image;
 struct IndicatorIcon;
+struct StaveSharingChange;
+struct SystemIndicatorIcon;
 struct InstrumentChange;
 struct InstrumentName;
 struct Jump;
@@ -485,6 +487,7 @@ public:
     CONVERT(is_measure_number, MEASURE_NUMBER)
     CONVERT(is_mm_rest_range, MMREST_RANGE)
     CONVERT(is_staff_text, STAFF_TEXT)
+    CONVERT(is_stave_sharing_change, STAVE_SHARING_CHANGE)
     CONVERT(is_stave_sharing_label, STAVE_SHARING_LABEL)
     CONVERT(is_system_text, SYSTEM_TEXT)
     CONVERT(is_sound_flag, SOUND_FLAG)
@@ -589,7 +592,11 @@ public:
 
     bool is_articulation_or_fermata() const { return is_articulation_family() || is_fermata(); }
 
-    bool is_indicator_icon() const { return is_system_lock_indicator() || is_page_lock_indicator() || is_staff_visibility_indicator(); }
+    bool is_system_indicator_icon() const {
+        return is_system_lock_indicator() || is_page_lock_indicator() || is_staff_visibility_indicator();
+    }
+
+    bool is_indicator_icon() const { return is_system_indicator_icon() || is_stave_sharing_change(); }
 };
 
 template <typename... ParentTypes>
@@ -694,6 +701,8 @@ CONVERT(Capo, to_capo, is_capo)
 CONVERT(Ottava, to_ottava, is_ottava)
 CONVERT(LayoutBreak, to_layout_break, is_layout_break)
 CONVERT(IndicatorIcon, to_indicator_icon, is_indicator_icon)
+CONVERT(StaveSharingChange, to_stave_sharing_change, is_stave_sharing_change)
+CONVERT(SystemIndicatorIcon, to_system_indicator_icon, is_system_indicator_icon)
 CONVERT(StaffVisibilityIndicator, to_staff_visibility_indicator, is_staff_visibility_indicator)
 CONVERT(SystemLockIndicator, to_system_lock_indicator, is_system_lock_indicator)
 CONVERT(Segment, to_segment, is_segment)

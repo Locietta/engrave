@@ -241,6 +241,25 @@ void Transaction::change_shared_origin(SharedPart *shared, Part *origin, bool co
         shared->remove_origin_part(origin);
 }
 
+void Transaction::change_stave_sharing_state(SharedPart &part, const Fraction &tick, const AuthoredStaveSharingState *state) {
+    const auto *old = part.exact_authored_state(tick);
+    if (state ? old && *old == *state : !old) return;
+
+    note_change(&part, CommandType::CHANGE_STAVE_SHARING_STATE);
+    if (state) {
+        part.set_authored_state(tick, *state);
+    } else {
+        part.remove_authored_state(tick);
+    }
+
+    const auto &states = part.authored_states();
+    const auto next =
+        std::upper_bound(states.begin(), states.end(), tick, [](const Fraction &value, const auto &entry) { return value < entry.first; });
+    const auto end = next == states.end() ? part.score()->end_tick() : next->first;
+    const auto range = part.track_range();
+    part.score()->set_layout(tick, end, track2staff(range.start_track), track2staff(range.end_track - 1));
+}
+
 void Transaction::change_excerpt_membership(Excerpt *excerpt, bool adding) {
     auto &master = *excerpt->master_score();
     note_change(&master, adding ? CommandType::ADD_EXCERPT : CommandType::REMOVE_EXCERPT);
