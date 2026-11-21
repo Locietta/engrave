@@ -26,6 +26,7 @@
 #include <cfloat>
 #include <cmath>
 #include <cstdlib>
+#include <optional>
 
 #include "accidentalslayout.h"
 #include "arpeggiolayout.h"
@@ -120,11 +121,11 @@ static bool jianpu_digit_drawn(const Note *note) { return note->display_visible(
 
 // The duration lines and residual dots follow the topmost drawn digit: a hidden digit
 // above it leaves an empty slot. notes() runs from low to high; layout_pitched stacks
-// the highest on top.
+// the highest on top. A chord with no digit drawn has none.
 static const Note *jianpu_duration_note(const Chord *chord) {
     const std::vector<Note *> &notes = chord->notes();
     const auto drawn = std::ranges::find_if(notes.rbegin(), notes.rend(), jianpu_digit_drawn);
-    return drawn != notes.rend() ? *drawn : chord->up_note();
+    return drawn != notes.rend() ? *drawn : nullptr;
 }
 
 static void clear_jianpu_octave_dots(const Chord *chord) {
@@ -276,7 +277,15 @@ void ChordLayout::layout_pitched(Chord *item, LayoutContext &ctx) {
     }
 
     // The lines sit beside the stacked digits; the chord shape below takes them in.
-    if (!item->is_grace()) layout_jianpu_duration_lines(item, ctx);
+    if (!item->is_grace()) {
+        layout_jianpu_duration_lines(item, ctx);
+        // The dots the lines leave follow the last line, as on a Jianpu rest, rather than
+        // the digit layout_chords3 placed them after.
+        if (item->dots() && !item->jianpu_duration_lines().empty()) {
+            const JianpuDurationLine *last = item->jianpu_duration_lines().back();
+            item->mutldata()->dot_pos_x = chord_x + last->pos().x() + last->ldata()->bbox().right();
+        }
+    }
 
     // A chord can have its own arpeggio and also be part of another arpeggio's span.  We need to lay out both of these arpeggios properly
     Arpeggio *old_span_arp = item->span_arpeggio();
@@ -1783,10 +1792,12 @@ void ChordLayout::layout_jianpu_duration_lines(Chord *item, LayoutContext &ctx) 
     if (item->notes().empty()) {
         return;
     }
-    const Note *note = jianpu_duration_note(item);
+    // Lines of a chord with no digit drawn keep the top digit's place, unseen.
+    const Note *drawn = jianpu_duration_note(item);
+    const Note *note = drawn ? drawn : item->up_note();
 
     const track_idx_t track = staff2track(idx);
-    const bool visible = !staff->is_lines_invisible(tick) && item->visible() && jianpu_digit_drawn(note);
+    const bool visible = !staff->is_lines_invisible(tick) && item->visible() && drawn != nullptr;
     const double head_width = note->head_width();
     // The first line keeps a fifth of a head width clear of the digit box, or of the
     // digit itself where a large font draws it wider than the box.
@@ -1980,8 +1991,7 @@ void ChordLayout::layout_voice_offsets(System *system, staff_idx_t staff_idx, La
         return bottom;
     };
     std::vector<SpannerSegment *> shifted_slur_segments;
-    const auto shift_chord_slurs = [system, relaid, &shifted_slur_segments](Chord *chord, double dy) {
-        if (std::ranges::contains(relaid, static_cast<const MeasureBase *>(chord->measure()))) return;
+    const auto shift_chord_slurs = [system, &shifted_slur_segments](Chord *chord, double dy) {
         for (const std::set<Spanner *> *spanners : {&chord->starting_spanners(), &chord->ending_spanners()}) {
             for (Spanner *spanner : *spanners) {
                 if (!spanner->is_slur()) {
@@ -1996,18 +2006,35 @@ void ChordLayout::layout_voice_offsets(System *system, staff_idx_t staff_idx, La
             }
         }
     };
-    const auto shift_item = [&shift_chord_slurs](EngravingItem *e, double dy) {
+    // The system's slur segments were laid out against where the bands last put the digits.
+    // A relaid measure's chords start off their bands again, so their slurs move only as far
+    // as their band did; other chords take their slurs along.
+    const auto settle_chord_slurs = [relaid, &baseline_top, &shift_chord_slurs](Chord *chord, double dy) {
+        Chord::LayoutData *ldata = chord->mutldata();
+        const double band_top = baseline_top(chord);
+        double slur_dy = dy;
+        if (std::ranges::contains(relaid, static_cast<const MeasureBase *>(chord->measure()))) {
+            slur_dy = ldata->jianpu_band_top ? band_top - *ldata->jianpu_band_top : 0.0;
+        }
+        ldata->jianpu_band_top = band_top;
+        if (muse::real_is_null(slur_dy)) {
+            return;
+        }
+        shift_chord_slurs(chord, slur_dy);
+        for (Chord *grace : chord->grace_notes()) {
+            shift_chord_slurs(grace, slur_dy);
+        }
+    };
+    const auto shift_item = [](EngravingItem *e, double dy) {
         if (e->is_chord()) {
             Chord *chord = to_chord(e);
             for (Note *note : chord->notes()) {
                 note->mutldata()->move_y(dy);
             }
-            shift_chord_slurs(chord, dy);
             for (Chord *grace : chord->grace_notes()) {
                 for (Note *note : grace->notes()) {
                     note->mutldata()->move_y(dy);
                 }
-                shift_chord_slurs(grace, dy);
                 // slur_pos() later reads the grace chord's bbox, which comes from its shape.
                 fill_shape(grace, grace->mutldata());
             }
@@ -2068,55 +2095,46 @@ void ChordLayout::layout_voice_offsets(System *system, staff_idx_t staff_idx, La
     const auto present = [&groups_by_voice](voice_idx_t voice) { return !groups_by_voice[voice].empty(); };
     voice_idx_t top_voice = 0;
     while (top_voice < voice_count && !present(top_voice)) ++top_voice;
-    if (std::count_if(groups_by_voice.begin(), groups_by_voice.end(), [](const auto &groups) { return !groups.empty(); }) < 2) {
-        return;
-    }
 
-    // Absolute band positions start at the top voice's unshifted baseline.
-    double reference_top = DBL_MAX;
-    for (EngravingItem *e : groups_by_voice[top_voice].front()) {
-        reference_top = std::min(reference_top, baseline_top(e));
-    }
-    if (reference_top == DBL_MAX) {
-        return;
-    }
-
-    const double voice_distance = ctx.conf().style_absolute(Sid::JIANPU_VOICE_VERTICAL_DISTANCE);
-
-    // Each baseline clears the previous voice's reach below and its own reach above.
-    std::array<double, voice_count> band_target_top{};
-    double next_baseline = reference_top;
-    double previous_below = 0.0;
-    for (voice_idx_t voice = top_voice; voice < voice_count; ++voice) {
-        if (!present(voice)) {
-            continue;
+    // A lone voice keeps the place layout gave it. Each further baseline clears the previous
+    // voice's reach below and its own reach above, starting at the top voice's unshifted
+    // baseline.
+    std::array<std::optional<double>, voice_count> band_target_top{};
+    if (std::ranges::count_if(groups_by_voice, [](const auto &groups) { return !groups.empty(); }) >= 2) {
+        double next_baseline = DBL_MAX;
+        for (EngravingItem *e : groups_by_voice[top_voice].front()) {
+            next_baseline = std::min(next_baseline, baseline_top(e));
         }
-        if (voice != top_voice) {
-            next_baseline += previous_below + voice_distance + max_above[voice];
+        const double voice_distance = ctx.conf().style_absolute(Sid::JIANPU_VOICE_VERTICAL_DISTANCE);
+        double previous_below = 0.0;
+        for (voice_idx_t voice = top_voice; voice < voice_count; ++voice) {
+            if (!present(voice)) {
+                continue;
+            }
+            if (voice != top_voice) {
+                next_baseline += previous_below + voice_distance + max_above[voice];
+            }
+            band_target_top[voice] = next_baseline;
+            previous_below = max_below[voice];
         }
-        band_target_top[voice] = next_baseline;
-        previous_below = max_below[voice];
     }
 
     std::vector<Segment *> shifted_segments;
     for (voice_idx_t voice = 0; voice < voice_count; ++voice) {
-        const double target_top = band_target_top[voice];
+        const std::optional<double> target_top = band_target_top[voice];
         for (const std::vector<EngravingItem *> &segment_items : groups_by_voice[voice]) {
             double top = DBL_MAX;
             for (EngravingItem *e : segment_items) {
                 top = std::min(top, baseline_top(e));
             }
-            if (top == DBL_MAX) {
-                continue;
-            }
-            const double dy = target_top - top;
-            if (muse::real_is_null(dy)) {
-                continue;
-            }
+            const double dy = target_top ? *target_top - top : 0.0;
             for (EngravingItem *e : segment_items) {
-                shift_item(e, dy);
-                Segment *segment = to_chord_rest(e)->segment();
-                if (!muse::contains(shifted_segments, segment)) shifted_segments.push_back(segment);
+                if (!muse::real_is_null(dy)) {
+                    shift_item(e, dy);
+                    Segment *segment = to_chord_rest(e)->segment();
+                    if (!muse::contains(shifted_segments, segment)) shifted_segments.push_back(segment);
+                }
+                if (e->is_chord()) settle_chord_slurs(to_chord(e), dy);
             }
         }
     }

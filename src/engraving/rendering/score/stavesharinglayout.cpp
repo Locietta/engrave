@@ -22,7 +22,9 @@
 
 #include "stavesharinglayout.h"
 
+#include <algorithm>
 #include <climits>
+#include <vector>
 
 #include "dom/breath.h"
 #include "dom/chord.h"
@@ -34,6 +36,7 @@
 #include "dom/note.h"
 #include "dom/part.h"
 #include "dom/partialtie.h"
+#include "dom/pitchspelling.h"
 #include "dom/rest.h"
 #include "dom/score.h"
 #include "dom/sig.h"
@@ -449,6 +452,23 @@ bool StaveSharingLayout::same_instrument(track_idx_t prev_track, track_idx_t nex
     return next_instrument->id() == prev_instrument->id() && next_instrument->transpose() == prev_instrument->transpose();
 }
 
+// A shared Jianpu note counts from the key of its first origin (TLayout::jianpu_key_sig_event),
+// and the key in effect can come from before the range, so origins share a voice only where
+// their keys number the digits alike.
+bool StaveSharingLayout::same_jianpu_numbering(track_idx_t prev_track, track_idx_t next_track, const Fraction &tick,
+                                               const StaveSharingContext &ctx) {
+    const std::vector<Staff *> &shared_staves = ctx.cur_shared_part->staves();
+    if (std::ranges::none_of(shared_staves, [&tick](const Staff *staff) { return staff->is_jianpu_staff(tick); })) {
+        return true;
+    }
+    const Staff *prev_staff = ctx.layout_ctx.dom().staff(track2staff(prev_track));
+    const Staff *next_staff = ctx.layout_ctx.dom().staff(track2staff(next_track));
+    if (!prev_staff || !next_staff) {
+        return false;
+    }
+    return jianpu_key_mapping(prev_staff->key_sig_event(tick)) == jianpu_key_mapping(next_staff->key_sig_event(tick));
+}
+
 bool StaveSharingLayout::is_unison(track_idx_t prev_track, track_idx_t next_track, StaveSharingContext &ctx) {
     for (Segment *segment : ctx.segments_in_range(ctx.cr_segments)) {
         if (!same_instrument(prev_track, next_track, segment->tick(), ctx)) {
@@ -475,6 +495,10 @@ bool StaveSharingLayout::is_unison(track_idx_t prev_track, track_idx_t next_trac
 
         if (!cr1->is_chord()) {
             continue;
+        }
+
+        if (!same_jianpu_numbering(prev_track, next_track, segment->tick(), ctx)) {
+            return false;
         }
 
         Chord *c1 = to_chord(cr1);
@@ -568,6 +592,10 @@ bool StaveSharingLayout::can_go_to_same_voice(track_idx_t prev_track, track_idx_
 
         if (!cr1->is_chord()) {
             continue;
+        }
+
+        if (!same_jianpu_numbering(prev_track, next_track, segment->tick(), ctx)) {
+            return false;
         }
 
         Chord *c1 = to_chord(cr1);

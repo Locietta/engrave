@@ -29,6 +29,7 @@
 
 #include <functional>
 #include <iterator>
+#include <optional>
 #include <set>
 #include <vector>
 
@@ -486,6 +487,9 @@ public:
         bool allow_kerning_below = true;
         StartEndSlurs start_end_slurs;
         double dot_pos_x = 0.0;
+        // The up note's y where the Jianpu voice bands last put it: the system's slur
+        // segments were laid out against it (ChordLayout::layout_voice_offsets).
+        std::optional<double> jianpu_band_top;
         std::vector<ParenthesisGroup> parentheses;
         Stem *stem = nullptr;
         Hook *hook = nullptr;

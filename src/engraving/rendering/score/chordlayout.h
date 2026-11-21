@@ -118,7 +118,8 @@ struct ChordLayout {
     static void layout_jianpu_duration_lines(Chord *item, LayoutContext &ctx);
     static void layout_jianpu_octave_dots(Chord *item, LayoutContext &ctx);
     // The chords of relaid measures were laid out afresh, off their bands, while the system's
-    // slur segments for them still sit where the bands put them; those segments stay.
+    // slur segments for them still sit where the bands last put them; those segments move
+    // only as far as the bands do.
     static void layout_voice_offsets(System *system, staff_idx_t staff_idx, LayoutContext &ctx,
                                      std::span<const MeasureBase *const> relaid = {});
 

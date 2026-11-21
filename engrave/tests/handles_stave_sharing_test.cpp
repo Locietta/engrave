@@ -124,6 +124,68 @@ TEST(StaveSharingOutput, SharedJianpuDigitsCountFromTheMappedOriginKey) {
     }
 }
 
+// A shared Jianpu unison shows one digit for all its origins, so origins share a voice only
+// where their keys number alike. Here the keys differ from the first measure on, before
+// the range of the later map, and each origin keeps the digits of its own key throughout.
+TEST(StaveSharingOutput, SharedJianpuUnisonsKeepEachOriginsInheritedKey) {
+    using namespace mu::engraving;
+    for (const bool authored : {true, false}) {
+        SCOPED_TRACE(authored ? "authored unison map from the second measure" : "automatic map on a second system");
+        auto xml = read_text(g_source_root / "tests/data/inputs/stave-sharing.mscx");
+        constexpr std::string_view jianpu = R"(<StaffType group="jianpu"><name>jianpu</name><lines>0</lines></StaffType>)";
+        for (const std::string_view eid : {"<eid>B_B</eid>", "<eid>C_C</eid>"}) xml.insert(xml.find(eid) + eid.size(), jianpu);
+        // D major on the first origin from its first measure; the second origin stays in C.
+        const auto first_origin = xml.find("<Staff id=\"3\">");
+        xml.insert(xml.find("<voice>", first_origin) + std::string_view("<voice>").size(), "<KeySig><concertKey>2</concertKey></KeySig>");
+        // Both origins play D5 then E5 in every measure.
+        for (const auto &[from, to] : {std::pair{"<pitch>74</pitch><tpc>16", "<pitch>76</pitch><tpc>18"},
+                                       std::pair{"<pitch>72</pitch><tpc>14", "<pitch>74</pitch><tpc>16"}}) {
+            for (size_t pos = xml.find(from); pos != std::string::npos; pos = xml.find(from, pos + std::string_view(to).size()))
+                xml.replace(pos, std::string_view(from).size(), to);
+        }
+        if (authored) {
+            xml.insert(xml.find("</SharedPart>"),
+                       R"(<StaveSharingState tick="1/1"><trackMap origin="8" shared="0"/><trackMap origin="12" shared="0"/>)"
+                       R"(</StaveSharingState>)");
+        } else {
+            xml.insert(xml.find("<voice>"), "<LayoutBreak><subtype>line</subtype></LayoutBreak>");
+        }
+        auto document = open_text(xml);
+        ASSERT_TRUE(document);
+        auto &master = master_of(*document);
+        ASSERT_EQ(master.staff(2)->key(Fraction(1, 1)), Key::D);
+        ASSERT_EQ(master.staff(3)->key(Fraction(1, 1)), Key::C);
+        const auto cold = source_native(master);
+        ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+        const auto *part = master.shared_parts().front();
+        if (authored) {
+            const auto *state = part->rendered_state_at_tick(Fraction(1, 1));
+            ASSERT_NE(state, nullptr);
+            EXPECT_FALSE(state->is_user_map_valid);
+        } else {
+            ASSERT_NE(master.first_measure()->system(), master.first_measure()->next_measure()->system());
+        }
+
+        // D5 and E5 are "1" and "2" in D major, "2" and "3" in C.
+        const std::pair<track_idx_t, std::array<std::string_view, 2>> digits[] = {{8, {"1", "2"}}, {12, {"2", "3"}}};
+        for (const Fraction tick : {Fraction(0, 1), Fraction(1, 2), Fraction(1, 1), Fraction(3, 2)}) {
+            auto *segment = master.tick2segment(tick, true, SegmentType::CHORD_REST);
+            ASSERT_NE(segment, nullptr);
+            const size_t half = tick.ticks() % Fraction(1, 1).ticks() == 0 ? 0 : 1;
+            for (const auto &[track, expected] : digits) {
+                SCOPED_TRACE(std::format("tick {} from track {}", tick.ticks(), track));
+                const EngravingItem *origin = segment->element(track);
+                ASSERT_TRUE(origin && origin->is_chord());
+                const EngravingItem *shown = to_chord(origin)->up_note()->shared_item();
+                ASSERT_TRUE(shown && shown->is_note());
+                EXPECT_EQ(shown->origin_items().size(), 1u);
+                EXPECT_EQ(to_note(shown)->jianpu_digit().to_std_string(), expected[half]);
+            }
+        }
+        EXPECT_EQ(source_native(master), cold);
+    }
+}
+
 TEST(StaveSharingOutput, UnisonRenderingPreservesAuthoredSourceAndHandles) {
     using namespace mu::engraving;
     auto document = open_path(g_source_root / "tests/data/inputs/stave-sharing.mscx");

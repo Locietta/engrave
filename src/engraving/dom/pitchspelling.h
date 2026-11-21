@@ -142,6 +142,8 @@ struct JianpuSpelling {
 struct JianpuKeyMapping {
     KeyMode mode = KeyMode::MAJOR;
     int tonic_tpc = Tpc::TPC_C;
+
+    bool operator==(const JianpuKeyMapping &) const = default;
 };
 
 extern int jianpu_tonic_tpc(Key relative_major_key, KeyMode mode);

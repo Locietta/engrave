@@ -25,6 +25,9 @@
 #include "engraving/infrastructure/shape.h"
 #include "engraving/infrastructure/sourcehandle.h"
 #include "engraving/rendering/score/beamtremololayout.h"
+#include "engraving/rendering/score/chordlayout.h"
+#include "engraving/rendering/score/layoutcontext.h"
+#include "engraving/rendering/score/measurelayout.h"
 #include "engraving/rendering/score/tlayout.h"
 #include "engraving/types/typesconv.h"
 #include "handles_test_fixture.h"
@@ -866,6 +869,59 @@ TEST(Jianpu, DurationMarksFollowTheTopDrawnDigit) {
     }
 }
 
+// "1 - - ." writes the dot a double-dotted half leaves after its last line, as a rest
+// does; the chord shape holds it there for spacing and skylines.
+TEST(Jianpu, ResidualDotsFollowTheLastDurationLine) {
+    const auto alone = "<Chord><dots>2</dots><durationType>half</durationType><Note><pitch>60</pitch><tpc>14</tpc></Note></Chord>";
+    auto document = open_text(jianpu_score(std::format("<Measure><voice>{}{}{}</voice></Measure><Measure><voice>{}{}</voice></Measure>",
+                                                       four_four, alone, rest("eighth"), c_and_g("half", 2, ""), rest("eighth"))));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    render(*document);
+    for (const Fraction tick : {Fraction(0, 1), Fraction(1, 1)}) {
+        SCOPED_TRACE(tick.ticks());
+        const auto *chord = to_chord(chord_rest_at(master, tick));
+        ASSERT_EQ(chord->jianpu_duration_lines().size(), 2u);
+        const Note *top = chord->notes().back();
+        ASSERT_EQ(top->dots().size(), 1u);
+        const NoteDot *dot = top->dots().front();
+        ASSERT_TRUE(dot->visible());
+        const JianpuDurationLine *last = chord->jianpu_duration_lines().back();
+        // Both in chord coordinates: the dot is the note's child, the line the chord's.
+        const RectF dot_rect = dot->ldata()->bbox().translated(dot->pos() + top->pos());
+        const RectF line_rect = last->ldata()->bbox().translated(last->pos());
+        EXPECT_GT(dot_rect.left(), line_rect.right());
+        const auto held = std::ranges::count_if(
+            chord->shape().elements(), [&](const ShapeElement &element) { return element.item() == dot && RectF(element) == dot_rect; });
+        EXPECT_EQ(held, 1);
+    }
+}
+
+// A chord with no digit drawn shows none of its marks, the dot its lines leave included.
+TEST(Jianpu, AnUndrawnDottedChordShowsNoResidualDot) {
+    auto document = open_text(
+        jianpu_score(std::format("<Measure><voice>{}{}{}{}</voice></Measure><Measure><voice>{}{}</voice></Measure>", four_four,
+                                 c_and_g("quarter", 1, ""), rest("eighth"), rest("half"), c_and_g("half", 2, ""), rest("eighth"))));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    std::vector<Chord *> chords;
+    for (const Fraction tick : {Fraction(0, 1), Fraction(1, 1)}) {
+        auto *chord = to_chord(chord_rest_at(master, tick));
+        for (Note *note : chord->notes()) note->set_hidden(true);
+        chords.push_back(chord);
+    }
+    render(*document);
+    for (const Chord *chord : chords) {
+        SCOPED_TRACE(chord->tick().ticks());
+        for (const Note *note : chord->notes()) {
+            ASSERT_TRUE(note->visible());
+            for (const NoteDot *dot : note->dots()) EXPECT_FALSE(dot->visible());
+        }
+        for (const JianpuDurationLine *line : chord->jianpu_duration_lines()) EXPECT_FALSE(line->visible());
+    }
+    EXPECT_EQ(chords.back()->jianpu_duration_lines().size(), 2u);
+}
+
 // Spacing and skylines read the chord shape, so it has to hold the lines where they end up.
 TEST(Jianpu, ChordShapeHoldsTheFinalDurationLines) {
     auto document = open_text(jianpu_score(std::format("<Measure><voice>{}{}{}</voice></Measure>", four_four, c_and_g("half", 0, ""),
@@ -1016,16 +1072,14 @@ TEST(Jianpu, VoiceBandsClearGraceDigits) {
     EXPECT_GE(grace_top - upper_bottom, master.style().style_absolute(Sid::JIANPU_VOICE_VERTICAL_DISTANCE) - 1e-9);
 }
 
-// Relaying out the last system of a page tries the next page's first measure on it and
-// evicts it again. That measure returns to its voice bands, while the slurs its system
-// laid out for those bands stay where they are.
-TEST(Jianpu, EvictedMeasureKeepsTheSlursOfItsSystem) {
+namespace {
+// Two voices in each of the measures, with a slur over the two halves of the second voice.
+std::string slurred_lower_voice_score(int measure_count) {
     std::string upper;
     for (int i = 0; i < 4; ++i) upper += chord("quarter", 60, 14);
-    // In every measure a slur over the two halves of the second voice.
     std::string measures;
     std::string slurs;
-    for (int i = 0; i < 160; ++i) {
+    for (int i = 0; i < measure_count; ++i) {
         const auto lower =
             std::format("<Chord><eid>S{0}_S{0}</eid><durationType>half</durationType><Note><pitch>48</pitch><tpc>14</tpc></Note></Chord>"
                         "<Chord><eid>E{0}_E{0}</eid><durationType>half</durationType><Note><pitch>50</pitch><tpc>16</tpc></Note></Chord>",
@@ -1038,7 +1092,21 @@ TEST(Jianpu, EvictedMeasureKeepsTheSlursOfItsSystem) {
     }
     auto xml = jianpu_score(measures);
     xml.insert(xml.find("</Score>"), std::format("<SpannerMap>{}</SpannerMap>", slurs));
-    auto document = open_text(xml);
+    return xml;
+}
+
+const SpannerSegment *first_slur_segment(const Chord *start) {
+    for (const Spanner *spanner : start->starting_spanners())
+        if (spanner->is_slur() && !spanner->spanner_segments().empty()) return spanner->spanner_segments().front();
+    return nullptr;
+}
+} // namespace
+
+// Relaying out the last system of a page tries the next page's first measure on it and
+// evicts it again. That measure returns to its voice bands, while the slurs its system
+// laid out for those bands stay where they are.
+TEST(Jianpu, EvictedMeasureKeepsTheSlursOfItsSystem) {
+    auto document = open_text(slurred_lower_voice_score(160));
     ASSERT_TRUE(document);
     auto &master = master_of(*document);
     render(*document);
@@ -1048,17 +1116,11 @@ TEST(Jianpu, EvictedMeasureKeepsTheSlursOfItsSystem) {
     Measure *last_on_previous_page = evicted->prev_measure();
     ASSERT_NE(last_on_previous_page->system()->page(), first_on_page->page());
 
-    const auto slur_segment = [&]() -> const SpannerSegment * {
-        const auto *start = to_chord(chord_rest_at(master, evicted->tick(), 1));
-        for (const Spanner *spanner : start->starting_spanners())
-            if (spanner->is_slur() && !spanner->spanner_segments().empty()) return spanner->spanner_segments().front();
-        return nullptr;
-    };
-    const auto *before = slur_segment();
+    const auto *band_chord = to_chord(chord_rest_at(master, evicted->tick(), 1));
+    const auto *before = first_slur_segment(band_chord);
     ASSERT_NE(before, nullptr);
     ASSERT_EQ(before->system(), first_on_page);
     const PointF pos_before = before->pos();
-    const auto *band_chord = to_chord(chord_rest_at(master, evicted->tick(), 1));
     const double band_before = band_chord->up_note()->pos().y();
     ASSERT_GT(band_before, 0.0) << "the lower voice sits in a lower band";
 
@@ -1066,11 +1128,59 @@ TEST(Jianpu, EvictedMeasureKeepsTheSlursOfItsSystem) {
     render(*document);
     ASSERT_EQ(evicted->system(), first_on_page);
     EXPECT_DOUBLE_EQ(band_chord->up_note()->pos().y(), band_before);
-    const auto *after = slur_segment();
+    const auto *after = first_slur_segment(band_chord);
     ASSERT_NE(after, nullptr);
     EXPECT_EQ(after->system(), first_on_page);
     EXPECT_DOUBLE_EQ(after->pos().y(), pos_before.y());
     EXPECT_DOUBLE_EQ(after->pos().x(), pos_before.x());
+}
+
+// A relaid measure starts off its voice bands again, while its system keeps the slur
+// segments laid out for them, as when SystemLayout::collect_system evicts it back. Its
+// slurs then move only as far as its band does: not at all for the same content, and
+// with the band when its upper voice gains a dot below, which pushes the lower band down.
+TEST(Jianpu, RelaidMeasureSlursFollowTheirBand) {
+    using namespace mu::engraving::rendering::score;
+    auto document = open_text(slurred_lower_voice_score(2));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    render(*document);
+    Measure *relaid = master.first_measure()->next_measure();
+    System *system = relaid->system();
+    ASSERT_EQ(system, master.first_measure()->system());
+    const auto *band_chord = to_chord(chord_rest_at(master, relaid->tick(), 1));
+    const auto *slur = first_slur_segment(band_chord);
+    ASSERT_NE(slur, nullptr);
+    ASSERT_EQ(slur->system(), system);
+    const PointF slur_before = slur->pos();
+    const double band_before = band_chord->up_note()->pos().y();
+    ASSERT_GT(band_before, 0.0) << "the lower voice sits in a lower band";
+    Note *upper = to_chord(chord_rest_at(master, relaid->tick(), 0))->up_note();
+
+    for (const bool dot_below : {false, true}) {
+        SCOPED_TRACE(dot_below ? "dot below" : "same content");
+        // C2 is "1" with a dot below.
+        if (dot_below) upper->set_pitch(36, Tpc::TPC_C, Tpc::TPC_C);
+        master.cmd_state().lock();
+        {
+            LayoutContext ctx(&master);
+            relaid->mutldata()->set_need_layout(true);
+            MeasureLayout::layout_measure(relaid, ctx);
+            const std::array<const MeasureBase *, 1> relaid_measures{relaid};
+            ChordLayout::layout_voice_offsets(system, 0, ctx, relaid_measures);
+        }
+        master.cmd_state().unlock();
+        ASSERT_EQ(upper->jianpu_octave_dots().size(), 1u);
+        ASSERT_EQ(upper->jianpu_octave_dots().front()->ldata()->above, !dot_below);
+        const double band_moved = band_chord->up_note()->pos().y() - band_before;
+        if (dot_below) {
+            ASSERT_GT(band_moved, 0.0) << "the lower band clears the new dot";
+        } else {
+            ASSERT_DOUBLE_EQ(band_moved, 0.0);
+        }
+        EXPECT_NEAR(slur->pos().y() - slur_before.y(), band_moved, 1e-9);
+        EXPECT_DOUBLE_EQ(slur->pos().x(), slur_before.x());
+    }
 }
 
 // Rest alignment and full measure rest clearance run after the voice bands; on a
