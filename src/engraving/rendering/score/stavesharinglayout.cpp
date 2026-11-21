@@ -1164,7 +1164,9 @@ void StaveSharingLayout::make_shared_chord_rests(StaveSharingContext &ctx) {
 
                 connect_output(shared_tuplet, origin_tuplet);
 
-                shared_tuplet->add(shared_de);
+                // Layout reruns this for already shared elements; a second copy of a
+                // nested tuplet would be autoplaced clear of the first.
+                if (!shared_tuplet->contains(shared_de)) shared_tuplet->add(shared_de);
 
                 origin_de = origin_tuplet;
                 shared_de = shared_tuplet;

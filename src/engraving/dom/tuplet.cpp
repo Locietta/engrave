@@ -62,6 +62,8 @@ Tuplet::Tuplet(DummyParentOr<Measure> parent) : DurationElement(ElementType::TUP
     number_type_ = TupletNumberType::SHOW_NUMBER;
     bracket_type_ = TupletBracketType::AUTO_BRACKET;
     ratio_ = Fraction(1, 1);
+    // Styled setters trigger a layout at tick(); tick 0 would widen the range to the score start.
+    tick_ = parent.as<Measure>() ? parent.as<Measure>()->tick() : Fraction(0, 1);
     init_element_style(&::mu::engraving::tuplet_style);
 }
 
@@ -214,20 +216,12 @@ void Tuplet::scan_elements(std::function<void(EngravingItem *)> func) {
 }
 
 void Tuplet::add(EngravingItem *e) {
-#ifndef NDEBUG
-    for (DurationElement *el : current_elements_) {
-        if (el == e) {
-            LOGD("%p: %p %s already there", this, e, e->type_name());
-            return;
-        }
-    }
-#endif
-
     switch (e->type()) {
         case ElementType::CHORD:
         case ElementType::REST:
         case ElementType::TUPLET: {
             DurationElement *de = to_duration_element(e);
+            IF_ASSERT_FAILED(!contains(de)) { return; }
             de->set_tuplet(this);
 
             bool found = false;

@@ -142,6 +142,57 @@ TEST(StaveSharingOutput, TiesAndSlursRemainOutsideSourceSpannerMembership) {
     }
 }
 
+// Upstream #35281: every range layout re-added the shared nested tuplet to its shared
+// parent, and each copy was autoplaced clear of the previous one.
+TEST(StaveSharingOutput, NestedTupletRangeRelayoutMatchesFullLayout) {
+    using namespace mu::engraving;
+    auto xml = read_text(g_source_root / "tests/data/inputs/stave-sharing.mscx");
+    const std::string authored = "<TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig><Chord><durationType>half</durationType><Note><pitch>72</"
+                                 "pitch><tpc>14</tpc></Note></Chord><Chord><durationType>half</durationType><Note><pitch>74</"
+                                 "pitch><tpc>16</tpc></Note></Chord>";
+    const std::string nested =
+        "<TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>"
+        "<Chord><durationType>quarter</durationType><Note><pitch>72</pitch><tpc>14</tpc></Note></Chord>"
+        "<Tuplet><normalNotes>2</normalNotes><actualNotes>3</actualNotes><baseNote>quarter</baseNote></Tuplet>"
+        "<Tuplet><normalNotes>2</normalNotes><actualNotes>3</actualNotes><baseNote>eighth</baseNote></Tuplet>"
+        "<Chord><durationType>eighth</durationType><Note><pitch>74</pitch><tpc>16</tpc></Note></Chord>"
+        "<Rest><durationType>eighth</durationType></Rest><Rest><durationType>eighth</durationType></Rest><endTuplet/>"
+        "<Rest><durationType>quarter</durationType></Rest><Rest><durationType>quarter</durationType></Rest><endTuplet/>"
+        "<Chord><durationType>quarter</durationType><Note><pitch>81</pitch><tpc>17</tpc></Note></Chord>";
+    for (int staff = 0; staff < 2; ++staff) {
+        const auto at = xml.find(authored);
+        ASSERT_NE(at, std::string::npos);
+        xml.replace(at, authored.size(), nested);
+    }
+    auto document = open_text(xml);
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    const auto cold = source_native(master);
+    auto *measure = master.first_measure();
+    ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+    engrave::Result<engrave::RenderOutput> range;
+    for (int cycle = 0; cycle < 2; ++cycle) {
+        master.invalidate_layout(measure->tick(), measure->end_tick());
+        range = document->render({.format = engrave::RenderFormat::SVG});
+        ASSERT_TRUE(range) << range.error().message;
+        auto *shown = measure->find_segment_r(SegmentType::CHORD_REST, Fraction(1, 4))->effective_element(0);
+        ASSERT_TRUE(shown && shown->is_chord());
+        EXPECT_FALSE(source_object(*shown));
+        Tuplet *inner = to_chord(shown)->tuplet();
+        ASSERT_NE(inner, nullptr);
+        Tuplet *outer = inner->tuplet();
+        ASSERT_NE(outer, nullptr);
+        EXPECT_EQ(inner->elements().size(), 3u);
+        EXPECT_EQ(outer->elements().size(), 3u);
+    }
+    EXPECT_GT(master.layout_state.range_count, 0u);
+    EXPECT_EQ(source_native(master), cold);
+    master.layout_data_store()->clear();
+    auto full = document->render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(full) << full.error().message;
+    EXPECT_EQ(range->pages, full->pages);
+}
+
 TEST(StaveSharingOutput, UnmatchedAuthoredRestsStayInSourceAfterSuppression) {
     using namespace mu::engraving;
     auto xml = read_text(g_source_root / "tests/data/inputs/stave-sharing.mscx");
