@@ -3533,60 +3533,63 @@ void Score::undo_remove_measures(Measure *m1, Measure *m2, bool preserve_ties, b
     //
     //  handle ties which start before m1 and end in (m1-m2)
     //
-    for (Segment *s = m1->first(); s != m2->last(); s = s->next1()) {
-        IF_ASSERT_FAILED(s) {
-            // This score is corrupted; handle it without crashing,
-            // to help the user to fix corruptions by deleting the affected measures
-            LOGE() << "Missing segments detected while deleting measures " << m1->measure_number() << " to " << m2->measure_number()
-                   << ". This score (" << name() << ") is corrupted. Continuing without deleting measure contents.";
-            break;
-        }
-
-        if (!s->is_chord_rest_type()) {
-            continue;
-        }
-
-        // Make sure annotations are removed once, even if this segment contains linked copies of the same annotation
-        // (the linked copy would be removed by undoRemoveElement)
-        while (!s->annotations().empty()) {
-            EngravingItem *annotation = s->annotations().front();
-            IF_ASSERT_FAILED(annotation) { continue; }
-            undo_remove_element(annotation);
-        }
-
-        for (track_idx_t track = 0; track < ntracks(); ++track) {
-            EngravingItem *e = s->element(track);
-            if (!e || !e->is_chord()) {
-                continue;
-            }
-            Chord *c = to_chord(e);
-            for (Note *n : c->notes()) {
-                // Remove ties crossing measure range boundaries
-                Tie *t = n->tie_back_non_partial();
-                if (t && t->start_note() && (t->start_note()->chord()->tick() < start_tick)) {
-                    if (preserve_ties) {
-                        t->set_end_note(0);
-                    } else {
-                        undo_remove_element(t);
-                    }
-                }
-                t = n->tie_for_non_partial();
-                if (t && t->end_note() && (t->end_note()->chord()->tick() >= end_tick)) {
+    auto collect_boundary_spanners_for_chord = [&](Chord *c) {
+        for (Note *n : c->notes()) {
+            // Remove ties crossing measure range boundaries
+            Tie *t = n->tie_back_non_partial();
+            if (t && t->start_note() && (t->start_note()->chord()->tick() < start_tick)) {
+                if (preserve_ties) {
+                    t->set_end_note(0);
+                } else {
                     undo_remove_element(t);
                 }
+            }
+            t = n->tie_for_non_partial();
+            if (t && t->end_note() && (t->end_note()->chord()->tick() >= end_tick)) {
+                undo_remove_element(t);
+            }
 
-                // Do the same for other note-anchored spanners (e.g. glissandi).
-                // Delay actual removing to avoid modifying lists inside loops over them.
-                for (Spanner *sb : n->spanner_back()) {
-                    if (sb->tick() < start_tick) {
-                        spanners_to_remove.insert(sb);
-                    }
+            // Do the same for other note-anchored spanners (e.g. glissandi).
+            // Delay actual removing to avoid modifying lists inside loops over them.
+            for (Spanner *sb : n->spanner_back()) {
+                const Measure *sm = sb->find_start_measure();
+                if (sb->tick() < start_tick || !sm || sm->tick() < start_tick || sm->tick() >= end_tick) {
+                    spanners_to_remove.insert(sb);
                 }
-                for (Spanner *sf : n->spanner_for()) {
-                    if (sf->tick2() >= end_tick) {
-                        spanners_to_remove.insert(sf);
-                    }
+            }
+            for (Spanner *sf : n->spanner_for()) {
+                const Measure *em = sf->find_end_measure();
+                if (sf->tick2() >= end_tick || !em || em->tick() < start_tick || em->tick() >= end_tick) {
+                    spanners_to_remove.insert(sf);
                 }
+            }
+        }
+    };
+
+    for (Measure *m = m1; m && m != m2->next_measure(); m = m->next_measure()) {
+        for (Segment *s = m->first(); s; s = s->next()) {
+            if (!s->is_chord_rest_type()) {
+                continue;
+            }
+
+            // Make sure annotations are removed once, even if this segment contains linked copies of the same annotation
+            // (the linked copy would be removed by undoRemoveElement)
+            while (!s->annotations().empty()) {
+                EngravingItem *annotation = s->annotations().front();
+                IF_ASSERT_FAILED(annotation) { continue; }
+                undo_remove_element(annotation);
+            }
+
+            for (track_idx_t track = 0; track < ntracks(); ++track) {
+                EngravingItem *e = s->element(track);
+                if (!e || !e->is_chord()) {
+                    continue;
+                }
+                Chord *c = to_chord(e);
+                for (Chord *gc : c->grace_notes()) {
+                    collect_boundary_spanners_for_chord(gc);
+                }
+                collect_boundary_spanners_for_chord(c);
             }
         }
     }

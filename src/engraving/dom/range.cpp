@@ -25,6 +25,8 @@
 #include "barline.h"
 #include "chord.h"
 #include "engraving/dom/dummyparent.h"
+#include "engraving/dom/masterscore.h"
+#include "engraving/infrastructure/eidregister.h"
 #include "excerpt.h"
 #include "factory.h"
 #include "linkedobjects.h"
@@ -66,85 +68,32 @@ static void cleanup_tuplet(Tuplet *t) {
     }
 }
 
-//   clonedNote
-//---------------------------------------------------------
-static Note *cloned_note(const Note *src_note, TrackList::ClonedChordMap &c_chord_map) {
-    Note *c_note = nullptr;
-    Chord *src_chord = src_note->chord();
-    Chord *c_chord = c_chord_map[src_chord];
+static bool is_note_anchored_line(const Spanner *sp) { return sp && (sp->is_glissando() || sp->is_guitar_bend() || sp->is_note_line()); }
 
-    if (src_chord && c_chord) {
-        int note_src_position = 0;
-        int note_cloned_position = 0;
-        bool note_found = false;
-        // We presume notes where created in the same order in the srcChord and clonedChord
-        // Note position in sourceChord
-        for (Note *n : src_chord->notes()) {
-            ++note_src_position;
-            if (src_note == n) {
-                note_found = true;
-                break;
-            }
-        }
-        if (note_found) {
-            // Note in clonedChord
-            for (Note *n : c_chord->notes()) {
-                ++note_cloned_position;
-                if (note_cloned_position == note_src_position) {
-                    c_note = n;
-                    break;
-                }
-            }
+static bool attached_in_score(EngravingObject *item, Score *score, const EIDRegister &registry) {
+    if (!item || item->score() != score) {
+        return false;
+    }
+    if (registry.live_item(registry.handle_of(score))) {
+        return registry.live_item(registry.handle_of(item)) == item;
+    }
+    for (EngravingObject *cur = item; cur != score; cur = cur->ownership_parent()) {
+        if (!cur || !source_attached(*cur)) {
+            return false;
         }
     }
-    return c_note;
+    return true;
 }
 
-//---------------------------------------------------------
-//   cloneAndRebuildSpanners
-//---------------------------------------------------------
-static void clone_and_rebuild_spanners(TrackList::ClonedChordMap &c_chord_map) {
-    Chord *src_chord = nullptr;
-    Note *c_note = nullptr;
-    auto iter = c_chord_map.begin();
-
-    // Clone Spanners from Chords
-    while (iter != c_chord_map.end()) {
-        src_chord = iter->first;
-
-        //
-        // Add For and Back Note's spanners to cloned Note
-        //
-        for (Note *src_note : src_chord->notes()) {
-            c_note = cloned_note(src_note, c_chord_map);
-
-            if (c_note) {
-                for (Spanner *sp : src_note->spanner_for()) {
-                    if (sp->is_guitar_bend() || sp->is_glissando()) {
-                        Spanner *csp = to_spanner(sp->clone());
-
-                        Note *end_cloned_note = cloned_note(to_note(sp->end_element()), c_chord_map);
-                        if (end_cloned_note) {
-                            csp->set_note_span(c_note, end_cloned_note);
-                            end_cloned_note->add_spanner_back(csp);
-                        }
-                        c_note->add_spanner_for(csp);
-                    }
-                }
-                for (Spanner *sp : src_note->spanner_back()) {
-                    if (sp->is_guitar_bend() || sp->is_glissando()) {
-                        Note *start_cloned_note = cloned_note(to_note(sp->start_element()), c_chord_map);
-                        // The outgoing pass attached the same clone at both endpoints.
-                        if (start_cloned_note) continue;
-                        Spanner *csp = to_spanner(sp->clone());
-
-                        c_note->add_spanner_back(csp);
-                    }
-                }
-            }
-        }
-        ++iter;
+static void record_written_chord(TrackList::WrittenChordMap *written_chords, const Chord *src, Chord *dst) {
+    if (!written_chords || !src || !dst) {
+        return;
     }
+    auto &span = (*written_chords)[src];
+    if (!span.first) {
+        span.first = dst;
+    }
+    span.last = dst;
 }
 
 //---------------------------------------------------------
@@ -152,7 +101,6 @@ static void clone_and_rebuild_spanners(TrackList::ClonedChordMap &c_chord_map) {
 //---------------------------------------------------------
 
 TrackList::~TrackList() {
-    cloned_chord_.clear();
     for (EngravingItem *e : *this) {
         if (e->is_tuplet()) {
             Tuplet *t = to_tuplet(e);
@@ -171,6 +119,9 @@ void TrackList::append_tuplet(Tuplet *src_tuplet, Tuplet *dst_tuplet) {
     for (DurationElement *de : src_tuplet->elements()) {
         DurationElement *e = to_duration_element(de->clone());
         dst_tuplet->add(e);
+        if (de->is_chord()) {
+            range_->record_read_chord(to_chord(de), to_chord(e));
+        }
         if (de->is_tuplet()) {
             Tuplet *st = to_tuplet(de);
             Tuplet *dt = to_tuplet(e);
@@ -216,6 +167,7 @@ void TrackList::combine_tuplet(Tuplet *dst, Tuplet *src) {
                 n->set_tie_for(chord->notes()[i]->tie_for());
                 ++i;
             }
+            range_->record_read_chord(chord, bc);
             idx = 1; // skip first src element
         }
     }
@@ -224,6 +176,9 @@ void TrackList::combine_tuplet(Tuplet *dst, Tuplet *src) {
         DurationElement *de = src->elements()[idx];
         DurationElement *e = to_duration_element(de->clone());
         dst->add(e);
+        if (de->is_chord()) {
+            range_->record_read_chord(to_chord(de), to_chord(e));
+        }
         if (de->is_tuplet()) {
             Tuplet *st = to_tuplet(de);
             Tuplet *dt = to_tuplet(e);
@@ -274,9 +229,6 @@ void TrackList::append(EngravingItem *e) {
                 if (e->is_chord()) {
                     Chord *chord = to_chord(e);
 
-                    // Map between Chords and clonned chords
-                    cloned_chord_.insert(std::make_pair(chord, to_chord(element)));
-
                     bool akkumulate_chord = true;
                     for (Note *n : chord->notes()) {
                         if (!n->tie_back_non_partial() || !n->tie_back()->generated()) {
@@ -297,7 +249,9 @@ void TrackList::append(EngravingItem *e) {
                         }
                         delete element;
                         element = nullptr;
-                        cloned_chord_.erase(chord);
+                        range_->record_read_chord(chord, bc);
+                    } else {
+                        range_->record_read_chord(chord, to_chord(element));
                     }
                 }
             }
@@ -369,7 +323,6 @@ bool TrackList::truncate(const Fraction &f) {
 
 void TrackList::read(const Segment *fs, const Segment *es) {
     Fraction tick = fs->tick();
-    cloned_chord_.clear();
 
     const Segment *s;
     for (s = fs; s && (s != es); s = s->next1()) {
@@ -424,13 +377,11 @@ void TrackList::read(const Segment *fs, const Segment *es) {
             append(e);
         }
     }
-    Fraction gap = es->tick() - tick;
+    const Fraction end_tick = es ? es->tick() : fs->score()->last_measure()->end_tick();
+    Fraction gap = end_tick - tick;
     if (gap.is_not_zero()) {
-        append_gap(gap, es->score());
+        append_gap(gap, fs->score());
     }
-
-    // Clone and rebuild Spanners
-    clone_and_rebuild_spanners(cloned_chord_);
 
     //
     // connect ties
@@ -469,7 +420,6 @@ void TrackList::read(const Segment *fs, const Segment *es) {
             }
         }
     }
-    cloned_chord_.clear();
 }
 
 //---------------------------------------------------------
@@ -495,7 +445,7 @@ static bool check_rest(Fraction &rest, Measure *&m, const Fraction &d) {
 //    rest    - available time in measure
 //---------------------------------------------------------
 
-Tuplet *TrackList::write_tuplet(Tuplet *parent, Tuplet *tuplet, Measure *&measure, Fraction &rest) const {
+Tuplet *TrackList::write_tuplet(Tuplet *parent, Tuplet *tuplet, Measure *&measure, Fraction &rest, WrittenChordMap *written_chords) const {
     Score *score = measure->score();
     Tuplet *dt = tuplet->clone();
     dt->set_ownership_parent(measure);
@@ -564,6 +514,7 @@ Tuplet *TrackList::write_tuplet(Tuplet *parent, Tuplet *tuplet, Measure *&measur
                     duration -= gd;
 
                     if (cr->is_chord()) {
+                        record_written_chord(written_chords, to_chord(e), to_chord(cr));
                         for (Note *note : to_chord(cr)->notes()) {
                             if (!duration.is_zero() && !note->tie_for()) {
                                 Tie *tie = Factory::create_tie(note);
@@ -577,7 +528,7 @@ Tuplet *TrackList::write_tuplet(Tuplet *parent, Tuplet *tuplet, Measure *&measur
                 }
             } else if (e->is_tuplet()) {
                 Tuplet *tt1 = to_tuplet(e);
-                Tuplet *ttt = write_tuplet(dt, tt1, measure, rest);
+                Tuplet *ttt = write_tuplet(dt, tt1, measure, rest, written_chords);
                 dt = ttt->tuplet();
                 parent = dt->tuplet();
                 duration = Fraction();
@@ -593,11 +544,10 @@ Tuplet *TrackList::write_tuplet(Tuplet *parent, Tuplet *tuplet, Measure *&measur
 //    rewrite notes into measure list measure
 //---------------------------------------------------------
 
-bool TrackList::write(Score *score, const Fraction &tick) const {
+bool TrackList::write(Score *score, const Fraction &tick, WrittenChordMap *written_chords) const {
     if ((track_ % ::mu::engraving::voices) && size() == 1 && at(0)->is_rest()) { // don’t write rests in voice > 0
         return true;
     }
-    ClonedChordMap w_cloned_chord;
     Measure *measure = score->tick2measure(tick);
     Measure *m = measure;
     Fraction remains = m->end_tick() - tick;
@@ -662,8 +612,7 @@ bool TrackList::write(Score *score, const Fraction &tick) const {
                         remains -= gd;
 
                         if (cr->is_chord()) {
-                            // Map between Chords and clonned chords
-                            w_cloned_chord.insert(std::make_pair(to_chord(e), to_chord(cr)));
+                            record_written_chord(written_chords, to_chord(e), to_chord(cr));
 
                             TremoloTwoChord *tremolo = to_chord(cr)->tremolo_two_chord();
                             if (!firstpart && tremolo) { // remove partial two-note tremolo
@@ -685,7 +634,7 @@ bool TrackList::write(Score *score, const Fraction &tick) const {
                         }
                     }
                 } else if (e->is_tuplet()) {
-                    write_tuplet(0, to_tuplet(e), m, remains);
+                    write_tuplet(0, to_tuplet(e), m, remains, written_chords);
                     duration = Fraction();
                 }
                 firstpart = false;
@@ -739,11 +688,6 @@ bool TrackList::write(Score *score, const Fraction &tick) const {
     }
 
     //
-    // Rebuild Spanner's Start and End Notes
-    //
-    clone_and_rebuild_spanners(w_cloned_chord);
-
-    //
     // connect ties from measure->first() to segment
     //
 
@@ -779,9 +723,165 @@ bool TrackList::write(Score *score, const Fraction &tick) const {
 
 ScoreRange::~ScoreRange() {
     muse::delete_all(tracks_);
+    delete_note_spanners();
     delete_bar_lines();
     delete_spacers();
     delete_jumps_and_markers();
+}
+
+void ScoreRange::record_read_chord(const Chord *src, const Chord *dst) {
+    if (!src || !dst) {
+        return;
+    }
+    if (read_chords_.try_emplace(src, dst).second) {
+        read_chord_order_.push_back(src);
+    } else {
+        read_chords_[src] = dst;
+    }
+}
+
+bool ScoreRange::make_note_endpoint_ref(Note *note, NoteEndpointRef &out) const {
+    if (!note) {
+        return false;
+    }
+    Chord *chord = note->chord();
+    if (!chord) {
+        return false;
+    }
+    const auto &notes = chord->notes();
+    auto note_it = std::find(notes.begin(), notes.end(), note);
+    if (note_it == notes.end()) {
+        return false;
+    }
+
+    const bool is_grace = chord->is_grace();
+    const Chord *main_chord =
+        is_grace ? (chord->ownership_parent() && chord->ownership_parent()->is_chord() ? to_chord(chord->ownership_parent()) : nullptr) :
+                   chord;
+    if (!main_chord) {
+        return false;
+    }
+
+    if (auto it = read_chords_.find(main_chord); it != read_chords_.end()) {
+        out.range_chord = it->second;
+        out.is_grace = is_grace;
+        out.grace_index = 0;
+        if (is_grace) {
+            const auto &graces = main_chord->grace_notes();
+            auto grace_it = std::find(graces.begin(), graces.end(), chord);
+            if (grace_it == graces.end()) {
+                return false;
+            }
+            out.grace_index = static_cast<size_t>(std::distance(graces.begin(), grace_it));
+        }
+        out.note_index = static_cast<size_t>(std::distance(notes.begin(), note_it));
+        out.external_note = {};
+        return true;
+    }
+
+    out.range_chord = nullptr;
+    out.is_grace = false;
+    out.grace_index = 0;
+    out.note_index = 0;
+    out.external_note = note->master_score()->eid_register()->enroll(*note);
+    return out.external_note.is_valid();
+}
+
+void ScoreRange::backup_note_spanners() {
+    EIDRegister *registry = first_->score()->master_score()->eid_register();
+    ankerl::unordered_dense::set<const Spanner *> seen;
+    auto collect_from_chord = [&](const Chord *chord) {
+        for (Note *note : chord->notes()) {
+            for (const auto *list : {&note->spanner_for(), &note->spanner_back()}) {
+                for (Spanner *sp : *list) {
+                    if (!is_note_anchored_line(sp) || !seen.insert(sp).second) {
+                        continue;
+                    }
+                    EngravingItem *start_el = sp->start_element();
+                    EngravingItem *end_el = sp->end_element();
+                    if (!start_el || !start_el->is_note() || !end_el || !end_el->is_note()) {
+                        continue;
+                    }
+                    Note *start_note = to_note(start_el);
+                    Note *end_note = to_note(end_el);
+                    NoteSpannerBackup backup;
+                    if (!make_note_endpoint_ref(start_note, backup.start) || !make_note_endpoint_ref(end_note, backup.end)) {
+                        continue;
+                    }
+                    Spanner *clone = to_spanner(sp->clone());
+                    clone->move_to_dummy();
+                    clone->set_start_element(nullptr);
+                    clone->set_end_element(nullptr);
+                    backup.spanner = clone;
+                    backup.original = registry->enroll(*sp);
+                    backup.single_note = (start_note == end_note);
+                    note_spanners_.push_back(backup);
+                }
+            }
+        }
+    };
+
+    for (const Chord *src_chord : read_chord_order_) {
+        for (const Chord *grace : src_chord->grace_notes()) {
+            collect_from_chord(grace);
+        }
+        collect_from_chord(src_chord);
+    }
+}
+
+void ScoreRange::restore_note_spanners(Score *score, const TrackList::WrittenChordMap &written_chords) const {
+    EIDRegister *registry = score->master_score()->eid_register();
+    auto resolve_endpoint = [&](const NoteEndpointRef &ref, bool use_first_part) -> Note * {
+        if (ref.range_chord) {
+            auto it = written_chords.find(ref.range_chord);
+            if (it == written_chords.end()) {
+                return nullptr;
+            }
+            Chord *target = (use_first_part || ref.is_grace) ? it->second.first : it->second.last;
+            if (!target) {
+                return nullptr;
+            }
+            if (ref.is_grace) {
+                if (ref.grace_index >= target->grace_notes().size()) {
+                    return nullptr;
+                }
+                target = target->grace_notes()[ref.grace_index];
+            }
+            if (ref.note_index >= target->notes().size()) {
+                return nullptr;
+            }
+            return target->notes()[ref.note_index];
+        }
+
+        EngravingObject *obj = registry->item_from_handle(ref.external_note);
+        if (!obj || !obj->is_note() || !attached_in_score(obj, score, *registry)) {
+            return nullptr;
+        }
+        Note *note = to_note(obj);
+        return (note->chord() && note->find_measure()) ? note : nullptr;
+    };
+
+    for (const NoteSpannerBackup &backup : note_spanners_) {
+        Note *new_start = resolve_endpoint(backup.start, backup.single_note);
+        Note *new_end = resolve_endpoint(backup.end, true);
+        if (!new_start || !new_end || (!backup.single_note && new_start == new_end) || new_end->tick() < new_start->tick()) {
+            continue;
+        }
+        if (EngravingObject *old_obj = registry->item_from_handle(backup.original);
+            old_obj && old_obj->is_spanner() && attached_in_score(old_obj, score, *registry)) {
+            score->undo_remove_element(to_spanner(old_obj));
+        }
+        Spanner *nsp = to_spanner(backup.spanner->clone());
+        nsp->set_note_span(new_start, new_end);
+        score->undo_add_element(nsp);
+    }
+}
+
+void ScoreRange::delete_note_spanners() {
+    for (const NoteSpannerBackup &backup : note_spanners_) {
+        delete backup.spanner;
+    }
+    note_spanners_.clear();
 }
 
 //---------------------------------------------------------
@@ -798,10 +898,13 @@ void ScoreRange::read(Segment *first, Segment *last, bool read_spanner) {
     track_idx_t end_track = score->nstaves() * ::mu::engraving::voices;
 
     spanner_.clear();
+    read_chords_.clear();
+    read_chord_order_.clear();
+    delete_note_spanners();
 
     if (read_spanner) {
         Fraction stick = first->tick();
-        Fraction etick = last->tick();
+        Fraction etick = last ? last->tick() : score->last_measure()->end_tick();
         for (auto i : first->score()->spanner()) {
             Spanner *s = i.second;
             if (s->system_flag() && s->track() != 0) {
@@ -830,6 +933,11 @@ void ScoreRange::read(Segment *first, Segment *last, bool read_spanner) {
             tracks_.push_back(dl);
         }
     }
+    if (read_spanner) {
+        backup_note_spanners();
+    }
+    read_chords_.clear();
+    read_chord_order_.clear();
 
     // Make sure incoming ties are restored
     Measure *m1 = first->measure();
@@ -915,9 +1023,10 @@ void ScoreRange::restore_volta(Score *score, const Fraction &tick, Volta *v) con
 //---------------------------------------------------------
 
 bool ScoreRange::write(Score *score, const Fraction &tick) const {
+    TrackList::WrittenChordMap written_chords;
     for (TrackList *dl : tracks_) {
         track_idx_t track = dl->track();
-        if (!dl->write(score, tick)) {
+        if (!dl->write(score, tick, &written_chords)) {
             return false;
         }
         if ((track % ::mu::engraving::voices) == ::mu::engraving::voices - 1) {
@@ -937,6 +1046,7 @@ bool ScoreRange::write(Score *score, const Fraction &tick) const {
         }
         ++track;
     }
+    restore_note_spanners(score, written_chords);
     for (Spanner *s : spanner_) {
         if (s->is_volta()) {
             restore_volta(score, tick, to_volta(s));
@@ -1058,7 +1168,7 @@ Fraction ScoreRange::ticks() const { return tracks_.empty() ? Fraction() : track
 //   backupBarLines
 //---------------------------------------------------------
 void ScoreRange::backup_bar_lines(Segment *first, Segment *last) {
-    for (Segment *s = first; s && (s->is_before(last) || s == last); s = s->next1()) {
+    for (Segment *s = first; s && (!last || s->is_before(last) || s == last); s = s->next1()) {
         if (!s->is_type(SegmentType::BAR_LINE_TYPES)) {
             continue;
         }
@@ -1211,7 +1321,7 @@ void ScoreRange::restore_bar_lines(Score *score, const Fraction &tick) const {
 //---------------------------------------------------------
 void ScoreRange::backup_breaks(Segment *first, Segment *last) {
     Measure *fm = first->measure();
-    Measure *lm = last->measure();
+    Measure *lm = last ? last->measure() : first->score()->last_measure();
     for (Measure *m = fm; m && m != lm->next_measure(); m = m->next_measure()) {
         if (m->line_break()) {
             BreaksBackup b_backup;
@@ -1250,7 +1360,7 @@ void ScoreRange::restore_breaks(Score *score, const Fraction &tick) const {
 
 void ScoreRange::backup_repeats(Segment *first, Segment *last) {
     Measure *fm = first->measure();
-    Measure *lm = last->measure();
+    Measure *lm = last ? last->measure() : first->score()->last_measure();
     for (Measure *m = fm; m && m != lm->next_measure(); m = m->next_measure()) {
         if (m->repeat_start()) {
             StartEndRepeatBackup repeat_backup;
@@ -1301,7 +1411,7 @@ void ScoreRange::delete_bar_lines() {
 
 void ScoreRange::backup_spacers(Segment *first, Segment *last) {
     Measure *fm = first->measure();
-    Measure *lm = last->measure();
+    Measure *lm = last ? last->measure() : first->score()->last_measure();
 
     for (Measure *m = fm; m && m != lm->next_measure(); m = m->next_measure()) {
         staff_idx_t n_staves = m->score()->nstaves();
@@ -1392,7 +1502,7 @@ bool ScoreRange::end_of_measure_element(EngravingItem *e) const {
 
 void ScoreRange::backup_jumps_and_markers(Segment *first, Segment *last) {
     Measure *fm = first->measure();
-    Measure *lm = last->measure();
+    Measure *lm = last ? last->measure() : first->score()->last_measure();
 
     for (Measure *m = fm; m && m != lm->next_measure(); m = m->next_measure()) {
         // Backup Markers and Jumps (Measures's son)

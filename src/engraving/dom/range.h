@@ -22,9 +22,11 @@
 
 #pragma once
 
-#include <list>
 #include <vector>
 
+#include <ankerl/unordered_dense.h>
+
+#include "../infrastructure/sourcehandle.h"
 #include "../types/fraction.h"
 #include "../types/types.h"
 
@@ -52,7 +54,12 @@ struct Volta;
 struct TrackList : std::vector<EngravingItem *> {
 
 public:
-    typedef std::map<Chord *, Chord *> ClonedChordMap;
+    struct WrittenChordSpan {
+        Chord *first = nullptr;
+        Chord *last = nullptr;
+    };
+
+    using WrittenChordMap = ankerl::unordered_dense::map<const Chord *, WrittenChordSpan>;
 
     TrackList(ScoreRange *r) { range_ = r; }
 
@@ -67,7 +74,7 @@ public:
     void set_track(track_idx_t val) { track_ = val; }
 
     void read(const Segment *fs, const Segment *ls);
-    bool write(Score *, const Fraction &) const;
+    bool write(Score *, const Fraction &, WrittenChordMap *written_chords = nullptr) const;
 
     void append_gap(const Fraction &, Score *score);
     bool truncate(const Fraction &);
@@ -75,7 +82,8 @@ public:
 
 private:
 
-    Tuplet *write_tuplet(Tuplet *parent, Tuplet *tuplet, Measure *&measure, Fraction &rest) const;
+    Tuplet *write_tuplet(Tuplet *parent, Tuplet *tuplet, Measure *&measure, Fraction &rest,
+                         WrittenChordMap *written_chords = nullptr) const;
     void append(EngravingItem *);
     void append_tuplet(Tuplet *src_tuplet, Tuplet *dst_tuplet);
     void combine_tuplet(Tuplet *dst, Tuplet *src);
@@ -83,7 +91,6 @@ private:
     Fraction duration_;
     ScoreRange *range_ = nullptr;
     track_idx_t track_ = 0;
-    ClonedChordMap cloned_chord_;
 };
 
 //---------------------------------------------------------
@@ -174,12 +181,37 @@ private:
 
     void restore_volta(Score *score, const Fraction &tick, Volta *v) const;
 
+    struct NoteEndpointRef {
+        const Chord *range_chord = nullptr;
+        bool is_grace = false;
+        size_t grace_index = 0;
+        size_t note_index = 0;
+        SourceHandle external_note;
+    };
+
+    struct NoteSpannerBackup {
+        Spanner *spanner = nullptr;
+        SourceHandle original;
+        NoteEndpointRef start;
+        NoteEndpointRef end;
+        bool single_note = false;
+    };
+
+    void record_read_chord(const Chord *src, const Chord *dst);
+    bool make_note_endpoint_ref(Note *note, NoteEndpointRef &out) const;
+    void backup_note_spanners();
+    void restore_note_spanners(Score *score, const TrackList::WrittenChordMap &written_chords) const;
+    void delete_note_spanners();
+
     friend struct TrackList;
 
     std::vector<TrackList *> tracks_;
     std::vector<Tie *> start_ties_;
     std::vector<SpacerBackup> spacers_;
     std::vector<JumpsMarkersBackup> jumps_markers_;
+    ankerl::unordered_dense::map<const Chord *, const Chord *> read_chords_;
+    std::vector<const Chord *> read_chord_order_;
+    std::vector<NoteSpannerBackup> note_spanners_;
     Segment *first_ = nullptr;
     Segment *last_ = nullptr;
 };

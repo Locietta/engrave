@@ -210,10 +210,7 @@ bool EditTimeSig::rewrite_measures(Transaction &tx, Score *score, Measure *start
 
     ScoreRange range;
     Measure *next_measure = end_measure->next_measure();
-    Segment *final_seg = end_measure->last();
-    if (next_measure) {
-        final_seg = next_measure->first();
-    }
+    Segment *final_seg = next_measure ? next_measure->first() : nullptr;
     range.read(start_measure->first(), final_seg);
 
     //

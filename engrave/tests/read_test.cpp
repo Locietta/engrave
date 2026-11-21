@@ -1,5 +1,6 @@
 #include "engraving/dom/dummyparent.h"
 #include "engraving/dom/guitarbend.h"
+#include "engraving/dom/range.h"
 #include "read_test_fixture.h"
 
 using namespace read_test;
@@ -1017,6 +1018,211 @@ TEST(Read, NoteAnchoredLineEndsMatchAcrossLegacyReadAndNativeReadback) {
     ASSERT_TRUE(readback);
     EXPECT_EQ(flags(**readback), (std::vector<bool>{false, true, true, true}));
     EXPECT_EQ(segment_x(**readback), legacy_x);
+}
+
+TEST(Read, TimeSigRewriteReanchorsCrossBoundaryNoteOwnedLines) {
+    using namespace mu::engraving;
+    constexpr std::string_view xml = R"(<museScore version="4.60"><Score><Division>480</Division>
+<Part><Staff id="1"/><Instrument id="guitar"><trackName>Guitar</trackName><instrumentId>pluck.guitar</instrumentId></Instrument></Part>
+<Staff id="1">
+<Measure><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
+<Chord><durationType>quarter</durationType><Note><pitch>60</pitch><tpc>14</tpc></Note></Chord>
+<Chord><durationType>quarter</durationType><Note><pitch>62</pitch><tpc>16</tpc></Note></Chord>
+<Chord><durationType>half</durationType><Note><pitch>64</pitch><tpc>18</tpc></Note></Chord>
+</voice></Measure>
+<Measure><voice>
+<Chord><durationType>quarter</durationType><Note><pitch>65</pitch><tpc>13</tpc></Note></Chord>
+<Chord><durationType>quarter</durationType><Note><pitch>67</pitch><tpc>15</tpc></Note></Chord>
+<Chord><durationType>half</durationType><Note><pitch>69</pitch><tpc>17</tpc></Note></Chord>
+</voice></Measure>
+<Measure><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
+<Chord><durationType>half</durationType><Note><pitch>71</pitch><tpc>19</tpc></Note></Chord>
+<Chord><durationType>half</durationType><Note><pitch>72</pitch><tpc>14</tpc></Note></Chord>
+</voice></Measure>
+</Staff></Score></museScore>)";
+
+    auto opened = g_engine->open(as_bytes(xml));
+    ASSERT_TRUE(opened) << opened.error().message;
+    auto &document = **opened;
+    auto &master = master_of(document);
+    auto &registry = *master.eid_register();
+
+    const auto measure_notes = [](Measure *measure) {
+        std::vector<Note *> notes;
+        for (auto *seg = measure->first(SegmentType::CHORD_REST); seg; seg = seg->next(SegmentType::CHORD_REST)) {
+            if (auto *el = seg->element(0); el && el->is_chord()) {
+                notes.push_back(to_chord(el)->up_note());
+            }
+        }
+        return notes;
+    };
+
+    Measure *m1 = master.first_measure();
+    Measure *m2 = m1 ? m1->next_measure() : nullptr;
+    Measure *m3 = m2 ? m2->next_measure() : nullptr;
+    ASSERT_TRUE(m1 && m2 && m3);
+
+    const auto m1_notes = measure_notes(m1);
+    const auto m2_notes = measure_notes(m2);
+    const auto m3_notes = measure_notes(m3);
+    ASSERT_EQ(m1_notes.size(), 3u);
+    ASSERT_EQ(m2_notes.size(), 3u);
+    ASSERT_EQ(m3_notes.size(), 2u);
+
+    auto add_line = [&](Spanner *line, Note *start, Note *end) {
+        line->set_note_span(start, end);
+        master.add_element(line);
+    };
+    add_line(Factory::create_glissando(m1_notes[0]), m1_notes[0], m2_notes[0]);
+    auto *incoming_bend = Factory::create_guitar_bend(m1_notes[1]);
+    incoming_bend->set_bend_type(GuitarBendType::BEND);
+    add_line(incoming_bend, m1_notes[1], m2_notes[1]);
+    add_line(Factory::create_note_line(m1_notes[2]), m1_notes[2], m2_notes[2]);
+    add_line(Factory::create_glissando(m2_notes[0]), m2_notes[0], m3_notes[0]);
+    auto *outgoing_bend = Factory::create_guitar_bend(m2_notes[1]);
+    outgoing_bend->set_bend_type(GuitarBendType::BEND);
+    add_line(outgoing_bend, m2_notes[1], m3_notes[1]);
+    engrave::assign_missing_ids(master);
+
+    std::vector<SourceHandle> disposed_handles{registry.enroll(*m2)};
+    for (Note *n : m2_notes) {
+        disposed_handles.push_back(registry.enroll(*n));
+    }
+
+    ASSERT_TRUE(document.edit({{engrave::SetTimeSig{engrave::from_engine(m2->eid()), {3, 4}}}}));
+
+    for (const SourceHandle &handle : disposed_handles) {
+        EXPECT_EQ(registry.item_from_handle(handle), nullptr);
+    }
+
+    std::vector<Spanner *> live_lines;
+    for (auto *obj : engrave::document_objects(master)) {
+        if (obj->is_glissando() || obj->is_guitar_bend() || obj->is_note_line()) {
+            live_lines.push_back(to_spanner(obj));
+        }
+    }
+    ASSERT_EQ(live_lines.size(), 5u);
+
+    size_t gliss_count = 0;
+    size_t bend_count = 0;
+    size_t noteline_count = 0;
+    for (Spanner *sp : live_lines) {
+        gliss_count += sp->is_glissando() ? 1u : 0u;
+        bend_count += sp->is_guitar_bend() ? 1u : 0u;
+        noteline_count += sp->is_note_line() ? 1u : 0u;
+        ASSERT_TRUE(sp->start_element() && sp->start_element()->is_note());
+        ASSERT_TRUE(sp->end_element() && sp->end_element()->is_note());
+        Note *start = to_note(sp->start_element());
+        Note *end = to_note(sp->end_element());
+        EXPECT_TRUE(source_attached(*start));
+        EXPECT_TRUE(source_attached(*end));
+        EXPECT_TRUE(registry.handle_of(start).is_valid());
+        EXPECT_TRUE(registry.handle_of(end).is_valid());
+        EXPECT_EQ(sp->ownership_parent(), start);
+        EXPECT_EQ(std::ranges::count(start->spanner_for(), sp), 1);
+        EXPECT_EQ(std::ranges::count(end->spanner_back(), sp), 1);
+        EXPECT_TRUE(end->chord()->ends_note_anchored_line());
+        EXPECT_EQ(sp->tick(), start->tick());
+        EXPECT_EQ(sp->tick2(), end->tick());
+    }
+    EXPECT_EQ(gliss_count, 2u);
+    EXPECT_EQ(bend_count, 2u);
+    EXPECT_EQ(noteline_count, 1u);
+
+    for (Note *n : m1_notes) {
+        ASSERT_EQ(n->spanner_for().size(), 1u);
+    }
+    EXPECT_EQ(to_note(m1_notes[0]->spanner_for().front()->end_element())->pitch(), 65);
+    EXPECT_EQ(to_note(m1_notes[1]->spanner_for().front()->end_element())->pitch(), 67);
+    EXPECT_EQ(to_note(m1_notes[2]->spanner_for().front()->end_element())->pitch(), 69);
+    EXPECT_EQ(to_note(m1_notes[2]->spanner_for().front()->end_element())->tick(), Fraction(6, 4));
+    for (Note *n : m3_notes) {
+        ASSERT_EQ(n->spanner_back().size(), 1u);
+    }
+    EXPECT_EQ(to_note(m3_notes[0]->spanner_back().front()->start_element())->pitch(), 65);
+    EXPECT_EQ(to_note(m3_notes[1]->spanner_back().front()->start_element())->pitch(), 67);
+
+    auto rendered = document.render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(rendered) << rendered.error().message;
+    auto saved = document.export_score({.format = engrave::Format::MSCX});
+    ASSERT_TRUE(saved) << saved.error().message;
+    auto reopened = g_engine->open(*saved);
+    ASSERT_TRUE(reopened) << reopened.error().message;
+    ASSERT_TRUE((*reopened)->render({.format = engrave::RenderFormat::SVG}));
+}
+
+TEST(Read, ScoreRangeWriteDiscardsCrossBoundaryNoteLinesWithDisposedStart) {
+    using namespace mu::engraving;
+    constexpr std::string_view xml = R"(<museScore version="4.60"><Score><Division>480</Division>
+<Part><Staff id="1"/><Instrument id="guitar"><trackName>Guitar</trackName><instrumentId>pluck.guitar</instrumentId></Instrument></Part>
+<Staff id="1">
+<Measure><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
+<Chord><durationType>half</durationType><Note><pitch>60</pitch><tpc>14</tpc></Note></Chord>
+<Chord><durationType>half</durationType><Note><pitch>62</pitch><tpc>16</tpc></Note></Chord>
+</voice></Measure>
+<Measure><voice>
+<Chord><durationType>half</durationType><Note><pitch>65</pitch><tpc>13</tpc></Note></Chord>
+<Chord><durationType>half</durationType><Note><pitch>67</pitch><tpc>15</tpc></Note></Chord>
+</voice></Measure>
+</Staff></Score></museScore>)";
+
+    auto opened = g_engine->open(as_bytes(xml));
+    ASSERT_TRUE(opened) << opened.error().message;
+    auto &document = **opened;
+    auto &master = master_of(document);
+    auto &registry = *master.eid_register();
+
+    Measure *m1 = master.first_measure();
+    Measure *m2 = m1 ? m1->next_measure() : nullptr;
+    ASSERT_TRUE(m1 && m2);
+
+    Note *start_gliss = to_chord(m1->first(SegmentType::CHORD_REST)->element(0))->up_note();
+    Note *start_bend = to_chord(m1->first(SegmentType::CHORD_REST)->next(SegmentType::CHORD_REST)->element(0))->up_note();
+    Note *end_gliss = to_chord(m2->first(SegmentType::CHORD_REST)->element(0))->up_note();
+    Note *end_bend = to_chord(m2->first(SegmentType::CHORD_REST)->next(SegmentType::CHORD_REST)->element(0))->up_note();
+
+    auto *gliss = Factory::create_glissando(start_gliss);
+    gliss->set_note_span(start_gliss, end_gliss);
+    master.add_element(gliss);
+
+    auto *bend = Factory::create_guitar_bend(start_bend);
+    bend->set_bend_type(GuitarBendType::BEND);
+    bend->set_note_span(start_bend, end_bend);
+    master.add_element(bend);
+
+    const SourceHandle m1_handle = registry.enroll(*m1);
+    const SourceHandle m2_handle = registry.enroll(*m2);
+
+    {
+        Command cmd(master);
+        ScoreRange range;
+        range.read(m2->first(), nullptr);
+
+        master.undo_remove_measures(m1, m2, true);
+        Measure *replacement = Factory::create_measure(&master);
+        replacement->set_timesig(Fraction(4, 4));
+        replacement->set_ticks(Fraction(4, 4));
+        replacement->set_tick(Fraction(0, 1));
+        master.transaction_manager()->current_or_dummy_transaction().change_measures(replacement, replacement, true);
+        ASSERT_TRUE(range.write(&master, Fraction(0, 1)));
+        cmd.commit();
+    }
+
+    EXPECT_EQ(registry.item_from_handle(m1_handle), nullptr);
+    EXPECT_EQ(registry.item_from_handle(m2_handle), nullptr);
+
+    for (auto *obj : engrave::document_objects(master)) {
+        EXPECT_FALSE(obj->is_glissando());
+        EXPECT_FALSE(obj->is_guitar_bend());
+        if (obj->is_note()) {
+            Note *note = to_note(obj);
+            EXPECT_TRUE(note->spanner_for().empty());
+            EXPECT_TRUE(note->spanner_back().empty());
+            EXPECT_FALSE(note->chord()->ends_note_anchored_line());
+        }
+    }
+    ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+    ASSERT_TRUE(document.export_score({.format = engrave::Format::MSCX}));
 }
 
 TEST(Read, NormalizeRepairsGraceTieTicksAfterMeasureInsertion) {
