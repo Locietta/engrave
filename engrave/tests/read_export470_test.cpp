@@ -675,9 +675,10 @@ TEST(Export470, EnabledFluteGroupingIsWarnedAndReopensDisabled) {
 }
 
 namespace {
-// Build and platform metadata vary between hosts; the rest of a 4.70 document is pinned.
+// Build and platform metadata vary between hosts, and a score without an authored
+// creationDate is stamped with the day it was opened; the rest of a 4.70 document is pinned.
 std::string legacy_digest_without_build_metadata(std::string xml) {
-    for (const std::string_view tag : {"<programRevision>", "<metaTag name=\"platform\">"}) {
+    for (const std::string_view tag : {"<programRevision>", "<metaTag name=\"creationDate\">", "<metaTag name=\"platform\">"}) {
         const auto open = xml.find(tag);
         if (open == std::string::npos) return "missing " + std::string(tag);
         const auto content = open + tag.size();
@@ -689,7 +690,7 @@ std::string legacy_digest_without_build_metadata(std::string xml) {
 }
 
 // The 4.70 writer at 98d232fda7 produced these bytes for the minimal fixture.
-constexpr std::string_view minimal_legacy_digest = "a6bf83a7b22d2ac5cb906ed686ba6b5d6052b19d19ba772463f75e3c4b9b99f4";
+constexpr std::string_view minimal_legacy_digest = "c241e4fe7f37850778151963125ecb429db0966dd5bc7c2e1a914a2332a498d1";
 } // namespace
 
 TEST(Export470, StaveSharingChangeStyleIsInactiveWithoutSharedParts) {
