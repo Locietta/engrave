@@ -42,7 +42,6 @@
 #include "dom/segment.h"
 #include "dom/slur.h"
 #include "dom/spacer.h"
-#include "dom/spannermap.h"
 #include "dom/staff.h"
 #include "dom/staffvisibilityindicator.h"
 #include "dom/system.h"
@@ -51,6 +50,7 @@
 #include "dom/tuplet.h"
 #include "engraving/dom/dummyparent.h"
 #include "headerfooterlayout.h"
+#include "layoutdatastore.h"
 #include "log.h"
 #include "masklayout.h"
 #include "measurelayout.h"
@@ -464,10 +464,9 @@ void PageLayout::layout_cross_staff_slurs(LayoutContext &ctx, System *system) {
     Fraction stick = system->first_measure()->tick();
     Fraction etick = system->end_tick();
 
-    auto spanners = ctx.dom().spanner_map().find_overlapping(stick.ticks(), etick.ticks());
-    for (auto interval : spanners) {
-        Spanner *sp = interval.value;
-        if (!sp->is_slur() || sp->tick() == system->end_tick()) {
+    const auto spanners = ctx.dom().score()->layout_data_store()->rendered_spanners(stick.ticks(), etick.ticks());
+    for (Spanner *sp : spanners) {
+        if (!sp->is_slur() || sp->tick() == etick || !system->staff(sp->staff_idx())->show()) {
             continue;
         }
         Slur *slur = to_slur(sp);

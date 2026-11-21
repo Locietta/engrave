@@ -647,6 +647,7 @@ void LayoutDataStore::discard_score_output() {
     }
     layout_copies_.clear();
     output_.stave_sharing_states.clear();
+    output_.suspended_shared_parts.clear();
     output_.suppressed_shared_spanners.clear();
     {
         BoolGuard guard(suppress_shape_prune_, true);

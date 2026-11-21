@@ -1930,6 +1930,16 @@ void SystemLayout::layout_ties(Chord *ch, System *system, const Fraction &stick,
         t = note->tie_back();
         if (t) {
             if (note->incoming_partial_tie() || t->start_note()->tick() < stick) {
+                // A shared tie is created when its end note becomes available.
+                if (t->is_layout_copy() && t->start_note() && (t->segments_empty() || !t->segment_at(0)->system())) {
+                    auto *start_system = t->start_note()->chord()->measure()->system();
+                    if (start_system && start_system != system) {
+                        auto *start = SlurTieLayout::layout_tie_for(t, start_system);
+                        if (start && start->add_to_skyline()) {
+                            start_system->staff(start->staff_idx())->skyline().add(start->shape().translate(start->pos()));
+                        }
+                    }
+                }
                 TieSegment *ts = SlurTieLayout::layout_tie_back(t, system, ctx);
                 if (ts && ts->add_to_skyline()) {
                     staff->skyline().add(ts->shape().translate(ts->pos()));

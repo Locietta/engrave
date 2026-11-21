@@ -829,3 +829,163 @@ TEST(StaveSharingOutput, CrossingSlurResolvesEachEndpointAndHairpinStaysOnStaff)
         EXPECT_EQ(source_native(master), cold);
     }
 }
+
+TEST(StaveSharingOutput, SplitUnisonKeepsBothTiesAcrossAutomaticSystemMaps) {
+    using namespace mu::engraving;
+    const auto source = read_text(g_source_root / "tests/data/inputs/stave-sharing.mscx");
+    for (const bool authored : {false, true}) {
+        SCOPED_TRACE(authored);
+        auto xml = source;
+        xml.insert(xml.find("<voice>"), "<LayoutBreak><subtype>line</subtype></LayoutBreak>");
+        auto document = open_text(xml);
+        ASSERT_TRUE(document);
+        auto &master = master_of(*document);
+        auto *first_measure = master.first_measure();
+        auto *second_measure = first_measure->next_measure();
+        auto *first = first_measure->first(SegmentType::CHORD_REST)->next(SegmentType::CHORD_REST);
+        auto *second = second_measure->first(SegmentType::CHORD_REST);
+        auto *part = master.shared_parts().front();
+        if (authored) part->set_authored_state(first_measure->tick(), {{{8, 0}, {12, 0}}, false});
+        auto *diverging = to_chord(second->next(SegmentType::CHORD_REST)->element(12))->up_note();
+        diverging->set_pitch(76);
+        diverging->set_tpc1(18);
+        diverging->set_tpc2(18);
+
+        std::vector<Tie *> ties;
+        for (const auto track : {8u, 12u}) {
+            auto *start = to_chord(first->element(track))->up_note();
+            auto *end = to_chord(second->element(track))->up_note();
+            end->set_pitch(74);
+            end->set_tpc1(16);
+            end->set_tpc2(16);
+            auto *tie = Factory::create_tie(start);
+            tie->set_note_span(start, end);
+            master.add_element(tie);
+            tie->assign_new_eid();
+            ties.push_back(tie);
+        }
+
+        const auto cold = source_native(master);
+        for (int pass = 0; pass < 2; ++pass) {
+            ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+            ASSERT_NE(first->system(), second->system());
+            const auto *state = part->rendered_state_at_tick(second->tick());
+            ASSERT_NE(state, nullptr);
+            EXPECT_FALSE(state->is_user_map_valid);
+            const Tie *displays[2]{};
+            for (size_t i = 0; i < ties.size(); ++i) {
+                const auto *start = to_note(master.layout_copy(*ties[i]->start_note()));
+                const auto *end = to_note(master.layout_copy(*ties[i]->end_note()));
+                const auto *display = to_tie(master.layout_copy(*ties[i]));
+                ASSERT_NE(start, nullptr);
+                ASSERT_NE(end, nullptr);
+                ASSERT_NE(display, nullptr);
+                EXPECT_EQ(display->start_note(), start);
+                EXPECT_EQ(display->end_note(), end);
+                EXPECT_EQ(start->tie_for(), display);
+                EXPECT_EQ(end->tie_back(), display);
+                EXPECT_EQ(display->nsegments(), 2u);
+                displays[i] = display;
+            }
+            EXPECT_NE(displays[0]->start_note(), displays[1]->start_note());
+            EXPECT_NE(displays[0]->end_note(), displays[1]->end_note());
+            EXPECT_EQ(source_native(master), cold);
+            master.invalidate_layout(second->tick(), second_measure->end_tick());
+        }
+    }
+}
+
+TEST(StaveSharingOutput, AutomaticCrossSystemSpannersKeepTheirStartTrack) {
+    using namespace mu::engraving;
+    auto xml = read_text(g_source_root / "tests/data/inputs/stave-sharing.mscx");
+    xml.insert(xml.find("<voice>"), "<LayoutBreak><subtype>line</subtype></LayoutBreak>");
+    xml.insert(xml.find("</Style>"), "<allowVoiceCrossing>0</allowVoiceCrossing>");
+    auto document = open_text(xml);
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *first = master.first_measure()->first(SegmentType::CHORD_REST)->next(SegmentType::CHORD_REST);
+    auto *second = master.first_measure()->next_measure()->first(SegmentType::CHORD_REST)->next(SegmentType::CHORD_REST);
+    auto *end = to_chord(second->element(12))->up_note();
+    end->set_pitch(76);
+    end->set_tpc1(18);
+    end->set_tpc2(18);
+    auto *slur = Factory::create_slur(master.dummy());
+    auto *hairpin = Factory::create_hairpin(master.dummy());
+    for (Spanner *span : {static_cast<Spanner *>(slur), static_cast<Spanner *>(hairpin)}) {
+        span->set_track(12);
+        span->set_track2(12);
+        span->set_tick(first->tick());
+        span->set_tick2(second->tick());
+        master.add_element(span);
+        span->assign_new_eid();
+    }
+    const auto cold = source_native(master);
+    for (int pass = 0; pass < 2; ++pass) {
+        ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+        ASSERT_NE(first->system(), second->system());
+        const auto *shared_slur = to_slur(master.layout_copy(*slur));
+        ASSERT_NE(shared_slur, nullptr);
+        EXPECT_EQ(shared_slur->track(), 1u);
+        EXPECT_EQ(shared_slur->effective_track2(), 4u);
+        EXPECT_EQ(shared_slur->start_element(), first->effective_element(1));
+        EXPECT_EQ(shared_slur->end_element(), second->effective_element(4));
+        const auto *shared_hairpin = to_hairpin(master.layout_copy(*hairpin));
+        ASSERT_NE(shared_hairpin, nullptr);
+        EXPECT_EQ(shared_hairpin->track(), 1u);
+        EXPECT_EQ(shared_hairpin->effective_track2(), 1u);
+        EXPECT_EQ(shared_hairpin->voice_assignment(), VoiceAssignment::ALL_VOICE_IN_STAFF);
+        for (const Spanner *span : {static_cast<const Spanner *>(shared_slur), static_cast<const Spanner *>(shared_hairpin)}) {
+            ASSERT_EQ(span->nsegments(), 2u);
+            EXPECT_EQ(span->segment_at(0)->system(), first->system());
+            EXPECT_EQ(span->segment_at(1)->system(), second->system());
+        }
+        EXPECT_EQ(source_native(master), cold);
+        master.invalidate_layout(second->tick(), second->measure()->end_tick());
+    }
+}
+
+TEST(StaveSharingOutput, RemovingSharedStaffKeepsIncompatibleOriginVoicesVisible) {
+    using namespace mu::engraving;
+    auto xml = read_text(g_source_root / "tests/data/inputs/stave-sharing.mscx");
+    const auto voice = [](int pitch, int tpc) {
+        return std::format("<voice><Chord><durationType>whole</durationType><Note><pitch>{}</pitch><tpc>{}</tpc></Note></Chord></voice>",
+                           pitch, tpc);
+    };
+    xml.insert(xml.find("</Measure>", xml.find("<Staff id=\"4\">")), voice(84, 14));
+    xml.insert(xml.find("</Measure>", xml.find("<Staff id=\"3\">")), voice(77, 13) + voice(79, 15));
+    auto document = open_text(xml);
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *measure = master.first_measure();
+    auto *segment = measure->first(SegmentType::CHORD_REST);
+    auto *part = master.shared_parts().front();
+    auto *fourth = to_chord(segment->element(12))->up_note();
+    fourth->set_pitch(81);
+    fourth->set_tpc1(17);
+    fourth->set_tpc2(17);
+    ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+    ASSERT_EQ(part->track_map_at_tick(measure->tick()).size(), 5u);
+
+    auto *manager = master.transaction_manager();
+    manager->begin_transaction(muse::TranslatableString::untranslatable("remove a shared staff"));
+    master.cmd_remove_staff(1);
+    manager->end_transaction();
+    ASSERT_EQ(part->staves().size(), 1u);
+    const auto cold = source_native(master);
+    const auto objects = engrave::document_objects(master);
+    for (int pass = 0; pass < 2; ++pass) {
+        ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+        EXPECT_FALSE(measure->system()->staff(0)->show());
+        EXPECT_TRUE(measure->system()->staff(1)->show());
+        EXPECT_TRUE(measure->system()->staff(2)->show());
+        std::vector<int> visible_pitches;
+        segment->scan_elements([&](const auto *item) {
+            if (item->is_note()) visible_pitches.push_back(to_note(item)->pitch());
+        });
+        std::ranges::sort(visible_pitches);
+        EXPECT_EQ(visible_pitches, (std::vector{72, 77, 79, 81, 84}));
+        EXPECT_EQ(source_native(master), cold);
+        EXPECT_EQ(engrave::document_objects(master), objects);
+        master.invalidate_layout(measure->tick(), measure->end_tick());
+    }
+}

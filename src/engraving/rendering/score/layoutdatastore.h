@@ -31,6 +31,7 @@ struct LayoutDataStore {
         std::vector<const Spanner *> suppressed_shared_spanners;
         std::vector<Tuplet *> shared_tuplets;
         std::map<const SharedPart *, RenderedStaveSharingStates> stave_sharing_states;
+        std::vector<const SharedPart *> suspended_shared_parts;
     };
 
     Score *score() const { return score_; }

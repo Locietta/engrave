@@ -92,6 +92,12 @@ SpannerSegment *SlurTieLayout::layout_system(Slur *item, System *system, LayoutC
     }
     slur_segment->set_spanner_segment_type(sst);
 
+    auto *start_cr = item->start_cr();
+    auto *end_cr = item->end_cr();
+    if (!start_cr || (!end_cr && (sst == SpannerSegmentType::SINGLE || sst == SpannerSegmentType::END || item->is_outgoing()))) {
+        return slur_segment;
+    }
+
     SlurTiePos s_pos;
     slur_pos(item, &s_pos, ctx);
     PointF p1, p2;
@@ -238,7 +244,7 @@ SpannerSegment *SlurTieLayout::layout_system(Slur *item, System *system, LayoutC
         }
     } else {
         // at end of system
-        Measure *measure = item->end_cr()->measure();
+        Measure *measure = outgoing_partial_slur ? end_cr->measure() : system->last_measure();
         ChordRest *last_cr = outgoing_partial_slur ? measure->last_chord_rest(item->track()) : system->last_chord_rest(item->track());
         double y = p1.y();
         const bool same_staff = last_cr && last_cr->v_staff_idx() == slur_segment->v_staff_idx();
@@ -259,8 +265,7 @@ SpannerSegment *SlurTieLayout::layout_system(Slur *item, System *system, LayoutC
             }
         }
 
-        double ending_x =
-            ending_x_for_open_ended_slur_tie(outgoing_partial_slur ? measure : system->last_measure(), item->start_cr()->v_staff_idx());
+        double ending_x = ending_x_for_open_ended_slur_tie(measure, start_cr->v_staff_idx());
         p2 = PointF(ending_x, y);
 
         // adjust for ties at the end of the system

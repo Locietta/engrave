@@ -41,6 +41,7 @@ using AuthoredStaveSharingStates = std::vector<std::pair<Fraction, AuthoredStave
 struct RenderedStaveSharingState {
     SharedTrackMap shared_track_map;
     bool is_user_map_valid = false;
+    bool capacity_exhausted = false;
     bool operator==(const RenderedStaveSharingState &) const = default;
 };
 

@@ -148,7 +148,10 @@ void ScorePageViewLayout::prepare_score(Score *score, const LayoutContext &ctx) 
             // and ~System unlinks itself from its page
         }
 
-        score->layout_data_store()->discard_score_output();
+        auto &store = *score->layout_data_store();
+        auto suspended = std::move(store.score_output().suspended_shared_parts);
+        store.discard_score_output();
+        store.score_output().suspended_shared_parts = std::move(suspended);
     }
 }
 

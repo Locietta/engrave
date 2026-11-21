@@ -132,10 +132,33 @@ void ScoreLayout::layout_range(Score *score, const Fraction &st, const Fraction 
         if (auto *m = score->tick2measure(stick); m && m->prev_measure()) stick = m->prev_measure()->tick();
         if (auto *m = score->tick2measure(etick); m && m->next_measure()) etick = m->next_measure()->end_tick();
     }
-    ctx.mut_state().set_is_layout_all(is_layout_all);
+    auto &sharing_output = ctx.mut_layout_data().score_output();
+    if (sharing_output.suspended_shared_parts.empty()) {
+        ctx.mut_state().set_is_layout_all(is_layout_all);
+        ScorePageViewLayout::layout_page_view(score, ctx, stick, etick);
+    } else {
+        // A subsequent edit may make the group representable again.
+        sharing_output.suspended_shared_parts.clear();
+        LayoutContext retry(score);
+        retry.mut_state().set_is_layout_all(true);
+        ScorePageViewLayout::layout_page_view(score, retry, Fraction(0, 1), score->last()->end_tick());
+    }
 
-    // Init context and layout
-    ScorePageViewLayout::layout_page_view(score, ctx, stick, etick);
+    for (;;) {
+        const auto suspended_count = sharing_output.suspended_shared_parts.size();
+        // Score-wide visibility must agree in all systems, including those
+        // reused by a range layout. Refit them with the affected origins visible.
+        for (const auto &[part, states] : sharing_output.stave_sharing_states) {
+            if (std::ranges::any_of(states, [](const auto &entry) { return entry.second.capacity_exhausted; })) {
+                sharing_output.suspended_shared_parts.push_back(part);
+            }
+        }
+        if (sharing_output.suspended_shared_parts.size() == suspended_count) break;
+
+        LayoutContext retry(score);
+        retry.mut_state().set_is_layout_all(true);
+        ScorePageViewLayout::layout_page_view(score, retry, Fraction(0, 1), score->last()->end_tick());
+    }
     ctx.mut_layout_data().prune_spanner_segments();
     ctx.mut_layout_data().for_each_output(
         [&](EngravingItem &item, EngravingItem::LayoutData &data) { TLayout::complete_item_shape(item, data, ctx.conf()); });

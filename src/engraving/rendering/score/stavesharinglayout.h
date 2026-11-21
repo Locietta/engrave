@@ -67,7 +67,7 @@ private:
     static void update_track_maps(StaveSharingContext &ctx);
     static TrackGroup participating_tracks(const StaveSharingContext &ctx);
     static bool is_valid(const SharedTrackMap &map, const TrackGroup &origin_tracks, StaveSharingContext &ctx);
-    static SharedTrackMap compute_track_map(const TrackGroup &origin_tracks, StaveSharingContext &ctx);
+    static std::optional<SharedTrackMap> compute_track_map(const TrackGroup &origin_tracks, StaveSharingContext &ctx);
 
     static bool same_instrument(track_idx_t prev_track, track_idx_t next_track, const Fraction &tick, StaveSharingContext &ctx);
 
