@@ -6169,7 +6169,9 @@ SpannerSegment *TLayout::layout_system_s_line(SLine *line, System *system, Layou
         // processing the first line segment
         //
         line->compute_start_element();
-        line->compute_end_element();
+        // The end of a shared line can belong to a system whose display
+        // tracks have yet to be fitted.
+        if (!line->is_layout_copy()) line->compute_end_element();
         if (line->tick2() < etick) {
             sst = SpannerSegmentType::SINGLE;
         } else if (line->tick2() == etick) {
@@ -6194,6 +6196,9 @@ SpannerSegment *TLayout::layout_system_s_line(SLine *line, System *system, Layou
         // processing the last line segment
         //
         sst = SpannerSegmentType::END;
+    }
+    if (line->is_layout_copy() && line->tick2() >= stick && line->tick2() <= etick) {
+        line->compute_end_element();
     }
     line_segm->set_spanner_segment_type(sst);
     line_segm->set_placement(line->placement());

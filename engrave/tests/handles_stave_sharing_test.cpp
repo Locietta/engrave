@@ -919,28 +919,45 @@ TEST(StaveSharingOutput, AutomaticCrossSystemSpannersKeepTheirStartTrack) {
         master.add_element(span);
         span->assign_new_eid();
     }
-    const auto cold = source_native(master);
     for (int pass = 0; pass < 2; ++pass) {
+        const auto cold = source_native(master);
+        const track_idx_t end_track = pass == 0 ? 4u : 1u;
         ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
         ASSERT_NE(first->system(), second->system());
         const auto *shared_slur = to_slur(master.layout_copy(*slur));
         ASSERT_NE(shared_slur, nullptr);
         EXPECT_EQ(shared_slur->track(), 1u);
-        EXPECT_EQ(shared_slur->effective_track2(), 4u);
+        EXPECT_EQ(shared_slur->effective_track2(), end_track);
         EXPECT_EQ(shared_slur->start_element(), first->effective_element(1));
-        EXPECT_EQ(shared_slur->end_element(), second->effective_element(4));
+        EXPECT_EQ(shared_slur->end_element(), second->effective_element(end_track));
         const auto *shared_hairpin = to_hairpin(master.layout_copy(*hairpin));
         ASSERT_NE(shared_hairpin, nullptr);
         EXPECT_EQ(shared_hairpin->track(), 1u);
         EXPECT_EQ(shared_hairpin->effective_track2(), 1u);
-        EXPECT_EQ(shared_hairpin->voice_assignment(), VoiceAssignment::ALL_VOICE_IN_STAFF);
+        EXPECT_EQ(shared_hairpin->voice_assignment(),
+                  pass == 0 ? VoiceAssignment::ALL_VOICE_IN_STAFF : VoiceAssignment::CURRENT_VOICE_ONLY);
+        EXPECT_EQ(shared_hairpin->start_element(), first->effective_element(1));
+        const auto *line_end = shared_hairpin->end_element();
+        ASSERT_NE(line_end, nullptr);
+        EXPECT_EQ(line_end->staff_idx(), 0u);
+        EXPECT_EQ(line_end->tick(), second->tick());
+        if (pass == 0) {
+            EXPECT_TRUE(line_end->is_time_tick_anchor());
+        } else {
+            EXPECT_EQ(line_end, second->effective_element(1));
+        }
         for (const Spanner *span : {static_cast<const Spanner *>(shared_slur), static_cast<const Spanner *>(shared_hairpin)}) {
             ASSERT_EQ(span->nsegments(), 2u);
             EXPECT_EQ(span->segment_at(0)->system(), first->system());
             EXPECT_EQ(span->segment_at(1)->system(), second->system());
         }
         EXPECT_EQ(source_native(master), cold);
-        master.invalidate_layout(second->tick(), second->measure()->end_tick());
+        if (pass == 0) {
+            end->set_pitch(74);
+            end->set_tpc1(16);
+            end->set_tpc2(16);
+            master.invalidate_layout(second->tick(), second->measure()->end_tick());
+        }
     }
 }
 
@@ -988,4 +1005,14 @@ TEST(StaveSharingOutput, RemovingSharedStaffKeepsIncompatibleOriginVoicesVisible
         EXPECT_EQ(engrave::document_objects(master), objects);
         master.invalidate_layout(measure->tick(), measure->end_tick());
     }
+
+    fourth->set_pitch(70);
+    fourth->set_tpc1(12);
+    fourth->set_tpc2(12);
+    master.invalidate_layout(measure->tick(), measure->end_tick());
+    ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+    EXPECT_TRUE(measure->system()->staff(0)->show());
+    EXPECT_FALSE(measure->system()->staff(1)->show());
+    EXPECT_FALSE(measure->system()->staff(2)->show());
+    EXPECT_EQ(part->track_map_at_tick(measure->tick()).size(), 5u);
 }

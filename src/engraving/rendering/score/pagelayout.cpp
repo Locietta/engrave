@@ -470,7 +470,12 @@ void PageLayout::layout_cross_staff_slurs(LayoutContext &ctx, System *system) {
             continue;
         }
         Slur *slur = to_slur(sp);
-        if (slur->is_cross_staff() || slur->has_cross_beams()) {
+        // Resolving the next system can split an initially shared slur into
+        // two copies. The new copy still needs a segment in this system.
+        const bool missing_shared_segment =
+            slur->is_layout_copy() &&
+            std::ranges::none_of(slur->spanner_segments(), [system](auto *segment) { return segment->system() == system; });
+        if (slur->is_cross_staff() || slur->has_cross_beams() || missing_shared_segment) {
             SlurTieLayout::layout_system(slur, system, ctx);
 
             ChordRest *scr = to_chord_rest(slur->start_element());
