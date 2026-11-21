@@ -11,8 +11,10 @@
 // reference MSCX files in that directory are not inputs and are skipped.
 
 #include <algorithm>
+#include <cstdint>
 #include <cstdio>
 #include <filesystem>
+#include <format>
 #include <iterator>
 #include <map>
 #include <memory>
@@ -393,6 +395,244 @@ TEST(GuitarProImport, GP3SlidesImportAcrossInterveningStaffGraceNoteAndMissingPa
     EXPECT_TRUE(beat3->up_note()->spanner_back().empty());
     EXPECT_FALSE(beat3->ends_note_anchored_line());
 
+    ASSERT_TRUE((*opened)->render({.format = engrave::RenderFormat::SVG}));
+}
+
+/// Little-endian Guitar Pro 3-5 primitives.
+struct GpWriter {
+    std::vector<std::byte> bytes;
+
+    void u8(uint8_t v) { bytes.push_back(static_cast<std::byte>(v)); }
+
+    void i8(int8_t v) { u8(static_cast<uint8_t>(v)); }
+
+    void i32(int32_t v) {
+        const auto u = static_cast<uint32_t>(v);
+        for (int shift = 0; shift < 32; shift += 8) u8(static_cast<uint8_t>((u >> shift) & 0xffu));
+    }
+
+    void zeros(size_t n) { bytes.insert(bytes.end(), n, std::byte{0}); }
+
+    void delphi(std::string_view s) {
+        i32(static_cast<int32_t>(s.size() + 1));
+        u8(static_cast<uint8_t>(s.size()));
+        for (unsigned char c : s) u8(c);
+    }
+
+    void pascal_fixed(std::string_view s, size_t cap) {
+        u8(static_cast<uint8_t>(s.size()));
+        for (unsigned char c : s) u8(c);
+        zeros(cap - s.size());
+    }
+};
+
+/// One beat of a single-note voice: no string is a rest; a slide is a shift slide.
+struct SlideBeat {
+    int8_t len = 0; // -1 half, 0 quarter, 1 eighth
+    int string = -1;
+    int fret = 0;
+    bool slide = false;
+};
+
+/// A GP4 or GP5 file of two guitars and three 4/4 bars. Guitar 1, in quarters:
+///   bar 1: s2f2 slide, rest, s2f4, s1f5 slide
+///   bar 2: s1f7, s0f1 slide, s3f2, s0f3
+///   bar 3: s4f5 slide, s3f1, s2f1, s4f7
+/// Guitar 2 plays s2f9 as two eighths and a quarter at the start of bar 1, so it has a note on
+/// the first slide's string at the rest of guitar 1, and nothing in bars 2 and 3.
+std::vector<std::byte> slide_file(int major_version) {
+    const bool gp5 = major_version == 5;
+    const std::vector<std::vector<SlideBeat>> guitar1 = {
+        {{0, 2, 2, true}, {0}, {0, 2, 4}, {0, 1, 5, true}},
+        {{0, 1, 7}, {0, 0, 1, true}, {0, 3, 2}, {0, 0, 3}},
+        {{0, 4, 5, true}, {0, 3, 1}, {0, 2, 1}, {0, 4, 7}},
+    };
+    const std::vector<std::vector<SlideBeat>> guitar2 = {{{1, 2, 9}, {1, 2, 9}, {0, 2, 9}}, {}, {}};
+    const std::vector<std::vector<SlideBeat>> *staves[] = {&guitar1, &guitar2};
+    constexpr int bars = 3;
+
+    GpWriter w;
+    w.pascal_fixed(gp5 ? "FICHIER GUITAR PRO v5.00" : "FICHIER GUITAR PRO v4.00", 30);
+    for (int i = 0; i < (gp5 ? 9 : 8); ++i) w.delphi("");
+    w.i32(0);          // comments
+    if (!gp5) w.u8(0); // triplet feel
+    w.i32(0);          // lyric track
+    w.i32(0);          // lyric start beat
+    w.i32(0);          // lyrics
+    for (int i = 0; i < 4; ++i) {
+        w.i32(0);
+        w.i32(0);
+    }
+    if (gp5) {
+        w.zeros(30);
+        for (int i = 0; i < 11; ++i) {
+            w.zeros(4);
+            w.u8(0);
+        }
+    }
+    w.i32(120); // tempo
+    w.i32(0);   // key
+    w.u8(0);    // octave
+    for (int i = 0; i < 64; ++i) {
+        w.i32(24);
+        w.u8(10);
+        w.u8(8);
+        w.zeros(6);
+    }
+    if (gp5) {
+        for (int i = 0; i < 19; ++i) {
+            w.u8(0xff); // no direction marker
+            w.u8(0xff);
+        }
+        w.zeros(4);
+    }
+    w.i32(bars);
+    w.i32(2);
+
+    for (int bar = 0; bar < bars; ++bar) {
+        if (gp5 && bar > 0) w.u8(0);
+        w.u8(bar == 0 ? 0x03 : 0x00);
+        if (bar == 0) {
+            w.u8(4);
+            w.u8(4);
+        }
+        if (gp5) {
+            if (bar == 0) w.zeros(4); // beam groups
+            w.u8(0);
+            w.u8(0); // triplet feel
+        }
+    }
+
+    constexpr int tuning[7] = {64, 59, 55, 50, 45, 40, 0};
+    for (int staff = 0; staff < 2; ++staff) {
+        w.u8(0);
+        if (gp5) w.u8(0);
+        w.pascal_fixed(staff == 0 ? "Guitar 1" : "Guitar 2", 40);
+        w.i32(6);
+        for (int t : tuning) w.i32(t);
+        w.i32(1);         // port
+        w.i32(staff + 1); // channel
+        w.i32(staff + 1); // effects channel
+        w.i32(24);        // frets
+        w.i32(0);         // capo
+        w.i32(0);         // color
+        if (gp5) w.zeros(44);
+    }
+    if (gp5) w.zeros(2);
+
+    auto write_beat = [&](const SlideBeat &beat) {
+        w.u8(0);
+        w.i8(beat.len);
+        if (beat.string < 0) {
+            w.u8(0);
+        } else {
+            w.u8(static_cast<uint8_t>(1u << (6 - beat.string)));
+            w.u8(beat.slide ? 0x28 : 0x20); // fret and note type, effects when sliding
+            w.u8(1);                        // normal note
+            w.i8(static_cast<int8_t>(beat.fret));
+            if (gp5) w.u8(0);
+            if (beat.slide) {
+                w.u8(0);
+                w.u8(0x08); // slide
+                w.u8(1);    // shift slide, in both formats
+            }
+        }
+        if (gp5) {
+            w.u8(0);
+            w.u8(0);
+        }
+    };
+    for (int bar = 0; bar < bars; ++bar) {
+        for (int staff = 0; staff < 2; ++staff) {
+            const auto &beats = (*staves[staff])[bar];
+            w.i32(static_cast<int32_t>(beats.size()));
+            for (const SlideBeat &beat : beats) write_beat(beat);
+            if (gp5) {
+                // The second voice is one empty beat, as Guitar Pro 5 writes an unused voice.
+                w.i32(1);
+                w.u8(0x40);
+                w.u8(0);
+                w.i8(0);
+                w.u8(0);
+                w.u8(0);
+                w.u8(0);
+                if (bar != bars - 1 || staff != 1) w.u8(0);
+            }
+        }
+    }
+    return std::move(w.bytes);
+}
+
+/// Every glissando of the score, as "track tick string fret -> track tick string fret".
+std::vector<std::string> glissandi(mu::engraving::Score *score) {
+    using namespace mu::engraving;
+    std::vector<std::string> rows;
+    for (Segment *seg = score->first_segment(SegmentType::CHORD_REST); seg; seg = seg->next1(SegmentType::CHORD_REST)) {
+        for (EngravingItem *el : seg->elist()) {
+            if (!el || !el->is_chord()) continue;
+            for (Note *note : to_chord(el)->notes()) {
+                for (Spanner *sp : note->spanner_for()) {
+                    if (!sp->is_glissando() || !sp->end_element() || !sp->end_element()->is_note()) continue;
+                    const Note *end = to_note(sp->end_element());
+                    EXPECT_EQ(std::ranges::count(end->spanner_back(), sp), 1);
+                    rows.push_back(std::format("{} {} s{} f{} -> {} {} s{} f{}", note->track(), note->tick().ticks(), note->string(),
+                                               note->fret(), end->track(), end->tick().ticks(), end->string(), end->fret()));
+                }
+            }
+        }
+    }
+    std::ranges::sort(rows);
+    return rows;
+}
+
+void expect_slide_layout(mu::engraving::MasterScore *master) {
+    using namespace mu::engraving;
+    auto cr_at = [&](int ticks, track_idx_t track) -> ChordRest * {
+        Segment *seg = master->tick2segment(Fraction::from_ticks(ticks), true, SegmentType::CHORD_REST);
+        return seg ? seg->cr(track) : nullptr;
+    };
+    ChordRest *rest = cr_at(480, 0);
+    ASSERT_TRUE(rest && rest->is_rest());
+    ChordRest *other = cr_at(480, 4);
+    ASSERT_TRUE(other && other->is_chord());
+    EXPECT_EQ(to_chord(other)->up_note()->string(), 2);
+    ChordRest *first = cr_at(0, 0);
+    ASSERT_TRUE(first && first->is_chord());
+    EXPECT_EQ(to_chord(first)->up_note()->string(), 2);
+    EXPECT_EQ(to_chord(first)->up_note()->fret(), 2);
+}
+
+TEST(GuitarProImport, GP4ShiftSlidesReachTheNextTwoChordsOnTheirStringAndTrack) {
+    auto opened = g_engine->open(slide_file(4));
+    ASSERT_TRUE(opened) << opened.error().message;
+    mu::engraving::MasterScore *master = engrave::DocumentAccess::master_score(**opened);
+    ASSERT_NE(master, nullptr);
+    expect_slide_layout(master);
+
+    // Quarter = 480 ticks. The slide from s4f5 at bar 3 finds its string only in the third chord.
+    const std::vector<std::string> expected = {
+        "0 0 s2 f2 -> 0 960 s2 f4",
+        "0 1440 s1 f5 -> 0 1920 s1 f7",
+        "0 2400 s0 f1 -> 0 3360 s0 f3",
+    };
+    EXPECT_EQ(glissandi(master), expected);
+    ASSERT_TRUE((*opened)->render({.format = engrave::RenderFormat::SVG}));
+}
+
+TEST(GuitarProImport, GP5ShiftSlidesReachTheNextChordOnTheirStringAndTrack) {
+    auto opened = g_engine->open(slide_file(5));
+    ASSERT_TRUE(opened) << opened.error().message;
+    mu::engraving::MasterScore *master = engrave::DocumentAccess::master_score(**opened);
+    ASSERT_NE(master, nullptr);
+    expect_slide_layout(master);
+
+    const std::vector<std::string> expected = {
+        "0 0 s2 f2 -> 0 960 s2 f4",
+        "0 1440 s1 f5 -> 0 1920 s1 f7",
+        "0 2400 s0 f1 -> 0 3360 s0 f3",
+        "0 3840 s4 f5 -> 0 5280 s4 f7",
+    };
+    EXPECT_EQ(glissandi(master), expected);
     ASSERT_TRUE((*opened)->render({.format = engrave::RenderFormat::SVG}));
 }
 

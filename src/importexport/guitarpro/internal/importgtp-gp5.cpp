@@ -20,6 +20,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <limits>
+
 #include "containers.h"
 #include "engraving/dom/arpeggio.h"
 #include "engraving/dom/articulation.h"
@@ -1014,42 +1016,9 @@ bool GuitarPro5::read(IODevice *io) {
             p->instrument()->set_string_data(sd);
         }
     }
-    for (auto n : slide_list) {
-        auto segment = n->chord()->segment();
-        auto measure = segment->measure();
-        while ((segment = segment->next1(SegmentType::CHORD_REST)) ||
-               ((measure = measure->next_measure()) && (segment = measure->first()))) {
-            if (segment->segment_type() != SegmentType::CHORD_REST) {
-                continue;
-            }
-            bool br = false;
-            ChordRest *cr = to_chord_rest(segment->cr(n->track()));
-            if (cr && cr->is_chord()) {
-                Chord *c = to_chord(cr);
-                for (auto nt : c->notes()) {
-                    if (nt->string() == n->string()) {
-                        for (auto e : nt->el()) {
-                            if (e->is_chord_line()) {
-                                ChordLine *cl = to_chord_line(e);
-                                if (cl->chord_line_type() == ChordLineType::PLOP || cl->chord_line_type() == ChordLineType::SCOOP) {
-                                    br = true;
-                                    break;
-                                }
-                            }
-                        }
-                        if (br) {
-                            break;
-                        }
-
-                        glissando_note_pairs_.push_back({n, nt});
-                        br = true;
-                        break;
-                    }
-                }
-            }
-            if (br) {
-                break;
-            }
+    for (Note *start : slide_list) {
+        if (Note *end = slide_end_note(*start, std::numeric_limits<size_t>::max())) {
+            glissando_note_pairs_.push_back({start, end});
         }
     }
 

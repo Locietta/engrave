@@ -24,7 +24,6 @@
 #include "engraving/dom/articulation.h"
 #include "engraving/dom/capo.h"
 #include "engraving/dom/chord.h"
-#include "engraving/dom/chordline.h"
 #include "engraving/dom/clef.h"
 #include "engraving/dom/dummyparent.h"
 #include "engraving/dom/factory.h"
@@ -1137,55 +1136,21 @@ bool GuitarPro4::read(IODevice *io) {
         }
     }
 
-    for (auto n : slide_list) {
-        Segment *segment = n->chord()->segment();
-        Measure *measure1 = segment->measure();
-        int segment_counter = 0;
-        while ((segment = segment->next1(SegmentType::CHORD_REST)) ||
-               ((measure1 = measure1->next_measure()) && (segment = measure1->first()))) {
-            if (!segment->is_chord_rest_type()) {
-                continue;
-            }
-            bool br = false;
-            ChordRest *cr = segment->cr(n->track());
-            if (cr && cr->is_chord()) {
-                Chord *c = to_chord(cr);
-                ++segment_counter;
-                if (segment_counter > 2) {
-                    break;
-                }
-                for (Note *nt : c->notes()) {
-                    if (nt->string() == n->string()) {
-                        for (auto e : nt->el()) {
-                            if (e->is_chord_line()) {
-                                auto cl = to_chord_line(e);
-                                if (cl->chord_line_type() == ChordLineType::PLOP || cl->chord_line_type() == ChordLineType::SCOOP) {
-                                    br = true;
-                                    break;
-                                }
-                            }
-                        }
-                        if (br) {
-                            break;
-                        }
-                        Glissando *s = new Glissando(n);
-                        s->set_start_element(n);
-                        s->set_tick(n->chord()->segment()->tick());
-                        s->set_track(n->track());
-                        s->set_glissando_type(GlissandoType::STRAIGHT);
-                        s->set_end_element(nt);
-                        s->set_tick2(nt->chord()->segment()->tick());
-                        s->set_track2(n->track());
-                        score->add_element(s);
-                        br = true;
-                        break;
-                    }
-                }
-                if (br) {
-                    break;
-                }
-            }
+    for (Note *start : slide_list) {
+        // GP4 import has always looked no further than the next two chords.
+        Note *end = slide_end_note(*start, 2);
+        if (!end) {
+            continue;
         }
+        Glissando *s = new Glissando(start);
+        s->set_start_element(start);
+        s->set_tick(start->chord()->segment()->tick());
+        s->set_track(start->track());
+        s->set_glissando_type(GlissandoType::STRAIGHT);
+        s->set_end_element(end);
+        s->set_tick2(end->chord()->segment()->tick());
+        s->set_track2(start->track());
+        score->add_element(s);
     }
 
     continious_elements_builder_->add_elements_to_score();

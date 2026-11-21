@@ -723,6 +723,24 @@ void GuitarPro::create_slide(int sl, ChordRest *cr, int staff_idx, [[maybe_unuse
     }
 }
 
+Note *GuitarPro::slide_end_note(const Note &start, size_t max_chords) {
+    size_t chords = 0;
+    for (Segment *seg = start.chord()->segment()->next1(SegmentType::CHORD_REST); seg && chords < max_chords;
+         seg = seg->next1(SegmentType::CHORD_REST)) {
+        ChordRest *cr = seg->cr(start.track());
+        if (!cr || !cr->is_chord()) {
+            continue;
+        }
+        ++chords;
+        for (Note *note : to_chord(cr)->notes()) {
+            if (note->string() == start.string()) {
+                return note;
+            }
+        }
+    }
+    return nullptr;
+}
+
 //---------------------------------------------------------
 //   readChannels
 //---------------------------------------------------------

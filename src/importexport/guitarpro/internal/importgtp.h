@@ -290,6 +290,10 @@ protected:
     void rests_for_empty_beats(mu::engraving::Segment *seg, Measure *measure, ChordRest *cr, Fraction &l, int track, const Fraction &tick);
     void create_slur(bool has_slur, staff_idx_t staff_idx, ChordRest *cr);
     void create_slide(int slide, ChordRest *cr, int staff_idx, Note *note = nullptr);
+    /// GP4 and GP5 store a shift or legato slide on its start note only. It ends on the note on
+    /// the same string in one of the next max_chords chords of the start's track; rests and
+    /// barlines in between do not stop it.
+    static Note *slide_end_note(const Note &start, size_t max_chords);
     void add_text_to_note(muse::String text, Note *note);
     void add_text_articulation(Note *note, mu::engraving::ArticulationTextType type);
     void add_palm_mute(ChordRest *cr, bool has_palm_mute);
