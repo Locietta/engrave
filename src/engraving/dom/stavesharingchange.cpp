@@ -22,6 +22,7 @@
 
 #include "stavesharingchange.h"
 
+#include "engraving/style/styletypes.h"
 #include "segment.h"
 #include "sharedpart.h"
 

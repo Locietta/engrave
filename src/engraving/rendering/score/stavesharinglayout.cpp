@@ -1970,7 +1970,7 @@ void StaveSharingLayout::fill_rests_if_need(StaveSharingContext &ctx) {
     for (track_idx_t track = range.start_track; track < range.end_track; track += ::mu::engraving::voices) {
         const Staff *staff = ctx.score->staff(track2staff(track));
         const auto fill = [&](Measure *measure, Fraction tick, const Fraction &until) {
-            const Fraction stretch = staff->time_stretch(tick);
+            const Fraction stretch = staff->rendered_time_stretch(tick);
             const auto durations = to_rhythmic_duration_list((until - tick) * stretch, true, (tick - measure->tick()) * stretch,
                                                              ctx.score->sigmap()->timesig(tick).nominal(), measure, 0, stretch);
             for (const TDuration &duration : durations) {
@@ -1979,7 +1979,7 @@ void StaveSharingLayout::fill_rests_if_need(StaveSharingContext &ctx) {
                 auto *rest = Factory::create_rest(segment);
                 rest->set_track(track);
                 rest->set_duration_type(duration);
-                rest->set_ticks(duration.fraction());
+                rest->set_ticks(duration.is_measure() ? (until - tick) * stretch : duration.fraction());
                 add_shared_output(rest);
                 tick += rest->actual_ticks();
             }
