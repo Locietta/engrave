@@ -691,15 +691,16 @@ TEST(Export470, StaveSharingChangeStyleIsInactiveWithoutSharedParts) {
     EXPECT_TRUE(after->warnings.empty());
     EXPECT_EQ(after->bytes, before->bytes);
     std::string xml(as_text(after->bytes));
-    const std::string_view revision_start = "<programRevision>";
-    const auto revision = xml.find(revision_start);
-    ASSERT_NE(revision, std::string::npos);
-    const std::string_view revision_end = "</programRevision>";
-    const auto end = xml.find(revision_end, revision + revision_start.size());
-    ASSERT_NE(end, std::string::npos);
-    xml.replace(revision, end + revision_end.size() - revision, "<programRevision/>");
-    // Captured by the 4.70 writer at 98d232fda7, before the stave-sharing change.
-    EXPECT_EQ(music::test::sha256_hex(as_bytes(xml)), "e68341151b7143404998ac528028f0d8c8126aa43b44eda8f936a466bf1c17b0");
+    for (const std::string_view tag : {"<programRevision>", "<metaTag name=\"platform\">"}) {
+        const auto open = xml.find(tag);
+        ASSERT_NE(open, std::string::npos) << tag;
+        const auto content = open + tag.size();
+        const auto close = xml.find('<', content);
+        ASSERT_NE(close, std::string::npos) << tag;
+        xml.erase(content, close - content);
+    }
+    // The 4.70 writer at 98d232fda7 produced these bytes apart from build and platform metadata.
+    EXPECT_EQ(music::test::sha256_hex(as_bytes(xml)), "a6bf83a7b22d2ac5cb906ed686ba6b5d6052b19d19ba772463f75e3c4b9b99f4");
 }
 
 TEST(Export470, DropsAuthoredStaveSharingMapsAndGeneratedIndicators) {
