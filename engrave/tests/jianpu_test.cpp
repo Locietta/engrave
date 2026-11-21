@@ -785,6 +785,38 @@ TEST(Jianpu, HiddenOverlappedNotesDrawNoMarks) {
     }
 }
 
+// A hidden top digit leaves its slot empty, so the augmentation line goes beside the
+// highest digit still drawn.
+TEST(Jianpu, DurationLinesFollowTheTopDrawnDigit) {
+    // C4 and G4 halves; the G4 is invisible in the first chord and an overlapped copy in the second.
+    const auto two_notes = [](std::string_view top_tags) {
+        return std::format("<Chord><durationType>half</durationType><Note><pitch>60</pitch><tpc>14</tpc></Note>"
+                           "<Note>{}<pitch>67</pitch><tpc>15</tpc></Note></Chord>",
+                           top_tags);
+    };
+    auto document = open_text(
+        jianpu_score(std::format("<Measure><voice>{}{}{}</voice></Measure>", four_four, two_notes("<visible>0</visible>"), two_notes(""))));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *invisible_top = to_chord(chord_rest_at(master, {0, 1}));
+    auto *overlapped_top = to_chord(chord_rest_at(master, {1, 2}));
+    overlapped_top->up_note()->set_hidden(true);
+    render(*document);
+    for (const Chord *chord : {invisible_top, overlapped_top}) {
+        SCOPED_TRACE(chord == invisible_top ? "invisible top" : "overlapped top");
+        ASSERT_EQ(chord->notes().size(), 2u);
+        const Note *low = chord->notes().front();
+        const Note *top = chord->notes().back();
+        ASSERT_EQ(top->epitch(), 67);
+        ASSERT_NE(low->y(), top->y());
+        ASSERT_EQ(chord->jianpu_duration_lines().size(), 1u);
+        const JianpuDurationLine *line = chord->jianpu_duration_lines().front();
+        EXPECT_TRUE(line->visible());
+        EXPECT_DOUBLE_EQ(line->pos().y(), low->pos().y());
+        EXPECT_DOUBLE_EQ(line->ldata()->pos().x(), low->pos().x() + low->bbox_x_shift() + low->head_width() * 1.2);
+    }
+}
+
 TEST(Jianpu, AccidentalsTakeTheirSpaceBeforeTheDigit) {
     std::string run;
     for (int i = 0; i < 4; ++i) run += chord("32nd", 60, 14) + chord("32nd", 66, 20); // C, then F sharp: "♯4"

@@ -1766,13 +1766,18 @@ void ChordLayout::layout_jianpu_duration_lines(Chord *item, LayoutContext &ctx) 
 
     resize_jianpu_duration_lines(item, size_t(lines));
 
-    const Note *note = item->up_note();
-    if (!note) {
+    const std::vector<Note *> &notes = item->notes();
+    if (notes.empty()) {
         return;
     }
+    // The lines follow the topmost drawn digit: a hidden digit above it leaves an
+    // empty slot, and layout_pitched stacks notes() from the back (highest) down.
+    const auto drawn = std::ranges::find_if(notes.rbegin(), notes.rend(), jianpu_digit_drawn);
+    const bool any_drawn = drawn != notes.rend();
+    const Note *note = any_drawn ? *drawn : item->up_note();
 
     const track_idx_t track = staff2track(idx);
-    const bool visible = !staff->is_lines_invisible(tick) && item->visible() && std::ranges::any_of(item->notes(), jianpu_digit_drawn);
+    const bool visible = !staff->is_lines_invisible(tick) && item->visible() && any_drawn;
     const double head_width = note->head_width();
     const double head_x = note->pos().x() + note->bbox_x_shift();
     const double lengthening_y = note->pos().y();
