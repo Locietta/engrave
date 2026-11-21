@@ -1285,6 +1285,32 @@ void Score::remove_part(Part *part) {
     set_instruments_changed(true);
 }
 
+static void rebase_stave_sharing_tracks(Score &score, size_t old_staff_count, auto new_staff_index) {
+    bool changed = false;
+    const auto remap = [&](track_idx_t track) {
+        const auto old_staff = track2staff(track);
+        const auto new_staff = old_staff < old_staff_count ? new_staff_index(old_staff) : muse::nidx;
+        return new_staff == muse::nidx ? muse::nidx : staff2track(new_staff, track2voice(track));
+    };
+    for (auto *part : score.shared_parts()) {
+        for (const auto &[tick, state] : part->authored_states()) {
+            SharedTrackMap map;
+            for (const auto &[origin, shared] : state.user_track_map) {
+                const auto new_origin = remap(origin);
+                const auto new_shared = remap(shared);
+                if (new_origin != muse::nidx && new_shared != muse::nidx) map.emplace(new_origin, new_shared);
+            }
+            if (map == state.user_track_map) continue;
+
+            // Keep the boundary so a deleted assignment cannot extend the preceding map.
+            note_change(part, CommandType::CHANGE_STAVE_SHARING_STATE);
+            part->set_authored_state(tick, {std::move(map), state.is_reset});
+            changed = true;
+        }
+    }
+    if (changed) score.set_layout_all();
+}
+
 void Score::insert_staff(Staff *staff, staff_idx_t ridx) {
     if (!staff || !staff->part()) {
         return;
@@ -1294,6 +1320,7 @@ void Score::insert_staff(Staff *staff, staff_idx_t ridx) {
     staff->part()->insert_staff(staff, ridx);
 
     staff_idx_t idx = staff_idx(staff->part()) + ridx;
+    rebase_stave_sharing_tracks(*this, staves_.size(), [idx](staff_idx_t old) { return old + (old >= idx); });
     staves_.insert(staves_.begin() + idx, staff);
     brackets_.insert(brackets_.begin() + idx, std::vector<BracketItem *>());
     for (staff_idx_t i = idx + 1; i < static_cast<staff_idx_t>(brackets_.size()); ++i) {
@@ -1383,6 +1410,7 @@ ID Score::new_part_id() const {
 
 void Score::remove_staff(Staff *staff) {
     staff_idx_t idx = staff->idx();
+    rebase_stave_sharing_tracks(*this, staves_.size(), [idx](staff_idx_t old) { return old == idx ? muse::nidx : old - (old > idx); });
     for (auto i = staff->score()->spanner().cbegin(); i != staff->score()->spanner().cend(); ++i) {
         Spanner *s = i->second;
         if (s->staff_idx() > idx) {
@@ -1600,11 +1628,12 @@ void Score::sort_staves(std::vector<staff_idx_t> &dst) {
     touch_source_subtree(*this);
     sort_system_objects(dst);
     layout_data_store_->clear();
+    std::vector<staff_idx_t> new_staff_indices(staves_.size(), muse::nidx);
+    for (staff_idx_t idx = 0; idx < dst.size(); ++idx) new_staff_indices[dst[idx]] = idx;
+    rebase_stave_sharing_tracks(*this, staves_.size(), [&](staff_idx_t old) { return new_staff_indices[old]; });
     parts_.clear();
     Part *cur_part = nullptr;
     std::vector<Staff *> dl;
-    std::map<size_t, size_t> track_map;
-    track_idx_t track = 0;
     for (staff_idx_t idx : dst) {
         Staff *staff = staves_[idx];
         if (staff->part() != cur_part) {
@@ -1614,9 +1643,6 @@ void Score::sort_staves(std::vector<staff_idx_t> &dst) {
         }
         cur_part->append_staff(staff);
         dl.push_back(staff);
-        for (size_t itrack = 0; itrack < ::mu::engraving::voices; ++itrack) {
-            track_map.insert({idx * ::mu::engraving::voices + itrack, track++});
-        }
     }
     staves_ = dl;
 

@@ -1,5 +1,6 @@
 #include <pugixml.hpp>
 
+#include "digest.h"
 #include "engrave/src/score/write470_spanners.h"
 #include "engraving/dom/bracketitem.h"
 #include "engraving/dom/chordlist.h"
@@ -689,6 +690,16 @@ TEST(Export470, StaveSharingChangeStyleIsInactiveWithoutSharedParts) {
     ASSERT_TRUE(after);
     EXPECT_TRUE(after->warnings.empty());
     EXPECT_EQ(after->bytes, before->bytes);
+    std::string xml(as_text(after->bytes));
+    const std::string_view revision_start = "<programRevision>";
+    const auto revision = xml.find(revision_start);
+    ASSERT_NE(revision, std::string::npos);
+    const std::string_view revision_end = "</programRevision>";
+    const auto end = xml.find(revision_end, revision + revision_start.size());
+    ASSERT_NE(end, std::string::npos);
+    xml.replace(revision, end + revision_end.size() - revision, "<programRevision/>");
+    // Captured by the 4.70 writer at 98d232fda7, before the stave-sharing change.
+    EXPECT_EQ(music::test::sha256_hex(as_bytes(xml)), "e68341151b7143404998ac528028f0d8c8126aa43b44eda8f936a466bf1c17b0");
 }
 
 TEST(Export470, DropsAuthoredStaveSharingMapsAndGeneratedIndicators) {

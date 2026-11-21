@@ -198,13 +198,33 @@ void StaveSharingLayout::update_stave_sharing(StaveSharingContext &ctx) {
     }
 }
 
-bool StaveSharingLayout::is_valid(const SharedTrackMap &map, StaveSharingContext &ctx) {
+StaveSharingLayout::TrackGroup StaveSharingLayout::participating_tracks(const StaveSharingContext &ctx) {
+    TrackGroup tracks;
+    const auto segments = ctx.segments_in_range(ctx.cr_segments);
+    for (const Part *part : ctx.cur_shared_part->origin_parts()) {
+        if (part->staves().empty()) continue;
+        const auto range = part->track_range();
+        for (auto track = range.start_track; track < range.end_track; ++track) {
+            if (track == range.start_track || std::ranges::any_of(segments, [track](const Segment *segment) {
+                    const auto *cr = to_chord_rest(segment->effective_element(track));
+                    return cr && !cr->is_full_measure_rest();
+                })) {
+                tracks.push_back(track);
+            }
+        }
+    }
+    return tracks;
+}
+
+bool StaveSharingLayout::is_valid(const SharedTrackMap &map, const TrackGroup &origin_tracks, StaveSharingContext &ctx) {
+    if (map.empty() || !std::ranges::all_of(origin_tracks, [&](auto track) { return map.contains(track); })) return false;
     const SharedPart &part = *ctx.cur_shared_part;
     const auto shared_range = part.track_range();
     std::vector<std::pair<track_idx_t, track_idx_t>> by_shared_track;
     for (const auto &[origin, shared] : map) {
         if (shared < shared_range.start_track || shared >= shared_range.end_track) return false;
         if (!std::ranges::any_of(part.origin_parts(), [origin](const Part *p) {
+                if (p->staves().empty()) return false;
                 const auto range = p->track_range();
                 return origin >= range.start_track && origin < range.end_track;
             }))
@@ -254,8 +274,9 @@ void StaveSharingLayout::update_track_maps(StaveSharingContext &ctx) {
     const auto resolve = [&](const Fraction &tick, const Fraction &until, const AuthoredStaveSharingState *state) {
         ctx.s_tick = tick;
         ctx.e_tick = until;
-        const bool valid = state && !state->is_reset && is_valid(state->user_track_map, ctx);
-        return RenderedStaveSharingState{valid ? state->user_track_map : compute_track_map(ctx), valid};
+        const auto tracks = participating_tracks(ctx);
+        const bool valid = state && !state->is_reset && is_valid(state->user_track_map, tracks, ctx);
+        return RenderedStaveSharingState{valid ? state->user_track_map : compute_track_map(tracks, ctx), valid};
     };
 
     std::vector<std::pair<Fraction, RenderedStaveSharingState>> states;
@@ -287,15 +308,7 @@ void StaveSharingLayout::update_track_maps(StaveSharingContext &ctx) {
     for (auto &[tick, state] : states) part.set_rendered_state(tick, std::move(state));
 }
 
-SharedTrackMap StaveSharingLayout::compute_track_map(StaveSharingContext &ctx) {
-    SharedPart *p = ctx.cur_shared_part;
-
-    TrackGroup origin_tracks;
-    origin_tracks.reserve(p->origin_parts().size());
-    for (Part *op : p->origin_parts()) {
-        origin_tracks.push_back(op->track_range().start_track);
-    }
-
+SharedTrackMap StaveSharingLayout::compute_track_map(const TrackGroup &origin_tracks, StaveSharingContext &ctx) {
     std::unordered_set<track_idx_t> processed_tracks;
 
     std::map<track_idx_t, TrackGroup> unisons_map;
@@ -356,7 +369,9 @@ SharedTrackMap StaveSharingLayout::compute_track_map(StaveSharingContext &ctx) {
 
     std::unordered_set<track_idx_t> assigned_tracks;
     track_idx_t last_assigned_track = muse::nidx;
-    track_idx_t cur_shared_track = p->track_range().start_track;
+    const auto range = ctx.cur_shared_part->track_range();
+    track_idx_t cur_shared_track = range.start_track;
+    std::vector<bool> used_slots(range.end_track - range.start_track);
 
     for (track_idx_t track : origin_tracks) {
         if (muse::contains(assigned_tracks, track)) {
@@ -368,6 +383,12 @@ SharedTrackMap StaveSharingLayout::compute_track_map(StaveSharingContext &ctx) {
         if (!can_go_on_this_stave) {
             cur_shared_track = track_zero_voice(cur_shared_track + ::mu::engraving::voices);
         }
+        if (cur_shared_track >= range.end_track) {
+            const auto free_slot = std::ranges::find(used_slots, false);
+            if (free_slot == used_slots.end()) break;
+            cur_shared_track = range.start_track + (free_slot - used_slots.begin());
+        }
+        used_slots[cur_shared_track - range.start_track] = true;
 
         if (muse::contains(unisons_map, track)) {
             for (track_idx_t unison_track : unisons_map[track]) {
@@ -385,20 +406,10 @@ SharedTrackMap StaveSharingLayout::compute_track_map(StaveSharingContext &ctx) {
 
         track2voice(cur_shared_track) == 0 ? ++cur_shared_track :
                                              cur_shared_track = track_zero_voice(cur_shared_track + ::mu::engraving::voices);
+        while (cur_shared_track < range.end_track && used_slots[cur_shared_track - range.start_track]) ++cur_shared_track;
     }
 
     return track_map;
-}
-
-bool StaveSharingLayout::is_empty(track_idx_t track, StaveSharingContext &ctx) {
-    for (Segment *seg : ctx.segments_in_range(ctx.cr_segments)) {
-        ChordRest *cr = to_chord_rest(seg->effective_element(track));
-        if (cr && !(cr->is_rest() && to_rest(cr)->is_full_measure_rest())) {
-            return false;
-        }
-    }
-
-    return true;
 }
 
 bool StaveSharingLayout::same_instrument(track_idx_t prev_track, track_idx_t next_track, const Fraction &tick, StaveSharingContext &ctx) {
@@ -467,7 +478,7 @@ bool StaveSharingLayout::is_unison(track_idx_t prev_track, track_idx_t next_trac
                     return false;
                 }
 
-                if (!check_note_spanners_for_unison(n1, n2)) {
+                if (!check_note_spanners_for_unison(n1, n2, ctx)) {
                     return false;
                 }
             }
@@ -568,7 +579,7 @@ bool StaveSharingLayout::can_go_to_same_voice(track_idx_t prev_track, track_idx_
                     continue;
                 }
 
-                if (!check_note_spanners_for_unison(n1, n2)) {
+                if (!check_note_spanners_for_unison(n1, n2, ctx)) {
                     return false;
                 }
 
@@ -652,6 +663,9 @@ bool StaveSharingLayout::check_segment_for_same_voice(Segment *segment, track_id
 }
 
 bool StaveSharingLayout::check_clef_key_time_sig_for_same_voice(Segment *segment, track_idx_t prev_track, track_idx_t next_track) {
+    prev_track = track_zero_voice(prev_track);
+    next_track = track_zero_voice(next_track);
+
     if (segment->is_clef_type() &&
         !check_items_for_same_voice(segment, prev_track, next_track, [](const EngravingItem *item1, const EngravingItem *item2) {
             return to_clef(item1)->clef_type() == to_clef(item2)->clef_type();
@@ -774,7 +788,7 @@ bool StaveSharingLayout::check_items_for_same_voice(Segment *segment, track_idx_
     return true;
 }
 
-bool StaveSharingLayout::check_note_spanners_for_unison(const Note *note1, const Note *note2) {
+bool StaveSharingLayout::check_note_spanners_for_unison(const Note *note1, const Note *note2, const StaveSharingContext &ctx) {
     const Tie *tie_back1 = note1->tie_back();
     const Tie *tie_back2 = note2->tie_back();
     if (bool(tie_back1) != bool(tie_back2)) {
@@ -791,6 +805,25 @@ bool StaveSharingLayout::check_note_spanners_for_unison(const Note *note1, const
     }
     if (tie_for1 && bool(tie_for1->end_element()) != bool(tie_for2->end_element())) {
         return false;
+    }
+
+    const auto &authored = ctx.cur_shared_part->authored_states();
+    if (!authored.empty()) {
+        const auto can_merge_endpoints = [&](Note *a, Note *b) {
+            if (!a || !b) return a == b;
+            if (a->tick() != b->tick() || !a->is_exact_unison(b)) return false;
+            const auto note_tick = note1->tick();
+            const auto endpoint_tick = a->tick();
+            const auto [start, end] = std::minmax(note_tick, endpoint_tick);
+            // The next interval resolves independently and can assign each player a
+            // different voice. Both endpoints need their own Note in that case.
+            const auto next = std::ranges::upper_bound(authored, start, std::less<>{}, &AuthoredStaveSharingStates::value_type::first);
+            return next == authored.end() || next->first > end;
+        };
+        if ((tie_back1 && !can_merge_endpoints(tie_back1->start_note(), tie_back2->start_note())) ||
+            (tie_for1 && !can_merge_endpoints(tie_for1->end_note(), tie_for2->end_note()))) {
+            return false;
+        }
     }
 
     const std::vector<Spanner *> &spanner_back1 = note1->spanner_back();
@@ -1149,7 +1182,7 @@ void StaveSharingLayout::make_shared_clef_key_time_sigs(StaveSharingContext &ctx
             }
 
             if (seg->is_clef_type()) {
-                Clef *origin_clef = to_clef(seg->effective_element(origin_track));
+                Clef *origin_clef = to_clef(seg->effective_element(track_zero_voice(origin_track)));
                 if (origin_clef) {
                     make_shared_item(origin_clef, shared_slot(seg, shared_track), shared_track, seg,
                                      [](const EngravingItem *origin, const EngravingItem *shared) {
@@ -1159,7 +1192,7 @@ void StaveSharingLayout::make_shared_clef_key_time_sigs(StaveSharingContext &ctx
             }
 
             if (seg->is_time_sig_type()) {
-                TimeSig *origin_time_sig = to_time_sig(seg->effective_element(origin_track));
+                TimeSig *origin_time_sig = to_time_sig(seg->effective_element(track_zero_voice(origin_track)));
                 if (origin_time_sig && origin_time_sig->is_local()) {
                     make_shared_item(origin_time_sig, shared_slot(seg, shared_track), shared_track, seg,
                                      [](const EngravingItem *origin, const EngravingItem *shared) {
@@ -1170,7 +1203,7 @@ void StaveSharingLayout::make_shared_clef_key_time_sigs(StaveSharingContext &ctx
             }
 
             if (seg->is_key_sig_type()) {
-                KeySig *origin_key_sig = to_key_sig(seg->effective_element(origin_track));
+                KeySig *origin_key_sig = to_key_sig(seg->effective_element(track_zero_voice(origin_track)));
                 if (origin_key_sig) {
                     make_shared_item(origin_key_sig, shared_slot(seg, shared_track), shared_track, seg,
                                      [](const EngravingItem *origin, const EngravingItem *shared) {
@@ -1370,19 +1403,25 @@ void StaveSharingLayout::make_shared_ties_and_note_spanners(Note *origin_note, N
     if (tie_back) {
         Note *shared_start_note = tie_back->start_note() ? to_note(tie_back->start_note()->shared_item()) : nullptr;
         Tie *shared_tie_back = shared_note->tie_back();
-        if (shared_tie_back && shared_tie_back->start_note() != shared_start_note) {
+        if (shared_tie_back && shared_tie_back->start_note() != shared_start_note && shared_tie_back->origin_items().empty()) {
             remove_shared_output(shared_tie_back);
             shared_tie_back = nullptr;
         }
         if (!shared_tie_back) {
-            if (auto *stale = shared_start_note ? shared_start_note->tie_for() : nullptr) remove_shared_output(stale);
-            shared_tie_back = to_tie(tie_back->clone());
-            shared_tie_back->set_note_span(shared_start_note, shared_note);
-
-            add_shared_output(shared_tie_back);
+            auto *previous = shared_start_note ? shared_start_note->tie_for() : nullptr;
+            if (previous && previous->origin_items().empty()) {
+                remove_shared_output(previous);
+                previous = nullptr;
+            }
+            // A live tie already owns the single forward link on this Note.
+            if (!previous) {
+                shared_tie_back = to_tie(tie_back->clone());
+                shared_tie_back->set_note_span(shared_start_note, shared_note);
+                add_shared_output(shared_tie_back);
+            }
         }
 
-        connect_output(shared_tie_back, tie_back);
+        if (shared_tie_back && shared_tie_back->start_note() == shared_start_note) connect_output(shared_tie_back, tie_back);
     }
 
     Tie *tie_for = origin_note->tie_for();
@@ -1529,12 +1568,19 @@ void StaveSharingLayout::make_shared_spanners(StaveSharingContext &ctx) {
         if (!track_map.contains(origin_track)) continue;
 
         track_idx_t shared_track = track_map.at(origin_track);
+        const auto &end_map = ctx.map_at_tick(spanner->tick2());
+        const auto map_end_track = [&](const Spanner &span) {
+            const auto end = end_map.find(span.effective_track2());
+            return end != end_map.end() ? end->second : shared_track;
+        };
+        const auto shared_end_track = spanner->can_be_cross_staff() ? map_end_track(*spanner) : shared_track;
 
         Spanner *shared_spanner = nullptr;
         for (Spanner *possible_shared_spanner : ctx.overlapping_spanners) {
             if (possible_shared_spanner->is_layout_copy() && possible_shared_spanner->track() == shared_track &&
                 possible_shared_spanner->type() == spanner->type() && possible_shared_spanner->tick() == spanner->tick() &&
-                possible_shared_spanner->ticks() == spanner->ticks()) {
+                possible_shared_spanner->ticks() == spanner->ticks() &&
+                (possible_shared_spanner->effective_track2() == shared_end_track || possible_shared_spanner->origin_items().empty())) {
                 shared_spanner = possible_shared_spanner;
                 break;
             }
@@ -1543,7 +1589,7 @@ void StaveSharingLayout::make_shared_spanners(StaveSharingContext &ctx) {
         if (!shared_spanner) {
             shared_spanner = to_spanner(spanner->clone());
             shared_spanner->set_track(shared_track);
-            shared_spanner->set_track2(shared_track);
+            shared_spanner->set_track2(shared_end_track);
             shared_spanner->set_tick(spanner->tick());
             shared_spanner->set_ticks(spanner->ticks());
             shared_spanner->set_start_element(nullptr);
@@ -1552,12 +1598,22 @@ void StaveSharingLayout::make_shared_spanners(StaveSharingContext &ctx) {
 
             add_shared_output(shared_spanner);
             ctx.overlapping_spanners.push_back(shared_spanner);
+        } else if (shared_spanner->effective_track2() != shared_end_track) {
+            shared_spanner->set_track2(shared_end_track);
+            shared_spanner->set_end_element(nullptr);
         }
 
         connect_output(shared_spanner, spanner);
 
         shared_spanners.push_back(shared_spanner);
         manage_voice_property_and_track_for_shared_items(shared_spanners, start_origin_track, end_origin_track, track_map);
+        // Staff-anchored lines have one track. Preserve the line at its start staff,
+        // using staff-wide voice assignment where the line supports it.
+        if (!spanner->can_be_cross_staff() && shared_spanner->has_voice_assignment_properties() &&
+            std::ranges::any_of(shared_spanner->origin_items(),
+                                [&](const auto *origin) { return map_end_track(*to_spanner(origin)) != shared_track; })) {
+            shared_spanner->set_property(Pid::VOICE_ASSIGNMENT, VoiceAssignment::ALL_VOICE_IN_STAFF);
+        }
     }
 }
 

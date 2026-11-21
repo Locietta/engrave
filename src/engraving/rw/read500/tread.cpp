@@ -3410,6 +3410,7 @@ static void read_stave_sharing_state(SharedPart *part, XmlReader &e) {
     bool valid_tick = false;
     const Fraction tick = Fraction::from_string(e.attribute("tick"), &valid_tick);
     AuthoredStaveSharingState state;
+    bool valid_map = true;
     while (e.read_next_start_element()) {
         const AsciiStringView tag(e.name());
         if (tag == "isReset") {
@@ -3417,14 +3418,15 @@ static void read_stave_sharing_state(SharedPart *part, XmlReader &e) {
         } else if (tag == "trackMap") {
             const int origin = e.int_attribute("origin", -1);
             const int shared = e.int_attribute("shared", -1);
-            if (origin >= 0 && shared >= 0) {
-                state.user_track_map.emplace(static_cast<track_idx_t>(origin), static_cast<track_idx_t>(shared));
-            }
+            if (origin < 0 || shared < 0 ||
+                !state.user_track_map.emplace(static_cast<track_idx_t>(origin), static_cast<track_idx_t>(shared)).second)
+                valid_map = false;
             e.skip_current_element();
         } else {
             e.unknown();
         }
     }
+    if (!valid_map) state.user_track_map.clear();
     if (valid_tick && tick.is_valid() && !tick.negative()) part->set_authored_state(tick, std::move(state));
 }
 

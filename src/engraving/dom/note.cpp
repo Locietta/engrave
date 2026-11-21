@@ -1165,7 +1165,7 @@ void Note::add(EngravingItem *e) {
         case ElementType::GUITAR_BEND: add_spanner(to_spanner(e)); break;
         default: EngravingItem::add(e); break;
     }
-    trigger_layout();
+    if (!is_layout_copy()) trigger_layout();
 
     source_child_added(*this, e);
 
@@ -1222,7 +1222,8 @@ void Note::remove(EngravingItem *e) {
 
         default: EngravingItem::remove(e); break;
     }
-    trigger_layout();
+    // Layout output can be detached while the score is being destroyed.
+    if (!is_layout_copy()) trigger_layout();
     source_child_removed(*this, e);
     e->removed();
 }

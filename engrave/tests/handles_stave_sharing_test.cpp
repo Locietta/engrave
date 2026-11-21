@@ -624,3 +624,208 @@ TEST(StaveSharingOutput, InsertAndRemoveTimeMovesAuthoredStates) {
     master.insert_time(old_tick, Fraction(-1, 2), {});
     EXPECT_TRUE(part->authored_states().empty());
 }
+
+TEST(StaveSharingOutput, StaffEditsRebaseAuthoredTracksAcrossCheckpointRestoreAndSave) {
+    using namespace mu::engraving;
+    auto xml = read_text(g_source_root / "tests/data/inputs/stave-sharing.mscx");
+    for (int id = 4; id >= 1; --id) {
+        const auto tag = std::format("<Staff id=\"{}\">", id);
+        xml.replace(xml.find(tag), tag.size(), std::format("<Staff id=\"{}\">", id + 1));
+    }
+    xml.insert(xml.find("<SharedPart>"), "<Part><Staff/><Instrument id=\"flute\"/></Part>");
+    xml.insert(xml.find("<Staff id=\"2\">"),
+               "<Staff id=\"1\"><Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>"
+               "<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure></Staff>");
+    xml.insert(xml.find("</SharedPart>"),
+               R"(<StaveSharingState tick="0/1"><trackMap origin="12" shared="4"/><trackMap origin="16" shared="8"/></StaveSharingState>)");
+    auto document = open_text(xml);
+    ASSERT_TRUE(document);
+    const Fraction tick(0, 1);
+    const SharedTrackMap original{{12, 4}, {16, 8}};
+    const auto check = [&](engrave::Document &doc, const SharedTrackMap &expected) {
+        auto &master = master_of(doc);
+        ASSERT_EQ(master.shared_parts().size(), 1u);
+        const auto *state = master.shared_parts().front()->exact_authored_state(tick);
+        ASSERT_NE(state, nullptr);
+        EXPECT_EQ(state->user_track_map, expected);
+    };
+    const auto edit = [&](auto operation, const SharedTrackMap &before, const SharedTrackMap &after) {
+        ASSERT_TRUE(document->checkpoint("before"));
+        auto &master = master_of(*document);
+        auto *manager = master.transaction_manager();
+        manager->begin_transaction(muse::TranslatableString::untranslatable("change staff order"));
+        operation(master);
+        manager->end_transaction();
+        engrave::assign_missing_ids(master);
+        check(*document, after);
+        auto reopened = open_text(source_native(master));
+        ASSERT_TRUE(reopened);
+        check(*reopened, after);
+        ASSERT_TRUE(document->checkpoint("after"));
+        ASSERT_TRUE(document->restore_checkpoint("before"));
+        check(*document, before);
+        ASSERT_TRUE(document->restore_checkpoint("after"));
+        check(*document, after);
+    };
+    check(*document, original);
+    const SharedTrackMap inserted{{16, 8}, {20, 12}};
+    edit([](MasterScore &master) { master.undo_insert_staff(Factory::create_staff(master.parts().front()), 0); }, original, inserted);
+    edit([](MasterScore &master) { master.cmd_remove_staff(0); }, inserted, original);
+    edit(
+        [](MasterScore &master) {
+            std::vector<staff_idx_t> order{1, 2, 0, 4, 3};
+            master.sort_staves(order);
+        },
+        original, {{12, 4}, {16, 0}});
+    edit([](MasterScore &master) { master.cmd_remove_staff(1); }, {{12, 4}, {16, 0}}, {{12, 0}});
+    ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+    const auto *state = master_of(*document).shared_parts().front()->rendered_state_at_tick(tick);
+    ASSERT_NE(state, nullptr);
+    EXPECT_FALSE(state->is_user_map_valid);
+    EXPECT_EQ(state->shared_track_map, (SharedTrackMap{{8, 0}, {12, 0}}));
+}
+
+TEST(StaveSharingOutput, InvalidAuthoredMapsKeepAllOriginNotesVisible) {
+    using namespace mu::engraving;
+    const auto source = read_text(g_source_root / "tests/data/inputs/stave-sharing.mscx");
+    for (const std::string_view entries : {
+             "",
+             R"(<trackMap origin="8" shared="4"/>)",
+             R"(<trackMap origin="8" shared="4"/><trackMap origin="12" shared="4"/><trackMap origin="8" shared="4"/>)",
+             R"(<trackMap origin="8" shared="4"/><trackMap origin="12" shared="4"/><trackMap origin="8" shared="0"/>)",
+         }) {
+        SCOPED_TRACE(entries);
+        auto xml = source;
+        xml.insert(xml.find("</SharedPart>"), std::format(R"(<StaveSharingState tick="0/1">{}</StaveSharingState>)", entries));
+        auto document = open_text(xml);
+        ASSERT_TRUE(document);
+        auto &master = master_of(*document);
+        ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+        const auto *state = master.shared_parts().front()->rendered_state_at_tick(Fraction(0, 1));
+        ASSERT_NE(state, nullptr);
+        EXPECT_FALSE(state->is_user_map_valid);
+        EXPECT_EQ(state->shared_track_map, (SharedTrackMap{{8, 0}, {12, 0}}));
+        auto *segment = master.first_measure()->first(SegmentType::CHORD_REST);
+        const auto *rendered = to_chord(segment->effective_element(0))->up_note();
+        EXPECT_EQ(rendered->pitch(), 72);
+        for (const auto track : {8u, 12u}) EXPECT_EQ(master.layout_copy(*to_chord(segment->element(track))->up_note()), rendered);
+    }
+}
+
+TEST(StaveSharingOutput, AuthoredMapsMustIncludeActiveSecondaryOriginVoices) {
+    using namespace mu::engraving;
+    const auto source = read_text(g_source_root / "tests/data/inputs/stave-sharing.mscx");
+    for (const bool complete : {false, true}) {
+        auto xml = source;
+        xml.insert(xml.find("</Measure>", xml.find("<Staff id=\"3\">")),
+                   "<voice><Chord><durationType>whole</durationType><Note><pitch>60</pitch><tpc>14</tpc></Note></Chord></voice>");
+        xml.insert(
+            xml.find("</SharedPart>"),
+            std::format(
+                R"(<StaveSharingState tick="0/1"><trackMap origin="8" shared="0"/>{}<trackMap origin="12" shared="4"/></StaveSharingState>)",
+                complete ? R"(<trackMap origin="9" shared="1"/>)" : ""));
+        auto document = open_text(xml);
+        ASSERT_TRUE(document);
+        auto &master = master_of(*document);
+        ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+        const auto *state = master.shared_parts().front()->rendered_state_at_tick(Fraction(0, 1));
+        ASSERT_NE(state, nullptr);
+        EXPECT_EQ(state->is_user_map_valid, complete);
+        if (complete) EXPECT_EQ(state->shared_track_map, (SharedTrackMap{{8, 0}, {9, 1}, {12, 4}}));
+        auto *segment = master.first_measure()->first(SegmentType::CHORD_REST);
+        auto *secondary = to_chord(segment->element(9))->up_note();
+        const auto *copy = master.layout_copy(*secondary);
+        ASSERT_NE(copy, nullptr);
+        EXPECT_EQ(to_note(copy)->pitch(), 60);
+        EXPECT_EQ(copy->track(), 1u);
+    }
+}
+
+TEST(StaveSharingOutput, SplitUnisonKeepsBothTiesAcrossAuthoredBoundary) {
+    using namespace mu::engraving;
+    auto document = open_path(g_source_root / "tests/data/inputs/stave-sharing.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *first = master.first_measure()->first(SegmentType::CHORD_REST);
+    auto *second = first->next(SegmentType::CHORD_REST);
+    auto *part = master.shared_parts().front();
+    part->set_authored_state(first->tick(), {{{8, 0}, {12, 0}}, false});
+    part->set_authored_state(second->tick(), {{{8, 1}, {12, 0}}, false});
+    std::vector<Tie *> ties;
+    for (const auto track : {8u, 12u}) {
+        auto *start = to_chord(first->element(track))->up_note();
+        auto *end = to_chord(second->element(track))->up_note();
+        end->set_pitch(72);
+        end->set_tpc1(14);
+        end->set_tpc2(14);
+        auto *tie = Factory::create_tie(start);
+        tie->set_note_span(start, end);
+        master.add_element(tie);
+        tie->assign_new_eid();
+        ties.push_back(tie);
+    }
+    for (int pass = 0; pass < 2; ++pass) {
+        ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+        EXPECT_FALSE(part->rendered_state_at_tick(first->tick())->is_user_map_valid);
+        EXPECT_TRUE(part->rendered_state_at_tick(second->tick())->is_user_map_valid);
+        for (size_t i = 0; i < ties.size(); ++i) {
+            auto *start = to_chord(first->effective_element(i))->up_note();
+            auto *end = to_chord(second->effective_element(1 - i))->up_note();
+            const auto *display = to_tie(master.layout_copy(*ties[i]));
+            ASSERT_NE(display, nullptr);
+            EXPECT_EQ(display->start_note(), start);
+            EXPECT_EQ(display->end_note(), end);
+            EXPECT_EQ(start->tie_for(), display);
+            EXPECT_EQ(end->tie_back(), display);
+        }
+        master.invalidate_layout(first->tick(), second->tick());
+    }
+}
+
+TEST(StaveSharingOutput, CrossingSlurResolvesEachEndpointAndHairpinStaysOnStaff) {
+    using namespace mu::engraving;
+    const auto source = read_text(g_source_root / "tests/data/inputs/stave-sharing.mscx");
+    for (bool system_break : {false, true}) {
+        SCOPED_TRACE(system_break);
+        auto xml = source;
+        if (system_break) xml.insert(xml.find("<voice>"), "<LayoutBreak><subtype>line</subtype></LayoutBreak>");
+        auto document = open_text(xml);
+        ASSERT_TRUE(document);
+        auto &master = master_of(*document);
+        auto *first = master.first_measure()->first(SegmentType::CHORD_REST);
+        auto *second = first->next(SegmentType::CHORD_REST);
+        if (system_break) {
+            first = second;
+            second = master.first_measure()->next_measure()->first(SegmentType::CHORD_REST);
+        }
+        auto *part = master.shared_parts().front();
+        part->set_authored_state(Fraction(0, 1), {{{8, 0}, {12, 1}}, false});
+        part->set_authored_state(second->tick(), {{{8, 1}, {12, 0}}, false});
+        auto *slur = Factory::create_slur(master.dummy());
+        auto *hairpin = Factory::create_hairpin(master.dummy());
+        for (Spanner *span : {static_cast<Spanner *>(slur), static_cast<Spanner *>(hairpin)}) {
+            span->set_track(8);
+            span->set_track2(8);
+            span->set_tick(first->tick());
+            span->set_tick2(second->tick());
+            master.add_element(span);
+            span->assign_new_eid();
+        }
+        const auto cold = source_native(master);
+        ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+        EXPECT_EQ(first->system() != second->system(), system_break);
+        const auto *shared_slur = to_slur(master.layout_copy(*slur));
+        ASSERT_NE(shared_slur, nullptr);
+        EXPECT_EQ(shared_slur->track(), 0u);
+        EXPECT_EQ(shared_slur->track2(), 1u);
+        EXPECT_EQ(shared_slur->start_element(), first->effective_element(0));
+        EXPECT_EQ(shared_slur->end_element(), second->effective_element(1));
+        const auto *shared_hairpin = to_hairpin(master.layout_copy(*hairpin));
+        ASSERT_NE(shared_hairpin, nullptr);
+        EXPECT_EQ(shared_hairpin->track(), 0u);
+        EXPECT_EQ(shared_hairpin->track2(), 0u);
+        EXPECT_EQ(shared_hairpin->voice_assignment(), VoiceAssignment::ALL_VOICE_IN_STAFF);
+        EXPECT_FALSE(shared_hairpin->segments_empty());
+        EXPECT_EQ(source_native(master), cold);
+    }
+}

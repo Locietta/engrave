@@ -202,6 +202,7 @@ public:
     track_idx_t track2() const;
     void set_track2(track_idx_t v);
     track_idx_t effective_track2() const;
+    bool can_be_cross_staff() const;
 
     bool play_spanner() const { return play_spanner_; }
 
@@ -313,7 +314,6 @@ protected:
     virtual bool is_in_spanner_map() const { return true; }
 
 private:
-    bool can_be_cross_staff() const;
     void reset_segment_overrides(PropertyGroup group);
 
     friend struct SpannerSegment;

@@ -610,6 +610,7 @@ cc_binary(
         "engrave/tests/core_tests_main.cpp",
         "engrave/tests/describe_test.cpp",
         "engrave/tests/diagnostics_test.cpp",
+        "engrave/tests/digest.cpp",
         "engrave/tests/gp_import_test.cpp",
         "engrave/tests/handles_mmr_segment_test.cpp",
         "engrave/tests/handles_native_save_test.cpp",
@@ -636,6 +637,7 @@ cc_binary(
         ":probe_internal_headers",
         ":test_harness_headers",
         "@gtest",
+        "@pixi_deps//:zlib",
         "@pugixml",
     ] + WIN_MANIFEST_DEPS,
 )

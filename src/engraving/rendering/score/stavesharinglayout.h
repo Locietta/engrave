@@ -65,10 +65,9 @@ private:
     static void update_stave_sharing(StaveSharingContext &ctx);
 
     static void update_track_maps(StaveSharingContext &ctx);
-    static bool is_valid(const SharedTrackMap &map, StaveSharingContext &ctx);
-    static SharedTrackMap compute_track_map(StaveSharingContext &ctx);
-
-    static bool is_empty(track_idx_t track, StaveSharingContext &ctx);
+    static TrackGroup participating_tracks(const StaveSharingContext &ctx);
+    static bool is_valid(const SharedTrackMap &map, const TrackGroup &origin_tracks, StaveSharingContext &ctx);
+    static SharedTrackMap compute_track_map(const TrackGroup &origin_tracks, StaveSharingContext &ctx);
 
     static bool same_instrument(track_idx_t prev_track, track_idx_t next_track, const Fraction &tick, StaveSharingContext &ctx);
 
@@ -82,7 +81,7 @@ private:
     static bool check_segment_annotations_for_same_voice(Segment *segment, track_idx_t prev_track, track_idx_t next_track);
     static bool check_items_for_same_voice(Segment *segment, track_idx_t prev_track, track_idx_t next_track,
                                            const std::function<bool(const EngravingItem *, const EngravingItem *)> &is_equal);
-    static bool check_note_spanners_for_unison(const Note *note1, const Note *note2);
+    static bool check_note_spanners_for_unison(const Note *note1, const Note *note2, const StaveSharingContext &ctx);
     static bool check_spanners_for_same_voice(track_idx_t prev_track, track_idx_t next_track, StaveSharingContext &ctx);
     static bool check_articulations_for_same_voice(Chord *chord1, Chord *chord2);
 
