@@ -126,6 +126,19 @@ static void record_written_chord(TrackList::WrittenChordMap *written_chords, con
     auto &span = (*written_chords)[src];
     if (!span.first) {
         span.first = dst;
+    } else {
+        const std::vector<Chord *> duplicate_graces = dst->grace_notes();
+        dst->remove_all_grace_notes();
+        muse::delete_all(duplicate_graces);
+        // Move the after-graces along as new fragments are written. Ties are
+        // reconnected after the last fragment has been placed.
+        const std::vector<Chord *> graces = span.last->grace_notes();
+        for (Chord *grace : graces) {
+            if (!grace->is_grace_after()) continue;
+            span.last->remove(grace);
+            grace->set_grace_index(dst->grace_notes().size());
+            dst->add(grace);
+        }
     }
     span.last = dst;
 }
@@ -786,6 +799,28 @@ bool ScoreRange::NoteEndpointRef::matches(const Note &note) const {
     return note.pitch() == pitch && note.string() == string && note.tpc1() == tpc1 && note.tpc2() == tpc2;
 }
 
+size_t ScoreRange::backup_local_grace(const Chord &chord, const Chord *range_chord, SourceHandle staff) {
+    const auto existing = std::ranges::find(local_graces_, &chord, &LocalGraceBackup::source);
+    const auto index = static_cast<size_t>(existing - local_graces_.begin());
+    if (existing != local_graces_.end()) return index;
+
+    auto *backup = chord.clone();
+    backup->move_to_dummy();
+    for (auto *copy_note : backup->notes()) {
+        if (auto *tie = copy_note->tie_for_non_partial()) {
+            copy_note->remove(tie);
+            delete tie;
+        }
+    }
+    size_t split_grace_index = 0;
+    for (const Chord *sibling : to_chord(chord.ownership_parent())->grace_notes()) {
+        if (sibling == &chord) break;
+        if (sibling->is_grace_after() == chord.is_grace_after()) ++split_grace_index;
+    }
+    local_graces_.push_back({&chord, range_chord, staff, backup, split_grace_index});
+    return index;
+}
+
 bool ScoreRange::make_note_endpoint_ref(Note *note, NoteEndpointRef &out) {
     if (!note || !note->chord() || !note->staff()) return false;
     const auto *chord = note->chord();
@@ -814,31 +849,19 @@ bool ScoreRange::make_note_endpoint_ref(Note *note, NoteEndpointRef &out) {
     out.range_chord = range->second;
     out.staff = registry.enroll(*chord->staff());
     out.is_grace = chord->is_grace();
+    out.is_after_grace = chord->is_grace_after();
     const Note *primary_note = main == primary ? note : to_note(note->find_linked_in_staff(primary->staff()));
     if (!primary_note) {
         if (!out.is_grace || chord->find_linked_in_staff(primary->staff())) return false;
 
-        // clone_staff2 only copies graces from the primary staff. Save a local
-        // grace once even when several lines use it.
-        const auto existing = std::ranges::find(local_graces_, chord, &LocalGraceBackup::source);
-        out.local_grace = static_cast<size_t>(existing - local_graces_.begin());
-        if (existing == local_graces_.end()) {
-            auto *backup = chord->clone();
-            backup->move_to_dummy();
-            for (auto *copy_note : backup->notes()) {
-                if (auto *tie = copy_note->tie_for_non_partial()) {
-                    copy_note->remove(tie);
-                    delete tie;
-                }
-            }
-            local_graces_.push_back({chord, out.range_chord, out.staff, backup});
-        }
+        // clone_staff2 only copies graces from the primary staff.
+        out.local_grace = backup_local_grace(*chord, out.range_chord, out.staff);
         primary_note = note;
     } else if (out.is_grace) {
-        const auto &graces = primary->grace_notes();
+        const auto graces = out.is_after_grace ? primary->grace_notes_after() : primary->grace_notes_before();
         const auto grace = std::ranges::find(graces, primary_note->chord());
         if (grace == graces.end()) return false;
-        out.grace_index = static_cast<size_t>(grace - graces.begin());
+        out.grace_index = static_cast<size_t>(std::distance(graces.begin(), grace));
     }
 
     out.pitch = primary_note->pitch();
@@ -925,6 +948,12 @@ void ScoreRange::backup_note_spanners(const Fraction &stick, const Fraction &eti
                     }
                     const Chord *chord = to_chord(el);
                     for (const Chord *grace : chord->grace_notes()) {
+                        if (st != primary && !grace->find_linked_in_staff(primary)) {
+                            const auto range = read_chords_.find(to_chord(chord->find_linked_in_staff(primary)));
+                            if (range != read_chords_.end()) {
+                                backup_local_grace(*grace, range->second, score->master_score()->eid_register()->enroll(*st));
+                            }
+                        }
                         collect_from_chord(grace);
                     }
                     collect_from_chord(chord);
@@ -982,13 +1011,16 @@ void ScoreRange::restore_note_spanners(Score *score, const TrackList::WrittenCho
         const auto &backup = local_graces_[i];
         auto *staff = resolve_staff(backup.staff);
         const auto written = written_chords.find(backup.range_chord);
-        if (!staff || written == written_chords.end() || !written->second.first) continue;
-        auto *main = to_chord(written->second.first->find_linked_in_staff(staff));
+        if (!staff || written == written_chords.end()) continue;
+        const auto &[first, last] = written->second;
+        auto *anchor = backup.grace->is_grace_after() ? last : first;
+        auto *main = to_chord(anchor->find_linked_in_staff(staff));
         if (!main) continue;
         auto *grace = backup.grace->clone();
         grace->set_ownership_parent(main);
         grace->set_track(main->track());
-        grace->set_grace_index(std::min(backup.grace->grace_index(), main->grace_notes().size()));
+        const size_t index = first == last ? backup.grace->grace_index() : backup.split_grace_index;
+        grace->set_grace_index(std::min(index, main->grace_notes().size()));
         staff->score()->do_undo_add_element(grace);
         restored_graces[i] = grace;
     }
@@ -999,11 +1031,13 @@ void ScoreRange::restore_note_spanners(Score *score, const TrackList::WrittenCho
             if (!staff) return nullptr;
             const auto written = written_chords.find(ref.range_chord);
             if (written == written_chords.end()) return nullptr;
-            Chord *anchor = (use_first_part || ref.is_grace) ? written->second.first : written->second.last;
+            const bool use_first_fragment = ref.is_grace ? !ref.is_after_grace : use_first_part;
+            Chord *anchor = use_first_fragment ? written->second.first : written->second.last;
             if (ref.local_grace) {
                 anchor = restored_graces[*ref.local_grace];
             } else if (anchor && ref.is_grace) {
-                anchor = ref.grace_index < anchor->grace_notes().size() ? anchor->grace_notes()[ref.grace_index] : nullptr;
+                const auto graces = ref.is_after_grace ? anchor->grace_notes_after() : anchor->grace_notes_before();
+                anchor = ref.grace_index < graces.size() ? graces[ref.grace_index] : nullptr;
             }
             if (!anchor) return nullptr;
             size_t ordinal = 0;

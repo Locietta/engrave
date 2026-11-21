@@ -261,7 +261,7 @@ staff_idx_t System::first_visible_staff_from(staff_idx_t start_staff_idx) const 
         Staff *s = score()->staff(i);
         SysStaff *ss = staves_[i];
 
-        if (s->show() && ss->show()) {
+        if (s->layout_show() && ss->show()) {
             return i;
         }
     }
@@ -281,7 +281,7 @@ staff_idx_t System::prev_visible_staff(staff_idx_t start_staff_idx) const {
         Staff *s = score()->staff(i);
         SysStaff *ss = staves_[i];
 
-        if (s->show() && ss->show()) {
+        if (s->layout_show() && ss->show()) {
             return i;
         }
 

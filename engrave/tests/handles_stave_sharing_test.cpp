@@ -1025,6 +1025,12 @@ TEST(StaveSharingOutput, LateIncompatibleSystemRetiresOutputAndPreservesSourceQu
     auto xml = read_text(g_source_root / "tests/data/inputs/stave-sharing.mscx");
     xml.insert(xml.find("<voice>"), "<LayoutBreak><subtype>line</subtype></LayoutBreak>");
     xml.insert(xml.find("</Style>"), "<allowVoiceCrossing>0</allowVoiceCrossing>");
+    for (const auto &[from, to] : {std::pair{"id=\"flute\"", "id=\"soprano\""}, std::pair{"wind.flutes.flute", "voice.soprano"},
+                                   std::pair{"<pitch>72</pitch><tpc>14", "<pitch>69</pitch><tpc>17"}}) {
+        for (size_t pos = xml.find(from); pos != std::string::npos; pos = xml.find(from, pos + std::string_view(to).size())) {
+            xml.replace(pos, std::string_view(from).size(), to);
+        }
+    }
     auto document = open_text(xml);
     ASSERT_TRUE(document);
     auto &master = master_of(*document);
@@ -1040,6 +1046,12 @@ TEST(StaveSharingOutput, LateIncompatibleSystemRetiresOutputAndPreservesSourceQu
     const auto upper_track = part->origin_parts().front()->track_range().start_track;
     const auto lower_track = part->origin_parts().back()->track_range().start_track;
     auto *first_segment = first->first(SegmentType::CHORD_REST);
+    auto *dynamic = Factory::create_dynamic(first_segment);
+    dynamic->set_track(upper_track);
+    dynamic->set_dynamic_type(DynamicType::P);
+    dynamic->set_property(Pid::PLACEMENT, PlacementV::BELOW);
+    dynamic->set_property(Pid::CENTER_BETWEEN_STAVES, AutoOnOff::ON);
+    first_segment->add(dynamic);
     auto *later_segment = second->first(SegmentType::CHORD_REST)->next(SegmentType::CHORD_REST);
     auto *first_note = to_chord(first_segment->element(upper_track))->up_note();
     auto *later_note = to_chord(later_segment->element(lower_track))->up_note();
@@ -1071,6 +1083,14 @@ TEST(StaveSharingOutput, LateIncompatibleSystemRetiresOutputAndPreservesSourceQu
                 EXPECT_GT(upper_box.height(), 0.0);
                 EXPECT_GT(lower_box.height(), 0.0);
                 EXPECT_GT(lower_box.top(), upper_box.bottom());
+                EXPECT_EQ(system->next_visible_staff(track2staff(upper_track)), track2staff(lower_track));
+                EXPECT_EQ(system->prev_visible_staff(track2staff(lower_track)), track2staff(upper_track));
+                if (measure == first) {
+                    ASSERT_TRUE(dynamic->has_layout_data());
+                    const auto *layout = dynamic->ldata();
+                    const double center = upper_box.top() + layout->pos().y() + layout->bbox().center().y();
+                    EXPECT_NEAR(center, (upper_box.bottom() + lower_box.top()) * 0.5, 0.1 * dynamic->spatium());
+                }
             } else {
                 EXPECT_GT(system->staff(0)->bbox().height(), 0.0);
                 EXPECT_TRUE(upper_box.is_empty());

@@ -186,6 +186,7 @@ private:
         const Chord *range_chord = nullptr;
         SourceHandle staff;
         bool is_grace = false;
+        bool is_after_grace = false;
         size_t grace_index = 0;
         int pitch = 0;
         int string = 0;
@@ -214,6 +215,7 @@ private:
         const Chord *range_chord = nullptr;
         SourceHandle staff;
         Chord *grace = nullptr;
+        size_t split_grace_index = 0;
     };
 
     struct LocalGraceTieBackup {
@@ -224,6 +226,7 @@ private:
 
     void record_read_chord(const Chord *src, const Chord *dst);
     bool can_absorb_continuation(const Chord *range_chord, const Chord *continuation) const;
+    size_t backup_local_grace(const Chord &chord, const Chord *range_chord, SourceHandle staff);
     bool make_note_endpoint_ref(Note *note, NoteEndpointRef &out);
     void backup_note_spanners(const Fraction &stick, const Fraction &etick);
     void restore_note_spanners(Score *score, const TrackList::WrittenChordMap &written_chords) const;

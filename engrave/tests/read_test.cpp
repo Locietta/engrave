@@ -1828,7 +1828,7 @@ TEST(Read, TimeSigRewriteUsesLinkedNoteIdentityAcrossTabOrder) {
     }
 }
 
-TEST(Read, TimeSigRewriteRestoresExcerptOnlyGraceBeforeItsLine) {
+static void expect_time_sig_rewrite_preserves_excerpt_grace_ties(bool with_line) {
     using namespace mu::engraving;
     std::string xml(note_line_rewrite_xml);
     for (const auto original : {std::string_view("<pitch>60</pitch><tpc>14</tpc>"), std::string_view("<pitch>71</pitch><tpc>19</tpc>")}) {
@@ -1857,9 +1857,11 @@ TEST(Read, TimeSigRewriteRestoresExcerptOnlyGraceBeforeItsLine) {
         note->set_tpc2(21);
         grace->add(note);
         excerpt->undo_add_element(grace, false);
-        auto *line = Factory::create_note_line(note);
-        line->set_note_span(note, chord_at(*excerpt, Fraction(1, 2))->up_note());
-        excerpt->undo_add_element(line, false);
+        if (with_line) {
+            auto *line = Factory::create_note_line(note);
+            line->set_note_span(note, chord_at(*excerpt, Fraction(1, 2))->up_note());
+            excerpt->undo_add_element(line, false);
+        }
         auto add_tie = [&](Note *start, Note *end) {
             auto *tie = Factory::create_tie(start);
             tie->set_start_note(start);
@@ -1883,11 +1885,13 @@ TEST(Read, TimeSigRewriteRestoresExcerptOnlyGraceBeforeItsLine) {
         EXPECT_EQ(graces.front()->links(), nullptr);
         EXPECT_EQ(graces.front()->note_type(), NoteType::ACCIACCATURA);
         const auto lines = live_note_lines(*excerpt);
-        ASSERT_EQ(lines.size(), 1u);
-        EXPECT_EQ(lines.front()->start_element(), graces.front()->up_note());
+        ASSERT_EQ(lines.size(), with_line ? 1u : 0u);
+        if (with_line) {
+            EXPECT_EQ(lines.front()->start_element(), graces.front()->up_note());
+            EXPECT_EQ(lines.front()->end_element(), chord_at(*excerpt, Fraction(1, 2))->up_note());
+            EXPECT_EQ(lines.front()->links(), nullptr);
+        }
         EXPECT_EQ(graces.front()->up_note()->pitch(), 61);
-        EXPECT_EQ(lines.front()->end_element(), chord_at(*excerpt, Fraction(1, 2))->up_note());
-        EXPECT_EQ(lines.front()->links(), nullptr);
         auto *grace_note = graces.front()->up_note();
         auto *before = chord_at(*excerpt, Fraction(0, 1))->up_note();
         auto *after = chord_at(*excerpt, excerpt->last_measure()->tick())->up_note();
@@ -1900,6 +1904,92 @@ TEST(Read, TimeSigRewriteRestoresExcerptOnlyGraceBeforeItsLine) {
         EXPECT_EQ(grace_note->tie_back()->end_note(), grace_note);
         EXPECT_EQ(grace_note->tie_for()->start_note(), grace_note);
         EXPECT_EQ(grace_note->tie_for()->end_note(), after);
+    }
+}
+
+TEST(Read, TimeSigRewriteRestoresExcerptOnlyGraceBeforeItsLine) { expect_time_sig_rewrite_preserves_excerpt_grace_ties(true); }
+
+TEST(Read, TimeSigRewriteRestoresExcerptOnlyGraceWithTiesAndNoLine) { expect_time_sig_rewrite_preserves_excerpt_grace_ties(false); }
+
+TEST(Read, TimeSigRewriteKeepsTieIntoAfterGraceOnLastFragment) {
+    using namespace mu::engraving;
+    for (bool linked : {false, true}) {
+        SCOPED_TRACE(linked);
+        auto opened = g_engine->open(as_bytes(note_line_rewrite_xml));
+        ASSERT_TRUE(opened) << opened.error().message;
+        auto &document = **opened;
+        auto &master = master_of(document);
+        const Fraction start_tick(1, 2);
+        if (linked) {
+            auto *main = chord_at(master, start_tick);
+            add_test_grace(main, NoteType::ACCIACCATURA);
+            auto *after = add_test_grace(main, NoteType::GRACE8_AFTER)->up_note();
+            Command cmd(master);
+            auto *tie = Factory::create_tie(main->up_note());
+            tie->set_start_note(main->up_note());
+            tie->set_end_note(after);
+            tie->set_track(main->track());
+            tie->set_track2(after->track());
+            master.do_undo_add_element(tie);
+            auto *line = Factory::create_note_line(after);
+            line->set_note_span(after, chord_at(master, Fraction(1, 1))->up_note());
+            master.undo_add_element(line, false);
+            cmd.commit();
+        }
+        ASSERT_TRUE(document.edit({{engrave::GenerateExcerpts{{engrave::from_engine(master.parts().front()->eid())}}}}));
+        ASSERT_EQ(master.excerpts().size(), 1u);
+        auto *excerpt = master.excerpts().front()->excerpt_score();
+        if (!linked) {
+            auto *main = chord_at(*excerpt, start_tick);
+            add_test_grace(main, NoteType::ACCIACCATURA);
+            auto *after = add_test_grace(main, NoteType::GRACE8_AFTER)->up_note();
+            Command cmd(master);
+            auto *tie = Factory::create_tie(main->up_note());
+            tie->set_start_note(main->up_note());
+            tie->set_end_note(after);
+            tie->set_track(main->track());
+            tie->set_track2(after->track());
+            excerpt->do_undo_add_element(tie);
+            cmd.commit();
+        }
+        engrave::assign_missing_ids(master);
+
+        ASSERT_TRUE(document.edit({{engrave::SetTimeSig{engrave::from_engine(master.first_measure()->eid()), {3, 4}}}}));
+        const Fraction split_tick(3, 4);
+        for (Score *score : {static_cast<Score *>(&master), excerpt}) {
+            auto *first = chord_at(*score, start_tick);
+            auto *last = chord_at(*score, split_tick);
+            ASSERT_NE(first, nullptr);
+            ASSERT_NE(last, nullptr);
+            ASSERT_TRUE(first->grace_notes_after().empty());
+            ASSERT_TRUE(last->grace_notes_before().empty());
+
+            auto *first_note = first->up_note();
+            auto *last_note = last->up_note();
+            ASSERT_NE(first_note->tie_for(), nullptr);
+            EXPECT_EQ(first_note->tie_for()->end_note(), last_note);
+            EXPECT_EQ(last_note->tie_back(), first_note->tie_for());
+            if (!linked && score == &master) {
+                EXPECT_TRUE(first->grace_notes_before().empty());
+                EXPECT_TRUE(last->grace_notes_after().empty());
+                EXPECT_EQ(last_note->tie_for(), nullptr);
+                continue;
+            }
+
+            ASSERT_EQ(first->grace_notes_before().size(), 1u);
+            ASSERT_EQ(last->grace_notes_after().size(), 1u);
+            auto *after = last->grace_notes_after().front()->up_note();
+            ASSERT_NE(last_note->tie_for(), nullptr);
+            EXPECT_EQ(last_note->tie_for()->start_note(), last_note);
+            EXPECT_EQ(last_note->tie_for()->end_note(), after);
+            EXPECT_EQ(after->tie_back(), last_note->tie_for());
+        }
+        if (linked) {
+            const auto lines = live_note_lines(master);
+            ASSERT_EQ(lines.size(), 1u);
+            EXPECT_EQ(lines.front()->start_element(), chord_at(master, split_tick)->grace_notes_after().front()->up_note());
+            EXPECT_EQ(lines.front()->end_element(), chord_at(master, Fraction(1, 1))->up_note());
+        }
     }
 }
 
