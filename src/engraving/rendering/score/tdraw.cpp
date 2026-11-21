@@ -1838,7 +1838,7 @@ void TDraw::draw(const KeySig *item, Painter *painter, const PaintOptions &opt) 
             return;
         }
         Font f(item->staff()->staff_type_for_element(item)->jianpu_font());
-        f.set_point_size_f(f.point_size_f() * item->mag());
+        f.set_point_size_f(f.point_size_f() * item->mag_s());
         painter->set_font(f);
         painter->draw_text(PointF(ldata->bbox().x(), ldata->bbox().bottom()), ldata->jianpu_label);
         return;

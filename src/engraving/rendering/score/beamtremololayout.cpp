@@ -664,7 +664,8 @@ bool BeamTremoloLayout::calculate_anchors(const BeamBase *item, BeamBase::Layout
         ldata->end_anchor = chord_beam_anchor(ldata, end_cr, ChordBeamAnchorType::END);
 
         // The Jianpu y origin is the centre of the digit.
-        const double half_height = item->staff()->staff_type_for_element(item)->jianpu_box_h() * start_cr->mag() * .5;
+        // The digit box is in default-spatium units, as TLayout::layout_note scales it.
+        const double half_height = item->staff()->staff_type_for_element(item)->jianpu_box_h() * start_cr->mag_s() * .5;
         const double offset_y = beam_above ? -(half_height + beam_dot_stack) : half_height + beam_distance;
         ldata->start_anchor += PointF(0, offset_y);
         ldata->end_anchor += PointF(0, offset_y);

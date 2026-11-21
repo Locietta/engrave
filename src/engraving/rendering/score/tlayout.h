@@ -274,6 +274,7 @@ struct TLayout {
     static void layout_mm_rest_range(MMRestRange *item, MMRestRange::LayoutData *ldata, const LayoutContext &ctx);
 
     static void layout_note(const Note *item, Note::LayoutData *ldata);
+    static KeySigEvent jianpu_key_sig_event(const Note &note);
     static void fill_note_shape(const Note *item, Note::LayoutData *ldata);
     static void layout_note_dot(const NoteDot *item, NoteDot::LayoutData *ldata);
     static void layout_note_anchored_line(SLine *item, SLine::LayoutData *ldata, LayoutContext &ctx);

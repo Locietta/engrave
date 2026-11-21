@@ -565,6 +565,10 @@ RestGroups RestLayout::compute_rest_groups(const System *system, LayoutContext &
             }
 
             const Measure *measure = to_measure(mb);
+            // Jianpu rests sit in their voice bands (ChordLayout::layout_voice_offsets) with their lines.
+            if (ctx.dom().staff(staff_idx)->is_jianpu_staff(measure->tick())) {
+                continue;
+            }
             track_idx_t s_track = staff2track(staff_idx);
 
             InterruptionPoints interruption_points = compute_interruption_points(measure, staff_idx);
@@ -691,6 +695,10 @@ void RestLayout::check_full_measure_rest_collisions(const System *system, Layout
             }
 
             Measure *measure = to_measure(mb);
+            // Jianpu voice bands already keep the voices apart (ChordLayout::layout_voice_offsets).
+            if (ctx.dom().staff(staff_idx)->is_jianpu_staff(measure->tick())) {
+                continue;
+            }
             Rest *full_measure_rest = nullptr;
 
             Segment *first_cr_seg = measure->first(SegmentType::CHORD_REST);

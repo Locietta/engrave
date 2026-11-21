@@ -3190,11 +3190,12 @@ void TLayout::layout_key_sig(const KeySig *item, KeySig::LayoutData *ldata, cons
         // A Jianpu staff labels the tonic ("1=C") instead of drawing sharps and flats.
         ldata->jianpu_label = jianpu_key_label(item->key_sig_event());
 
-        const double height = (st ? st->jianpu_box_h() : spatium) * item->mag();
+        // The Jianpu font and box are in default-spatium units, as for the note digits.
+        const double height = st ? st->jianpu_box_h() * item->mag_s() : spatium;
         double width = 0.0;
         if (!ldata->jianpu_label.is_empty()) {
             Font font(st ? st->jianpu_font() : Font());
-            font.set_point_size_f(font.point_size_f() * item->mag());
+            font.set_point_size_f(font.point_size_f() * item->mag_s());
             width = FontMetrics(font).width(ldata->jianpu_label);
         }
         ldata->set_pos_y(item->staff_offset_y());
@@ -3854,10 +3855,11 @@ void TLayout::layout_note(const Note *item, Note::LayoutData *ldata) {
         const Staff *st = item->staff();
         const StaffType *jianpu = st->staff_type_for_element(item);
 
-        const JianpuKeyMapping mapping = jianpu_key_mapping(st->key_sig_event(item->chord()->tick()));
+        const JianpuKeyMapping mapping = jianpu_key_mapping(jianpu_key_sig_event(*item));
         JianpuSpelling spelling = tpc2_jianpu(item->tpc(), mapping.tonic_tpc, mapping.mode);
         const Tie *tie_back = item->tie_back_non_partial();
-        if (tie_back && tie_back->start_note()->tpc() == item->tpc()) {
+        // A shared tie whose start note has no shared copy has no start note.
+        if (tie_back && tie_back->start_note() && tie_back->start_note()->tpc() == item->tpc()) {
             // A tied continuation shows no accidental: the tied-from digit already does.
             spelling.accidental = String();
         }
@@ -3915,6 +3917,14 @@ void TLayout::layout_note(const Note *item, Note::LayoutData *ldata) {
     ldata->set_bbox(note_b_box);
 
     fill_note_shape(item, ldata);
+}
+
+// A shared staff shows its mapped origins' notes, so a shared digit counts from the key
+// of the staff it came from, not from the shared staff's own key.
+KeySigEvent TLayout::jianpu_key_sig_event(const Note &note) {
+    const Note *source = note.origin_items().empty() ? &note : to_note(note.origin_items().front());
+    const Staff *staff = source->staff();
+    return staff ? staff->key_sig_event(note.chord()->tick()) : KeySigEvent();
 }
 
 void TLayout::fill_note_shape(const Note *item, Note::LayoutData *ldata) {

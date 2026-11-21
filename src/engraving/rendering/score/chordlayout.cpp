@@ -95,8 +95,9 @@ static double jianpu_beam_offset(const Chord *chord, PlacementV placement, const
     }
 
     const int lines = BeamTremoloLayout::stroke_count(beam->ldata(), chord);
+    // style_absolute already scales by the spatium, so only the magnification remains.
     const double distance = ctx.conf().style_absolute(Sid::JIANPU_DIMINUTION_BEAM_DISTANCE);
-    return (distance * lines) * chord->mag_s();
+    return (distance * lines) * chord->mag();
 }
 
 static void resize_jianpu_octave_dots(Note *note, size_t count) {
@@ -116,6 +117,15 @@ static void resize_jianpu_octave_dots(Note *note, size_t count) {
 
 // The marks of a digit show only with it; an overlapping note that TDraw hides draws none.
 static bool jianpu_digit_drawn(const Note *note) { return note->display_visible() && !note->hidden(); }
+
+// The duration lines and residual dots follow the topmost drawn digit: a hidden digit
+// above it leaves an empty slot. notes() runs from low to high; layout_pitched stacks
+// the highest on top.
+static const Note *jianpu_duration_note(const Chord *chord) {
+    const std::vector<Note *> &notes = chord->notes();
+    const auto drawn = std::ranges::find_if(notes.rbegin(), notes.rend(), jianpu_digit_drawn);
+    return drawn != notes.rend() ? *drawn : chord->up_note();
+}
 
 static void clear_jianpu_octave_dots(const Chord *chord) {
     for (Note *note : chord->notes()) {
@@ -193,9 +203,10 @@ void ChordLayout::layout_pitched(Chord *item, LayoutContext &ctx) {
     double jianpu_offset_y = upnote ? -upnote->spatium() * .5 * mag_value : 0.0;
 
     // Grace digits sit above the main digit. The staff scale (not the grace scale)
-    // keeps the gap equal to a normal digit's box height.
+    // keeps the gap equal to a normal digit's box height, which is in default-spatium units.
     if (is_jianpu_staff && item->is_grace() && item->staff()) {
-        jianpu_offset_y -= item->staff()->staff_type_for_element(item)->jianpu_box_h() * mag_value;
+        const double staff_mag_s = mag_value * item->style().spatium() / item->default_spatium();
+        jianpu_offset_y -= item->staff()->staff_type_for_element(item)->jianpu_box_h() * staff_mag_s;
     }
 
     const double item_mag = item->mag();
@@ -263,6 +274,9 @@ void ChordLayout::layout_pitched(Chord *item, LayoutContext &ctx) {
             }
         }
     }
+
+    // The lines sit beside the stacked digits; the chord shape below takes them in.
+    if (!item->is_grace()) layout_jianpu_duration_lines(item, ctx);
 
     // A chord can have its own arpeggio and also be part of another arpeggio's span.  We need to lay out both of these arpeggios properly
     Arpeggio *old_span_arp = item->span_arpeggio();
@@ -1766,27 +1780,25 @@ void ChordLayout::layout_jianpu_duration_lines(Chord *item, LayoutContext &ctx) 
 
     resize_jianpu_duration_lines(item, size_t(lines));
 
-    const std::vector<Note *> &notes = item->notes();
-    if (notes.empty()) {
+    if (item->notes().empty()) {
         return;
     }
-    // The lines follow the topmost drawn digit: a hidden digit above it leaves an
-    // empty slot, and layout_pitched stacks notes() from the back (highest) down.
-    const auto drawn = std::ranges::find_if(notes.rbegin(), notes.rend(), jianpu_digit_drawn);
-    const bool any_drawn = drawn != notes.rend();
-    const Note *note = any_drawn ? *drawn : item->up_note();
+    const Note *note = jianpu_duration_note(item);
 
     const track_idx_t track = staff2track(idx);
-    const bool visible = !staff->is_lines_invisible(tick) && item->visible() && any_drawn;
+    const bool visible = !staff->is_lines_invisible(tick) && item->visible() && jianpu_digit_drawn(note);
     const double head_width = note->head_width();
-    const double head_x = note->pos().x() + note->bbox_x_shift();
+    // The first line keeps a fifth of a head width clear of the digit box, or of the
+    // digit itself where a large font draws it wider than the box.
+    const double digit_right =
+        std::max(note->pos().x() + note->bbox_x_shift() + head_width, note->pos().x() + note->ldata()->jianpu_ink_box.right());
     const double lengthening_y = note->pos().y();
     for (int i = 0; i < lines; ++i) {
         JianpuDurationLine *line = item->jianpu_duration_lines()[i];
         line->set_track(track);
         line->set_visible(visible);
         line->mutldata()->len = head_width;
-        line->mutldata()->set_pos(head_x + head_width * 1.2 * (i + 1), lengthening_y);
+        line->mutldata()->set_pos(digit_right + head_width * (0.2 + 1.2 * i), lengthening_y);
         TLayout::layout_jianpu_duration_line(line, ctx);
     }
 }
@@ -1806,11 +1818,14 @@ void ChordLayout::layout_jianpu_octave_dots(Chord *item, LayoutContext &ctx) {
 
     const track_idx_t track = staff2track(idx);
     const bool staff_visible = !staff->is_lines_invisible(tick);
-    const double height = staff->staff_type_for_element(item)->jianpu_box_h() * item->mag_s();
-    const JianpuKeyMapping mapping = jianpu_key_mapping(staff->key_sig_event(tick));
-    const double distance = ctx.conf().style_absolute(Sid::JIANPU_OCTAVE_DOT_DISTANCE) * item->mag_s();
+    const double box_h = staff->staff_type_for_element(item)->jianpu_box_h();
+    // As in layout_pitched, which stacks the digits by this distance.
+    const double distance = ctx.conf().style_absolute(Sid::JIANPU_OCTAVE_DOT_DISTANCE) * item->mag();
 
     for (Note *note : item->notes()) {
+        // The digit box of this note, as TLayout::layout_note sized it.
+        const double height = box_h * note->mag_s();
+        const JianpuKeyMapping mapping = jianpu_key_mapping(TLayout::jianpu_key_sig_event(*note));
         const int octave = pitch2_jianpu_octave(note->epitch(), note->tpc(), mapping.tonic_tpc, mapping.mode);
         if (octave == 0) {
             if (!note->jianpu_octave_dots().empty()) resize_jianpu_octave_dots(note, 0);
@@ -1849,7 +1864,8 @@ void ChordLayout::layout_jianpu_octave_dots(Chord *item, LayoutContext &ctx) {
 // Jianpu separates voices by vertical bands (voice 1 on top) instead of stem
 // directions. The bands span the system's Jianpu measures so their height stays
 // consistent along the line.
-void ChordLayout::layout_voice_offsets(System *system, staff_idx_t staff_idx, LayoutContext &ctx) {
+void ChordLayout::layout_voice_offsets(System *system, staff_idx_t staff_idx, LayoutContext &ctx,
+                                       std::span<const MeasureBase *const> relaid) {
     const Staff *staff = ctx.dom().staff(staff_idx);
     if (!staff || !staff->layout_show() || !system) {
         return;
@@ -1907,15 +1923,12 @@ void ChordLayout::layout_voice_offsets(System *system, staff_idx_t staff_idx, La
             }
         }
     };
-    const auto extent_top = [&ctx, &include_slur_extents](EngravingItem *e) -> double {
-        if (!e->is_chord()) {
-            return e->ldata()->pos().y() + e->ldata()->bbox().top();
-        }
-        Chord *chord = to_chord(e);
+    // The top of a chord's digits and upper octave dots, in the coordinates of a main chord
+    // whose origin is y_offset above this chord's.
+    const auto digits_top = [](const Chord *chord, double y_offset) -> double {
         double top = DBL_MAX;
-        double bottom = -DBL_MAX;
         for (Note *note : chord->notes()) {
-            const double y = note->ldata()->pos().y();
+            const double y = y_offset + note->ldata()->pos().y();
             top = std::min(top, y + note->ldata()->bbox().top());
             for (JianpuOctaveDot *dot : note->jianpu_octave_dots()) {
                 if (dot->ldata()->above) {
@@ -1923,8 +1936,22 @@ void ChordLayout::layout_voice_offsets(System *system, staff_idx_t staff_idx, La
                 }
             }
         }
+        return top;
+    };
+    const auto extent_top = [&ctx, &digits_top, &include_slur_extents](EngravingItem *e) -> double {
+        if (!e->is_chord()) {
+            return e->ldata()->pos().y() + e->ldata()->bbox().top();
+        }
+        Chord *chord = to_chord(e);
+        double top = digits_top(chord, 0.0);
+        double bottom = -DBL_MAX;
         include_slur_extents(chord, top, bottom);
-        return top - jianpu_beam_offset(chord, PlacementV::ABOVE, ctx);
+        top -= jianpu_beam_offset(chord, PlacementV::ABOVE, ctx);
+        // Grace digits stack above the main digit (layout_pitched), so they can reach higher.
+        for (const Chord *grace : chord->grace_notes()) {
+            top = std::min(top, digits_top(grace, grace->ldata()->pos().y()) - jianpu_beam_offset(grace, PlacementV::ABOVE, ctx));
+        }
+        return top;
     };
     const auto extent_bottom = [&ctx, &include_slur_extents](EngravingItem *e) -> double {
         if (!e->is_chord()) {
@@ -1953,7 +1980,8 @@ void ChordLayout::layout_voice_offsets(System *system, staff_idx_t staff_idx, La
         return bottom;
     };
     std::vector<SpannerSegment *> shifted_slur_segments;
-    const auto shift_chord_slurs = [system, &shifted_slur_segments](Chord *chord, double dy) {
+    const auto shift_chord_slurs = [system, relaid, &shifted_slur_segments](Chord *chord, double dy) {
+        if (std::ranges::contains(relaid, static_cast<const MeasureBase *>(chord->measure()))) return;
         for (const std::set<Spanner *> *spanners : {&chord->starting_spanners(), &chord->ending_spanners()}) {
             for (Spanner *spanner : *spanners) {
                 if (!spanner->is_slur()) {
@@ -2745,7 +2773,6 @@ void ChordLayout::layout_chords1(LayoutContext &ctx, Segment *segment, staff_idx
                 AccidentalsLayout::layout_accidentals({grace}, ctx);
                 ChordLayout::layout_jianpu_octave_dots(grace, ctx);
             }
-            ChordLayout::layout_jianpu_duration_lines(chord, ctx);
             ChordLayout::layout_jianpu_octave_dots(chord, ctx);
         }
     }
@@ -3050,8 +3077,8 @@ void ChordLayout::set_dot_relative_line(Note *note, int dot_move, LayoutContext 
     int ndots = static_cast<int>(note->dots().size());
 
     if (note->staff()->is_jianpu_staff(note->chord()->tick())) {
-        // Only the up note shows the dots that the augmentation lines leave.
-        cdots = note->chord()->up_note() == note ? jianpu_residual_dots(note->chord()->duration_type().type(), cdots) : 0;
+        // Only the digit with the duration lines shows the dots that the lines leave.
+        cdots = jianpu_duration_note(note->chord()) == note ? jianpu_residual_dots(note->chord()->duration_type().type(), cdots) : 0;
     }
 
     int n = cdots - ndots;

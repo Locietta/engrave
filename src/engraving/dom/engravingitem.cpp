@@ -238,8 +238,8 @@ constexpr LegacyZ legacy_z[] = {
     {ElementType::JIANPU_OCTAVE_DOT, 152},
     {ElementType::JIANPU_DURATION_LINE, 153},
     {ElementType::STAVE_SHARING_CHANGE, 154},
-    {ElementType::ROOT_ITEM, 152},
-    {ElementType::DUMMY, 153},
+    {ElementType::ROOT_ITEM, 155},
+    {ElementType::DUMMY, 156},
 };
 
 constexpr bool legacy_z_matches_enum() {

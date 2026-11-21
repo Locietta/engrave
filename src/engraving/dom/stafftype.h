@@ -382,6 +382,8 @@ public:
 
     bool is_tab_staff() const { return group_ == StaffGroup::TAB; }
 
+    bool is_jianpu_staff() const { return group_ == StaffGroup::JIANPU; }
+
     bool is_drum_staff() const { return group_ == StaffGroup::PERCUSSION; }
 
     bool is_simple_tab_staff() const;

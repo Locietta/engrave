@@ -468,11 +468,16 @@ int normalize_jianpu_alteration(int alteration) {
     }
     return alteration;
 }
+
+// An unset (INVALID) or out-of-range key numbers from C, as a staff without a key signature does.
+Key jianpu_valid_key(Key key) { return key >= Key::MIN && key <= Key::MAX ? key : Key::C; }
+
+int floor_div(int value, int divisor) { return value >= 0 ? value / divisor : (value - divisor + 1) / divisor; }
 } // namespace
 
 int jianpu_tonic_tpc(Key relative_major_key, KeyMode mode) {
     const int degree_offset = jianpu_mode_degree_offset(mode);
-    const int relative_major_tpc = key2_tpc(relative_major_key);
+    const int relative_major_tpc = key2_tpc(jianpu_valid_key(relative_major_key));
     const int relative_major_step = tpc2step(relative_major_tpc);
     const int tonic_step = (relative_major_step + degree_offset) % ::mu::engraving::step_delta_octave;
     const int relative_major_pitch = (major_scale_semitones[relative_major_step] + int(tpc2alter(relative_major_tpc)) + 12) % 12;
@@ -509,22 +514,23 @@ JianpuSpelling tpc2_jianpu(int tpc, int tonic_tpc, KeyMode mode) {
 int pitch2_jianpu_octave(int pitch, int tpc, int tonic_tpc, KeyMode mode) {
     tonic_tpc = clamp_enharmonic(tonic_tpc);
     tpc = clamp_enharmonic(tpc);
-    const int note_octave = (clamp_pitch_octaved(pitch) - int(tpc2alter(tpc))) / ::mu::engraving::pitch_delta_octave;
+    // A sharp spelling of a low pitch (B sharp of pitch 0) belongs to the octave below.
+    const int note_octave = floor_div(clamp_pitch_octaved(pitch) - int(tpc2alter(tpc)), ::mu::engraving::pitch_delta_octave);
     const int abs_step = note_octave * ::mu::engraving::step_delta_octave + tpc2step(tpc);
     // Undotted digits start at the tonic's step in the C3 octave (pitch / 12 == 4).
     const int tonic_abs_step = 4 * ::mu::engraving::step_delta_octave + tpc2step(tonic_tpc);
     const int degree_one_offset =
         (::mu::engraving::step_delta_octave - jianpu_mode_degree_offset(mode)) % ::mu::engraving::step_delta_octave;
-    const int relative_step = abs_step - tonic_abs_step - degree_one_offset;
-    return relative_step >= 0 ? relative_step / ::mu::engraving::step_delta_octave :
-                                (relative_step - ::mu::engraving::step_delta_octave + 1) / ::mu::engraving::step_delta_octave;
+    return floor_div(abs_step - tonic_abs_step - degree_one_offset, ::mu::engraving::step_delta_octave);
 }
 
-int pitch2_jianpu_octave(int pitch, int tpc, Key key, KeyMode mode) { return pitch2_jianpu_octave(pitch, tpc, key2_tpc(key), mode); }
+int pitch2_jianpu_octave(int pitch, int tpc, Key key, KeyMode mode) {
+    return pitch2_jianpu_octave(pitch, tpc, key2_tpc(jianpu_valid_key(key)), mode);
+}
 
 JianpuKeyMapping jianpu_key_mapping(const KeySigEvent &ks) {
     if (ks.jianpu_numbering() == JianpuNumbering::CUSTOM) {
-        return {ks.jianpu_tonic_mode(), key2_tpc(ks.jianpu_tonic_key())};
+        return {ks.jianpu_tonic_mode(), key2_tpc(jianpu_valid_key(ks.jianpu_tonic_key()))};
     }
     return {ks.mode(), jianpu_tonic_tpc(ks.key(), ks.mode())};
 }

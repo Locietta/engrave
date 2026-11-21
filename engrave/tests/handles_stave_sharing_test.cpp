@@ -1,6 +1,7 @@
 #include "engrave/src/score/score_metadata.h"
 #include "engrave/src/score/score_semantic.h"
 #include "engraving/dom/dummyparent.h"
+#include "engraving/dom/jianpuoctavedot.h"
 #include "engraving/dom/repeatlist.h"
 #include "engraving/dom/stavesharingchange.h"
 #include "engraving/dom/systemlockindicator.h"
@@ -48,6 +49,79 @@ TEST(StaveSharingOutput, S13NashvilleUsesMappedOriginSourceKey) {
     EXPECT_EQ(display->display_text(), u"1");
     EXPECT_EQ(source->display_name(), u"1");
     EXPECT_EQ(native_captures(*document), cold);
+}
+
+// A shared staff shows its mapped origins' notes, so a Jianpu digit and its octave dots
+// count from the key of the origin they came from at each map, not from the shared
+// staff's own C.
+TEST(StaveSharingOutput, SharedJianpuDigitsCountFromTheMappedOriginKey) {
+    using namespace mu::engraving;
+    auto xml = read_text(g_source_root / "tests/data/inputs/stave-sharing.mscx");
+    constexpr std::string_view jianpu = R"(<StaffType group="jianpu"><name>jianpu</name><lines>0</lines></StaffType>)";
+    for (const std::string_view eid : {"<eid>B_B</eid>", "<eid>C_C</eid>"}) xml.insert(xml.find(eid) + eid.size(), jianpu);
+    // D major on the first origin; the same signature numbered as E minor ("6=E") on the second.
+    const std::pair<int, std::string_view> keys[] = {
+        {3, "<KeySig><concertKey>2</concertKey></KeySig>"},
+        {4, "<KeySig><concertKey>2</concertKey><jianpuNumbering>custom</jianpuNumbering><jianpuTonicKey>E</jianpuTonicKey>"
+            "<jianpuTonicMode>minor</jianpuTonicMode></KeySig>"},
+    };
+    for (const auto &[staff, keysig] : keys) {
+        const auto start = xml.find(std::format("<Staff id=\"{}\">", staff));
+        xml.insert(xml.find("<voice>", start) + std::string_view("<voice>").size(), keysig);
+    }
+    // Every measure plays D5 then E5.
+    for (const auto &[from, to] : {std::pair{"<pitch>74</pitch><tpc>16", "<pitch>76</pitch><tpc>18"},
+                                   std::pair{"<pitch>72</pitch><tpc>14", "<pitch>74</pitch><tpc>16"}}) {
+        for (size_t pos = xml.find(from); pos != std::string::npos; pos = xml.find(from, pos + std::string_view(to).size()))
+            xml.replace(pos, std::string_view(from).size(), to);
+    }
+    // The first origin on the upper shared staff, then on the lower one.
+    xml.insert(xml.find("</SharedPart>"),
+               R"(<StaveSharingState tick="0/1"><trackMap origin="8" shared="0"/><trackMap origin="12" shared="4"/></StaveSharingState>)"
+               R"(<StaveSharingState tick="1/1"><trackMap origin="8" shared="4"/><trackMap origin="12" shared="0"/></StaveSharingState>)");
+    auto document = open_text(xml);
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    ASSERT_TRUE(master.staff(0)->is_jianpu_staff(Fraction(0, 1)));
+    ASSERT_EQ(master.staff(0)->key(Fraction(0, 1)), Key::C);
+    const auto cold = source_native(master);
+
+    struct Expected {
+        Fraction tick;
+        track_idx_t track;
+        std::string_view digit;
+        size_t dots_above;
+    };
+
+    // Under D major D5 is "1" and E5 "2", two octaves above D3; numbered from E minor
+    // they are "5" and "6", one octave above the "6" of E3. In C they would be "2" and "3".
+    const Expected expected[] = {
+        {{0, 1}, 0, "1", 2}, {{1, 2}, 0, "2", 2}, {{0, 1}, 4, "5", 1}, {{1, 2}, 4, "6", 1},
+        {{1, 1}, 0, "5", 1}, {{3, 2}, 0, "6", 1}, {{1, 1}, 4, "1", 2}, {{3, 2}, 4, "2", 2},
+    };
+    for (int cycle = 0; cycle < 2; ++cycle) {
+        SCOPED_TRACE(cycle);
+        ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+        const auto *part = master.shared_parts().front();
+        for (const Fraction tick : {Fraction(0, 1), Fraction(1, 1)}) {
+            ASSERT_NE(part->rendered_state_at_tick(tick), nullptr);
+            EXPECT_TRUE(part->rendered_state_at_tick(tick)->is_user_map_valid) << tick.ticks();
+        }
+        for (const auto &[tick, track, digit, dots_above] : expected) {
+            SCOPED_TRACE(std::format("tick {} on track {}", tick.ticks(), track));
+            auto *segment = master.tick2segment(tick, true, SegmentType::CHORD_REST);
+            ASSERT_NE(segment, nullptr);
+            auto *shown = segment->effective_element(track);
+            ASSERT_TRUE(shown && shown->is_chord() && shown->is_layout_copy());
+            const Note *note = to_chord(shown)->up_note();
+            EXPECT_EQ(note->jianpu_digit().to_std_string(), digit);
+            EXPECT_TRUE(note->jianpu_accidental().is_empty());
+            ASSERT_EQ(note->jianpu_octave_dots().size(), dots_above);
+            for (const auto *dot : note->jianpu_octave_dots()) EXPECT_TRUE(dot->ldata()->above);
+        }
+        EXPECT_EQ(source_native(master), cold);
+        master.layout_data_store()->clear();
+    }
 }
 
 TEST(StaveSharingOutput, UnisonRenderingPreservesAuthoredSourceAndHandles) {

@@ -582,13 +582,11 @@ Fraction Staff::next_key_tick(const Fraction &tick) const {
 
 Fraction Staff::current_key_tick(const Fraction &tick) const { return Fraction::from_ticks(keys_.current_key_tick(tick.ticks())); }
 
-double Staff::staff_height() const {
-    Fraction tick = Fraction(0, 1);
-    return (lines(tick) - 1) * spatium(tick) * staff_type(tick)->line_distance().val();
-}
+double Staff::staff_height() const { return staff_height(Fraction(0, 1)); }
 
+// A staff without lines (Jianpu) is as high as a one-line staff, not one line distance below zero.
 double Staff::staff_height(const Fraction &tick) const {
-    return (lines(tick) - 1) * spatium(tick) * staff_type(tick)->line_distance().val();
+    return std::max(lines(tick) - 1, 0) * spatium(tick) * staff_type(tick)->line_distance().val();
 }
 
 double Staff::spatium(const Fraction &tick) const { return style().spatium() * staff_mag(tick); }
@@ -1212,7 +1210,7 @@ bool Staff::is_drum_staff(const Fraction &tick) const {
     return origin_part(tick)->instrument(tick)->use_drumset();
 }
 
-bool Staff::is_jianpu_staff(const Fraction &tick) const { return staff_type(tick)->type() == StaffTypes::JIANPU; }
+bool Staff::is_jianpu_staff(const Fraction &tick) const { return staff_type(tick)->is_jianpu_staff(); }
 
 int Staff::lines(const Fraction &tick) const { return staff_type(tick)->lines(); }
 

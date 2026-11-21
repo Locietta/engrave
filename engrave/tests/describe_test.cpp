@@ -366,6 +366,7 @@ TEST(Describe, StylesCoverEveryStyleId) {
 // The writer omits z when it equals the default, so a default that moves with the
 // ElementType ordinals silently drops or changes saved stacking values. The defaults
 // stay at the ordinals of ea2b00ee48, around and after the deleted LASSO slot (117).
+// The 5.00 types take upstream 08d70c1a6a's ordinals, which move ROOT_ITEM and DUMMY up.
 TEST(Describe, DefaultStackingOrderIsPinned) {
     using mu::engraving::default_z;
     EXPECT_EQ(default_z(ElementType::INVALID), 0);
@@ -374,10 +375,11 @@ TEST(Describe, DefaultStackingOrderIsPinned) {
     EXPECT_EQ(default_z(ElementType::TAB_DURATION_SYMBOL), 11900);
     EXPECT_EQ(default_z(ElementType::BAGPIPE_EMBELLISHMENT), 13300);
     EXPECT_EQ(default_z(ElementType::CHORD), 12700);
-    EXPECT_EQ(default_z(ElementType::DUMMY), 15300);
-    EXPECT_EQ(default_z(ElementType::STAVE_SHARING_CHANGE), 15400);
     EXPECT_EQ(default_z(ElementType::JIANPU_OCTAVE_DOT), 15200);
     EXPECT_EQ(default_z(ElementType::JIANPU_DURATION_LINE), 15300);
+    EXPECT_EQ(default_z(ElementType::STAVE_SHARING_CHANGE), 15400);
+    EXPECT_EQ(default_z(ElementType::ROOT_ITEM), 15500);
+    EXPECT_EQ(default_z(ElementType::DUMMY), 15600);
 }
 
 TEST(Corpus, EveryPropertyOfEveryCorpusTypeReads) {

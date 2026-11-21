@@ -232,6 +232,7 @@ System *SystemLayout::collect_system(LayoutContext &ctx) {
             break_measure = ctx.mut_state().cur_measure();
             system->remove_last_measure();
             ctx.mut_state().cur_measure()->set_system(old_system);
+            std::vector<const MeasureBase *> evicted{ctx.state().cur_measure()};
             while (ctx.state().prev_measure() && ctx.state().prev_measure()->no_break() && system->measures().size() > 1) {
                 ctx.mut_state().set_tick(ctx.state().tick() - ctx.state().cur_measure()->ticks());
                 if (ctx.state().cur_measure()->is_measure()) {
@@ -244,10 +245,11 @@ System *SystemLayout::collect_system(LayoutContext &ctx) {
 
                 system->remove_last_measure();
                 ctx.mut_state().cur_measure()->set_system(old_system);
+                evicted.push_back(ctx.state().cur_measure());
             }
             // The evicted measures' own system may not be rebuilt in this pass; re-align its Jianpu voices.
             for (staff_idx_t staff_idx = 0; staff_idx < ctx.dom().nstaves(); ++staff_idx) {
-                ChordLayout::layout_voice_offsets(old_system, staff_idx, ctx);
+                ChordLayout::layout_voice_offsets(old_system, staff_idx, ctx, evicted);
             }
 
             if (shared_track_map_changed) {
@@ -1289,7 +1291,6 @@ void SystemLayout::layout_system_elements(System *system, LayoutContext &ctx) {
         ChordLayout::layout_articulations(c, ctx);
         ChordLayout::layout_articulations2(c, ctx);
         ChordLayout::layout_chord_base_fingering(c, system, ctx);
-        ChordLayout::layout_jianpu_duration_lines(c, ctx);
     }
 
     layout_tuplets(elements_to_layout.chord_rests, ctx);
@@ -2174,7 +2175,8 @@ void SystemLayout::layout2(System *system, LayoutContext &ctx) {
         double dist = staff->staff_height();
         double y_offset;
         double h;
-        if (staff->lines(Fraction(0, 1)) == 1) {
+        // As in layout_system, a staff without lines (Jianpu) takes the extent of a one-line staff.
+        if (staff->lines(Fraction(0, 1)) <= 1) {
             y_offset = spatium_value * ::mu::engraving::barline_span_1_linestaff_to * 0.5;
             h = spatium_value * (::mu::engraving::barline_span_1_linestaff_to - ::mu::engraving::barline_span_1_linestaff_from) * 0.5;
         } else {

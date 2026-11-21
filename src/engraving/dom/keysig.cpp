@@ -161,20 +161,24 @@ bool KeySig::set_property(Pid property_id, const PropertyValue &v) {
     if (EngravingObject *e = property_delegate(property_id)) {
         return e->set_property(property_id, v);
     }
+    // A palette or detached key signature has no staff key map to keep in step.
+    const auto update_staff_key = [this] {
+        if (Staff *st = staff()) st->set_key(tick(), key_sig_event());
+    };
     switch (property_id) {
         case Pid::KEY:
             if (generated()) {
                 return false;
             }
             set_key(sig_.concert_key(), Key(v.to_int()));
-            staff()->set_key(tick(), key_sig_event());
+            update_staff_key();
             break;
         case Pid::KEY_CONCERT:
             if (generated()) {
                 return false;
             }
             set_key(Key(v.to_int()));
-            staff()->set_key(tick(), key_sig_event());
+            update_staff_key();
             break;
         case Pid::SHOW_COURTESY:
             if (generated()) {
@@ -187,28 +191,28 @@ bool KeySig::set_property(Pid property_id, const PropertyValue &v) {
                 return false;
             }
             set_mode(v.value<KeyMode>());
-            staff()->set_key(tick(), key_sig_event());
+            update_staff_key();
             break;
         case Pid::JIANPU_NUMBERING:
             if (generated()) {
                 return false;
             }
             set_jianpu_numbering(v.value<JianpuNumbering>());
-            staff()->set_key(tick(), key_sig_event());
+            update_staff_key();
             break;
         case Pid::JIANPU_TONIC_KEY:
             if (generated()) {
                 return false;
             }
             set_jianpu_tonic_key(v.value<Key>());
-            staff()->set_key(tick(), key_sig_event());
+            update_staff_key();
             break;
         case Pid::JIANPU_TONIC_MODE:
             if (generated()) {
                 return false;
             }
             set_jianpu_tonic_mode(v.value<KeyMode>());
-            staff()->set_key(tick(), key_sig_event());
+            update_staff_key();
             break;
         case Pid::IS_COURTESY: is_courtesy_value = v.to_bool(); break;
         default:

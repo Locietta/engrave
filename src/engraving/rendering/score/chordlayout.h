@@ -22,6 +22,7 @@
 #ifndef MU_ENGRAVING_LAYOUTCHORDS_DEV_H
 #define MU_ENGRAVING_LAYOUTCHORDS_DEV_H
 
+#include <span>
 #include <vector>
 
 #include "dom/chord.h"
@@ -116,7 +117,10 @@ struct ChordLayout {
     static void resize_jianpu_duration_lines(ChordRest *item, size_t count);
     static void layout_jianpu_duration_lines(Chord *item, LayoutContext &ctx);
     static void layout_jianpu_octave_dots(Chord *item, LayoutContext &ctx);
-    static void layout_voice_offsets(System *system, staff_idx_t staff_idx, LayoutContext &ctx);
+    // The chords of relaid measures were laid out afresh, off their bands, while the system's
+    // slur segments for them still sit where the bands put them; those segments stay.
+    static void layout_voice_offsets(System *system, staff_idx_t staff_idx, LayoutContext &ctx,
+                                     std::span<const MeasureBase *const> relaid = {});
 
     static void cross_measure_setup(Chord *chord, bool on, LayoutContext &ctx);
 
