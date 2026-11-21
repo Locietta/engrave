@@ -80,20 +80,12 @@ static bool chord_anchors_note_line(const Chord &chord) {
     return anchors(&chord) || std::ranges::any_of(chord.grace_notes(), anchors);
 }
 
-static bool anchors_note_line(const Chord &chord) {
-    if (!chord.links()) {
-        return chord_anchors_note_line(chord);
-    }
-    return std::ranges::any_of(
-        *chord.links(), [](const EngravingObject *obj) { return obj && obj->is_chord() && chord_anchors_note_line(*to_chord(obj)); });
-}
-
-static bool has_grace_notes_in_links(const Chord &chord) {
-    if (!chord.links()) {
-        return !chord.grace_notes().empty();
-    }
-    return std::ranges::any_of(*chord.links(),
-                               [](const EngravingObject *obj) { return obj && obj->is_chord() && !to_chord(obj)->grace_notes().empty(); });
+static bool chord_or_link_matches(const Chord &chord, auto matches) {
+    if (matches(chord)) return true;
+    const auto *links = chord.links();
+    return links && std::ranges::any_of(*links, [&](const EngravingObject *obj) {
+               return obj && obj != &chord && obj->is_chord() && matches(*to_chord(obj));
+           });
 }
 
 static Spanner *clone_note_spanner(const Spanner &src) {
@@ -784,15 +776,17 @@ void ScoreRange::record_read_chord(const Chord *src, const Chord *dst) {
         return;
     }
     read_chords_[src] = dst;
-    if (anchors_note_line(*src)) {
-        line_anchor_chords_.insert(dst);
+    // Extending this chord would move its after-graces to the end of the continuation.
+    if (chord_or_link_matches(*src,
+                              [](const Chord &chord) { return chord_anchors_note_line(chord) || !chord.grace_notes_after().empty(); })) {
+        continuation_boundaries_.insert(dst);
     }
 }
 
-// A generated-tie continuation merged into the chord before it loses its own position and grace notes,
-// so a note-owned line on either chord would end up on the wrong note.
 bool ScoreRange::can_absorb_continuation(const Chord *range_chord, const Chord *continuation) const {
-    return !has_grace_notes_in_links(*continuation) && !anchors_note_line(*continuation) && !line_anchor_chords_.contains(range_chord);
+    return !continuation_boundaries_.contains(range_chord) && !chord_or_link_matches(*continuation, [](const Chord &chord) {
+        return !chord.grace_notes().empty() || chord_anchors_note_line(chord);
+    });
 }
 
 bool ScoreRange::NoteEndpointRef::matches(const Note &note) const {
@@ -1129,7 +1123,7 @@ void ScoreRange::read(Segment *first, Segment *last, bool read_spanner) {
 
     spanner_.clear();
     read_chords_.clear();
-    line_anchor_chords_.clear();
+    continuation_boundaries_.clear();
     delete_note_spanners();
 
     const Fraction stick = first->tick();
@@ -1168,7 +1162,7 @@ void ScoreRange::read(Segment *first, Segment *last, bool read_spanner) {
         backup_note_spanners(stick, etick);
     }
     read_chords_.clear();
-    line_anchor_chords_.clear();
+    continuation_boundaries_.clear();
 
     // Make sure incoming ties are restored
     Measure *m1 = first->measure();

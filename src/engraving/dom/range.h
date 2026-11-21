@@ -239,8 +239,7 @@ private:
     std::vector<SpacerBackup> spacers_;
     std::vector<JumpsMarkersBackup> jumps_markers_;
     ankerl::unordered_dense::map<const Chord *, const Chord *> read_chords_;
-    // Range chords read from a chord that anchors a note-owned line.
-    ankerl::unordered_dense::set<const Chord *> line_anchor_chords_;
+    ankerl::unordered_dense::set<const Chord *> continuation_boundaries_;
     std::vector<NoteSpannerBackup> note_spanners_;
     std::vector<LocalGraceBackup> local_graces_;
     std::vector<LocalGraceTieBackup> local_grace_ties_;

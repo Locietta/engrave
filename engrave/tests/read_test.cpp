@@ -2140,10 +2140,9 @@ TEST(Read, TimeSigRewritePreservesExcerptUnlinkedLineOverrides) {
     ASSERT_TRUE(g_engine->open(*saved));
 }
 
-TEST(Read, TimeSigRewriteKeepsNoteLinesOnSplitTupletContinuations) {
-    using namespace mu::engraving;
-    // 4/4 measure 1 holds a 3:2 half-note triplet [C4 (0), E4 (1/3), G4 (2/3)]; measure 2 has an explicit 4/4 TimeSig.
-    constexpr std::string_view split_tuplet_xml = R"(<museScore version="4.60"><Score><Division>480</Division>
+namespace {
+// 4/4 measure 1 holds a 3:2 half-note triplet [C4 (0), E4 (1/3), G4 (2/3)]; measure 2 has an explicit 4/4 TimeSig.
+constexpr std::string_view split_tuplet_xml = R"(<museScore version="4.60"><Score><Division>480</Division>
 <Part><Staff id="1"/><Instrument id="guitar"><trackName>Guitar</trackName><instrumentId>pluck.guitar</instrumentId></Instrument></Part>
 <Staff id="1">
 <Measure><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
@@ -2159,24 +2158,115 @@ TEST(Read, TimeSigRewriteKeepsNoteLinesOnSplitTupletContinuations) {
 </voice></Measure>
 </Staff></Score></museScore>)";
 
-    auto split_into_two_four = [](MasterScore &master) {
-        Command cmd(master);
-        Transaction &tx = master.transaction_manager()->current_or_dummy_transaction();
-        Measure *m1 = master.first_measure();
-        Segment *old_ts = m1->find_segment(SegmentType::TIME_SIG, Fraction(0, 1));
-        if (old_ts) master.undo_remove_element(old_ts);
-        const bool ok = EditTimeSig::rewrite_measures(tx, &master, m1, m1, Fraction(2, 4), muse::nidx);
-        if (!ok) return false;
-        Measure *new_m1 = master.first_measure();
-        Segment *ts_seg = new_m1->undo_get_segment(SegmentType::TIME_SIG, Fraction(0, 1));
-        TimeSig *ts = Factory::create_time_sig(ts_seg);
-        ts->set_sig(Fraction(2, 4));
-        ts->set_track(0);
-        master.undo_add_element(ts);
-        cmd.commit();
-        engrave::assign_missing_ids(master);
-        return true;
+bool split_tuplet_into_two_four(mu::engraving::MasterScore &master) {
+    using namespace mu::engraving;
+    Command cmd(master);
+    Transaction &tx = master.transaction_manager()->current_or_dummy_transaction();
+    Measure *m1 = master.first_measure();
+    Segment *old_ts = m1->find_segment(SegmentType::TIME_SIG, Fraction(0, 1));
+    if (old_ts) master.undo_remove_element(old_ts);
+    if (!EditTimeSig::rewrite_measures(tx, &master, m1, m1, Fraction(2, 4), muse::nidx)) return false;
+    Measure *new_m1 = master.first_measure();
+    Segment *ts_seg = new_m1->undo_get_segment(SegmentType::TIME_SIG, Fraction(0, 1));
+    TimeSig *ts = Factory::create_time_sig(ts_seg);
+    ts->set_sig(Fraction(2, 4));
+    ts->set_track(0);
+    master.undo_add_element(ts);
+    cmd.commit();
+    engrave::assign_missing_ids(master);
+    return true;
+}
+} // namespace
+
+TEST(Read, TimeSigRewriteKeepsAfterGraceBeforeGeneratedTieContinuation) {
+    using namespace mu::engraving;
+    auto add_after_grace = [](Chord *main) {
+        auto *grace = Factory::create_chord(main->score()->dummy());
+        grace->set_track(main->track());
+        grace->set_note_type(NoteType::GRACE8_AFTER);
+        grace->set_duration_type(DurationType::V_EIGHTH);
+        grace->set_ticks(Fraction(1, 8));
+        auto *note = Factory::create_note(grace);
+        note->set_pitch(65);
+        note->set_tpc1(13);
+        note->set_tpc2(13);
+        grace->add(note);
+        main->add(grace);
     };
+    for (const bool in_tuplet : {false, true}) {
+        for (const bool linked : {false, true}) {
+            SCOPED_TRACE(std::format("tuplet {} linked {}", in_tuplet, linked));
+            auto opened = g_engine->open(as_bytes(in_tuplet ? split_tuplet_xml : note_line_rewrite_xml));
+            ASSERT_TRUE(opened) << opened.error().message;
+            auto &document = **opened;
+            auto &master = master_of(document);
+            if (in_tuplet) {
+                ASSERT_TRUE(split_tuplet_into_two_four(master));
+            } else {
+                ASSERT_TRUE(document.edit({{engrave::SetTimeSig{engrave::from_engine(master.first_measure()->eid()), {3, 4}}}}));
+            }
+
+            const Fraction start_tick = in_tuplet ? Fraction(1, 3) : Fraction(1, 2);
+            const Fraction continuation_tick = in_tuplet ? Fraction(1, 2) : Fraction(3, 4);
+            auto *first = chord_at(master, start_tick);
+            auto *continuation = chord_at(master, continuation_tick);
+            ASSERT_TRUE(first && continuation);
+            const auto *tie = continuation->up_note()->tie_back();
+            ASSERT_TRUE(tie && tie->generated());
+            ASSERT_EQ(tie->start_note(), first->up_note());
+            if (in_tuplet) {
+                ASSERT_TRUE(continuation->tuplet() && continuation->tuplet()->generated());
+            }
+            if (linked) add_after_grace(first);
+
+            ASSERT_TRUE(document.edit({{engrave::GenerateExcerpts{{engrave::from_engine(master.parts().front()->eid())}}}}));
+            ASSERT_EQ(master.excerpts().size(), 1u);
+            auto *excerpt = master.excerpts().front()->excerpt_score();
+            auto *excerpt_first = chord_at(*excerpt, start_tick);
+            ASSERT_NE(excerpt_first, nullptr);
+            if (linked) {
+                ASSERT_EQ(excerpt_first->grace_notes_after().size(), 1u);
+                const auto *links = first->grace_notes_after().front()->links();
+                ASSERT_TRUE(links && links->contains(excerpt_first->grace_notes_after().front()));
+            } else {
+                ASSERT_TRUE(first->grace_notes_after().empty());
+                add_after_grace(excerpt_first);
+            }
+            engrave::assign_missing_ids(master);
+
+            ASSERT_TRUE(document.edit({{engrave::SetTimeSig{engrave::from_engine(master.first_measure()->eid()), {4, 4}}}}));
+
+            for (Score *score : {static_cast<Score *>(&master), excerpt}) {
+                SCOPED_TRACE(score == &master ? "master" : "excerpt");
+                const auto *rewritten_first = chord_at(*score, start_tick);
+                const auto *rewritten_continuation = chord_at(*score, continuation_tick);
+                ASSERT_NE(rewritten_first, nullptr);
+                const bool expect_grace = linked || score == excerpt;
+                ASSERT_EQ(rewritten_first->grace_notes_after().size(), expect_grace ? 1u : 0u);
+                if (expect_grace) {
+                    const auto *grace = rewritten_first->grace_notes_after().front();
+                    EXPECT_EQ(grace->ownership_parent(), rewritten_first);
+                    EXPECT_EQ(grace->tick(), start_tick);
+                    EXPECT_EQ(grace->up_note()->pitch(), 65);
+                }
+                EXPECT_EQ(rewritten_first->end_tick(), continuation_tick);
+                ASSERT_NE(rewritten_continuation, nullptr);
+                EXPECT_TRUE(rewritten_continuation->grace_notes_after().empty());
+
+                const auto *start = rewritten_first->up_note();
+                const auto *end = rewritten_continuation->up_note();
+                const auto *rewritten_tie = start->tie_for();
+                ASSERT_NE(rewritten_tie, nullptr);
+                EXPECT_EQ(rewritten_tie->start_note(), start);
+                EXPECT_EQ(rewritten_tie->end_note(), end);
+                EXPECT_EQ(end->tie_back(), rewritten_tie);
+            }
+        }
+    }
+}
+
+TEST(Read, TimeSigRewriteKeepsNoteLinesOnSplitTupletContinuations) {
+    using namespace mu::engraving;
 
     // Baseline: without an anchored line or grace note, recombining the split generated tuplet absorbs the continuation.
     {
@@ -2184,7 +2274,7 @@ TEST(Read, TimeSigRewriteKeepsNoteLinesOnSplitTupletContinuations) {
         ASSERT_TRUE(opened) << opened.error().message;
         auto &document = **opened;
         auto &master = master_of(document);
-        ASSERT_TRUE(split_into_two_four(master));
+        ASSERT_TRUE(split_tuplet_into_two_four(master));
         Chord *cont = chord_at(master, Fraction(1, 2));
         ASSERT_NE(cont, nullptr);
         ASSERT_TRUE(cont->tuplet() && cont->tuplet()->generated());
@@ -2210,7 +2300,7 @@ TEST(Read, TimeSigRewriteKeepsNoteLinesOnSplitTupletContinuations) {
         ASSERT_TRUE(opened) << opened.error().message;
         auto &document = **opened;
         auto &master = master_of(document);
-        ASSERT_TRUE(split_into_two_four(master));
+        ASSERT_TRUE(split_tuplet_into_two_four(master));
 
         Chord *c4 = chord_at(master, Fraction(0, 1));
         Chord *e4_first = chord_at(master, Fraction(1, 3));
