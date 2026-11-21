@@ -2836,6 +2836,13 @@ void ChordLayout::layout_ledger_lines(const std::vector<Chord *> &chords, Layout
 void ChordLayout::get_note_list_for_dots(Chord *c, std::vector<Note *> &top_down_notes, std::vector<Note *> &bottom_up_notes,
                                          std::vector<int> &anchored_dots) {
     Measure *measure = c->measure();
+    const auto chord_at_track = [&](track_idx_t track) {
+        if (c->is_layout_copy() && c->segment()) {
+            auto *item = c->segment()->effective_element(track);
+            return item && item->is_chord() ? to_chord(item) : nullptr;
+        }
+        return measure->find_chord(c->tick(), track);
+    };
     bool has_voices = measure->has_rendered_voices(c->v_staff_idx(), c->tick(), c->ticks(), true);
     bool has_upper_cross_notes = false;
     bool has_lower_cross_notes = false;
@@ -2850,7 +2857,7 @@ void ChordLayout::get_note_list_for_dots(Chord *c, std::vector<Note *> &top_down
     // Check for cross staff notes on staff above without dots
     if (part_top_staff != c->v_staff_idx()) {
         for (size_t i = part_top_staff * ::mu::engraving::voices; i < (part_top_staff + 1) * ::mu::engraving::voices; ++i) {
-            if (Chord *voice_chord = measure->find_chord(c->tick(), i)) {
+            if (Chord *voice_chord = chord_at_track(i)) {
                 if (voice_chord->v_staff_idx() == c->v_staff_idx()) {
                     has_upper_cross_notes = true;
                     start_voice = i;
@@ -2863,7 +2870,7 @@ void ChordLayout::get_note_list_for_dots(Chord *c, std::vector<Note *> &top_down
     // Check for cross staff notes on stave below
     if (part_bottom_staff != c->v_staff_idx()) {
         for (size_t i = (c->v_staff_idx() + 1) * ::mu::engraving::voices; i < last_voice; ++i) {
-            if (Chord *voice_chord = measure->find_chord(c->tick(), i)) {
+            if (Chord *voice_chord = chord_at_track(i)) {
                 if (voice_chord->v_staff_idx() == c->v_staff_idx()) {
                     has_lower_cross_notes = true;
                     break;
@@ -2897,7 +2904,7 @@ void ChordLayout::get_note_list_for_dots(Chord *c, std::vector<Note *> &top_down
         last_voice = has_lower_cross_notes ? last_voice : (c->v_staff_idx() + 1) * ::mu::engraving::voices;
         // Check staves above and below for moved chords (If staff below is available)
         for (size_t i = start_voice; i < last_voice; ++i) {
-            if (Chord *voice_chord = measure->find_chord(c->tick(), i)) {
+            if (Chord *voice_chord = chord_at_track(i)) {
                 // Skip chords on adjacent staves which have not been moved to this staff
                 if (voice_chord->v_staff_idx() != c->v_staff_idx()) {
                     continue;

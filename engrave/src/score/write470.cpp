@@ -805,7 +805,7 @@ void convert_style(pugi::xml_node score_node, Score &score, std::optional<Elemen
     std::array<bool, std::size(supported_styles)> seen{};
     for (auto child = style.first_child(); child;) {
         poll();
-        const auto next = child.next_sibling();
+        auto next = child.next_sibling();
         if (child.type() == pugi::node_element) {
             const std::string_view name = child.name();
             const auto *known = find_style(name);
@@ -818,6 +818,12 @@ void convert_style(pugi::xml_node score_node, Score &score, std::optional<Elemen
             } else if (!known->legacy) {
                 if (!five_only_style_is_inactive(name, features, score.style()) && !style_matches(child, *known))
                     unsupported(score_node, "style " + std::string(name), score_id, warnings);
+                // Preserve the existing 4.70 whitespace when stripping a newly emitted key.
+                if (name == "staveSharingChangeMinDistance" && next.type() == pugi::node_pcdata) {
+                    const auto whitespace = next;
+                    next = next.next_sibling();
+                    style.remove_child(whitespace);
+                }
                 style.remove_child(child);
             }
         }
