@@ -471,6 +471,8 @@ void LayoutDataStore::prune_shape_borrowers(std::span<const EngravingItem *const
                 auto *owner = to_segment(item);
                 const auto size = static_cast<const Segment *>(owner)->shapes().size();
                 for (size_t i = 0; i < size; ++i) owner->staff_shape(i).remove_if(borrows_retired);
+            } else if (item->is_chord()) {
+                to_chord(item)->remove_spanner_borrowers([&](const Spanner *span) { return contains_retired(retired, span); });
             }
         }
         if (beam) {
@@ -594,8 +596,15 @@ void LayoutDataStore::retire_shared_auxiliary_output() {
         for (auto *page : output_.pages) page->invalidate_bsp_tree();
         for (auto *system : output_.systems)
             for (auto *staff : system->staves()) staff->skyline().clear();
-        for (auto &record : records_->items.values())
-            if (record.second.item->is_segment()) to_segment(record.second.item)->clear_shapes();
+        const ankerl::unordered_dense::set<Spanner *> retired(output_.shared_spanners.begin(), output_.shared_spanners.end());
+        for (auto &record : records_->items.values()) {
+            auto *item = record.second.item;
+            if (item->is_segment()) to_segment(item)->clear_shapes();
+            // A range pass can retain display chords after their shared spanners are retired.
+            if (item->is_chord() && !retired.empty()) {
+                to_chord(item)->remove_spanner_borrowers([&](Spanner *span) { return retired.contains(span); });
+            }
+        }
     }
     // Note borrowers must be detached while the display notes are still alive.
     for (auto *spanner : output_.shared_spanners) {

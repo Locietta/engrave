@@ -438,6 +438,11 @@ public:
 
     void remove_ending_spanner(Spanner *spanner) { ending_spanners_.erase(spanner); }
 
+    void remove_spanner_borrowers(auto is_retired) {
+        std::erase_if(starting_spanners_, is_retired);
+        std::erase_if(ending_spanners_, is_retired);
+    }
+
     bool should_have_stem() const;
     bool should_have_hook() const;
 
