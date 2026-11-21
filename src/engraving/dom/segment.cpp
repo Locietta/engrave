@@ -1465,11 +1465,11 @@ void Segment::scan_elements(std::function<void(EngravingItem *)> func) {
                                style().style_v(Sid::TIME_SIG_PLACEMENT).value<TimeSigPlacement>() != TimeSigPlacement::NORMAL);
     for (size_t track = 0; track < score()->nstaves() * ::mu::engraving::voices; ++track) {
         size_t staff_idx = track / ::mu::engraving::voices;
-        bool this_measure_visible = measure()->visible(staff_idx) && score()->staff(staff_idx)->show();
+        bool this_measure_visible = measure()->visible(staff_idx) && score()->staff(staff_idx)->layout_show();
         if (!scan_all_time_sigs && !this_measure_visible) {
             Measure *next_measure = measure()->next_measure();
             bool next_measure_visible = next_measure && next_measure->system() == measure()->system() && next_measure->visible(staff_idx) &&
-                                        score()->staff(staff_idx)->show();
+                                        score()->staff(staff_idx)->layout_show();
             if (!((is_end_bar_line_type() && (next_measure_visible || measure()->is_cutaway_clef(staff_idx))) ||
                   (is_clef_type() && measure()->is_cutaway_clef(staff_idx)))) {
                 track += ::mu::engraving::voices - 1;
@@ -2066,7 +2066,7 @@ void Segment::create_shape(staff_idx_t staff_idx) {
         }
     }
 
-    if (!score()->staff(staff_idx)->show()) {
+    if (!score()->staff(staff_idx)->layout_show()) {
         return;
     }
 
@@ -2350,7 +2350,7 @@ Fraction Segment::shortest_chord_rest() const {
     Fraction shortest = measure()->ticks(); // Initializing at the highest possible value ( = time signature of the measure)
     Fraction cur = measure()->ticks();
     for (auto elem : effective_elements()) {
-        if (!elem || !elem->staff()->show() || !elem->is_chord_rest() || (elem->is_rest() && to_rest(elem)->is_gap()) ||
+        if (!elem || !elem->staff()->layout_show() || !elem->is_chord_rest() || (elem->is_rest() && to_rest(elem)->is_gap()) ||
             (!elem->visible() &&
              measure()->has_rendered_voices(elem->staff_idx(), measure()->tick(), measure()->ticks(), /*considerInvisible*/ true))) {
             continue;
@@ -2369,7 +2369,7 @@ bool Segment::has_accidentals() const {
         return false;
     }
     for (EngravingItem *e : effective_elements()) {
-        if (!e || !e->is_chord() || (e->staff() && !e->staff()->show())) {
+        if (!e || !e->is_chord() || (e->staff() && !e->staff()->layout_show())) {
             continue;
         }
         for (Note *note : to_chord(e)->notes()) {

@@ -233,12 +233,12 @@ double SystemHeaderLayout::total_bracket_offset(LayoutContext &ctx) {
             }
 
             for (; first_staff <= last_staff; ++first_staff) {
-                if (ctx.dom().staff(first_staff)->show()) {
+                if (ctx.dom().staff(first_staff)->layout_show()) {
                     break;
                 }
             }
             for (; last_staff >= first_staff; --last_staff) {
-                if (ctx.dom().staff(last_staff)->show()) {
+                if (ctx.dom().staff(last_staff)->layout_show()) {
                     break;
                 }
             }
@@ -485,7 +485,7 @@ void SystemHeaderLayout::compute_instrument_names_width(System *system, LayoutCo
             ldata->set_total_names_width(std::max(ldata->total_names_width(), name_width_including_group_brackets(group_name, system)));
         }
 
-        if (!staff->show()) {
+        if (!staff->layout_show()) {
             // We know that the staff is hidden in the entire score so safe to skip
             continue;
         }
@@ -511,7 +511,7 @@ void SystemHeaderLayout::compute_instrument_names_width(System *system, LayoutCo
         const Staff *staff = ctx.dom().staff(staff_idx);
         Part *part = staff->part();
 
-        if (!part->show() || part->visible_staves_count() == 0) {
+        if (!part->layout_show() || std::ranges::count_if(part->staves(), &Staff::layout_show) == 0) {
             // We know that the part is hidden in the entire score so safe to skip
             continue;
         }
@@ -1352,9 +1352,9 @@ void SystemHeaderLayout::set_instrument_names(System *system, LayoutContext &ctx
     for (size_t staff_idx = 0; staff_idx < system->staves().size(); /*empty*/) {
         Part *part = ctx.dom().staff(staff_idx)->part();
         size_t part_nstaves = part->nstaves();
-        size_t visible_staves_count = part->visible_staves_count();
+        size_t visible_staves_count = std::ranges::count_if(part->staves(), &Staff::layout_show);
 
-        if (part->is_shared_part() && part->show()) {
+        if (part->is_shared_part() && part->layout_show()) {
             set_shared_part_names(to_shared_part(part), staff_idx, system, ctx, tick);
             staff_idx += part_nstaves;
             continue;
@@ -1370,13 +1370,13 @@ void SystemHeaderLayout::set_instrument_names(System *system, LayoutContext &ctx
             bool staff_long_name = staff_name_type == InstrumentNameType::LONG;
 
             String instrument_name;
-            if (idx_in_part == 0 && part->show() && visible_staves_count > 0 && !hide) {
+            if (idx_in_part == 0 && part->layout_show() && visible_staves_count > 0 && !hide) {
                 instrument_name = formatted_instrument_name(system, part, tick, staff_long_name);
             }
             update_name(system, global_idx, ctx, instrument_name, staff_name_type, InstrumentNameRole::PART);
 
             String staff_name;
-            if (staff->show() && !hide) {
+            if (staff->layout_show() && !hide) {
                 staff_name = staff_long_name ? staff->individual_staff_name_long(tick) : staff->individual_staff_name_short(tick);
             }
             update_name(system, global_idx, ctx, staff_name, staff_name_type, InstrumentNameRole::STAFF);
@@ -1393,7 +1393,7 @@ void SystemHeaderLayout::set_shared_part_names(SharedPart *shared_part, staff_id
     InstrumentNameType type = resolve_instrument_name_type(visibility);
     bool hide_start_staff = visibility == InstrumentLabelVisibility::HIDE;
 
-    if (!shared_part->show() || shared_part->visible_staves_count() == 0) {
+    if (!shared_part->layout_show() || std::ranges::count_if(shared_part->staves(), &Staff::layout_show) == 0) {
         for (size_t rel_staff_idx = 0; rel_staff_idx < shared_part->nstaves(); ++rel_staff_idx) {
             size_t global_staff_idx = start_staff_idx + rel_staff_idx;
             update_name(system, global_staff_idx, ctx, String(), type, InstrumentNameRole::GROUP);
@@ -1475,7 +1475,7 @@ void SystemHeaderLayout::update_group_names(System *system, LayoutContext &ctx, 
         Part *cur_part = ctx.dom().staff(start_of_group)->part();
         const Instrument *cur_instrument = cur_part->instrument(tick);
         const InstrumentLabel &cur_label = cur_instrument->instrument_label();
-        if (!cur_instrument->instrument_label().allow_group_name() || !cur_part->show() || cur_part->is_shared_part()) {
+        if (!cur_instrument->instrument_label().allow_group_name() || !cur_part->layout_show() || cur_part->is_shared_part()) {
             ++start_of_group;
             continue;
         }
@@ -1508,7 +1508,7 @@ void SystemHeaderLayout::update_group_names(System *system, LayoutContext &ctx, 
                 continue;
             }
 
-            if (next_part->show() && next_part->visible_staves_count() > 0) {
+            if (next_part->layout_show() && std::ranges::count_if(next_part->staves(), &Staff::layout_show) > 0) {
                 parts_in_this_group.push_back(next_part);
                 next_label.set_use_custom_group_name(cur_label.use_custom_group_name());
                 next_label.set_custom_name_long_group(cur_label.custom_name_long_group());

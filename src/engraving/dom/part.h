@@ -124,6 +124,7 @@ public:
     void insert_staff(Staff *, staff_idx_t idx);
     void remove_staff(Staff *);
     virtual bool show() const;
+    bool layout_show() const;
 
     void set_show(bool val) { show_ = val; }
 

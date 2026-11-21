@@ -48,7 +48,7 @@ void ModifyDom::create_stems(const Measure *measure, LayoutContext &ctx) {
     const DomAccessor &dom = ctx.dom();
     for (staff_idx_t staff_idx = 0; staff_idx < dom.nstaves(); ++staff_idx) {
         const Staff *staff = dom.staff(staff_idx);
-        if (!staff->show()) {
+        if (!staff->layout_show()) {
             continue;
         }
 

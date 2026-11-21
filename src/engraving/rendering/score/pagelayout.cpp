@@ -34,6 +34,7 @@
 #include "dom/durationelement.h"
 #include "dom/factory.h"
 #include "dom/fingering.h"
+#include "dom/hairpin.h"
 #include "dom/measure.h"
 #include "dom/measurebase.h"
 #include "dom/note.h"
@@ -321,7 +322,7 @@ void PageLayout::collect_page(LayoutContext &ctx) {
                         continue;
                     }
                     if (e2->is_chord_rest()) {
-                        if (!ctx.dom().staff(track2staff(track))->show()) {
+                        if (!ctx.dom().staff(track2staff(track))->layout_show()) {
                             continue;
                         }
                         ChordRest *cr = to_chord_rest(e2);
@@ -470,12 +471,7 @@ void PageLayout::layout_cross_staff_slurs(LayoutContext &ctx, System *system) {
             continue;
         }
         Slur *slur = to_slur(sp);
-        // Resolving the next system can split an initially shared slur into
-        // two copies. The new copy still needs a segment in this system.
-        const bool missing_shared_segment =
-            slur->is_layout_copy() &&
-            std::ranges::none_of(slur->spanner_segments(), [system](auto *segment) { return segment->system() == system; });
-        if (slur->is_cross_staff() || slur->has_cross_beams() || missing_shared_segment) {
+        if (slur->is_cross_staff() || slur->has_cross_beams()) {
             SlurTieLayout::layout_system(slur, system, ctx);
 
             ChordRest *scr = to_chord_rest(slur->start_element());
@@ -487,6 +483,71 @@ void PageLayout::layout_cross_staff_slurs(LayoutContext &ctx, System *system) {
                 ChordLayout::layout_articulations3(to_chord(ecr), slur, ctx);
             }
         }
+    }
+}
+
+void PageLayout::repair_shared_spanners(LayoutContext &ctx) {
+    auto &store = ctx.mut_layout_data();
+    std::vector<Page *> changed_pages;
+    for (auto *span : store.score_output().shared_spanners) {
+        if (!span->is_slur() && !span->is_hairpin()) continue;
+
+        std::optional<PlacementV> placement;
+        if (span->is_hairpin()) {
+            auto *hairpin = to_hairpin(span);
+            hairpin->mutldata()->voice_placement = hairpin->directed_placement();
+            placement = hairpin->placement();
+        }
+
+        std::vector<std::pair<System *, SpannerSegment *>> covered;
+        bool missing = false;
+        Fraction end = span->tick2();
+        for (auto *system : ctx.dom().systems()) {
+            const auto *first = system->first_measure();
+            if (!first) continue;
+            if (first->tick() > end) break;
+            if (span->tick() >= system->end_tick() || (span->is_hairpin() && end == first->tick() && span->tick() < first->tick()) ||
+                !system->staff(span->staff_idx())->show()) {
+                continue;
+            }
+            const auto &segments = span->spanner_segments();
+            const auto existing = std::ranges::find(segments, system, &SpannerSegment::system);
+            auto *segment = existing == segments.end() ? nullptr : *existing;
+            missing |= !segment;
+            covered.emplace_back(system, segment);
+        }
+        const auto needs_layout = [&](SpannerSegment *segment) {
+            return !segment || (span->is_slur() && missing) || (placement && segment->placement() != *placement);
+        };
+        for (const auto &[system, previous] : covered) {
+            if (previous && needs_layout(previous)) store.retire_spanner_borrowers(*previous);
+        }
+        // A split can be discovered after its first page has already been
+        // finalized. Lay out from the start so the later slur segments use
+        // the direction computed from the first anchor.
+        for (const auto &[system, previous] : covered) {
+            if (!needs_layout(previous)) continue;
+            auto *segment = TLayout::layout_system(span, system, ctx);
+            if (segment->add_to_skyline() && segment->effective_staff_idx() != muse::nidx) {
+                system->staff(segment->effective_staff_idx())->skyline().add(segment->shape().translate(segment->pos()));
+            }
+            if (auto *page = system->page(); page && !std::ranges::contains(changed_pages, page)) changed_pages.push_back(page);
+        }
+        if (missing) {
+            auto &segments = span->mutldata()->segments;
+            std::ranges::stable_sort(segments, {}, [](auto *segment) {
+                const auto *system = segment->system();
+                return system ? system->first_measure()->tick() : Fraction::max();
+            });
+            for (size_t i = 0; i < segments.size(); ++i) {
+                set_layout_child_key(*segments[i], {AuthoredChildRole::SPANNER_SEGMENT, static_cast<uint32_t>(i)});
+            }
+        }
+    }
+    for (auto *page : changed_pages) {
+        for (auto *system : page->systems()) SystemLayout::center_elements_between_staves(system);
+        MaskLayout::compute_masks(ctx, page);
+        page->invalidate_bsp_tree();
     }
 }
 

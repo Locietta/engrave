@@ -126,6 +126,7 @@ public:
     void remove_key(const Fraction &);
 
     bool show() const;
+    bool layout_show() const;
     bool stemless(const Fraction &) const;
 
     bool cutaway() const { return cutaway_; }

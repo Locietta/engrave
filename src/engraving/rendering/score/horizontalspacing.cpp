@@ -51,7 +51,7 @@ using namespace mu::engraving::rendering::score;
 double HorizontalSpacing::compute_spacing_for_full_system(System *system, double stretch_reduction, double squeeze_factor,
                                                           bool override_min_measure_width) {
 
-    if (system->score()->all_staves_invisible()) {
+    if (std::ranges::none_of(system->score()->staves(), &Staff::layout_show)) {
         return 0.0;
     }
 
@@ -91,7 +91,7 @@ double HorizontalSpacing::compute_spacing_for_full_system(System *system, double
 
 double HorizontalSpacing::update_spacing_for_last_added_measure(System *system, bool start_of_continuous_layout_region) {
 
-    if (system->score()->all_staves_invisible()) {
+    if (std::ranges::none_of(system->score()->staves(), &Staff::layout_show)) {
         return 0.0;
     }
 
@@ -1278,7 +1278,7 @@ double HorizontalSpacing::min_horizontal_distance(const Segment *f, const Segmen
     double d = 0.0;
     Score *score = f->score();
     for (unsigned staff_idx = 0; staff_idx < f->shapes().size(); ++staff_idx) {
-        if (score->staff(staff_idx) && !score->staff(staff_idx)->show()) {
+        if (score->staff(staff_idx) && !score->staff(staff_idx)->layout_show()) {
             continue;
         }
 

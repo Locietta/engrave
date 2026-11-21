@@ -35,6 +35,7 @@
 #include "log.h"
 #include "masterscore.h"
 #include "measure.h"
+#include "rendering/score/layoutdatastore.h"
 #include "rw/xmlwriter.h"
 #include "score.h"
 #include "sharedpart.h"
@@ -243,6 +244,15 @@ bool Part::show() const {
 
     bool shared_part_enabled = shared_part() && shared_part()->enabled();
     return show_ && !shared_part_enabled;
+}
+
+bool Part::layout_show() const {
+    const auto *store = score()->layout_data_store();
+    const auto *sharing = is_shared_part() ? to_shared_part(this) : shared_part();
+    if (store && sharing && std::ranges::contains(store->score_output().suspended_shared_parts, sharing)) {
+        return !is_shared_part() && show_;
+    }
+    return show();
 }
 
 //---------------------------------------------------------

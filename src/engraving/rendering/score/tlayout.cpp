@@ -6183,10 +6183,6 @@ SpannerSegment *TLayout::layout_system_s_line(SLine *line, System *system, Layou
         } else {
             sst = SpannerSegmentType::BEGIN;
         }
-        if (line->has_voice_assignment_properties()) {
-            to_hairpin(line)->mutldata()->voice_placement = line->placement_based_on_voice_assignment(
-                ctx.conf().style_v(Sid::DYNAMICS_HAIRPIN_VOICE_BASED_PLACEMENT).value<DirectionV>());
-        }
     } else if (line->tick() < stick &&
                (line->tick2() > etick || (line->tick2() == etick && line->is_pedal() && to_pedal(line)->connect45_hook_to_next()))) {
         sst = SpannerSegmentType::MIDDLE;
@@ -6199,6 +6195,10 @@ SpannerSegment *TLayout::layout_system_s_line(SLine *line, System *system, Layou
     }
     if (line->is_layout_copy() && line->tick2() >= stick && line->tick2() <= etick) {
         line->compute_end_element();
+    }
+    if (line->has_voice_assignment_properties()) {
+        to_hairpin(line)->mutldata()->voice_placement =
+            line->placement_based_on_voice_assignment(ctx.conf().style_v(Sid::DYNAMICS_HAIRPIN_VOICE_BASED_PLACEMENT).value<DirectionV>());
     }
     line_segm->set_spanner_segment_type(sst);
     line_segm->set_placement(line->placement());

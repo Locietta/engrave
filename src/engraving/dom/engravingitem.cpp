@@ -543,7 +543,7 @@ staff_idx_t EngravingItem::effective_staff_idx() const {
 
         bool omit_object = true;
         for (staff_idx_t stf_idx = prev_sys_obj_staff_idx; stf_idx < original_staff_idx; ++stf_idx) {
-            if (score_->staff(stf_idx)->show() && system->staff(stf_idx)->show() && !cutaway_measure_no(stf_idx)) {
+            if (score_->staff(stf_idx)->layout_show() && system->staff(stf_idx)->show() && !cutaway_measure_no(stf_idx)) {
                 omit_object = false;
                 break;
             }
@@ -556,7 +556,8 @@ staff_idx_t EngravingItem::effective_staff_idx() const {
         }
     }
 
-    if (score_->staff(original_staff_idx)->show() && system->staff(original_staff_idx)->show() && !cutaway_measure_no(original_staff_idx)) {
+    if (score_->staff(original_staff_idx)->layout_show() && system->staff(original_staff_idx)->show() &&
+        !cutaway_measure_no(original_staff_idx)) {
         return original_staff_idx;
     }
 
@@ -1153,14 +1154,14 @@ const Staff *EngravingItem::staff_to_center_against(bool above, const System *sy
         const auto &staves = score()->staves();
         if (above) {
             for (staff_idx_t i = this_idx; i > 0; --i) {
-                if (staves[i - 1] && staves[i - 1]->show()) {
+                if (staves[i - 1] && staves[i - 1]->layout_show()) {
                     other_idx = i - 1;
                     break;
                 }
             }
         } else {
             for (staff_idx_t i = this_idx + 1; i < staves.size(); ++i) {
-                if (staves[i] && staves[i]->show()) {
+                if (staves[i] && staves[i]->layout_show()) {
                     other_idx = i;
                     break;
                 }

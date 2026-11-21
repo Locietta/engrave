@@ -123,7 +123,7 @@ void MeasureLayout::layout2(Measure *item, LayoutContext &ctx) {
     const size_t tracks = ctx.dom().ntracks();
     static const SegmentType st{SegmentType::CHORD_REST};
     for (track_idx_t track = 0; track < tracks; ++track) {
-        if (!ctx.dom().staff(track2staff(track))->show()) {
+        if (!ctx.dom().staff(track2staff(track))->layout_show()) {
             track += ::mu::engraving::voices - 1;
             continue;
         }
@@ -180,7 +180,7 @@ void MeasureLayout::layout_measure(MeasureBase *current_mb, LayoutContext &ctx) 
     // Semantic repairs have run at the score layout boundary.
     for (const Segment &segment : measure->segments()) {
         for (EngravingItem *item : segment.effective_elements()) {
-            if (item && item->is_chord() && item->staff()->show()) ChordLayout::layout_note_lines(to_chord(item));
+            if (item && item->is_chord() && item->staff()->layout_show()) ChordLayout::layout_note_lines(to_chord(item));
         }
     }
     ModifyDom::create_stems(measure, ctx);
@@ -203,7 +203,7 @@ void MeasureLayout::layout_measure(MeasureBase *current_mb, LayoutContext &ctx) 
 
         for (const Segment *rendered = measure->rendered_first(); rendered; rendered = rendered->rendered_next()) {
             const Segment &segment = *rendered;
-            if (!staff->show() && !segment.is_type(SegmentType::TIME_SIG_TYPES)) {
+            if (!staff->layout_show() && !segment.is_type(SegmentType::TIME_SIG_TYPES)) {
                 continue;
             }
 
@@ -240,7 +240,7 @@ void MeasureLayout::layout_measure(MeasureBase *current_mb, LayoutContext &ctx) 
             if (!item || !item->is_chord_rest()) {
                 continue;
             }
-            if (const Staff *staff = ctx.dom().staff(item->v_staff_idx()); staff && staff->show()) {
+            if (const Staff *staff = ctx.dom().staff(item->v_staff_idx()); staff && staff->layout_show()) {
                 BeamLayout::layout_non_cross_beams(to_chord_rest(item), ctx);
             }
         }
@@ -248,7 +248,7 @@ void MeasureLayout::layout_measure(MeasureBase *current_mb, LayoutContext &ctx) 
 
     for (staff_idx_t staff_idx = 0; staff_idx < ctx.dom().nstaves(); ++staff_idx) {
         const Staff *staff = ctx.dom().staff(staff_idx);
-        if (!staff->show()) {
+        if (!staff->layout_show()) {
             continue;
         }
 
@@ -431,7 +431,7 @@ void MeasureLayout::compute_pre_spacing_items(Measure *m, LayoutContext &ctx) {
             }
             Chord *chord = to_chord(e);
             Staff *staff = chord->staff();
-            if (staff && !staff->show()) {
+            if (staff && !staff->layout_show()) {
                 continue;
             }
 
@@ -925,7 +925,7 @@ void MeasureLayout::set_clef_seg_visibility(Measure *m, bool is_last_measure_in_
     bool visible_clef = false;
     bool clef_found = false;
     for (staff_idx_t staff_idx = 0; staff_idx < nstaves; ++staff_idx) {
-        if (!ctx.dom().staff(staff_idx)->show()) {
+        if (!ctx.dom().staff(staff_idx)->layout_show()) {
             continue;
         }
 

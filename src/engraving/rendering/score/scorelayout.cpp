@@ -89,7 +89,8 @@ void ScoreLayout::layout_range(Score *score, const Fraction &st, const Fraction 
                 measure->find_segment_r(output->segment_type(), output->rtick()) != nullptr || output->elist().size() != score->ntracks();
         }
         for (auto *segment = measure->rendered_first(); segment; segment = segment->rendered_next()) {
-            if (segment->ldata()->suppressed || !segment->ldata()->display_copies.empty()) {
+            const auto *data = segment->ldata();
+            if (data->suppressed || !data->display_copies.empty() || !data->suppressed_annotations.empty()) {
                 measure->mutldata()->segment_output_invalid = true;
                 collision = true;
             }
@@ -118,16 +119,19 @@ void ScoreLayout::layout_range(Score *score, const Fraction &st, const Fraction 
             if (auto *last = system->last_measure()) etick = std::max(etick, last->end_tick());
         }
     };
-    for (auto *m = score->first_measure(); m; m = m->next_measure()) {
-        retire_collisions(m);
-        if (auto *mmr = m->mm_rest()) retire_collisions(mmr);
-    }
-    ctx.mut_layout_data().retire_shared_auxiliary_output();
-    ctx.mut_layout_data().score_output().suppressed_shared_spanners.clear();
-    for (auto *m = score->first_measure(); m; m = m->next_measure()) {
-        m->reconcile_output_segments();
-        if (auto *mmr = m->mm_rest()) mmr->reconcile_output_segments();
-    }
+    const auto retire_segment_output = [&] {
+        for (auto *m = score->first_measure(); m; m = m->next_measure()) {
+            retire_collisions(m);
+            if (auto *mmr = m->mm_rest()) retire_collisions(mmr);
+        }
+        ctx.mut_layout_data().retire_shared_auxiliary_output();
+        ctx.mut_layout_data().score_output().suppressed_shared_spanners.clear();
+        for (auto *m = score->first_measure(); m; m = m->next_measure()) {
+            m->reconcile_output_segments();
+            if (auto *mmr = m->mm_rest()) mmr->reconcile_output_segments();
+        }
+    };
+    retire_segment_output();
     if (!is_layout_all) {
         if (auto *m = score->tick2measure(stick); m && m->prev_measure()) stick = m->prev_measure()->tick();
         if (auto *m = score->tick2measure(etick); m && m->next_measure()) etick = m->next_measure()->end_tick();
@@ -150,15 +154,19 @@ void ScoreLayout::layout_range(Score *score, const Fraction &st, const Fraction 
         // reused by a range layout. Refit them with the affected origins visible.
         for (const auto &[part, states] : sharing_output.stave_sharing_states) {
             if (std::ranges::any_of(states, [](const auto &entry) { return entry.second.capacity_exhausted; })) {
-                sharing_output.suspended_shared_parts.push_back(part);
+                if (!std::ranges::contains(sharing_output.suspended_shared_parts, part)) {
+                    sharing_output.suspended_shared_parts.push_back(part);
+                }
             }
         }
         if (sharing_output.suspended_shared_parts.size() == suspended_count) break;
 
+        retire_segment_output();
         LayoutContext retry(score);
         retry.mut_state().set_is_layout_all(true);
         ScorePageViewLayout::layout_page_view(score, retry, Fraction(0, 1), score->last()->end_tick());
     }
+    PageLayout::repair_shared_spanners(ctx);
     ctx.mut_layout_data().prune_spanner_segments();
     ctx.mut_layout_data().for_each_output(
         [&](EngravingItem &item, EngravingItem::LayoutData &data) { TLayout::complete_item_shape(item, data, ctx.conf()); });

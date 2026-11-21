@@ -79,7 +79,7 @@ PointF StaffLines::canvas_pos() const {
 bool StaffLines::collect_for_drawing() const {
     staff_idx_t idx = staff_idx();
     return EngravingItem::collect_for_drawing() && (measure()->visible(idx) || measure()->is_cutaway_clef(idx)) &&
-           score()->staff(idx)->show();
+           score()->staff(idx)->layout_show();
 }
 
 //---------------------------------------------------------

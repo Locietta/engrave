@@ -25,6 +25,7 @@
 #include "dom/score.h"
 #include "dom/segment.h"
 #include "dom/spanner.h"
+#include "dom/staff.h"
 #include "editing/addremoveelement.h"
 #include "editing/editpagelocks.h"
 #include "editing/editsystemlocks.h"
@@ -160,7 +161,7 @@ size_t DomAccessor::nstaves() const {
 size_t DomAccessor::visible_staff_count() const {
     IF_ASSERT_FAILED(score()) { return 0; }
 
-    return score()->visible_staves_count();
+    return std::ranges::count_if(staves(), &Staff::layout_show);
 }
 
 const std::vector<Staff *> &DomAccessor::staves() const {
@@ -178,7 +179,7 @@ const Staff *DomAccessor::staff(staff_idx_t idx) const {
 
 bool DomAccessor::all_staves_invisible() const {
     IF_ASSERT_FAILED(score()) { return false; }
-    return score()->all_staves_invisible();
+    return std::ranges::none_of(staves(), &Staff::layout_show);
 }
 
 size_t DomAccessor::ntracks() const {

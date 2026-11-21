@@ -35,6 +35,7 @@ struct PageLayout {
 
     static void get_next_page(LayoutContext &ctx);
     static void collect_page(LayoutContext &ctx);
+    static void repair_shared_spanners(LayoutContext &ctx);
 
 private:
     static void layout_page(LayoutContext &ctx, Page *page, double rest_height, double footer_padding, bool squeeze_to_fit);

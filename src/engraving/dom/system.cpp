@@ -302,7 +302,7 @@ staff_idx_t System::last_visible_staff() const {
     for (staff_idx_t i = nstaves - 1;; --i) {
         Staff *staff = score()->staff(i);
         SysStaff *sys_staff = staves_[i];
-        if (staff->show() && sys_staff->show()) {
+        if (staff->layout_show() && sys_staff->show()) {
             return i;
         }
         if (i == 0) {
@@ -328,14 +328,14 @@ staff_idx_t System::search_staff(double y, staff_idx_t preferred_staff /* = inva
     const size_t nstaves = score()->nstaves();
     for (; i < nstaves;) {
         SysStaff *stff = staff(i);
-        if (!stff->show() || !score()->staff(i)->show()) {
+        if (!stff->show() || !score()->staff(i)->layout_show()) {
             ++i;
             continue;
         }
         staff_idx_t ni = i;
         for (;;) {
             ++ni;
-            if (ni == nstaves || (staff(ni)->show() && score()->staff(ni)->show())) {
+            if (ni == nstaves || (staff(ni)->show() && score()->staff(ni)->layout_show())) {
                 break;
             }
         }
@@ -579,7 +579,8 @@ void System::scan_elements(std::function<void(EngravingItem *)> func) {
             }
             v = v1 || v2; // hide spanner if both chords are hidden
         }
-        if ((score()->staff(staff_idx)->show() && staves_[staff_idx]->show() && v) || spanner->is_volta() || spanner->system_flag()) {
+        if ((score()->staff(staff_idx)->layout_show() && staves_[staff_idx]->show() && v) || spanner->is_volta() ||
+            spanner->system_flag()) {
             ss->scan_elements(func);
         }
     }

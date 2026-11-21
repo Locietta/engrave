@@ -384,7 +384,7 @@ bool Spanner::either_end_visible() const {
     if (is_volta()) {
         return true;
     }
-    if (!score()->staff(staff_idx())->show()) {
+    if (!score()->staff(staff_idx())->layout_show()) {
         return false;
     }
     return is_visible_cr(start_element()) || is_visible_cr(end_element());

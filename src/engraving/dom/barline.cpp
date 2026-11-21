@@ -122,7 +122,7 @@ PointF BarLine::page_pos() const {
         Staff *staff1 = score()->staff(staff_idx1);
         SysStaff *sys_staff1 = system->staff(staff_idx1);
 
-        while (staff1 && sys_staff1 && !(sys_staff1->show() && staff1->show())) {
+        while (staff1 && sys_staff1 && !(sys_staff1->show() && staff1->layout_show())) {
             if (++staff_idx1 >= end_idx) {
                 // no visible staves spanned; just use first
                 staff_idx1 = start_idx;
@@ -146,7 +146,7 @@ static staff_idx_t prev_visible_spanned_staff(const BarLine *bl) {
             break;
         }
         Staff *s = score->staff(i);
-        if (s->part()->show() && bl->measure()->visible(i)) {
+        if (s->part()->layout_show() && bl->measure()->visible(i)) {
             return i;
         }
     }
@@ -160,7 +160,7 @@ static size_t next_visible_spanned_staff(const BarLine *bl) {
     Segment *segment = bl->segment();
     for (size_t i = staff_idx + 1; i < nstaves; ++i) {
         Staff *s = score->staff(i);
-        if (s->part()->show()) {
+        if (s->part()->layout_show()) {
             // span/show bar line if this measure is visible
             if (bl->measure()->visible(i)) {
                 return i;

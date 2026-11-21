@@ -286,7 +286,7 @@ void MMRestLayout::copy_annotations(const Segment *source, Segment *display, con
     for (const EngravingItem *item : source->rendered_annotations()) {
         if (!muse::contains(::break_types, item->type())) continue;
         if (const auto *existing = display->score()->layout_copy(*item); existing && existing->ownership_parent() == display) continue;
-        if (check_visibility && (!item->visible() || !ctx.dom().staff(item->staff_idx())->show())) continue;
+        if (check_visibility && (!item->visible() || !ctx.dom().staff(item->staff_idx())->layout_show())) continue;
         display->add_layout_annotation(display_copy(*item, *display));
     }
 }
@@ -298,7 +298,7 @@ Segment *MMRestLayout::copy_elements(const Segment *source, Measure *measure, co
     for (staff_idx_t staff = 0; staff < ctx.dom().nstaves(); ++staff) {
         const auto track = staff2track(staff);
         const EngravingItem *item = rendered_source ? source->effective_element(track) : source->element(track);
-        if (!item || !item->visible() || (check_visibility && !ctx.dom().staff(staff)->show())) continue;
+        if (!item || !item->visible() || (check_visibility && !ctx.dom().staff(staff)->layout_show())) continue;
         if (auto *old = display->element(track)) {
             display->set_element(track, nullptr);
             if (auto *store = display->score()->layout_data_store()) store->retire_layout_copy(*old);
@@ -323,7 +323,7 @@ bool MMRestLayout::valid_mm_rest_measure(const LayoutContext &ctx, const Measure
 
     size_t nstaves = ctx.dom().nstaves();
     for (staff_idx_t staff_idx = 0; staff_idx < nstaves; ++staff_idx) {
-        if (!ctx.dom().staff(staff_idx)->show()) {
+        if (!ctx.dom().staff(staff_idx)->layout_show()) {
             continue;
         }
 
@@ -335,7 +335,7 @@ bool MMRestLayout::valid_mm_rest_measure(const LayoutContext &ctx, const Measure
     int n = 0;
     for (const Segment *s = m->first(); s; s = s->next()) {
         for (const EngravingItem *e : s->rendered_annotations()) {
-            if (e->staff_idx() >= nstaves || !e->staff()->show() || !e->visible()) {
+            if (e->staff_idx() >= nstaves || !e->staff()->layout_show() || !e->visible()) {
                 continue;
             }
             if (muse::contains(::break_types, e->type()) && !s->rtick().is_zero()) {
@@ -389,7 +389,7 @@ bool MMRestLayout::break_mmr_for_element(Measure *measure, Measure *prev_measure
         if (muse::contains(::always_break_types, e->type())) {
             return true;
         }
-        bool break_for_element = e->system_flag() || e->staff()->show();
+        bool break_for_element = e->system_flag() || e->staff()->layout_show();
         if (muse::contains(::conditional_break_types, e->type()) && break_for_element) {
             return true;
         }
@@ -416,7 +416,7 @@ bool MMRestLayout::break_mmr_for_element(Measure *measure, Measure *prev_measure
             }
         }
         for (size_t staff_idx = 0; staff_idx < ctx.dom().nstaves(); ++staff_idx) {
-            if (!ctx.dom().staff(staff_idx)->show()) {
+            if (!ctx.dom().staff(staff_idx)->layout_show()) {
                 continue;
             }
             EngravingItem *e = s->element(staff_idx * ::mu::engraving::voices);
@@ -456,7 +456,7 @@ bool MMRestLayout::break_mmr_for_element(Measure *measure, Measure *prev_measure
     // Break for breaths and annotations found mid-way into the previous measure
     for (Segment *s = prev_measure->first(); s; s = s->next()) {
         for (size_t staff_idx = 0; staff_idx < ctx.dom().nstaves(); ++staff_idx) {
-            if (!ctx.dom().staff(staff_idx)->show()) {
+            if (!ctx.dom().staff(staff_idx)->layout_show()) {
                 continue;
             }
             EngravingItem *e = s->element(staff_idx * ::mu::engraving::voices);
@@ -502,7 +502,7 @@ bool MMRestLayout::break_mmr_for_element(Measure *measure, Measure *prev_measure
     // only if the element is on a visible staff
     auto has_visible_element = [&ctx](Segment *seg) -> bool {
         for (size_t staff_idx = 0; staff_idx < ctx.dom().nstaves(); ++staff_idx) {
-            if (!ctx.dom().staff(staff_idx)->show()) {
+            if (!ctx.dom().staff(staff_idx)->layout_show()) {
                 continue;
             }
             EngravingItem *e = seg->element(staff_idx * ::mu::engraving::voices);

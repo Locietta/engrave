@@ -1278,7 +1278,7 @@ bool Measure::visible(staff_idx_t staff_idx) const {
     if (score()->staff(staff_idx)->cutaway() && is_empty(staff_idx)) {
         return false;
     }
-    return score()->staff(staff_idx)->show() && mstaves_[staff_idx]->visible();
+    return score()->staff(staff_idx)->layout_show() && mstaves_[staff_idx]->visible();
 }
 
 bool Measure::stemless(staff_idx_t staff_idx) const {
@@ -1369,7 +1369,7 @@ void Measure::scan_elements(std::function<void(EngravingItem *)> func) {
             func(measure_number);
         }
 
-        if (!(visible(staff_idx) && score()->staff(staff_idx)->show()) && !is_cutaway_clef(staff_idx)) {
+        if (!(visible(staff_idx) && score()->staff(staff_idx)->layout_show()) && !is_cutaway_clef(staff_idx)) {
             continue;
         }
 
@@ -1727,7 +1727,7 @@ bool Measure::empty() const {
     for (const Segment *s = first(st); s; s = s->next(st)) {
         bool rest_found = false;
         for (track_idx_t track = 0; track < tracks; ++track) {
-            if ((track % ::mu::engraving::voices) == 0 && !score()->staff(track / ::mu::engraving::voices)->show()) {
+            if ((track % ::mu::engraving::voices) == 0 && !score()->staff(track / ::mu::engraving::voices)->layout_show()) {
                 track += ::mu::engraving::voices - 1;
                 continue;
             }

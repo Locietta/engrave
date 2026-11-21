@@ -1,3 +1,5 @@
+#include "engrave/src/score/score_metadata.h"
+#include "engrave/src/score/score_semantic.h"
 #include "engraving/dom/dummyparent.h"
 #include "engraving/dom/repeatlist.h"
 #include "engraving/dom/stavesharingchange.h"
@@ -964,6 +966,7 @@ TEST(StaveSharingOutput, AutomaticCrossSystemSpannersKeepTheirStartTrack) {
 TEST(StaveSharingOutput, RemovingSharedStaffKeepsIncompatibleOriginVoicesVisible) {
     using namespace mu::engraving;
     auto xml = read_text(g_source_root / "tests/data/inputs/stave-sharing.mscx");
+    xml.insert(xml.find("</Style>"), "<allowVoiceCrossing>1</allowVoiceCrossing>");
     const auto voice = [](int pitch, int tpc) {
         return std::format("<voice><Chord><durationType>whole</durationType><Note><pitch>{}</pitch><tpc>{}</tpc></Note></Chord></voice>",
                            pitch, tpc);
@@ -1015,4 +1018,180 @@ TEST(StaveSharingOutput, RemovingSharedStaffKeepsIncompatibleOriginVoicesVisible
     EXPECT_FALSE(measure->system()->staff(1)->show());
     EXPECT_FALSE(measure->system()->staff(2)->show());
     EXPECT_EQ(part->track_map_at_tick(measure->tick()).size(), 5u);
+}
+
+TEST(StaveSharingOutput, LateIncompatibleSystemRetiresOutputAndPreservesSourceQueries) {
+    using namespace mu::engraving;
+    auto xml = read_text(g_source_root / "tests/data/inputs/stave-sharing.mscx");
+    xml.insert(xml.find("<voice>"), "<LayoutBreak><subtype>line</subtype></LayoutBreak>");
+    xml.insert(xml.find("</Style>"), "<allowVoiceCrossing>0</allowVoiceCrossing>");
+    auto document = open_text(xml);
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *part = master.shared_parts().front();
+    auto *manager = master.transaction_manager();
+    manager->begin_transaction(muse::TranslatableString::untranslatable("remove a shared staff"));
+    master.cmd_remove_staff(1);
+    manager->end_transaction();
+    ASSERT_EQ(part->staves().size(), 1u);
+
+    auto *first = master.first_measure();
+    auto *second = first->next_measure();
+    const auto upper_track = part->origin_parts().front()->track_range().start_track;
+    const auto lower_track = part->origin_parts().back()->track_range().start_track;
+    auto *first_segment = first->first(SegmentType::CHORD_REST);
+    auto *later_segment = second->first(SegmentType::CHORD_REST)->next(SegmentType::CHORD_REST);
+    auto *first_note = to_chord(first_segment->element(upper_track))->up_note();
+    auto *later_note = to_chord(later_segment->element(lower_track))->up_note();
+    ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+    ASSERT_NE(first_note->shared_item(), nullptr);
+    ASSERT_TRUE(first->system()->staff(0)->show());
+    ASSERT_TRUE(second->system()->staff(0)->show());
+    later_note->set_pitch(76);
+    later_note->set_tpc1(18);
+    later_note->set_tpc2(18);
+    master.invalidate_layout(second->tick(), second->end_tick());
+
+    for (bool suspended : {true, false}) {
+        const auto semantic = music::semantic_dump(&master);
+        const auto metadata = music::score_metadata(&master, std::vector<music::ScoreMetadataTrack>{});
+        ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+        ASSERT_NE(first->system(), second->system());
+        EXPECT_TRUE(music::json_equal(music::semantic_dump(&master), semantic));
+        EXPECT_TRUE(music::json_equal(music::score_metadata(&master, std::vector<music::ScoreMetadataTrack>{}), metadata));
+        for (auto *measure : {first, second}) {
+            auto *system = measure->system();
+            EXPECT_EQ(system->staff(0)->show(), !suspended);
+            EXPECT_EQ(system->staff(track2staff(upper_track))->show(), suspended);
+            EXPECT_EQ(system->staff(track2staff(lower_track))->show(), suspended);
+            if (!suspended) continue;
+            for (auto *segment = measure->first(); segment; segment = segment->next()) {
+                EXPECT_TRUE(segment->ldata()->display_copies.empty());
+                EXPECT_TRUE(segment->ldata()->display_annotations.empty());
+                EXPECT_TRUE(segment->ldata()->suppressed_source_tracks.empty());
+                EXPECT_TRUE(segment->ldata()->suppressed_annotations.empty());
+                EXPECT_FALSE(segment->ldata()->suppressed);
+                for (auto track : {upper_track, lower_track}) {
+                    auto *item = segment->element(track);
+                    if (!item || !item->is_chord()) continue;
+                    EXPECT_EQ(segment->effective_element(track), item);
+                    EXPECT_EQ(to_chord(item)->up_note()->shared_item(), nullptr);
+                }
+            }
+        }
+        if (!suspended) {
+            auto *copy = first_note->shared_item();
+            ASSERT_NE(copy, nullptr);
+            EXPECT_TRUE(std::ranges::contains(copy->origin_items(), first_note));
+            break;
+        }
+        later_note->set_pitch(74);
+        later_note->set_tpc1(16);
+        later_note->set_tpc2(16);
+        master.invalidate_layout(second->tick(), second->end_tick());
+    }
+}
+
+TEST(StaveSharingOutput, LateSlurSplitPublishesSegmentsOnAllThreePages) {
+    using namespace mu::engraving;
+    auto xml = read_text(g_source_root / "tests/data/inputs/stave-sharing.mscx");
+    for (int id : {1, 2, 3, 4}) {
+        const auto staff = xml.find(std::format(R"(<Staff id="{}">)", id));
+        const auto first = xml.find("<Measure>", staff);
+        const auto second = xml.find("<Measure>", xml.find("</Measure>", first));
+        const auto end = xml.find("</Measure>", second) + std::string_view("</Measure>").size();
+        xml.insert(end, xml.substr(second, end - second));
+        if (id == 1) {
+            const std::string page_break = "<LayoutBreak><subtype>page</subtype></LayoutBreak>";
+            xml.insert(second + std::string_view("<Measure>").size(), page_break);
+            xml.insert(first + std::string_view("<Measure>").size(), page_break);
+        }
+    }
+    auto document = open_text(xml);
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *first = master.first_measure();
+    auto *second = first->next_measure();
+    auto *third = second->next_measure();
+    ASSERT_NE(third, nullptr);
+    auto *start = first->first(SegmentType::CHORD_REST);
+    auto *end = third->first(SegmentType::CHORD_REST)->next(SegmentType::CHORD_REST);
+    auto *part = master.shared_parts().front();
+    part->set_authored_state(first->tick(), {{{8, 0}, {12, 0}}, false});
+    part->set_authored_state(third->tick(), {{{8, 0}, {12, 1}}, false});
+    auto make_slur = [&](track_idx_t track) {
+        auto *slur = Factory::create_slur(master.dummy());
+        slur->set_track(track);
+        slur->set_track2(track);
+        slur->set_tick(start->tick());
+        slur->set_tick2(end->tick());
+        master.add_element(slur);
+        slur->assign_new_eid();
+        return slur;
+    };
+    auto *upper = make_slur(8);
+    auto *lower = make_slur(12);
+    for (int pass = 0; pass < 2; ++pass) {
+        ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+        ASSERT_EQ(master.pages().size(), 3u);
+        const auto *a = to_slur(master.layout_copy(*upper));
+        const auto *b = to_slur(master.layout_copy(*lower));
+        ASSERT_NE(a, nullptr);
+        ASSERT_NE(b, nullptr);
+        ASSERT_NE(a, b);
+        for (const auto *copy : {a, b}) {
+            ASSERT_EQ(copy->nsegments(), 3u);
+            for (auto *measure : {first, second, third}) {
+                const auto it = std::ranges::find(copy->spanner_segments(), measure->system(), &SpannerSegment::system);
+                ASSERT_NE(it, copy->spanner_segments().end());
+                EXPECT_GT((*it)->ldata()->bbox().width(), 0.0);
+            }
+        }
+        master.invalidate_layout(third->tick(), third->end_tick());
+    }
+}
+
+TEST(StaveSharingOutput, LateHairpinAssignmentRelayoutsEarlierSegment) {
+    using namespace mu::engraving;
+    auto xml = read_text(g_source_root / "tests/data/inputs/stave-sharing.mscx");
+    xml.insert(xml.find("<voice>"), "<LayoutBreak><subtype>page</subtype></LayoutBreak>");
+    auto document = open_text(xml);
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *first = master.first_measure();
+    auto *second = first->next_measure();
+    auto *start = first->first(SegmentType::CHORD_REST)->next(SegmentType::CHORD_REST);
+    auto *end = second->first(SegmentType::CHORD_REST)->next(SegmentType::CHORD_REST);
+    auto *part = master.shared_parts().front();
+    part->set_authored_state(first->tick(), {{{8, 0}, {12, 1}}, false});
+    auto *hairpin = Factory::create_hairpin(master.dummy());
+    hairpin->set_track(8);
+    hairpin->set_track2(8);
+    hairpin->set_tick(start->tick());
+    hairpin->set_tick2(end->tick());
+    hairpin->set_property(Pid::CENTER_BETWEEN_STAVES, AutoOnOff::OFF);
+    master.add_element(hairpin);
+    hairpin->assign_new_eid();
+
+    for (bool staff_wide : {true, false, true}) {
+        part->set_authored_state(second->tick(), staff_wide ? AuthoredStaveSharingState{{{8, 1}, {12, 0}}, false} :
+                                                              AuthoredStaveSharingState{{{8, 0}, {12, 1}}, false});
+        master.invalidate_layout(second->tick(), second->end_tick());
+        ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+        ASSERT_NE(first->system()->page(), second->system()->page());
+        const auto *copy = to_hairpin(master.layout_copy(*hairpin));
+        ASSERT_NE(copy, nullptr);
+        EXPECT_EQ(copy->voice_assignment(), staff_wide ? VoiceAssignment::ALL_VOICE_IN_STAFF : VoiceAssignment::CURRENT_VOICE_ONLY);
+        EXPECT_EQ(copy->placement(), staff_wide ? PlacementV::BELOW : PlacementV::ABOVE);
+        ASSERT_EQ(copy->nsegments(), 2u);
+        for (const auto *segment : copy->spanner_segments()) {
+            EXPECT_EQ(segment->placement(), copy->placement());
+            EXPECT_GT(segment->ldata()->bbox().width(), 0.0);
+            if (staff_wide) {
+                EXPECT_GT(segment->pos().y(), 0.0);
+            } else {
+                EXPECT_LT(segment->pos().y(), 0.0);
+            }
+        }
+    }
 }

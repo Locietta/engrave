@@ -230,11 +230,7 @@ bool SharedPart::set_property(Pid pid, const PropertyValue &v) {
     return true;
 }
 
-bool SharedPart::enabled() const {
-    if (!enabled_ || !style().style_b(Sid::ENABLE_STAVE_SHARING)) return false;
-    const auto *store = score()->layout_data_store();
-    return !store || !std::ranges::contains(store->score_output().suspended_shared_parts, this);
-}
+bool SharedPart::enabled() const { return enabled_ && style().style_b(Sid::ENABLE_STAVE_SHARING); }
 
 bool SharedPart::show() const { return show_ && enabled(); }
 } // namespace mu::engraving

@@ -27,6 +27,7 @@
 #include "dom/breath.h"
 #include "dom/chord.h"
 #include "dom/factory.h"
+#include "dom/hairpin.h"
 #include "dom/instrchange.h"
 #include "dom/keysig.h"
 #include "dom/measure.h"
@@ -184,7 +185,7 @@ void StaveSharingLayout::update_notation_without_recomputing_track_map(Measure *
     }
 
     for (Part *p : ssctx.layout_ctx.dom().parts()) {
-        if (p->is_shared_part() && to_shared_part(p)->show()) {
+        if (p->is_shared_part() && to_shared_part(p)->layout_show()) {
             SharedPart *shared_part = to_shared_part(p);
             ssctx.cur_shared_part = shared_part;
             update_notation(ssctx);
@@ -197,7 +198,7 @@ void StaveSharingLayout::update_notation_without_recomputing_track_map(Measure *
 
 void StaveSharingLayout::update_stave_sharing(StaveSharingContext &ctx) {
     for (Part *p : ctx.layout_ctx.dom().parts()) {
-        if (p->is_shared_part() && to_shared_part(p)->show()) {
+        if (p->is_shared_part() && to_shared_part(p)->layout_show()) {
             SharedPart *shared_part = to_shared_part(p);
             ctx.cur_shared_part = shared_part;
             ctx.collect_overlapping_spanners();
@@ -379,25 +380,40 @@ std::optional<SharedTrackMap> StaveSharingLayout::compute_track_map(const TrackG
     SharedTrackMap track_map;
 
     std::unordered_set<track_idx_t> assigned_tracks;
-    track_idx_t last_assigned_track = muse::nidx;
     const auto range = ctx.cur_shared_part->track_range();
     track_idx_t cur_shared_track = range.start_track;
     std::vector<bool> used_slots(range.end_track - range.start_track);
+    const bool allow_crossing = ctx.style.style_b(Sid::ALLOW_VOICE_CROSSING);
+    const auto compatible = [&](track_idx_t slot, track_idx_t track) {
+        return std::ranges::all_of(track_map, [&](const auto &assignment) {
+            const auto [origin, shared] = assignment;
+            if (track2staff(shared) != track2staff(slot)) return true;
+            return shared < slot ? can_go_to_same_stave(origin, track, allow_crossing, ctx) :
+                                   can_go_to_same_stave(track, origin, allow_crossing, ctx);
+        });
+    };
 
     for (track_idx_t track : origin_tracks) {
         if (muse::contains(assigned_tracks, track)) {
             continue;
         }
 
-        bool can_go_on_this_stave = track2voice(cur_shared_track) == 0 || last_assigned_track == muse::nidx ||
-                                    can_go_to_same_stave(last_assigned_track, track, ctx.style.style_b(Sid::ALLOW_VOICE_CROSSING), ctx);
-        if (!can_go_on_this_stave) {
-            cur_shared_track = track_zero_voice(cur_shared_track + ::mu::engraving::voices);
+        while (cur_shared_track < range.end_track) {
+            if (used_slots[cur_shared_track - range.start_track]) {
+                ++cur_shared_track;
+            } else if (!compatible(cur_shared_track, track)) {
+                cur_shared_track = track_zero_voice(cur_shared_track + ::mu::engraving::voices);
+            } else {
+                break;
+            }
         }
         if (cur_shared_track >= range.end_track) {
-            const auto free_slot = std::ranges::find(used_slots, false);
-            if (free_slot == used_slots.end()) return std::nullopt;
-            cur_shared_track = range.start_track + (free_slot - used_slots.begin());
+            cur_shared_track = range.start_track;
+            while (cur_shared_track < range.end_track &&
+                   (used_slots[cur_shared_track - range.start_track] || !compatible(cur_shared_track, track))) {
+                ++cur_shared_track;
+            }
+            if (cur_shared_track == range.end_track) return std::nullopt;
         }
         used_slots[cur_shared_track - range.start_track] = true;
 
@@ -405,19 +421,16 @@ std::optional<SharedTrackMap> StaveSharingLayout::compute_track_map(const TrackG
             for (track_idx_t unison_track : unisons_map[track]) {
                 track_map[unison_track] = cur_shared_track;
                 assigned_tracks.insert(unison_track);
-                last_assigned_track = unison_track;
             }
         } else {
             for (track_idx_t shared_voice_track : same_voice_map[track]) {
                 track_map[shared_voice_track] = cur_shared_track;
                 assigned_tracks.insert(shared_voice_track);
-                last_assigned_track = shared_voice_track;
             }
         }
 
         track2voice(cur_shared_track) == 0 ? ++cur_shared_track :
                                              cur_shared_track = track_zero_voice(cur_shared_track + ::mu::engraving::voices);
-        while (cur_shared_track < range.end_track && used_slots[cur_shared_track - range.start_track]) ++cur_shared_track;
     }
 
     return track_map;
@@ -1610,6 +1623,8 @@ void StaveSharingLayout::make_shared_spanners(StaveSharingContext &ctx) {
 
         connect_output(shared_spanner, spanner);
 
+        const auto old_assignment =
+            shared_spanner->is_hairpin() ? to_hairpin(shared_spanner)->voice_assignment() : VoiceAssignment::ALL_VOICE_IN_INSTRUMENT;
         shared_spanners.push_back(shared_spanner);
         manage_voice_property_and_track_for_shared_items(shared_spanners, start_origin_track, end_origin_track, track_map);
         // Staff-anchored lines have one track. Preserve the line at its start staff,
@@ -1618,6 +1633,13 @@ void StaveSharingLayout::make_shared_spanners(StaveSharingContext &ctx) {
             std::ranges::any_of(shared_spanner->origin_items(),
                                 [&](const auto *origin) { return map_end_track(*to_spanner(origin)) != shared_track; })) {
             shared_spanner->set_property(Pid::VOICE_ASSIGNMENT, VoiceAssignment::ALL_VOICE_IN_STAFF);
+        }
+        if (shared_spanner->is_hairpin() && to_hairpin(shared_spanner)->voice_assignment() != old_assignment) {
+            for (auto *segment : shared_spanner->spanner_segments()) {
+                if (!segment->system()) continue;
+                output(shared_spanner).retire_spanner_borrowers(*segment);
+                segment->move_to_system(nullptr);
+            }
         }
     }
 }

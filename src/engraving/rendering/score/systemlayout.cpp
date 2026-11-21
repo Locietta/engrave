@@ -579,7 +579,7 @@ System *SystemLayout::get_next_system(LayoutContext &ctx) {
         size_t nstaves = ctx.dom().nstaves();
         system->adjust_staves_number(nstaves);
         for (staff_idx_t i = 0; i < nstaves; ++i) {
-            system->staff(i)->set_show(ctx.dom().staff(i)->show());
+            system->staff(i)->set_show(ctx.dom().staff(i)->layout_show());
         }
     }
     return system;
@@ -714,7 +714,7 @@ void SystemLayout::hide_empty_staves(System *system, LayoutContext &ctx, bool is
 
     if (ctx.dom().nstaves() == 1) {
         // One staff, show if not manually hidden score-wide
-        const bool show = ctx.dom().staves().front()->show();
+        const bool show = ctx.dom().staves().front()->layout_show();
         system->staves().front()->set_show(show);
         system->set_has_staff_visibility_indicator(false);
         return;
@@ -737,7 +737,7 @@ void SystemLayout::hide_empty_staves(System *system, LayoutContext &ctx, bool is
 
         DEFER { ++staff_idx; };
 
-        if (!staff->show()) {
+        if (!staff->layout_show()) {
             ss->set_show(false);
             continue;
         }
@@ -762,7 +762,7 @@ void SystemLayout::hide_empty_staves(System *system, LayoutContext &ctx, bool is
             if (staff->show_if_entire_system_empty() && !ss->show()) {
                 ss->set_show(true);
                 system_is_empty = false;
-            } else if (!first_visible && staff->show()) {
+            } else if (!first_visible && staff->layout_show()) {
                 first_visible = staff;
             }
         }
@@ -794,7 +794,7 @@ bool SystemLayout::can_change_sys_staff_visibility(const System *system, const s
     }
 
     // SysStaff is hidden; check if can show
-    if (!staff->show()) {
+    if (!staff->layout_show()) {
         return false;
     }
 
@@ -970,7 +970,7 @@ void SystemLayout::layout_lyrics(const ElementsToLayout &elements, LayoutContext
     bool dash_on_first_note_syllable = ctx.conf().style().style_b(Sid::LYRICS_SHOW_DASH_IF_SYLLABLE_ON_FIRST_NOTE);
     std::set<Spanner *> unmanaged_spanners = ctx.dom().unmanaged_spanners();
     for (Spanner *sp : unmanaged_spanners) {
-        if (!sp->system_flag() && sp->staff() && !sp->staff()->show()) {
+        if (!sp->system_flag() && sp->staff() && !sp->staff()->layout_show()) {
             continue;
         }
         bool dash_on_first = dash_on_first_note_syllable && !to_lyrics_line(sp)->is_end_melisma();
@@ -2075,7 +2075,7 @@ void SystemLayout::layout_system(System *system, LayoutContext &ctx, double lead
     for (size_t staff_idx = 0; staff_idx < nstaves; ++staff_idx) {
         SysStaff *s = system->staves().at(staff_idx);
         const Staff *staff = ctx.dom().staff(staff_idx);
-        if (!staff->show() || !s->show()) {
+        if (!staff->layout_show() || !s->show()) {
             s->setbbox(RectF());
             continue;
         }
@@ -2417,12 +2417,12 @@ double SystemLayout::min_distance(const System *top, const System *bottom, const
     size_t last_staff = 0;
 
     for (first_staff = 0; first_staff < top->staves().size() - 1; ++first_staff) {
-        if (dom.staff(first_staff)->show() && bottom->staff(first_staff)->show()) {
+        if (dom.staff(first_staff)->layout_show() && bottom->staff(first_staff)->show()) {
             break;
         }
     }
     for (last_staff = top->staves().size() - 1; last_staff > 0; --last_staff) {
-        if (dom.staff(last_staff)->show() && top->staff(last_staff)->show()) {
+        if (dom.staff(last_staff)->layout_show() && top->staff(last_staff)->show()) {
             break;
         }
     }

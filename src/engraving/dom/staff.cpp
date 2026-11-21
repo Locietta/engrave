@@ -904,6 +904,8 @@ void Staff::init_from_staff_type(const StaffType *staff_type) {
 
 bool Staff::show() const { return part_->show() && visible(); }
 
+bool Staff::layout_show() const { return part_->layout_show() && visible(); }
+
 bool Staff::gen_key_sig() {
     if (const_staff_type(Fraction(0, 1))->group() == StaffGroup::TAB) {
         return false;
