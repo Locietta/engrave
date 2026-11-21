@@ -1065,10 +1065,13 @@ TEST(Handles, RewrittenPartKeepsSlightBendIdentity) {
     auto *bend = Factory::create_guitar_bend(note);
     bend->set_bend_type(GuitarBendType::SLIGHT_BEND);
     bend->set_note_span(note, note);
-    bend->set_track(note->track());
-    bend->set_track2(note->track());
-    note->add_spanner_for(bend);
-    note->add_spanner_back(bend);
+    {
+        Command command(master);
+        master.undo_add_element(bend, true);
+        command.commit();
+    }
+    ASSERT_FALSE(master.excerpts().empty());
+    ASSERT_NE(bend->find_linked_in_score(master.excerpts().front()->excerpt_score()), nullptr);
     engrave::assign_missing_ids(master);
     const auto original_id = engine_id(*bend);
     const auto original_handle = master.eid_register()->handle_of(bend);
