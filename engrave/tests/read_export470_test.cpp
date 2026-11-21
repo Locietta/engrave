@@ -674,6 +674,24 @@ TEST(Export470, EnabledFluteGroupingIsWarnedAndReopensDisabled) {
     }
 }
 
+namespace {
+// Build and platform metadata vary between hosts; the rest of a 4.70 document is pinned.
+std::string legacy_digest_without_build_metadata(std::string xml) {
+    for (const std::string_view tag : {"<programRevision>", "<metaTag name=\"platform\">"}) {
+        const auto open = xml.find(tag);
+        if (open == std::string::npos) return "missing " + std::string(tag);
+        const auto content = open + tag.size();
+        const auto close = xml.find('<', content);
+        if (close == std::string::npos) return "unterminated " + std::string(tag);
+        xml.erase(content, close - content);
+    }
+    return music::test::sha256_hex(as_bytes(xml));
+}
+
+// The 4.70 writer at 98d232fda7 produced these bytes for the minimal fixture.
+constexpr std::string_view minimal_legacy_digest = "a6bf83a7b22d2ac5cb906ed686ba6b5d6052b19d19ba772463f75e3c4b9b99f4";
+} // namespace
+
 TEST(Export470, StaveSharingChangeStyleIsInactiveWithoutSharedParts) {
     auto plain = read_text(write470_fixture());
     auto baseline = g_engine->open(as_bytes(plain));
@@ -690,17 +708,99 @@ TEST(Export470, StaveSharingChangeStyleIsInactiveWithoutSharedParts) {
     ASSERT_TRUE(after);
     EXPECT_TRUE(after->warnings.empty());
     EXPECT_EQ(after->bytes, before->bytes);
-    std::string xml(as_text(after->bytes));
-    for (const std::string_view tag : {"<programRevision>", "<metaTag name=\"platform\">"}) {
-        const auto open = xml.find(tag);
-        ASSERT_NE(open, std::string::npos) << tag;
-        const auto content = open + tag.size();
-        const auto close = xml.find('<', content);
-        ASSERT_NE(close, std::string::npos) << tag;
-        xml.erase(content, close - content);
+    EXPECT_EQ(legacy_digest_without_build_metadata(std::string(as_text(after->bytes))), minimal_legacy_digest);
+}
+
+// Every score carries the Jianpu style keys after the 5.00 sync; without a Jianpu
+// staff they configure nothing and must not change a byte of the legacy file.
+TEST(Export470, JianpuStylesAreInactiveWithoutJianpuStaves) {
+    auto plain = read_text(write470_fixture());
+    auto baseline = g_engine->open(as_bytes(plain));
+    ASSERT_TRUE(baseline);
+    const auto style = plain.find("</Style>");
+    ASSERT_NE(style, std::string::npos);
+    plain.insert(style, "<jianpuNumberFontFace>Edwin</jianpuNumberFontFace><jianpuNumberFontSize>12</jianpuNumberFontSize>"
+                        "<jianpuDiminutionBeamPlacement>0</jianpuDiminutionBeamPlacement>"
+                        "<jianpuOctaveDotRadius>0.25</jianpuOctaveDotRadius>");
+    auto styled = g_engine->open(as_bytes(plain));
+    ASSERT_TRUE(styled);
+    ASSERT_EQ(master_of(**styled).style().style_d(mu::engraving::Sid::JIANPU_NUMBER_FONT_SIZE), 12.0);
+    for (const auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
+        const engrave::ExportOptions options{.format = format, .native_version = "4.70"};
+        auto before = (*baseline)->export_score_with_warnings(options);
+        auto after = (*styled)->export_score_with_warnings(options);
+        ASSERT_TRUE(before) << before.error().message;
+        ASSERT_TRUE(after) << after.error().message;
+        EXPECT_TRUE(before->warnings.empty());
+        EXPECT_TRUE(after->warnings.empty());
+        if (format != engrave::Format::MSCX) continue;
+        EXPECT_EQ(after->bytes, before->bytes);
+        EXPECT_EQ(as_text(after->bytes).find("jianpu"), std::string_view::npos);
+        EXPECT_EQ(legacy_digest_without_build_metadata(std::string(as_text(after->bytes))), minimal_legacy_digest);
     }
-    // The 4.70 writer at 98d232fda7 produced these bytes apart from build and platform metadata.
-    EXPECT_EQ(music::test::sha256_hex(as_bytes(xml)), "a6bf83a7b22d2ac5cb906ed686ba6b5d6052b19d19ba772463f75e3c4b9b99f4");
+}
+
+TEST(Export470, RefusesJianpuStavesStaffTypeChangesAndKeySignatureNumbering) {
+    const auto replace = [](std::string text, std::string_view from, std::string_view to) {
+        const auto at = text.find(from);
+        if (at == std::string::npos) throw std::runtime_error("fixture lacks " + std::string(from));
+        return text.replace(at, from.size(), to);
+    };
+    // Jianpu is a 5.00 construct; only the 5.00 reader knows its key signature tags.
+    const auto plain = replace(read_text(write470_fixture()), "<museScore version=\"4.70\">", "<museScore version=\"5.00\">");
+    // A second measure, so that the staff type change is not the initial staff type.
+    const auto two_measures = [&] {
+        const auto start = plain.find("<Measure>");
+        const auto end = plain.find("</Measure>", start) + std::string_view("</Measure>").size();
+        std::string second = plain.substr(start, end - start);
+        for (const auto &[from, to] : {std::pair{"C_C", "H_H"}, {"D_D", "I_I"}, {"E_E", "J_J"}, {"F_F", "K_K"}, {"G_G", "L_L"}})
+            second = replace(second, from, to);
+        second = replace(second, "<Measure>",
+                         "<Measure><StaffTypeChange><eid>M_M</eid><StaffType group=\"jianpu\"><name>jianpu</name><lines>0</lines>"
+                         "</StaffType></StaffTypeChange>");
+        std::string text = plain;
+        return text.insert(end, second);
+    };
+
+    struct Case {
+        std::string label;
+        std::string source;
+        std::string_view detail;
+    };
+
+    const std::vector<Case> cases{
+        {"initial staff",
+         replace(replace(plain, "<StaffType group=\"pitched\">", "<StaffType group=\"jianpu\">"), "<name>stdNormal</name>",
+                 "<name>jianpu</name><lines>0</lines>"),
+         "Jianpu StaffType"},
+        {"staff type change", two_measures(), "Jianpu StaffType"},
+        {"key signature numbering",
+         replace(plain, "<TimeSig>",
+                 "<KeySig><eid>M_M</eid><concertKey>2</concertKey><jianpuNumbering>custom</jianpuNumbering>"
+                 "<jianpuTonicKey>D</jianpuTonicKey><jianpuTonicMode>dorian</jianpuTonicMode></KeySig><TimeSig>"),
+         "KeySig Jianpu numbering"},
+    };
+    for (const auto &test : cases) {
+        auto document = g_engine->open(as_bytes(test.source));
+        ASSERT_TRUE(document) << test.label << ": " << document.error().message;
+        const auto native = (*document)->export_score({.format = engrave::Format::MSCX});
+        ASSERT_TRUE(native) << test.label;
+        const auto native_text = as_text(*native);
+        EXPECT_NE(native_text.find(test.label == "key signature numbering" ? "<jianpuTonicMode>dorian" : "group=\"jianpu\""),
+                  std::string_view::npos)
+            << test.label;
+        if (test.label == "staff type change") EXPECT_NE(native_text.find("<StaffTypeChange>"), std::string_view::npos);
+        for (const auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
+            const auto result = (*document)->export_score_with_warnings({.format = format, .native_version = "4.70"});
+            ASSERT_FALSE(result) << test.label;
+            EXPECT_EQ(result.error().code, ErrorCode::UNSUPPORTED) << test.label;
+            // One warning: on a Jianpu staff the 24 Jianpu styles are active, and their
+            // defaults have to equal the neutral catalog values or they are refused too.
+            ASSERT_EQ(result.error().export_warnings.size(), 1u) << test.label << ": " << result.error().message;
+            EXPECT_EQ(result.error().export_warnings.front().code, "B470_UNSUPPORTED_FEATURE") << test.label;
+            EXPECT_NE(result.error().message.find(test.detail), std::string::npos) << test.label << ": " << result.error().message;
+        }
+    }
 }
 
 TEST(Export470, DropsAuthoredStaveSharingMapsAndGeneratedIndicators) {

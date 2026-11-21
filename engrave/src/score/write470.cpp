@@ -763,6 +763,7 @@ struct ScoreFeatures {
     bool vocal_staves = false;
     bool names = false;
     bool force_names = false;
+    bool jianpu = false;
 };
 
 bool five_only_style_is_inactive(std::string_view name, const ScoreFeatures &features, const MStyle &style) {
@@ -777,6 +778,7 @@ bool five_only_style_is_inactive(std::string_view name, const ScoreFeatures &fea
         name.starts_with("instrumentNamesShowTransposition"))
         return true;
     if (name.starts_with("instrumentNumerals")) return true;
+    if (name.starts_with("jianpu")) return !features.jianpu;
     if (name.starts_with("instrumentNames")) return !features.names;
     if (name.starts_with("dashBar")) return !features.dashed_bars;
     if (name == "lyricsStackingOrder") return !features.lyrics || !features.dynamics;
@@ -819,7 +821,7 @@ void convert_style(pugi::xml_node score_node, Score &score, std::optional<Elemen
                 if (!five_only_style_is_inactive(name, features, score.style()) && !style_matches(child, *known))
                     unsupported(score_node, "style " + std::string(name), score_id, warnings);
                 // Preserve the existing 4.70 whitespace when stripping a newly emitted key.
-                if (name == "staveSharingChangeMinDistance" && next.type() == pugi::node_pcdata) {
+                if ((name == "staveSharingChangeMinDistance" || name.starts_with("jianpu")) && next.type() == pugi::node_pcdata) {
                     const auto whitespace = next;
                     next = next.next_sibling();
                     style.remove_child(whitespace);
@@ -871,6 +873,12 @@ void convert_notation(pugi::xml_node node, const Score &score, std::optional<Ele
             unsupported(node, "Lyrics/centerBetweenStaves without a source lyric", score_id, warnings);
     } else if (name == "StaffTypeChange" && node.child("StaffType") && changes_staff_label(node, score)) {
         unsupported(node, "StaffTypeChange staff label or instrument label visibility", score_id, warnings);
+    } else if (name == "StaffType" && std::string_view(node.attribute("group").value()) == "jianpu") {
+        // 4.7.6 has no numbered notation: it would read a pitched staff without lines.
+        features.jianpu = true;
+        unsupported(node, "Jianpu StaffType", score_id, warnings);
+    } else if (name == "KeySig" && (node.child("jianpuNumbering") || node.child("jianpuTonicKey") || node.child("jianpuTonicMode"))) {
+        unsupported(node, "KeySig Jianpu numbering", score_id, warnings);
     } else if (name == "Score" && node.child("initialPartId").text().as_ullong() > std::numeric_limits<int>::max()) {
         unsupported(node, "initialPartId outside the legacy integer range", score_id, warnings);
     } else if (name == "Spanner") {
