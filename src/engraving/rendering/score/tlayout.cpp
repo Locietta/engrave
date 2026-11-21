@@ -3888,6 +3888,12 @@ void TLayout::layout_note(const Note *item, Note::LayoutData *ldata) {
             ldata->jianpu_accidental_box =
                 acc_fm.tight_bounding_rect(ldata->jianpu_accidental).translated(ldata->jianpu_accidental_baseline);
         }
+        ldata->jianpu_ink_box =
+            note_b_box.united(digit_fm.tight_bounding_rect(ldata->jianpu_digit).translated(ldata->jianpu_digit_baseline));
+        if (ldata->jianpu_accidental_box.is_valid()) {
+            ldata->jianpu_ink_box = ldata->jianpu_ink_box.united(ldata->jianpu_accidental_box);
+        }
+        note_b_box = ldata->jianpu_ink_box;
     } else {
         SymId nh = item->note_head();
         ldata->cached_notehead_sym.set_value(nh);
@@ -3913,15 +3919,12 @@ void TLayout::layout_note(const Note *item, Note::LayoutData *ldata) {
 
 void TLayout::fill_note_shape(const Note *item, Note::LayoutData *ldata) {
     LAYOUT_CALL_ITEM(item);
-    // A Jianpu shape restarts from the digit box, as the bbox already covers the marks.
-    const bool jianpu = item->on_jianpu_staff();
-    RectF note_b_box = jianpu ? ldata->jianpu_digit_box : ldata->bbox();
+    // The first element is the note's bbox (EngravingItem::LayoutData::bbox), so a Jianpu
+    // note puts its whole ink there rather than the digit box alone.
+    RectF note_b_box = item->on_jianpu_staff() ? ldata->jianpu_ink_box : ldata->bbox();
 
     Shape shape(Shape::Type::COMPOSITE);
     shape.add(note_b_box, item);
-    if (jianpu && ldata->jianpu_accidental_box.is_valid()) {
-        shape.add(ldata->jianpu_accidental_box, item);
-    }
 
     for (const NoteDot *dot : item->dots()) {
         if (!dot->add_to_skyline()) {

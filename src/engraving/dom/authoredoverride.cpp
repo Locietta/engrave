@@ -118,12 +118,21 @@ AuthoredChildKey inferred_key(const EngravingItem &item) {
     }
     if (parent->is_tuplet() && static_cast<const Tuplet *>(parent)->number() == &item) return {AuthoredChildRole::TUPLET_NUMBER};
     if (item.type() == ElementType::NOTEDOT) {
+        const ChordRest *duration = parent->is_note() ? static_cast<const ChordRest *>(static_cast<const Note *>(parent)->chord()) :
+                                    parent->is_rest() ? static_cast<const Rest *>(parent) :
+                                                        nullptr;
         const auto *dots = parent->is_note() ? &static_cast<const Note *>(parent)->dots() :
                            parent->is_rest() ? &static_cast<const Rest *>(parent)->dot_list() :
                                                nullptr;
-        if (dots)
+        if (dots) {
+            // A Jianpu duration draws its leading dots as augmentation lines, so the
+            // dots it lays out are its last ones.
+            const size_t authored = duration ? size_t(std::max(duration->dots(), 0)) : 0;
+            const size_t first =
+                authored > dots->size() && static_cast<const EngravingItem *>(parent)->on_jianpu_staff() ? authored - dots->size() : 0;
             for (size_t i = 0; i < dots->size(); ++i)
-                if ((*dots)[i] == &item) return {AuthoredChildRole::DOT, static_cast<uint32_t>(i)};
+                if ((*dots)[i] == &item) return {AuthoredChildRole::DOT, static_cast<uint32_t>(first + i)};
+        }
     }
 
     return {};

@@ -586,6 +586,51 @@ TEST(Jianpu, RestsKeepTheDotsTheirLinesDoNotShow) {
     }
 }
 
+// A double-dotted half shows its first dot as a line: the dot left is the second
+// authored dot and takes that dot's overrides.
+TEST(Jianpu, ResidualDotsTakeTheOverridesOfTheirAuthoredDot) {
+    constexpr std::string_view dots = "<NoteDot><visible>0</visible><color r=\"255\" g=\"0\" b=\"0\" a=\"255\"/></NoteDot>"
+                                      "<NoteDot><color r=\"0\" g=\"0\" b=\"255\" a=\"255\"/></NoteDot>";
+    const auto note = std::format("<Chord><dots>2</dots><durationType>half</durationType>"
+                                  "<Note><pitch>67</pitch><tpc>15</tpc>{}</Note></Chord>",
+                                  dots);
+    const auto double_dotted_rest = std::format("<Rest><dots>2</dots><durationType>half</durationType>{}</Rest>", dots);
+    auto document = open_text(jianpu_score(std::format("<Measure><voice>{}{}{}</voice></Measure><Measure><voice>{}{}</voice></Measure>",
+                                                       four_four, note, rest("eighth"), double_dotted_rest, rest("eighth"))));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    render(*document);
+    const auto *chord = to_chord(chord_rest_at(master, {0, 1}));
+    const auto *r = to_rest(chord_rest_at(master, {1, 1}));
+    for (const auto *residual : {&chord->up_note()->dots(), &r->dot_list()}) {
+        ASSERT_EQ(residual->size(), 1u);
+        const NoteDot *dot = residual->front();
+        EXPECT_EQ(dot->authored_child.ordinal, 1u);
+        EXPECT_TRUE(dot->visible());
+        EXPECT_EQ(dot->color(), Color(0, 0, 255));
+    }
+}
+
+TEST(Jianpu, RestDotsFollowTheDrawnZeroOnAScaledStaff) {
+    auto xml = jianpu_score(std::format("<Measure><voice>{}{}{}{}</voice></Measure>", four_four, rest("quarter", "<dots>1</dots>"),
+                                        rest("eighth"), rest("half")));
+    constexpr std::string_view lines = "<lines>0</lines>";
+    xml.insert(xml.find(lines) + lines.size(), "<mag>1.5</mag>");
+    auto document = open_text(xml);
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    render(*document);
+    const auto *r = to_rest(chord_rest_at(master, {0, 1}));
+    ASSERT_DOUBLE_EQ(r->mag(), 1.5);
+    // TDraw draws the zero in the staff's Jianpu font at mag_s.
+    muse::draw::Font font(master.staff(0)->staff_type_for_element(r)->jianpu_font());
+    font.set_point_size_f(font.point_size_f() * r->mag_s());
+    const double zero_width = muse::draw::FontMetrics(font).width(muse::String(u"0"));
+    EXPECT_DOUBLE_EQ(r->ldata()->jianpu_digit_box.width(), zero_width);
+    ASSERT_EQ(r->dot_list().size(), 1u);
+    EXPECT_DOUBLE_EQ(r->dot_list().front()->pos().x(), zero_width + master.style().style_absolute(Sid::DOT_NOTE_DISTANCE) * r->mag());
+}
+
 TEST(Jianpu, RestsInABeamGroupKeepTheirOwnUnderlines) {
     constexpr std::string_view begin = "<BeamMode>begin</BeamMode>";
     constexpr std::string_view mid = "<BeamMode>mid</BeamMode>";
@@ -615,6 +660,30 @@ TEST(Jianpu, RestsInABeamGroupKeepTheirOwnUnderlines) {
     // least that short, and one alone gets a full-width underline.
     EXPECT_EQ(segments({0, 1}), (Segments{{0, 0, 360}, {1, 0, 0}, {1, 360, 360}}));
     EXPECT_EQ(segments({1, 1}), (Segments{{0, 1920, 2160}, {1, 1920, 2040}}));
+}
+
+TEST(Jianpu, ARestBetweenEighthsUnderlinesItsOwnDigit) {
+    constexpr std::string_view begin = "<BeamMode>begin</BeamMode>";
+    constexpr std::string_view mid = "<BeamMode>mid</BeamMode>";
+    // "1 0 2." with one line under all three and a second under the sixteenth rest alone.
+    auto document = open_text(jianpu_score(
+        std::format("<Measure><voice>{}{}{}{}{}{}</voice></Measure>", four_four, chord("eighth", 60, 14, begin), rest("16th", mid),
+                    chord("eighth", 62, 16, std::format("{}<dots>1</dots>", mid)), chord("eighth", 64, 18, begin), chord("half", 65, 13))));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    render(*document);
+    auto *r = to_rest(chord_rest_at(master, {1, 8}));
+    const Beam *beam = r->beam();
+    ASSERT_NE(beam, nullptr);
+    ASSERT_EQ(beam->rendered_elements().size(), 3u);
+    std::vector<const BeamSegment *> second_level;
+    for (const BeamSegment *segment : beam->beam_segments())
+        if (segment->level == 1) second_level.push_back(segment);
+    ASSERT_EQ(second_level.size(), 1u);
+    const double beam_x = beam->page_pos().x();
+    const double rest_x = r->page_pos().x();
+    EXPECT_NEAR(beam_x + second_level.front()->line.x1(), rest_x + r->ldata()->jianpu_digit_box.left(), 0.001);
+    EXPECT_NEAR(beam_x + second_level.front()->line.x2(), rest_x + r->ldata()->jianpu_digit_box.right(), 0.001);
 }
 
 TEST(Jianpu, VoiceBandsFollowTheStaffTypeOfEachMeasure) {
@@ -694,6 +763,28 @@ TEST(Jianpu, GeneratedMarksFollowTheVisibilityOfTheirOwners) {
     });
 }
 
+// Note::hidden marks the overlapped copy of a note: it stays visible, but TDraw skips
+// its digit, so its marks must not show alone.
+TEST(Jianpu, HiddenOverlappedNotesDrawNoMarks) {
+    // Pitch 72 in C is "1" with two dots above, and a half has one line.
+    auto document = open_text(
+        jianpu_score(std::format("<Measure><voice>{}{}{}</voice></Measure>", four_four, chord("half", 72, 14), chord("half", 72, 14))));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *hidden = to_chord(chord_rest_at(master, {0, 1}));
+    auto *shown = to_chord(chord_rest_at(master, {1, 2}));
+    hidden->up_note()->set_hidden(true);
+    render(*document);
+    ASSERT_TRUE(hidden->up_note()->visible());
+    for (const Chord *chord : {hidden, shown}) {
+        SCOPED_TRACE(chord == hidden ? "hidden" : "shown");
+        ASSERT_EQ(chord->up_note()->jianpu_octave_dots().size(), 2u);
+        ASSERT_EQ(chord->jianpu_duration_lines().size(), 1u);
+        for (const JianpuOctaveDot *dot : chord->up_note()->jianpu_octave_dots()) EXPECT_EQ(dot->visible(), chord == shown);
+        EXPECT_EQ(chord->jianpu_duration_lines().front()->visible(), chord == shown);
+    }
+}
+
 TEST(Jianpu, AccidentalsTakeTheirSpaceBeforeTheDigit) {
     std::string run;
     for (int i = 0; i < 4; ++i) run += chord("32nd", 60, 14) + chord("32nd", 66, 20); // C, then F sharp: "♯4"
@@ -727,6 +818,91 @@ TEST(Jianpu, AccidentalsTakeTheirSpaceBeforeTheDigit) {
     EXPECT_EQ(sharps, 4);
 }
 
+namespace {
+// The drawn digit and accidental of a Jianpu note, measured as TDraw draws them.
+RectF jianpu_note_ink(const Note *note) {
+    muse::draw::Font font(note->staff()->staff_type_for_element(note)->jianpu_font());
+    font.set_point_size_f(font.point_size_f() * note->mag_s());
+    const Note::LayoutData *ldata = note->ldata();
+    RectF ink = muse::draw::FontMetrics(font).tight_bounding_rect(ldata->jianpu_digit).translated(ldata->jianpu_digit_baseline);
+    if (!ldata->jianpu_accidental.is_empty()) {
+        font.set_point_size_f(font.point_size_f() * Note::LayoutData::jianpu_accidental_mag);
+        ink = ink.united(
+            muse::draw::FontMetrics(font).tight_bounding_rect(ldata->jianpu_accidental).translated(ldata->jianpu_accidental_baseline));
+    }
+    return ink;
+}
+
+bool contains(const RectF &outer, const RectF &inner) {
+    constexpr double eps = 1e-9;
+    return outer.left() <= inner.left() + eps && outer.right() >= inner.right() - eps && outer.top() <= inner.top() + eps &&
+           outer.bottom() >= inner.bottom() - eps;
+}
+} // namespace
+
+// A large Jianpu font draws digits wider than the notehead-wide digit box.
+TEST(Jianpu, LargeDigitsTakeTheirInkIntoSpacing) {
+    std::string run;
+    for (int i = 0; i < 4; ++i) run += chord("16th", 64, 18) + chord("16th", 66, 20); // "3 ♯4"
+    auto xml = jianpu_score(std::format("<Measure><voice>{}{}{}</voice></Measure>", four_four, run, chord("half", 67, 15)));
+    xml.insert(xml.find("</Style>"), "<jianpuNumberFontSize>30</jianpuNumberFontSize>");
+    auto document = open_text(xml);
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    render(*document);
+
+    const Note *previous = nullptr;
+    int wider = 0;
+    for (ChordRest *cr : chord_rests(master, 0)) {
+        const Note *note = to_chord(cr)->up_note();
+        const RectF ink = jianpu_note_ink(note);
+        if (ink.width() > note->ldata()->jianpu_digit_box.width()) ++wider;
+        EXPECT_TRUE(contains(note->ldata()->bbox(), ink)) << note->pitch();
+        EXPECT_TRUE(contains(cr->shape().bbox(), ink.translated(note->pos())));
+        if (previous) EXPECT_LE(previous->page_pos().x() + jianpu_note_ink(previous).right(), note->page_pos().x() + ink.left());
+        previous = note;
+    }
+    EXPECT_GT(wider, 0) << "the font overflows the digit box";
+}
+
+TEST(Jianpu, VoiceBandsClearAnAccidentalAboveTheDigit) {
+    // F sharp in C is "♯4"; the first voice's C3 has no dot below.
+    auto document = open_text(jianpu_score(
+        std::format("<Measure><voice>{}{}</voice><voice>{}</voice></Measure>", four_four, chord("whole", 48, 14), chord("whole", 54, 20))));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    render(*document);
+    const Note *upper = to_chord(chord_rest_at(master, {0, 1}, 0))->up_note();
+    const Note *lower = to_chord(chord_rest_at(master, {0, 1}, 1))->up_note();
+    ASSERT_TRUE(upper->jianpu_octave_dots().empty());
+    ASSERT_TRUE(lower->ldata()->jianpu_accidental_box.is_valid());
+    EXPECT_TRUE(contains(lower->ldata()->bbox(), lower->ldata()->jianpu_accidental_box));
+    const double upper_bottom = upper->page_pos().y() + upper->ldata()->bbox().bottom();
+    const double accidental_top = lower->page_pos().y() + lower->ldata()->jianpu_accidental_box.top();
+    EXPECT_GE(accidental_top - upper_bottom, master.style().style_absolute(Sid::JIANPU_VOICE_VERTICAL_DISTANCE) - 1e-9);
+}
+
+TEST(Jianpu, PageQueriesFindANoteByItsAccidental) {
+    auto document = open_text(
+        jianpu_score(std::format("<Measure><voice>{}{}{}</voice></Measure>", four_four, chord("half", 66, 20), chord("half", 67, 15))));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    render(*document);
+    master.ensure_layout();
+    Note *note = to_chord(chord_rest_at(master, {0, 1}))->up_note();
+    const RectF accidental = note->ldata()->jianpu_accidental_box;
+    const RectF digit = note->ldata()->jianpu_digit_box;
+    ASSERT_TRUE(accidental.is_valid());
+    // The part of the accidental left of the digit box.
+    ASSERT_LT(accidental.left(), digit.left());
+    const RectF only_accidental =
+        RectF(accidental.left(), accidental.top(), std::min(accidental.right(), digit.left()) - accidental.left(), accidental.height())
+            .adjusted(1e-3, 1e-3, -1e-3, -1e-3)
+            .translated(note->page_pos());
+    ASSERT_FALSE(master.pages().empty());
+    EXPECT_TRUE(std::ranges::contains(master.pages().front()->items(only_accidental), note));
+}
+
 TEST(Jianpu, TablatureRelayoutDropsTheJianpuMarks) {
     constexpr std::string_view guitar = R"(<?xml version="1.0" encoding="UTF-8"?>
 <museScore version="5.00"><Score><Division>480</Division>
@@ -737,6 +913,10 @@ TEST(Jianpu, TablatureRelayoutDropsTheJianpuMarks) {
 <Staff id="1"><Measure><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
 <Chord><durationType>half</durationType><Note><pitch>76</pitch><tpc>18</tpc><string>0</string><fret>12</fret></Note></Chord>
 <Rest><durationType>half</durationType></Rest>
+</voice></Measure><Measure><voice>
+<Rest><dots>1</dots><durationType>quarter</durationType></Rest>
+<Rest><durationType>eighth</durationType></Rest>
+<Rest><durationType>half</durationType></Rest>
 </voice></Measure></Staff></Score></museScore>)";
     auto document = open_text(guitar);
     ASSERT_TRUE(document);
@@ -744,19 +924,30 @@ TEST(Jianpu, TablatureRelayoutDropsTheJianpuMarks) {
     render(*document);
     auto *chord = to_chord(chord_rest_at(master, {0, 1}));
     ChordRest *r = chord_rest_at(master, {1, 2});
+    auto *dotted = to_rest(chord_rest_at(master, {1, 1}));
     ASSERT_FALSE(chord->up_note()->jianpu_octave_dots().empty());
     ASSERT_EQ(chord->jianpu_duration_lines().size(), 1u);
     ASSERT_EQ(r->jianpu_duration_lines().size(), 1u);
+    ASSERT_EQ(dotted->dot_list().size(), 1u);
 
-    // The relayout reuses the layout data of the Jianpu pass.
-    master.staff(0)->set_staff_type(Fraction(0, 1), *StaffType::preset(StaffTypes::TAB_6COMMON));
+    // The relayout reuses the layout data of the Jianpu pass. Rests with duration
+    // symbols take their dots from the symbol.
+    StaffType tab = *StaffType::preset(StaffTypes::TAB_6COMMON);
+    tab.set_gen_durations(true);
+    tab.set_show_rests(true);
+    master.staff(0)->set_staff_type(Fraction(0, 1), tab);
     master.invalidate_layout(Fraction(0, 1), Fraction(-1, 1));
     render(*document);
     ASSERT_TRUE(master.staff(0)->is_tab_staff(Fraction(0, 1)));
+    ASSERT_NE(dotted->tab_dur(), nullptr);
     EXPECT_TRUE(chord->up_note()->jianpu_octave_dots().empty());
     EXPECT_TRUE(chord->jianpu_duration_lines().empty());
     EXPECT_TRUE(r->jianpu_duration_lines().empty());
-    master.scan_elements([](EngravingItem *item) { EXPECT_FALSE(item->is_jianpu_octave_dot() || item->is_jianpu_duration_line()); });
+    EXPECT_TRUE(dotted->dot_list().empty());
+    master.scan_elements([](EngravingItem *item) {
+        EXPECT_FALSE(item->is_jianpu_octave_dot() || item->is_jianpu_duration_line());
+        EXPECT_FALSE(item->is_note_dot() && item->ownership_parent() && item->ownership_parent()->is_rest());
+    });
 }
 
 TEST(Jianpu, DraggedBeamDrawsFlatAndKeepsItsAuthoredEnds) {
@@ -809,6 +1000,33 @@ TEST(Jianpu, KeyEditsKeepTheCustomNumbering) {
     }
     EXPECT_EQ(keysig->concert_key(), Key(3));
     EXPECT_EQ(keysig->key(), Key(4));
+}
+
+// Under the score key a minor key numbers its tonic 6; losing the mode would relabel it 1.
+TEST(Jianpu, KeyEditsKeepTheScoreKeyMode) {
+    auto document = open_text(jianpu_source_with("<KeySig><eid>Z_Z</eid><concertKey>2</concertKey><mode>minor</mode></KeySig>"));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *keysig = to_key_sig(master.first_measure()->find_segment(SegmentType::KEY_SIG, Fraction(0, 1))->element(0));
+    render(*document);
+    ASSERT_EQ(keysig->ldata()->jianpu_label.to_std_string(), "6=B");
+    const auto id = engine_id(*keysig);
+    // Three sharps are F# minor, four C# minor.
+    for (const auto &[property, key, label] : {std::tuple{"concertKey", 3, "6=F♯"}, std::tuple{"actualKey", 4, "6=C♯"}}) {
+        SCOPED_TRACE(property);
+        const auto edited = document->edit({{engrave::SetProperty{id, property, std::int64_t(key)}}});
+        ASSERT_TRUE(edited) << edited.error().message;
+        EXPECT_EQ(keysig->mode(), KeyMode::MINOR);
+        EXPECT_EQ(master.staff(0)->key_sig_event(Fraction(0, 1)).mode(), KeyMode::MINOR);
+        render(*document);
+        EXPECT_EQ(keysig->ldata()->jianpu_label.to_std_string(), label);
+
+        auto reopened = reopen(*document);
+        ASSERT_TRUE(reopened);
+        const KeySigEvent saved = master_of(*reopened).staff(0)->key_sig_event(Fraction(0, 1));
+        EXPECT_EQ(saved, keysig->key_sig_event());
+        EXPECT_EQ(saved.mode(), KeyMode::MINOR);
+    }
 }
 
 TEST(Jianpu, InactiveTonicIsSavedAndDefaultsWriteNothing) {

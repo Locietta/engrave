@@ -51,17 +51,18 @@ KeySig::KeySig(const KeySig &k) : EngravingItem(k) {
 
 double KeySig::mag() const { return staff() ? staff()->staff_mag(this) : 1.0; }
 
-// The Jianpu numbering is authored apart from the key, so a key edit keeps it.
-static KeySigEvent with_jianpu_numbering_of(const KeySigEvent &source) {
-    KeySigEvent e;
-    e.set_jianpu_numbering(source.jianpu_numbering());
-    e.set_jianpu_tonic_key(source.jianpu_tonic_key());
-    e.set_jianpu_tonic_mode(source.jianpu_tonic_mode());
+// A key edit replaces only the accidentals: the mode and Jianpu numbering are authored
+// apart from them. Custom accidentals, and the atonal mode that draws none, are what a
+// standard key replaces.
+static KeySigEvent with_key_replaced(KeySigEvent e) {
+    e.set_custom(false);
+    e.custom_key_defs().clear();
+    if (e.is_atonal()) e.set_mode(KeyMode::UNKNOWN);
     return e;
 }
 
 void KeySig::set_key(Key concert_key) {
-    KeySigEvent e = with_jianpu_numbering_of(sig_);
+    KeySigEvent e = with_key_replaced(sig_);
     e.set_concert_key(concert_key);
     if (staff() && !style().style_b(Sid::CONCERT_PITCH)) {
         const Part *part = staff()->origin_part(tick());
@@ -76,7 +77,7 @@ void KeySig::set_key(Key concert_key) {
 }
 
 void KeySig::set_key(Key concert_key, Key transposed_key) {
-    KeySigEvent e = with_jianpu_numbering_of(sig_);
+    KeySigEvent e = with_key_replaced(sig_);
     e.set_concert_key(concert_key);
     e.set_key(transposed_key);
     set_key_sig_event(e);

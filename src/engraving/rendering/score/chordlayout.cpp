@@ -114,6 +114,9 @@ static void resize_jianpu_octave_dots(Note *note, size_t count) {
     }
 }
 
+// The marks of a digit show only with it; an overlapping note that TDraw hides draws none.
+static bool jianpu_digit_drawn(const Note *note) { return note->display_visible() && !note->hidden(); }
+
 static void clear_jianpu_octave_dots(const Chord *chord) {
     for (Note *note : chord->notes()) {
         if (!note->jianpu_octave_dots().empty()) resize_jianpu_octave_dots(note, 0);
@@ -1769,8 +1772,7 @@ void ChordLayout::layout_jianpu_duration_lines(Chord *item, LayoutContext &ctx) 
     }
 
     const track_idx_t track = staff2track(idx);
-    const bool visible = !staff->is_lines_invisible(tick) && item->visible() &&
-                         std::ranges::any_of(item->notes(), [](const Note *n) { return n->display_visible(); });
+    const bool visible = !staff->is_lines_invisible(tick) && item->visible() && std::ranges::any_of(item->notes(), jianpu_digit_drawn);
     const double head_width = note->head_width();
     const double head_x = note->pos().x() + note->bbox_x_shift();
     const double lengthening_y = note->pos().y();
@@ -1829,7 +1831,7 @@ void ChordLayout::layout_jianpu_octave_dots(Chord *item, LayoutContext &ctx) {
         for (int i = 0; i < dots; ++i) {
             JianpuOctaveDot *dot = note->jianpu_octave_dots()[i];
             dot->set_track(track);
-            dot->set_visible(staff_visible && note->display_visible());
+            dot->set_visible(staff_visible && jianpu_digit_drawn(note));
             JianpuOctaveDot::LayoutData *dot_ldata = dot->mutldata();
             dot_ldata->above = octave > 0;
             dot_ldata->len = max_x - min_x;

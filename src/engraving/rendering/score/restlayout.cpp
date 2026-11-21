@@ -162,6 +162,8 @@ void RestLayout::layout_rest(const Rest *item, Rest::LayoutData *ldata, const La
             }
             // needed?        _tabDur->setTrack(track());
             TLayout::layout_tab_duration_symbol(item->tab_dur(), item->tab_dur()->mutldata());
+            // The symbol draws its own dots; dots of a previous staff type's layout go.
+            layout_rest_dots(item, ldata, ctx, 0, 0.0, 0.0);
             ldata->set_bbox(item->tab_dur()->ldata()->bbox());
             ldata->set_pos(0.0, 0.0); // no rest is drawn: reset any position might be set for it
             return;
@@ -233,11 +235,12 @@ void RestLayout::layout_rest_for_jianpu(const Rest *item, Rest::LayoutData *ldat
     const track_idx_t track = staff2track(item->staff_idx() + item->staff_move());
     const bool staff_visible = !staff->is_lines_invisible(tick);
 
-    muse::draw::Font font(item->staff_type()->jianpu_font());
-    font.set_point_size_f(font.point_size_f() * item->mag());
+    // The font and coordinates TDraw draws the zero in.
+    muse::draw::Font font(st->jianpu_font());
+    font.set_point_size_f(font.point_size_f() * item->mag_s());
 
     muse::draw::FontMetrics fm(font);
-    const double width = fm.width(String(u"0")) / item->mag_s();
+    const double width = fm.width(String(u"0"));
     const double height = st->jianpu_box_h() * item->mag_s();
 
     ldata->jianpu_digit_box = RectF(0, -height * .5, width, height);
