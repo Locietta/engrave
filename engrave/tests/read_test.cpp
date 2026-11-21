@@ -1225,6 +1225,54 @@ TEST(Read, ScoreRangeWriteDiscardsCrossBoundaryNoteLinesWithDisposedStart) {
     ASSERT_TRUE(document.export_score({.format = engrave::Format::MSCX}));
 }
 
+TEST(Read, TupletAddDoesNotDuplicateExistingElement) {
+    using namespace mu::engraving;
+    constexpr std::string_view xml = R"(<museScore version="4.60"><Score><Division>480</Division>
+<Part><Staff id="1"/><Instrument id="piano"><trackName>Piano</trackName><instrumentId>keyboard.piano</instrumentId></Instrument></Part>
+<Staff id="1"><Measure><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
+<Tuplet><normalNotes>2</normalNotes><actualNotes>3</actualNotes><baseNote>quarter</baseNote></Tuplet>
+<Tuplet><normalNotes>2</normalNotes><actualNotes>3</actualNotes><baseNote>eighth</baseNote></Tuplet>
+<Chord><durationType>eighth</durationType><Note><pitch>60</pitch><tpc>14</tpc></Note></Chord>
+<Rest><durationType>eighth</durationType></Rest>
+<Rest><durationType>eighth</durationType></Rest>
+<endTuplet/>
+<Chord><durationType>quarter</durationType><Note><pitch>64</pitch><tpc>18</tpc></Note></Chord>
+<Rest><durationType>quarter</durationType></Rest>
+<endTuplet/>
+<Rest><durationType>half</durationType></Rest>
+</voice></Measure></Staff></Score></museScore>)";
+
+    auto opened = g_engine->open(as_bytes(xml));
+    ASSERT_TRUE(opened) << opened.error().message;
+    auto &master = master_of(**opened);
+    EXPECT_TRUE(master.shared_parts().empty());
+
+    auto *first_chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    ASSERT_NE(first_chord, nullptr);
+    Tuplet *inner = first_chord->tuplet();
+    ASSERT_NE(inner, nullptr);
+    Tuplet *outer = inner->tuplet();
+    ASSERT_NE(outer, nullptr);
+    ASSERT_EQ(outer->elements().size(), 3u);
+    ASSERT_EQ(inner->elements().size(), 3u);
+
+    const std::vector<DurationElement *> expected_outer = outer->elements();
+    const std::vector<DurationElement *> expected_inner = inner->elements();
+#ifdef NDEBUG
+    for (DurationElement *el : expected_outer) {
+        outer->add(el);
+    }
+    inner->add(first_chord);
+    EXPECT_EQ(outer->elements(), expected_outer);
+    EXPECT_EQ(inner->elements(), expected_inner);
+#else
+    EXPECT_DEATH(outer->add(expected_outer[0]), "contains");
+    EXPECT_DEATH(inner->add(first_chord), "contains");
+    EXPECT_EQ(outer->elements(), expected_outer);
+    EXPECT_EQ(inner->elements(), expected_inner);
+#endif
+}
+
 TEST(Read, NormalizeRepairsGraceTieTicksAfterMeasureInsertion) {
     using namespace mu::engraving;
     auto document = open_path(write470_fixture());
