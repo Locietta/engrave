@@ -73,11 +73,13 @@ private:
     static std::optional<SharedTrackMap> compute_track_map(const TrackGroup &origin_tracks, StaveSharingContext &ctx);
 
     static bool same_instrument(track_idx_t prev_track, track_idx_t next_track, const Fraction &tick, StaveSharingContext &ctx);
-    static bool same_jianpu_numbering(track_idx_t prev_track, track_idx_t next_track, const Fraction &tick, const StaveSharingContext &ctx);
+    static bool same_jianpu_numbering(track_idx_t prev_track, track_idx_t next_track, const Fraction &tick, const StaveSharingContext &ctx,
+                                      const Staff *destination = nullptr);
 
     static bool is_unison(track_idx_t prev_track, track_idx_t next_track, StaveSharingContext &ctx);
     static bool can_go_to_same_voice(track_idx_t prev_track, track_idx_t next_track, StaveSharingContext &ctx,
-                                     const TrackGroup &cur_track_group, std::unordered_set<Note *> &local_unison_notes);
+                                     const TrackGroup &cur_track_group, std::unordered_set<Note *> &local_unison_notes,
+                                     const Staff *destination = nullptr);
 
     static bool check_segment_for_same_voice(Segment *segment, track_idx_t prev_track, track_idx_t next_track);
     static bool check_clef_key_time_sig_for_same_voice(Segment *segment, track_idx_t prev_track, track_idx_t next_track);

@@ -316,8 +316,7 @@ Segment *MMRestLayout::copy_elements(const Segment *source, Measure *measure, co
 // MMRs are chosen before stave sharing can expose music on the shared or origin staves.
 static bool staff_contributes_to_mm_rest(const Staff *staff) {
     const auto *shared = staff->part()->shared_part();
-    return staff->layout_show() ||
-           (shared && shared->show() && std::ranges::any_of(shared->staves(), [](const Staff *s) { return s->visible(); }));
+    return staff->layout_show() || (shared && shared->layout_show() && shared->layout_visible_staves_count() > 0);
 }
 
 bool MMRestLayout::valid_mm_rest_measure(const LayoutContext &ctx, const Measure *m) {
@@ -416,7 +415,7 @@ bool MMRestLayout::break_mmr_for_element(Measure *measure, Measure *prev_measure
             }
         }
         for (size_t staff_idx = 0; staff_idx < ctx.dom().nstaves(); ++staff_idx) {
-            if (!ctx.dom().staff(staff_idx)->layout_show()) {
+            if (!staff_contributes_to_mm_rest(ctx.dom().staff(staff_idx))) {
                 continue;
             }
             EngravingItem *e = s->element(staff_idx * ::mu::engraving::voices);
@@ -456,7 +455,7 @@ bool MMRestLayout::break_mmr_for_element(Measure *measure, Measure *prev_measure
     // Break for breaths and annotations found mid-way into the previous measure
     for (Segment *s = prev_measure->first(); s; s = s->next()) {
         for (size_t staff_idx = 0; staff_idx < ctx.dom().nstaves(); ++staff_idx) {
-            if (!ctx.dom().staff(staff_idx)->layout_show()) {
+            if (!staff_contributes_to_mm_rest(ctx.dom().staff(staff_idx))) {
                 continue;
             }
             EngravingItem *e = s->element(staff_idx * ::mu::engraving::voices);
@@ -502,7 +501,7 @@ bool MMRestLayout::break_mmr_for_element(Measure *measure, Measure *prev_measure
     // only if the element is on a visible staff
     auto has_visible_element = [&ctx](Segment *seg) -> bool {
         for (size_t staff_idx = 0; staff_idx < ctx.dom().nstaves(); ++staff_idx) {
-            if (!ctx.dom().staff(staff_idx)->layout_show()) {
+            if (!staff_contributes_to_mm_rest(ctx.dom().staff(staff_idx))) {
                 continue;
             }
             EngravingItem *e = seg->element(staff_idx * ::mu::engraving::voices);

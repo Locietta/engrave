@@ -2105,7 +2105,8 @@ void ChordLayout::layout_voice_offsets(System *system, staff_idx_t staff_idx, La
         for (EngravingItem *e : groups_by_voice[top_voice].front()) {
             next_baseline = std::min(next_baseline, baseline_top(e));
         }
-        const double voice_distance = ctx.conf().style_absolute(Sid::JIANPU_VOICE_VERTICAL_DISTANCE);
+        const double voice_distance =
+            ctx.conf().style_absolute(Sid::JIANPU_VOICE_VERTICAL_DISTANCE) * staff->staff_mag(jianpu_measures.front()->tick());
         double previous_below = 0.0;
         for (voice_idx_t voice = top_voice; voice < voice_count; ++voice) {
             if (!present(voice)) {
@@ -3567,7 +3568,8 @@ void ChordLayout::update_line_attach_points(Chord *chord, bool is_first_in_measu
     if (is_first_in_measure) {
         for (Note *note : chord->notes()) {
             Tie *tie_back = note->tie_back();
-            if (tie_back && (note->incoming_partial_tie() || tie_back->start_note()->find_measure() != note->find_measure())) {
+            if (tie_back && (note->incoming_partial_tie() ||
+                             (tie_back->start_note() && tie_back->start_note()->find_measure() != note->find_measure()))) {
                 SlurTieLayout::layout_tie_back(tie_back, note->find_measure()->system(), ctx);
             }
         }

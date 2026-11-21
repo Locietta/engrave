@@ -528,11 +528,22 @@ int pitch2_jianpu_octave(int pitch, int tpc, Key key, KeyMode mode) {
     return pitch2_jianpu_octave(pitch, tpc, key2_tpc(jianpu_valid_key(key)), mode);
 }
 
+static KeyMode canonical_jianpu_mode(KeyMode mode) {
+    switch (mode) {
+        case KeyMode::UNKNOWN:
+        case KeyMode::NONE:
+        case KeyMode::IONIAN: return KeyMode::MAJOR;
+        case KeyMode::AEOLIAN: return KeyMode::MINOR;
+        default: return mode;
+    }
+}
+
 JianpuKeyMapping jianpu_key_mapping(const KeySigEvent &ks) {
     if (ks.jianpu_numbering() == JianpuNumbering::CUSTOM) {
-        return {ks.jianpu_tonic_mode(), key2_tpc(jianpu_valid_key(ks.jianpu_tonic_key()))};
+        return {canonical_jianpu_mode(ks.jianpu_tonic_mode()), key2_tpc(jianpu_valid_key(ks.jianpu_tonic_key()))};
     }
-    return {ks.mode(), jianpu_tonic_tpc(ks.key(), ks.mode())};
+    const KeyMode mode = canonical_jianpu_mode(ks.mode());
+    return {mode, jianpu_tonic_tpc(ks.key(), mode)};
 }
 
 String jianpu_accidental_mark(const String &acc_name) {

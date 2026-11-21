@@ -258,7 +258,7 @@ bool StaveSharingLayout::is_valid(const SharedTrackMap &map, const TrackGroup &o
             }
             group.clear();
             unison_notes.clear();
-        } else if (!can_go_to_same_voice(group.back(), origin, ctx, group, unison_notes)) {
+        } else if (!can_go_to_same_voice(group.back(), origin, ctx, group, unison_notes, ctx.layout_ctx.dom().staff(track2staff(shared)))) {
             return false;
         }
         group.push_back(origin);
@@ -456,9 +456,12 @@ bool StaveSharingLayout::same_instrument(track_idx_t prev_track, track_idx_t nex
 // and the key in effect can come from before the range, so origins share a voice only where
 // their keys number the digits alike.
 bool StaveSharingLayout::same_jianpu_numbering(track_idx_t prev_track, track_idx_t next_track, const Fraction &tick,
-                                               const StaveSharingContext &ctx) {
+                                               const StaveSharingContext &ctx, const Staff *destination) {
     const std::vector<Staff *> &shared_staves = ctx.cur_shared_part->staves();
-    if (std::ranges::none_of(shared_staves, [&tick](const Staff *staff) { return staff->is_jianpu_staff(tick); })) {
+    const bool uses_jianpu = destination ?
+                                 destination->is_jianpu_staff(tick) :
+                                 std::ranges::any_of(shared_staves, [&tick](const Staff *staff) { return staff->is_jianpu_staff(tick); });
+    if (!uses_jianpu) {
         return true;
     }
     const Staff *prev_staff = ctx.layout_ctx.dom().staff(track2staff(prev_track));
@@ -565,7 +568,8 @@ bool StaveSharingLayout::is_unison(track_idx_t prev_track, track_idx_t next_trac
 }
 
 bool StaveSharingLayout::can_go_to_same_voice(track_idx_t prev_track, track_idx_t next_track, StaveSharingContext &ctx,
-                                              const TrackGroup &cur_track_group, std::unordered_set<Note *> &local_unison_notes) {
+                                              const TrackGroup &cur_track_group, std::unordered_set<Note *> &local_unison_notes,
+                                              const Staff *destination) {
     std::vector<Note *> potential_unison_notes;
 
     for (Segment *segment : ctx.segments_in_range(ctx.cr_segments)) {
@@ -594,7 +598,7 @@ bool StaveSharingLayout::can_go_to_same_voice(track_idx_t prev_track, track_idx_
             continue;
         }
 
-        if (!same_jianpu_numbering(prev_track, next_track, segment->tick(), ctx)) {
+        if (!same_jianpu_numbering(prev_track, next_track, segment->tick(), ctx, destination)) {
             return false;
         }
 
@@ -2039,14 +2043,15 @@ void StaveSharingLayout::cleanup(StaveSharingContext &ctx) {
 }
 
 void StaveSharingLayout::add_measure_rests_if_need(StaveSharingContext &ctx) {
-    Measure *start_meas = ctx.segments_to_update.front()->measure();
-    Measure *end_meas = ctx.segments_to_update.back()->measure();
-
     TrackRange track_range = ctx.cur_shared_part->track_range();
     staff_idx_t start_staff = track2staff(track_range.start_track);
     staff_idx_t end_staff = track2staff(track_range.end_track);
 
-    for (Measure *measure = start_meas; measure && measure->is_before_or_equal(end_meas); measure = measure->next_measure()) {
+    Measure *prev = nullptr;
+    for (Segment *segment : ctx.segments_to_update) {
+        Measure *measure = segment->measure();
+        if (measure == prev) continue;
+        prev = measure;
         for (staff_idx_t staff_idx = start_staff; staff_idx < end_staff; ++staff_idx) {
             if (!measure->is_rendered_empty(staff_idx)) {
                 continue;
@@ -2068,7 +2073,6 @@ void StaveSharingLayout::add_measure_rests_if_need(StaveSharingContext &ctx) {
 }
 
 void StaveSharingLayout::fill_rests_if_need(StaveSharingContext &ctx) {
-    if (ctx.cr_segments_to_update.empty()) return;
     const auto range = ctx.cur_shared_part->track_range();
     for (track_idx_t track = range.start_track; track < range.end_track; track += ::mu::engraving::voices) {
         const Staff *staff = ctx.score->staff(track2staff(track));
@@ -2088,9 +2092,11 @@ void StaveSharingLayout::fill_rests_if_need(StaveSharingContext &ctx) {
             }
         };
 
-        auto *first = ctx.cr_segments_to_update.front()->measure();
-        auto *last = ctx.cr_segments_to_update.back()->measure();
-        for (Measure *measure = first; measure; measure = measure->next_measure()) {
+        Measure *prev = nullptr;
+        for (Segment *updated : ctx.cr_segments_to_update) {
+            Measure *measure = updated->measure();
+            if (measure == prev) continue;
+            prev = measure;
             Fraction filled_until = measure->tick();
             ChordRest *previous = nullptr;
             for (auto *segment = measure->rendered_first(); segment;) {
@@ -2111,7 +2117,6 @@ void StaveSharingLayout::fill_rests_if_need(StaveSharingContext &ctx) {
                 segment = next;
             }
             if (filled_until < measure->end_tick()) fill(measure, filled_until, measure->end_tick());
-            if (measure == last) break;
         }
     }
 }
@@ -2127,15 +2132,12 @@ StaveSharingLayout::StaveSharingContext::StaveSharingContext(MeasureBase *first,
                                                              bool display_measures)
     : layout_ctx(ctx), style(ctx.conf().style()) {
     for (MeasureBase *mb = first; mb; mb = display_measures ? mb->next_mm() : mb->next()) {
-        if (!mb->is_measure()) {
-            continue;
-        }
-
-        for (Segment *rendered = to_measure(mb)->rendered_first(); rendered; rendered = rendered->rendered_next()) {
-            Segment &seg = *rendered;
-            all_segments.push_back(&seg);
-            if (seg.is_chord_rest_type()) {
-                cr_segments.push_back(&seg);
+        if (mb->is_measure()) {
+            for (Segment *rendered = to_measure(mb)->rendered_first(); rendered; rendered = rendered->rendered_next()) {
+                all_segments.push_back(rendered);
+                if (rendered->is_chord_rest_type()) {
+                    cr_segments.push_back(rendered);
+                }
             }
         }
 

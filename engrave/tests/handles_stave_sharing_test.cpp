@@ -2,6 +2,7 @@
 #include "engrave/src/score/score_semantic.h"
 #include "engraving/dom/dummyparent.h"
 #include "engraving/dom/jianpuoctavedot.h"
+#include "engraving/dom/keysig.h"
 #include "engraving/dom/repeatlist.h"
 #include "engraving/dom/stavesharingchange.h"
 #include "engraving/dom/systemlockindicator.h"
@@ -9,6 +10,7 @@
 #include "engraving/rendering/score/layoutcontext.h"
 #include "engraving/rendering/score/pagelayout.h"
 #include "engraving/rendering/score/scorepageviewlayout.h"
+#include "engraving/rendering/score/stavesharinglayout.h"
 #include "handles_test_fixture.h"
 
 using namespace handles_test;
@@ -183,6 +185,43 @@ TEST(StaveSharingOutput, SharedJianpuUnisonsKeepEachOriginsInheritedKey) {
             }
         }
         EXPECT_EQ(source_native(master), cold);
+    }
+}
+
+TEST(StaveSharingOutput, AuthoredUnisonChecksTheDestinationStaffsJianpuNumbering) {
+    using namespace mu::engraving;
+    for (const bool jianpu_destination : {false, true}) {
+        SCOPED_TRACE(jianpu_destination);
+        auto xml = read_text(g_source_root / "tests/data/inputs/stave-sharing.mscx");
+        constexpr std::string_view jianpu = R"(<StaffType group="jianpu"><name>jianpu</name><lines>0</lines></StaffType>)";
+        const std::string_view jianpu_staff = jianpu_destination ? "<eid>B_B</eid>" : "<eid>C_C</eid>";
+        xml.insert(xml.find(jianpu_staff) + jianpu_staff.size(), jianpu);
+        const auto origin = xml.find("<Staff id=\"3\">");
+        xml.insert(xml.find("<voice>", origin) + std::string_view("<voice>").size(),
+                   jianpu_destination ? "<KeySig><concertKey>0</concertKey><mode>major</mode></KeySig>" :
+                                        "<KeySig><concertKey>2</concertKey><mode>major</mode></KeySig>");
+        xml.insert(xml.find("</SharedPart>"),
+                   R"(<StaveSharingState tick="1/1"><trackMap origin="8" shared="0"/><trackMap origin="12" shared="0"/>)"
+                   R"(</StaveSharingState>)");
+        auto document = open_text(xml);
+        ASSERT_TRUE(document);
+        auto &master = master_of(*document);
+        const Fraction tick(1, 1);
+        EXPECT_EQ(master.staff(0)->is_jianpu_staff(tick), jianpu_destination);
+        EXPECT_EQ(master.staff(1)->is_jianpu_staff(tick), !jianpu_destination);
+        EXPECT_EQ(master.staff(2)->key(tick), jianpu_destination ? Key::C : Key::D);
+        EXPECT_EQ(master.staff(2)->key_sig_event(tick).mode(), KeyMode::MAJOR);
+        EXPECT_EQ(master.staff(3)->key_sig_event(tick).mode(), KeyMode::UNKNOWN);
+        ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+        const auto *state = master.shared_parts().front()->rendered_state_at_tick(tick);
+        ASSERT_NE(state, nullptr);
+        EXPECT_TRUE(state->is_user_map_valid);
+        auto *segment = master.tick2segment(tick, true, SegmentType::CHORD_REST);
+        ASSERT_NE(segment, nullptr);
+        const auto *shown = segment->effective_element(0);
+        ASSERT_TRUE(shown && shown->is_chord() && shown->is_layout_copy());
+        EXPECT_EQ(to_chord(shown)->up_note()->origin_items().size(), 2u);
+        if (jianpu_destination) EXPECT_EQ(to_chord(shown)->up_note()->jianpu_digit(), u"1");
     }
 }
 
@@ -637,6 +676,104 @@ TEST(StaveSharingOutput, OriginDynamicStartsANewMultiMeasureRestOnColdLayout) {
     ASSERT_NE(copy, annotations.end());
     EXPECT_EQ(to_dynamic(*copy)->dynamic_type(), DynamicType::F);
     EXPECT_GT((*copy)->width(), 0.0);
+}
+
+TEST(StaveSharingOutput, LocalKeyStartsANewMultiMeasureRestOnColdLayout) {
+    using namespace mu::engraving;
+    auto xml = read_text(g_source_root / "tests/data/inputs/stave-sharing-mmr.mscx");
+    constexpr std::string_view rest = "<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>";
+    for (int staff = 1; staff <= 4; ++staff) {
+        const auto staff_start = xml.find(std::format("<Staff id=\"{}\">", staff));
+        xml.insert(xml.find("</Staff>", staff_start), rest);
+        if (staff == 3) {
+            const auto second_voice = xml.find("<voice>", xml.find("</Measure>", staff_start)) + std::string_view("<voice>").size();
+            xml.insert(second_voice, "<KeySig><concertKey>2</concertKey></KeySig>");
+        }
+    }
+    xml.insert(xml.find("</SharedPart>"),
+               R"(<StaveSharingState tick="0/1"><trackMap origin="8" shared="0"/><trackMap origin="12" shared="4"/></StaveSharingState>)");
+    auto document = open_text(xml);
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    master.style().set(Sid::MIN_EMPTY_MEASURES, 2);
+    expect_no_layout(master);
+    ASSERT_FALSE(master.staff(2)->layout_show());
+    ASSERT_TRUE(master.staff(0)->layout_show());
+    auto *first = master.first_measure();
+    auto *second = first->next_measure();
+    ASSERT_EQ(master.staff(2)->key(second->tick()), Key::D);
+    ASSERT_EQ(master.staff(3)->key(second->tick()), Key::C);
+
+    ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+    EXPECT_EQ(first->covering_mm_rest_or_this(), first);
+    auto *display = second->mm_rest();
+    ASSERT_NE(display, nullptr);
+    EXPECT_EQ(display->mm_rest_count(), 2);
+    EXPECT_EQ(second->next_measure()->covering_mm_rest_or_this(), display);
+    const auto *segment = display->find_segment_r(SegmentType::KEY_SIG, Fraction(0, 1));
+    ASSERT_NE(segment, nullptr);
+    const auto *signature = segment->effective_element(0);
+    ASSERT_TRUE(signature && signature->is_key_sig());
+    EXPECT_EQ(to_key_sig(signature)->key(), Key::D);
+    EXPECT_GT(signature->width(), 0.0);
+}
+
+TEST(StaveSharingOutput, AuthoredRestsFollowTheDisplayedMeasureRange) {
+    using namespace mu::engraving;
+    auto xml = read_text(g_source_root / "tests/data/inputs/stave-sharing.mscx");
+    constexpr std::string_view rest = "<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>";
+    constexpr std::string_view break_rest = "<Measure><LayoutBreak><subtype>line</subtype></"
+                                            "LayoutBreak><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>";
+    for (int staff = 1; staff <= 4; ++staff) {
+        const auto staff_start = xml.find(std::format("<Staff id=\"{}\">", staff));
+        const auto first_end = xml.find("</Measure>", staff_start) + std::string_view("</Measure>").size();
+        xml.insert(first_end,
+                   std::format("{}{}{}", rest, staff == 1 ? break_rest : rest, staff == 1 ? "<HBox><width>5</width></HBox>" : ""));
+    }
+    xml.insert(xml.find("</SharedPart>"),
+               R"(<StaveSharingState tick="0/1"><trackMap origin="8" shared="0"/><trackMap origin="12" shared="4"/></StaveSharingState>)");
+    auto document = open_text(xml);
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    master.style().set(Sid::CREATE_MULTI_MEASURE_RESTS, true);
+    master.style().set(Sid::MIN_EMPTY_MEASURES, 2);
+    const auto cold = source_native(master);
+    ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+    auto *first = master.first_measure();
+    auto *second = first->next_measure();
+    auto *third = second->next_measure();
+    auto *later = third->next_measure();
+    auto *display = second->mm_rest();
+    ASSERT_NE(display, nullptr);
+    EXPECT_EQ(display->mm_rest_count(), 2);
+    EXPECT_EQ(display->system(), first->system());
+    EXPECT_NE(later->system(), display->system());
+    for (auto *hidden : {second, third}) {
+        const auto *segment = hidden->first(SegmentType::CHORD_REST);
+        ASSERT_NE(segment, nullptr);
+        EXPECT_EQ(segment->effective_element(0), segment->element(0));
+        EXPECT_EQ(segment->effective_element(4), segment->element(4));
+    }
+    const auto *display_rest = display->first(SegmentType::CHORD_REST)->effective_element(0);
+    ASSERT_TRUE(display_rest && display_rest->is_mm_rest());
+    EXPECT_GT(display_rest->width(), 0.0);
+    const auto *later_chord = later->first(SegmentType::CHORD_REST)->effective_element(0);
+    ASSERT_TRUE(later_chord && later_chord->is_chord());
+    EXPECT_EQ(to_chord(later_chord)->up_note()->pitch(), 72);
+    EXPECT_EQ(source_native(master), cold);
+
+    auto *box = display->next_mm();
+    ASSERT_TRUE(box && box->type() == ElementType::HBOX);
+    ASSERT_EQ(box->next_mm(), later);
+    auto *part = master.shared_parts().front();
+    const SharedTrackMap initial_map{{8, 0}, {12, 4}};
+    EXPECT_EQ(part->track_map_at_tick(later->tick()), initial_map);
+    part->set_authored_state(later->tick(), {.user_track_map = {{8, 4}, {12, 0}}});
+    using namespace mu::engraving::rendering::score;
+    LayoutContext ctx(&master);
+    StaveSharingLayout::update_stave_sharing_for_full_system(first, box, ctx, true);
+    EXPECT_EQ(part->track_map_at_tick(later->tick()), initial_map);
+    EXPECT_EQ(later->first(SegmentType::CHORD_REST)->effective_element(0), later_chord);
 }
 
 TEST(StaveSharingOutput, EditedUnisonRangeMatchesFullLayout) {
