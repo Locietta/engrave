@@ -2079,8 +2079,9 @@ void ChordLayout::layout_voice_offsets(System *system, staff_idx_t staff_idx, La
     for (Segment *segment : shifted_segments) {
         segment->create_shape(staff_idx);
     }
-} //---------------------------------------------------------
+}
 
+//---------------------------------------------------------
 //   layoutSegmentElements
 //---------------------------------------------------------
 
