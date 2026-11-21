@@ -2144,7 +2144,7 @@ void SystemLayout::layout2(System *system, LayoutContext &ctx) {
     for (size_t i = 0; i < system->staves().size(); ++i) {
         const Staff *s = ctx.dom().staff(i);
         SysStaff *ss = system->staves().at(i);
-        if (s->show() && ss->show()) {
+        if (s->layout_show() && ss->show()) {
             visible_staves.push_back(std::pair<size_t, SysStaff *>(i, ss));
         } else {
             ss->setbbox(RectF()); // already done in layout() ?

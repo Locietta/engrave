@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <span>
+
 #include "layoutcontext.h"
 
 namespace mu::engraving {
@@ -34,7 +36,7 @@ namespace mu::engraving::rendering::score {
 struct PageLayout {
 
     static void get_next_page(LayoutContext &ctx);
-    static void collect_page(LayoutContext &ctx);
+    static void collect_page(LayoutContext &ctx, std::span<System *const> *fitted_systems = nullptr);
     static void repair_shared_spanners(LayoutContext &ctx);
 
 private:

@@ -4,6 +4,7 @@
 #include "engraving/dom/linkedobjects.h"
 #include "engraving/dom/noteline.h"
 #include "engraving/dom/range.h"
+#include "engraving/dom/tie.h"
 #include "engraving/editing/edittimesig.h"
 #include "read_test_fixture.h"
 
@@ -1829,13 +1830,19 @@ TEST(Read, TimeSigRewriteUsesLinkedNoteIdentityAcrossTabOrder) {
 
 TEST(Read, TimeSigRewriteRestoresExcerptOnlyGraceBeforeItsLine) {
     using namespace mu::engraving;
-    auto opened = g_engine->open(as_bytes(note_line_rewrite_xml));
+    std::string xml(note_line_rewrite_xml);
+    for (const auto original : {std::string_view("<pitch>60</pitch><tpc>14</tpc>"), std::string_view("<pitch>71</pitch><tpc>19</tpc>")}) {
+        xml.replace(xml.find(original), original.size(), "<pitch>61</pitch><tpc>21</tpc>");
+    }
+    auto opened = g_engine->open(as_bytes(xml));
     ASSERT_TRUE(opened) << opened.error().message;
     auto &document = **opened;
     auto &master = master_of(document);
     ASSERT_TRUE(document.edit({{engrave::GenerateExcerpts{{engrave::from_engine(master.parts().front()->eid())}}}}));
     ASSERT_EQ(master.excerpts().size(), 1u);
     auto *excerpt = master.excerpts().front()->excerpt_score();
+    auto *outside = chord_at(*excerpt, Fraction(2, 1))->up_note();
+    const auto outside_handle = master.eid_register()->enroll(*outside);
     {
         Command cmd(master);
         auto *main = chord_at(*excerpt, Fraction(1, 4));
@@ -1853,6 +1860,16 @@ TEST(Read, TimeSigRewriteRestoresExcerptOnlyGraceBeforeItsLine) {
         auto *line = Factory::create_note_line(note);
         line->set_note_span(note, chord_at(*excerpt, Fraction(1, 2))->up_note());
         excerpt->undo_add_element(line, false);
+        auto add_tie = [&](Note *start, Note *end) {
+            auto *tie = Factory::create_tie(start);
+            tie->set_start_note(start);
+            tie->set_end_note(end);
+            tie->set_track(start->track());
+            tie->set_track2(end->track());
+            excerpt->do_undo_add_element(tie);
+        };
+        add_tie(chord_at(*excerpt, Fraction(0, 1))->up_note(), note);
+        add_tie(note, outside);
         cmd.commit();
     }
     engrave::assign_missing_ids(master);
@@ -1871,6 +1888,18 @@ TEST(Read, TimeSigRewriteRestoresExcerptOnlyGraceBeforeItsLine) {
         EXPECT_EQ(graces.front()->up_note()->pitch(), 61);
         EXPECT_EQ(lines.front()->end_element(), chord_at(*excerpt, Fraction(1, 2))->up_note());
         EXPECT_EQ(lines.front()->links(), nullptr);
+        auto *grace_note = graces.front()->up_note();
+        auto *before = chord_at(*excerpt, Fraction(0, 1))->up_note();
+        auto *after = chord_at(*excerpt, excerpt->last_measure()->tick())->up_note();
+        EXPECT_EQ(master.eid_register()->item_from_handle(outside_handle), after);
+        ASSERT_NE(grace_note->tie_back(), nullptr);
+        ASSERT_NE(grace_note->tie_for(), nullptr);
+        EXPECT_EQ(before->tie_for(), grace_note->tie_back());
+        EXPECT_EQ(after->tie_back(), grace_note->tie_for());
+        EXPECT_EQ(grace_note->tie_back()->start_note(), before);
+        EXPECT_EQ(grace_note->tie_back()->end_note(), grace_note);
+        EXPECT_EQ(grace_note->tie_for()->start_note(), grace_note);
+        EXPECT_EQ(grace_note->tie_for()->end_note(), after);
     }
 }
 

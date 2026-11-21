@@ -237,7 +237,7 @@ constexpr LegacyZ legacy_z[] = {
     {ElementType::TAPPING_TEXT, 151},
     {ElementType::JIANPU_OCTAVE_DOT, 152},
     {ElementType::JIANPU_DURATION_LINE, 153},
-    {ElementType::STAVE_SHARING_CHANGE, 152},
+    {ElementType::STAVE_SHARING_CHANGE, 154},
     {ElementType::ROOT_ITEM, 152},
     {ElementType::DUMMY, 153},
 };

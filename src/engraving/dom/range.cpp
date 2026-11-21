@@ -825,6 +825,12 @@ bool ScoreRange::make_note_endpoint_ref(Note *note, NoteEndpointRef &out) {
         if (existing == local_graces_.end()) {
             auto *backup = chord->clone();
             backup->move_to_dummy();
+            for (auto *copy_note : backup->notes()) {
+                if (auto *tie = copy_note->tie_for_non_partial()) {
+                    copy_note->remove(tie);
+                    delete tie;
+                }
+            }
             local_graces_.push_back({chord, out.range_chord, out.staff, backup});
         }
         primary_note = note;
@@ -926,6 +932,30 @@ void ScoreRange::backup_note_spanners(const Fraction &stick, const Fraction &eti
             }
         }
     }
+
+    ankerl::unordered_dense::set<Tie *> seen_ties;
+    std::vector<Tie *> ties_to_remove;
+    // Resolving the other endpoint can discover another excerpt-only grace.
+    for (size_t i = 0; i < local_graces_.size(); ++i) {
+        for (auto *note : local_graces_[i].source->notes()) {
+            for (auto *tie : {note->tie_back_non_partial(), note->tie_for_non_partial()}) {
+                if (!tie || !seen_ties.insert(tie).second) continue;
+                LocalGraceTieBackup backup;
+                if (!make_note_endpoint_ref(tie->start_note(), backup.start) || !make_note_endpoint_ref(tie->end_note(), backup.end)) {
+                    continue;
+                }
+                backup.tie = tie->clone();
+                backup.tie->set_start_note(nullptr);
+                backup.tie->set_end_note(nullptr);
+                backup.tie->move_to_dummy();
+                local_grace_ties_.push_back(backup);
+                ties_to_remove.push_back(tie);
+            }
+        }
+    }
+    // The generic rewrite reconnects ties by pitch. Remove these before it
+    // can attach an external endpoint to a regular chord of the same pitch.
+    for (auto *tie : ties_to_remove) tie->score()->do_undo_remove_element(tie);
 }
 
 void ScoreRange::restore_note_spanners(Score *score, const TrackList::WrittenChordMap &written_chords) const {
@@ -997,6 +1027,23 @@ void ScoreRange::restore_note_spanners(Score *score, const TrackList::WrittenCho
         return (note->chord() && note->find_measure()) ? note : nullptr;
     };
 
+    for (const auto &backup : local_grace_ties_) {
+        auto *start = resolve_endpoint(backup.start, false);
+        auto *end = resolve_endpoint(backup.end, true);
+        if (!start || !end || start == end || start->score() != end->score() || end->tick() < start->tick() || start->tie_for() ||
+            end->tie_back()) {
+            continue;
+        }
+        auto *tie = backup.tie->clone();
+        tie->set_start_note(start);
+        tie->set_end_note(end);
+        tie->set_track(start->track());
+        tie->set_track2(end->track());
+        tie->set_tick(start->tick());
+        tie->set_ticks(end->tick() - start->tick());
+        start->score()->do_undo_add_element(tie);
+    }
+
     // The originals went with the measures the range was read from (Score::undo_remove_measures).
     for (const NoteSpannerBackup &group : note_spanners_) {
         Spanner *first_restored = nullptr;
@@ -1029,6 +1076,8 @@ void ScoreRange::delete_note_spanners() {
     note_spanners_.clear();
     for (const auto &backup : local_graces_) delete backup.grace;
     local_graces_.clear();
+    for (const auto &backup : local_grace_ties_) delete backup.tie;
+    local_grace_ties_.clear();
 }
 
 //---------------------------------------------------------

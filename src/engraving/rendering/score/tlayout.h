@@ -367,6 +367,7 @@ struct TLayout {
 private:
 
     friend struct SlurTieLayout;
+    friend struct PageLayout;
 
     static void layout_figured_bass_item(const FiguredBassItem *item, FiguredBassItem::LayoutData *ldata, const LayoutContext &ctx);
 

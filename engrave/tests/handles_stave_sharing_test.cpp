@@ -1064,6 +1064,18 @@ TEST(StaveSharingOutput, LateIncompatibleSystemRetiresOutputAndPreservesSourceQu
             EXPECT_EQ(system->staff(0)->show(), !suspended);
             EXPECT_EQ(system->staff(track2staff(upper_track))->show(), suspended);
             EXPECT_EQ(system->staff(track2staff(lower_track))->show(), suspended);
+            EXPECT_GT(system->height(), 0.0);
+            const auto &upper_box = system->staff(track2staff(upper_track))->bbox();
+            const auto &lower_box = system->staff(track2staff(lower_track))->bbox();
+            if (suspended) {
+                EXPECT_GT(upper_box.height(), 0.0);
+                EXPECT_GT(lower_box.height(), 0.0);
+                EXPECT_GT(lower_box.top(), upper_box.bottom());
+            } else {
+                EXPECT_GT(system->staff(0)->bbox().height(), 0.0);
+                EXPECT_TRUE(upper_box.is_empty());
+                EXPECT_TRUE(lower_box.is_empty());
+            }
             if (!suspended) continue;
             for (auto *segment = measure->first(); segment; segment = segment->next()) {
                 EXPECT_TRUE(segment->ldata()->display_copies.empty());
@@ -1127,6 +1139,13 @@ TEST(StaveSharingOutput, LateSlurSplitPublishesSegmentsOnAllThreePages) {
         slur->set_tick2(end->tick());
         master.add_element(slur);
         slur->assign_new_eid();
+        for (uint32_t i = 0; i < 3; ++i) {
+            slur->authored_overrides.set({{AuthoredChildRole::SPANNER_SEGMENT, i},
+                                          Pid::SLUR_UOFF1,
+                                          PointF(0.25 * (i + 1), 0.0),
+                                          PropertyFlags::NOSTYLE,
+                                          AuthoredOverrideUnit::SPATIUM});
+        }
         return slur;
     };
     auto *upper = make_slur(8);
@@ -1141,10 +1160,16 @@ TEST(StaveSharingOutput, LateSlurSplitPublishesSegmentsOnAllThreePages) {
         ASSERT_NE(a, b);
         for (const auto *copy : {a, b}) {
             ASSERT_EQ(copy->nsegments(), 3u);
-            for (auto *measure : {first, second, third}) {
-                const auto it = std::ranges::find(copy->spanner_segments(), measure->system(), &SpannerSegment::system);
-                ASSERT_NE(it, copy->spanner_segments().end());
-                EXPECT_GT((*it)->ldata()->bbox().width(), 0.0);
+            const std::array measures{first, second, third};
+            for (size_t i = 0; i < measures.size(); ++i) {
+                auto *segment = to_slur_segment(copy->spanner_segments()[i]);
+                EXPECT_EQ(segment->system(), measures[i]->system());
+                EXPECT_EQ(segment->authored_child.ordinal, i);
+                EXPECT_GT(segment->ldata()->bbox().width(), 0.0);
+                EXPECT_NEAR(segment->ups(Grip::START).off.x(), 0.25 * (i + 1) * segment->spatium(), 1e-6);
+                const auto &path = segment->ldata()->path();
+                ASSERT_FALSE(path.is_empty());
+                EXPECT_NEAR(path.element_at(0).x, segment->ups(Grip::START).pos().x(), 1e-6);
             }
         }
         master.invalidate_layout(third->tick(), third->end_tick());
@@ -1155,6 +1180,16 @@ TEST(StaveSharingOutput, LateHairpinAssignmentRelayoutsEarlierSegment) {
     using namespace mu::engraving;
     auto xml = read_text(g_source_root / "tests/data/inputs/stave-sharing.mscx");
     xml.insert(xml.find("<voice>"), "<LayoutBreak><subtype>page</subtype></LayoutBreak>");
+    xml.insert(xml.find("</Style>"), "<hairpinHeight>16</hairpinHeight>");
+    xml.insert(xml.find("<Staff id=\"1\">"), R"(<Part><Staff/><Instrument id="flute"><trackName>Flute</trackName>
+<instrumentId>wind.flutes.flute</instrumentId></Instrument></Part>)");
+    xml.insert(xml.find("</Score>"), R"(<Staff id="5">
+<Measure><voice>
+<Chord><durationType>half</durationType><Note><pitch>84</pitch><tpc>14</tpc></Note></Chord>
+<Chord><durationType>half</durationType><Note><pitch>84</pitch><tpc>14</tpc></Note></Chord>
+</voice></Measure>
+<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>
+</Staff>)");
     auto document = open_text(xml);
     ASSERT_TRUE(document);
     auto &master = master_of(*document);
@@ -1189,6 +1224,15 @@ TEST(StaveSharingOutput, LateHairpinAssignmentRelayoutsEarlierSegment) {
             EXPECT_GT(segment->ldata()->bbox().width(), 0.0);
             if (staff_wide) {
                 EXPECT_GT(segment->pos().y(), 0.0);
+                if (segment->system() == first->system()) {
+                    const auto *lower_staff = first->system()->staff(4);
+                    ASSERT_TRUE(lower_staff->show());
+                    const auto bounds = segment->ldata()->bbox().translated(segment->pos());
+                    EXPECT_LT(bounds.bottom(), lower_staff->bbox().top());
+                    const auto *nearby_note = to_chord(start->element(staff2track(4)))->up_note();
+                    EXPECT_LT(segment->page_pos().y() + segment->ldata()->bbox().bottom(),
+                              nearby_note->page_pos().y() + nearby_note->ldata()->bbox().top());
+                }
             } else {
                 EXPECT_LT(segment->pos().y(), 0.0);
             }

@@ -216,6 +216,12 @@ private:
         Chord *grace = nullptr;
     };
 
+    struct LocalGraceTieBackup {
+        Tie *tie = nullptr;
+        NoteEndpointRef start;
+        NoteEndpointRef end;
+    };
+
     void record_read_chord(const Chord *src, const Chord *dst);
     bool can_absorb_continuation(const Chord *range_chord, const Chord *continuation) const;
     bool make_note_endpoint_ref(Note *note, NoteEndpointRef &out);
@@ -234,6 +240,7 @@ private:
     ankerl::unordered_dense::set<const Chord *> line_anchor_chords_;
     std::vector<NoteSpannerBackup> note_spanners_;
     std::vector<LocalGraceBackup> local_graces_;
+    std::vector<LocalGraceTieBackup> local_grace_ties_;
     Segment *first_ = nullptr;
     Segment *last_ = nullptr;
 };

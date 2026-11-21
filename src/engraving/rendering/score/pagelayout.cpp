@@ -116,7 +116,7 @@ void PageLayout::get_next_page(LayoutContext &ctx) {
 //   collectPage
 //---------------------------------------------------------
 
-void PageLayout::collect_page(LayoutContext &ctx) {
+void PageLayout::collect_page(LayoutContext &ctx, std::span<System *const> *fitted_systems) {
 
     Page *page = ctx.mut_state().page();
     const LayoutConfiguration &conf = ctx.conf();
@@ -223,7 +223,14 @@ void PageLayout::collect_page(LayoutContext &ctx) {
         //  check for page break or if next system will fit on page
         //
         bool collected = false;
-        if (ctx.state().range_done()) {
+        if (fitted_systems) {
+            if (!fitted_systems->empty()) {
+                next_system = fitted_systems->front();
+                *fitted_systems = fitted_systems->subspan(1);
+            } else {
+                next_system = nullptr;
+            }
+        } else if (ctx.state().range_done()) {
             // take next system unchanged
             if (system_idx > 0) {
                 next_system = muse::value(ctx.mut_dom().systems(), system_idx++);
@@ -488,7 +495,7 @@ void PageLayout::layout_cross_staff_slurs(LayoutContext &ctx, System *system) {
 
 void PageLayout::repair_shared_spanners(LayoutContext &ctx) {
     auto &store = ctx.mut_layout_data();
-    std::vector<Page *> changed_pages;
+    bool refit = false;
     for (auto *span : store.score_output().shared_spanners) {
         if (!span->is_slur() && !span->is_hairpin()) continue;
 
@@ -499,8 +506,8 @@ void PageLayout::repair_shared_spanners(LayoutContext &ctx) {
             placement = hairpin->placement();
         }
 
-        std::vector<std::pair<System *, SpannerSegment *>> covered;
-        bool missing = false;
+        std::vector<System *> covered;
+        bool stale = false;
         Fraction end = span->tick2();
         for (auto *system : ctx.dom().systems()) {
             const auto *first = system->first_measure();
@@ -513,41 +520,65 @@ void PageLayout::repair_shared_spanners(LayoutContext &ctx) {
             const auto &segments = span->spanner_segments();
             const auto existing = std::ranges::find(segments, system, &SpannerSegment::system);
             auto *segment = existing == segments.end() ? nullptr : *existing;
-            missing |= !segment;
-            covered.emplace_back(system, segment);
+            stale |= !segment || segment->authored_child.ordinal != covered.size() || (placement && segment->placement() != *placement);
+            covered.push_back(system);
         }
-        const auto needs_layout = [&](SpannerSegment *segment) {
-            return !segment || (span->is_slur() && missing) || (placement && segment->placement() != *placement);
-        };
-        for (const auto &[system, previous] : covered) {
-            if (previous && needs_layout(previous)) store.retire_spanner_borrowers(*previous);
+        auto &segments = span->mutldata()->segments;
+        for (auto *segment : segments) {
+            if (!segment->system() || std::ranges::contains(covered, segment->system())) continue;
+            store.retire_spanner_borrowers(*segment);
+            segment->move_to_system(nullptr);
+            stale = true;
         }
-        // A split can be discovered after its first page has already been
-        // finalized. Lay out from the start so the later slur segments use
-        // the direction computed from the first anchor.
-        for (const auto &[system, previous] : covered) {
-            if (!needs_layout(previous)) continue;
-            auto *segment = TLayout::layout_system(span, system, ctx);
-            if (segment->add_to_skyline() && segment->effective_staff_idx() != muse::nidx) {
-                system->staff(segment->effective_staff_idx())->skyline().add(segment->shape().translate(segment->pos()));
-            }
-            if (auto *page = system->page(); page && !std::ranges::contains(changed_pages, page)) changed_pages.push_back(page);
-        }
-        if (missing) {
-            auto &segments = span->mutldata()->segments;
-            std::ranges::stable_sort(segments, {}, [](auto *segment) {
-                const auto *system = segment->system();
-                return system ? system->first_measure()->tick() : Fraction::max();
+        if (!stale) continue;
+        refit = true;
+
+        // Reserve every segment before any curve is computed: a segment on
+        // the last page may already occupy the first ordinal.
+        for (auto *system : covered) {
+            TLayout::get_next_layout_system_segment(span, system, [span]() -> SpannerSegment * {
+                return span->is_slur() ? static_cast<SpannerSegment *>(to_slur(span)->new_slur_tie_segment()) :
+                                         to_hairpin(span)->create_line_segment();
             });
-            for (size_t i = 0; i < segments.size(); ++i) {
-                set_layout_child_key(*segments[i], {AuthoredChildRole::SPANNER_SEGMENT, static_cast<uint32_t>(i)});
-            }
         }
+        std::ranges::stable_sort(segments, {}, [](auto *segment) {
+            const auto *system = segment->system();
+            return system ? system->first_measure()->tick() : Fraction::max();
+        });
     }
-    for (auto *page : changed_pages) {
-        for (auto *system : page->systems()) SystemLayout::center_elements_between_staves(system);
-        MaskLayout::compute_masks(ctx, page);
+    if (!refit) return;
+
+    // Shared output is final now. Rebuild the skylines in normal stacking
+    // order, then fit the existing systems to pages using their new heights.
+    LayoutContext fit(ctx.mut_dom().score());
+    auto &state = fit.mut_state();
+    const auto &systems = fit.dom().systems();
+    state.set_tick(systems.back()->end_tick());
+    state.set_end_tick(state.tick());
+    for (auto *system : systems) {
+        if (system->first_measure()) SystemLayout::layout_system_elements(system, fit);
+        SystemLayout::layout2(system, fit);
+    }
+
+    auto &pages = fit.mut_dom().pages();
+    for (auto *page : pages) {
+        page->systems().clear();
         page->invalidate_bsp_tree();
+    }
+    state.set_page(pages.front());
+    state.set_cur_system(systems.front());
+    auto pending = std::span<System *const>(systems).subspan(1);
+    while (state.cur_system()) {
+        get_next_page(fit);
+        collect_page(fit, &pending);
+    }
+    while (pages.size() > state.page_idx()) {
+        auto *unused = pages.back();
+        pages.pop_back();
+        delete unused;
+    }
+    if (state.must_recompute_headers_footers()) {
+        for (auto *page : pages) HeaderFooterLayout::layout_header_footer(fit, page);
     }
 }
 
