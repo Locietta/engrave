@@ -1552,8 +1552,10 @@ void Chord::remove_markings(bool keep_tremolo) {
         span_arpeggio_ = nullptr;
     }
 
-    muse::delete_all(grace_notes_);
+    // Detach before deleting: the source registry reads each grace chord it is told about.
+    const std::vector<Chord *> graces = grace_notes_;
     remove_all_grace_notes();
+    muse::delete_all(graces);
     muse::delete_all(articulations());
     articulations().clear();
     for (Note *n : notes()) {
