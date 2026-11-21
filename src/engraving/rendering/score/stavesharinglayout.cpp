@@ -143,8 +143,9 @@ void connect_output(EngravingItem *shared, EngravingItem *origin) {
 }
 } // namespace
 
-bool StaveSharingLayout::update_stave_sharing_for_full_system(MeasureBase *first_mb, MeasureBase *last_mb, LayoutContext &ctx) {
-    StaveSharingContext ssctx(first_mb, last_mb, ctx);
+bool StaveSharingLayout::update_stave_sharing_for_full_system(MeasureBase *first_mb, MeasureBase *last_mb, LayoutContext &ctx,
+                                                              bool display_measures) {
+    StaveSharingContext ssctx(first_mb, last_mb, ctx, display_measures);
     if (ssctx.cr_segments.empty()) return false;
 
     ssctx.update_for_last_added = false;
@@ -157,7 +158,7 @@ bool StaveSharingLayout::update_stave_sharing_for_last_added_measure(System *sys
         return false;
     }
 
-    StaveSharingContext ssctx(system->first(), system->last(), ctx);
+    StaveSharingContext ssctx(system->first(), system->last(), ctx, true);
     if (ssctx.cr_segments.empty()) {
         return false;
     }
@@ -172,12 +173,11 @@ bool StaveSharingLayout::update_stave_sharing_for_last_added_measure(System *sys
 
 void StaveSharingLayout::relayout_measures_on_track_map_changed(System *system, LayoutContext &ctx) {
     SystemHeaderLayout::update_system_header_width(system, ctx);
-    for (MeasureBase *mb = system->first(); mb; mb = mb->next()) {
+    for (MeasureBase *mb : system->measures()) {
         if (mb->is_measure()) {
             to_measure(mb)->mutldata()->set_need_layout(true);
             MeasureLayout::layout_measure(mb, ctx);
         }
-        if (mb == system->last()) break;
     }
 }
 
@@ -2123,9 +2123,10 @@ std::span<Segment *const> StaveSharingLayout::StaveSharingContext::segments_in_r
     return {first, std::lower_bound(first, segments.end(), e_tick, by_tick)};
 }
 
-StaveSharingLayout::StaveSharingContext::StaveSharingContext(MeasureBase *first, MeasureBase *last, LayoutContext &ctx)
+StaveSharingLayout::StaveSharingContext::StaveSharingContext(MeasureBase *first, MeasureBase *last, LayoutContext &ctx,
+                                                             bool display_measures)
     : layout_ctx(ctx), style(ctx.conf().style()) {
-    for (MeasureBase *mb = first; mb; mb = mb->next()) {
+    for (MeasureBase *mb = first; mb; mb = display_measures ? mb->next_mm() : mb->next()) {
         if (!mb->is_measure()) {
             continue;
         }

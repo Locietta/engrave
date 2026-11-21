@@ -29,7 +29,8 @@
 
 namespace mu::engraving::rendering::score {
 struct StaveSharingLayout {
-    static bool update_stave_sharing_for_full_system(MeasureBase *first_mb, MeasureBase *last_mb, LayoutContext &ctx);
+    static bool update_stave_sharing_for_full_system(MeasureBase *first_mb, MeasureBase *last_mb, LayoutContext &ctx,
+                                                     bool display_measures);
     static void relayout_measures_on_track_map_changed(System *system, LayoutContext &ctx);
     static bool update_stave_sharing_for_last_added_measure(System *system, LayoutContext &ctx);
     static void update_notation_without_recomputing_track_map(Measure *measure, LayoutContext &ctx);
@@ -58,7 +59,7 @@ private:
         LayoutContext &layout_ctx;
         const MStyle &style;
 
-        StaveSharingContext(MeasureBase *first, MeasureBase *last, LayoutContext &ctx);
+        StaveSharingContext(MeasureBase *first, MeasureBase *last, LayoutContext &ctx, bool display_measures = false);
         std::span<Segment *const> segments_in_range(std::span<Segment *const> segments) const;
         const SharedTrackMap &map_at_tick(const Fraction &tick) const;
         void collect_overlapping_spanners();

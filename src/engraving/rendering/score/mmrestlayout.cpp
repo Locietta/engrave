@@ -21,6 +21,8 @@
  */
 #include "mmrestlayout.h"
 
+#include <algorithm>
+
 #include "dom/barline.h"
 #include "dom/factory.h"
 #include "dom/layoutbreak.h"
@@ -311,21 +313,21 @@ Segment *MMRestLayout::copy_elements(const Segment *source, Measure *measure, co
     return display;
 }
 
+// MMRs are chosen before stave sharing can expose music on the shared or origin staves.
+static bool staff_contributes_to_mm_rest(const Staff *staff) {
+    const auto *shared = staff->part()->shared_part();
+    return staff->layout_show() ||
+           (shared && shared->show() && std::ranges::any_of(shared->staves(), [](const Staff *s) { return s->visible(); }));
+}
+
 bool MMRestLayout::valid_mm_rest_measure(const LayoutContext &ctx, const Measure *m) {
     if (m->exclude_from_numbering()) {
         return false;
     }
 
-    // MMRs are chosen before stave sharing can expose its music on either the shared or origin staves.
-    const auto check_staff = [&ctx](staff_idx_t staff_idx) {
-        const auto *staff = ctx.dom().staff(staff_idx);
-        const auto *shared = staff->part()->shared_part();
-        return staff->layout_show() || (shared && shared->enabled());
-    };
-
     const size_t nstaves = ctx.dom().nstaves();
     for (staff_idx_t staff_idx = 0; staff_idx < nstaves; ++staff_idx) {
-        if (check_staff(staff_idx) && m->is_measure_repeat_group(staff_idx)) {
+        if (staff_contributes_to_mm_rest(ctx.dom().staff(staff_idx)) && m->is_measure_repeat_group(staff_idx)) {
             return false;
         }
     }
@@ -333,7 +335,7 @@ bool MMRestLayout::valid_mm_rest_measure(const LayoutContext &ctx, const Measure
     int n = 0;
     for (const Segment *s = m->first(); s; s = s->next()) {
         for (const EngravingItem *e : s->rendered_annotations()) {
-            if (e->staff_idx() >= nstaves || !e->staff()->layout_show() || !e->visible()) {
+            if (e->staff_idx() >= nstaves || !staff_contributes_to_mm_rest(e->staff()) || !e->visible()) {
                 continue;
             }
             if (muse::contains(::break_types, e->type()) && !s->rtick().is_zero()) {
@@ -349,7 +351,7 @@ bool MMRestLayout::valid_mm_rest_measure(const LayoutContext &ctx, const Measure
         }
         bool rest_found = false;
         for (track_idx_t track = 0; track < tracks; ++track) {
-            if ((track % ::mu::engraving::voices) == 0 && !check_staff(track2staff(track))) {
+            if ((track % ::mu::engraving::voices) == 0 && !staff_contributes_to_mm_rest(ctx.dom().staff(track2staff(track)))) {
                 track += ::mu::engraving::voices - 1;
                 continue;
             }
@@ -387,7 +389,7 @@ bool MMRestLayout::break_mmr_for_element(Measure *measure, Measure *prev_measure
         if (muse::contains(::always_break_types, e->type())) {
             return true;
         }
-        bool break_for_element = e->system_flag() || e->staff()->layout_show();
+        bool break_for_element = e->system_flag() || (e->staff_idx() < ctx.dom().nstaves() && staff_contributes_to_mm_rest(e->staff()));
         if (muse::contains(::conditional_break_types, e->type()) && break_for_element) {
             return true;
         }

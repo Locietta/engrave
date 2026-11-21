@@ -149,7 +149,7 @@ System *SystemLayout::collect_system(LayoutContext &ctx) {
             nullptr;
 
     if (system_lock) {
-        StaveSharingLayout::update_stave_sharing_for_full_system(system_lock->start_mb(), system_lock->end_mb(), ctx);
+        StaveSharingLayout::update_stave_sharing_for_full_system(system_lock->start_mb(), system_lock->end_mb(), ctx, false);
     }
 
     while (ctx.state().cur_measure()) { // collect measure for system
@@ -254,7 +254,7 @@ System *SystemLayout::collect_system(LayoutContext &ctx) {
 
             if (shared_track_map_changed) {
                 // The last added measure caused sharedTrackMap to change. Now we are removing that measure so we must restore it.
-                if (StaveSharingLayout::update_stave_sharing_for_full_system(system->first(), system->last(), ctx)) {
+                if (StaveSharingLayout::update_stave_sharing_for_full_system(system->first(), system->last(), ctx, true)) {
                     StaveSharingLayout::relayout_measures_on_track_map_changed(system, ctx);
                 }
             }
