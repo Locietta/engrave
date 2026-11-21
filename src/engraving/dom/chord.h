@@ -281,11 +281,9 @@ public:
 
     ChordLine *chord_line() const;
 
-    bool ends_note_anchored_line() const { return ends_note_anchored_line_; }
-
-    void set_ends_note_anchored_line(bool val) { ends_note_anchored_line_ = val; }
-
-    void update_ends_note_anchored_line();
+    // Whether a glissando, guitar bend, or minimum-length note line ends on one of
+    // this chord's notes. Derived on demand so no spanner_back edit can leave it stale.
+    bool ends_note_anchored_line() const;
 
     StemSlash *stem_slash() const { return has_layout_data() ? ldata()->stem_slash : nullptr; }
 
@@ -518,9 +516,8 @@ private:
     TremoloTwoChord *tremolo_two_chord_ = nullptr;
     TremoloSingleChord *tremolo_single_chord_ = nullptr;
 
-    bool ends_note_anchored_line_ = false; // true if this chord is the ending point of a glissando (needed for layout)
-    std::vector<Chord *> grace_notes_;     // storage for all grace notes
-    size_t grace_index_ = 0;               // if this is a grace note, index in parent list
+    std::vector<Chord *> grace_notes_; // storage for all grace notes
+    size_t grace_index_ = 0;           // if this is a grace note, index in parent list
 
     bool is_trill_cue_note_ = false;
 

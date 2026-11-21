@@ -241,7 +241,6 @@ Chord::Chord(DummyParentOr<Segment> parent) : ChordRest(ElementType::CHORD, pare
     stem_direction_ = DirectionV::AUTO;
     arpeggio_ = 0;
     span_arpeggio_ = 0;
-    ends_note_anchored_line_ = false;
     note_type_ = NoteType::NORMAL;
     no_stem_ = false;
     show_stem_slash_ = note_type_ == NoteType::ACCIACCATURA;
@@ -280,7 +279,6 @@ Chord::Chord(const Chord &c, bool link) : ChordRest(c, link) {
         na->set_track(track());
         articulations_.push_back(na);
     }
-    ends_note_anchored_line_ = false;
     arpeggio_ = 0;
 
     span_arpeggio_ = c.span_arpeggio_;
@@ -563,7 +561,6 @@ void Chord::add(EngravingItem *e) {
         case ElementType::CHORD_BRACKET: add_el(e); break;
         case ElementType::TREMOLO_TWOCHORD: set_tremolo_two_chord(item_cast<TremoloTwoChord *>(e)); break;
         case ElementType::TREMOLO_SINGLECHORD: set_tremolo_single_chord(item_cast<TremoloSingleChord *>(e)); break;
-        case ElementType::GLISSANDO: ends_note_anchored_line_ = true; break;
         case ElementType::CHORDLINE: add_el(e); break;
         case ElementType::CHORD: {
             Chord *gc = to_chord(e);
@@ -639,7 +636,6 @@ void Chord::remove(EngravingItem *e) {
         case ElementType::CHORD_BRACKET: remove_el(e); break;
         case ElementType::TREMOLO_TWOCHORD: set_tremolo_two_chord(nullptr); break;
         case ElementType::TREMOLO_SINGLECHORD: set_tremolo_single_chord(nullptr); break;
-        case ElementType::GLISSANDO: ends_note_anchored_line_ = false; break;
         case ElementType::CHORDLINE: remove_el(e); break;
         case ElementType::CHORD: {
             auto i = std::find(grace_notes_.begin(), grace_notes_.end(), to_chord(e));
@@ -1523,20 +1519,15 @@ void Chord::set_slash(bool flag, bool stemless) {
     }
 }
 
-//    sets/resets the chord endsNoteAnchoredLine_ according any note anchored line
-//    end into this chord or no.
-
-void Chord::update_ends_note_anchored_line() {
-    ends_note_anchored_line_ = false; // assume no note anchored line ends here
-    // scan all chord notes for note anchored lines ending on this chord
-    for (Note *note : notes()) {
-        for (Spanner *sp : note->spanner_back()) {
-            if (sp->is_glissando() || (sp->is_note_line() && to_note_line(sp)->enforce_min_length())) {
-                ends_note_anchored_line_ = true;
-                return;
+bool Chord::ends_note_anchored_line() const {
+    for (const Note *note : notes_) {
+        for (const Spanner *sp : note->spanner_back()) {
+            if (sp->is_glissando() || sp->is_guitar_bend() || (sp->is_note_line() && to_note_line(sp)->enforce_min_length())) {
+                return true;
             }
         }
     }
+    return false;
 }
 
 //    - this is normally called after cloning a chord to tie a note over the barline

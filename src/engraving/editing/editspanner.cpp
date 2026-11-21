@@ -97,9 +97,6 @@ void mu::engraving::apply_change_spanner_elements(Spanner *spanner, EngravingIte
                 old_end_note->remove_spanner_back(spanner);
                 new_start_note->add_spanner_for(spanner);
                 new_end_note->add_spanner_back(spanner);
-                if (spanner->is_glissando()) {
-                    old_end_note->chord()->update_ends_note_anchored_line();
-                }
             }
         }
     } else {

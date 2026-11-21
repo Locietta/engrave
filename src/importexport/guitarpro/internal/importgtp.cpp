@@ -661,42 +661,36 @@ void GuitarPro::read_lyrics() {
 void GuitarPro::create_slide(int sl, ChordRest *cr, int staff_idx, [[maybe_unused]] Note *note) {
     // shift / legato slide
     if (sl == ::mu::iex::guitarpro::GuitarPro::shift_slide || sl == ::mu::iex::guitarpro::GuitarPro::legato_slide) {
-        Glissando *s = mu::engraving::Factory::create_glissando(cr);
-        //s->setXmlText("");
-        s->set_glissando_type(GlissandoType::STRAIGHT);
-        cr->add(s);
         Segment *prev_seg = cr->segment()->prev1(SegmentType::CHORD_REST);
-        EngravingItem *prev_elem = prev_seg->element(staff_idx);
-        if (prev_elem) {
-            if (prev_elem->is_chord()) {
-                Chord *prev_chord = to_chord(prev_elem);
-                /** TODO we should not just take the top note here
-                * but the /correct/ note need to check whether GP
-                * supports multi-note gliss. I think it can in modern
-                * versions */
-                s->set_start_element(prev_chord->up_note());
-                s->set_tick(prev_seg->tick());
-                s->set_track(staff_idx);
-                s->set_ownership_parent(prev_chord->up_note());
-                s->set_text(u"");
-                s->set_glissando_type(GlissandoType::STRAIGHT);
-                s->set_glissando_shift(sl == ::mu::iex::guitarpro::GuitarPro::shift_slide);
-                s->set_glissando_style(s->part()->instrument(s->tick())->glissando_style());
+        EngravingItem *prev_elem = prev_seg ? prev_seg->element(cr->track()) : nullptr;
+        if (prev_elem && prev_elem->is_chord()) {
+            Chord *prev_chord = to_chord(prev_elem);
+            Chord *chord = to_chord(cr);
+            /** TODO we should not just take the top notes here
+            * but the /correct/ notes need to check whether GP
+            * supports multi-note gliss. I think it can in modern
+            * versions */
+            Note *start_note = prev_chord->up_note();
+            Note *end_note = chord->up_note();
 
-                if (sl == ::mu::iex::guitarpro::GuitarPro::legato_slide) {
-                    create_slur(true, staff_idx, prev_chord);
-                }
+            Glissando *s = mu::engraving::Factory::create_glissando(start_note);
+            s->set_start_element(start_note);
+            s->set_tick(prev_seg->tick());
+            s->set_track(start_note->track());
+            s->set_end_element(end_note);
+            s->set_tick2(chord->segment()->tick());
+            s->set_track2(end_note->track());
+            s->set_text(u"");
+            s->set_glissando_type(GlissandoType::STRAIGHT);
+            s->set_glissando_shift(sl == ::mu::iex::guitarpro::GuitarPro::shift_slide);
+            s->set_glissando_style(s->part()->instrument(s->tick())->glissando_style());
+            score->add_element(s);
+
+            if (sl == ::mu::iex::guitarpro::GuitarPro::legato_slide) {
+                create_slur(true, staff_idx, prev_chord);
             }
         }
 
-        Chord *chord = (Chord *) cr;
-        /* TODO again here, we should not just set the up note but the
-         * /correct/ note need to check whether GP supports
-         * multi-note gliss. I think it can in modern versions */
-        s->set_end_element(chord->up_note());
-        s->set_tick2(chord->segment()->tick());
-        s->set_track2(staff_idx);
-        score->add_element(s);
         if (sl == ::mu::iex::guitarpro::GuitarPro::legato_slide) {
             create_slur(false, staff_idx, cr);
         }
@@ -1830,7 +1824,6 @@ GuitarPro::ReadNoteResult GuitarPro1::read_note(int string, Note *note) {
                 //note->setSlideNote(gn);
                 Glissando *glis = new Glissando(gn);
                 glis->set_glissando_type(GlissandoType::STRAIGHT);
-                gn->chord()->add(glis);
                 glis->set_start_element(gn);
                 glis->set_tick(gn->chord()->tick());
                 glis->set_track(gn->track());

@@ -1095,10 +1095,6 @@ void Note::add_spanner(Spanner *l) {
     if (e && e->is_note()) {
         Note *note = to_note(e);
         note->add_spanner_back(l);
-        bool is_note_anchored_text_line = l->is_note_line() && to_note_line(l)->enforce_min_length();
-        if (l->is_glissando() || l->is_guitar_bend() || is_note_anchored_text_line) {
-            note->chord()->set_ends_note_anchored_line(true);
-        }
     }
     add_spanner_for(l);
 }
@@ -1109,9 +1105,6 @@ void Note::remove_spanner(Spanner *l) {
         if (!e->remove_spanner_back(l)) {
             LOGD("Note::removeSpanner(%p): cannot remove spannerBack %s %p", this, l->type_name(), l);
             // abort();
-        }
-        if (l->is_glissando()) {
-            e->chord()->update_ends_note_anchored_line();
         }
     }
     if (!remove_spanner_for(l)) {

@@ -69,7 +69,7 @@ public:
 
     void reset() override;
 
-    bool enforce_min_length() { return line_end_placement_ != NoteLineEndPlacement::LEFT_EDGE; }
+    bool enforce_min_length() const { return line_end_placement_ != NoteLineEndPlacement::LEFT_EDGE; }
 
 protected:
     Sid default_pos_sid() const override;

@@ -375,11 +375,6 @@ void ConnectorInfoReader::read_add_connector(Note *item, ConnectorInfoReader *in
                         tie->update_possible_jump_points();
                     }
                 } else {
-                    bool is_note_anchored_text_line = sp->is_note_line() && to_note_line(sp)->enforce_min_length();
-                    if ((sp->is_glissando() || sp->is_guitar_bend() || is_note_anchored_text_line) && item->ownership_parent() &&
-                        item->ownership_parent()->is_chord()) {
-                        to_chord(item->ownership_parent())->set_ends_note_anchored_line(true);
-                    }
                     item->add_spanner_back(sp);
                 }
 

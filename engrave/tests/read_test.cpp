@@ -855,7 +855,6 @@ TEST(Read, NormalizeResolvesInstrumentDependentGlissandoStyleWithoutLayout) {
         EXPECT_TRUE(document.page_count());
         EXPECT_EQ(line->glissando_style(), style);
         start->remove(line.get());
-        end->chord()->update_ends_note_anchored_line();
     }
 }
 
@@ -948,7 +947,9 @@ TEST(Read, NormalizeRepairsNoteOwnedLinesAfterMeasureInsertion) {
             default: FAIL();
         }
         line->set_note_span(start, end);
+        EXPECT_FALSE(end->chord()->ends_note_anchored_line());
         start->add(line.get());
+        EXPECT_TRUE(end->chord()->ends_note_anchored_line());
         EXPECT_TRUE(master.spanner_map().empty());
         const Fraction old_tick = start->tick();
         master.start_cmd(muse::TranslatableString::untranslatable("insert before note-owned line"));
@@ -961,9 +962,61 @@ TEST(Read, NormalizeRepairsNoteOwnedLinesAfterMeasureInsertion) {
         EXPECT_FALSE(line->has_layout_data());
         EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
         start->remove(line.get());
-        end->chord()->update_ends_note_anchored_line();
+        EXPECT_FALSE(end->chord()->ends_note_anchored_line());
         master.end_cmd(false);
     }
+}
+
+// The 4.60 reader used to set the end-chord flag itself; the 5.00 reader never did.
+TEST(Read, NoteAnchoredLineEndsMatchAcrossLegacyReadAndNativeReadback) {
+    using namespace mu::engraving;
+    const auto chord = [](int pitch, int tpc, std::string_view spanners) {
+        return std::format("<Chord><durationType>16th</durationType><Note>{}<pitch>{}</pitch><tpc>{}</tpc></Note></Chord>", spanners, pitch,
+                           tpc);
+    };
+    const auto start = [](std::string_view type) {
+        return std::format("<Spanner type=\"{0}\"><{0}/><next><location><fractions>1/16</fractions></location></next></Spanner>", type);
+    };
+    const auto end = [](std::string_view type) {
+        return std::format("<Spanner type=\"{}\"><prev><location><fractions>-1/16</fractions></location></prev></Spanner>", type);
+    };
+    const auto score = [&](bool lines) {
+        const auto line = [&](std::string_view part) { return lines ? std::string(part) : std::string(); };
+        return std::format("<museScore version=\"4.60\"><Score><Division>480</Division><Part><Staff id=\"1\"/>"
+                           "<Instrument id=\"piano\"><trackName>Piano</trackName><instrumentId>keyboard.piano</instrumentId>"
+                           "</Instrument></Part><Staff id=\"1\"><Measure><voice><TimeSig><sigN>1</sigN><sigD>4</sigD></TimeSig>"
+                           "{}{}{}{}</voice></Measure></Staff></Score></museScore>",
+                           chord(60, 14, line(start("Glissando"))), chord(64, 18, line(end("Glissando") + start("GuitarBend"))),
+                           chord(66, 20, line(end("GuitarBend") + start("NoteLine"))), chord(67, 15, line(end("NoteLine"))));
+    };
+    const auto flags = [](engrave::Document &document) {
+        std::vector<bool> result;
+        for (auto *segment = master_of(document).first_measure()->first(SegmentType::CHORD_REST); segment;
+             segment = segment->next(SegmentType::CHORD_REST))
+            result.push_back(to_chord(segment->element(0))->ends_note_anchored_line());
+        return result;
+    };
+    const auto segment_x = [](engrave::Document &document) {
+        auto positions = document.positions(engrave::PositionKind::SEGMENT);
+        EXPECT_TRUE(positions) << positions.error().message;
+        std::vector<double> result;
+        if (positions)
+            for (const auto &element : positions->elements) result.push_back(element.x);
+        return result;
+    };
+    auto plain = g_engine->open(as_bytes(score(false)));
+    ASSERT_TRUE(plain);
+    auto legacy = g_engine->open(as_bytes(score(true)));
+    ASSERT_TRUE(legacy);
+    EXPECT_EQ(flags(**legacy), (std::vector<bool>{false, true, true, true}));
+    const auto legacy_x = segment_x(**legacy);
+    EXPECT_NE(legacy_x, segment_x(**plain));
+    auto saved = (*legacy)->export_score({.format = engrave::Format::MSCX});
+    ASSERT_TRUE(saved) << saved.error().message;
+    auto readback = g_engine->open(*saved);
+    ASSERT_TRUE(readback);
+    EXPECT_EQ(flags(**readback), (std::vector<bool>{false, true, true, true}));
+    EXPECT_EQ(segment_x(**readback), legacy_x);
 }
 
 TEST(Read, NormalizeRepairsGraceTieTicksAfterMeasureInsertion) {
