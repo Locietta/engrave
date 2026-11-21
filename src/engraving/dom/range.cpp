@@ -782,83 +782,73 @@ bool ScoreRange::can_absorb_continuation(const Chord *range_chord, const Chord *
     return !has_grace_notes_in_links(*continuation) && !anchors_note_line(*continuation) && !line_anchor_chords_.contains(range_chord);
 }
 
-bool ScoreRange::make_note_endpoint_ref(Note *note, NoteEndpointRef &out) const {
-    if (!note) {
-        return false;
-    }
-    Chord *chord = note->chord();
-    if (!chord || !chord->staff()) {
-        return false;
-    }
-    const auto &notes = chord->notes();
-    auto note_it = std::find(notes.begin(), notes.end(), note);
-    if (note_it == notes.end()) {
-        return false;
-    }
+bool ScoreRange::NoteEndpointRef::matches(const Note &note) const {
+    return note.pitch() == pitch && note.string() == string && note.tpc1() == tpc1 && note.tpc2() == tpc2;
+}
 
-    const bool is_grace = chord->is_grace();
-    const Chord *main_chord =
-        is_grace ? (chord->ownership_parent() && chord->ownership_parent()->is_chord() ? to_chord(chord->ownership_parent()) : nullptr) :
-                   chord;
-    if (!main_chord) {
-        return false;
-    }
+bool ScoreRange::make_note_endpoint_ref(Note *note, NoteEndpointRef &out) {
+    if (!note || !note->chord() || !note->staff()) return false;
+    const auto *chord = note->chord();
+    const auto *main = chord->is_grace() ? to_chord(chord->ownership_parent()) : chord;
+    if (!main) return false;
 
-    size_t grace_index = 0;
-    if (is_grace) {
-        const auto &graces = main_chord->grace_notes();
-        auto grace_it = std::find(graces.begin(), graces.end(), chord);
-        if (grace_it == graces.end()) {
-            return false;
-        }
-        grace_index = static_cast<size_t>(std::distance(graces.begin(), grace_it));
-    }
-
-    const Chord *range_chord = nullptr;
-    if (auto it = read_chords_.find(main_chord); it != read_chords_.end()) {
-        range_chord = it->second;
-    } else if (main_chord->links()) {
-        for (const EngravingObject *linked : *main_chord->links()) {
-            if (!linked || !linked->is_chord()) {
-                continue;
-            }
-            if (auto linked_it = read_chords_.find(to_chord(linked)); linked_it != read_chords_.end()) {
-                range_chord = linked_it->second;
+    const Chord *primary = main;
+    auto range = read_chords_.find(main);
+    if (range == read_chords_.end() && main->links()) {
+        for (auto *linked : *main->links()) {
+            if (!linked || !linked->is_chord()) continue;
+            range = read_chords_.find(to_chord(linked));
+            if (range != read_chords_.end()) {
+                primary = range->first;
                 break;
             }
         }
     }
 
-    EIDRegister *registry = note->master_score()->eid_register();
-    if (range_chord) {
-        out.range_chord = range_chord;
-        out.staff = registry->enroll(*chord->staff());
-        out.is_grace = is_grace;
-        out.grace_index = grace_index;
-        out.note_index = static_cast<size_t>(std::distance(notes.begin(), note_it));
-        out.external_note = {};
-        return out.staff.is_valid();
+    auto &registry = *note->master_score()->eid_register();
+    if (range == read_chords_.end()) {
+        out.external_note = registry.enroll(*note);
+        return out.external_note.is_valid();
     }
 
-    out.range_chord = nullptr;
-    out.staff = {};
-    out.is_grace = false;
-    out.grace_index = 0;
-    out.note_index = 0;
-    out.external_note = registry->enroll(*note);
-    return out.external_note.is_valid();
+    out.range_chord = range->second;
+    out.staff = registry.enroll(*chord->staff());
+    out.is_grace = chord->is_grace();
+    const Note *primary_note = main == primary ? note : to_note(note->find_linked_in_staff(primary->staff()));
+    if (!primary_note) {
+        if (!out.is_grace || chord->find_linked_in_staff(primary->staff())) return false;
+
+        // clone_staff2 only copies graces from the primary staff. Save a local
+        // grace once even when several lines use it.
+        const auto existing = std::ranges::find(local_graces_, chord, &LocalGraceBackup::source);
+        out.local_grace = static_cast<size_t>(existing - local_graces_.begin());
+        if (existing == local_graces_.end()) {
+            auto *backup = chord->clone();
+            backup->move_to_dummy();
+            local_graces_.push_back({chord, out.range_chord, out.staff, backup});
+        }
+        primary_note = note;
+    } else if (out.is_grace) {
+        const auto &graces = primary->grace_notes();
+        const auto grace = std::ranges::find(graces, primary_note->chord());
+        if (grace == graces.end()) return false;
+        out.grace_index = static_cast<size_t>(grace - graces.begin());
+    }
+
+    out.pitch = primary_note->pitch();
+    out.string = primary_note->string();
+    out.tpc1 = primary_note->tpc1();
+    out.tpc2 = primary_note->tpc2();
+    for (const auto *candidate : primary_note->chord()->notes()) {
+        if (candidate == primary_note) return out.staff.is_valid();
+        if (out.matches(*candidate)) ++out.note_ordinal;
+    }
+    return false;
 }
 
 void ScoreRange::backup_note_spanners(const Fraction &stick, const Fraction &etick) {
     Score *score = first_->score();
     const std::vector<staff_idx_t> unique_staves = score->unique_staves();
-    ankerl::unordered_dense::set<const Staff *> primary_staves;
-    for (staff_idx_t staff_idx : unique_staves) {
-        if (const Staff *primary = score->staff(staff_idx)) {
-            primary_staves.insert(primary);
-        }
-    }
-
     ankerl::unordered_dense::set<const EngravingObject *> seen;
     auto collect_from_chord = [&](const Chord *chord) {
         for (Note *note : chord->notes()) {
@@ -868,7 +858,6 @@ void ScoreRange::backup_note_spanners(const Fraction &stick, const Fraction &eti
                         continue;
                     }
                     NoteSpannerBackup group;
-                    group.was_linked = sp->links() && sp->links()->size() > 1;
                     for (EngravingObject *link_obj : sp->link_list()) {
                         seen.insert(link_obj);
                         if (!link_obj || !link_obj->is_engraving_item() || !to_engraving_item(link_obj)->is_spanner()) {
@@ -894,7 +883,6 @@ void ScoreRange::backup_note_spanners(const Fraction &stick, const Fraction &eti
                         copy.spanner->set_start_element(nullptr);
                         copy.spanner->set_end_element(nullptr);
                         copy.single_note = (start_note == end_note);
-                        copy.on_primary_staff = primary_staves.contains(start_note->staff()) && primary_staves.contains(end_note->staff());
                         group.copies.push_back(copy);
                     }
                     if (!group.copies.empty()) {
@@ -948,40 +936,53 @@ void ScoreRange::restore_note_spanners(Score *score, const TrackList::WrittenCho
         valid_scores.insert(linked_score);
     }
 
+    const auto resolve_staff = [&](SourceHandle handle) -> Staff * {
+        auto *staff_obj = registry->item_from_handle(handle);
+        if (!staff_obj || !staff_obj->is_staff()) return nullptr;
+        auto *staff = to_staff(staff_obj);
+        const auto *staff_score = staff->score();
+        return staff_score && valid_scores.contains(staff_score) && muse::contains(staff_score->staves(), staff) ? staff : nullptr;
+    };
+
+    std::vector<Chord *> restored_graces(local_graces_.size());
+    std::vector<size_t> grace_order;
+    for (size_t i = 0; i < local_graces_.size(); ++i) grace_order.push_back(i);
+    std::ranges::stable_sort(grace_order, {}, [&](size_t i) { return local_graces_[i].grace->grace_index(); });
+    for (size_t i : grace_order) {
+        const auto &backup = local_graces_[i];
+        auto *staff = resolve_staff(backup.staff);
+        const auto written = written_chords.find(backup.range_chord);
+        if (!staff || written == written_chords.end() || !written->second.first) continue;
+        auto *main = to_chord(written->second.first->find_linked_in_staff(staff));
+        if (!main) continue;
+        auto *grace = backup.grace->clone();
+        grace->set_ownership_parent(main);
+        grace->set_track(main->track());
+        grace->set_grace_index(std::min(backup.grace->grace_index(), main->grace_notes().size()));
+        staff->score()->do_undo_add_element(grace);
+        restored_graces[i] = grace;
+    }
+
     auto resolve_endpoint = [&](const NoteEndpointRef &ref, bool use_first_part) -> Note * {
         if (ref.range_chord) {
-            EngravingObject *staff_obj = registry->item_from_handle(ref.staff);
-            if (!staff_obj || !staff_obj->is_staff()) {
-                return nullptr;
+            auto *staff = resolve_staff(ref.staff);
+            if (!staff) return nullptr;
+            const auto written = written_chords.find(ref.range_chord);
+            if (written == written_chords.end()) return nullptr;
+            Chord *anchor = (use_first_part || ref.is_grace) ? written->second.first : written->second.last;
+            if (ref.local_grace) {
+                anchor = restored_graces[*ref.local_grace];
+            } else if (anchor && ref.is_grace) {
+                anchor = ref.grace_index < anchor->grace_notes().size() ? anchor->grace_notes()[ref.grace_index] : nullptr;
             }
-            Staff *target_staff = to_staff(staff_obj);
-            Score *target_score = target_staff->score();
-            if (!target_score || !valid_scores.contains(target_score) || !muse::contains(target_score->staves(), target_staff)) {
-                return nullptr;
-            }
-            auto it = written_chords.find(ref.range_chord);
-            if (it == written_chords.end()) {
-                return nullptr;
-            }
-            Chord *primary_target = (use_first_part || ref.is_grace) ? it->second.first : it->second.last;
-            if (!primary_target) {
-                return nullptr;
-            }
-            Chord *target =
-                primary_target->staff() == target_staff ? primary_target : to_chord(primary_target->find_linked_in_staff(target_staff));
-            if (!target) {
-                return nullptr;
-            }
-            if (ref.is_grace) {
-                if (ref.grace_index >= target->grace_notes().size()) {
-                    return nullptr;
+            if (!anchor) return nullptr;
+            size_t ordinal = 0;
+            for (auto *note : anchor->notes()) {
+                if (ref.matches(*note) && ordinal++ == ref.note_ordinal) {
+                    return note->staff() == staff ? note : to_note(note->find_linked_in_staff(staff));
                 }
-                target = target->grace_notes()[ref.grace_index];
             }
-            if (ref.note_index >= target->notes().size()) {
-                return nullptr;
-            }
-            return target->notes()[ref.note_index];
+            return nullptr;
         }
 
         EngravingObject *obj = registry->item_from_handle(ref.external_note);
@@ -1009,10 +1010,6 @@ void ScoreRange::restore_note_spanners(Score *score, const TrackList::WrittenCho
             Score *target_score = new_start->score();
             Spanner *nsp = clone_note_spanner(*copy.spanner);
             nsp->set_note_span(new_start, new_end);
-            if (!group.was_linked && copy.on_primary_staff && !nsp->exclude_from_other_parts()) {
-                target_score->undo_add_element(nsp);
-                continue;
-            }
             if (first_restored) {
                 target_score->apply_link(nsp, first_restored);
             } else {
@@ -1030,6 +1027,8 @@ void ScoreRange::delete_note_spanners() {
         }
     }
     note_spanners_.clear();
+    for (const auto &backup : local_graces_) delete backup.grace;
+    local_graces_.clear();
 }
 
 //---------------------------------------------------------

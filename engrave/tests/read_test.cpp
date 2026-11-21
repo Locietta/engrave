@@ -1737,6 +1737,143 @@ TEST(Read, TimeSigRewritePreservesNonPrimaryLinkedStaffNoteLines) {
     ASSERT_TRUE(document.export_score({.format = engrave::Format::MSCX}));
 }
 
+TEST(Read, TimeSigRewriteKeepsPrimaryNoteLineUnlinked) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(as_bytes(note_line_rewrite_xml));
+    ASSERT_TRUE(opened) << opened.error().message;
+    auto &document = **opened;
+    auto &master = master_of(document);
+    {
+        Command cmd(master);
+        Staff *staff = master.staff(0);
+        Staff *linked = Factory::create_staff(staff->part());
+        master.undo_insert_staff(linked, 1, false);
+        Excerpt::clone_staff(staff, linked);
+        cmd.commit();
+    }
+    ASSERT_TRUE(document.edit({{engrave::GenerateExcerpts{{engrave::from_engine(master.parts().front()->eid())}}}}));
+    ASSERT_EQ(master.excerpts().size(), 1u);
+    auto *excerpt = master.excerpts().front()->excerpt_score();
+    {
+        Command cmd(master);
+        auto *start = chord_at(master, Fraction(0, 1))->up_note();
+        auto *end = chord_at(master, Fraction(1, 4))->up_note();
+        auto *line = Factory::create_note_line(start);
+        line->set_note_span(start, end);
+        master.undo_add_element(line, false);
+        cmd.commit();
+    }
+    engrave::assign_missing_ids(master);
+
+    ASSERT_TRUE(document.edit({{engrave::SetTimeSig{engrave::from_engine(master.first_measure()->eid()), {3, 4}}}}));
+    const auto lines = live_note_lines(master);
+    ASSERT_EQ(lines.size(), 1u);
+    expect_line_on(lines.front(), 60, Fraction(0, 1), 62, Fraction(1, 4));
+    EXPECT_EQ(lines.front()->staff_idx(), 0u);
+    EXPECT_EQ(lines.front()->links(), nullptr);
+    EXPECT_TRUE(live_note_lines(*excerpt).empty());
+}
+
+TEST(Read, TimeSigRewriteUsesLinkedNoteIdentityAcrossTabOrder) {
+    using namespace mu::engraving;
+    std::string xml(note_line_rewrite_xml);
+    for (const auto &[pitch, tpc, added_pitch, added_tpc] : {std::array{60, 14, 64, 18}, std::array{62, 16, 65, 13}}) {
+        const auto needle = std::format("<Note><pitch>{}</pitch><tpc>{}</tpc></Note>", pitch, tpc);
+        xml.replace(xml.find(needle), needle.size(),
+                    std::format("<Note><pitch>{}</pitch><tpc>{}</tpc><string>1</string><fret>1</fret></Note>"
+                                "<Note><pitch>{}</pitch><tpc>{}</tpc><string>2</string><fret>9</fret></Note>",
+                                pitch, tpc, added_pitch, added_tpc));
+    }
+    auto opened = g_engine->open(as_bytes(xml));
+    ASSERT_TRUE(opened) << opened.error().message;
+    auto &document = **opened;
+    auto &master = master_of(document);
+    {
+        Command cmd(master);
+        auto *standard = master.staff(0);
+        auto *tab = Factory::create_staff(standard->part());
+        tab->set_staff_type(Fraction(0, 1), *StaffType::get_default_preset(StaffGroup::TAB));
+        master.undo_insert_staff(tab, 1, false);
+        Excerpt::clone_staff(standard, tab);
+        auto *start = chord_at(master, Fraction(0, 1))->notes().front();
+        auto *end = chord_at(master, Fraction(1, 4))->notes().front();
+        ASSERT_EQ(start->pitch(), 60);
+        ASSERT_EQ(end->pitch(), 62);
+        auto *tab_start = to_note(start->find_linked_in_staff(tab));
+        auto *tab_end = to_note(end->find_linked_in_staff(tab));
+        ASSERT_TRUE(tab_start && tab_end);
+        std::ranges::sort(tab_start->chord()->notes(), std::greater{}, &Note::string);
+        std::ranges::sort(tab_end->chord()->notes(), std::greater{}, &Note::string);
+        ASSERT_EQ(tab_start->chord()->notes().back(), tab_start);
+        ASSERT_EQ(tab_end->chord()->notes().back(), tab_end);
+        auto *line = Factory::create_note_line(start);
+        line->set_note_span(start, end);
+        master.undo_add_element(line);
+        cmd.commit();
+    }
+    engrave::assign_missing_ids(master);
+    ASSERT_EQ(live_note_lines(master).size(), 2u);
+
+    for (const engrave::Fraction meter : {engrave::Fraction{3, 4}, engrave::Fraction{4, 4}}) {
+        ASSERT_TRUE(document.edit({{engrave::SetTimeSig{engrave::from_engine(master.first_measure()->eid()), meter}}}));
+        auto lines = live_note_lines(master);
+        ASSERT_EQ(lines.size(), 2u);
+        if (lines.front()->staff_idx() != 0) std::swap(lines.front(), lines.back());
+        for (auto *line : lines) expect_line_on(line, 60, Fraction(0, 1), 62, Fraction(1, 4));
+        ASSERT_NE(lines.front()->links(), nullptr);
+        EXPECT_TRUE(lines.front()->links()->contains(lines.back()));
+        EXPECT_EQ(lines.front()->start_element()->find_linked_in_staff(master.staff(1)), lines.back()->start_element());
+        EXPECT_EQ(lines.front()->end_element()->find_linked_in_staff(master.staff(1)), lines.back()->end_element());
+    }
+}
+
+TEST(Read, TimeSigRewriteRestoresExcerptOnlyGraceBeforeItsLine) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(as_bytes(note_line_rewrite_xml));
+    ASSERT_TRUE(opened) << opened.error().message;
+    auto &document = **opened;
+    auto &master = master_of(document);
+    ASSERT_TRUE(document.edit({{engrave::GenerateExcerpts{{engrave::from_engine(master.parts().front()->eid())}}}}));
+    ASSERT_EQ(master.excerpts().size(), 1u);
+    auto *excerpt = master.excerpts().front()->excerpt_score();
+    {
+        Command cmd(master);
+        auto *main = chord_at(*excerpt, Fraction(1, 4));
+        auto *grace = Factory::create_chord(excerpt->dummy());
+        grace->set_ownership_parent(main);
+        grace->set_track(main->track());
+        grace->set_note_type(NoteType::ACCIACCATURA);
+        grace->set_duration_type(TDuration(DurationType::V_EIGHTH));
+        auto *note = Factory::create_note(grace);
+        note->set_pitch(61);
+        note->set_tpc1(21);
+        note->set_tpc2(21);
+        grace->add(note);
+        excerpt->undo_add_element(grace, false);
+        auto *line = Factory::create_note_line(note);
+        line->set_note_span(note, chord_at(*excerpt, Fraction(1, 2))->up_note());
+        excerpt->undo_add_element(line, false);
+        cmd.commit();
+    }
+    engrave::assign_missing_ids(master);
+
+    for (const engrave::Fraction meter : {engrave::Fraction{3, 4}, engrave::Fraction{4, 4}, engrave::Fraction{2, 4}}) {
+        ASSERT_TRUE(document.edit({{engrave::SetTimeSig{engrave::from_engine(master.first_measure()->eid()), meter}}}));
+        EXPECT_TRUE(live_note_lines(master).empty());
+        EXPECT_TRUE(chord_at(master, Fraction(1, 4))->grace_notes().empty());
+        const auto &graces = chord_at(*excerpt, Fraction(1, 4))->grace_notes();
+        ASSERT_EQ(graces.size(), 1u);
+        EXPECT_EQ(graces.front()->links(), nullptr);
+        EXPECT_EQ(graces.front()->note_type(), NoteType::ACCIACCATURA);
+        const auto lines = live_note_lines(*excerpt);
+        ASSERT_EQ(lines.size(), 1u);
+        EXPECT_EQ(lines.front()->start_element(), graces.front()->up_note());
+        EXPECT_EQ(graces.front()->up_note()->pitch(), 61);
+        EXPECT_EQ(lines.front()->end_element(), chord_at(*excerpt, Fraction(1, 2))->up_note());
+        EXPECT_EQ(lines.front()->links(), nullptr);
+    }
+}
+
 TEST(Read, TimeSigRewritePreservesExcerptUnlinkedLineOverrides) {
     using namespace mu::engraving;
     auto opened = g_engine->open(as_bytes(note_line_rewrite_xml));
@@ -1750,6 +1887,8 @@ TEST(Read, TimeSigRewritePreservesExcerptUnlinkedLineOverrides) {
 
     const PointF part_gliss_offset = PointF(1.25, -2.5) * part->style().spatium();
     const PointF part_seg_off2 = PointF(0.75, 1.5) * part->style().spatium();
+    const PointF part_bend_vertex = PointF(0.5, -1.0) * part->style().spatium();
+    const Color part_bend_color(35, 110, 180);
     const Color part_noteline_color(200, 40, 60);
     const Spatium part_noteline_width(0.35);
     const AuthoredChildKey seg_key{AuthoredChildRole::SPANNER_SEGMENT, 0};
@@ -1768,6 +1907,17 @@ TEST(Read, TimeSigRewritePreservesExcerptUnlinkedLineOverrides) {
         auto *note_line = Factory::create_note_line(g4);
         note_line->set_note_span(g4, a4);
         master.undo_add_element(note_line);
+
+        auto *bend = Factory::create_guitar_bend(d4);
+        bend->set_bend_type(GuitarBendType::BEND);
+        bend->set_note_span(d4, chord_at(master, Fraction(1, 2))->up_note());
+        master.undo_add_element(bend);
+
+        Spanner *part_bend = to_spanner(bend->find_linked_in_score(part));
+        ASSERT_NE(part_bend, nullptr);
+        part_bend->undo_change_property(Pid::COLOR, PropertyValue::from_value(part_bend_color), PropertyFlags::NOSTYLE);
+        part_bend->undo_change_property(Pid::VISIBLE, false, PropertyFlags::NOSTYLE);
+        ASSERT_TRUE(set_child_override(*part_bend, seg_key, Pid::BEND_VERTEX_OFF, part_bend_vertex, PropertyFlags::UNSTYLED));
 
         Spanner *part_gliss = to_spanner(gliss->find_linked_in_score(part));
         Spanner *part_note_line = to_spanner(note_line->find_linked_in_score(part));
@@ -1791,8 +1941,8 @@ TEST(Read, TimeSigRewritePreservesExcerptUnlinkedLineOverrides) {
 
         const auto master_lines = live_note_lines(master);
         const auto part_lines = live_note_lines(*part);
-        ASSERT_EQ(master_lines.size(), 2u);
-        ASSERT_EQ(part_lines.size(), 2u);
+        ASSERT_EQ(master_lines.size(), 3u);
+        ASSERT_EQ(part_lines.size(), 3u);
 
         auto find_by_type = [](const std::vector<Spanner *> &lines, ElementType type) -> Spanner * {
             auto it = std::ranges::find_if(lines, [type](const Spanner *sp) { return sp->type() == type; });
@@ -1803,7 +1953,21 @@ TEST(Read, TimeSigRewritePreservesExcerptUnlinkedLineOverrides) {
         Glissando *p_gliss = to_glissando(find_by_type(part_lines, ElementType::GLISSANDO));
         NoteLine *m_nl = to_note_line(find_by_type(master_lines, ElementType::NOTELINE));
         NoteLine *p_nl = to_note_line(find_by_type(part_lines, ElementType::NOTELINE));
-        ASSERT_TRUE(m_gliss && p_gliss && m_nl && p_nl);
+        auto *m_bend = find_by_type(master_lines, ElementType::GUITAR_BEND);
+        auto *p_bend = find_by_type(part_lines, ElementType::GUITAR_BEND);
+        ASSERT_TRUE(m_gliss && p_gliss && m_nl && p_nl && m_bend && p_bend);
+        ASSERT_NE(m_bend->links(), nullptr);
+        EXPECT_TRUE(m_bend->links()->contains(p_bend));
+        EXPECT_TRUE(m_bend->visible());
+        EXPECT_NE(m_bend->get_property(Pid::COLOR).value<Color>(), part_bend_color);
+        EXPECT_FALSE(p_bend->visible());
+        EXPECT_EQ(p_bend->get_property(Pid::COLOR).value<Color>(), part_bend_color);
+        const auto *bend_override = authored_override_table(p_bend)->find(seg_key, Pid::BEND_VERTEX_OFF);
+        ASSERT_NE(bend_override, nullptr);
+        EXPECT_EQ(bend_override->flags, PropertyFlags::UNSTYLED);
+        EXPECT_EQ(child_override(*p_bend, seg_key, Pid::BEND_VERTEX_OFF)->value<PointF>(), part_bend_vertex);
+        EXPECT_FALSE(child_override(*m_bend, seg_key, Pid::BEND_VERTEX_OFF).has_value());
+        EXPECT_FALSE(p_bend->is_appearance_linked_to_master());
 
         ASSERT_NE(m_gliss->links(), nullptr);
         EXPECT_TRUE(m_gliss->links()->contains(p_gliss));

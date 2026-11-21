@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <optional>
 #include <vector>
 
 #include <ankerl/unordered_dense.h>
@@ -186,7 +187,14 @@ private:
         SourceHandle staff;
         bool is_grace = false;
         size_t grace_index = 0;
-        size_t note_index = 0;
+        int pitch = 0;
+        int string = 0;
+        int tpc1 = 0;
+        int tpc2 = 0;
+        size_t note_ordinal = 0;
+        std::optional<size_t> local_grace;
+
+        bool matches(const Note &note) const;
         SourceHandle external_note;
     };
 
@@ -195,17 +203,22 @@ private:
         NoteEndpointRef start;
         NoteEndpointRef end;
         bool single_note = false;
-        bool on_primary_staff = false;
     };
 
     struct NoteSpannerBackup {
         std::vector<NoteSpannerCopy> copies;
-        bool was_linked = false;
+    };
+
+    struct LocalGraceBackup {
+        const Chord *source = nullptr;
+        const Chord *range_chord = nullptr;
+        SourceHandle staff;
+        Chord *grace = nullptr;
     };
 
     void record_read_chord(const Chord *src, const Chord *dst);
     bool can_absorb_continuation(const Chord *range_chord, const Chord *continuation) const;
-    bool make_note_endpoint_ref(Note *note, NoteEndpointRef &out) const;
+    bool make_note_endpoint_ref(Note *note, NoteEndpointRef &out);
     void backup_note_spanners(const Fraction &stick, const Fraction &etick);
     void restore_note_spanners(Score *score, const TrackList::WrittenChordMap &written_chords) const;
     void delete_note_spanners();
@@ -220,6 +233,7 @@ private:
     // Range chords read from a chord that anchors a note-owned line.
     ankerl::unordered_dense::set<const Chord *> line_anchor_chords_;
     std::vector<NoteSpannerBackup> note_spanners_;
+    std::vector<LocalGraceBackup> local_graces_;
     Segment *first_ = nullptr;
     Segment *last_ = nullptr;
 };
