@@ -1,4 +1,5 @@
 #include "engraving/dom/dummyparent.h"
+#include "engraving/dom/repeatlist.h"
 #include "engraving/dom/stavesharingchange.h"
 #include "engraving/dom/systemlockindicator.h"
 #include "handles_test_fixture.h"
