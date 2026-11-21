@@ -2167,9 +2167,16 @@ void TWrite::write(const KeySig *item, XmlWriter &xml, WriteContext &ctx) {
         xml.tag("mode", TConv::to_xml(item->mode()));
     }
 
-    if (item->jianpu_numbering() != JianpuNumbering::FOLLOW_SCORE_KEY) {
+    // A custom numbering writes its whole tonic. Under the score key the tonic is
+    // inactive, but an authored one is kept for a later switch back to custom.
+    const bool custom_numbering = item->jianpu_numbering() != JianpuNumbering::FOLLOW_SCORE_KEY;
+    if (custom_numbering) {
         xml.tag("jianpuNumbering", TConv::to_xml(item->jianpu_numbering()));
+    }
+    if (custom_numbering || item->jianpu_tonic_key() != Key::C) {
         xml.tag("jianpuTonicKey", TConv::to_xml(item->jianpu_tonic_key()));
+    }
+    if (custom_numbering || item->jianpu_tonic_mode() != KeyMode::MAJOR) {
         xml.tag("jianpuTonicMode", TConv::to_xml(item->jianpu_tonic_mode()));
     }
 

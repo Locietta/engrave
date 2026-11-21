@@ -51,8 +51,17 @@ KeySig::KeySig(const KeySig &k) : EngravingItem(k) {
 
 double KeySig::mag() const { return staff() ? staff()->staff_mag(this) : 1.0; }
 
-void KeySig::set_key(Key concert_key) {
+// The Jianpu numbering is authored apart from the key, so a key edit keeps it.
+static KeySigEvent with_jianpu_numbering_of(const KeySigEvent &source) {
     KeySigEvent e;
+    e.set_jianpu_numbering(source.jianpu_numbering());
+    e.set_jianpu_tonic_key(source.jianpu_tonic_key());
+    e.set_jianpu_tonic_mode(source.jianpu_tonic_mode());
+    return e;
+}
+
+void KeySig::set_key(Key concert_key) {
+    KeySigEvent e = with_jianpu_numbering_of(sig_);
     e.set_concert_key(concert_key);
     if (staff() && !style().style_b(Sid::CONCERT_PITCH)) {
         const Part *part = staff()->origin_part(tick());
@@ -67,7 +76,7 @@ void KeySig::set_key(Key concert_key) {
 }
 
 void KeySig::set_key(Key concert_key, Key transposed_key) {
-    KeySigEvent e;
+    KeySigEvent e = with_jianpu_numbering_of(sig_);
     e.set_concert_key(concert_key);
     e.set_key(transposed_key);
     set_key_sig_event(e);
@@ -157,12 +166,14 @@ bool KeySig::set_property(Pid property_id, const PropertyValue &v) {
                 return false;
             }
             set_key(sig_.concert_key(), Key(v.to_int()));
+            staff()->set_key(tick(), key_sig_event());
             break;
         case Pid::KEY_CONCERT:
             if (generated()) {
                 return false;
             }
             set_key(Key(v.to_int()));
+            staff()->set_key(tick(), key_sig_event());
             break;
         case Pid::SHOW_COURTESY:
             if (generated()) {

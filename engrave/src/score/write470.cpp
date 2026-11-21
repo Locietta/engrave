@@ -877,8 +877,17 @@ void convert_notation(pugi::xml_node node, const Score &score, std::optional<Ele
         // 4.7.6 has no numbered notation: it would read a pitched staff without lines.
         features.jianpu = true;
         unsupported(node, "Jianpu StaffType", score_id, warnings);
-    } else if (name == "KeySig" && (node.child("jianpuNumbering") || node.child("jianpuTonicKey") || node.child("jianpuTonicMode"))) {
+    } else if (name == "KeySig" && node.child("jianpuNumbering")) {
         unsupported(node, "KeySig Jianpu numbering", score_id, warnings);
+    } else if (name == "KeySig") {
+        // Without a custom numbering the tonic is inactive, as inactive Jianpu styles are.
+        for (const auto *tag : {"jianpuTonicKey", "jianpuTonicMode"}) {
+            const auto child = node.child(tag);
+            if (!child) continue;
+            // The indentation before the tag goes with it, as in a file that never had it.
+            if (const auto indent = child.previous_sibling(); indent.type() == pugi::node_pcdata) node.remove_child(indent);
+            node.remove_child(child);
+        }
     } else if (name == "Score" && node.child("initialPartId").text().as_ullong() > std::numeric_limits<int>::max()) {
         unsupported(node, "initialPartId outside the legacy integer range", score_id, warnings);
     } else if (name == "Spanner") {

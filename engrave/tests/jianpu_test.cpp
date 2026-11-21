@@ -234,7 +234,10 @@ TEST(Jianpu, KeySignatureNumberingMapsTheTonicAndLabel) {
     EXPECT_EQ(TConv::from_xml("jianpu", StaffTypes::STANDARD), StaffTypes::JIANPU);
     EXPECT_EQ(TConv::from_xml("jianpu_number", TextStyleType::DEFAULT), TextStyleType::JIANPU_NUMBER);
     EXPECT_EQ(StaffType::get_default_preset(StaffGroup::JIANPU)->type(), StaffTypes::JIANPU);
-    EXPECT_EQ(StaffType::get_default_preset(StaffGroup::TAB)->xml_name(), u"tab6StrCommon");
+    // The Jianpu group leaves the older defaults alone.
+    EXPECT_EQ(StaffType::get_default_preset(StaffGroup::TAB)->xml_name(), u"tab6StrSimple");
+    EXPECT_EQ(StaffType::get_default_preset(StaffGroup::PERCUSSION)->xml_name(), u"perc5Line");
+    EXPECT_EQ(StaffType::get_default_preset(StaffGroup::STANDARD)->xml_name(), u"stdNormal");
 
     // A linked staff keeps its own numbering, as it may be a staff of another type.
     for (Pid pid : {Pid::JIANPU_NUMBERING, Pid::JIANPU_TONIC_KEY, Pid::JIANPU_TONIC_MODE}) EXPECT_FALSE(property_link_same_score(pid));
@@ -777,6 +780,71 @@ TEST(Jianpu, DraggedBeamDrawsFlatAndKeepsItsAuthoredEnds) {
     EXPECT_DOUBLE_EQ(ends.first, 1.25);
     EXPECT_DOUBLE_EQ(ends.second, 2.5);
     EXPECT_EQ(native_captures(*document), cold_native);
+}
+
+TEST(Jianpu, KeyEditsKeepTheCustomNumbering) {
+    auto document = open_text(jianpu_source_with("<KeySig><eid>Z_Z</eid><concertKey>2</concertKey>"
+                                                 "<jianpuNumbering>custom</jianpuNumbering><jianpuTonicKey>Eb</jianpuTonicKey>"
+                                                 "<jianpuTonicMode>phrygian</jianpuTonicMode></KeySig>"));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *keysig = to_key_sig(master.first_measure()->find_segment(SegmentType::KEY_SIG, Fraction(0, 1))->element(0));
+    const auto id = engine_id(*keysig);
+    for (const auto &[property, key] : {std::pair{"concertKey", 3}, std::pair{"actualKey", 4}}) {
+        SCOPED_TRACE(property);
+        const auto edited = document->edit({{engrave::SetProperty{id, property, std::int64_t(key)}}});
+        ASSERT_TRUE(edited) << edited.error().message;
+        EXPECT_EQ(keysig->jianpu_numbering(), JianpuNumbering::CUSTOM);
+        EXPECT_EQ(keysig->jianpu_tonic_key(), Key::E_B);
+        EXPECT_EQ(keysig->jianpu_tonic_mode(), KeyMode::PHRYGIAN);
+        EXPECT_EQ(master.staff(0)->key_sig_event(Fraction(0, 1)), keysig->key_sig_event());
+        render(*document);
+        EXPECT_EQ(keysig->ldata()->jianpu_label.to_std_string(), "3=E♭");
+
+        auto reopened = reopen(*document);
+        ASSERT_TRUE(reopened);
+        const KeySigEvent saved = master_of(*reopened).staff(0)->key_sig_event(Fraction(0, 1));
+        EXPECT_EQ(saved, keysig->key_sig_event());
+        EXPECT_EQ(saved.jianpu_tonic_key(), Key::E_B);
+    }
+    EXPECT_EQ(keysig->concert_key(), Key(3));
+    EXPECT_EQ(keysig->key(), Key(4));
+}
+
+TEST(Jianpu, InactiveTonicIsSavedAndDefaultsWriteNothing) {
+    const auto keysig_xml = [](const std::string &written) {
+        const auto at = written.find("<KeySig");
+        return at == std::string::npos ? std::string() : written.substr(at, written.find("</KeySig>", at) - at);
+    };
+    auto plain = open_text(jianpu_source_with("<KeySig><eid>Z_Z</eid><concertKey>2</concertKey></KeySig>"));
+    ASSERT_TRUE(plain);
+    const auto plain_keysig = keysig_xml(export_mscx(*plain));
+    ASSERT_FALSE(plain_keysig.empty());
+    EXPECT_EQ(plain_keysig.find("jianpu"), std::string::npos) << plain_keysig;
+
+    auto document =
+        open_text(jianpu_source_with("<KeySig><eid>Z_Z</eid><concertKey>2</concertKey>"
+                                     "<jianpuTonicKey>Eb</jianpuTonicKey><jianpuTonicMode>phrygian</jianpuTonicMode></KeySig>"));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *keysig = to_key_sig(master.first_measure()->find_segment(SegmentType::KEY_SIG, Fraction(0, 1))->element(0));
+    EXPECT_EQ(keysig->jianpu_numbering(), JianpuNumbering::FOLLOW_SCORE_KEY);
+    render(*document);
+    EXPECT_EQ(keysig->ldata()->jianpu_label.to_std_string(), "1=D") << "the inactive tonic leaves the score key in charge";
+
+    const auto written = keysig_xml(export_mscx(*document));
+    EXPECT_EQ(written.find("<jianpuNumbering>"), std::string::npos) << written;
+    EXPECT_NE(written.find("<jianpuTonicKey>Eb</jianpuTonicKey>"), std::string::npos) << written;
+    EXPECT_NE(written.find("<jianpuTonicMode>phrygian</jianpuTonicMode>"), std::string::npos) << written;
+    auto reopened = reopen(*document);
+    ASSERT_TRUE(reopened);
+    EXPECT_EQ(master_of(*reopened).staff(0)->key_sig_event(Fraction(0, 1)), keysig->key_sig_event());
+
+    // Switching to a custom numbering picks up the kept tonic: Eb Phrygian numbers its tonic 3.
+    const auto edited = document->edit({{engrave::SetProperty{engine_id(*keysig), "jianpuNumbering", engrave::Enum{"custom"}}}});
+    ASSERT_TRUE(edited) << edited.error().message;
+    render(*document);
+    EXPECT_EQ(keysig->ldata()->jianpu_label.to_std_string(), "3=E♭");
 }
 
 TEST(Jianpu, DescribeListsTheJianpuKeySignatureProperties) {

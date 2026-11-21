@@ -803,6 +803,68 @@ TEST(Export470, RefusesJianpuStavesStaffTypeChangesAndKeySignatureNumbering) {
     }
 }
 
+// Under the score key a kept Jianpu tonic is inactive, so 4.7.6 renders the same
+// without it.
+TEST(Export470, DropsAnInactiveJianpuTonic) {
+    const auto replace = [](std::string text, std::string_view from, std::string_view to) {
+        const auto at = text.find(from);
+        if (at == std::string::npos) throw std::runtime_error("fixture lacks " + std::string(from));
+        return text.replace(at, from.size(), to);
+    };
+    const auto plain = replace(read_text(write470_fixture()), "<museScore version=\"4.70\">", "<museScore version=\"5.00\">");
+    // F major, which leaves the fixture's C without an accidental.
+    const auto with_key = [&](std::string_view tonic) {
+        return replace(plain, "<TimeSig>", std::format("<KeySig><eid>M_M</eid><concertKey>-1</concertKey>{}</KeySig><TimeSig>", tonic));
+    };
+    auto untouched = g_engine->open(as_bytes(with_key("")));
+    auto inactive = g_engine->open(as_bytes(with_key("<jianpuTonicKey>D</jianpuTonicKey><jianpuTonicMode>dorian</jianpuTonicMode>")));
+    ASSERT_TRUE(untouched);
+    ASSERT_TRUE(inactive);
+    const auto native = (*inactive)->export_score({.format = engrave::Format::MSCX});
+    ASSERT_TRUE(native);
+    EXPECT_NE(as_text(*native).find("<jianpuTonicMode>dorian</jianpuTonicMode>"), std::string_view::npos);
+    for (const auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
+        const engrave::ExportOptions options{.format = format, .native_version = "4.70"};
+        const auto before = (*untouched)->export_score_with_warnings(options);
+        const auto after = (*inactive)->export_score_with_warnings(options);
+        ASSERT_TRUE(before) << before.error().message;
+        ASSERT_TRUE(after) << after.error().message;
+        EXPECT_TRUE(after->warnings.empty());
+        if (format == engrave::Format::MSCX) EXPECT_EQ(after->bytes, before->bytes);
+    }
+}
+
+// An excerpt keeps its own style. Its Jianpu keys are inactive without a Jianpu
+// staff in that excerpt, and active, so refused, with one.
+TEST(Export470, ExcerptJianpuStyleFollowsTheExcerptStaves) {
+    auto document = open_path(write470_fixture().parent_path() / "excerpts.mscx");
+    ASSERT_TRUE(document);
+    const engrave::ExportOptions options{.format = engrave::Format::MSCX, .native_version = "4.70"};
+    const auto before = document->export_score_with_warnings(options);
+    ASSERT_TRUE(before) << before.error().message;
+    auto &master = master_of(*document);
+    auto *excerpt = master.excerpts().front()->excerpt_score();
+    excerpt->style().set(mu::engraving::Sid::JIANPU_NUMBER_FONT_SIZE, 12.0);
+    const auto native = document->export_score({.format = engrave::Format::MSCX});
+    ASSERT_TRUE(native);
+    EXPECT_NE(as_text(*native).find("<jianpuNumberFontSize>12</jianpuNumberFontSize>"), std::string_view::npos);
+
+    const auto after = document->export_score_with_warnings(options);
+    ASSERT_TRUE(after) << after.error().message;
+    EXPECT_TRUE(after->warnings.empty());
+    EXPECT_EQ(after->bytes, before->bytes);
+
+    excerpt->staff(0)->set_staff_type(mu::engraving::Fraction(0, 1), *mu::engraving::StaffType::preset(mu::engraving::StaffTypes::JIANPU));
+    const auto refused = document->export_score_with_warnings(options);
+    ASSERT_FALSE(refused);
+    EXPECT_NE(refused.error().message.find("Jianpu StaffType"), std::string::npos) << refused.error().message;
+    EXPECT_NE(refused.error().message.find("style jianpuNumberFontSize"), std::string::npos) << refused.error().message;
+    // The style refusal names the excerpt that owns the style.
+    EXPECT_TRUE(std::ranges::any_of(refused.error().export_warnings, [&](const engrave::ExportWarning &warning) {
+        return warning.object && warning.object->id == excerpt->eid().to_std_string();
+    }));
+}
+
 TEST(Export470, DropsAuthoredStaveSharingMapsAndGeneratedIndicators) {
     auto source = read_text(write470_fixture().parent_path() / "shared_parts.source.mscx");
     const auto shared = source.find("</SharedPart>");

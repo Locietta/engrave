@@ -853,10 +853,12 @@ double StaffType::spatium() const { return style().spatium() * (is_small() ? sty
 //
 //=========================================================
 
+// The tab default is the simple preset the former index 5 named, not "tab6StrCommon"
+// as its comment claimed.
 static const StaffTypes default_preset[::mu::engraving::staff_group_max] = {
-    StaffTypes::STANDARD,    // default pitched preset is "stdNormal"
-    StaffTypes::PERC_5LINE,  // default percussion preset is "perc5lines"
-    StaffTypes::TAB_6COMMON, // default tab preset is "tab6StrCommon"
+    StaffTypes::STANDARD,
+    StaffTypes::PERC_5LINE,
+    StaffTypes::TAB_6SIMPLE,
     StaffTypes::JIANPU,
 };
 
