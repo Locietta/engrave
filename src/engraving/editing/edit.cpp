@@ -3528,7 +3528,12 @@ void Score::undo_remove_measures(Measure *m1, Measure *m2, bool preserve_ties, b
 
     const Fraction start_tick = m1->tick();
     const Fraction end_tick = m2->end_tick();
-    std::set<Spanner *> spanners_to_remove;
+    std::vector<Spanner *> spanners_to_remove;
+    auto schedule_removal = [&](Spanner *sp) {
+        if (!muse::contains(spanners_to_remove, sp)) {
+            spanners_to_remove.push_back(sp);
+        }
+    };
 
     //
     //  handle ties which start before m1 and end in (m1-m2)
@@ -3551,16 +3556,19 @@ void Score::undo_remove_measures(Measure *m1, Measure *m2, bool preserve_ties, b
 
             // Do the same for other note-anchored spanners (e.g. glissandi).
             // Delay actual removing to avoid modifying lists inside loops over them.
+            // Glissandi, bends and note lines are in no spanner map, so nothing else removes one that lies
+            // inside the range: left on its note, it would outlive the measures with dangling endpoints.
+            auto in_no_spanner_map = [](const Spanner *sp) { return sp->is_glissando() || sp->is_guitar_bend() || sp->is_note_line(); };
             for (Spanner *sb : n->spanner_back()) {
                 const Measure *sm = sb->find_start_measure();
-                if (sb->tick() < start_tick || !sm || sm->tick() < start_tick || sm->tick() >= end_tick) {
-                    spanners_to_remove.insert(sb);
+                if (in_no_spanner_map(sb) || sb->tick() < start_tick || !sm || sm->tick() < start_tick || sm->tick() >= end_tick) {
+                    schedule_removal(sb);
                 }
             }
             for (Spanner *sf : n->spanner_for()) {
                 const Measure *em = sf->find_end_measure();
-                if (sf->tick2() >= end_tick || !em || em->tick() < start_tick || em->tick() >= end_tick) {
-                    spanners_to_remove.insert(sf);
+                if (in_no_spanner_map(sf) || sf->tick2() >= end_tick || !em || em->tick() < start_tick || em->tick() >= end_tick) {
+                    schedule_removal(sf);
                 }
             }
         }
@@ -3594,7 +3602,15 @@ void Score::undo_remove_measures(Measure *m1, Measure *m2, bool preserve_ties, b
         }
     }
 
+    std::set<const EngravingObject *> removed;
     for (Spanner *s : spanners_to_remove) {
+        // A copy on a linked staff of this score has gone with the first of its links removed.
+        if (removed.contains(s)) {
+            continue;
+        }
+        for (const EngravingObject *link : s->link_list()) {
+            removed.insert(link);
+        }
         undo_remove_element(s);
     }
 

@@ -70,6 +70,16 @@ static void cleanup_tuplet(Tuplet *t) {
 
 static bool is_note_anchored_line(const Spanner *sp) { return sp && (sp->is_glissando() || sp->is_guitar_bend() || sp->is_note_line()); }
 
+static bool anchors_note_line(const Chord &chord) {
+    auto anchors = [](const Chord *c) {
+        return std::ranges::any_of(c->notes(), [](const Note *n) {
+            return std::ranges::any_of(n->spanner_for(), is_note_anchored_line) ||
+                   std::ranges::any_of(n->spanner_back(), is_note_anchored_line);
+        });
+    };
+    return anchors(&chord) || std::ranges::any_of(chord.grace_notes(), anchors);
+}
+
 static bool attached_in_score(EngravingObject *item, Score *score, const EIDRegister &registry) {
     if (!item || item->score() != score) {
         return false;
@@ -157,7 +167,7 @@ void TrackList::combine_tuplet(Tuplet *dst, Tuplet *src) {
                 break;
             }
         }
-        if (akkumulate_chord) {
+        if (akkumulate_chord && range_->can_absorb_continuation(to_chord(dst->elements().back()), chord)) {
             Chord *bc = to_chord(dst->elements().back());
             bc->set_ticks(bc->ticks() + chord->ticks());
 
@@ -236,7 +246,7 @@ void TrackList::append(EngravingItem *e) {
                             break;
                         }
                     }
-                    if (akkumulate_chord && !empty() && back()->is_chord()) {
+                    if (akkumulate_chord && !empty() && back()->is_chord() && range_->can_absorb_continuation(to_chord(back()), chord)) {
                         Chord *bc = to_chord(back());
                         const Fraction du = bc->ticks() + chord->ticks();
                         bc->set_ticks(du);
@@ -738,6 +748,15 @@ void ScoreRange::record_read_chord(const Chord *src, const Chord *dst) {
     } else {
         read_chords_[src] = dst;
     }
+    if (anchors_note_line(*src)) {
+        line_anchor_chords_.insert(dst);
+    }
+}
+
+// A generated-tie continuation merged into the chord before it loses its own position and grace notes,
+// so a note-owned line on either chord would end up on the wrong note.
+bool ScoreRange::can_absorb_continuation(const Chord *range_chord, const Chord *continuation) const {
+    return continuation->grace_notes().empty() && !anchors_note_line(*continuation) && !line_anchor_chords_.contains(range_chord);
 }
 
 bool ScoreRange::make_note_endpoint_ref(Note *note, NoteEndpointRef &out) const {
@@ -788,7 +807,6 @@ bool ScoreRange::make_note_endpoint_ref(Note *note, NoteEndpointRef &out) const 
 }
 
 void ScoreRange::backup_note_spanners() {
-    EIDRegister *registry = first_->score()->master_score()->eid_register();
     ankerl::unordered_dense::set<const Spanner *> seen;
     auto collect_from_chord = [&](const Chord *chord) {
         for (Note *note : chord->notes()) {
@@ -813,7 +831,6 @@ void ScoreRange::backup_note_spanners() {
                     clone->set_start_element(nullptr);
                     clone->set_end_element(nullptr);
                     backup.spanner = clone;
-                    backup.original = registry->enroll(*sp);
                     backup.single_note = (start_note == end_note);
                     note_spanners_.push_back(backup);
                 }
@@ -861,15 +878,12 @@ void ScoreRange::restore_note_spanners(Score *score, const TrackList::WrittenCho
         return (note->chord() && note->find_measure()) ? note : nullptr;
     };
 
+    // The originals went with the measures the range was read from (Score::undo_remove_measures).
     for (const NoteSpannerBackup &backup : note_spanners_) {
         Note *new_start = resolve_endpoint(backup.start, backup.single_note);
         Note *new_end = resolve_endpoint(backup.end, true);
         if (!new_start || !new_end || (!backup.single_note && new_start == new_end) || new_end->tick() < new_start->tick()) {
             continue;
-        }
-        if (EngravingObject *old_obj = registry->item_from_handle(backup.original);
-            old_obj && old_obj->is_spanner() && attached_in_score(old_obj, score, *registry)) {
-            score->undo_remove_element(to_spanner(old_obj));
         }
         Spanner *nsp = to_spanner(backup.spanner->clone());
         nsp->set_note_span(new_start, new_end);
@@ -900,6 +914,7 @@ void ScoreRange::read(Segment *first, Segment *last, bool read_spanner) {
     spanner_.clear();
     read_chords_.clear();
     read_chord_order_.clear();
+    line_anchor_chords_.clear();
     delete_note_spanners();
 
     if (read_spanner) {
@@ -938,6 +953,7 @@ void ScoreRange::read(Segment *first, Segment *last, bool read_spanner) {
     }
     read_chords_.clear();
     read_chord_order_.clear();
+    line_anchor_chords_.clear();
 
     // Make sure incoming ties are restored
     Measure *m1 = first->measure();
