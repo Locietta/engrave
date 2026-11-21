@@ -618,6 +618,7 @@ cc_binary(
         "engrave/tests/handles_test.cpp",
         "engrave/tests/handles_test_fixture.cpp",
         "engrave/tests/io_boundary_test.cpp",
+        "engrave/tests/jianpu_test.cpp",
         "engrave/tests/layout_headers_test.cpp",
         "engrave/tests/mnx_import_test.cpp",
         "engrave/tests/mnx_model_test.cpp",

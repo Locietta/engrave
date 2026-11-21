@@ -109,6 +109,8 @@ TEST(PropertyValue, EveryEnumRetainsItsTag) {
     check_enum<LineType>(PType::LINE_TYPE);
     check_enum<HookType>(PType::HOOK_TYPE);
     check_enum<KeyMode>(PType::KEY_MODE);
+    check_enum<Key>(PType::KEY);
+    check_enum<JianpuNumbering>(PType::JIANPU_NUMBERING);
     check_enum<TextStyleType>(PType::TEXT_STYLE);
     check_enum<PlayingTechniqueType>(PType::PLAYTECH_TYPE);
     check_enum<GradualTempoChangeType>(PType::TEMPOCHANGE_TYPE);

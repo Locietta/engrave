@@ -1,0 +1,520 @@
+// Jianpu (numbered notation): pitch spelling, key numbering, the layout output on
+// a Jianpu staff, and that rendering it leaves the authored score untouched.
+//
+// Ported from the tests of MuseScore 82ba7e5736 (durationtype, note, keysig, beam,
+// jianpudurationline and jianpuoctavedot) onto tests/data/inputs/jianpu-beam.mscx,
+// upstream's beam_data/jianpuBeam.mscx.
+
+#include "draw/fontmetrics.h"
+#include "engrave/src/score/score_semantic.h"
+#include "engraving/dom/jianpudurationline.h"
+#include "engraving/dom/jianpuoctavedot.h"
+#include "engraving/dom/key.h"
+#include "engraving/dom/keysig.h"
+#include "engraving/dom/pitchspelling.h"
+#include "engraving/dom/stafftype.h"
+#include "engraving/dom/utils.h"
+#include "engraving/infrastructure/sourcehandle.h"
+#include "engraving/rendering/score/beamtremololayout.h"
+#include "engraving/types/typesconv.h"
+#include "handles_test_fixture.h"
+
+using namespace handles_test;
+using namespace mu::engraving;
+
+namespace {
+
+std::filesystem::path jianpu_fixture() { return g_source_root / "tests/data/inputs/jianpu-beam.mscx"; }
+
+// The fixture with extra markup before its first chord of the first measure.
+std::string jianpu_source_with(std::string_view before_first_chord) {
+    auto xml = read_text(jianpu_fixture());
+    const auto at = xml.find("<Chord>");
+    if (at == std::string::npos) throw std::runtime_error("jianpu fixture has no chord");
+    xml.insert(at, before_first_chord);
+    return xml;
+}
+
+std::vector<ChordRest *> chord_rests(Score &score, track_idx_t track) {
+    std::vector<ChordRest *> result;
+    for (Segment *s = score.first_segment(SegmentType::CHORD_REST); s; s = s->next1(SegmentType::CHORD_REST)) {
+        if (auto *item = s->element(track); item && item->is_chord_rest()) result.push_back(to_chord_rest(item));
+    }
+    return result;
+}
+
+void render(engrave::Document &document) {
+    const auto svg = document.render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(svg) << svg.error().message;
+    ASSERT_FALSE(svg->pages.empty());
+}
+
+// Natural notes in C: the digit is the scale step counted from C.
+std::string c_major_digit(int pitch) {
+    static constexpr std::array<char, 12> digits = {'1', 0, '2', 0, '3', '4', 0, '5', 0, '6', 0, '7'};
+    return std::string(1, digits[static_cast<size_t>(pitch % 12)]);
+}
+
+// Undotted digits in C start at C3 (pitch 48); each further octave is one dot.
+int c_major_octave(int pitch) { return pitch >= 48 ? (pitch - 48) / 12 : -((47 - pitch) / 12 + 1); }
+
+} // namespace
+
+TEST(Jianpu, AugmentationAndDiminutionLinesFollowTheDuration) {
+    const auto augmentation = [](DurationType type, int dots) {
+        TDuration duration(type);
+        duration.set_dots(dots);
+        return jianpu_augmentation_lines_for_duration(duration);
+    };
+    // A half is two quarters: one line after the digit; each dot adds half the value.
+    EXPECT_EQ(augmentation(DurationType::V_QUARTER, 0), 0);
+    EXPECT_EQ(augmentation(DurationType::V_HALF, 0), 1);
+    EXPECT_EQ(augmentation(DurationType::V_HALF, 1), 2);
+    EXPECT_EQ(augmentation(DurationType::V_HALF, 2), 2);
+    EXPECT_EQ(augmentation(DurationType::V_WHOLE, 0), 3);
+    EXPECT_EQ(augmentation(DurationType::V_WHOLE, 1), 5);
+    EXPECT_EQ(augmentation(DurationType::V_BREVE, 0), 7);
+    EXPECT_EQ(augmentation(DurationType::V_LONG, 0), 15);
+
+    const std::pair<DurationType, int> diminution[] = {
+        {DurationType::V_LONG, 0},    {DurationType::V_BREVE, 0},  {DurationType::V_WHOLE, 0}, {DurationType::V_HALF, 0},
+        {DurationType::V_QUARTER, 0}, {DurationType::V_EIGHTH, 1}, {DurationType::V_16TH, 2},  {DurationType::V_32ND, 3},
+        {DurationType::V_64TH, 4},    {DurationType::V_128TH, 5},  {DurationType::V_256TH, 6}, {DurationType::V_512TH, 7},
+        {DurationType::V_1024TH, 8},
+    };
+    for (const auto &[type, lines] : diminution) EXPECT_EQ(jianpu_diminution_lines_for_duration(TDuration(type)), lines) << int(type);
+}
+
+TEST(Jianpu, DigitsAndOctavesFollowTheTonicAndMode) {
+    EXPECT_EQ(pitch2_jianpu_octave(36, Tpc::TPC_C, Key::C, KeyMode::MAJOR), -1);
+    EXPECT_EQ(pitch2_jianpu_octave(48, Tpc::TPC_C, Key::C, KeyMode::MAJOR), 0);
+    EXPECT_EQ(pitch2_jianpu_octave(60, Tpc::TPC_C, Key::C, KeyMode::MAJOR), 1);
+    EXPECT_EQ(pitch2_jianpu_octave(72, Tpc::TPC_C, Key::C, KeyMode::MAJOR), 2);
+    EXPECT_EQ(pitch2_jianpu_octave(43, Tpc::TPC_G, Key::G, KeyMode::MAJOR), -1);
+    EXPECT_EQ(pitch2_jianpu_octave(48, Tpc::TPC_C, Key::G, KeyMode::MAJOR), -1);
+    EXPECT_EQ(pitch2_jianpu_octave(55, Tpc::TPC_G, Key::G, KeyMode::MAJOR), 0);
+    EXPECT_EQ(pitch2_jianpu_octave(60, Tpc::TPC_C, Key::G, KeyMode::MAJOR), 0);
+    EXPECT_EQ(pitch2_jianpu_octave(66, Tpc::TPC_F_S, Key::G, KeyMode::MAJOR), 0);
+    EXPECT_EQ(pitch2_jianpu_octave(67, Tpc::TPC_G, Key::G, KeyMode::MAJOR), 1);
+    EXPECT_EQ(pitch2_jianpu_octave(79, Tpc::TPC_G, Key::G, KeyMode::MAJOR), 2);
+
+    // Each mode of the C tonic, from its relative major.
+    const std::pair<Key, KeyMode> c_tonics[] = {
+        {Key::B_B, KeyMode::DORIAN},  {Key::A_B, KeyMode::PHRYGIAN}, {Key::G, KeyMode::LYDIAN},    {Key::F, KeyMode::MIXOLYDIAN},
+        {Key::E_B, KeyMode::AEOLIAN}, {Key::C, KeyMode::IONIAN},     {Key::D_B, KeyMode::LOCRIAN}, {Key::E_B, KeyMode::MINOR},
+        {Key::C, KeyMode::MAJOR},     {Key::C, KeyMode::UNKNOWN},    {Key::C, KeyMode::NONE},
+    };
+    for (const auto &[key, mode] : c_tonics) EXPECT_EQ(jianpu_tonic_tpc(key, mode), Tpc::TPC_C) << int(key) << "/" << int(mode);
+    // An unmarked mode is the major key of the signature.
+    EXPECT_EQ(jianpu_tonic_tpc(Key::G, KeyMode::UNKNOWN), Tpc::TPC_G);
+    EXPECT_EQ(jianpu_tonic_tpc(Key::E_B, KeyMode::UNKNOWN), Tpc::TPC_E_B);
+
+    const auto spelled = [](int tpc, int tonic, KeyMode mode) {
+        const auto spelling = tpc2_jianpu(tpc, tonic, mode);
+        return spelling.accidental.to_std_string() + spelling.step_name.to_std_string();
+    };
+    // C Dorian numbers from its second degree: C is 2, E flat is 4, E natural is #4.
+    const int c_dorian = jianpu_tonic_tpc(Key::B_B, KeyMode::DORIAN);
+    EXPECT_EQ(spelled(Tpc::TPC_C, c_dorian, KeyMode::DORIAN), "2");
+    EXPECT_EQ(spelled(Tpc::TPC_E_B, c_dorian, KeyMode::DORIAN), "4");
+    EXPECT_EQ(spelled(Tpc::TPC_E, c_dorian, KeyMode::DORIAN), "#4");
+    EXPECT_EQ(spelled(Tpc::TPC_F_S, Tpc::TPC_C, KeyMode::MAJOR), "#4");
+    EXPECT_EQ(spelled(Tpc::TPC_G_B, Tpc::TPC_C, KeyMode::MAJOR), "b5");
+    const int a_minor = jianpu_tonic_tpc(Key::C, KeyMode::MINOR);
+    EXPECT_EQ(a_minor, Tpc::TPC_A);
+    EXPECT_EQ(spelled(Tpc::TPC_A, a_minor, KeyMode::MINOR), "6");
+    EXPECT_EQ(spelled(Tpc::TPC_C, a_minor, KeyMode::MINOR), "1");
+    EXPECT_EQ(jianpu_accidental_mark(u"#b"), u"♯♭");
+
+    EXPECT_EQ(pitch2_jianpu_octave(58, Tpc::TPC_B_B, c_dorian, KeyMode::DORIAN), 0);
+    EXPECT_EQ(pitch2_jianpu_octave(60, Tpc::TPC_C, c_dorian, KeyMode::DORIAN), 0);
+    EXPECT_EQ(pitch2_jianpu_octave(57, Tpc::TPC_A, a_minor, KeyMode::MINOR), -1);
+    EXPECT_EQ(pitch2_jianpu_octave(59, Tpc::TPC_B, a_minor, KeyMode::MINOR), -1);
+    EXPECT_EQ(pitch2_jianpu_octave(60, Tpc::TPC_C, a_minor, KeyMode::MINOR), 0);
+    EXPECT_EQ(pitch2_jianpu_octave(69, Tpc::TPC_A, a_minor, KeyMode::MINOR), 0);
+    EXPECT_EQ(pitch2_jianpu_octave(72, Tpc::TPC_C, a_minor, KeyMode::MINOR), 1);
+}
+
+TEST(Jianpu, KeySignatureNumberingMapsTheTonicAndLabel) {
+    KeySigEvent g_major;
+    g_major.set_concert_key(Key::G);
+    for (int field = 0; field < 3; ++field) {
+        KeySigEvent changed = g_major;
+        if (field == 0) changed.set_jianpu_numbering(JianpuNumbering::CUSTOM);
+        if (field == 1) changed.set_jianpu_tonic_key(Key::D);
+        if (field == 2) changed.set_jianpu_tonic_mode(KeyMode::DORIAN);
+        EXPECT_FALSE(changed == g_major) << field;
+        EXPECT_TRUE(changed != g_major) << field;
+    }
+
+    KeySigEvent d_dorian;
+    d_dorian.set_concert_key(Key::D);
+    d_dorian.set_mode(KeyMode::DORIAN);
+    // D major's signature in Dorian is E Dorian.
+    EXPECT_EQ(jianpu_key_mapping(d_dorian).mode, KeyMode::DORIAN);
+    EXPECT_EQ(jianpu_key_mapping(d_dorian).tonic_tpc, Tpc::TPC_E);
+    d_dorian.set_jianpu_numbering(JianpuNumbering::CUSTOM);
+    d_dorian.set_jianpu_tonic_key(Key::A_B);
+    d_dorian.set_jianpu_tonic_mode(KeyMode::LYDIAN);
+    EXPECT_EQ(jianpu_key_mapping(d_dorian).mode, KeyMode::LYDIAN);
+    EXPECT_EQ(jianpu_key_mapping(d_dorian).tonic_tpc, Tpc::TPC_A_B);
+
+    const auto label = [](Key key, std::optional<KeyMode> mode) {
+        KeySigEvent ks;
+        ks.set_concert_key(key);
+        if (mode) ks.set_mode(*mode);
+        return jianpu_key_label(ks).to_std_string();
+    };
+    EXPECT_EQ(label(Key::C, std::nullopt), "1=C");
+    EXPECT_EQ(label(Key::G, std::nullopt), "1=G");
+    EXPECT_EQ(label(Key::C, KeyMode::NONE), "1=C");
+    EXPECT_EQ(label(Key::C, KeyMode::MAJOR), "1=C");
+    EXPECT_EQ(label(Key::C, KeyMode::MINOR), "6=A");
+    EXPECT_EQ(label(Key::B_B, KeyMode::DORIAN), "2=C");
+    EXPECT_EQ(label(Key::E_B, std::nullopt), "1=E♭");
+    KeySigEvent custom;
+    custom.set_concert_key(Key::G);
+    custom.set_jianpu_numbering(JianpuNumbering::CUSTOM);
+    custom.set_jianpu_tonic_key(Key::C);
+    custom.set_jianpu_tonic_mode(KeyMode::MAJOR);
+    EXPECT_EQ(jianpu_key_label(custom).to_std_string(), "1=C");
+
+    EXPECT_EQ(TConv::to_xml(JianpuNumbering::CUSTOM), "custom");
+    EXPECT_EQ(TConv::to_xml(JianpuNumbering::FOLLOW_SCORE_KEY), "followScoreKey");
+    EXPECT_EQ(TConv::to_xml(Key::E_B), "Eb");
+    EXPECT_EQ(TConv::to_xml(Key::F_S), "F#");
+    for (int key = int(Key::MIN); key <= int(Key::MAX); ++key) EXPECT_EQ(TConv::from_xml(TConv::to_xml(Key(key)), Key::INVALID), Key(key));
+    EXPECT_EQ(TConv::from_xml("unrecognized", JianpuNumbering::FOLLOW_SCORE_KEY), JianpuNumbering::FOLLOW_SCORE_KEY);
+    EXPECT_EQ(TConv::from_xml("unrecognized", Key::C), Key::C);
+    EXPECT_EQ(TConv::from_xml("jianpu", StaffGroup::STANDARD), StaffGroup::JIANPU);
+    EXPECT_EQ(TConv::from_xml("jianpu", StaffTypes::STANDARD), StaffTypes::JIANPU);
+    EXPECT_EQ(TConv::from_xml("jianpu_number", TextStyleType::DEFAULT), TextStyleType::JIANPU_NUMBER);
+    EXPECT_EQ(StaffType::get_default_preset(StaffGroup::JIANPU)->type(), StaffTypes::JIANPU);
+    EXPECT_EQ(StaffType::get_default_preset(StaffGroup::TAB)->xml_name(), u"tab6StrCommon");
+
+    // A linked staff keeps its own numbering, as it may be a staff of another type.
+    for (Pid pid : {Pid::JIANPU_NUMBERING, Pid::JIANPU_TONIC_KEY, Pid::JIANPU_TONIC_MODE}) EXPECT_FALSE(property_link_same_score(pid));
+    EXPECT_EQ(property_type(Pid::JIANPU_NUMBERING), PType::JIANPU_NUMBERING);
+    EXPECT_EQ(property_type(Pid::JIANPU_TONIC_KEY), PType::KEY);
+    EXPECT_EQ(property_type(Pid::JIANPU_TONIC_MODE), PType::KEY_MODE);
+}
+
+TEST(Jianpu, KeySignatureNumberingRoundTripsAndFollowsEdits) {
+    auto document = open_text(jianpu_source_with("<KeySig><eid>Z_Z</eid><concertKey>2</concertKey><mode>major</mode>"
+                                                 "<jianpuNumbering>custom</jianpuNumbering><jianpuTonicKey>Eb</jianpuTonicKey>"
+                                                 "<jianpuTonicMode>phrygian</jianpuTonicMode></KeySig>"));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *segment = master.first_measure()->find_segment(SegmentType::KEY_SIG, Fraction(0, 1));
+    ASSERT_NE(segment, nullptr);
+    auto *keysig = to_key_sig(segment->element(0));
+    ASSERT_NE(keysig, nullptr);
+    ASSERT_FALSE(keysig->generated());
+    EXPECT_EQ(keysig->get_property(Pid::JIANPU_NUMBERING).type(), PType::JIANPU_NUMBERING);
+    EXPECT_EQ(keysig->get_property(Pid::JIANPU_NUMBERING).value<JianpuNumbering>(), JianpuNumbering::CUSTOM);
+    EXPECT_EQ(keysig->get_property(Pid::JIANPU_TONIC_KEY).type(), PType::KEY);
+    EXPECT_EQ(keysig->get_property(Pid::JIANPU_TONIC_KEY).value<Key>(), Key::E_B);
+    EXPECT_EQ(keysig->get_property(Pid::JIANPU_TONIC_MODE).value<KeyMode>(), KeyMode::PHRYGIAN);
+    EXPECT_EQ(keysig->property_default(Pid::JIANPU_NUMBERING).value<JianpuNumbering>(), JianpuNumbering::FOLLOW_SCORE_KEY);
+    EXPECT_EQ(keysig->property_default(Pid::JIANPU_TONIC_KEY).value<Key>(), Key::C);
+    EXPECT_EQ(keysig->property_default(Pid::JIANPU_TONIC_MODE).value<KeyMode>(), KeyMode::MAJOR);
+    EXPECT_EQ(master.staff(0)->key_sig_event(Fraction(0, 1)), keysig->key_sig_event());
+
+    const auto written = export_mscx(*document);
+    for (const auto tag :
+         {"<jianpuNumbering>custom</jianpuNumbering>", "<jianpuTonicKey>Eb</jianpuTonicKey>", "<jianpuTonicMode>phrygian</jianpuTonicMode>",
+          "<StaffType group=\"jianpu\">", "<jianpuTextStyle>jianpu_number</jianpuTextStyle>"})
+        EXPECT_NE(written.find(tag), std::string::npos) << tag;
+    auto reopened = reopen(*document);
+    ASSERT_TRUE(reopened);
+    EXPECT_EQ(master_of(*reopened).staff(0)->key_sig_event(Fraction(0, 1)), keysig->key_sig_event());
+
+    // Eb Phrygian numbers its tonic 3.
+    render(*document);
+    EXPECT_EQ(keysig->ldata()->jianpu_label.to_std_string(), "3=E♭");
+    EXPECT_TRUE(keysig->ldata()->key_symbols.empty());
+
+    const auto id = engine_id(*keysig);
+    auto edited = document->edit({{engrave::SetProperty{id, "jianpuTonicKey", engrave::Enum{"D"}},
+                                   engrave::SetProperty{id, "jianpuTonicMode", engrave::Enum{"major"}}}});
+    ASSERT_TRUE(edited) << edited.error().message;
+    render(*document);
+    EXPECT_EQ(keysig->ldata()->jianpu_label.to_std_string(), "1=D");
+    EXPECT_EQ(master.staff(0)->key_sig_event(Fraction(0, 1)).jianpu_tonic_key(), Key::D);
+    edited = document->edit({{engrave::SetProperty{id, "jianpuNumbering", engrave::Enum{"followScoreKey"}}}});
+    ASSERT_TRUE(edited) << edited.error().message;
+    render(*document);
+    // Follow the signature: two sharps, D major.
+    EXPECT_EQ(keysig->ldata()->jianpu_label.to_std_string(), "1=D");
+    EXPECT_EQ(export_mscx(*document).find("<jianpuNumbering>"), std::string::npos);
+
+    const auto rejected = document->edit({{engrave::SetProperty{id, "jianpuTonicKey", engrave::Enum{"invalid"}}}});
+    ASSERT_FALSE(rejected);
+    EXPECT_EQ(rejected.error().code, ErrorCode::INVALID_ARGUMENT);
+}
+
+TEST(Jianpu, LayoutDrawsDigitsDotsLinesAndRestsInsteadOfNoteheads) {
+    auto document = open_path(jianpu_fixture());
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    ASSERT_TRUE(master.staff(0)->is_jianpu_staff(Fraction(0, 1)));
+    render(*document);
+
+    const StaffType *type = master.staff(0)->staff_type(Fraction(0, 1));
+    EXPECT_EQ(type->group(), StaffGroup::JIANPU);
+    EXPECT_EQ(type->jianpu_font().family(), muse::draw::Font::FontFamily(u"FreeSans"));
+    EXPECT_GT(type->jianpu_box_h(), 0.0);
+
+    int chords = 0, rests = 0, lined = 0, dotted = 0, beamed = 0;
+    for (track_idx_t track = 0; track < 2; ++track) {
+        for (ChordRest *cr : chord_rests(master, track)) {
+            if (cr->is_rest()) {
+                ++rests;
+                const auto *rest = to_rest(cr);
+                EXPECT_EQ(rest->ldata()->sym, SymId::NO_SYM);
+                EXPECT_TRUE(rest->dot_list().empty());
+                EXPECT_DOUBLE_EQ(rest->ldata()->bbox().height(), type->jianpu_box_h() * rest->mag_s());
+                // The fixture's half rest is "0 -": one augmentation line after the zero.
+                const size_t lines = rest->duration_type().type() == DurationType::V_HALF ? 1 : 0;
+                ASSERT_EQ(rest->jianpu_duration_lines().size(), lines);
+                for (const JianpuDurationLine *line : rest->jianpu_duration_lines()) {
+                    ++lined;
+                    EXPECT_DOUBLE_EQ(line->ldata()->len, rest->ldata()->bbox().width());
+                    EXPECT_DOUBLE_EQ(line->ldata()->pos().x(), rest->ldata()->bbox().width() * 1.2);
+                    EXPECT_EQ(line->chord_rest(), rest);
+                }
+                continue;
+            }
+            ++chords;
+            Chord *chord = to_chord(cr);
+            EXPECT_EQ(chord->stem(), nullptr);
+            EXPECT_EQ(chord->hook(), nullptr);
+            EXPECT_TRUE(chord->ledger_lines().empty());
+            const int lines = chord->duration_type().type() == DurationType::V_HALF ? 1 : 0;
+            ASSERT_EQ(chord->jianpu_duration_lines().size(), size_t(lines));
+            for (const JianpuDurationLine *line : chord->jianpu_duration_lines()) {
+                ++lined;
+                const Note *up = chord->up_note();
+                // One head width long and 1.2 head widths after the digit.
+                EXPECT_DOUBLE_EQ(line->ldata()->len, up->head_width());
+                EXPECT_DOUBLE_EQ(line->ldata()->pos().x(), up->pos().x() + up->bbox_x_shift() + up->head_width() * 1.2);
+                EXPECT_DOUBLE_EQ(line->ldata()->line_width, master.style().style_absolute(Sid::JIANPU_DURATION_LINE_THICKNESS));
+                EXPECT_EQ(line->chord_rest(), chord);
+                EXPECT_EQ(line->track(), chord->track());
+                const Shape shape = chord->shape();
+                EXPECT_GE(shape.right(), line->pos().x() + line->ldata()->bbox().right());
+            }
+            if (chord->beam()) {
+                ++beamed;
+                EXPECT_DOUBLE_EQ(chord->beam()->slope(), 0.0);
+            }
+            for (const Note *note : chord->notes()) {
+                // The fixture's notes are naturals in C major.
+                EXPECT_EQ(note->jianpu_digit().to_std_string(), c_major_digit(note->pitch())) << note->pitch();
+                EXPECT_TRUE(note->jianpu_accidental().is_empty());
+                EXPECT_TRUE(!note->accidental() || note->accidental()->ldata()->is_skip_draw());
+                const int octave = c_major_octave(note->pitch());
+                ASSERT_EQ(note->jianpu_octave_dots().size(), size_t(std::abs(octave))) << note->pitch();
+                for (const JianpuOctaveDot *dot : note->jianpu_octave_dots()) {
+                    ++dotted;
+                    EXPECT_EQ(dot->ldata()->above, octave > 0);
+                    EXPECT_EQ(dot->note(), note);
+                    EXPECT_EQ(dot->track(), note->track());
+                    EXPECT_DOUBLE_EQ(dot->ldata()->radius, master.style().style_absolute(Sid::JIANPU_OCTAVE_DOT_RADIUS) * note->mag());
+                    EXPECT_GT(dot->ldata()->len, 0.0);
+                }
+            }
+        }
+    }
+    EXPECT_EQ(chords, 37);
+    EXPECT_EQ(rests, 6);
+    EXPECT_EQ(lined, 1);
+    EXPECT_GT(dotted, 0);
+    EXPECT_GT(beamed, 0);
+
+    // The generated header key signature shows the tonic of the C major default.
+    auto *keysig_segment = master.first_measure()->find_rendered_segment_r(SegmentType::KEY_SIG, Fraction(0, 1));
+    ASSERT_NE(keysig_segment, nullptr);
+    const auto *keysig = to_key_sig(keysig_segment->effective_element(0));
+    ASSERT_NE(keysig, nullptr);
+    EXPECT_EQ(keysig->ldata()->jianpu_label.to_std_string(), "1=C");
+}
+
+TEST(Jianpu, ChordDigitsStackHighestOnTopInOneColumn) {
+    auto document = open_text(jianpu_source_with("<Chord><eid>Y_Y</eid><durationType>quarter</durationType>"
+                                                 "<Note><eid>X_X</eid><pitch>60</pitch><tpc>14</tpc></Note>"
+                                                 "<Note><eid>W_W</eid><pitch>64</pitch><tpc>18</tpc></Note>"
+                                                 "<Note><eid>V_V</eid><pitch>67</pitch><tpc>15</tpc></Note></Chord>"));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    render(*document);
+    auto *chord = to_chord(chord_rests(master, 0).front());
+    ASSERT_EQ(chord->notes().size(), 3u);
+    const double x = chord->notes().front()->x();
+    double above = std::numeric_limits<double>::max();
+    for (const Note *note : chord->notes()) {
+        EXPECT_DOUBLE_EQ(note->x(), x);
+        // notes() runs from low to high pitch; each digit sits above the previous one.
+        EXPECT_LT(note->y(), above);
+        above = note->y();
+    }
+    EXPECT_EQ(chord->up_note()->jianpu_digit().to_std_string(), "5");
+}
+
+TEST(Jianpu, SingleGraceNoteGetsItsOwnDiminutionBeam) {
+    auto document = open_text(jianpu_source_with("<Chord><eid>U_U</eid><acciaccatura/><durationType>eighth</durationType>"
+                                                 "<Note><eid>T_T</eid><pitch>62</pitch><tpc>16</tpc></Note></Chord>"));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    render(*document);
+    auto *main = to_chord(chord_rests(master, 0).front());
+    ASSERT_EQ(main->grace_notes().size(), 1u);
+    Chord *grace = main->grace_notes().front();
+    Beam *beam = grace->beam();
+    ASSERT_NE(beam, nullptr);
+    EXPECT_TRUE(beam->is_grace());
+    ASSERT_EQ(beam->rendered_elements().size(), 1u);
+    EXPECT_EQ(beam->rendered_elements().front(), grace);
+    ASSERT_EQ(beam->beam_segments().size(), 1u);
+    EXPECT_NEAR(beam->beam_segments().front()->line.x2() - beam->beam_segments().front()->line.x1(), grace->ldata()->bbox().width(), 0.001);
+}
+
+TEST(Jianpu, BeamsAreHorizontalWithoutRewritingTheAuthoredBeam) {
+    auto document = open_path(jianpu_fixture());
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    render(*document);
+    int beams = 0;
+    for (ChordRest *cr : chord_rests(master, 0)) {
+        Beam *beam = cr->beam();
+        if (!beam || beam->rendered_elements().front() != cr) continue;
+        ++beams;
+        EXPECT_TRUE(rendering::score::BeamTremoloLayout::no_slope(beam));
+        EXPECT_FALSE(beam->get_property(Pid::BEAM_NO_SLOPE).to_bool()) << "the style default stays the authored value";
+        EXPECT_DOUBLE_EQ(beam->slope(), 0.0);
+        EXPECT_DOUBLE_EQ(beam->beam_width(), master.style().style_absolute(Sid::JIANPU_DIMINUTION_BEAM_THICKNESS) * beam->mag() *
+                                                 (beam->is_grace() ? master.style().style_d(Sid::GRACE_NOTE_MAG) : 1.0));
+        for (const BeamSegment *segment : beam->beam_segments()) EXPECT_DOUBLE_EQ(segment->line.y1(), segment->line.y2());
+    }
+    EXPECT_GT(beams, 0);
+}
+
+TEST(Jianpu, SecondVoiceStacksBelowTheFirst) {
+    auto xml = read_text(jianpu_fixture());
+    const auto end = xml.find("</Measure>");
+    ASSERT_NE(end, std::string::npos);
+    xml.insert(end, "<voice><Chord><eid>S_S</eid><durationType>whole</durationType>"
+                    "<Note><eid>R_R</eid><pitch>48</pitch><tpc>14</tpc></Note></Chord></voice>");
+    auto document = open_text(xml);
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    render(*document);
+    int shared = 0;
+    for (Segment *s = master.first_segment(SegmentType::CHORD_REST); s; s = s->next1(SegmentType::CHORD_REST)) {
+        auto *upper = s->element(0);
+        auto *lower = s->element(1);
+        if (!upper || !lower) continue;
+        ++shared;
+        const auto baseline = [](EngravingItem *item) {
+            return item->is_chord() ? to_chord(item)->up_note()->ldata()->pos().y() : item->ldata()->pos().y();
+        };
+        EXPECT_GT(baseline(lower) - baseline(upper), master.style().style_absolute(Sid::JIANPU_VOICE_VERTICAL_DISTANCE))
+            << s->tick().ticks();
+    }
+    EXPECT_GT(shared, 0);
+}
+
+TEST(Jianpu, RenderingLeavesTheSourceHandlesAndQueriesUntouched) {
+    auto document = open_path(jianpu_fixture());
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    expect_no_layout(master);
+    const auto cold_native = native_captures(*document);
+    const auto cold_source = source_native(master);
+    const auto cold_semantic = music::semantic_dump(&master).dump();
+    const auto cold_objects = engrave::document_objects(master);
+    const auto cold_handles = master.eid_register()->size();
+    const auto cold_outline = document->outline();
+    ASSERT_TRUE(cold_outline);
+    ASSERT_EQ(cold_outline->parts.size(), 1u);
+    ASSERT_EQ(cold_outline->parts.front().staves.size(), 1u);
+    EXPECT_EQ(cold_outline->parts.front().staves.front().group, "jianpu");
+
+    for (int cycle = 0; cycle < 2; ++cycle) {
+        SCOPED_TRACE(cycle);
+        render(*document);
+        size_t dots = 0, lines = 0;
+        for (EngravingObject *object : cold_objects) {
+            EXPECT_FALSE(object->is_jianpu_octave_dot() || object->is_jianpu_duration_line());
+        }
+        master.scan_elements([&](EngravingItem *item) {
+            if (!item->is_jianpu_octave_dot() && !item->is_jianpu_duration_line()) return;
+            item->is_jianpu_octave_dot() ? ++dots : ++lines;
+            EXPECT_FALSE(source_object(*item));
+            EXPECT_TRUE(item->generated());
+            // Layout output: drawn, but not a child of its authored owner.
+            const auto &siblings = item->ownership_parent()->children();
+            EXPECT_EQ(std::find(siblings.begin(), siblings.end(), item), siblings.end());
+        });
+        EXPECT_GT(dots, 0u);
+        EXPECT_EQ(lines, 1u);
+        EXPECT_EQ(engrave::document_objects(master), cold_objects);
+        EXPECT_EQ(master.eid_register()->size(), cold_handles);
+        EXPECT_EQ(source_native(master), cold_source);
+        EXPECT_EQ(music::semantic_dump(&master).dump(), cold_semantic);
+        EXPECT_EQ(native_captures(*document), cold_native);
+
+        master.layout_data_store()->clear();
+        for (ChordRest *cr : chord_rests(master, 0)) {
+            EXPECT_TRUE(cr->jianpu_duration_lines().empty());
+            if (cr->is_chord())
+                for (Note *note : to_chord(cr)->notes()) {
+                    EXPECT_TRUE(note->jianpu_octave_dots().empty());
+                    EXPECT_TRUE(note->jianpu_digit().is_empty());
+                }
+        }
+        EXPECT_EQ(source_native(master), cold_source);
+    }
+}
+
+TEST(Jianpu, SvgDrawsTheFreeSansDigitsAndRests) {
+    auto document = open_path(jianpu_fixture());
+    ASSERT_TRUE(document);
+    // The default Jianpu face is a bundled font, not the tablature fallback (FreeSerif).
+    const auto &fonts = engrave::DocumentAccess::context(*document).fonts_database();
+    EXPECT_EQ(fonts.actual_font(muse::draw::FontDataKey(u"FreeSans"), muse::draw::Font::Type::TABLATURE).family(),
+              muse::draw::Font::FontFamily(u"FreeSans"));
+    const auto *type = master_of(*document).staff(0)->staff_type(Fraction(0, 1));
+    muse::draw::Font serif(type->jianpu_font());
+    serif.set_family(u"FreeSerif", muse::draw::Font::Type::TABLATURE);
+    EXPECT_NE(muse::draw::FontMetrics(serif).tight_bounding_rect(u"01234567").height(), type->jianpu_box_h());
+
+    const auto svg = document->render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(svg) << svg.error().message;
+    ASSERT_EQ(svg->pages.size(), 1u);
+    EXPECT_GT(text_of(svg->pages.front()).size(), 1000u);
+
+    const auto png = document->render({.format = engrave::RenderFormat::PNG, .dpi = 72});
+    ASSERT_TRUE(png) << png.error().message;
+    ASSERT_EQ(png->pages.size(), 1u);
+    EXPECT_GT(png->pages.front().size(), 1000u);
+}
+
+TEST(Jianpu, DescribeListsTheJianpuKeySignatureProperties) {
+    const auto keysig = g_engine->describe("KeySig");
+    ASSERT_TRUE(keysig) << keysig.error().message;
+    const auto find = [&](std::string_view name) -> const engrave::PropInfo * {
+        const auto it = std::ranges::find(keysig->props, name, &engrave::PropInfo::name);
+        return it == keysig->props.end() ? nullptr : &*it;
+    };
+    const auto *numbering = find("jianpuNumbering");
+    ASSERT_NE(numbering, nullptr);
+    EXPECT_TRUE(numbering->settable);
+    EXPECT_EQ(numbering->enum_tokens, (std::vector<std::string>{"followScoreKey", "custom"}));
+    const auto *tonic = find("jianpuTonicKey");
+    ASSERT_NE(tonic, nullptr);
+    EXPECT_EQ(tonic->enum_tokens.size(), 15u);
+    EXPECT_NE(std::ranges::find(tonic->enum_tokens, "F#"), tonic->enum_tokens.end());
+    EXPECT_NE(find("jianpuTonicMode"), nullptr);
+    for (const auto type : {"JianpuOctaveDot", "JianpuDurationLine"}) EXPECT_TRUE(g_engine->describe(type)) << type;
+}
