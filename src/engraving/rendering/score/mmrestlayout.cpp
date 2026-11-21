@@ -31,6 +31,7 @@
 #include "dom/mmrestrange.h"
 #include "dom/score.h"
 #include "dom/segment.h"
+#include "dom/sharedpart.h"
 #include "dom/staff.h"
 #include "editing/editmeasures.h"
 #include "engraving/dom/dummyparent.h"
@@ -310,24 +311,21 @@ Segment *MMRestLayout::copy_elements(const Segment *source, Measure *measure, co
     return display;
 }
 
-//---------------------------------------------------------
-// validMMRestMeasure
-//    return true if this might be a measure in a
-//    multi measure rest
-//---------------------------------------------------------
-
 bool MMRestLayout::valid_mm_rest_measure(const LayoutContext &ctx, const Measure *m) {
     if (m->exclude_from_numbering()) {
         return false;
     }
 
-    size_t nstaves = ctx.dom().nstaves();
-    for (staff_idx_t staff_idx = 0; staff_idx < nstaves; ++staff_idx) {
-        if (!ctx.dom().staff(staff_idx)->layout_show()) {
-            continue;
-        }
+    // MMRs are chosen before stave sharing can expose its music on either the shared or origin staves.
+    const auto check_staff = [&ctx](staff_idx_t staff_idx) {
+        const auto *staff = ctx.dom().staff(staff_idx);
+        const auto *shared = staff->part()->shared_part();
+        return staff->layout_show() || (shared && shared->enabled());
+    };
 
-        if (m->is_measure_repeat_group(staff_idx)) {
+    const size_t nstaves = ctx.dom().nstaves();
+    for (staff_idx_t staff_idx = 0; staff_idx < nstaves; ++staff_idx) {
+        if (check_staff(staff_idx) && m->is_measure_repeat_group(staff_idx)) {
             return false;
         }
     }
@@ -351,7 +349,7 @@ bool MMRestLayout::valid_mm_rest_measure(const LayoutContext &ctx, const Measure
         }
         bool rest_found = false;
         for (track_idx_t track = 0; track < tracks; ++track) {
-            if ((track % ::mu::engraving::voices) == 0 && !ctx.dom().staff(track / ::mu::engraving::voices)->layout_show()) {
+            if ((track % ::mu::engraving::voices) == 0 && !check_staff(track2staff(track))) {
                 track += ::mu::engraving::voices - 1;
                 continue;
             }

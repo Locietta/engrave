@@ -708,6 +708,12 @@ TEST(StaveSharingOutput, InsertAndRemoveTimeMovesAuthoredStates) {
 TEST(StaveSharingOutput, MeterRewritePreservesAuthoredStatesInMasterAndExcerpt) {
     using namespace mu::engraving;
     auto xml = read_text(g_source_root / "tests/data/inputs/stave-sharing.mscx");
+    // The explicit second signature stops the rewrite after the first 4/4 measure.
+    for (int staff = 1; staff <= 4; ++staff) {
+        const auto first_end = xml.find("</Measure>", xml.find(std::format("<Staff id=\"{}\">", staff)));
+        constexpr std::string_view measure_voice = "<Measure><voice>";
+        xml.insert(xml.find(measure_voice, first_end) + measure_voice.size(), "<TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>");
+    }
     const auto score_end = xml.find("</Score>");
     const auto part_start = xml.find("<SharedPart>");
     auto excerpt = xml.substr(part_start, score_end - part_start);
@@ -729,10 +735,24 @@ TEST(StaveSharingOutput, MeterRewritePreservesAuthoredStatesInMasterAndExcerpt) 
     const AuthoredStaveSharingStates master_states{
         {Fraction(0, 1), {{{8, 0}, {12, 1}}, false}},
         {Fraction(1, 1), {{}, true}},
+        {Fraction(5, 4), {{{8, 1}, {12, 0}}, false}},
     };
     const AuthoredStaveSharingStates excerpt_states{
         {Fraction(0, 1), {{{8, 4}, {12, 5}}, false}},
         {Fraction(3, 4), {{}, true}},
+        {Fraction(1, 1), {{{8, 5}, {12, 4}}, false}},
+        {Fraction(5, 4), {{}, true}},
+    };
+    const AuthoredStaveSharingStates padded_master_states{
+        {Fraction(0, 1), {{{8, 0}, {12, 1}}, false}},
+        {Fraction(3, 2), {{}, true}},
+        {Fraction(7, 4), {{{8, 1}, {12, 0}}, false}},
+    };
+    const AuthoredStaveSharingStates padded_excerpt_states{
+        {Fraction(0, 1), {{{8, 4}, {12, 5}}, false}},
+        {Fraction(3, 4), {{}, true}},
+        {Fraction(3, 2), {{{8, 5}, {12, 4}}, false}},
+        {Fraction(7, 4), {{}, true}},
     };
     auto &master = master_of(*document);
     ASSERT_EQ(master.excerpts().size(), 1u);
@@ -742,46 +762,48 @@ TEST(StaveSharingOutput, MeterRewritePreservesAuthoredStatesInMasterAndExcerpt) 
     for (const auto &[tick, state] : master_states) master.shared_parts().front()->set_authored_state(tick, state);
     for (const auto &[tick, state] : excerpt_states) excerpt_score->shared_parts().front()->set_authored_state(tick, state);
 
-    const auto expect_score = [&](engrave::Document &doc, const Fraction &bar_length, size_t bars) {
+    const auto expect_score = [&](engrave::Document &doc, bool padded) {
         auto &score = master_of(doc);
         ASSERT_EQ(score.excerpts().size(), 1u);
+        const std::vector<Fraction> bar_lengths =
+            padded ? std::vector<Fraction>{{3, 4}, {3, 4}, {1, 1}} : std::vector<Fraction>{{1, 1}, {1, 1}};
         const auto expect_part = [&](Score &view, const AuthoredStaveSharingStates &expected) {
             ASSERT_EQ(view.shared_parts().size(), 1u);
             EXPECT_EQ(view.shared_parts().front()->authored_states(), expected);
-            size_t measures = 0;
+            std::vector<Fraction> actual_lengths;
             for (auto *measure = view.first_measure(); measure; measure = measure->next_measure()) {
-                EXPECT_EQ(measure->ticks(), bar_length);
-                ++measures;
+                actual_lengths.push_back(measure->ticks());
             }
-            EXPECT_EQ(measures, bars);
-            EXPECT_EQ(view.end_tick(), Fraction(2, 1));
+            EXPECT_EQ(actual_lengths, bar_lengths);
+            EXPECT_EQ(view.end_tick(), padded ? Fraction(5, 2) : Fraction(2, 1));
         };
-        expect_part(score, master_states);
-        expect_part(*score.excerpts().front()->excerpt_score(), excerpt_states);
+        expect_part(score, padded ? padded_master_states : master_states);
+        expect_part(*score.excerpts().front()->excerpt_score(), padded ? padded_excerpt_states : excerpt_states);
     };
 
+    expect_score(*document, false);
     ASSERT_TRUE(document->checkpoint("before rewrite"));
     auto *manager = master.transaction_manager();
     manager->begin_transaction(muse::TranslatableString::untranslatable("rewrite meter"));
     auto *first = master.first_measure();
     auto *signature = Factory::create_time_sig(first->find_segment(SegmentType::TIME_SIG, first->tick()));
-    signature->set_sig(Fraction(2, 4));
+    signature->set_sig(Fraction(3, 4));
     EditTimeSig::add_time_sig(manager->current_or_dummy_transaction(), &master, first, 2, signature, false);
     manager->end_transaction();
     engrave::assign_missing_ids(master);
-    expect_score(*document, Fraction(1, 2), 4);
+    expect_score(*document, true);
 
     ASSERT_TRUE(document->checkpoint("after rewrite"));
     ASSERT_TRUE(document->restore_checkpoint("before rewrite"));
-    expect_score(*document, Fraction(1, 1), 2);
+    expect_score(*document, false);
     ASSERT_TRUE(document->restore_checkpoint("after rewrite"));
-    expect_score(*document, Fraction(1, 2), 4);
+    expect_score(*document, true);
 
     const auto saved = document->export_score({.format = engrave::Format::MSCZ});
     ASSERT_TRUE(saved);
     auto reopened = g_engine->open(*saved);
     ASSERT_TRUE(reopened);
-    expect_score(**reopened, Fraction(1, 2), 4);
+    expect_score(**reopened, true);
 }
 
 TEST(StaveSharingOutput, StaffEditsRebaseAuthoredTracksAcrossCheckpointRestoreAndSave) {
@@ -1140,46 +1162,52 @@ TEST(StaveSharingOutput, RemovingSharedStaffKeepsIncompatibleOriginVoicesVisible
     fourth->set_pitch(81);
     fourth->set_tpc1(17);
     fourth->set_tpc2(17);
-    ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
-    ASSERT_EQ(part->track_map_at_tick(measure->tick()).size(), 5u);
-
     auto *manager = master.transaction_manager();
     manager->begin_transaction(muse::TranslatableString::untranslatable("remove a shared staff"));
     master.cmd_remove_staff(1);
     manager->end_transaction();
     ASSERT_EQ(part->staves().size(), 1u);
-    // Keep the incompatible first measure in layout so it triggers suspension.
-    measure->set_exclude_from_numbering(true);
     master.style().set(Sid::CREATE_MULTI_MEASURE_RESTS, true);
     master.style().set(Sid::MIN_EMPTY_MEASURES, 1);
     auto *second = measure->next_measure();
     ASSERT_NE(second, nullptr);
+    expect_no_layout(master);
+    ASSERT_TRUE(master.staff(0)->layout_show());
+    ASSERT_FALSE(master.staff(1)->layout_show());
+    ASSERT_FALSE(master.staff(2)->layout_show());
     const auto cold = source_native(master);
     const auto objects = engrave::document_objects(master);
     for (int pass = 0; pass < 2; ++pass) {
         ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
-        EXPECT_EQ(second->mm_rest(), nullptr);
-        EXPECT_EQ(second->covering_mm_rest_or_this(), second);
-        EXPECT_FALSE(measure->system()->staff(0)->show());
-        EXPECT_TRUE(measure->system()->staff(1)->show());
-        EXPECT_TRUE(measure->system()->staff(2)->show());
         std::vector<int> visible_pitches;
-        segment->scan_elements([&](const auto *item) {
-            if (item->is_note()) visible_pitches.push_back(to_note(item)->pitch());
-        });
+        for (auto *bar : {measure, second}) {
+            EXPECT_EQ(bar->mm_rest(), nullptr);
+            EXPECT_EQ(bar->covering_mm_rest_or_this(), bar);
+            ASSERT_NE(bar->system(), nullptr);
+            EXPECT_FALSE(bar->system()->staff(0)->show());
+            EXPECT_TRUE(bar->system()->staff(1)->show());
+            EXPECT_TRUE(bar->system()->staff(2)->show());
+            for (auto *chord_rest = bar->first(SegmentType::CHORD_REST); chord_rest;
+                 chord_rest = chord_rest->next(SegmentType::CHORD_REST)) {
+                chord_rest->scan_elements([&](const auto *item) {
+                    if (item->is_note()) visible_pitches.push_back(to_note(item)->pitch());
+                });
+            }
+        }
         std::ranges::sort(visible_pitches);
-        EXPECT_EQ(visible_pitches, (std::vector{72, 77, 79, 81, 84}));
+        EXPECT_EQ(visible_pitches, (std::vector{72, 72, 72, 74, 74, 74, 74, 77, 79, 81, 84}));
         EXPECT_EQ(source_native(master), cold);
         EXPECT_EQ(engrave::document_objects(master), objects);
         master.invalidate_layout(measure->tick(), measure->end_tick());
     }
 
-    master.style().set(Sid::CREATE_MULTI_MEASURE_RESTS, false);
     fourth->set_pitch(70);
     fourth->set_tpc1(12);
     fourth->set_tpc2(12);
     master.invalidate_layout(measure->tick(), measure->end_tick());
     ASSERT_TRUE(document->render({.format = engrave::RenderFormat::SVG}));
+    EXPECT_EQ(measure->covering_mm_rest_or_this(), measure);
+    EXPECT_EQ(second->covering_mm_rest_or_this(), second);
     EXPECT_TRUE(measure->system()->staff(0)->show());
     EXPECT_FALSE(measure->system()->staff(1)->show());
     EXPECT_FALSE(measure->system()->staff(2)->show());
