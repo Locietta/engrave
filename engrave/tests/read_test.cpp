@@ -1,7 +1,10 @@
 #include "engraving/dom/dummyparent.h"
+#include "engraving/dom/glissando.h"
 #include "engraving/dom/guitarbend.h"
 #include "engraving/dom/linkedobjects.h"
+#include "engraving/dom/noteline.h"
 #include "engraving/dom/range.h"
+#include "engraving/editing/edittimesig.h"
 #include "read_test_fixture.h"
 
 using namespace read_test;
@@ -1301,8 +1304,8 @@ void expect_line_on(const mu::engraving::Spanner *line, int start_pitch, mu::eng
 
 TEST(Read, TimeSigRewriteKeepsNoteLinesOnGeneratedTieContinuations) {
     using namespace mu::engraving;
-    enum class Anchor { EndsOnContinuation, StartToContinuation, GraceOnContinuation };
-    for (const Anchor anchor : {Anchor::EndsOnContinuation, Anchor::StartToContinuation, Anchor::GraceOnContinuation}) {
+    enum class Anchor { ENDS_ON_CONTINUATION, START_TO_CONTINUATION, GRACE_ON_CONTINUATION };
+    for (const Anchor anchor : {Anchor::ENDS_ON_CONTINUATION, Anchor::START_TO_CONTINUATION, Anchor::GRACE_ON_CONTINUATION}) {
         // 4/4 joins the two halves of the split E4 back into one measure; in 5/8 the first half is split again at 5/8.
         for (const engrave::Fraction meter : {engrave::Fraction{4, 4}, engrave::Fraction{5, 8}}) {
             SCOPED_TRACE(std::format("anchor {} meter {}/{}", static_cast<int>(anchor), meter.num, meter.den));
@@ -1322,7 +1325,7 @@ TEST(Read, TimeSigRewriteKeepsNoteLinesOnGeneratedTieContinuations) {
             ASSERT_TRUE(continuation->up_note()->tie_back() && continuation->up_note()->tie_back()->generated());
 
             Note *grace_note = nullptr;
-            if (anchor == Anchor::GraceOnContinuation) {
+            if (anchor == Anchor::GRACE_ON_CONTINUATION) {
                 Command cmd(master);
                 master.set_grace_note(e4, 59, NoteType::ACCIACCATURA, Constants::division / 2);
                 grace_note = master.set_grace_note(continuation, 62, NoteType::ACCIACCATURA, Constants::division / 2);
@@ -1331,15 +1334,15 @@ TEST(Read, TimeSigRewriteKeepsNoteLinesOnGeneratedTieContinuations) {
             }
             Spanner *line = nullptr;
             switch (anchor) {
-                case Anchor::EndsOnContinuation:
+                case Anchor::ENDS_ON_CONTINUATION:
                     line = Factory::create_glissando(c4->up_note());
                     line->set_note_span(c4->up_note(), continuation->up_note());
                     break;
-                case Anchor::StartToContinuation:
+                case Anchor::START_TO_CONTINUATION:
                     line = Factory::create_note_line(e4->up_note());
                     line->set_note_span(e4->up_note(), continuation->up_note());
                     break;
-                case Anchor::GraceOnContinuation:
+                case Anchor::GRACE_ON_CONTINUATION:
                     line = Factory::create_glissando(grace_note);
                     line->set_note_span(grace_note, f4->up_note());
                     break;
@@ -1353,9 +1356,9 @@ TEST(Read, TimeSigRewriteKeepsNoteLinesOnGeneratedTieContinuations) {
             ASSERT_EQ(lines.size(), 1u);
             const Fraction e4_last_part = meter == engrave::Fraction{5, 8} ? Fraction(5, 8) : Fraction(2, 4);
             switch (anchor) {
-                case Anchor::EndsOnContinuation: expect_line_on(lines.front(), 60, Fraction(0, 1), 64, Fraction(3, 4)); break;
-                case Anchor::StartToContinuation: expect_line_on(lines.front(), 64, e4_last_part, 64, Fraction(3, 4)); break;
-                case Anchor::GraceOnContinuation: {
+                case Anchor::ENDS_ON_CONTINUATION: expect_line_on(lines.front(), 60, Fraction(0, 1), 64, Fraction(3, 4)); break;
+                case Anchor::START_TO_CONTINUATION: expect_line_on(lines.front(), 64, e4_last_part, 64, Fraction(3, 4)); break;
+                case Anchor::GRACE_ON_CONTINUATION: {
                     expect_line_on(lines.front(), 62, Fraction(3, 4), 65, Fraction(4, 4));
                     const Note *start = to_note(lines.front()->start_element());
                     ASSERT_TRUE(start->chord()->is_grace());
@@ -1575,6 +1578,425 @@ TEST(Read, TimeSigRewritesKeepOneNoteLinePerExcerpt) {
         EXPECT_TRUE(master_lines.front()->links()->contains(part_lines.front()));
     }
     ASSERT_TRUE(document.export_score({.format = engrave::Format::MSCZ}));
+}
+
+TEST(Read, TimeSigRewritePreservesExcerptOnlyNoteOwnedLines) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(as_bytes(note_line_rewrite_xml));
+    ASSERT_TRUE(opened) << opened.error().message;
+    auto &document = **opened;
+    auto &master = master_of(document);
+    auto &registry = *master.eid_register();
+    ASSERT_TRUE(document.edit({{engrave::GenerateExcerpts{{engrave::from_engine(master.parts().front()->eid())}}}}));
+    ASSERT_EQ(master.excerpts().size(), 1u);
+    Score *part = master.excerpts().front()->excerpt_score();
+    ASSERT_NE(part, nullptr);
+
+    // Split E4 at 3/4 first so we also cover an excerpt-only line anchored on a generated-tie continuation.
+    // Rewriting 8/4 into 3/4 produces three 3/4 measures (9/4), shifting the untouched 4/4 B4 measure to 9/4.
+    ASSERT_TRUE(document.edit({{engrave::SetTimeSig{engrave::from_engine(master.first_measure()->eid()), {3, 4}}}}));
+    {
+        Command cmd(master);
+        Chord *part_c4_chord = chord_at(*part, Fraction(0, 1));
+        Chord *part_e4_cont_chord = chord_at(*part, Fraction(3, 4));
+        Chord *part_a4_chord = chord_at(*part, Fraction(6, 4));
+        Chord *part_b4_chord = chord_at(*part, Fraction(9, 4));
+        ASSERT_TRUE(part_c4_chord && part_e4_cont_chord && part_a4_chord && part_b4_chord);
+        Note *part_c4 = part_c4_chord->up_note();
+        Note *part_e4_cont = part_e4_cont_chord->up_note();
+        Note *part_a4 = part_a4_chord->up_note();
+        Note *part_b4 = part_b4_chord->up_note();
+        ASSERT_TRUE(part_e4_cont->tie_back() && part_e4_cont->tie_back()->generated());
+
+        auto *internal = Factory::create_note_line(part_c4);
+        internal->set_note_span(part_c4, part_e4_cont);
+        part->undo_add_element(internal, false);
+
+        auto *crossing = Factory::create_glissando(part_a4);
+        crossing->set_note_span(part_a4, part_b4);
+        part->undo_add_element(crossing, false);
+        cmd.commit();
+    }
+    engrave::assign_missing_ids(master);
+    ASSERT_TRUE(live_note_lines(master).empty());
+    ASSERT_EQ(live_note_lines(*part).size(), 2u);
+
+    for (const engrave::Fraction meter : {engrave::Fraction{4, 4}, engrave::Fraction{2, 4}, engrave::Fraction{4, 4}}) {
+        SCOPED_TRACE(std::format("meter {}/{}", meter.num, meter.den));
+        std::vector<SourceHandle> old_part_lines;
+        for (Spanner *line : live_note_lines(*part)) old_part_lines.push_back(registry.enroll(*line));
+        ASSERT_EQ(old_part_lines.size(), 2u);
+
+        ASSERT_TRUE(document.edit({{engrave::SetTimeSig{engrave::from_engine(master.first_measure()->eid()), meter}}}));
+
+        for (const SourceHandle &handle : old_part_lines) EXPECT_EQ(registry.item_from_handle(handle), nullptr);
+        EXPECT_TRUE(live_note_lines(master).empty());
+        EXPECT_EQ(parked_note_lines(master), 0u);
+        EXPECT_EQ(parked_note_lines(*part), 0u);
+
+        const auto part_lines = live_note_lines(*part);
+        ASSERT_EQ(part_lines.size(), 2u);
+        for (const Spanner *line : part_lines) {
+            EXPECT_EQ(line->score(), part);
+            EXPECT_EQ(line->links(), nullptr);
+            EXPECT_EQ(to_note(line->start_element())->score(), part);
+            EXPECT_EQ(to_note(line->end_element())->score(), part);
+            if (line->is_note_line()) {
+                expect_line_on(line, 60, Fraction(0, 1), 64, Fraction(3, 4));
+            } else {
+                // Rewriting 9/4 into 4/4 pads to 12/4 (3/1), which is also an exact multiple of 2/4.
+                expect_line_on(line, 69, Fraction(6, 4), 71, Fraction(3, 1));
+            }
+        }
+    }
+
+    auto saved = document.export_score({.format = engrave::Format::MSCX});
+    ASSERT_TRUE(saved) << saved.error().message;
+    auto reopened = g_engine->open(*saved);
+    ASSERT_TRUE(reopened) << reopened.error().message;
+    EXPECT_TRUE(live_note_lines(master_of(**reopened)).empty());
+    ASSERT_EQ(master_of(**reopened).excerpts().size(), 1u);
+    EXPECT_EQ(live_note_lines(*master_of(**reopened).excerpts().front()->excerpt_score()).size(), 2u);
+}
+
+TEST(Read, TimeSigRewritePreservesNonPrimaryLinkedStaffNoteLines) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(as_bytes(note_line_rewrite_xml));
+    ASSERT_TRUE(opened) << opened.error().message;
+    auto &document = **opened;
+    auto &master = master_of(document);
+    auto &registry = *master.eid_register();
+    {
+        Command cmd(master);
+        Staff *source = master.staff(0);
+        Staff *linked = Factory::create_staff(source->part());
+        linked->set_part(source->part());
+        master.undo_insert_staff(linked, 1, false);
+        Excerpt::clone_staff(source, linked);
+        cmd.commit();
+    }
+    ASSERT_EQ(master.nstaves(), 2u);
+
+    const track_idx_t secondary_track = staff2track(1);
+    {
+        Command cmd(master);
+        Note *c4_secondary = chord_at(master, Fraction(0, 1), secondary_track)->up_note();
+        Note *d4_secondary = chord_at(master, Fraction(1, 4), secondary_track)->up_note();
+        Note *f4_secondary = chord_at(master, Fraction(4, 4), secondary_track)->up_note();
+        Note *g4_secondary = chord_at(master, Fraction(5, 4), secondary_track)->up_note();
+        ASSERT_TRUE(c4_secondary && d4_secondary && f4_secondary && g4_secondary);
+
+        auto *secondary_only = Factory::create_note_line(c4_secondary);
+        secondary_only->set_note_span(c4_secondary, d4_secondary);
+        master.undo_add_element(secondary_only, false);
+
+        auto *linked_from_secondary = Factory::create_glissando(f4_secondary);
+        linked_from_secondary->set_note_span(f4_secondary, g4_secondary);
+        master.undo_add_element(linked_from_secondary, true);
+        cmd.commit();
+    }
+    engrave::assign_missing_ids(master);
+    ASSERT_EQ(live_note_lines(master).size(), 3u);
+
+    for (const engrave::Fraction meter : {engrave::Fraction{3, 4}, engrave::Fraction{4, 4}, engrave::Fraction{2, 4}}) {
+        SCOPED_TRACE(std::format("meter {}/{}", meter.num, meter.den));
+        std::vector<SourceHandle> old_lines;
+        for (Spanner *line : live_note_lines(master)) old_lines.push_back(registry.enroll(*line));
+        ASSERT_EQ(old_lines.size(), 3u);
+
+        ASSERT_TRUE(document.edit({{engrave::SetTimeSig{engrave::from_engine(master.first_measure()->eid()), meter}}}));
+
+        for (const SourceHandle &handle : old_lines) EXPECT_EQ(registry.item_from_handle(handle), nullptr);
+        EXPECT_EQ(parked_note_lines(master), 0u);
+        const auto lines = live_note_lines(master);
+        ASSERT_EQ(lines.size(), 3u);
+
+        size_t note_line_count = 0;
+        ankerl::unordered_dense::set<staff_idx_t> gliss_staves;
+        for (const Spanner *line : lines) {
+            const staff_idx_t st_idx = to_note(line->start_element())->staff_idx();
+            EXPECT_EQ(to_note(line->end_element())->staff_idx(), st_idx);
+            if (line->is_note_line()) {
+                ++note_line_count;
+                EXPECT_EQ(st_idx, 1u);
+                EXPECT_EQ(line->links(), nullptr);
+                expect_line_on(line, 60, Fraction(0, 1), 62, Fraction(1, 4));
+            } else {
+                gliss_staves.insert(st_idx);
+                ASSERT_NE(line->links(), nullptr);
+                EXPECT_EQ(line->links()->size(), 2u);
+                expect_line_on(line, 65, Fraction(4, 4), 67, Fraction(5, 4));
+            }
+        }
+        EXPECT_EQ(note_line_count, 1u);
+        EXPECT_EQ(gliss_staves.size(), 2u);
+        EXPECT_TRUE(gliss_staves.contains(0));
+        EXPECT_TRUE(gliss_staves.contains(1));
+    }
+    ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+    ASSERT_TRUE(document.export_score({.format = engrave::Format::MSCX}));
+}
+
+TEST(Read, TimeSigRewritePreservesExcerptUnlinkedLineOverrides) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(as_bytes(note_line_rewrite_xml));
+    ASSERT_TRUE(opened) << opened.error().message;
+    auto &document = **opened;
+    auto &master = master_of(document);
+    ASSERT_TRUE(document.edit({{engrave::GenerateExcerpts{{engrave::from_engine(master.parts().front()->eid())}}}}));
+    ASSERT_EQ(master.excerpts().size(), 1u);
+    Score *part = master.excerpts().front()->excerpt_score();
+    ASSERT_NE(part, nullptr);
+
+    const PointF part_gliss_offset = PointF(1.25, -2.5) * part->style().spatium();
+    const PointF part_seg_off2 = PointF(0.75, 1.5) * part->style().spatium();
+    const Color part_noteline_color(200, 40, 60);
+    const Spatium part_noteline_width(0.35);
+    const AuthoredChildKey seg_key{AuthoredChildRole::SPANNER_SEGMENT, 0};
+
+    {
+        Command cmd(master);
+        Note *c4 = chord_at(master, Fraction(0, 1))->up_note();
+        Note *d4 = chord_at(master, Fraction(1, 4))->up_note();
+        Note *g4 = chord_at(master, Fraction(5, 4))->up_note();
+        Note *a4 = chord_at(master, Fraction(6, 4))->up_note();
+
+        auto *gliss = Factory::create_glissando(c4);
+        gliss->set_note_span(c4, d4);
+        master.undo_add_element(gliss);
+
+        auto *note_line = Factory::create_note_line(g4);
+        note_line->set_note_span(g4, a4);
+        master.undo_add_element(note_line);
+
+        Spanner *part_gliss = to_spanner(gliss->find_linked_in_score(part));
+        Spanner *part_note_line = to_spanner(note_line->find_linked_in_score(part));
+        ASSERT_TRUE(part_gliss && part_note_line);
+
+        // Unlink position on part_gliss (leaving appearance linked to master), plus a segment-level override.
+        part_gliss->undo_change_property(Pid::OFFSET, part_gliss_offset, PropertyFlags::UNSTYLED);
+        ASSERT_TRUE(set_child_override(*part_gliss, seg_key, Pid::OFFSET2, part_seg_off2, PropertyFlags::NOSTYLE));
+
+        // Unlink appearance + PropertyFlags::UNSTYLED on part_note_line (leaving position linked to master).
+        part_note_line->undo_change_property(Pid::COLOR, PropertyValue::from_value(part_noteline_color), PropertyFlags::UNSTYLED);
+        part_note_line->undo_change_property(Pid::LINE_WIDTH, part_noteline_width, PropertyFlags::UNSTYLED);
+        part_note_line->undo_change_property(Pid::VISIBLE, false, PropertyFlags::NOSTYLE);
+        cmd.commit();
+    }
+    engrave::assign_missing_ids(master);
+
+    for (const engrave::Fraction meter : {engrave::Fraction{3, 4}, engrave::Fraction{4, 4}}) {
+        SCOPED_TRACE(std::format("meter {}/{}", meter.num, meter.den));
+        ASSERT_TRUE(document.edit({{engrave::SetTimeSig{engrave::from_engine(master.first_measure()->eid()), meter}}}));
+
+        const auto master_lines = live_note_lines(master);
+        const auto part_lines = live_note_lines(*part);
+        ASSERT_EQ(master_lines.size(), 2u);
+        ASSERT_EQ(part_lines.size(), 2u);
+
+        auto find_by_type = [](const std::vector<Spanner *> &lines, ElementType type) -> Spanner * {
+            auto it = std::ranges::find_if(lines, [type](const Spanner *sp) { return sp->type() == type; });
+            return it != lines.end() ? *it : nullptr;
+        };
+
+        Glissando *m_gliss = to_glissando(find_by_type(master_lines, ElementType::GLISSANDO));
+        Glissando *p_gliss = to_glissando(find_by_type(part_lines, ElementType::GLISSANDO));
+        NoteLine *m_nl = to_note_line(find_by_type(master_lines, ElementType::NOTELINE));
+        NoteLine *p_nl = to_note_line(find_by_type(part_lines, ElementType::NOTELINE));
+        ASSERT_TRUE(m_gliss && p_gliss && m_nl && p_nl);
+
+        ASSERT_NE(m_gliss->links(), nullptr);
+        EXPECT_TRUE(m_gliss->links()->contains(p_gliss));
+        EXPECT_EQ(m_gliss->offset(), PointF());
+        EXPECT_EQ(p_gliss->offset(), part_gliss_offset);
+        EXPECT_FALSE(p_gliss->is_position_linked_to_master());
+        EXPECT_TRUE(p_gliss->is_appearance_linked_to_master());
+        ASSERT_TRUE(child_override(*p_gliss, seg_key, Pid::OFFSET2).has_value());
+        EXPECT_EQ(child_override(*p_gliss, seg_key, Pid::OFFSET2)->value<PointF>(), part_seg_off2);
+        EXPECT_FALSE(child_override(*m_gliss, seg_key, Pid::OFFSET2).has_value());
+
+        ASSERT_NE(m_nl->links(), nullptr);
+        EXPECT_TRUE(m_nl->links()->contains(p_nl));
+        EXPECT_TRUE(m_nl->visible());
+        EXPECT_EQ(m_nl->property_flags(Pid::LINE_WIDTH), PropertyFlags::STYLED);
+        EXPECT_NE(m_nl->get_property(Pid::COLOR).value<Color>(), part_noteline_color);
+        EXPECT_FALSE(p_nl->visible());
+        EXPECT_EQ(p_nl->get_property(Pid::COLOR).value<Color>(), part_noteline_color);
+        EXPECT_EQ(p_nl->line_width(), part_noteline_width);
+        EXPECT_EQ(p_nl->property_flags(Pid::LINE_WIDTH), PropertyFlags::UNSTYLED);
+        EXPECT_FALSE(p_nl->is_appearance_linked_to_master());
+        EXPECT_TRUE(p_nl->is_position_linked_to_master());
+    }
+
+    // Verify still-linked property groups propagate from master without clobbering unlinked overrides.
+    const auto master_lines = live_note_lines(master);
+    const auto part_lines = live_note_lines(*part);
+    Spanner *m_gliss = *std::ranges::find_if(master_lines, [](const Spanner *sp) { return sp->is_glissando(); });
+    Spanner *p_gliss = *std::ranges::find_if(part_lines, [](const Spanner *sp) { return sp->is_glissando(); });
+    Spanner *m_nl = *std::ranges::find_if(master_lines, [](const Spanner *sp) { return sp->is_note_line(); });
+    Spanner *p_nl = *std::ranges::find_if(part_lines, [](const Spanner *sp) { return sp->is_note_line(); });
+
+    const Color master_gliss_color(20, 120, 220);
+    const PointF master_nl_offset = PointF(-0.5, 1.0) * master.style().spatium();
+    {
+        Command cmd(master);
+        m_gliss->undo_change_property(Pid::COLOR, PropertyValue::from_value(master_gliss_color), PropertyFlags::UNSTYLED);
+        m_nl->undo_change_property(Pid::OFFSET, master_nl_offset, PropertyFlags::UNSTYLED);
+        cmd.commit();
+    }
+    EXPECT_EQ(p_gliss->get_property(Pid::COLOR).value<Color>(), master_gliss_color);
+    EXPECT_EQ(p_gliss->offset(), part_gliss_offset);
+    EXPECT_EQ(p_nl->offset(), master_nl_offset);
+    EXPECT_EQ(p_nl->get_property(Pid::COLOR).value<Color>(), part_noteline_color);
+    EXPECT_FALSE(p_nl->visible());
+    EXPECT_EQ(p_nl->property_flags(Pid::LINE_WIDTH), PropertyFlags::UNSTYLED);
+
+    ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+    auto saved = document.export_score({.format = engrave::Format::MSCX});
+    ASSERT_TRUE(saved) << saved.error().message;
+    ASSERT_TRUE(g_engine->open(*saved));
+}
+
+TEST(Read, TimeSigRewriteKeepsNoteLinesOnSplitTupletContinuations) {
+    using namespace mu::engraving;
+    // 4/4 measure 1 holds a 3:2 half-note triplet [C4 (0), E4 (1/3), G4 (2/3)]; measure 2 has an explicit 4/4 TimeSig.
+    constexpr std::string_view split_tuplet_xml = R"(<museScore version="4.60"><Score><Division>480</Division>
+<Part><Staff id="1"/><Instrument id="guitar"><trackName>Guitar</trackName><instrumentId>pluck.guitar</instrumentId></Instrument></Part>
+<Staff id="1">
+<Measure><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
+<Tuplet><normalNotes>2</normalNotes><actualNotes>3</actualNotes><baseNote>half</baseNote></Tuplet>
+<Chord><durationType>half</durationType><Note><pitch>60</pitch><tpc>14</tpc></Note></Chord>
+<Chord><durationType>half</durationType><Note><pitch>64</pitch><tpc>18</tpc></Note></Chord>
+<Chord><durationType>half</durationType><Note><pitch>67</pitch><tpc>15</tpc></Note></Chord>
+<endTuplet/>
+</voice></Measure>
+<Measure><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
+<Chord><durationType>half</durationType><Note><pitch>71</pitch><tpc>19</tpc></Note></Chord>
+<Chord><durationType>half</durationType><Note><pitch>72</pitch><tpc>14</tpc></Note></Chord>
+</voice></Measure>
+</Staff></Score></museScore>)";
+
+    auto split_into_two_four = [](MasterScore &master) {
+        Command cmd(master);
+        Transaction &tx = master.transaction_manager()->current_or_dummy_transaction();
+        Measure *m1 = master.first_measure();
+        Segment *old_ts = m1->find_segment(SegmentType::TIME_SIG, Fraction(0, 1));
+        if (old_ts) master.undo_remove_element(old_ts);
+        const bool ok = EditTimeSig::rewrite_measures(tx, &master, m1, m1, Fraction(2, 4), muse::nidx);
+        if (!ok) return false;
+        Measure *new_m1 = master.first_measure();
+        Segment *ts_seg = new_m1->undo_get_segment(SegmentType::TIME_SIG, Fraction(0, 1));
+        TimeSig *ts = Factory::create_time_sig(ts_seg);
+        ts->set_sig(Fraction(2, 4));
+        ts->set_track(0);
+        master.undo_add_element(ts);
+        cmd.commit();
+        engrave::assign_missing_ids(master);
+        return true;
+    };
+
+    // Baseline: without an anchored line or grace note, recombining the split generated tuplet absorbs the continuation.
+    {
+        auto opened = g_engine->open(as_bytes(split_tuplet_xml));
+        ASSERT_TRUE(opened) << opened.error().message;
+        auto &document = **opened;
+        auto &master = master_of(document);
+        ASSERT_TRUE(split_into_two_four(master));
+        Chord *cont = chord_at(master, Fraction(1, 2));
+        ASSERT_NE(cont, nullptr);
+        ASSERT_TRUE(cont->tuplet() && cont->tuplet()->generated());
+        ASSERT_TRUE(cont->up_note()->tie_back() && cont->up_note()->tie_back()->generated());
+
+        ASSERT_TRUE(document.edit({{engrave::SetTimeSig{engrave::from_engine(master.first_measure()->eid()), {4, 4}}}}));
+        const Chord *c4 = chord_at(master, Fraction(0, 1));
+        const Chord *e4 = chord_at(master, Fraction(1, 3));
+        const Chord *g4 = chord_at(master, Fraction(2, 3));
+        ASSERT_TRUE(c4 && e4 && g4);
+        EXPECT_EQ(c4->up_note()->pitch(), 60);
+        EXPECT_EQ(e4->up_note()->pitch(), 64);
+        EXPECT_EQ(e4->ticks(), Fraction(1, 2));
+        EXPECT_EQ(e4->up_note()->tie_for(), nullptr);
+        EXPECT_EQ(g4->up_note()->pitch(), 67);
+        EXPECT_EQ(chord_at(master, Fraction(1, 2)), nullptr);
+    }
+
+    enum class Anchor { ENDS_ON_CONTINUATION, START_TO_CONTINUATION, GRACE_ON_CONTINUATION };
+    for (const Anchor anchor : {Anchor::ENDS_ON_CONTINUATION, Anchor::START_TO_CONTINUATION, Anchor::GRACE_ON_CONTINUATION}) {
+        SCOPED_TRACE(static_cast<int>(anchor));
+        auto opened = g_engine->open(as_bytes(split_tuplet_xml));
+        ASSERT_TRUE(opened) << opened.error().message;
+        auto &document = **opened;
+        auto &master = master_of(document);
+        ASSERT_TRUE(split_into_two_four(master));
+
+        Chord *c4 = chord_at(master, Fraction(0, 1));
+        Chord *e4_first = chord_at(master, Fraction(1, 3));
+        Chord *continuation = chord_at(master, Fraction(1, 2));
+        Chord *g4 = chord_at(master, Fraction(2, 3));
+        ASSERT_TRUE(c4 && e4_first && continuation && g4);
+        ASSERT_TRUE(continuation->tuplet() && continuation->tuplet()->generated());
+        ASSERT_TRUE(continuation->up_note()->tie_back() && continuation->up_note()->tie_back()->generated());
+
+        Note *grace_note = nullptr;
+        if (anchor == Anchor::GRACE_ON_CONTINUATION) {
+            Command cmd(master);
+            master.set_grace_note(e4_first, 59, NoteType::ACCIACCATURA, Constants::division / 2);
+            grace_note = master.set_grace_note(continuation, 62, NoteType::ACCIACCATURA, Constants::division / 2);
+            cmd.commit();
+            ASSERT_EQ(continuation->grace_notes().size(), 1u);
+        }
+
+        Spanner *line = nullptr;
+        switch (anchor) {
+            case Anchor::ENDS_ON_CONTINUATION:
+                line = Factory::create_glissando(c4->up_note());
+                line->set_note_span(c4->up_note(), continuation->up_note());
+                break;
+            case Anchor::START_TO_CONTINUATION:
+                line = Factory::create_note_line(e4_first->up_note());
+                line->set_note_span(e4_first->up_note(), continuation->up_note());
+                break;
+            case Anchor::GRACE_ON_CONTINUATION:
+                line = Factory::create_glissando(grace_note);
+                line->set_note_span(grace_note, g4->up_note());
+                break;
+        }
+        master.add_element(line);
+        engrave::assign_missing_ids(master);
+
+        ASSERT_TRUE(document.edit({{engrave::SetTimeSig{engrave::from_engine(master.first_measure()->eid()), {4, 4}}}}));
+
+        const Chord *new_c4 = chord_at(master, Fraction(0, 1));
+        const Chord *new_e4_first = chord_at(master, Fraction(1, 3));
+        const Chord *new_continuation = chord_at(master, Fraction(1, 2));
+        const Chord *new_g4 = chord_at(master, Fraction(2, 3));
+        ASSERT_TRUE(new_c4 && new_e4_first && new_continuation && new_g4);
+        ASSERT_NE(new_continuation->tuplet(), nullptr);
+        EXPECT_EQ(new_continuation->tuplet(), new_e4_first->tuplet());
+        EXPECT_EQ(new_continuation->tuplet()->elements().size(), 4u);
+        ASSERT_NE(new_continuation->up_note()->tie_back(), nullptr);
+        EXPECT_EQ(new_continuation->up_note()->tie_back()->start_note(), new_e4_first->up_note());
+
+        const auto lines = live_note_lines(master);
+        ASSERT_EQ(lines.size(), 1u);
+        switch (anchor) {
+            case Anchor::ENDS_ON_CONTINUATION: expect_line_on(lines.front(), 60, Fraction(0, 1), 64, Fraction(1, 2)); break;
+            case Anchor::START_TO_CONTINUATION: expect_line_on(lines.front(), 64, Fraction(1, 3), 64, Fraction(1, 2)); break;
+            case Anchor::GRACE_ON_CONTINUATION: {
+                expect_line_on(lines.front(), 62, Fraction(1, 2), 67, Fraction(2, 3));
+                const Note *start = to_note(lines.front()->start_element());
+                ASSERT_TRUE(start->chord()->is_grace());
+                EXPECT_EQ(start->chord()->ownership_parent(), new_continuation);
+                ASSERT_EQ(new_e4_first->grace_notes().size(), 1u);
+                EXPECT_EQ(new_e4_first->grace_notes().front()->up_note()->pitch(), 59);
+                ASSERT_EQ(new_continuation->grace_notes().size(), 1u);
+                EXPECT_EQ(new_continuation->grace_notes().front()->up_note()->pitch(), 62);
+                break;
+            }
+        }
+        EXPECT_EQ(parked_note_lines(master), 0u);
+        ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+    }
 }
 
 TEST(Read, TupletAddDoesNotDuplicateExistingElement) {

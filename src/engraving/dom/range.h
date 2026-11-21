@@ -183,23 +183,30 @@ private:
 
     struct NoteEndpointRef {
         const Chord *range_chord = nullptr;
+        SourceHandle staff;
         bool is_grace = false;
         size_t grace_index = 0;
         size_t note_index = 0;
         SourceHandle external_note;
     };
 
-    struct NoteSpannerBackup {
+    struct NoteSpannerCopy {
         Spanner *spanner = nullptr;
         NoteEndpointRef start;
         NoteEndpointRef end;
         bool single_note = false;
+        bool on_primary_staff = false;
+    };
+
+    struct NoteSpannerBackup {
+        std::vector<NoteSpannerCopy> copies;
+        bool was_linked = false;
     };
 
     void record_read_chord(const Chord *src, const Chord *dst);
     bool can_absorb_continuation(const Chord *range_chord, const Chord *continuation) const;
     bool make_note_endpoint_ref(Note *note, NoteEndpointRef &out) const;
-    void backup_note_spanners();
+    void backup_note_spanners(const Fraction &stick, const Fraction &etick);
     void restore_note_spanners(Score *score, const TrackList::WrittenChordMap &written_chords) const;
     void delete_note_spanners();
 
@@ -210,7 +217,6 @@ private:
     std::vector<SpacerBackup> spacers_;
     std::vector<JumpsMarkersBackup> jumps_markers_;
     ankerl::unordered_dense::map<const Chord *, const Chord *> read_chords_;
-    std::vector<const Chord *> read_chord_order_;
     // Range chords read from a chord that anchors a note-owned line.
     ankerl::unordered_dense::set<const Chord *> line_anchor_chords_;
     std::vector<NoteSpannerBackup> note_spanners_;

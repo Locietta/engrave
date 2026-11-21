@@ -101,7 +101,7 @@ void Tuplet::set_visible(bool f) { EngravingItem::set_visible(f); }
 
 void Tuplet::set_color(const Color &col) { EngravingItem::set_color(col); }
 
-Fraction Tuplet::rtick() const { return tick() - measure()->tick(); }
+Fraction Tuplet::rtick() const { return measure() ? tick() - measure()->tick() : Fraction(0, 1); }
 
 void Tuplet::apply_number_style() const {
     if (!number()) return;

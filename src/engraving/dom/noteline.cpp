@@ -105,7 +105,7 @@ NoteLine::NoteLine(EngravingObject *parent) : TextLineBase(ElementType::NOTELINE
     }
 }
 
-NoteLine::NoteLine(const NoteLine &nl) : TextLineBase(nl) {}
+NoteLine::NoteLine(const NoteLine &nl) : TextLineBase(nl), line_end_placement_(nl.line_end_placement_) {}
 
 LineSegment *NoteLine::create_line_segment() {
     NoteLineSegment *seg = new NoteLineSegment(this);

@@ -49,8 +49,18 @@ namespace mu::engraving {
 GuitarBend::GuitarBend(EngravingObject *parent) : SLine(ElementType::GUITAR_BEND, parent, ElementFlag::MOVABLE) {}
 
 GuitarBend::GuitarBend(const GuitarBend &g) : SLine(g) {
-    bend_type_ = g.bend_type();
-    bend_amount_in_quarter_tones_value = g.bend_amount_in_quarter_tones();
+    direction_value = g.direction_value;
+    bend_amount_in_quarter_tones_value = g.bend_amount_in_quarter_tones_value;
+    show_hold_line_value = g.show_hold_line_value;
+    start_time_factor_value = g.start_time_factor_value;
+    end_time_factor_value = g.end_time_factor_value;
+    bend_type_ = g.bend_type_;
+    is_invalid_ = g.is_invalid_;
+    is_borderline_unplayable_ = g.is_borderline_unplayable_;
+    dive_tab_pos_ = g.dive_tab_pos_;
+    dip_vibrato_type_ = g.dip_vibrato_type_;
+    is_slack_ = g.is_slack_;
+    target_time_factor_ = g.target_time_factor_;
 }
 
 GuitarBend::~GuitarBend() = default;

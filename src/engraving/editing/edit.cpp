@@ -23,6 +23,8 @@
 #include <map>
 #include <set>
 
+#include <ankerl/unordered_dense.h>
+
 #include "../dom/accidental.h"
 #include "../dom/arpeggio.h"
 #include "../dom/articulation.h"
@@ -3529,8 +3531,9 @@ void Score::undo_remove_measures(Measure *m1, Measure *m2, bool preserve_ties, b
     const Fraction start_tick = m1->tick();
     const Fraction end_tick = m2->end_tick();
     std::vector<Spanner *> spanners_to_remove;
+    ankerl::unordered_dense::set<Spanner *> scheduled_spanners;
     auto schedule_removal = [&](Spanner *sp) {
-        if (!muse::contains(spanners_to_remove, sp)) {
+        if (scheduled_spanners.insert(sp).second) {
             spanners_to_remove.push_back(sp);
         }
     };
@@ -3602,7 +3605,7 @@ void Score::undo_remove_measures(Measure *m1, Measure *m2, bool preserve_ties, b
         }
     }
 
-    std::set<const EngravingObject *> removed;
+    ankerl::unordered_dense::set<const EngravingObject *> removed;
     for (Spanner *s : spanners_to_remove) {
         // A copy on a linked staff of this score has gone with the first of its links removed.
         if (removed.contains(s)) {
