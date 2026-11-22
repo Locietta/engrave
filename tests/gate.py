@@ -167,7 +167,7 @@ def main():
         action="store_true",
         help="use the engine_tests binaries already built in --build-dir, such as an embedding project's build",
     )
-    p.add_argument("--soundfont", type=Path)
+    p.add_argument("--soundfont", type=Path, help="SoundFont for audio-enabled modes")
     mode = p.add_mutually_exclusive_group()
     mode.add_argument(
         "--no-audio",
@@ -234,7 +234,8 @@ def main():
     def run(name, command, cwd=None, env=None, quiet=False):
         command = list(map(str, command))
         t = time.monotonic()
-        with (a.output / (name + ".log")).open("wb") as log:
+        log_path = a.output / (name + ".log")
+        with log_path.open("wb") as log:
             r = subprocess.run(
                 command,
                 cwd=cwd or REPO_ROOT,
@@ -251,7 +252,9 @@ def main():
         )
         log_record(record, quiet)
         if r.returncode:
-            raise RuntimeError(f"{name}: see {a.output / (name + '.log')}")
+            if a.goldens_only:
+                print(log_path.read_text(encoding="utf-8", errors="replace")[-12000:], file=sys.stderr, flush=True)
+            raise RuntimeError(f"{name}: see {log_path}")
         return record
 
     def run_check(name, check):
@@ -617,10 +620,13 @@ def _compare_goldens(a, sources, platform, suffix, run, start):
         out = a.output / "actual" / source.name
         raw.mkdir(parents=True, exist_ok=True)
         out.mkdir(parents=True, exist_ok=True)
+        command = probe_command(probe, a.assets, soundfonts, "capture", source, raw)
+        if a.no_audio:
+            command.append("--no-audio")
         produced = [
             run(
                 source.name + "-capture",
-                probe_command(probe, a.assets, soundfonts, "capture", source, raw),
+                command,
                 quiet=True,
             )
         ]

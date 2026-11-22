@@ -7,7 +7,7 @@
 //   engrave_output_probe --assets=DIR --export=SCORE --out=DIR
 //   engrave_output_probe --assets=DIR --soundfont=FILE... --audio=SCORE --format=wav|flac|ogg|mp3|aac
 //                        --out=FILE [--no-repeats] [--sample-rate=HZ]
-//   engrave_output_probe --assets=DIR [--soundfont=FILE]... --capture=SCORE --out=DIR
+//   engrave_output_probe --assets=DIR (--soundfont=FILE... | --no-audio) --capture=SCORE --out=DIR
 //
 // --render writes page-<n>.svg for every page, page-<n>.png for every page and
 // score.pdf, all with the export defaults (144 dpi, transparent PNG, no page
@@ -91,7 +91,7 @@ int usage() {
                          "       --assets=DIR --positions=SCORE --out=DIR\n"
                          "       --assets=DIR --export=SCORE --out=DIR\n"
                          "       --assets=DIR [--soundfont=FILE]... --audio=SCORE --format=NAME --out=FILE\n"
-                         "       --assets=DIR [--soundfont=FILE]... --capture=SCORE --out=DIR\n");
+                         "       --assets=DIR (--soundfont=FILE... | --no-audio) --capture=SCORE --out=DIR\n");
     return 1;
 }
 
@@ -192,6 +192,7 @@ int main(int argc, char **argv) {
     std::vector<std::filesystem::path> soundfonts;
     std::string mode, format = "wav";
     bool repeats = true;
+    bool no_audio = false;
     bool test_output_open_failure = false;
     int sample_rate = 44100;
     for (int i = 1; i < argc; ++i) {
@@ -224,6 +225,8 @@ int main(int argc, char **argv) {
             sample_rate = std::atoi(value(14).c_str());
         else if (argument == "--no-repeats")
             repeats = false;
+        else if (argument == "--no-audio")
+            no_audio = true;
         else if (argument == "--test-output-open-failure")
             test_output_open_failure = true;
         else if (argument.starts_with("--test-startup-font="))
@@ -232,6 +235,7 @@ int main(int argc, char **argv) {
             return usage();
     }
     if (assets.empty() || score.empty() || out.empty() || mode.empty()) return usage();
+    if (no_audio && (mode != "capture" || !soundfonts.empty())) return usage();
 
     try {
         // This test-only mode runs in a fresh process, so the first render's
@@ -327,7 +331,7 @@ int main(int argc, char **argv) {
             if (const int rc = run_export(**engine, score, out); rc != 0) return rc;
             std::size_t pages = 0;
             if (const int rc = run_render(**engine, score, out, &pages); rc != 0) return rc;
-            if (!soundfonts.empty()) {
+            if (!no_audio) {
                 if (const int rc = run_audio(**engine, score, out / "score.wav", "wav", repeats, sample_rate, false, false); rc != 0)
                     return rc;
             }
