@@ -33,8 +33,7 @@ using namespace mu::engraving;
 void EditVisibility::change_chord_child_visible(Chord *chord, AuthoredChildKey key, bool visible) {
     const auto *entry = chord->authored_overrides.find(key, Pid::VISIBLE);
     if ((entry ? entry->value.to_bool() : true) == visible) return;
-    if (note_change(chord, CommandType::CHANGE_PROPERTY))
-        chord->master_score()->cmd_state().changes.changed_property_id_set.insert(Pid::VISIBLE);
+    if (note_change(chord)) chord->master_score()->cmd_state().changes.changed_property_id_set.insert(Pid::VISIBLE);
     set_child_override(*chord, key, Pid::VISIBLE, visible, PropertyFlags::NOSTYLE);
     chord->trigger_layout();
 }
@@ -50,8 +49,7 @@ void EditVisibility::change_dots_visible(EngravingItem *owner, int count, bool v
             if (linked != owner && appearance && !appearance->value.to_bool()) continue;
             const auto *entry = table.find(key, Pid::VISIBLE);
             if ((entry ? entry->value.to_bool() : linked->visible()) == visible) continue;
-            if (note_change(linked, CommandType::CHANGE_PROPERTY))
-                linked->master_score()->cmd_state().changes.changed_property_id_set.insert(Pid::VISIBLE);
+            if (note_change(linked)) linked->master_score()->cmd_state().changes.changed_property_id_set.insert(Pid::VISIBLE);
             for (uint32_t j = 0; j <= i; ++j) {
                 const AuthoredChildKey ordinal{AuthoredChildRole::DOT, j};
                 if (!table.carrier(ordinal)) table.set_carrier({ordinal, ElementType::NOTEDOT});

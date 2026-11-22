@@ -49,7 +49,7 @@ using namespace mu::engraving;
 
 static void apply_change_pitch(Note *note, int pitch, int tpc1, int tpc2) {
     if (note->pitch() == pitch && note->tpc1() == tpc1 && note->tpc2() == tpc2) return;
-    note_change(note, CommandType::CHANGE_PITCH);
+    note_change(note);
     note->set_pitch(pitch, tpc1, tpc2);
     note->trigger_layout();
 }

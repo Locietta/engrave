@@ -588,7 +588,7 @@ static Instrument create_instrument(const MusicXmlInstrument &mxml_instr, const 
         channel = instr.channel(0);
     } else {
         // set articulations to default (global articulations)
-        instr.set_articulation(midi_articulations);
+        instr.set_articulation(instrument_catalog().articulations);
         // set default program
         channel->set_program(mxml_instr.midi_program < 0 ? 0 : mxml_instr.midi_program);
     }

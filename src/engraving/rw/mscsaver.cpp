@@ -118,7 +118,7 @@ bool MscSaver::write_mscz(MasterScore *score, MscWriter &msc_writer, const write
 
     // Write images
     {
-        for (ImageStoreItem *ip : image_store) {
+        for (ImageStoreItem *ip : image_store()) {
             if (!ip->is_used(score)) {
                 continue;
             }

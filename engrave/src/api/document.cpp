@@ -126,7 +126,8 @@ Document::~Document() {
 Document::Impl::Snapshot Document::Impl::capture_snapshot() const {
     auto &master = *project->master_score();
     Snapshot snapshot;
-    snapshot.bytes = music::export_native_score(*engine->context, project, "mscz", music::ExportOptions{.transaction_snapshot = true}, {});
+    snapshot.bytes = music::export_native_score(*engine->context, project, "mscz",
+                                                music::ExportOptions{.transaction_snapshot = true, .compress = false}, {});
     snapshot.runtime_tempo = master.runtime_tempo_state();
     snapshot.source_revision = master.source_revision();
     snapshot.saved_revision = master.saved_revision();

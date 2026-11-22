@@ -264,7 +264,7 @@ std::string export_native_score(const EngineContext &context, const ScoreProject
             engraving::MscWriter::Params params;
             params.device = &buffer;
             params.main_file_name = u"score.mscx";
-            params.compress = !options.transaction_snapshot;
+            params.compress = options.compress;
             engraving::MscWriter writer(params);
             check(writer.open());
             if (options.excerpt_id == -1) {

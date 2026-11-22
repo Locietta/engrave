@@ -506,7 +506,7 @@ void EngravingObject::undo_change_property(Pid id, const PropertyValue &v, Prope
 }
 
 void EngravingObject::notify_property_change(Pid id) {
-    if (note_change(this, CommandType::CHANGE_PROPERTY)) master_score()->cmd_state().changes.changed_property_id_set.insert(id);
+    if (note_change(this)) master_score()->cmd_state().changes.changed_property_id_set.insert(id);
 }
 
 //---------------------------------------------------------

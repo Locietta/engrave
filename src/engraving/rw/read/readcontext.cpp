@@ -71,9 +71,7 @@ const MStyle &ReadContext::style() const { return score()->style(); }
 
 EngravingFontsProvider *ReadContext::engraving_fonts() const { return score()->engraving_fonts(); }
 
-String ReadContext::mscore_version() const { return score_->mscore_version(); }
-
-int ReadContext::msc_version() const { return score_->msc_version(); }
+int ReadContext::msc_version() const { return format_version_; }
 
 int ReadContext::file_division() const { return score_->file_division(); }
 

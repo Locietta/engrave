@@ -124,7 +124,7 @@ void apply_staff_tracks(Measure &measure, staff_idx_t first, staff_idx_t last, b
 }
 
 void Transaction::change_property(EngravingObject *object, Pid id, const PropertyValue &value, PropertyFlags flags, bool reset_path) {
-    if (note_change(object, CommandType::CHANGE_PROPERTY)) object->master_score()->cmd_state().changes.changed_property_id_set.insert(id);
+    if (note_change(object)) object->master_score()->cmd_state().changes.changed_property_id_set.insert(id);
 
     apply_property(*object, id, value, flags, reset_path);
 }
@@ -133,33 +133,26 @@ void Transaction::change_style_values(Score &score, std::span<const StyleValue> 
     bool changed = false;
     for (const auto &entry : values) changed |= score.style().style_v(entry.id) != entry.value;
     if (!changed) return;
-    if (note_change(&score, CommandType::CHANGE_STYLE_VALUES))
-        for (const auto &entry : values)
-            if (score.style().style_v(entry.id) != entry.value)
-                score.master_score()->cmd_state().changes.changed_style_id_set.insert(entry.id);
+    note_change(&score);
 
     apply_style_values(score, values);
 }
 
 void Transaction::replace_style(Score &score, const MStyle &style, bool overlap) {
-    if (note_change(&score, CommandType::CHANGE_STYLE))
-        for (int i = 0; i < int(Sid::STYLES); ++i) {
-            const auto id = static_cast<Sid>(i);
-            if (score.style().style_v(id) != style.style_v(id)) score.master_score()->cmd_state().changes.changed_style_id_set.insert(id);
-        }
+    note_change(&score);
 
     apply_style_replacement(score, style, overlap);
 }
 
 void Transaction::insert_time(Score &score, Fraction tick, Fraction length, bool unmanaged) {
-    note_change(&score, unmanaged ? CommandType::INSERT_TIME_UNMANAGED_SPANNER : CommandType::INSERT_TIME);
+    note_change(&score);
 
     apply_time_insertion(score, tick, length, unmanaged);
 }
 
 void Transaction::change_measures(MeasureBase *first, MeasureBase *last, bool adding, bool move_staff_type_changes) {
-    note_change(first, adding ? CommandType::INSERT_MEASURES : CommandType::REMOVE_MEASURES);
-    note_change(last, adding ? CommandType::INSERT_MEASURES : CommandType::REMOVE_MEASURES);
+    note_change(first);
+    note_change(last);
     if (!adding) {
         for (auto *item = first; item; item = item->next()) {
             defer_root(*item, item->master_score()->eid_register()->enroll(*item));
@@ -174,13 +167,13 @@ void Transaction::change_measures(MeasureBase *first, MeasureBase *last, bool ad
 }
 
 void Transaction::change_measure_repeat_count(Measure *measure, int count, staff_idx_t staff) {
-    note_change(measure, CommandType::CHANGE_MEASURE_REPEAT_COUNT);
+    note_change(measure);
 
     apply_measure_repeat_count(measure, count, staff);
 }
 
 void Transaction::change_mstaff(Measure *measure, MStaff *row, staff_idx_t index, bool adding) {
-    note_change(measure, adding ? CommandType::INSERT_M_STAFF : CommandType::REMOVE_M_STAFF);
+    note_change(measure);
     if (adding)
         measure->insert_m_staff(row, index);
     else {
@@ -190,7 +183,7 @@ void Transaction::change_mstaff(Measure *measure, MStaff *row, staff_idx_t index
 }
 
 void Transaction::add_mstaff(Measure *measure, std::unique_ptr<MStaff> row, staff_idx_t index) {
-    note_change(measure, CommandType::INSERT_M_STAFF);
+    note_change(measure);
     try {
         measure->insert_m_staff(row.get(), index);
     } catch (...) {
@@ -201,39 +194,39 @@ void Transaction::add_mstaff(Measure *measure, std::unique_ptr<MStaff> row, staf
 }
 
 void Transaction::change_staff_tracks(Measure *measure, staff_idx_t first, staff_idx_t last, bool adding) {
-    note_change(measure, adding ? CommandType::INSERT_STAVES : CommandType::REMOVE_STAVES);
+    note_change(measure);
 
     apply_staff_tracks(*measure, first, last, adding);
 }
 
 void Transaction::change_staff_brackets(Staff *staff, size_t level, BracketType type, size_t span, bool adding) {
-    note_change(staff, CommandType::UNKNOWN);
+    note_change(staff);
 
     apply_staff_brackets(*staff, level, type, span, adding);
 }
 
 void Transaction::change_staff_membership(Staff *staff, staff_idx_t index, bool adding) {
-    note_change(staff, adding ? CommandType::INSERT_STAFF : CommandType::REMOVE_STAFF);
+    note_change(staff);
     if (!adding) defer_root(*staff, staff->master_score()->eid_register()->enroll(*staff));
 
     apply_staff_membership(*staff, index, adding);
 }
 
 void Transaction::change_part_membership(Part *part, size_t index, bool adding) {
-    note_change(part, adding ? CommandType::INSERT_PART : CommandType::REMOVE_PART);
+    note_change(part);
     if (!adding) defer_root(*part, part->master_score()->eid_register()->enroll(*part));
 
     apply_part_membership(*part, index, adding);
 }
 
 void Transaction::change_part_label(Fraction tick, Part *part, const String &value, bool long_name) {
-    note_change(part, long_name ? CommandType::CHANGE_INSTRUMENT_LONG : CommandType::CHANGE_INSTRUMENT_SHORT);
+    note_change(part);
 
     apply_part_label(*part, tick, value, long_name);
 }
 
 void Transaction::change_shared_origin(SharedPart *shared, Part *origin, bool connecting) {
-    note_change(shared, connecting ? CommandType::CONNECT_SHARED_PART : CommandType::DISCONNECT_SHARED_PART);
+    note_change(shared);
 
     if (connecting)
         shared->add_origin_part(origin);
@@ -245,7 +238,7 @@ void Transaction::change_stave_sharing_state(SharedPart &part, const Fraction &t
     const auto *old = part.exact_authored_state(tick);
     if (state ? old && *old == *state : !old) return;
 
-    note_change(&part, CommandType::CHANGE_STAVE_SHARING_STATE);
+    note_change(&part);
     if (state) {
         part.set_authored_state(tick, *state);
     } else {
@@ -264,7 +257,7 @@ void Transaction::change_stave_sharing_state(SharedPart &part, const Fraction &t
 
 void Transaction::change_excerpt_membership(Excerpt *excerpt, bool adding) {
     auto &master = *excerpt->master_score();
-    note_change(&master, adding ? CommandType::ADD_EXCERPT : CommandType::REMOVE_EXCERPT);
+    note_change(&master);
     if (adding)
         master.add_excerpt(excerpt);
     else {
@@ -275,13 +268,13 @@ void Transaction::change_excerpt_membership(Excerpt *excerpt, bool adding) {
 
 void Transaction::add_element(EngravingItem *item) {
     validate_element_add(*item);
-    note_change(item, CommandType::ADD_ELEMENT);
+    note_change(item);
 
     apply_element_add(*item);
 }
 
 void Transaction::remove_element(EngravingItem *item) {
-    note_change(item, CommandType::REMOVE_ELEMENT);
+    note_change(item);
     defer_root(*item, item->master_score()->eid_register()->enroll(*item));
     prepare_element_removal(*item);
 
@@ -289,41 +282,40 @@ void Transaction::remove_element(EngravingItem *item) {
 }
 
 void Transaction::replace_element(EngravingItem *before, EngravingItem *after) {
-    note_change(before, CommandType::CHANGE_ELEMENT);
-    note_change(after, CommandType::CHANGE_ELEMENT);
+    note_change(before);
+    note_change(after);
     defer_root(*before, before->master_score()->eid_register()->enroll(*before));
 
     apply_element_replace(*before, *after);
 }
 
 void Transaction::reparent_element(EngravingItem *item, EngravingItem *parent, staff_idx_t staff) {
-    note_change(item, CommandType::CHANGE_PARENT);
-    note_change(parent, CommandType::CHANGE_PARENT);
+    note_change(item);
+    note_change(parent);
 
     apply_element_reparent(*item, *parent, staff * voices + item->voice());
 }
 
 void Transaction::reparent_segment(Segment *item, Measure *parent, Fraction tick) {
-    note_change(item, CommandType::CHANGE_PARENT);
+    note_change(item);
 
     apply_segment_reparent(*item, *parent, tick);
 }
 
 void Transaction::link_objects(EngravingObject *item, EngravingObject *peer) {
-    note_change(item, CommandType::LINK);
+    note_change(item);
 
     item->link_to(peer);
 }
 
 void Transaction::unlink_object(EngravingObject *item) {
-    note_change(item, CommandType::UNLINK);
+    note_change(item);
 
     item->unlink();
 }
 
 void Transaction::change_bracket_property(BracketItem &item, Pid id, const PropertyValue &value, PropertyFlags flags) {
-    if (note_change(item.score(), CommandType::CHANGE_PROPERTY))
-        item.master_score()->cmd_state().changes.changed_property_id_set.insert(id);
+    if (note_change(item.score())) item.master_score()->cmd_state().changes.changed_property_id_set.insert(id);
 
     // Immediate edits still avoid writing flags through a deleted bracket.
     item.set_property_flags(id, flags);
@@ -331,14 +323,13 @@ void Transaction::change_bracket_property(BracketItem &item, Pid id, const Prope
 }
 
 void Transaction::change_text_line_property(EngravingObject &object, const PropertyValue &value) {
-    if (note_change(&object, CommandType::CHANGE_PROPERTY))
-        object.master_score()->cmd_state().changes.changed_property_id_set.insert(Pid::SYSTEM_FLAG);
+    if (note_change(&object)) object.master_score()->cmd_state().changes.changed_property_id_set.insert(Pid::SYSTEM_FLAG);
 
     apply_text_line_property(object, value);
 }
 
 void Transaction::change_text_format(TextBase &text, Pid id, const PropertyValue &value, PropertyFlags flags) {
-    note_change(&text, CommandType::TEXT_EDIT);
+    note_change(&text);
 
     apply_text_format(text, id, value, flags);
 }
@@ -409,7 +400,7 @@ void Score::apply_measure_repeat_count(Measure *measure, int count, staff_idx_t 
     transaction_manager()->current_or_dummy_transaction().change_measure_repeat_count(measure, count, staff);
 }
 
-bool note_change(EngravingObject *object, CommandType type) {
+bool note_change(EngravingObject *object) {
     if (!object) return false;
     auto *master = object->master_score();
     if (!master || !master->transaction_manager()->current_transaction() || master->cmd_state().locked()) return false;
@@ -418,7 +409,7 @@ bool note_change(EngravingObject *object, CommandType type) {
     ++state.mutation_count;
     for (auto *changed : compound_objects(object)) {
         state.changes.changed_types.insert(changed->type());
-        state.changes.changed_objects[changed].insert(type);
+        state.changes.changed_objects.insert(changed);
     }
     return true;
 }
@@ -507,7 +498,7 @@ void TransactionManager::prepare_commit() {
     changes.tick_to = state.end_tick().ticks();
     changes.staff_idx_from = state.start_staff();
     changes.staff_idx_to = state.end_staff();
-    for (const auto &[object, types] : changes.changed_objects) {
+    for (const auto *object : changes.changed_objects) {
         if (!object->is_engraving_item()) continue;
         const int tick = to_engraving_item(object)->tick().ticks();
         if (changes.tick_from == -1 || changes.tick_from > tick) changes.tick_from = tick;

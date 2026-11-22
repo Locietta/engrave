@@ -57,18 +57,6 @@ namespace mu::engraving::read114 {
 struct Read114;
 } // namespace mu::engraving::read114
 
-namespace mu::engraving::read302 {
-struct Read302;
-} // namespace mu::engraving::read302
-
-namespace mu::engraving::read400 {
-struct Read400;
-} // namespace mu::engraving::read400
-
-namespace mu::engraving::read410 {
-struct Read410;
-} // namespace mu::engraving::read410
-
 namespace mu::engraving::rw {
 struct Reader;
 } // namespace mu::engraving::rw
@@ -145,7 +133,6 @@ enum class OttavaType : unsigned char;
 enum class Prefer : char;
 enum class AccidentalType : unsigned char;
 enum class LayoutBreakType : unsigned char;
-enum class CommandType : signed char;
 enum class SystemDividerType : unsigned char;
 
 struct ShowAnchors {
@@ -894,9 +881,6 @@ protected:
 
 private:
 
-    friend struct read302::Read302;
-    friend struct read400::Read400;
-    friend struct read410::Read410;
     friend struct rw::Reader;
     friend struct write::Writer;
 

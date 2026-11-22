@@ -20,6 +20,8 @@
 #include <vector>
 
 #include <ft2build.h>
+
+#include "engrave/src/render/cairo_font_cache.h"
 #include FT_FREETYPE_H
 
 #include <zlib.h>
@@ -306,6 +308,7 @@ struct RuntimeAssets::Impl {
     RuntimeFontsOwner owner;
     std::shared_ptr<CacheStore> cache_store;
     std::unique_ptr<RuntimeFontsDatabase> database;
+    std::unique_ptr<draw::CairoFontCache> cairo_fonts;
     std::unique_ptr<RuntimeFontsEngine> proxy_engine;
     std::unique_ptr<draw::FontProvider> provider;
     int next_font_id = 1;
@@ -362,6 +365,7 @@ RuntimeAssets::RuntimeAssets(const std::filesystem::path &cache_root) : impl_(st
     }
     impl_->cache_store = std::make_shared<CacheStore>(cache_root);
     impl_->database = std::make_unique<RuntimeFontsDatabase>(std::make_shared<ActiveTable>());
+    impl_->cairo_fonts = std::make_unique<draw::CairoFontCache>(*impl_->database);
     impl_->proxy_engine = std::make_unique<RuntimeFontsEngine>(impl_->owner, impl_->cache_store, create_engine(*impl_->database));
     impl_->provider = std::make_unique<draw::FontProvider>(*impl_->database, *impl_->proxy_engine);
 }
@@ -381,11 +385,14 @@ RuntimeFontsEngine &RuntimeAssets::fonts_engine() { return *impl_->proxy_engine;
 
 draw::FontProvider &RuntimeAssets::font_provider() { return *impl_->provider; }
 
+draw::CairoFontCache &RuntimeAssets::cairo_fonts() { return *impl_->cairo_fonts; }
+
 void RuntimeAssets::shutdown() {
     if (!impl_->owner.installed) return;
     impl_->owner.check();
     // Release the face cache and retained files explicitly; leases keep the
     // cache directory until the last one is released.
+    impl_->cairo_fonts.reset();
     impl_->proxy_engine->set_engine(nullptr);
     impl_->cache_store->shutdown();
     impl_->retained_fonts.clear();

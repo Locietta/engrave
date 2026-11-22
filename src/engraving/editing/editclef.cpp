@@ -72,7 +72,7 @@ static void update_note_lines(Segment *segment, track_idx_t track) {
 
 void mu::engraving::apply_change_clef_type(Clef *clef, ClefType concert_clef, ClefType transposing_clef) {
 
-    note_change(clef, CommandType::CHANGE_CLEF_TYPE);
+    note_change(clef);
 
     clef->set_concert_clef(concert_clef);
     clef->set_transposing_clef(transposing_clef);

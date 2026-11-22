@@ -1,6 +1,6 @@
 load("@engrave_config//:defs.bzl", "ENGRAVE_SOURCE_ROOT", "ENGRAVING_TESTS_DATA_ROOT")
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
-load("//bazel:defs.bzl", "ENGINE_COPTS", "ENGINE_LINKOPTS", "ENGINE_PLATFORM_DEFINES", "cc_pch", "staged_binary_group", "win_manifest_library")
+load("//bazel:defs.bzl", "ENGINE_COPTS", "ENGINE_LINKOPTS", "ENGINE_PLATFORM_DEFINES", "cc_pch", "pch_consumer_copts", "staged_binary_group", "win_manifest_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -104,7 +104,10 @@ cc_library(
 
 cc_library(
     name = "muse_draw",
-    srcs = glob(["muse/framework/draw/**/*.cpp"]) + ["engrave/src/render/cairo_painter.cpp"],
+    srcs = glob(["muse/framework/draw/**/*.cpp"]) + [
+        "engrave/src/render/cairo_font_cache.h",
+        "engrave/src/render/cairo_painter.cpp",
+    ],
     hdrs = glob(
         [
             "muse/framework/draw/**/*.h",
@@ -195,16 +198,7 @@ cc_library(
         "//conditions:default": [],
     }),
     copts = ENGINE_COPTS + select({
-        "//bazel:pch_enabled": [
-            "-Xclang",
-            "-fno-validate-pch",
-            "-include-pch",
-            "$(execpath :engraving_pch)",
-            "-Xclang",
-            "-isysroot",
-            "-Xclang",
-            ".",
-        ],
+        "//bazel:pch_enabled": pch_consumer_copts(":engraving_pch"),
         "//conditions:default": [],
     }),
     implementation_deps = ["@glaze"],

@@ -212,13 +212,13 @@ void EditChord::undo_clear_parenthesis_group(Chord *chord, std::vector<Note *> n
 }
 
 void mu::engraving::apply_change_span_arpeggio(Chord *chord, Arpeggio *span_arpeggio) {
-    note_change(chord, CommandType::UNKNOWN);
+    note_change(chord);
 
     chord->set_span_arpeggio(span_arpeggio);
 }
 
 void mu::engraving::apply_add_note_parenthesis_info(Chord *chord, NoteParenthesisInfo *note_paren_info) {
-    note_change(chord, CommandType::ADD_NOTE_PARENTHESES_INFO);
+    note_change(chord);
 
     chord->add_note_parenthesis_info(note_paren_info);
 
@@ -226,7 +226,7 @@ void mu::engraving::apply_add_note_parenthesis_info(Chord *chord, NoteParenthesi
 }
 
 void mu::engraving::apply_remove_note_parenthesis_info(Chord *chord, NoteParenthesisInfo *note_paren_info) {
-    note_change(chord, CommandType::REMOVE_NOTE_PARENTHESES_INFO);
+    note_change(chord);
 
     chord->remove_note_parenthesis_info(note_paren_info);
 
@@ -236,7 +236,7 @@ void mu::engraving::apply_remove_note_parenthesis_info(Chord *chord, NoteParenth
 }
 
 void mu::engraving::apply_remove_single_note_parentheses(Chord *chord, Note *note, const NoteParenthesisInfo *group) {
-    note_change(chord, CommandType::REMOVE_SINGLE_NOTE_PARENTHESES);
+    note_change(chord);
 
     chord->remove_note_from_parenthesis_info(note, group);
 

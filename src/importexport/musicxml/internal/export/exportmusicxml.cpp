@@ -8521,7 +8521,7 @@ static void write_mxl_archive(Score *score, muse::ZipWriter &zip, const String &
     dbuf.seek(0);
     zip.add_file(filename.to_std_string(), dbuf.data());
 
-    for (const ImageStoreItem *isi : image_store) {
+    for (const ImageStoreItem *isi : image_store()) {
         if (isi->is_used(score)) {
             String source;
             String type;

@@ -49,7 +49,7 @@ void mu::engraving::apply_change_key_sig(KeySig *keysig, KeySigEvent ks, bool sh
     if (evt_in_staff && authored && cur_evt_in_staff && keysig->key_sig_event() == ks && keysig->show_courtesy() == show_courtesy &&
         staff->key_sig_event(tick) == ks)
         return;
-    note_change(keysig, CommandType::CHANGE_KEY_SIG);
+    note_change(keysig);
 
     keysig->set_key_sig_event(ks);
     keysig->set_show_courtesy(show_courtesy);

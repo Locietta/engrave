@@ -76,7 +76,7 @@ private:
 //---------------------------------------------------------
 
 struct ImageStore {
-    ImageStore() = default;
+    ImageStore();
     ImageStore(const ImageStore &) = delete;
     ImageStore &operator=(const ImageStore &) = delete;
     ~ImageStore();
@@ -102,5 +102,5 @@ private:
     ItemList items_;
 };
 
-extern ImageStore image_store; // this is the global imageStore
+ImageStore &image_store();
 } // namespace mu::engraving

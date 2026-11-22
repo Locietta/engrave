@@ -39,15 +39,15 @@ using namespace mu::engraving;
 
 static void apply_add_page_lock(const RangeLock *lock) {
     auto *score = lock->start_mb()->score();
-    note_change(lock->start_mb(), CommandType::UNKNOWN);
-    note_change(lock->end_mb(), CommandType::UNKNOWN);
+    note_change(lock->start_mb());
+    note_change(lock->end_mb());
     score->add_page_lock(lock);
 }
 
 static void apply_remove_page_lock(const RangeLock *lock) {
     auto *score = lock->start_mb()->score();
-    note_change(lock->start_mb(), CommandType::UNKNOWN);
-    note_change(lock->end_mb(), CommandType::UNKNOWN);
+    note_change(lock->start_mb());
+    note_change(lock->end_mb());
     defer_root(*score, lock);
     score->remove_page_lock(lock);
 }

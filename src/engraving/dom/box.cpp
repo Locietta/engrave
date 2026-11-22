@@ -393,7 +393,7 @@ void FBox::init() {
     for (size_t i = 0; i < old_diagrams_names.size(); ++i) {
         String old_name = old_diagrams_names[i];
         if (!muse::contains(diagrams_names_in_score, old_name)) {
-            note_change(old_diagrams[i], CommandType::REMOVE_FRET_DIAGRAM_FROM_FRET_BOX);
+            note_change(old_diagrams[i]);
             defer_root(*old_diagrams[i], master_score()->eid_register()->enroll(*old_diagrams[i]));
             remove(old_diagrams[i]);
         }
@@ -406,7 +406,7 @@ void FBox::init() {
             new_diagram->set_ownership_parent(this);
             String name_of_diagram_before_this = i > 0 ? diagrams_names_in_score[i - 1] : String();
             size_t idx = compute_insertion_idx(name_of_diagram_before_this);
-            note_change(new_diagram, CommandType::ADD_FRET_DIAGRAM_TO_FRET_BOX);
+            note_change(new_diagram);
             add_at_idx(new_diagram, idx);
         }
     }

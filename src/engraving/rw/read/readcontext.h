@@ -69,7 +69,6 @@ struct ReadContext {
     bool transaction_snapshot = false;
     std::map<const EngravingItem *, AuthoredChildKey> child_keys;
 
-    String mscore_version() const;
     int msc_version() const;
 
     // Excerpts can have a different score version from the file that supplied their XML.
@@ -164,7 +163,7 @@ private:
     void remove_connector(const ConnectorInfoReader *connector);
 
     Score *score_;
-    int format_version_;
+    const int format_version_;
 
     std::vector<std::shared_ptr<ConnectorInfoReader>> connectors;
     std::vector<std::shared_ptr<ConnectorInfoReader>> pending_connectors;

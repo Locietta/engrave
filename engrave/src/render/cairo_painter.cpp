@@ -19,7 +19,6 @@
 #include <limits>
 #include <map>
 #include <memory>
-#include <mutex>
 #include <stdexcept>
 #include <string>
 #include <tuple>
@@ -29,6 +28,8 @@
 #include <cairo/cairo-ft.h>
 #include <cairo/cairo.h>
 #include <ft2build.h>
+
+#include "cairo_font_cache.h"
 #include FT_FREETYPE_H
 
 #include <hb-ft.h>
@@ -368,21 +369,12 @@ struct CachedFont {
     }
 };
 
-struct FontCache {
-    void clear() {
-        std::lock_guard<std::mutex> lock(mutex_);
-        by_request_.clear();
-        by_actual_.clear();
-        active_.reset();
-        ft_library_.reset();
-    }
+} // namespace
 
-    size_t size() {
-        std::lock_guard<std::mutex> lock(mutex_);
-        return by_actual_.size();
-    }
+struct CairoFontCache::Impl {
+    explicit Impl(const music::RuntimeFontsDatabase &fonts) : db(fonts) {}
 
-    std::shared_ptr<CachedFont> get(const Font &font, const music::RuntimeFontsDatabase &db) {
+    std::shared_ptr<CachedFont> get(const Font &font) {
         const FontDataKey requested = data_key_for_font(font);
         if (!requested.valid()) {
             throw std::runtime_error("CairoPainter: text drawing requires a non-empty font family");
@@ -393,7 +385,6 @@ struct FontCache {
         const Font::Type type = font.type() == Font::Type::UNDEFINED || font.type() == Font::Type::UNKNOWN ? Font::Type::TEXT : font.type();
         const CacheKey request_key = std::make_pair(requested, type);
 
-        std::lock_guard<std::mutex> lock(mutex_);
         const auto active = db.active_table();
         if (active != active_) {
             // A published registry can change both fallback resolution and the
@@ -477,19 +468,18 @@ private:
     // reactivation reuses old faces, and an identity can never be recycled.
     using ActualKey = std::tuple<FontDataKey, Font::Type, std::shared_ptr<const muse::ByteArray>>;
 
+    const music::RuntimeFontsDatabase &db;
     std::shared_ptr<const music::ActiveTable> active_;
     std::shared_ptr<FT_LibraryRec_> ft_library_;
-    std::mutex mutex_;
     std::map<ActualKey, std::shared_ptr<CachedFont>> by_actual_;
     std::map<CacheKey, std::shared_ptr<CachedFont>> by_request_;
 };
 
-FontCache &font_cache() {
-    // Engine teardown empties the cache. Keep the shell available during
-    // static teardown, when the last engine owner may still be destroyed.
-    static FontCache &cache = *new FontCache();
-    return cache;
-}
+CairoFontCache::CairoFontCache(const music::RuntimeFontsDatabase &fonts) : impl_(std::make_unique<Impl>(fonts)) {}
+
+CairoFontCache::~CairoFontCache() = default;
+
+namespace {
 
 struct ShapedLine {
     std::u16string text;
@@ -518,12 +508,6 @@ double line_height_for(const FtFaceEntry &entry, double pixel_size) {
 }
 
 } // namespace
-
-void CairoPainter::clear_font_cache() { font_cache().clear(); }
-
-size_t CairoPainter::cached_font_count() { return font_cache().size(); }
-
-// ------------------------------------------------------------------- Impl
 
 struct CairoPainter::Impl {
     struct State {
@@ -555,7 +539,7 @@ struct CairoPainter::Impl {
     };
 
     cairo_t *cr = nullptr;
-    const music::RuntimeFontsDatabase &fonts;
+    CairoFontCache &fonts;
     double dpi = 1200.0;
     bool active = true;
     State state;
@@ -566,7 +550,7 @@ struct CairoPainter::Impl {
     bool base_clip_known = true;
     std::map<unsigned int, CachedSurface> surfaces;
 
-    Impl(cairo_t *context, const music::RuntimeFontsDatabase &fonts_database, double device_dpi);
+    Impl(cairo_t *context, CairoFontCache &font_cache, double device_dpi);
     ~Impl();
 
     bool is_active() const;
@@ -638,8 +622,8 @@ private:
 
 // --------------------------------------------------------------- lifecycle
 
-CairoPainter::Impl::Impl(cairo_t *context, const music::RuntimeFontsDatabase &fonts_database, double device_dpi)
-    : cr(context), fonts(fonts_database), dpi(device_dpi) {
+CairoPainter::Impl::Impl(cairo_t *context, CairoFontCache &font_cache, double device_dpi)
+    : cr(context), fonts(font_cache), dpi(device_dpi) {
     if (!cr) {
         throw std::invalid_argument("CairoPainter: cairo_t context must not be null");
     }
@@ -956,7 +940,7 @@ double CairoPainter::Impl::font_size_pixels(const Font &font) const {
     throw std::runtime_error("CairoPainter: font has neither a point size nor a pixel size");
 }
 
-std::shared_ptr<CachedFont> CairoPainter::Impl::face_for(const Font &font) { return font_cache().get(font, fonts); }
+std::shared_ptr<CachedFont> CairoPainter::Impl::face_for(const Font &font) { return fonts.impl_->get(font); }
 
 void CairoPainter::Impl::apply_pen() {
     if (state.pen.style() == PenStyle::NO_PEN) {
@@ -1988,8 +1972,8 @@ void CairoPainter::Impl::draw_tiled_pixmap(const RectF &rect, const Pixmap &pm, 
 
 // -------------------------------------------------------- CairoPainter glue
 
-CairoPainter::CairoPainter(cairo_t *context, const music::RuntimeFontsDatabase &fonts_database, double device_dpi)
-    : impl_(std::make_unique<Impl>(context, fonts_database, device_dpi)) {}
+CairoPainter::CairoPainter(cairo_t *context, CairoFontCache &font_cache, double device_dpi)
+    : impl_(std::make_unique<Impl>(context, font_cache, device_dpi)) {}
 
 CairoPainter::~CairoPainter() = default;
 

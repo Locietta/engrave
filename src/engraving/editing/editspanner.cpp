@@ -65,7 +65,7 @@ void EditSpanner::add_spanner(Transaction &, Score *score, Spanner *spanner, sta
 }
 
 void mu::engraving::apply_change_spanner_elements(Spanner *spanner, EngravingItem *start_element, EngravingItem *end_element) {
-    note_change(spanner, CommandType::CHANGE_SPANNER_ELEMENTS);
+    note_change(spanner);
 
     EngravingItem *old_start_element = spanner->start_element();
     EngravingItem *old_end_element = spanner->end_element();
@@ -107,7 +107,7 @@ void mu::engraving::apply_change_spanner_elements(Spanner *spanner, EngravingIte
 }
 
 void mu::engraving::apply_change_start_end_spanner(Spanner *spanner, EngravingItem *start, EngravingItem *end) {
-    note_change(spanner, CommandType::CHANGE_START_END_SPANNER);
+    note_change(spanner);
 
     spanner->set_start_element(start);
     spanner->set_end_element(end);

@@ -32,14 +32,6 @@
 #include "measurebase.h"
 #include "segmentlist.h"
 
-namespace mu::engraving::read400 {
-struct MeasureRead;
-} // namespace mu::engraving::read400
-
-namespace mu::engraving::read410 {
-struct MeasureRead;
-} // namespace mu::engraving::read410
-
 namespace mu::engraving::write {
 struct MeasureWrite;
 } // namespace mu::engraving::write

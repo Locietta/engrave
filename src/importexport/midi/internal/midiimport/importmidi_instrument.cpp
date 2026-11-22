@@ -46,7 +46,6 @@ using namespace std::literals;
 using namespace mu::engraving;
 
 namespace mu::engraving {
-extern std::vector<const InstrumentGroup *> instrument_groups;
 } // namespace mu::engraving
 
 namespace mu::iex::midi { namespace MidiInstr {
@@ -307,7 +306,7 @@ static bool has_not_defined_drum_pitch(const std::set<int> &track_pitches, const
 static const InstrumentTemplate *find_instrument(const String &group_id, const String &instr_id) {
     const InstrumentTemplate *instr = nullptr;
 
-    for (const InstrumentGroup *group : instrument_groups) {
+    for (const InstrumentGroup *group : instrument_catalog().groups) {
         if (group->id == group_id) {
             for (const InstrumentTemplate *templ : group->instrument_templates) {
                 if (templ->id == instr_id) {
@@ -338,7 +337,7 @@ static const InstrumentTemplate *find_closest_instrument(const GM1Program progra
     int min_missing_pitches = std::numeric_limits<int>::max();
     const InstrumentTemplate *closest_template = nullptr;
 
-    for (const InstrumentGroup *group : instrument_groups) {
+    for (const InstrumentGroup *group : instrument_catalog().groups) {
         for (const InstrumentTemplate *templ : group->instrument_templates) {
             if (templ->staff_group == StaffGroup::TAB) {
                 continue;
@@ -394,7 +393,7 @@ static std::vector<const InstrumentTemplate *> find_instruments_for_program(cons
         track_pitches = find_all_pitches(track);
     }
 
-    for (const InstrumentGroup *group : instrument_groups) {
+    for (const InstrumentGroup *group : instrument_catalog().groups) {
         for (const InstrumentTemplate *templ : group->instrument_templates) {
             if (pref_instr && templ->id == pref_instr->id) {
                 continue;

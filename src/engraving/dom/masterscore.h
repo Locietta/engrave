@@ -249,7 +249,6 @@ private:
     friend struct EngravingProject;
     friend struct compat::ScoreAccess;
     friend struct read114::Read114;
-    friend struct read400::Read400;
     friend struct TransactionManager;
 
     MasterScore(const EngravingServices &services, std::weak_ptr<EngravingProject> project = std::weak_ptr<EngravingProject>());

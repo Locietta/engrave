@@ -45,7 +45,6 @@ using namespace mu;
 using namespace muse;
 using namespace muse::draw;
 using namespace mu::engraving;
-using namespace mu::engraving::read400;
 
 namespace {
 struct BarLineTableItem {

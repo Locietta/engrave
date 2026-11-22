@@ -49,18 +49,8 @@ static RetVal<ReaderPtr> make_reader(int version, bool ignore_version_error) {
     if (version < 460) {
         return RetVal<ReaderPtr>(make_ret(Err::FILE_TOO_OLD));
     }
-    if (!ignore_version_error) {
-        if (version > Constants::msc_version) {
-            return RetVal<ReaderPtr>(make_ret(Err::FILE_TOO_NEW));
-        }
-
-        if (version < 114) {
-            return RetVal<ReaderPtr>(make_ret(Err::FILE_TOO_OLD));
-        }
-
-        if (version == 300) {
-            return RetVal<ReaderPtr>(make_ret(Err::FILE_OLD300_FORMAT));
-        }
+    if (!ignore_version_error && version > Constants::msc_version) {
+        return RetVal<ReaderPtr>(make_ret(Err::FILE_TOO_NEW));
     }
 
     return RetVal<ReaderPtr>::make_ok(RWRegister::reader(version));
@@ -117,7 +107,7 @@ Ret MscLoader::load_mscz(MasterScore *master_score, const MscReader &msc_reader,
             if (!MScore::no_images) {
                 std::vector<String> images = msc_reader.image_file_names();
                 for (const String &name : images) {
-                    image_store.add(name.to_std_string(), msc_reader.read_image_file(name));
+                    image_store().add(name.to_std_string(), msc_reader.read_image_file(name));
                 }
             }
         }
@@ -135,16 +125,14 @@ Ret MscLoader::load_mscz(MasterScore *master_score, const MscReader &msc_reader,
         ByteArray score_data = msc_reader.read_score_file();
         String doc_name = master_score->file_info()->file_name().to_string();
 
-        compat::ReadStyleHook style_hook(master_score, score_data, doc_name);
-
         XmlReader xml(score_data);
         xml.set_doc_name(doc_name);
 
-        ret = read_master_score(master_score, xml, ignore_version_error, in_out, &style_hook);
+        ret = read_master_score(master_score, xml, ignore_version_error, in_out);
     }
 
     // Read excerpts
-    if (ret && master_score->msc_version() >= 400 && msc_reader.is_container()) {
+    if (ret && msc_reader.is_container()) {
         std::vector<String> excerpt_file_names = msc_reader.excerpt_file_names();
         for (const String &excerpt_file_name : excerpt_file_names) {
             Score *part_score = master_score->create_score();
@@ -212,8 +200,7 @@ Ret MscLoader::load_mscz(MasterScore *master_score, const MscReader &msc_reader,
     return ret;
 }
 
-Ret MscLoader::read_master_score(MasterScore *score, XmlReader &e, bool ignore_version_error, ReadInOutData *out,
-                                 compat::ReadStyleHook *style_hook) {
+Ret MscLoader::read_master_score(MasterScore *score, XmlReader &e, bool ignore_version_error, ReadInOutData *out) {
     while (e.read_next_start_element()) {
         if (e.name() == "museScore") {
             const String version = e.attribute("version");
@@ -232,20 +219,7 @@ Ret MscLoader::read_master_score(MasterScore *score, XmlReader &e, bool ignore_v
 
             IF_ASSERT_FAILED(reader.val) { return make_ret(Err::FILE_UNKNOWN_ERROR); }
 
-            //! NOTE We need to achieve that the default style corresponds to the version in which the score is created.
-            //! The values that the user changed will be written on over (only they are stored in the `mscz` file)
-            //! For version 4.0 (400), this does not need to be done,
-            //! because starting from version 4.0 the entire style is stored in a file,
-            //! respectively, the entire style will be loaded, which was when the score was created.
-            if (style_hook && score->msc_version() < 400) {
-                style_hook->setup_default_style();
-            }
-
-            if (score->msc_version() >= 400) {
-                //! NOTE: make sure we have a chord list
-                //! Load the default chord list otherwise
-                score->check_chord_list();
-            }
+            score->check_chord_list();
 
             Ret ret = reader.val->read_score_file(score, e, out);
 

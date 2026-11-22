@@ -153,7 +153,7 @@ bool Image::load_from_store(const std::string &store_path) {
         return false;
     }
 
-    auto *item = image_store.get_image(store_path);
+    auto *item = image_store().get_image(store_path);
     if (!item) {
         return false;
     }
@@ -187,7 +187,7 @@ bool Image::load_from_file(muse::io::PathT path) {
     muse::ByteArray ba = f.read_all();
     f.close();
 
-    set_store_item(image_store.add(path.to_std_string(), ba));
+    set_store_item(image_store().add(path.to_std_string(), ba));
     if (path.has_suffix("svg") || path.has_suffix("svgz")) {
         set_image_type(ImageType::SVG);
     } else {
@@ -197,7 +197,7 @@ bool Image::load_from_file(muse::io::PathT path) {
 }
 
 bool Image::load_from_data(const std::string &name, const muse::ByteArray &ba) {
-    set_store_item(image_store.add(name, ba));
+    set_store_item(image_store().add(name, ba));
 
     muse::io::PathT io_path(name);
     if (io_path.has_suffix("svg") || io_path.has_suffix("svgz")) {

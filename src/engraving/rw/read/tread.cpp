@@ -381,7 +381,7 @@ void TRead::read_property(EngravingItem *item, XmlReader &xml, ReadContext &ctx,
         v = v.value<PlacementV>() == PlacementV::ABOVE ? PropertyValue(DirectionV::UP) : PropertyValue(DirectionV::DOWN);
     }
 
-    if (pid == Pid::OFFSET && (ctx.is_legacy_format() || ctx.msc_version() < 500)) {
+    if (pid == Pid::OFFSET && ctx.is_legacy_format()) {
         compat::CompatUtils::migrate_offset500(item, v);
     }
 
@@ -838,7 +838,7 @@ void TRead::read(FretDiagram *d, XmlReader &e, ReadContext &ctx) {
         }
     }
 
-    if (d->harmony() && ctx.is_legacy_format() && ctx.msc_version() >= 460 && ctx.msc_version() < 500) {
+    if (d->harmony() && ctx.is_legacy_format()) {
         // A bug in 4.6 caused user offset and alignment of chord symbols attached to fret diagrams to be lost
         // Continue to ignore this for 4.6 - 4.7.x files only
         Harmony *harmony = d->harmony();
@@ -2532,7 +2532,7 @@ void TRead::read(ChordLine *l, XmlReader &e, ReadContext &ctx) {
                 invalid_offsets = true;
             }
             l->read_legacy_absolute_path(path);
-        } else if (!legacy_format && tag == "offset" && ctx.msc_version() >= 500) {
+        } else if (!legacy_format && tag == "offset") {
             // The policy can occur later. Preserve legacy 4.70 migration.
             double x = 0.0, y = 0.0;
             if ((!e.has_attribute("x") || chord_line_number(e.attribute("x"), x)) &&

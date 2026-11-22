@@ -182,12 +182,10 @@ def main():
     p.add_argument(
         "--goldens-only",
         action="store_true",
-        help="Run only the asset manifest check and SoundFont-free golden comparison",
+        help="Run only the asset manifest check and golden comparison",
     )
     p.add_argument("--dual-capture", type=Path, help="old golden lane actual directory")
     a = p.parse_args()
-    if a.goldens_only and not a.no_audio:
-        p.error("--goldens-only requires --no-audio")
     if not a.no_audio and a.soundfont is None:
         p.error("--soundfont is required unless --no-audio is set")
     for key, value in vars(a).items():

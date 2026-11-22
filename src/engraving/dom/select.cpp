@@ -547,9 +547,6 @@ void Selection::update_selected_elements() {
     track_idx_t start_track = staff_start_ * ::mu::engraving::voices;
     track_idx_t end_track = staff_end_ * ::mu::engraving::voices;
 
-    // Preserve the selection order used to choose the focused item.
-    std::vector<Chord *> single_note_chords;
-
     // A nested tuplet is selected only when the range contains all its elements.
     std::unordered_set<Tuplet *> inner_tuplets;
 
@@ -585,22 +582,8 @@ void Selection::update_selected_elements() {
                 inner_tuplets.emplace(tuplet);
             }
 
-            if (!cr->is_chord()) {
-                append_chord_rest(cr);
-                continue;
-            }
-
-            Chord *chord = to_chord(cr);
-            if (chord->notes().size() == 1) {
-                single_note_chords.emplace_back(chord);
-            } else {
-                append_chord_rest(chord);
-            }
+            append_chord_rest(cr);
         }
-    }
-
-    for (Chord *chord : single_note_chords) {
-        append_chord_rest(chord);
     }
 
     for (Tuplet *tuplet : inner_tuplets) {

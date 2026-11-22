@@ -86,8 +86,7 @@ static void reset_child_positions(Score &score) {
                 positions.emplace_back(entry.child, pid);
         }
         for (auto [key, pid] : positions) {
-            if (note_change(owner, CommandType::CHANGE_PROPERTY))
-                owner->master_score()->cmd_state().changes.changed_property_id_set.insert(pid);
+            if (note_change(owner)) owner->master_score()->cmd_state().changes.changed_property_id_set.insert(pid);
             reset_child_override(*owner, key, pid);
         }
         if (positions.empty()) continue;

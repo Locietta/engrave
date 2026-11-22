@@ -23,9 +23,6 @@
 #ifndef MU_ENGRAVING_READSTYLE_H
 #define MU_ENGRAVING_READSTYLE_H
 
-#include "types/bytearray.h"
-#include "types/string.h"
-
 namespace mu::engraving {
 struct Score;
 struct XmlReader;
@@ -34,21 +31,9 @@ struct MStyle;
 
 namespace mu::engraving::compat {
 struct ReadStyleHook {
-    ReadStyleHook(Score *score, const muse::ByteArray &score_data, const muse::String &complete_base_name);
-
-    void setup_default_style();
-
-    void read_style_tag(XmlReader &e);
-
-    static int style_default_by_msc_version(const int msc_ver);
     static void setup_default_style(Score *score);
     static void read_style_tag(Score *score, XmlReader &e);
     static bool read_style_properties(MStyle *style, XmlReader &e);
-
-private:
-    Score *score_ = nullptr;
-    const muse::ByteArray &score_data_;
-    const muse::String &complete_base_name_;
 };
 } // namespace mu::engraving::compat
 

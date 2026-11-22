@@ -39,7 +39,7 @@
 using namespace mu::engraving;
 
 void mu::engraving::apply_change_tie_jump_point_active(TieJumpPointList *jump_point_list, muse::String id, bool active) {
-    note_change(jump_point_list->start_tie(), CommandType::CHANGE_TIE_END_POINT_ACTIVE);
+    note_change(jump_point_list->start_tie());
 
     TieJumpPoint *jump_point = jump_point_list->find_jump_point(id);
     if (!jump_point) {

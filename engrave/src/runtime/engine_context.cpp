@@ -6,10 +6,10 @@
 #include <stdexcept>
 
 #include "draw/fontmetrics.h"
-#include "engrave/src/render/cairo_painter.h"
 #include "engrave/src/runtime/fonts_database.h"
 #include "engraving/dom/drumset.h"
 #include "engraving/dom/figuredbass.h"
+#include "engraving/dom/imageStore.h"
 #include "engraving/dom/instrtemplate.h"
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/stafftype.h"
@@ -128,14 +128,16 @@ struct EngineContext::Impl {
     std::unique_ptr<mu::iex::musicxml::MusicXmlConfiguration> music_xml;
     std::unique_ptr<EngravingContextConfiguration> context_configuration;
     EngravingServices engraving;
-    bool catalog_started = false;
+    std::unique_ptr<InstrumentCatalog> catalog;
+    std::unique_ptr<ImageStore> images;
 
     void teardown() noexcept;
 };
 
 // Reverse of the constructor; tolerates a partially built context.
 void EngineContext::Impl::teardown() noexcept {
-    if (catalog_started) clear_instrument_templates();
+    catalog.reset();
+    images.reset();
     engraving = EngravingServices();
     context_configuration.reset();
     music_xml.reset();
@@ -144,12 +146,10 @@ void EngineContext::Impl::teardown() noexcept {
     configuration.reset();
     if (engraving_fonts) engraving_fonts->deinit();
     engraving_fonts.reset();
-    muse::settings()->reset();
     MScore::test_mode = false;
     MScore::set_error(MsError::MS_NO_ERROR);
 
     if (assets) {
-        CairoPainter::clear_font_cache();
         FontMetrics::set_provider(nullptr);
         try {
             assets->shutdown();
@@ -192,6 +192,7 @@ EngineContext::EngineContext(const std::string &assets, const std::string &cache
 
         register_builtin_fonts(d.assets->fonts_database(), *d.engraving_fonts);
 
+        muse::settings()->reset();
         d.configuration->init();
         DefaultStyle::instance()->init(d.configuration->default_style_file_path(), d.configuration->part_style_file_path(),
                                        d.configuration->default_page_size());
@@ -202,7 +203,8 @@ EngineContext::EngineContext(const std::string &assets, const std::string &cache
 
         d.music_xml->init();
 
-        d.catalog_started = true;
+        d.images = std::make_unique<ImageStore>();
+        d.catalog = std::make_unique<InstrumentCatalog>();
         load_instrument_templates(":/engraving/instruments/instruments.xml");
     } catch (...) {
         d.teardown();

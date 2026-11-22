@@ -261,7 +261,7 @@ Score::~Score() {
         muse::delete_all(bracket_list);
     }
 
-    image_store.clear_unused();
+    image_store().clear_unused();
 
     // last: everything that is deleted above may park children on it on its way out
     system_dividers_.clear();
@@ -1294,7 +1294,7 @@ static void rebase_stave_sharing_tracks(Score &score, size_t old_staff_count, au
             if (map == state.user_track_map) continue;
 
             // Keep the boundary so a deleted assignment cannot extend the preceding map.
-            note_change(part, CommandType::CHANGE_STAVE_SHARING_STATE);
+            note_change(part);
             part->set_authored_state(tick, {std::move(map), state.is_reset});
             changed = true;
         }

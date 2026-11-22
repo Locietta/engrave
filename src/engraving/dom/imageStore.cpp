@@ -32,7 +32,13 @@ using namespace muse;
 using namespace muse::io;
 
 namespace mu::engraving {
-ImageStore image_store; // the global image store
+namespace {
+constinit ImageStore *s_image_store = nullptr;
+} // namespace
+
+ImageStore::ImageStore() { s_image_store = this; }
+
+ImageStore &image_store() { return *s_image_store; }
 
 //---------------------------------------------------------
 //   ImageStoreItem
@@ -98,7 +104,10 @@ inline static int to_int(char c) {
 //   ~ImageStore
 //---------------------------------------------------------
 
-ImageStore::~ImageStore() { muse::delete_all(items_); }
+ImageStore::~ImageStore() {
+    muse::delete_all(items_);
+    s_image_store = nullptr;
+}
 
 //---------------------------------------------------------
 //   getImage

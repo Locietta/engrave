@@ -164,12 +164,21 @@ struct InstrumentIndex {
     InstrumentIndex(int g, int i, const InstrumentTemplate *it);
 };
 
-extern std::vector<const InstrumentGenre *> instrument_genres;
-extern std::vector<const InstrumentFamily *> instrument_families;
-extern std::vector<const InstrumentGroup *> instrument_groups;
-extern std::vector<MidiArticulation> midi_articulations;
-extern std::vector<ScoreOrder> instrument_orders;
-extern void clear_instrument_templates();
+struct InstrumentCatalog {
+    InstrumentCatalog();
+    ~InstrumentCatalog();
+
+    InstrumentCatalog(const InstrumentCatalog &) = delete;
+    InstrumentCatalog &operator=(const InstrumentCatalog &) = delete;
+
+    std::vector<const InstrumentGroup *> groups;
+    std::vector<const InstrumentGenre *> genres;
+    std::vector<const InstrumentFamily *> families;
+    std::vector<MidiArticulation> articulations;
+    std::vector<ScoreOrder> orders;
+};
+
+InstrumentCatalog &instrument_catalog();
 extern bool load_instrument_templates(const muse::io::PathT &instr_templates_path);
 extern const InstrumentTemplate *combined_template_search(const Instrument &instrument);
 extern InstrumentIndex search_template_index_for_track_name(const String &track_name);

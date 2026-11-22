@@ -108,7 +108,6 @@ Public headers live under `engrave/include/engrave/`:
 The engine operates on a single dedicated owner thread per process (see `engrave/include/engrave/engine.h`):
 
 - **One Active Runtime Per Process**: `Engine::create()` validates options and returns `ErrorCode::UNSUPPORTED` while an Engine or its Documents are active. Documents remain usable on the original thread after their Engine is destroyed. Once the Engine and its last Document are destroyed, the process can create another Engine. Initialization failures also allow retries.
-- **Open Documents at Teardown**: Destroying an `Engine` while any `Document` is still open aborts the process. Destroy all documents first.
 - **Owner Thread Affiliation**: Every `Engine` and `Document` call must occur on the thread that created the engine; calling from another thread aborts.
 
 ## Testing

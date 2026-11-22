@@ -220,3 +220,16 @@ def win_manifest_library(name, manifest, visibility = None):
         target_compatible_with = ["@platforms//os:windows"],
         visibility = visibility,
     )
+
+def pch_consumer_copts(pch_label):
+    """Resolve relocatable PCH inputs relative to the current execroot."""
+    return [
+        "-Xclang",
+        "-fno-validate-pch",
+        "-include-pch",
+        "$(execpath %s)" % pch_label,
+        "-Xclang",
+        "-isysroot",
+        "-Xclang",
+        ".",
+    ]

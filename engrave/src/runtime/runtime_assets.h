@@ -8,6 +8,7 @@
 #include <vector>
 
 namespace muse::draw {
+struct CairoFontCache;
 struct FontProvider;
 } // namespace muse::draw
 
@@ -47,6 +48,7 @@ struct RuntimeAssets {
     music::RuntimeFontsDatabase &fonts_database();
     RuntimeFontsEngine &fonts_engine();
     muse::draw::FontProvider &font_provider();
+    muse::draw::CairoFontCache &cairo_fonts();
 
     // Owner-thread final shutdown, after scores and background jobs have been
     // destroyed. Releases cached faces; retained files survive outstanding leases.

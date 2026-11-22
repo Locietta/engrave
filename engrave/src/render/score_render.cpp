@@ -11,6 +11,7 @@
 #include "cairo_painter.h"
 #include "draw/painter.h"
 #include "engrave/src/runtime/engine_context.h"
+#include "engrave/src/runtime/runtime_assets.h"
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/score.h"
 #include "engraving/rendering/score/scorerenderer.h"
@@ -89,7 +90,7 @@ std::string render_score(const EngineContext &engine, mu::engraving::Score *scor
         cairo_restore(context.get());
         check(cairo_status(context.get()));
     }
-    auto provider = std::make_shared<muse::draw::CairoPainter>(context.get(), engine.fonts_database(), dpi);
+    auto provider = std::make_shared<muse::draw::CairoPainter>(context.get(), engine.assets().cairo_fonts(), dpi);
     {
         muse::draw::Painter painter(provider, "native-export");
         rendering::score::ScoreRenderer::ScorePaintOptions paint_options;

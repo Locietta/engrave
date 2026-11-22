@@ -30,7 +30,7 @@
 using namespace mu::engraving;
 
 void mu::engraving::apply_move_tremolo(Score *score, Fraction chord1_tick, Fraction chord2_tick, TremoloTwoChord *trem, track_idx_t track) {
-    note_change(trem, CommandType::MOVE_TREMOLO);
+    note_change(trem);
 
     // Find new tremolo chords
     Measure *m1 = score->tick2measure(chord1_tick);

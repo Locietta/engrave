@@ -261,21 +261,23 @@ jobs:
           locked: true
           cache: true
 
-      - name: Cache Bazel repositories
-        uses: actions/cache@v6
+      - name: Restore Bazel repository cache
+        id: repo-cache
+        uses: actions/cache/restore@v6
         with:
           path: ${{ env.REPO_CACHE }}
           key: bazel-repo-linux-xclang-${{ hashFiles('.bazelversion', 'MODULE.bazel', 'bazel/deps.bzl') }}
           restore-keys: bazel-repo-linux-xclang-
 
-      - name: Cache sanitized Bazel actions
-        uses: actions/cache@v6
+      - name: Restore sanitized Bazel disk cache
+        uses: actions/cache/restore@v6
         with:
           path: ${{ env.DISK_CACHE }}
           key: bazel-disk-linux-sanitize-${{ github.sha }}
           restore-keys: bazel-disk-linux-sanitize-
 
       - name: Build sanitized engine tests and probes
+        id: build
         run: |
           mkdir -p "$BUILD_DIR" "$REPO_CACHE" "$DISK_CACHE"
           bep="$PWD/$BUILD_DIR/bep.json"
@@ -316,3 +318,17 @@ jobs:
           python tests/gate.py --no-audio --goldens-only --skip-build --profile sanitize
           --build-dir "$BUILD_DIR" --assets "$RUNNER_TEMP/assets"
           --output "$RUNNER_TEMP/sanitized-goldens" -J 4
+
+      - name: Save Bazel repository cache
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.repo-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ env.REPO_CACHE }}
+          key: bazel-repo-linux-xclang-${{ hashFiles('.bazelversion', 'MODULE.bazel', 'bazel/deps.bzl') }}
+
+      - name: Save sanitized Bazel disk cache
+        if: ${{ !cancelled() && steps.build.outcome != 'skipped' }}
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ env.DISK_CACHE }}
+          key: bazel-disk-linux-sanitize-${{ github.sha }}

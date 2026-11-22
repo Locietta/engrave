@@ -84,7 +84,7 @@ char16_t LayoutBreak::icon_code() const {
 
 void LayoutBreak::set_layout_break_type(LayoutBreakType val) {
     if (layout_break_type_ == val) return;
-    note_change(this, CommandType::UNKNOWN);
+    note_change(this);
     const bool section_changed = is_section_break() || val == LayoutBreakType::SECTION;
     auto *parent = measure();
     const bool attached = parent && muse::contains(parent->el(), static_cast<EngravingItem *>(this));

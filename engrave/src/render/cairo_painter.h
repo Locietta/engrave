@@ -26,11 +26,8 @@
 struct _cairo;
 typedef struct _cairo cairo_t;
 
-namespace music {
-struct RuntimeFontsDatabase;
-} // namespace music
-
 namespace muse::draw {
+struct CairoFontCache;
 struct Painter;
 
 struct CairoPainter {
@@ -45,16 +42,13 @@ struct CairoPainter {
      *
      *  Ownership of context stays with the caller; this object never calls
      *  cairo_destroy().  The cairo_t must outlive the CairoPainter.  Text is
-     *  drawn with the font bytes of fontsDatabase, which must outlive it too.
+     *  drawn using the runtime font cache, which must also outlive the painter.
      */
-    CairoPainter(cairo_t *context, const music::RuntimeFontsDatabase &fonts_database, double device_dpi = 1200.0);
+    CairoPainter(cairo_t *context, CairoFontCache &fonts, double device_dpi = 1200.0);
     ~CairoPainter();
 
     CairoPainter(const CairoPainter &) = delete;
     CairoPainter &operator=(const CairoPainter &) = delete;
-
-    static void clear_font_cache();
-    static size_t cached_font_count();
 
     cairo_t *cairo_context() const;
 

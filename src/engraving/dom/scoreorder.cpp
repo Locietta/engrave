@@ -365,7 +365,7 @@ void ScoreOrder::set_brackets_and_barlines(Score *score) {
         }
 
         String family{get_family_name(instr_template, part->soloist())};
-        const ScoreGroup sg = get_group(family, instrument_groups[ii.group_index]->id);
+        const ScoreGroup sg = get_group(family, instrument_catalog().groups[ii.group_index]->id);
 
         staff_idx_t staff_idx{0};
         const bool is_multi_staff_instrument = instr_template->staff_count > 1;

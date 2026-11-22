@@ -205,7 +205,7 @@ String Instrument::recognize_id() const {
     String fallback;             // ID that gave the best match so far
     int best_match_strength = 0; // higher when ID is a better match
 
-    for (const InstrumentGroup *g : instrument_groups) {
+    for (const InstrumentGroup *g : instrument_catalog().groups) {
         for (const InstrumentTemplate *it : g->instrument_templates) {
             if (it->music_xml_id != music_xml_id_) {
                 continue;

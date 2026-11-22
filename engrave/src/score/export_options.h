@@ -43,6 +43,7 @@ struct ExportOptions {
     // Internal checkpoints preserve native numeric values without refreshing
     // fonts or geometry.
     bool transaction_snapshot = false;
+    bool compress = true;
     int png_dpi = 144;
     bool draw_page_background = false;
     bool transparent = true;
