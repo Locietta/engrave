@@ -1625,17 +1625,13 @@ void Score::reconnect_slurs(MeasureBase *mb_start, MeasureBase *mb_end) {
     }
 }
 
-void Score::delete_slurs_from_range(const Fraction &t1, const Fraction &t2, track_idx_t track_start, track_idx_t track_end,
-                                    const SelectionFilter &filter) {
+void Score::delete_slurs_from_range(const Fraction &t1, const Fraction &t2, track_idx_t track_start, track_idx_t track_end) {
     auto spanners = spanner_.find_overlapping(t1.ticks(), t2.ticks() - 1);
     for (auto i : spanners) {
         Spanner *sp = i.value;
         Fraction sp_start_tick = sp->tick();
         Fraction sp_end_tick = sp->tick2();
         if (!sp->is_slur()) {
-            continue;
-        }
-        if (!filter.can_select_voice(sp->track()) || !filter.can_select(sp)) {
             continue;
         }
 

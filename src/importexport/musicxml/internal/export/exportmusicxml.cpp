@@ -6832,6 +6832,7 @@ void ExportMusicXml::identification(XmlWriter &xml, Score const *const score) {
         xml.tag("software", String(u"MuseScore 0.7.0"));
         xml.tag("encoding-date", String(u"2007-09-10"));
     } else {
+        // Keep the MuseScore producer identifier in the interchange format.
         xml.tag("software", String(u"MuseScore Studio ") + muse::appinfo::version().to_string());
         xml.tag("encoding-date", muse::Date::current_date().to_string(muse::DateFormat::ISO_DATE));
     }

@@ -4,11 +4,10 @@ common --registry=https://bcr.bazel.build/
 common --experimental_repository_downloader_retries=10 --http_timeout_scaling=2
 common --repo_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
 common --cxxopt=-std=c++23 --host_cxxopt=-std=c++23
-common --experimental_cpp_modules
 build --incompatible_strict_action_env
 
 build -c opt
-build:release -c opt
+build:release -c opt --features=gc_sections --linkopt=-Wl,--icf=safe
 build:releasedbg -c opt --copt=-g
 build:debug -c dbg
 build:sanitize -c dbg --copt=-O1 --features=asan --features=ubsan

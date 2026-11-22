@@ -310,22 +310,6 @@ bool EditTimeSig::rewrite_measures(Transaction &tx, Score *score, Measure *start
         apply_move_tremolo(trem->score(), chord1_tick, chord2_tick, trem, track);
     }
 
-    if (score->note_entry_mode()) {
-        // set input cursor to possibly re-written segment
-        Fraction ic_tick = score->input_state().tick();
-        Segment *ic_segment = score->tick2segment(ic_tick, false, SegmentType::CHORD_REST);
-        if (!ic_segment) {
-            // this can happen if cursor was on a rest
-            // and in the rewriting it got subsumed into a full measure rest
-            Measure *ic_measure = score->tick2measure(ic_tick);
-            if (!ic_measure) { // shouldn't happen, but just in case
-                ic_measure = score->first_measure();
-            }
-            ic_segment = ic_measure->first(SegmentType::CHORD_REST);
-        }
-        score->input_state().set_segment(ic_segment);
-    }
-
     return true;
 }
 

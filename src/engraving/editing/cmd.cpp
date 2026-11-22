@@ -251,7 +251,7 @@ void MasterScore::update(bool reset_cmd_state, NormalizeMode mode) {
 
     for (Score *score : score_list()) {
         Selection &sel = score->selection();
-        if (sel.is_range() && !sel.is_locked()) {
+        if (sel.is_range()) {
             sel.update_selected_elements();
         }
     }
@@ -689,40 +689,14 @@ Segment *Score::set_note_rest(Segment *segment, track_idx_t track, NoteVal nval,
                               bool force_accidental, const std::set<SymId> &articulation_ids, bool rhythmic,
                               InputState *external_input_state) {
     assert(segment->segment_type() == SegmentType::CHORD_REST);
-    InputState &is = external_input_state ? (*external_input_state) : is_;
     EngravingItem *nr = nullptr;
     segment = set_note_rest_at(segment, track, nval, sd, stem_direction, force_accidental, articulation_ids, rhythmic, &nr);
-    ChordRest *cr = nullptr;
 
     if (nr) {
-        if (is.slur() && nr->is_note()) {
-            // If the start element was the same as the end element when the slur was created,
-            // the end grip of the front slur segment was given an x-offset of 3.0 * spatium().
-            // Now that the slur is about to be given a new end element, this should be reset.
-            if (is.slur()->end_element() == is.slur()->start_element()) {
-                is.slur()->front_segment()->reset();
-            }
-            //
-            // extend slur
-            //
-            Chord *chord = to_note(nr)->chord();
-            is.slur()->undo_change_property(Pid::SPANNER_TICKS, chord->tick() - is.slur()->tick());
-            for (EngravingObject *se : is.slur()->link_list()) {
-                Slur *slur = to_slur(se);
-                for (EngravingObject *ee : chord->link_list()) {
-                    EngravingItem *e = static_cast<EngravingItem *>(ee);
-                    if (e->score() == slur->score() && e->track() == slur->track2()) {
-                        apply_change_spanner_elements(slur, slur->start_element(), e);
-                        break;
-                    }
-                }
-            }
-        }
         if (external_input_state) {
-            is.set_track(nr->track());
-            cr = nr->is_rest() ? to_chord_rest(nr) : to_note(nr)->chord();
-            is.set_last_segment(is.segment());
-            is.set_segment(cr->segment());
+            auto *cr = nr->is_rest() ? to_chord_rest(nr) : to_note(nr)->chord();
+            external_input_state->set_track(nr->track());
+            external_input_state->set_segment(cr->segment());
         } else {
             select(nr, SelectType::SINGLE, 0);
         }
@@ -911,8 +885,7 @@ Fraction Score::make_gap(Segment *segment, track_idx_t track, const Fraction &in
             }
         }
 
-        SelectionFilter filter;
-        delete_slurs_from_range(t1, t2, track, track + 1, filter);
+        delete_slurs_from_range(t1, t2, track, track + 1);
     }
 
     return accumulated;

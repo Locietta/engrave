@@ -365,7 +365,7 @@
   "moduleExtensions": {
     "//bazel:deps.bzl%engrave_deps": {
       "general": {
-        "bzlTransitiveDigest": "lzKJMaPADlTF5JEVcxcunZEAWMZgr7kwNMU6s6pj2Hs=",
+        "bzlTransitiveDigest": "Alqgb1ka49XU0BLXrQzZRxh5FZTLaviTNGGIN3mW9iA=",
         "usagesDigest": "vsZZrqAkObMCOZqbg6QBTj6zySET+M08rFXOPqC299Y=",
         "recordedInputs": [
           "REPO_MAPPING:,bazel_tools bazel_tools"

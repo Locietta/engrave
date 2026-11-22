@@ -1001,15 +1001,6 @@ void Score::scan_elements_in_range(std::function<void(EngravingItem *)> func) {
     }
 }
 
-void Score::set_selection(const Selection &s) {
-    deselect_all();
-    selection_ = s;
-
-    for (EngravingItem *e : selection_.elements()) {
-        e->set_selected(true);
-    }
-}
-
 Text *Score::get_text(TextStyleType tid) const {
     MeasureBase *m = first();
     if (m && m->is_v_box()) {
@@ -1791,7 +1782,6 @@ void Score::select_single(EngravingItem *e, staff_idx_t staff_idx) {
             e = to_note(e)->chord();
         }
         if (e->is_chord_rest()) {
-            is_.set_last_segment(is_.segment());
             is_.set_segment(to_chord_rest(e)->segment());
         }
     }

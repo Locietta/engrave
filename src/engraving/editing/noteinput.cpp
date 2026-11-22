@@ -72,18 +72,13 @@ Note *NoteInput::add_note(Transaction &, Score *score, Chord *chord, const NoteV
 
     if (external_input_state) {
         is.set_track(note->track());
-        is.set_last_segment(is.segment());
         is.set_segment(note->chord()->segment());
     } else {
         score->select(note, SelectType::SINGLE, 0);
     }
 
     if (!chord->staff()->is_tab_staff(chord->tick())) {
-        NoteEntryMethod entry_method = is.note_entry_method();
-        if (entry_method != NoteEntryMethod::REPITCH && entry_method != NoteEntryMethod::REALTIME_AUTO &&
-            entry_method != NoteEntryMethod::REALTIME_MANUAL) {
-            is.move_to_next_input_pos();
-        }
+        is.move_to_next_input_pos();
     }
     return note;
 }

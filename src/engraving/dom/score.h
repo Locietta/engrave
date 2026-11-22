@@ -414,8 +414,6 @@ public:
 
     void set_play_chord(bool v) { update_state_.play_chord = v; }
 
-    bool selection_empty() const { return selection_.staff_start() == selection_.staff_end(); }
-
     bool selection_changed() const { return update_state_.selection_changed; }
 
     void set_selection_changed(bool val) { update_state_.selection_changed = val; }
@@ -481,19 +479,9 @@ public:
 
     void deselect_all() { selection_.deselect_all(); }
 
-    void update_selection() { selection_.update(); }
-
-    EngravingItem *get_selected_element() const { return selection_.element(); }
-
     const Selection &selection() const { return selection_; }
 
     Selection &selection() { return selection_; }
-
-    const SelectionFilter &selection_filter() const { return selection_filter_; }
-
-    SelectionFilter &selection_filter() { return selection_filter_; }
-
-    void set_selection(const Selection &s);
 
     bool can_reselect_item(const EngravingItem *item) const;
 
@@ -577,8 +565,6 @@ public:
 
     Fraction loop_boundary_tick(LoopBoundaryType type) const;
     void set_loop_boundary_tick(LoopBoundaryType type, Fraction tick);
-
-    bool note_entry_mode() const { return input_state().note_entry_mode(); }
 
     const InputState &input_state() const { return is_; }
 
@@ -942,8 +928,7 @@ private:
     void do_undo_remove_stale_tie_jump_points(Tie *tie, bool undo = true);
     void do_undo_reset_partial_slur(Slur *slur, bool undo);
 
-    void delete_slurs_from_range(const Fraction &t1, const Fraction &t2, track_idx_t track_start, track_idx_t track_end,
-                                 const SelectionFilter &filter);
+    void delete_slurs_from_range(const Fraction &t1, const Fraction &t2, track_idx_t track_start, track_idx_t track_end);
 
     muse::ID new_staff_id() const;
     muse::ID new_part_id() const;
@@ -1013,7 +998,6 @@ private:
     std::map<String, String> meta_tags_;
 
     Selection selection_;
-    SelectionFilter selection_filter_;
 
     DummyParent *dummy_ = nullptr;
     LayoutOptions layout_options_;

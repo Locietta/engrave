@@ -22,11 +22,13 @@
 
 #pragma once
 
+#include <unordered_set>
+
 #include "../types/types.h"
+#include "chord.h"
 #include "durationtype.h"
 #include "mscore.h"
 #include "pitchspelling.h"
-#include "selectionfilter.h"
 
 namespace mu::engraving {
 struct Score;
@@ -95,12 +97,6 @@ struct Selection {
 
     void set_state(SelState s);
 
-    //! NOTE If locked, the selected items should not be changed.
-
-    bool is_locked() const { return !lock_reason_.is_empty(); }
-
-    const String &lock_reason() const { return lock_reason_; }
-
     const std::vector<EngravingItem *> &elements() const { return el_; }
 
     std::vector<EngravingItem *> elements(ElementType type) const;
@@ -119,7 +115,6 @@ struct Selection {
     MeasureBase *start_measure_base() const;
 
     void update();
-    void update_state();
 
     Segment *start_segment() const { return start_segment_; }
 
@@ -152,19 +147,9 @@ struct Selection {
 
     void extend_range_selection(Segment *seg, Segment *seg_after, staff_idx_t staff_idx, const Fraction &tick, const Fraction &etick,
                                 Box *box = nullptr);
-    bool range_contains_multi_note_chords() const;
 
 private:
-    SelectionFilter selection_filter() const;
-
-    bool can_select(const EngravingItem *e) const { return selection_filter().can_select(e); }
-
-    bool can_select_note_idx(size_t note_idx, size_t total_notes_in_chord, bool range_contains_multi_note_chords) const;
-
-    bool can_select_voice(track_idx_t track) const { return selection_filter().can_select_voice(track); }
-
-    void append_filtered(EngravingItem *e);
-    void append_filtered(const std::unordered_set<EngravingItem *> &elems);
+    void append_anchored_elements(const std::unordered_set<EngravingItem *> &elems);
     void append_chord_rest(ChordRest *cr);
     void append_tuplet_hierarchy(Tuplet *innermost_tuplet);
     void append_guitar_bend(GuitarBend *guitar_bend);
@@ -175,6 +160,7 @@ private:
     void validate_boxes_and_segments(); // Checks that the Boxes/segments match (asserts and clears the Box if not)
 
     bool range_is_valid() const;
+    void refresh_state();
 
     Score *score_ = nullptr;
     SelState state_ = SelState::NONE;
@@ -196,12 +182,5 @@ private:
 
     Segment *active_segment_ = nullptr;
     track_idx_t active_track_ = 0;
-
-    Fraction current_tick_; // tracks the most recent selection
-    track_idx_t current_track_ = 0;
-
-    bool range_contains_multi_note_chords_ = false; // cached - calculating this isn't free
-
-    String lock_reason_;
 };
 } // namespace mu::engraving

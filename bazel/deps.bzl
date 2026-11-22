@@ -290,8 +290,8 @@ def _engrave_config_impl(rctx):
     major = _parse_cmake_var(version_text, "MUSE_APP_VERSION_MAJOR", "5")
     minor = _parse_cmake_var(version_text, "MUSE_APP_VERSION_MINOR", "0")
     patch = _parse_cmake_var(version_text, "MUSE_APP_VERSION_PATCH", "0")
-    human = _parse_cmake_var(version_text, "MUSE_APP_NAME_HUMAN_READABLE", "MuseScore Studio")
-    machine = _parse_cmake_var(version_text, "MUSE_APP_NAME_MACHINE_READABLE", "MuseScoreStudio")
+    human = _parse_cmake_var(version_text, "MUSE_APP_NAME_HUMAN_READABLE", "Engrave")
+    machine = _parse_cmake_var(version_text, "MUSE_APP_NAME_MACHINE_READABLE", "Engrave")
     label = _parse_cmake_var(version_text, "MUSE_APP_VERSION_LABEL", "")
 
     revision = rctx.os.environ.get("ENGRAVE_GIT_REVISION", "").strip()

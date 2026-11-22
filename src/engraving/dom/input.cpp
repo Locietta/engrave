@@ -29,15 +29,12 @@ using namespace mu;
 
 namespace mu::engraving {
 
-Fraction InputState::tick() const { return segment_ ? segment_->tick() : Fraction(0, 1); }
-
 void InputState::set_segment(Segment *s) {
     if (s && s->measure()->is_mm_rest()) {
         Measure *m = s->measure()->mm_rest_first();
         s = m->find_segment(SegmentType::CHORD_REST, m->tick());
     }
     segment_ = s;
-    last_segment_ = s;
 }
 
 Segment *InputState::next_input_pos() const {
@@ -55,13 +52,6 @@ Segment *InputState::next_input_pos() const {
 //   TODO: special case: note is first note of tie: goto to last note of tie
 
 void InputState::move_to_next_input_pos() {
-    Segment *s = next_input_pos();
-    last_segment_ = segment_;
-    if (s) {
-        segment_ = s;
-        beyond_score_ = false;
-    } else {
-        beyond_score_ = true;
-    }
+    if (auto *next = next_input_pos()) segment_ = next;
 }
 } // namespace mu::engraving
