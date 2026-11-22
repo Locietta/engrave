@@ -114,6 +114,7 @@ struct Position {
 struct SpanMusic {
     ElementId id;
     std::string type;
+    std::optional<std::string> subtype;
     Position start;
     Position end;
     std::optional<ElementId> start_element;

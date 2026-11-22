@@ -254,6 +254,36 @@ TEST(MusicRead, OverlappingSpansRetainEndpointsInLinkedPart) {
     }
 }
 
+TEST(MusicRead, HairpinSubtypes) {
+    const auto document = open_fixture(clarinet_fixture);
+    ASSERT_TRUE(document) << document.error().message;
+    const auto music = (*document)->read_music({.measure_count = 2});
+    ASSERT_TRUE(music) << music.error().message;
+    const auto start = music->measures.at(0).voices.at(0).events.at(0).id;
+    const auto end = music->measures.at(1).voices.at(0).events.at(0).id;
+    const std::vector<std::string_view> expected{"crescendo", "diminuendo", "crescendo_line", "diminuendo_line"};
+    Batch batch;
+    for (int type = 0; type < static_cast<int>(expected.size()); ++type) {
+        batch.ops.push_back(AddSpanner{"HairPin", start, end, {{"HAIRPIN_TYPE", type}}});
+    }
+    batch.ops.push_back(AddSpanner{"Slur", start, end, {}});
+    const auto edit = (*document)->edit(batch);
+    ASSERT_TRUE(edit) << edit.error().message;
+    ASSERT_FALSE(edit->rejection) << edit->rejection->error.message;
+    const auto window = (*document)->read_music({.measure_count = 2});
+    ASSERT_TRUE(window) << window.error().message;
+    ASSERT_EQ(window->spanners.size(), expected.size() + 1);
+    for (const auto subtype : expected) {
+        EXPECT_EQ(std::ranges::count_if(window->spanners,
+                                        [&](const SpanMusic &span) { return span.type == "HairPin" && span.subtype == subtype; }),
+                  1)
+            << subtype;
+    }
+    const auto slur = std::ranges::find(window->spanners, "Slur", &SpanMusic::type);
+    ASSERT_NE(slur, window->spanners.end());
+    EXPECT_FALSE(slur->subtype);
+}
+
 TEST(MusicRead, NoteOwnedLineCrossesAWindowWithoutEitherAnchor) {
     constexpr std::string_view source = R"(<museScore version="5.00"><Score><Division>480</Division>
 <Part id="1"><Staff/><trackName>Piano</trackName><Instrument id="piano"/></Part>

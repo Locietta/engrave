@@ -9,6 +9,7 @@
 #include "engrave/src/api/state.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/drumset.h"
+#include "engraving/dom/hairpin.h"
 #include "engraving/dom/instrument.h"
 #include "engraving/dom/keysig.h"
 #include "engraving/dom/masterscore.h"
@@ -296,9 +297,22 @@ Result<void> read_spans(const Score &score, Tick begin, Tick end, const std::vec
         if (!charge(budget.rows, 1)) return music_limit();
         std::string type_name = source.type_name();
         if (!charge_text(budget, type_name)) return music_limit();
+        std::optional<std::string> subtype;
+        if (source.is_hairpin()) {
+            using mu::engraving::HairpinType;
+            switch (mu::engraving::to_hairpin(&source)->hairpin_type()) {
+                case HairpinType::CRESC_HAIRPIN: subtype = "crescendo"; break;
+                case HairpinType::DIM_HAIRPIN: subtype = "diminuendo"; break;
+                case HairpinType::CRESC_LINE: subtype = "crescendo_line"; break;
+                case HairpinType::DIM_LINE: subtype = "diminuendo_line"; break;
+                case HairpinType::INVALID: break;
+            }
+            if (subtype && !charge_text(budget, *subtype)) return music_limit();
+        }
         seen.insert(*id);
         SpanMusic span{*id,
                        std::move(type_name),
+                       std::move(subtype),
                        span_position(*start, start_tick, source.track()),
                        span_position(*finish, end_tick, source.effective_track2()),
                        source_anchor(source, *start, start_tick, false),
