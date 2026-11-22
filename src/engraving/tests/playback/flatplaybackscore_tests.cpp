@@ -1007,6 +1007,14 @@ TEST(FlatPlaybackStoreTests, CancelsInsideContextMaterialization) {
 
     using Clock = std::chrono::steady_clock;
     const auto milliseconds = [](auto duration) { return std::chrono::duration<double, std::milli>(duration).count(); };
+    // ASan tracks allocations during materialization and unwind, so the latency budget belongs to the release lane.
+#if defined(__clang__)
+    constexpr bool enforce_latency = !__has_feature(address_sanitizer);
+#elif defined(__SANITIZE_ADDRESS__)
+    constexpr bool enforce_latency = false;
+#else
+    constexpr bool enforce_latency = true;
+#endif
     for (int pass = 0; pass < 4; ++pass) {
         const auto run = [&](const auto &checkpoint) {
             if (pass == 0) std::ignore = context.syllables(0, 4, checkpoint);
@@ -1029,7 +1037,9 @@ TEST(FlatPlaybackStoreTests, CancelsInsideContextMaterialization) {
             ++polls;
         });
         EXPECT_GT(polls, 200000u); // Presets require more than cursor-scan polls.
-        EXPECT_LT(maximum, 2.5);
+        if constexpr (enforce_latency) {
+            EXPECT_LT(maximum, 2.5);
+        }
         double return_maximum = 0;
         for (std::size_t cancel_at : {largest_at, polls - 2}) {
             std::size_t current = 0;
@@ -1048,7 +1058,9 @@ TEST(FlatPlaybackStoreTests, CancelsInsideContextMaterialization) {
         }
         std::cout << "materialization pass " << pass << " max_checkpoint_interval_ms=" << maximum
                   << " request_to_return_including_unwind_ms=" << return_maximum << '\n';
-        EXPECT_LT(return_maximum, 100.0);
+        if constexpr (enforce_latency) {
+            EXPECT_LT(return_maximum, 100.0);
+        }
     }
     delete score;
 }
