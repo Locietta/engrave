@@ -133,6 +133,7 @@ Result<Target> EditContext::target(const Ref &ref) const {
             return fail(ErrorCode::INVALID_ARGUMENT, "layout builds this element; it cannot be edited");
         }
         if (auto valid = validate_segment_address(*segment); !valid) return std::unexpected(valid.error());
+        if (auto measure = segment_measure(master_, *segment); !measure) return std::unexpected(measure.error());
         if (segment->staff < 0) return fail(ErrorCode::INVALID_ARGUMENT, std::format("a score has no staff {}", segment->staff));
         if (segment->voice < 0 || static_cast<std::size_t>(segment->voice) >= mu::engraving::voices)
             return fail(ErrorCode::INVALID_ARGUMENT, std::format("a staff has no voice {}", segment->voice));

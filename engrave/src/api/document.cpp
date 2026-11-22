@@ -131,8 +131,8 @@ Result<Document::Impl::Snapshot> Document::Impl::capture_snapshot() const try {
     Snapshot snapshot;
     snapshot.bytes = music::export_native_score(*engine->context, project, "mscz",
                                                 music::ExportOptions{.transaction_snapshot = true, .compress = false}, {});
-    // Scan the central directory with the same per-entry and aggregate limits
-    // the restore reader enforces, without inflating any entry.
+    // Restore reads each snapshot entry at most once, so the central directory
+    // bounds its decompression budget without inflating any entry.
     auto buffer = muse::io::Buffer::opened(muse::io::IODevice::READ_ONLY, muse::ByteArray(snapshot.bytes.data(), snapshot.bytes.size()));
     muse::ZipReader zip(&buffer);
     if (zip.file_info_list().empty() || zip.has_error())

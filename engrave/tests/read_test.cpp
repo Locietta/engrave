@@ -4482,6 +4482,30 @@ TEST(Read, ExtremeTickRangesAndMeasureWindows) {
     }
 }
 
+TEST(Read, SubTickPositionStaysInTheMeasureBeforeTheBarline) {
+    auto made = g_engine->create_document({.template_id = "Treble_Clef"});
+    ASSERT_TRUE(made);
+    auto &document = **made;
+    auto &master = master_of(document);
+    auto *first = master.first_measure();
+    ASSERT_NE(first->next_measure(), nullptr);
+    const auto first_id = engrave::from_engine(first->eid());
+    const engrave::SegmentAddress at{first_id, 0, 0, {3, 4}, "ChordRest"};
+    const auto entered = document.edit({{engrave::EnterNotes{at, {1, 4}, {{60}}}}});
+    ASSERT_TRUE(entered) << entered.error().message;
+    ASSERT_FALSE(entered->rejection) << entered->rejection->error.message;
+    auto *chord = master.find_cr({3, 4}, 0);
+    ASSERT_TRUE(chord && chord->is_chord());
+    chord->segment()->set_rtick({7679, 7680});
+
+    const auto query = document.query({.types = {"Chord"}, .first_measure = 0, .measure_count = 1});
+    ASSERT_TRUE(query);
+    ASSERT_EQ(query->elements.size(), 1u);
+    EXPECT_EQ(query->elements.front().tick, (engrave::Fraction{7679, 7680}));
+    EXPECT_EQ(query->elements.front().measure, first_id);
+    EXPECT_EQ(query->elements.front().measure_index, 0);
+}
+
 TEST(Read, FractionPropertyDefaultsKeepWrittenTerms) {
     const auto fixture = std::ranges::find_if(g_corpus, [](const auto &path) { return path.filename() == "linked_parts.mscx"; });
     ASSERT_NE(fixture, g_corpus.end());

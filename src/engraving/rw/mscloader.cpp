@@ -123,6 +123,7 @@ Ret MscLoader::load_mscz(MasterScore *master_score, const MscReader &msc_reader,
     // Read score
     {
         ByteArray score_data = msc_reader.read_score_file();
+        if (msc_reader.has_error()) return make_ret(Err::FILE_CRITICALLY_CORRUPTED, u"cannot read native ZIP score data");
         String doc_name = master_score->file_info()->file_name().to_string();
 
         XmlReader xml(score_data);
@@ -135,19 +136,21 @@ Ret MscLoader::load_mscz(MasterScore *master_score, const MscReader &msc_reader,
     if (ret && msc_reader.is_container()) {
         std::vector<String> excerpt_file_names = msc_reader.excerpt_file_names();
         for (const String &excerpt_file_name : excerpt_file_names) {
+            ByteArray excerpt_style_data = msc_reader.read_excerpt_style_file(excerpt_file_name);
+            ByteArray excerpt_data = msc_reader.read_excerpt_file(excerpt_file_name);
+            if (msc_reader.has_error() || excerpt_data.empty())
+                return make_ret(Err::FILE_CRITICALLY_CORRUPTED, u"cannot read excerpt " + excerpt_file_name);
+
             Score *part_score = master_score->create_score();
 
             compat::ReadStyleHook::setup_default_style(part_score);
 
-            Excerpt *ex = new Excerpt(master_score);
+            auto ex = std::make_unique<Excerpt>(master_score);
             ex->set_excerpt_score(part_score);
             ex->set_file_name(excerpt_file_name);
 
-            ByteArray excerpt_style_data = msc_reader.read_excerpt_style_file(excerpt_file_name);
             auto excerpt_style_buf = Buffer::opened(IODevice::READ_ONLY, &excerpt_style_data);
             part_score->style().read(&excerpt_style_buf);
-
-            ByteArray excerpt_data = msc_reader.read_excerpt_file(excerpt_file_name);
 
             XmlReader xml(excerpt_data);
             xml.set_doc_name(excerpt_file_name);
@@ -166,6 +169,7 @@ Ret MscLoader::load_mscz(MasterScore *master_score, const MscReader &msc_reader,
             if (!ret) {
                 break;
             }
+            if (xml.error() != XmlReader::NO_ERROR) return make_ret(Err::FILE_CRITICALLY_CORRUPTED, xml.error_string());
 
             Excerpt::link_measures(part_score, master_score);
 
@@ -181,7 +185,7 @@ Ret MscLoader::load_mscz(MasterScore *master_score, const MscReader &msc_reader,
                 }
             }
 
-            master_score->add_excerpt(ex);
+            master_score->add_excerpt(ex.release());
         }
     }
 
@@ -192,6 +196,7 @@ Ret MscLoader::load_mscz(MasterScore *master_score, const MscReader &msc_reader,
     // Read automation
     {
         ByteArray ba = msc_reader.read_automation_json_file();
+        if (msc_reader.has_error()) return make_ret(Err::FILE_CRITICALLY_CORRUPTED, u"cannot read native ZIP automation data");
         AutomationDataPtr automation_data = std::make_shared<AutomationData>();
         AutomationRW::read(*automation_data, ba);
         master_score->set_automation_data(automation_data);

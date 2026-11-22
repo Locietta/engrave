@@ -150,19 +150,22 @@ int score_index(MasterScore &master, const Score *score) {
 // measure an element sits in is one search rather than a walk per element.
 struct MeasureIndex {
     std::vector<Measure *> measures;
-    std::vector<int> ticks;
+    std::vector<Fraction> ticks;
 
     explicit MeasureIndex(Score &score) {
         for (Measure *measure = score.first_measure(); measure; measure = measure->next_measure()) {
             measures.push_back(measure);
-            ticks.push_back(measure->tick().ticks());
+            ticks.push_back(fraction_of(measure->tick()));
         }
     }
 
-    std::int32_t index_of_tick(int tick) const {
-        const auto found = std::upper_bound(ticks.begin(), ticks.end(), tick);
+    std::int32_t index_of_tick(const Fraction &tick, bool end_barline) const {
+        const auto found =
+            end_barline ? std::lower_bound(ticks.begin(), ticks.end(), tick) : std::upper_bound(ticks.begin(), ticks.end(), tick);
         if (found == ticks.begin()) return -1;
-        return static_cast<std::int32_t>(found - ticks.begin() - 1);
+        const auto index = static_cast<std::size_t>(found - ticks.begin() - 1);
+        const auto end = fraction_of(measures[index]->end_tick());
+        return (tick < end || (end_barline && tick == end)) ? static_cast<std::int32_t>(index) : -1;
     }
 
     std::int32_t index_of(const Measure *measure) const {
@@ -201,7 +204,10 @@ Where where_of(const EngravingObject &object, const MeasureIndex &index) {
         const auto &item = static_cast<const EngravingItem &>(object);
         where.tick = musical_time(item.tick());
         where.duration = musical_time(duration_of(item));
-        where.measure_index = index.index_of_tick(item.tick().ticks());
+        const auto *barline_segment = item.is_segment() ? &item : item.is_bar_line() ? item.ownership_parent() : nullptr;
+        const bool end_barline =
+            barline_segment && barline_segment->is_segment() && mu::engraving::to_segment(barline_segment)->is_end_bar_line_type();
+        where.measure_index = index.index_of_tick(where.tick, end_barline);
     } else {
         return where; // the score, a part or a staff: not at a position
     }

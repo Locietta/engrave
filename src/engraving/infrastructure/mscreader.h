@@ -54,6 +54,7 @@ struct MscReader {
     void close();
     bool is_opened() const;
     bool is_container() const;
+    bool has_error() const;
 
     muse::ByteArray read_style_file() const;
     muse::ByteArray read_score_file() const;
@@ -80,6 +81,7 @@ private:
         void close();
         bool is_opened() const;
         bool is_container() const;
+        bool has_error() const;
         muse::StringList file_list() const;
         bool file_exists(const muse::String &file_name) const;
         muse::ByteArray file_data(const muse::String &file_name) const;

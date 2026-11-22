@@ -69,6 +69,11 @@ bool MscReader::is_opened() const { return reader_ ? reader_->is_opened() : fals
 
 bool MscReader::is_container() const { return reader_ ? reader_->is_container() : false; }
 
+bool MscReader::has_error() const {
+    const auto *zip = reader_ ? std::get_if<ZipFileReader>(&reader_->implementation) : nullptr;
+    return zip && zip->has_error();
+}
+
 MscReader::Reader *MscReader::reader() const {
     if (!reader_) {
         switch (params_.mode) {
@@ -112,20 +117,20 @@ String MscReader::main_file_name() const {
 }
 
 ByteArray MscReader::read_score_file() const {
-    String mscx_file_name = main_file_name();
+    const String mscx_file_name = main_file_name();
     ByteArray data = file_data(mscx_file_name);
-    if (data.empty() && reader()->is_container()) {
+    if (data.empty() && !has_error() && reader()->is_container()) {
         StringList files = reader()->file_list();
         for (const String &name : files) {
             // mscx file in the root dir
             if (!name.contains(u'/') && name.ends_with(u".mscx", muse::CASE_INSENSITIVE)) {
-                mscx_file_name = name;
+                if (name != mscx_file_name) return file_data(name);
                 break;
             }
         }
     }
 
-    return file_data(mscx_file_name);
+    return data;
 }
 
 std::vector<String> MscReader::excerpt_file_names() const {
@@ -245,6 +250,8 @@ void MscReader::ZipFileReader::close() {
 bool MscReader::ZipFileReader::is_opened() const { return device_ ? device_->is_open() : false; }
 
 bool MscReader::ZipFileReader::is_container() const { return true; }
+
+bool MscReader::ZipFileReader::has_error() const { return zip_ && zip_->has_error(); }
 
 StringList MscReader::ZipFileReader::file_list() const {
     IF_ASSERT_FAILED(zip_) { return StringList(); }

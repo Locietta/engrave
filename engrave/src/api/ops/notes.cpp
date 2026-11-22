@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <format>
 #include <limits>
+#include <numeric>
 #include <optional>
 #include <string>
 #include <utility>
@@ -45,11 +46,38 @@ using mu::engraving::Transpose;
 
 std::unexpected<Error> invalid(std::string message) { return std::unexpected(Error{ErrorCode::INVALID_ARGUMENT, std::move(message)}); }
 
-// A duration in the engine's fraction, whose members the engine keeps as ints.
-std::optional<mu::engraving::Fraction> engine_fraction(const Fraction &value) {
-    constexpr std::int64_t limit = std::numeric_limits<int>::max();
-    if (value.num <= 0 || value.den <= 0 || value.num > limit || value.den > limit) return std::nullopt;
+std::optional<mu::engraving::Fraction> to_reduced_engine_fraction(Fraction value) {
+    if (value.den <= 0) return std::nullopt;
+    // Taking the remainder first keeps INT64_MIN out of std::gcd.
+    const auto divisor = std::gcd(value.num % value.den, value.den);
+    value.num /= divisor;
+    value.den /= divisor;
+    if (value.num < std::numeric_limits<int>::min() || value.num > std::numeric_limits<int>::max() ||
+        value.den > std::numeric_limits<int>::max())
+        return std::nullopt;
     return mu::engraving::Fraction(static_cast<int>(value.num), static_cast<int>(value.den));
+}
+
+mu::engraving::Rest *rest_covering(mu::engraving::Measure &measure, const mu::engraving::Fraction &tick, mu::engraving::track_idx_t track) {
+    EngravingItem *previous = nullptr;
+    for (auto *segment = measure.first(mu::engraving::SegmentType::CHORD_REST); segment && segment->tick() < tick;
+         segment = segment->next(mu::engraving::SegmentType::CHORD_REST)) {
+        if (auto *item = segment->element(track)) previous = item;
+    }
+    if (!previous || !previous->is_rest()) return nullptr;
+    auto *rest = mu::engraving::to_rest(previous);
+    return tick < rest->end_tick() ? rest : nullptr;
+}
+
+std::optional<mu::engraving::Fraction> split_duration(const mu::engraving::Fraction &length, const mu::engraving::Fraction &unit) {
+    const auto offset = to_reduced_engine_fraction({length.numerator64(), length.denominator64()});
+    if (!offset) return std::nullopt;
+    const auto local = *offset / unit;
+    const auto duration = to_reduced_engine_fraction({local.numerator64(), local.denominator64()});
+    // A rest can only be split at multiples of the shortest notated duration.
+    const auto shortest = mu::engraving::TDuration(mu::engraving::DurationType::V_1024TH).fraction();
+    if (!duration || shortest.denominator() % duration->denominator() != 0) return std::nullopt;
+    return duration;
 }
 
 // The element a running operation works on.
@@ -102,8 +130,8 @@ Result<Step> prepare(EditContext &context, const EnterNotes &op) {
     const auto *at = std::get_if<SegmentAddress>(&op.at);
     if (!at) return invalid("EnterNotes enters notes at a segment address");
     if (at->kind != "ChordRest") return invalid(std::format("EnterNotes enters notes in a ChordRest segment, not in a '{}' one", at->kind));
-    const auto duration = engine_fraction(op.duration);
-    if (!duration) return invalid("the duration must be a positive fraction of a whole note");
+    const auto duration = to_reduced_engine_fraction(op.duration);
+    if (!duration || op.duration.num <= 0) return invalid("the duration must be a positive fraction of a whole note");
     for (const Pitch &pitch : op.pitches) {
         if (!mu::engraving::pitch_is_valid(pitch.pitch)) return invalid(std::format("{} is not a pitch", pitch.pitch));
         if (pitch.tpc && !mu::engraving::tpc_is_valid(*pitch.tpc)) return invalid(std::format("{} is not a tonal pitch class", *pitch.tpc));
@@ -115,8 +143,9 @@ Result<Step> prepare(EditContext &context, const EnterNotes &op) {
     if (std::ranges::adjacent_find(pitches) != pitches.end()) return invalid("the pitches of one chord must differ");
     auto target = context.target(op.at);
     if (!target) return std::unexpected(target.error());
+    const auto tick = *to_reduced_engine_fraction(at->tick);
 
-    return [target = *target, duration = *duration, pitches = op.pitches](EditContext &context) -> Result<void> {
+    return [target = *target, tick, duration = *duration, pitches = op.pitches](EditContext &context) -> Result<void> {
         const auto &at = std::get<SegmentAddress>(target.ref);
         const auto location = context.writable_measure(at);
         if (!location) return std::unexpected(location.error());
@@ -124,47 +153,39 @@ Result<Step> prepare(EditContext &context, const EnterNotes &op) {
         Score *score = measure->score();
         Segment *start = find_segment(*measure, at);
         if (start && id_class(*start) == IdClass::LAYOUT) return invalid("layout builds this segment; it cannot be edited");
-        const mu::engraving::Fraction tick(static_cast<int>(at.tick.num), static_cast<int>(at.tick.den));
         const auto track = mu::engraving::staff2track(at.staff, at.voice);
         const Staff *staff = score->staff(at.staff);
         if (staff->is_tab_staff(tick) || staff->is_drum_staff(tick))
             return invalid("EnterNotes enters notes on a pitched staff, not on a tablature or a drum set");
 
-        ChordRest *covering = nullptr;
         const bool interior = measure->tick() < tick && tick < measure->end_tick();
-        if (interior && (!start || !start->element(track))) {
-            const auto *first = measure->first(mu::engraving::SegmentType::CHORD_REST);
-            auto *item = first ? first->element(track) : nullptr;
-            if (item && item->is_rest() && mu::engraving::to_rest(item)->is_full_measure_rest()) covering = mu::engraving::to_rest(item);
-        }
+        auto *covering = interior && (!start || !start->element(track)) ? rest_covering(*measure, tick, track) : nullptr;
         const bool open_voice = interior && at.voice != 0 && !measure->has_voice(track);
         if (!start && !covering && !open_voice) return std::unexpected(missing_segment(at));
+        auto *tuplet = covering ? covering->tuplet() : nullptr;
+        if (const auto *item = start ? start->element(track) : nullptr; item && item->is_chord_rest())
+            tuplet = mu::engraving::to_chord_rest(item)->tuplet();
         if (pitches.size() > 1) {
             if (!mu::engraving::TDuration::is_valid(duration)) return invalid("a chord of several pitches must fit one notated duration");
-            const auto *existing = start ? start->element(track) : nullptr;
-            auto *tuplet = existing && existing->is_chord_rest() ? mu::engraving::to_chord_rest(existing)->tuplet() : nullptr;
             auto limit = measure->end_tick();
             if (tuplet) limit = std::min(limit, tuplet->tick() + tuplet->actual_ticks());
             if (mu::engraving::actual_ticks(duration, tuplet, staff->time_stretch(tick)) > limit - tick)
                 return invalid("a chord of several pitches must end within its bar and tuplet");
         }
         if (covering || open_voice) {
-            const auto stretch = staff->time_stretch(tick);
-            const auto leading = (tick - measure->tick()) * stretch;
-            const auto trailing = (measure->end_tick() - tick) * stretch;
-            const auto can_notate = [](mu::engraving::Fraction length) {
-                for (const auto &part : mu::engraving::to_duration_list(length, false, 0, false)) length -= part.fraction();
-                return length.is_zero();
-            };
-            if (!can_notate(leading) || !can_notate(trailing)) return invalid("the entry position does not split into notated rests");
+            const auto begin = covering ? covering->tick() : measure->tick();
+            const auto end = covering ? covering->end_tick() : measure->end_tick();
+            const auto leading = split_duration(tick - begin, mu::engraving::actual_ticks({1, 1}, tuplet, staff->time_stretch(begin)));
+            const auto trailing = split_duration(end - tick, mu::engraving::actual_ticks({1, 1}, tuplet, staff->time_stretch(tick)));
+            if (!leading || !trailing) return invalid("the entry position does not split into notated rests");
             // make_gap visits only the chord/rests at and after its start.
             if (covering) score->undo_remove_element(covering);
-            auto left = score->set_rests(measure->tick(), track, leading, true, nullptr);
+            auto left = score->set_rests(begin, track, *leading, true, tuplet);
             if (left.empty()) return std::unexpected(Error{ErrorCode::EDIT_REJECTED, "the engine could not enter the leading rest"});
             // Empty secondary voices normally start with implicit gaps. This split
             // authors the leading silence so normalization retains it as a rest.
             for (auto *rest : left) rest->set_gap(false);
-            auto *right = score->set_rest(tick, track, trailing, true, nullptr);
+            auto *right = score->set_rest(tick, track, *trailing, true, tuplet);
             if (!right) return std::unexpected(Error{ErrorCode::EDIT_REJECTED, "the engine could not enter the trailing rest"});
             start = right->segment();
         }
@@ -229,8 +250,8 @@ Result<Step> prepare(EditContext &context, const SetPitch &op) {
 }
 
 Result<Step> prepare(EditContext &context, const SetDuration &op) {
-    const auto duration = engine_fraction(op.duration);
-    if (!duration) return invalid("the duration must be a positive fraction of a whole note");
+    const auto duration = to_reduced_engine_fraction(op.duration);
+    if (!duration || op.duration.num <= 0) return invalid("the duration must be a positive fraction of a whole note");
     auto target = context.target(op.chord_rest);
     if (!target) return std::unexpected(target.error());
     return [target = *target, duration = *duration](EditContext &context) -> Result<void> {

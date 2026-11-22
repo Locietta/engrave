@@ -38,6 +38,7 @@
 #include "engraving/dom/notedot.h"
 #include "engraving/dom/parenthesis.h"
 #include "engraving/dom/part.h"
+#include "engraving/dom/rest.h"
 #include "engraving/dom/segment.h"
 #include "engraving/dom/sharedpart.h"
 #include "engraving/dom/spacer.h"
@@ -58,8 +59,11 @@
 #include "engraving/editing/editstaffbrackets.h"
 #include "engraving/editing/editstyle.h"
 #include "engraving/editing/transaction/transaction.h"
+#include "engraving/infrastructure/mscreader.h"
 #include "engraving/style/style.h"
 #include "global/io/buffer.h"
+#include "global/serialization/zipreader.h"
+#include "global/serialization/zipwriter.h"
 
 namespace engrave::api {
 extern void (*after_batch_step_for_test)(std::size_t);
@@ -529,6 +533,77 @@ TEST(EditAtomic, RejectsSnapshotLargerThanZipEntryLimitBeforeWriting) {
     EXPECT_EQ(property(*document, note, "color"), color);
 }
 
+TEST(EditAtomic, MasterReadLeavesTheExactAggregateZipBudgetAvailable) {
+    constexpr std::size_t entry_limit = 64 * 1024 * 1024;
+    const muse::ByteArray master("<museScore version=\"5.00\"><Score/></museScore>");
+    muse::ByteArray archive;
+    {
+        auto out = muse::io::Buffer::opened(muse::io::IODevice::WRITE_ONLY, &archive);
+        muse::ZipWriter writer(&out);
+        writer.add_file("score.mscx", master);
+        muse::ByteArray padding(entry_limit);
+        for (const auto *name : {"Pictures/one", "Pictures/two", "Pictures/three"}) writer.add_file(name, padding);
+        padding.resize(entry_limit - master.size());
+        writer.add_file("Pictures/last", padding);
+        writer.close();
+        ASSERT_FALSE(writer.has_error());
+    }
+
+    auto in = muse::io::Buffer::opened(muse::io::IODevice::READ_ONLY, &archive);
+    mu::engraving::MscReader reader({.device = &in});
+    ASSERT_TRUE(reader.open());
+    EXPECT_EQ(reader.read_score_file(), master);
+    for (const auto *name : {u"one", u"two", u"three"}) EXPECT_EQ(reader.read_image_file(name).size(), entry_limit);
+    EXPECT_EQ(reader.read_image_file(u"last").size(), entry_limit - master.size());
+    EXPECT_FALSE(reader.has_error());
+    EXPECT_TRUE(reader.read_score_file().empty());
+    EXPECT_TRUE(reader.has_error());
+}
+
+TEST(Checkpoint, UnreadableExcerptLeavesTheLiveDocumentIntact) {
+    auto document = open("linked_parts.mscx");
+    ASSERT_TRUE(document);
+    ASSERT_TRUE(document->checkpoint("linked"));
+    auto &snapshot = engrave::DocumentAccess::impl(*document).checkpoints.front().snapshot;
+    const auto before = native_source(*document);
+    const auto revision = document->revision();
+    auto original = muse::io::Buffer::opened(muse::io::IODevice::READ_ONLY, muse::ByteArray(snapshot.bytes.data(), snapshot.bytes.size()));
+    muse::ZipReader source(&original);
+    const auto entries = source.file_info_list();
+    for (bool corrupt : {false, true}) {
+        SCOPED_TRACE(corrupt);
+        muse::ByteArray archive;
+        auto out = muse::io::Buffer::opened(muse::io::IODevice::WRITE_ONLY, &archive);
+        muse::ZipWriter writer(&out, muse::ZipWriter::Compression::STORE);
+        const std::string marker = "damaged excerpt payload";
+        bool replaced = false;
+        for (const auto &entry : entries) {
+            const auto name = entry.file_path.to_std_string();
+            if (!replaced && name.starts_with("Excerpts/") && name.ends_with(".mscx")) {
+                writer.add_file(name, corrupt ? muse::ByteArray(marker.data(), marker.size()) : muse::ByteArray());
+                replaced = true;
+            } else {
+                writer.add_file(name, source.file_data(name));
+            }
+        }
+        writer.close();
+        ASSERT_TRUE(replaced);
+        ASSERT_FALSE(writer.has_error());
+        snapshot.bytes.assign(archive.const_char(), archive.size());
+        if (corrupt) {
+            const auto payload = snapshot.bytes.find(marker);
+            ASSERT_NE(payload, std::string::npos);
+            snapshot.bytes[payload] = 'X';
+        }
+        const auto result = document->restore_checkpoint("linked");
+        ASSERT_FALSE(result);
+        EXPECT_EQ(result.error().code, ErrorCode::IO);
+        EXPECT_NE(result.error().message.find("cannot read excerpt"), std::string::npos);
+        EXPECT_EQ(document->revision(), revision);
+        EXPECT_EQ(native_source(*document), before);
+    }
+}
+
 TEST(Edit, StaticMeasureErrorsAreRejectedBeforeEarlierWrites) {
     auto document = open(fixture_name);
     ASSERT_TRUE(document);
@@ -546,6 +621,21 @@ TEST(Edit, StaticMeasureErrorsAreRejectedBeforeEarlierWrites) {
         EXPECT_EQ(result.error().op_index, 1u);
         EXPECT_EQ(native_source(*document), before);
     }
+}
+
+TEST(Edit, SegmentAddressWithNonMeasureIdIsRejectedBeforePrefixWrites) {
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    const auto note = find_id(*document, "Note");
+    const auto color = property(*document, note, "color");
+    const auto revision = document->revision();
+    const engrave::SegmentAddress bad{note, 0, 0, {0, 1}, "ChordRest"};
+    const auto result = document->edit({{SetProperty{note, "color", Color{255, 0, 0}}, engrave::EnterNotes{bad, {1, 4}, {{60}}}}});
+    ASSERT_FALSE(result);
+    EXPECT_EQ(result.error().code, ErrorCode::INVALID_ARGUMENT);
+    EXPECT_EQ(result.error().op_index, 1u);
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_EQ(property(*document, note, "color"), color);
 }
 
 TEST(Edit, CommitAdvancesTheRevision) {
@@ -695,6 +785,90 @@ TEST(Edit, OpensMeasureRestAtBeatTwoInPrimaryAndUnusedVoices) {
         EXPECT_EQ(trailing->actual_ticks(), (mu::engraving::Fraction{1, 2}));
         if (voice == 1) EXPECT_TRUE(master.find_cr({0, 1}, 0)->is_full_measure_rest());
     }
+}
+
+TEST(Edit, SplitsOrdinaryRestWhenAnotherStaffAlreadyHasTheEntrySegment) {
+    using mu::engraving::Fraction;
+    auto made = g_engine->create_document({.template_id = "Piano"});
+    ASSERT_TRUE(made);
+    auto &document = **made;
+    auto &master = engrave::harness::master_of(document);
+    const auto measure = engrave::from_engine(master.first_measure()->eid());
+    const engrave::SegmentAddress upper_quarter{measure, 0, 0, {1, 4}, "ChordRest"};
+    const engrave::SegmentAddress lower_eighth{measure, 1, 0, {1, 8}, "ChordRest"};
+    const auto seeded =
+        document.edit({{engrave::EnterNotes{upper_quarter, {1, 4}, {{64}}}, engrave::EnterNotes{lower_eighth, {1, 8}, {{48}}}}});
+    ASSERT_TRUE(seeded) << seeded.error().message;
+    ASSERT_FALSE(seeded->rejection) << seeded->rejection->error.message;
+    const auto *original = master.find_cr({0, 1}, 0);
+    ASSERT_TRUE(original && original->is_rest());
+    ASSERT_EQ(original->actual_ticks(), (Fraction{1, 4}));
+    const auto *lower = master.find_cr({1, 8}, mu::engraving::voices);
+    ASSERT_TRUE(lower && lower->is_chord());
+
+    const engrave::SegmentAddress upper_eighth{measure, 0, 0, {1, 8}, "ChordRest"};
+    const auto entered = document.edit({{engrave::EnterNotes{upper_eighth, {1, 16}, {{60}}}}});
+    ASSERT_TRUE(entered) << entered.error().message;
+    ASSERT_FALSE(entered->rejection) << entered->rejection->error.message;
+    const auto *leading = master.find_cr({0, 1}, 0);
+    const auto *note = master.find_cr({1, 8}, 0);
+    const auto *trailing = master.find_cr({3, 16}, 0);
+    ASSERT_TRUE(leading && leading->is_rest());
+    ASSERT_TRUE(note && note->is_chord());
+    ASSERT_TRUE(trailing && trailing->is_rest());
+    EXPECT_EQ(leading->end_tick(), (Fraction{1, 8}));
+    EXPECT_EQ(note->end_tick(), (Fraction{3, 16}));
+    EXPECT_EQ(trailing->end_tick(), (Fraction{1, 4}));
+    EXPECT_EQ(mu::engraving::to_chord(note)->notes().front()->pitch(), 60);
+    EXPECT_EQ(master.find_cr({1, 8}, mu::engraving::voices), lower);
+}
+
+TEST(Edit, SplitsOrdinaryRestInsideAnEmptyPickup) {
+    using mu::engraving::Fraction;
+    const std::string_view source = R"(<museScore version="5.00"><Score>
+      <Part><Staff id="1"/><trackName>Piano</trackName><Instrument id="piano"/></Part>
+      <Staff id="1"><Measure len="1/4"><voice>
+        <TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig><Rest><durationType>quarter</durationType></Rest>
+      </voice></Measure></Staff></Score></museScore>)";
+    auto opened = g_engine->open(std::as_bytes(std::span(source)), {.format = engrave::Format::MSCX});
+    ASSERT_TRUE(opened) << opened.error().message;
+    auto &document = **opened;
+    auto &master = engrave::harness::master_of(document);
+    const auto *bar = master.first_measure();
+    ASSERT_EQ(bar->ticks(), (Fraction{1, 4}));
+    const auto *original = master.find_cr({0, 1}, 0);
+    ASSERT_TRUE(original && original->is_rest() && !original->is_full_measure_rest());
+    ASSERT_EQ(original->actual_ticks(), (Fraction{1, 4}));
+
+    const engrave::SegmentAddress inside{engrave::from_engine(bar->eid()), 0, 0, {1, 8}, "ChordRest"};
+    const auto result = document.edit({{engrave::EnterNotes{inside, {1, 16}, {{60}}}}});
+    ASSERT_TRUE(result) << result.error().message;
+    ASSERT_FALSE(result->rejection) << result->rejection->error.message;
+    const auto *leading = master.find_cr({0, 1}, 0);
+    const auto *note = master.find_cr({1, 8}, 0);
+    const auto *trailing = master.find_cr({3, 16}, 0);
+    ASSERT_TRUE(leading && leading->is_rest());
+    ASSERT_TRUE(note && note->is_chord());
+    ASSERT_TRUE(trailing && trailing->is_rest());
+    EXPECT_EQ(leading->end_tick(), (Fraction{1, 8}));
+    EXPECT_EQ(note->end_tick(), (Fraction{3, 16}));
+    EXPECT_EQ(trailing->end_tick(), (Fraction{1, 4}));
+}
+
+TEST(Edit, ReducesNoteEntryTickAndDurationBeforeSplittingRests) {
+    auto made = g_engine->create_document({.template_id = "Treble_Clef"});
+    ASSERT_TRUE(made);
+    auto &document = **made;
+    auto &master = engrave::harness::master_of(document);
+    const auto measure = engrave::from_engine(master.first_measure()->eid());
+    const engrave::SegmentAddress at{measure, 0, 0, {500000000, 2000000000}, "ChordRest"};
+    const auto result = document.edit({{engrave::EnterNotes{at, {500000000, 2000000000}, {{60}}}}});
+    ASSERT_TRUE(result) << result.error().message;
+    ASSERT_FALSE(result->rejection) << result->rejection->error.message;
+    const auto *note = master.find_cr({1, 4}, 0);
+    ASSERT_TRUE(note && note->is_chord());
+    EXPECT_EQ(note->actual_ticks(), (mu::engraving::Fraction{1, 4}));
+    EXPECT_EQ(mu::engraving::to_chord(note)->notes().front()->pitch(), 60);
 }
 
 TEST(Edit, InstrumentCatalogMatchesAddedParts) {
