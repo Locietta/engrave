@@ -332,6 +332,7 @@ public:
     void update_instrument_change_transpositions(KeySigEvent &key, Staff *staff, const Fraction &tick);
 
     Note *set_grace_note(Chord *, int pitch, NoteType type, int len, std::size_t index = 0);
+    Note *set_grace_note(Chord *, int pitch, NoteType type, const TDuration &duration, std::size_t index = 0);
 
     GuitarBend *add_guitar_bend(GuitarBendType type, Note *note, Note *end_note = nullptr);
 

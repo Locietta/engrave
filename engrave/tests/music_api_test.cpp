@@ -620,6 +620,116 @@ TEST(MusicWrite, RejectionLeavesEarlierLanesUnchanged) {
     EXPECT_EQ(chord_at(read_test::master_of(**document), {1, 8}, 4), nullptr);
 }
 
+TEST(MusicWrite, LinkedStaffLanesCannotOverlap) {
+    const auto document =
+        test::core_env().engine->open(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "tests/data/inputs/golden/linked_parts.mscx");
+    ASSERT_TRUE(document) << document.error().message;
+    auto &master = read_test::master_of(**document);
+    ASSERT_NE(master.staff(0)->links(), nullptr);
+    ASSERT_EQ(master.staff(0)->links(), master.staff(1)->links());
+    const auto bar = (*document)->outline()->measures.at(0).id;
+    const auto revision = (*document)->revision();
+    const auto *original = master.find_cr({0, 1}, 0);
+    ASSERT_NE(original, nullptr);
+    const auto edit = (*document)->write_phrase({.lanes = {
+                                                     {{bar, {0, 1}, 0, 0}, PitchDomain::Concert, {PhraseEvent{{1, 4}, {{c4}}}}},
+                                                     {{bar, {0, 1}, 1, 0}, PitchDomain::Concert, {PhraseEvent{{1, 4}, {{g4}}}}},
+                                                 }});
+    read_test::expect_code(edit, ErrorCode::INVALID_ARGUMENT, "overlapping linked tracks");
+    ASSERT_FALSE(edit);
+    EXPECT_NE(edit.error().message.find("lane 1: the lane overlaps"), std::string::npos);
+    EXPECT_EQ((*document)->revision(), revision);
+    EXPECT_EQ(master.find_cr({0, 1}, 0), original);
+}
+
+TEST(MusicWrite, RestSplitWithLyricsRejectsAtomically) {
+    constexpr std::string_view source = R"(<museScore version="4.70"><Score><Division>480</Division>
+<Part id="1"><Staff/><trackName>Piano</trackName><Instrument id="piano"/></Part>
+<Staff id="1"><Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>
+<Measure><voice><Rest><durationType>measure</durationType><Lyrics><text>onset</text></Lyrics></Rest></voice></Measure>
+</Staff></Score></museScore>)";
+    const auto document = open_fixture(source);
+    ASSERT_TRUE(document) << document.error().message;
+    const auto bars = (*document)->outline()->measures;
+    const auto revision = (*document)->revision();
+    const auto check_lyrics = [&] {
+        const auto &master = read_test::master_of(**document);
+        const auto *rest = master.find_cr({1, 1}, 0);
+        ASSERT_NE(rest, nullptr);
+        ASSERT_TRUE(rest->is_rest());
+        ASSERT_EQ(rest->lyrics().size(), 1u);
+        EXPECT_EQ(rest->lyrics().front()->plain_text().to_std_string(), "onset");
+    };
+    check_lyrics();
+    const auto edit = (*document)->write_phrase({.lanes = {
+                                                     {{bars[0].id, {0, 1}}, PitchDomain::Concert, {PhraseEvent{{1, 4}, {{c4}}}}},
+                                                     {{bars[1].id, {1, 4}}, PitchDomain::Concert, {PhraseEvent{{1, 4}, {{g4}}}}},
+                                                 }});
+    ASSERT_TRUE(edit) << edit.error().message;
+    ASSERT_TRUE(edit->rejection);
+    EXPECT_NE(edit->rejection->error.message.find("rest with authored attachments"), std::string::npos);
+    EXPECT_EQ(edit->applied, 0u);
+    EXPECT_EQ((*document)->revision(), revision);
+    EXPECT_EQ(chord_at(read_test::master_of(**document), {0, 1}, 0), nullptr);
+    check_lyrics();
+}
+
+TEST(MusicWrite, BarEndHairpinKeepsTheAnchorVoice) {
+    const auto document = open_fixture(clarinet_fixture);
+    ASSERT_TRUE(document) << document.error().message;
+    const auto bar = (*document)->outline()->measures.at(1).id;
+    const auto secondary = (*document)->read_music({.first_measure = 1, .voices = {1}});
+    ASSERT_TRUE(secondary) << secondary.error().message;
+    const auto start = secondary->measures.at(0).voices.at(0).events.at(0).id;
+    const auto edit = (*document)->edit({{AddSpannerToBarEnd{"HairPin", start, {bar}, {{"voiceAssignment", Enum{"currentVoiceOnly"}}}}}});
+    ASSERT_TRUE(edit) << edit.error().message;
+    ASSERT_FALSE(edit->rejection) << edit->rejection->error.message;
+    const auto voice_two = (*document)->read_music({.first_measure = 1, .voices = {1}});
+    ASSERT_TRUE(voice_two) << voice_two.error().message;
+    ASSERT_EQ(voice_two->spanners.size(), 1u);
+    EXPECT_EQ(voice_two->spanners[0].type, "HairPin");
+    EXPECT_EQ(voice_two->spanners[0].start.voice, 1);
+    const auto voice_one = (*document)->read_music({.first_measure = 1, .voices = {0}});
+    ASSERT_TRUE(voice_one) << voice_one.error().message;
+    EXPECT_TRUE(voice_one->spanners.empty());
+}
+
+TEST(MusicWrite, GraceDurationUsesAnExactNotatedFraction) {
+    const auto document = open_fixture(clarinet_fixture);
+    ASSERT_TRUE(document) << document.error().message;
+    const auto pickup = (*document)->read_music({});
+    ASSERT_TRUE(pickup) << pickup.error().message;
+    const auto principal = pickup->measures.at(0).voices.at(0).events.at(0).id;
+    const auto revision = (*document)->revision();
+    for (const auto &invalid : {GraceEntry{GraceKind::Acciaccatura, {1, 3}, {{74}}}, GraceEntry{GraceKind::Acciaccatura, {1, 12}, {{74}}},
+                                GraceEntry{GraceKind::Grace16, {1, 4}, {{74}}}}) {
+        read_test::expect_code((*document)->edit({{AddGraceChord{principal, invalid}}}), ErrorCode::INVALID_ARGUMENT,
+                               "invalid grace duration");
+        EXPECT_EQ((*document)->revision(), revision);
+    }
+    const auto edit = (*document)->edit({{AddGraceChord{principal, {GraceKind::Acciaccatura, {3, 256}, {{74}}}}}});
+    ASSERT_TRUE(edit) << edit.error().message;
+    ASSERT_FALSE(edit->rejection) << edit->rejection->error.message;
+    const auto music = (*document)->read_music({});
+    ASSERT_TRUE(music) << music.error().message;
+    const auto &chord = std::get<ChordMusic>(music->measures.at(0).voices.at(0).events.at(0).body);
+    ASSERT_EQ(chord.before.size(), 1u);
+    EXPECT_EQ(chord.before[0].kind, GraceKind::Acciaccatura);
+    expect_fraction(chord.before[0].written_duration, 3, 256);
+}
+
+TEST(MusicWrite, StaleRevisionTakesPrecedenceOverInvalidLane) {
+    const auto document = open_fixture(piano_fixture);
+    ASSERT_TRUE(document) << document.error().message;
+    const auto revision = (*document)->revision();
+    const auto bar = (*document)->outline()->measures.at(0).id;
+    const Phrase phrase{.lanes = {{{bar, {0, 1}, -1, 0}, PitchDomain::Concert, {PhraseEvent{{1, 8}, {{c4}}}}}}};
+    read_test::expect_code((*document)->write_phrase(phrase), ErrorCode::INVALID_ARGUMENT, "invalid staff at the current revision");
+    read_test::expect_code((*document)->write_phrase(phrase, {.expected_revision = revision + 1}), ErrorCode::REVISION_CONFLICT,
+                           "invalid staff at a stale revision");
+    EXPECT_EQ((*document)->revision(), revision);
+}
+
 TEST(MusicWrite, APrincipalCannotSustainPastAnInternalInstrumentChange) {
     constexpr std::string_view source = R"(<museScore version="4.70"><Score><Division>480</Division>
 <Part id="1"><Staff/><trackName>Piano</trackName><Instrument id="piano"/></Part>

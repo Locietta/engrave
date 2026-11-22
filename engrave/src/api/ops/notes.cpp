@@ -229,6 +229,14 @@ Result<Step> prepare_entry(EditContext &context, const SegmentAddress &address, 
             }
         }
         if (covering || open_voice) {
+            if (covering) {
+                for (const auto *link : covering->link_list()) {
+                    const auto *rest = mu::engraving::to_rest(link);
+                    if (!rest->lyrics().empty() || !rest->el().empty() || rest->dead_slapped() || rest->authored_beam() ||
+                        !rest->authored_overrides.entries.empty() || !rest->authored_overrides.carriers.empty())
+                        return invalid("the entry would split a rest with authored attachments");
+                }
+            }
             const auto begin = covering ? covering->tick() : measure->tick();
             const auto end = covering ? covering->end_tick() : measure->end_tick();
             const auto leading = split_duration(tick - begin, mu::engraving::actual_ticks({1, 1}, tuplet, staff->time_stretch(begin)));
@@ -337,9 +345,9 @@ Result<Step> prepare(EditContext &context, const AddGraceChord &op) {
     const auto duration = to_reduced_engine_fraction(op.grace.written_duration);
     if (!style || !duration || duration->numerator() <= 0 || *duration > mu::engraving::Fraction(1, 4))
         return invalid("a grace chord needs a written duration of a quarter note or shorter");
-    TDuration written;
-    written.set_val(duration->ticks());
-    if (written.fraction() != *duration || (style->denominator && *duration != mu::engraving::Fraction(1, style->denominator)))
+    const TDuration written(*duration, true);
+    if (!written.is_valid() || written.fraction() != *duration ||
+        (style->denominator && *duration != mu::engraving::Fraction(1, style->denominator)))
         return invalid("the written duration does not fit the grace kind");
     if (op.grace.pitches.empty()) return invalid("a grace chord needs at least one pitch");
     auto values = note_values(op.grace.pitches);
@@ -352,7 +360,7 @@ Result<Step> prepare(EditContext &context, const AddGraceChord &op) {
     if (op.event_end && (!after || !event_end || event_end->numerator() <= 0))
         return invalid("an event end requires an after-grace and a positive score tick");
 
-    return [target = *target, type = style->type, after, event_end, length = duration->ticks(),
+    return [target = *target, type = style->type, after, event_end, written,
             values = std::move(*values)](EditContext &context) -> Result<void> {
         auto item = edited_item(context, target);
         if (!item) return std::unexpected(item.error());
@@ -378,7 +386,7 @@ Result<Step> prepare(EditContext &context, const AddGraceChord &op) {
         const auto &first = values.front();
         // The native after-grace view plays the stored chords in reverse order.
         const auto index = after ? 0 : principal->grace_notes().size();
-        Note *note = score->set_grace_note(principal, first.pitch, type, length, index);
+        Note *note = score->set_grace_note(principal, first.pitch, type, written, index);
         auto *chord = note->chord();
         const auto [tpc1, tpc2] =
             spell(*note, first.pitch, first.tpc1 == mu::engraving::TPC_INVALID ? std::nullopt : std::optional{first.tpc1});

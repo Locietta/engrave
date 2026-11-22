@@ -325,8 +325,14 @@ void Score::expand_voice(Segment *s, track_idx_t track) {
     }
 }
 
-// The index is in storage order. The after-grace view traverses that order in reverse.
 Note *Score::set_grace_note(Chord *ch, int pitch, NoteType type, int len, std::size_t index) {
+    TDuration duration;
+    duration.set_val(len);
+    return set_grace_note(ch, pitch, type, duration, index);
+}
+
+// The index is in storage order. The after-grace view traverses that order in reverse.
+Note *Score::set_grace_note(Chord *ch, int pitch, NoteType type, const TDuration &duration, std::size_t index) {
     Chord *chord = Factory::create_chord(this->dummy());
     Note *note = Factory::create_note(chord);
 
@@ -349,10 +355,8 @@ Note *Score::set_grace_note(Chord *ch, int pitch, NoteType type, int len, std::s
         note->set_tpc_from_pitch();
     }
 
-    TDuration d;
-    d.set_val(len);
-    chord->set_duration_type(d);
-    chord->set_ticks(d.fraction());
+    chord->set_duration_type(duration);
+    chord->set_ticks(duration.fraction());
     chord->set_note_type(type);
     chord->set_grace_index(index);
     chord->set_show_stem_slash_in_advance();

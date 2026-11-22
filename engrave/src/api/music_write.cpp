@@ -9,6 +9,7 @@
 #include <type_traits>
 #include <utility>
 
+#include "engrave/src/api/batch.h"
 #include "engrave/src/api/handles.h"
 #include "engrave/src/api/state.h"
 #include "engraving/dom/drumset.h"
@@ -135,6 +136,7 @@ struct ChordRefs {
 struct PhraseBatch {
     Batch batch;
     std::vector<PhraseLocation> locations;
+    // AddTie needs both notes on the same physical track.
     std::map<mu::engraving::track_idx_t, std::map<Tick, ChordRefs>> rhythms;
 
     std::size_t append(Op op, const PhraseLocation &location) {
@@ -407,7 +409,13 @@ Result<void> lower_lane(const PhraseLane &lane, const mu::engraving::Score &scor
     const auto begin = checked_tick(measure->tick());
     const auto tick = begin ? checked_tick(*begin + *offset) : std::nullopt;
     if (!tick) return prefix_error(invalid_tick().error(), location);
-    LaneBuilder builder{*score.staff(start.staff), start.staff, start.voice, lane.domain, {measure, *tick}, batch, location};
+    const auto &staff = *score.staff(start.staff);
+    auto linked_staff = staff.idx();
+    for (const auto *link : staff.link_list()) {
+        if (link->score() == &score) linked_staff = std::min(linked_staff, mu::engraving::to_staff(link)->idx());
+    }
+    const auto linked_track = mu::engraving::staff2track(linked_staff, start.voice);
+    LaneBuilder builder{staff, start.staff, start.voice, lane.domain, {measure, *tick}, batch, location};
     for (std::size_t item = 0; item < lane.items.size(); ++item) {
         builder.location.item = item;
         auto result = std::visit(
@@ -424,7 +432,7 @@ Result<void> lower_lane(const PhraseLane &lane, const mu::engraving::Score &scor
             lane.items[item]);
         if (!result) return prefix_error(std::move(result.error()), builder.location);
     }
-    auto overlap = check_overlap(intervals, mu::engraving::staff2track(start.staff, start.voice), *tick, builder.cursor.tick);
+    auto overlap = check_overlap(intervals, linked_track, *tick, builder.cursor.tick);
     if (!overlap) return prefix_error(std::move(overlap.error()), location);
     return {};
 }
@@ -433,6 +441,7 @@ Result<void> lower_lane(const PhraseLane &lane, const mu::engraving::Score &scor
 
 Result<EditResult> Document::write_phrase(const Phrase &phrase, const EditOptions &options) {
     impl_->engine->check_thread();
+    if (auto admitted = api::BatchGuard(*this).admit(options.expected_revision); !admitted) return std::unexpected(admitted.error());
     auto &master = *impl_->project->master_score();
     auto score = select_score(master, phrase.score);
     if (!score) return std::unexpected(std::move(score.error()));

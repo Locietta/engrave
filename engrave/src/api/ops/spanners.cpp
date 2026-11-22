@@ -200,7 +200,7 @@ Result<Step> prepare(EditContext &context, const AddSpannerToBarEnd &op) {
         }
         if (auto valid = validate_properties(item->type_name(), props); !valid) return valid;
         auto *spanner = mu::engraving::to_spanner(item.release());
-        add_at_ticks(spanner, mu::engraving::staff2track((*first)->staff_idx()), from, to);
+        add_at_ticks(spanner, (*first)->track(), from, to);
         set_properties(*spanner, props);
         context.created(spanner);
         return {};
