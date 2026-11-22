@@ -46,14 +46,14 @@ constexpr std::size_t audio_chunk_bytes = 1 << 20;
 
 std::unexpected<Error> fail(ErrorCode code, std::string message) { return std::unexpected(Error{code, std::move(message)}); }
 
-music::EngineAudioFormat engine_format(AudioFormat format) {
+std::optional<music::EngineAudioFormat> engine_format(AudioFormat format) {
     switch (format) {
         case AudioFormat::WAV: return music::EngineAudioFormat::WAV;
         case AudioFormat::FLAC: return music::EngineAudioFormat::FLAC;
         case AudioFormat::OPUS: return music::EngineAudioFormat::OGG;
         case AudioFormat::MP3: return music::EngineAudioFormat::MP3;
     }
-    return music::EngineAudioFormat::WAV;
+    return std::nullopt;
 }
 
 const char *file_extension(AudioFormat format) {
@@ -165,6 +165,8 @@ Result<AudioTracks> Document::audio_tracks(const ScoreSel &selection) {
 
 Result<AudioRenderResult> Document::render_audio(const AudioOptions &options, const ByteSink &sink) {
     impl_->engine->check_thread();
+    const auto format = engine_format(options.format);
+    if (!format) return fail(ErrorCode::INVALID_ARGUMENT, "unrecognized audio format");
     if (options.cancelled && options.cancelled()) return fail(ErrorCode::CANCELLED, "audio render cancelled");
     EngineState &engine = *impl_->engine;
     MasterScore &master = *impl_->project->master_score();
@@ -215,7 +217,7 @@ Result<AudioRenderResult> Document::render_audio(const AudioOptions &options, co
     }
 
     music::AudioRenderRequest request;
-    request.format = engine_format(options.format);
+    request.format = *format;
     request.excerpt_id = *excerpt_id;
     request.use_repeats = options.use_repeats;
     request.master_volume_db = options.master_volume_db.value_or(context->defaults.master.volume_db);

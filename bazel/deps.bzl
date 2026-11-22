@@ -74,8 +74,6 @@ LAME_CONFIG_H = """\
 #define PACKAGE "lame"
 #define PROTOTYPES 1
 #define USE_FAST_LOG 1
-#define HAVE_MPGLIB 1
-#define DECODE_ON_THE_FLY 1
 #define HAVE_XMMINTRIN_H 1
 #define LAME_LIBRARY_BUILD 1
 typedef long double ieee854_float80_t;

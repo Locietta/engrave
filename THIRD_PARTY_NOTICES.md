@@ -212,9 +212,9 @@ The standalone Bazel build compiles the following third-party dependencies from 
 
 | Package                          | Pinned Version | Typical Upstream License         | Usage in engrave                                                                                                    |
 | -------------------------------- | -------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| **FreeType** (conda-forge, Pixi) | 2.14.3         | FreeType License (FTL) / GPL-2.0 | Font glyph loading and metrics (shared with Cairo)                                                                  |
+| **FreeType** (conda-forge, Pixi) | 2.14.3         | FreeType License (FTL) (elected) | Font glyph loading and metrics (shared with Cairo)                                                                  |
 | **HarfBuzz**                     | 12.3.0         | MIT License                      | Text and music font shaping                                                                                         |
-| **FLAC (libflac)**               | 1.4.3          | BSD-3-Clause / GPL               | Lossless audio export                                                                                               |
+| **FLAC (libflac)**               | 1.4.3          | BSD-3-Clause (libFLAC library)   | Lossless audio export                                                                                               |
 | **LAME**                         | 3.100          | LGPL-2.0-or-later                | MP3 audio export                                                                                                    |
 | **Opus (libopus)**               | 1.5.2          | BSD-3-Clause                     | Opus audio encoding                                                                                                 |
 | **libopusenc**                   | 0.2.1          | BSD-3-Clause                     | Opus audio container encoding                                                                                       |
@@ -227,5 +227,9 @@ The standalone Bazel build compiles the following third-party dependencies from 
 | **unordered_dense**              | 5.3.3          | MIT License                      | Hash maps in the playback store                                                                                     |
 | **cairo** (conda-forge, Pixi)    | 1.18.6         | LGPL-2.1 / MPL-1.1               | Vector (PDF/SVG) and raster (PNG) rendering                                                                         |
 | **GoogleTest** (opt-in tests)    | 1.17.0         | BSD-3-Clause                     | Unit test execution                                                                                                 |
+
+`engrave` elects the FreeType License (FTL) for compatibility with GPL-3.0-only.
+
+Portions of this software are copyright © 2026 The FreeType Project (www.freetype.org). All rights reserved.
 
 _Note: The licenses in section 3 apply to external upstream packages fetched at build time, not in-tree files._

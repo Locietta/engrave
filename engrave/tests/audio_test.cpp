@@ -542,6 +542,18 @@ TEST(Audio, EncoderSettingsReachTheEncoder) {
     EXPECT_LT(small.bytes.size(), large.bytes.size()) << "a higher bitrate did not make a larger MP3";
 }
 
+TEST(Audio, UnrecognizedFormatWritesNoBytes) {
+    auto document = detail::open_score(detail::audio_score());
+    ASSERT_TRUE(document);
+    engrave::AudioOptions options;
+    options.format = static_cast<engrave::AudioFormat>(4);
+    std::size_t bytes_written = 0;
+    const auto result = document->render_audio(options, [&](std::span<const std::byte> bytes) { bytes_written += bytes.size(); });
+    EXPECT_EQ(bytes_written, 0u);
+    ASSERT_FALSE(result);
+    EXPECT_EQ(result.error().code, engrave::ErrorCode::INVALID_ARGUMENT);
+}
+
 TEST(Audio, OptionsAreValidated) {
     auto document = detail::open_score(detail::audio_score());
     ASSERT_TRUE(document);

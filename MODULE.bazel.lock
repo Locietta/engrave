@@ -365,7 +365,7 @@
   "moduleExtensions": {
     "//bazel:deps.bzl%engrave_deps": {
       "general": {
-        "bzlTransitiveDigest": "p1hGARH9c1OMpxfafYzgJJH47o6oqULncnILXdGnBnk=",
+        "bzlTransitiveDigest": "KeM5aXa1T5tCNG7OVjUqoxBHQYVHM5lP2n1MvuNRQyE=",
         "usagesDigest": "vsZZrqAkObMCOZqbg6QBTj6zySET+M08rFXOPqC299Y=",
         "recordedInputs": [
           "REPO_MAPPING:,bazel_tools bazel_tools"
@@ -498,7 +498,7 @@
             "attributes": {
               "build_file": "@@//bazel/third_party:lame.BUILD.bazel",
               "extra_files": {
-                "config_include/config.h": "#pragma once\n#define SIZEOF_DOUBLE 8\n#define SIZEOF_FLOAT 4\n#define SIZEOF_INT 4\n#define SIZEOF_SHORT 2\n#define SIZEOF_UNSIGNED_INT 4\n#define SIZEOF_UNSIGNED_SHORT 2\n#ifdef _WIN32\n#define SIZEOF_LONG 4\n#define SIZEOF_UNSIGNED_LONG 4\n#define SIZEOF_LONG_DOUBLE 12\n#else\n#define SIZEOF_LONG 8\n#define SIZEOF_UNSIGNED_LONG 8\n#define SIZEOF_LONG_DOUBLE 16\n#endif\n#define STDC_HEADERS 1\n#define HAVE_ERRNO_H 1\n#define HAVE_FCNTL_H 1\n#define HAVE_LIMITS_H 1\n#define HAVE_INTTYPES_H 1\n#define HAVE_STDINT_H 1\n#define HAVE_STRCHR 1\n#define HAVE_MEMCPY 1\n#define PACKAGE \"lame\"\n#define PROTOTYPES 1\n#define USE_FAST_LOG 1\n#define HAVE_MPGLIB 1\n#define DECODE_ON_THE_FLY 1\n#define HAVE_XMMINTRIN_H 1\n#define LAME_LIBRARY_BUILD 1\ntypedef long double ieee854_float80_t;\ntypedef double ieee754_float64_t;\ntypedef float ieee754_float32_t;\n"
+                "config_include/config.h": "#pragma once\n#define SIZEOF_DOUBLE 8\n#define SIZEOF_FLOAT 4\n#define SIZEOF_INT 4\n#define SIZEOF_SHORT 2\n#define SIZEOF_UNSIGNED_INT 4\n#define SIZEOF_UNSIGNED_SHORT 2\n#ifdef _WIN32\n#define SIZEOF_LONG 4\n#define SIZEOF_UNSIGNED_LONG 4\n#define SIZEOF_LONG_DOUBLE 12\n#else\n#define SIZEOF_LONG 8\n#define SIZEOF_UNSIGNED_LONG 8\n#define SIZEOF_LONG_DOUBLE 16\n#endif\n#define STDC_HEADERS 1\n#define HAVE_ERRNO_H 1\n#define HAVE_FCNTL_H 1\n#define HAVE_LIMITS_H 1\n#define HAVE_INTTYPES_H 1\n#define HAVE_STDINT_H 1\n#define HAVE_STRCHR 1\n#define HAVE_MEMCPY 1\n#define PACKAGE \"lame\"\n#define PROTOTYPES 1\n#define USE_FAST_LOG 1\n#define HAVE_XMMINTRIN_H 1\n#define LAME_LIBRARY_BUILD 1\ntypedef long double ieee854_float80_t;\ntypedef double ieee754_float64_t;\ntypedef float ieee754_float32_t;\n"
               },
               "header_copies": {
                 "staged_include/lame/lame.h": "include/lame.h"
