@@ -15,7 +15,7 @@ from unittest.mock import patch
 
 from engrave_testing import golden as g
 from engrave_testing.dependencies import validate_dependencies
-from engrave_testing.inventory import validate_actual, validate_allow_usage, validate_baseline
+from engrave_testing.inventory import golden_inventory, validate_actual, validate_allow_usage, validate_baseline
 from engrave_testing.paths import REPO_ROOT
 from engrave_testing.public_output import compare, describe_render, describe_render_pdf, run_capture_pipeline
 
@@ -64,6 +64,19 @@ class InventoryMutations(unittest.TestCase):
 
     def test_valid(self):
         validate_actual(self.fixture, self.actual, self.names, self.inventory)
+
+    def test_soundfont_free_inventory(self):
+        inventory = golden_inventory(self.golden, no_audio=True)
+        self.assertEqual(len(inventory), 25)
+        self.assertEqual(sum(map(len, inventory.values())), 226)
+        self.assertTrue(all("audio.json" not in outputs for outputs in inventory.values()))
+        with self.assertRaisesRegex(ValueError, "extra=.*audio.json"):
+            validate_actual(self.fixture, self.actual, inventory[self.fixture], inventory)
+        (self.actual / "audio.json").unlink()
+        validate_actual(self.fixture, self.actual, inventory[self.fixture], inventory)
+        (self.actual / "midi.json").unlink()
+        with self.assertRaisesRegex(ValueError, "missing=.*midi.json"):
+            validate_actual(self.fixture, self.actual, inventory[self.fixture], inventory)
 
     def test_missing_png_and_pdf(self):
         for name in ("page-0.png.json", "score.pdf.json"):

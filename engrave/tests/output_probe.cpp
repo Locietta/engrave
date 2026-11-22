@@ -7,7 +7,7 @@
 //   engrave_output_probe --assets=DIR --export=SCORE --out=DIR
 //   engrave_output_probe --assets=DIR --soundfont=FILE... --audio=SCORE --format=wav|flac|ogg|mp3|aac
 //                        --out=FILE [--no-repeats] [--sample-rate=HZ]
-//   engrave_output_probe --assets=DIR --soundfont=FILE... --capture=SCORE --out=DIR
+//   engrave_output_probe --assets=DIR [--soundfont=FILE]... --capture=SCORE --out=DIR
 //
 // --render writes page-<n>.svg for every page, page-<n>.png for every page and
 // score.pdf, all with the export defaults (144 dpi, transparent PNG, no page
@@ -327,7 +327,10 @@ int main(int argc, char **argv) {
             if (const int rc = run_export(**engine, score, out); rc != 0) return rc;
             std::size_t pages = 0;
             if (const int rc = run_render(**engine, score, out, &pages); rc != 0) return rc;
-            if (const int rc = run_audio(**engine, score, out / "score.wav", "wav", repeats, sample_rate, false, false); rc != 0) return rc;
+            if (!soundfonts.empty()) {
+                if (const int rc = run_audio(**engine, score, out / "score.wav", "wav", repeats, sample_rate, false, false); rc != 0)
+                    return rc;
+            }
             std::printf("{\"pages\": %zu}\n", pages);
             return 0;
         }

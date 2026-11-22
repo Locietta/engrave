@@ -26,6 +26,13 @@ def validate_actual(fixture, out, names, inventory):
         )
 
 
+def golden_inventory(root, *, no_audio):
+    inventory = validate_baseline(root)
+    if no_audio:
+        return {fixture: [name for name in names if name != "audio.json"] for fixture, names in inventory.items()}
+    return inventory
+
+
 def validate_allow_usage(allow, matched, platform, selected=None):
     stale = [
         i

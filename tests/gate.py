@@ -22,7 +22,7 @@ from pathlib import Path
 
 from engrave_testing import golden as g
 from engrave_testing.dependencies import validate_dependencies
-from engrave_testing.inventory import validate_actual, validate_allow_usage, validate_baseline
+from engrave_testing.inventory import golden_inventory, validate_actual, validate_allow_usage
 from engrave_testing.links import setup_link
 from engrave_testing.paths import INPUT_ROOT, REPO_ROOT, pixi_env
 from engrave_testing.public_output import (
@@ -126,7 +126,7 @@ def main():
     validate_dependencies()
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--engine-source", type=Path, default=REPO_ROOT)
-    for name in ("assets", "soundfont", "output"):
+    for name in ("assets", "output"):
         p.add_argument("--" + name, type=Path, required=True)
     p.add_argument(
         "--build-dir",
@@ -167,13 +167,29 @@ def main():
         action="store_true",
         help="use the engine_tests binaries already built in --build-dir, such as an embedding project's build",
     )
-    p.add_argument(
+    p.add_argument("--soundfont", type=Path)
+    mode = p.add_mutually_exclusive_group()
+    mode.add_argument(
+        "--no-audio",
+        action="store_true",
+        help="Run the gate without a SoundFont, audio tests, or audio goldens",
+    )
+    mode.add_argument(
         "--quick",
         action="store_true",
         help="Skip the engine-audio corpus check for faster per-step verification; use full gate at milestones",
     )
+    p.add_argument(
+        "--goldens-only",
+        action="store_true",
+        help="Run only the asset manifest check and SoundFont-free golden comparison",
+    )
     p.add_argument("--dual-capture", type=Path, help="old golden lane actual directory")
     a = p.parse_args()
+    if a.goldens_only and not a.no_audio:
+        p.error("--goldens-only requires --no-audio")
+    if not a.no_audio and a.soundfont is None:
+        p.error("--soundfont is required unless --no-audio is set")
     for key, value in vars(a).items():
         if isinstance(value, Path):
             setattr(a, key, value.resolve())
@@ -190,12 +206,13 @@ def main():
     manifest = a.pixi_manifest or a.engine_source / "pixi.toml"
     env_prefix = pixi_env(manifest.parent)
     native = env_prefix
-    native_fonts = native / "fonts"  # the environment root's fonts/ on every platform
     if platform == "windows":
         native = native / "Library"
     os.environ["PIXI_PROJECT_MANIFEST"] = str(manifest)
     for name in ("CONDA_PREFIX", "PIXI_ENVIRONMENT_NAME"):
         os.environ.pop(name, None)
+    if a.no_audio:
+        os.environ.pop("MUSIC_MCP_SOUNDFONT", None)
     # The binaries load the environment's shared libraries (cairo, zlib) at run time.
     os.environ["PATH"] = str(native / "bin") + os.pathsep + os.environ.get("PATH", "")
     if platform != "windows" and (native / "lib").is_dir():
@@ -311,13 +328,32 @@ def main():
                     "--//bazel:playback_harness=false",
                     "--output_groups=+runtime_dynamic_libraries",
                     f"--build_event_json_file={bep_path}",
-                    "//:engine_tests",
+                    *(["//:engrave_output_probe", "//:semantic_dump"] if a.goldens_only else ["//:engine_tests"]),
                 ],
                 cwd=a.engine_source,
             )
             _stage_bep_outputs(bep_path, a.build_dir)
         finally:
             bep_path.unlink(missing_ok=True)
+    sources = sorted((REPO_ROOT / "tests/data/inputs/golden").glob("*")) + [
+        REPO_ROOT / "tests/data/inputs/evening.musicxml"
+    ]
+    sources += [
+        a.engine_source / "src/importexport/mnx/tests/data" / name
+        for name in (
+            "engine/two-notes.mnx",
+            "project_examples/tupletSimple.mnx",
+            "project_examples/percussionKit.mnx",
+            "project_examples/graceArps.mnx",
+        )
+    ]
+    sources = [s for s in sources if s.suffix in {".mscx", ".mscz", ".musicxml", ".mxl", ".mid", ".gp", ".mnx"}]
+    if not sources:
+        raise RuntimeError("incomplete supported corpus")
+
+    if a.goldens_only:
+        return _compare_goldens(a, sources, platform, suffix, run, start)
+
     forbidden = re.compile(
         r"\bmuse::|\bmu::|\bkors\b|\bnlohmann\b|\bglz::|\bQt\b|\bQ[A-Z]\w*\b|"
         r'#\s*include\s*[<"](?:muse/|framework/|engraving/|nlohmann/|glaze/)'
@@ -329,25 +365,32 @@ def main():
                 raise RuntimeError(f"public header leak: {header}")
 
     run_check("header_scan", check_headers)
-    run(
-        "sine",
-        [
-            sys.executable,
-            REPO_ROOT / "tests/engrave_testing/make_sine_soundfont.py",
-            a.output / "sine.sf2",
-        ],
-    )
     asset = "--assets=" + str(a.assets)
     golden_corpus = "--golden-corpus=" + str(REPO_ROOT / "tests/data/inputs/golden")
     inputs_corpus = "--inputs-corpus=" + str(REPO_ROOT / "tests/data/inputs")
     output_args = [
         asset,
         "--corpus=" + str(REPO_ROOT / "tests/data/inputs/golden"),
-        "--corpus=" + str(REPO_ROOT / "tests/data/inputs/audio"),
-        "--soundfont=" + str(a.soundfont),
-        "--soundfont=" + str(a.output / "sine.sf2"),
-        "--native-fonts=" + str(native_fonts),
     ]
+    if a.no_audio:
+        output_args.append(
+            "--gtest_filter=-Audio.*:AudioInternal.*:RuntimeAssets.SoundFontReplacementChangesTheNextRenderAndIsAtomic"
+        )
+    else:
+        run(
+            "sine",
+            [
+                sys.executable,
+                REPO_ROOT / "tests/engrave_testing/make_sine_soundfont.py",
+                a.output / "sine.sf2",
+            ],
+        )
+        output_args += [
+            "--corpus=" + str(REPO_ROOT / "tests/data/inputs/audio"),
+            "--soundfont=" + str(a.soundfont),
+            "--soundfont=" + str(a.output / "sine.sf2"),
+        ]
+    output_args.append("--native-fonts=" + str(env_prefix / "fonts"))
     core_args = [
         asset,
         golden_corpus,
@@ -364,21 +407,6 @@ def main():
             else Path("/usr/share/fonts/TTF/DejaVuSans.ttf")
         )
     )
-    sources = sorted((REPO_ROOT / "tests/data/inputs/golden").glob("*")) + [
-        REPO_ROOT / "tests/data/inputs/evening.musicxml"
-    ]
-    sources += [
-        a.engine_source / "src/importexport/mnx/tests/data" / name
-        for name in (
-            "engine/two-notes.mnx",
-            "project_examples/tupletSimple.mnx",
-            "project_examples/percussionKit.mnx",
-            "project_examples/graceArps.mnx",
-        )
-    ]
-    sources = [s for s in sources if s.suffix in {".mscx", ".mscz", ".musicxml", ".mxl", ".mid", ".gp", ".mnx"}]
-    if not sources:
-        raise RuntimeError("incomplete supported corpus")
     tasks = [
         dict(name="comparator-mutations", command=[sys.executable, REPO_ROOT / "tests/test_inventory.py"]),
         dict(
@@ -430,7 +458,10 @@ def main():
     # These pinned engine tests still read cwd-relative fixtures and engine data.
     # Each suite gets its own capture directory so a shared engine-cwd can never
     # race between them.
-    for name in ("score_edit_test", "score_audio_test", "score_positions_test"):
+    score_tests = ["score_edit_test", "score_positions_test"]
+    if not a.no_audio:
+        score_tests.insert(1, "score_audio_test")
+    for name in score_tests:
         engine_cwd = a.output / "engine-cwd" / name
         (engine_cwd / "vendor").mkdir(parents=True, exist_ok=True)
         setup_link(INPUT_ROOT, engine_cwd / "fixtures")
@@ -486,8 +517,7 @@ def main():
                 a.assets,
                 "--font",
                 font,
-                "--soundfont",
-                a.soundfont,
+                *([] if a.no_audio else ["--soundfont", a.soundfont]),
                 "--output",
                 a.output / "assets",
             ],
@@ -513,7 +543,7 @@ def main():
             command=[a.build_dir / ("example_embedder" + suffix), a.assets, *sources],
         )
     )
-    if not a.quick:
+    if not (a.quick or a.no_audio):
         tasks.append(
             dict(
                 name="engine-audio",
@@ -564,14 +594,21 @@ def main():
             "1",
         ],
     )
+    return _compare_goldens(a, sources, platform, suffix, run, start)
+
+
+def _compare_goldens(a, sources, platform, suffix, run, start):
     golden_root = REPO_ROOT / "tests/data/golden" / platform
-    inventory = validate_baseline(golden_root)
+    inventory = golden_inventory(golden_root, no_audio=a.no_audio)
     allow = g.load_allow(REPO_ROOT / "tests/data/golden/allow.json", context="engine-gate-archive")
+    if a.no_audio:
+        allow = [entry for entry in allow if entry["output"] != "audio.json"]
     counts = dict(identical=0, allowed=0, different=0, **{"missing-golden": 0})
     dual = dict(identical=0, allowed=0, different=0, **{"missing-golden": 0})
     matched_allow = set()
     dual_matched = set()
-    dual_inventory = validate_baseline(a.dual_capture) if a.dual_capture else None
+    dual_inventory = golden_inventory(a.dual_capture, no_audio=a.no_audio) if a.dual_capture else None
+    soundfonts = [] if a.no_audio else [a.soundfont]
     probe = a.build_dir / ("engrave_output_probe" + suffix)
     semantic_dump = a.build_dir / ("semantic_dump" + suffix)
 
@@ -583,7 +620,7 @@ def main():
         produced = [
             run(
                 source.name + "-capture",
-                probe_command(probe, a.assets, [a.soundfont], "capture", source, raw),
+                probe_command(probe, a.assets, soundfonts, "capture", source, raw),
                 quiet=True,
             )
         ]
@@ -601,11 +638,9 @@ def main():
         g.write_json(out / "semantic.json", json.loads(dump))
         # PyMuPDF initializes as single-threaded; PDF normalization runs on the
         # main thread in finalize_capture after the worker pool drains.
-        names = (
-            ["semantic.json"]
-            + describe_render(raw, out, include_pdf=False)
-            + describe_audio_file(raw / "score.wav", out)
-        )
+        names = ["semantic.json", *describe_render(raw, out, include_pdf=False)]
+        if not a.no_audio:
+            names.extend(describe_audio_file(raw / "score.wav", out))
         for name, value in [
             ("score.mscx", g.normalize_mscx(g.read_text(raw / "score.mscx"))),
             (
@@ -673,7 +708,7 @@ def main():
         print("quick mode: skipped engine-audio corpus check (required at milestones)", flush=True)
     inputs = [
         REPO_ROOT / "tests/data/golden/inputs.json",
-        a.soundfont,
+        *soundfonts,
         REPO_ROOT / "tests/data/golden/allow.json",
         *sources,
     ]
@@ -686,6 +721,9 @@ def main():
         seconds=round(time.monotonic() - start, 3),
         engine=subprocess.check_output(["git", "-C", str(a.engine_source), "rev-parse", "HEAD"], text=True).strip(),
     )
+    if a.no_audio:
+        report.update(no_audio=True, goldens_only=a.goldens_only)
+        print(f"{len(inventory)} fixtures: {counts}", flush=True)
     (a.output / "report.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     if any(c[k] for c in (counts, dual) for k in ("different", "missing-golden")):
         return 1
