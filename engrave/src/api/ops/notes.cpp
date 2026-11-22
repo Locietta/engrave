@@ -228,15 +228,37 @@ Result<Step> prepare_entry(EditContext &context, const SegmentAddress &address, 
                 if (rhythm->end_tick() > tick && rhythm->tuplet() != tuplet) return invalid("drum entry cannot cross a tuplet boundary");
             }
         }
-        if (covering || open_voice) {
-            if (covering) {
-                for (const auto *link : covering->link_list()) {
-                    const auto *rest = mu::engraving::to_rest(link);
-                    if (!rest->lyrics().empty() || !rest->el().empty() || rest->dead_slapped() || rest->authored_beam() ||
-                        !rest->authored_overrides.entries.empty() || !rest->authored_overrides.carriers.empty())
-                        return invalid("the entry would split a rest with authored attachments");
-                }
+        auto has_authored_attachments = [](const mu::engraving::Rest *target) {
+            for (const auto *link : target->link_list()) {
+                const auto *rest = mu::engraving::to_rest(link);
+                if (!rest->lyrics().empty() || !rest->el().empty() || rest->dead_slapped() || rest->authored_beam() ||
+                    !rest->authored_overrides.entries.empty() || !rest->authored_overrides.carriers.empty())
+                    return true;
             }
+            return false;
+        };
+        if (covering && has_authored_attachments(covering)) return invalid("the entry would split a rest with authored attachments");
+        {
+            auto remaining_span = duration;
+            auto cursor = tick;
+            for (auto *current = measure; current && remaining_span > mu::engraving::Fraction(0, 1); current = current->next_measure()) {
+                const auto scale = mu::engraving::actual_ticks({1, 1}, tuplet, staff->time_stretch(cursor));
+                const auto room = (current->end_tick() - cursor).reduced();
+                const auto needed = (remaining_span * scale).reduced();
+                const auto stop = needed <= room ? (cursor + needed).reduced() : current->end_tick();
+                for (auto *segment = current->first(mu::engraving::SegmentType::CHORD_REST); segment && segment->tick() < stop;
+                     segment = segment->next(mu::engraving::SegmentType::CHORD_REST)) {
+                    if (segment->tick() < cursor) continue;
+                    const auto *item = segment->element(track);
+                    if (item && item->is_rest() && has_authored_attachments(mu::engraving::to_rest(item)))
+                        return invalid("the entry would split or replace a rest with authored attachments");
+                }
+                if (needed <= room) break;
+                remaining_span = (remaining_span - (room / scale).reduced()).reduced();
+                cursor = current->end_tick();
+            }
+        }
+        if (covering || open_voice) {
             const auto begin = covering ? covering->tick() : measure->tick();
             const auto end = covering ? covering->end_tick() : measure->end_tick();
             const auto leading = split_duration(tick - begin, mu::engraving::actual_ticks({1, 1}, tuplet, staff->time_stretch(begin)));

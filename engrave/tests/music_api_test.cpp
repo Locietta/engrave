@@ -661,17 +661,23 @@ TEST(MusicWrite, RestSplitWithLyricsRejectsAtomically) {
         EXPECT_EQ(rest->lyrics().front()->plain_text().to_std_string(), "onset");
     };
     check_lyrics();
-    const auto edit = (*document)->write_phrase({.lanes = {
-                                                     {{bars[0].id, {0, 1}}, PitchDomain::Concert, {PhraseEvent{{1, 4}, {{c4}}}}},
-                                                     {{bars[1].id, {1, 4}}, PitchDomain::Concert, {PhraseEvent{{1, 4}, {{g4}}}}},
-                                                 }});
-    ASSERT_TRUE(edit) << edit.error().message;
-    ASSERT_TRUE(edit->rejection);
-    EXPECT_NE(edit->rejection->error.message.find("rest with authored attachments"), std::string::npos);
-    EXPECT_EQ(edit->applied, 0u);
-    EXPECT_EQ((*document)->revision(), revision);
-    EXPECT_EQ(chord_at(read_test::master_of(**document), {0, 1}, 0), nullptr);
-    check_lyrics();
+    for (const auto &attempt : {
+             PhraseLane{{bars[1].id, {1, 4}}, PitchDomain::Concert, {PhraseEvent{{1, 4}, {{g4}}}}},
+             PhraseLane{{bars[1].id, {0, 1}}, PitchDomain::Concert, {PhraseEvent{{1, 4}, {{c4}}}}},
+             PhraseLane{{bars[1].id, {0, 1}}, PitchDomain::Concert, {PhraseEvent{{1, 4}, {}}}},
+         }) {
+        const auto edit = (*document)->write_phrase({.lanes = {
+                                                         {{bars[0].id, {0, 1}}, PitchDomain::Concert, {PhraseEvent{{1, 4}, {{c4}}}}},
+                                                         attempt,
+                                                     }});
+        ASSERT_TRUE(edit) << edit.error().message;
+        ASSERT_TRUE(edit->rejection);
+        EXPECT_NE(edit->rejection->error.message.find("rest with authored attachments"), std::string::npos);
+        EXPECT_EQ(edit->applied, 0u);
+        EXPECT_EQ((*document)->revision(), revision);
+        EXPECT_EQ(chord_at(read_test::master_of(**document), {0, 1}, 0), nullptr);
+        check_lyrics();
+    }
 }
 
 TEST(MusicWrite, BarEndHairpinKeepsTheAnchorVoice) {
