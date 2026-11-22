@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iterator>
+#include <limits>
 #include <map>
 #include <memory>
 #include <set>
@@ -26,6 +27,7 @@
 #include "engraving/dom/chordline.h"
 #include "engraving/dom/chordlist.h"
 #include "engraving/dom/drumset.h"
+#include "engraving/dom/excerpt.h"
 #include "engraving/dom/factory.h"
 #include "engraving/dom/instrument.h"
 #include "engraving/dom/masterscore.h"
@@ -188,10 +190,11 @@ TEST(Checkpoint, InternalRestoreRecoversRevisionWithoutNamedStorage) {
     const auto before = native_source(*document);
     const auto revision = document->revision();
     const auto snapshot = state.capture_snapshot();
+    ASSERT_TRUE(snapshot) << snapshot.error().message;
     const auto note = find_id(*document, "Note");
     ASSERT_TRUE(document->edit({{SetProperty{note, "color", Color{255, 0, 0}}}}));
     ASSERT_GT(document->revision(), revision);
-    ASSERT_TRUE(state.restore_snapshot(snapshot, false));
+    ASSERT_TRUE(state.restore_snapshot(*snapshot, false));
     EXPECT_EQ(document->revision(), revision);
     EXPECT_EQ(native_source(*document), before);
     const auto missing = document->restore_checkpoint("before");
@@ -371,6 +374,159 @@ TEST(Edit, NonrepresentableRewritePoisonsAndCheckpointRestoresExactBytes) {
     ASSERT_TRUE(document->restore_checkpoint("before"));
     EXPECT_EQ(native_source(*document), before);
     ASSERT_TRUE(document->edit({{SetProperty{note, "color", Color{255, 0, 0}}}}));
+}
+
+TEST(EditAtomic, LateRejectionRestoresLinkedIdsRevisionsVersionsAndCheckpoints) {
+    auto document = open("linked_parts.mscx");
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    ASSERT_FALSE(master.excerpts().empty());
+    auto &excerpt = *master.excerpts().front()->excerpt_score();
+    const auto excerpt_id = engrave::from_engine(excerpt.eid());
+    const auto notes = document->query({.types = {"Note"}});
+    ASSERT_TRUE(notes);
+    const auto linked = std::ranges::find_if(notes->elements, [](const auto &note) { return note.links.size() > 1; });
+    ASSERT_NE(linked, notes->elements.end());
+    const auto note_id = linked->id;
+    const auto links = linked->links;
+    master.set_mscore_version(u"4.6.3");
+    master.set_mscore_revision(170);
+    excerpt.set_mscore_version(u"4.7.0");
+    excerpt.set_mscore_revision(195);
+    master.restore_source_revisions(9, 4);
+    mu::engraving::TempoTimeline timeline;
+    timeline.rebuild(mu::engraving::TempoValues{{0, 3.0}}, {});
+    timeline.set_tempo_multiplier(mu::engraving::BeatsPerSecond(1.5));
+    master.set_tempo_timeline_override(std::move(timeline));
+
+    const auto before = native_source(*document);
+    const auto revision = document->revision();
+    const auto original_color = property(*document, note_id, "color");
+    ASSERT_TRUE(document->checkpoint("before"));
+    auto &state = engrave::DocumentAccess::impl(*document);
+    ASSERT_EQ(state.checkpoints.size(), 1u);
+    state.checkpoint_byte_limit = state.checkpoints.front().byte_count;
+    const auto checkpoint_bytes = state.checkpoints.front().snapshot.bytes;
+    const auto checkpoint_charge = state.checkpoints.front().byte_count;
+
+    const auto result = document->edit({{SetProperty{note_id, "color", Color{255, 0, 0}}, engrave::SetPitch{engrave::OpRef{0, 0}, 65}}},
+                                       engrave::EditOptions{.expected_revision = revision});
+    ASSERT_TRUE(result) << result.error().message;
+    ASSERT_TRUE(result->rejection);
+    EXPECT_EQ(result->rejection->op_index, 1u);
+    EXPECT_EQ(result->rejection->error.code, ErrorCode::INVALID_ARGUMENT);
+    EXPECT_EQ(result->rejection->error.op_index, 1u);
+    EXPECT_EQ(result->applied, 0u);
+    EXPECT_TRUE(result->ops.empty());
+    EXPECT_TRUE(result->created.empty());
+    EXPECT_TRUE(result->removed.empty());
+    EXPECT_TRUE(result->replaced.empty());
+    EXPECT_EQ(result->revision, revision);
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_EQ(native_source(*document), before);
+    EXPECT_EQ(property(*document, note_id, "color"), original_color);
+    for (const auto &id : links) EXPECT_TRUE(document->get(id));
+    const auto after_notes = document->query({.types = {"Note"}});
+    ASSERT_TRUE(after_notes);
+    const auto after = std::ranges::find(after_notes->elements, note_id, &engrave::ElementInfo::id);
+    ASSERT_NE(after, after_notes->elements.end());
+    EXPECT_EQ(after->links, links);
+    const auto &restored = engrave::harness::master_of(*document);
+    ASSERT_FALSE(restored.excerpts().empty());
+    const auto &restored_excerpt = *restored.excerpts().front()->excerpt_score();
+    EXPECT_EQ(engrave::from_engine(restored_excerpt.eid()), excerpt_id);
+    EXPECT_EQ(restored.source_revision(), 9u);
+    EXPECT_EQ(restored.saved_revision(), 4u);
+    EXPECT_EQ(restored.mscore_version().to_std_string(), "4.6.3");
+    EXPECT_EQ(restored.mscore_revision(), 170);
+    EXPECT_EQ(restored_excerpt.mscore_version().to_std_string(), "4.7.0");
+    EXPECT_EQ(restored_excerpt.mscore_revision(), 195);
+    EXPECT_DOUBLE_EQ(restored.tempo_timeline().utick2utime(1920), 8.0 / 9.0);
+    ASSERT_EQ(state.checkpoints.size(), 1u);
+    EXPECT_EQ(state.checkpoints.front().name, "before");
+    EXPECT_EQ(state.checkpoints.front().byte_count, checkpoint_charge);
+    EXPECT_EQ(state.checkpoints.front().snapshot.bytes, checkpoint_bytes);
+
+    const auto committed = document->edit({{SetProperty{note_id, "color", Color{0, 0, 255}}}}, engrave::EditOptions{});
+    ASSERT_TRUE(committed) << committed.error().message;
+    EXPECT_FALSE(committed->rejection);
+    EXPECT_EQ(committed->applied, 1u);
+    EXPECT_EQ(document->revision(), revision + 1);
+    EXPECT_EQ(property(*document, note_id, "color"), (engrave::Value{Color{0, 0, 255}}));
+    ASSERT_TRUE(document->restore_checkpoint("before"));
+    EXPECT_EQ(native_source(*document), before);
+}
+
+TEST(EditAtomic, RestoresAfterRejectionDuringMeasureRewrite) {
+    auto document = open("hairpins_and_repeats.mscx");
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    auto *first = master.first_measure();
+    auto *second = first->next_measure();
+    const auto measure_id = engrave::from_engine(second->eid());
+    const auto slur = document->edit({{engrave::AddSpanner{"Slur",
+                                                           engrave::from_engine(master.find_cr(first->tick(), 0)->eid()),
+                                                           engrave::from_engine(master.find_cr(second->tick(), 0)->eid()),
+                                                           {}}}});
+    ASSERT_TRUE(slur);
+    ASSERT_EQ(slur->applied, 1u);
+    const auto slur_id = *slur->ops.front().created.front();
+    const auto before = native_source(*document);
+    const auto revision = document->revision();
+
+    const auto result = document->edit({{engrave::SetTimeSig{measure_id, {1, 5}}}}, engrave::EditOptions{});
+    ASSERT_TRUE(result) << result.error().message;
+    ASSERT_TRUE(result->rejection);
+    EXPECT_EQ(result->rejection->op_index, 0u);
+    EXPECT_FALSE(result->rejection->error.poisoned);
+    EXPECT_EQ(result->applied, 0u);
+    EXPECT_EQ(document->revision(), revision);
+    const auto restored = engrave::resolve(engrave::harness::master_of(*document), slur_id);
+    ASSERT_TRUE(restored);
+    const auto *endpoint = mu::engraving::to_spanner(restored->object)->end_element();
+    ASSERT_NE(endpoint, nullptr);
+    EXPECT_EQ(endpoint->tick(), (mu::engraving::Fraction{1, 1}));
+    EXPECT_EQ(native_source(*document), before);
+}
+
+TEST(EditAtomic, RestoresAfterCommitThrows) {
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    constexpr auto exhausted = std::numeric_limits<std::uint64_t>::max();
+    engrave::harness::master_of(*document).restore_source_revisions(exhausted, 10);
+    const auto before = native_source(*document);
+    const auto revision = document->revision();
+    const auto note = find_id(*document, "Note");
+    const auto result = document->edit({{SetProperty{note, "color", Color{255, 0, 0}}}}, engrave::EditOptions{});
+    ASSERT_FALSE(result);
+    EXPECT_EQ(result.error().code, ErrorCode::EDIT_REJECTED);
+    EXPECT_FALSE(result.error().op_index);
+    EXPECT_FALSE(result.error().poisoned);
+    EXPECT_TRUE(result.error().applied_ops.empty());
+    EXPECT_EQ(document->revision(), revision);
+    const auto &restored = engrave::harness::master_of(*document);
+    EXPECT_EQ(restored.source_revision(), exhausted);
+    EXPECT_EQ(restored.saved_revision(), 10u);
+    EXPECT_EQ(native_source(*document), before);
+}
+
+TEST(EditAtomic, RejectsSnapshotLargerThanZipEntryLimitBeforeWriting) {
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    // The writer serializes each ampersand as five bytes of XML.
+    master.meta_tags()[u"large metadata"] = muse::String::from_std_string(std::string(14 * 1024 * 1024, '&'));
+    const auto note = find_id(*document, "Note");
+    const auto color = property(*document, note, "color");
+    const auto revision = document->revision();
+    const auto source_revision = master.source_revision();
+    const auto result = document->edit({{SetProperty{note, "color", Color{255, 0, 0}}}}, engrave::EditOptions{});
+    ASSERT_FALSE(result);
+    EXPECT_EQ(result.error().code, ErrorCode::RESOURCE_LIMIT);
+    EXPECT_FALSE(result.error().poisoned);
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_EQ(engrave::harness::master_of(*document).source_revision(), source_revision);
+    EXPECT_EQ(property(*document, note, "color"), color);
 }
 
 TEST(Edit, StaticMeasureErrorsAreRejectedBeforeEarlierWrites) {

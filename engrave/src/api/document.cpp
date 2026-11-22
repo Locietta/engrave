@@ -1,5 +1,6 @@
 #include <engrave/document.h>
 
+#include <exception>
 #include <format>
 #include <iterator>
 #include <limits>
@@ -14,26 +15,28 @@
 #include "engraving/engravingproject.h"
 #include "engraving/rendering/score/layoutdatastore.h"
 #include "engraving/rendering/score/scorerenderer.h"
+#include "global/io/buffer.h"
 #include "global/io/writebudget.h"
+#include "global/serialization/zipreader.h"
 
 namespace engrave {
 
 Document::Impl::~Impl() = default;
 
-mu::engraving::rendering::score::LayoutDataStore &Document::Impl::adopt_layout_output(mu::engraving::Score &score) {
+mu::engraving::rendering::score::LayoutDataStore &Document::Impl::adopt_layout_output(mu::engraving::Score &score, LayoutOutputs &outputs) {
     using mu::engraving::rendering::score::LayoutDataStore;
     auto *existing = score.layout_data_store();
-    if (std::ranges::any_of(layout_outputs, [existing](const auto &output) { return output.get() == existing; })) return *existing;
-    std::erase_if(layout_outputs, [](const auto &output) { return output->score() == nullptr; });
+    if (std::ranges::any_of(outputs, [existing](const auto &output) { return output.get() == existing; })) return *existing;
+    std::erase_if(outputs, [](const auto &output) { return output->score() == nullptr; });
     // reserve can fail; ownership and all live borrowers must be unchanged then.
-    layout_outputs.reserve(layout_outputs.size() + 1);
+    outputs.reserve(outputs.size() + 1);
     if (auto output = score.renderer()->take_layout_data_store(score)) {
-        layout_outputs.push_back(std::move(output));
+        outputs.push_back(std::move(output));
         return *existing;
     }
     auto output = std::make_unique<LayoutDataStore>(score);
     auto *result = output.get();
-    layout_outputs.push_back(std::move(output));
+    outputs.push_back(std::move(output));
     score.bind_layout_data_store(result);
     return *result;
 }
@@ -56,7 +59,7 @@ std::unique_ptr<Document> Document::Impl::make(const std::shared_ptr<EngineState
     impl->project = std::move(project);
     impl->project->master_score()->invalidate_repeat_list();
     impl->project->master_score()->init_automation();
-    impl->bind_layout_boundary();
+    impl->bind_layout_boundary(*impl->project->master_score(), impl->layout_outputs);
     for (auto *score : impl->project->master_score()->score_list()) {
         score->layout_state.font_generation = engine->font_generation;
         score->layout_state.revision = impl->revision;
@@ -69,11 +72,11 @@ std::unique_ptr<Document> Document::Impl::make(const std::shared_ptr<EngineState
     return std::unique_ptr<Document>(new Document(std::move(impl)));
 }
 
-void Document::Impl::bind_layout_boundary() {
-    for (auto *score : project->master_score()->score_list())
-        if (score->layout_data_store()) adopt_layout_output(*score);
-    project->master_score()->layout_boundary = [this](mu::engraving::Score &score) { ensure_layout(score); };
-    project->master_score()->layout_store_boundary = [this](mu::engraving::Score &score) -> auto & { return adopt_layout_output(score); };
+void Document::Impl::bind_layout_boundary(mu::engraving::MasterScore &master, LayoutOutputs &outputs) {
+    for (auto *score : master.score_list())
+        if (score->layout_data_store()) adopt_layout_output(*score, outputs);
+    master.layout_boundary = [this](mu::engraving::Score &score) { ensure_layout(score); };
+    master.layout_store_boundary = [this](mu::engraving::Score &score) -> auto & { return adopt_layout_output(score); };
 }
 
 void Document::Impl::ensure_layout(mu::engraving::Score &score) {
@@ -123,11 +126,17 @@ Document::~Document() {
     EngineState::release(std::move(engine));
 }
 
-Document::Impl::Snapshot Document::Impl::capture_snapshot() const {
+Result<Document::Impl::Snapshot> Document::Impl::capture_snapshot() const try {
     auto &master = *project->master_score();
     Snapshot snapshot;
     snapshot.bytes = music::export_native_score(*engine->context, project, "mscz",
                                                 music::ExportOptions{.transaction_snapshot = true, .compress = false}, {});
+    // Scan the central directory with the same per-entry and aggregate limits
+    // the restore reader enforces, without inflating any entry.
+    auto buffer = muse::io::Buffer::opened(muse::io::IODevice::READ_ONLY, muse::ByteArray(snapshot.bytes.data(), snapshot.bytes.size()));
+    muse::ZipReader zip(&buffer);
+    if (zip.file_info_list().empty() || zip.has_error())
+        return std::unexpected(Error{ErrorCode::RESOURCE_LIMIT, "the snapshot exceeds the native ZIP reader limits"});
     snapshot.runtime_tempo = master.runtime_tempo_state();
     snapshot.source_revision = master.source_revision();
     snapshot.saved_revision = master.saved_revision();
@@ -135,6 +144,8 @@ Document::Impl::Snapshot Document::Impl::capture_snapshot() const {
     for (const auto *score : master.score_list())
         snapshot.versions.push_back({score->mscore_version().to_std_u16_string(), score->mscore_revision(), score->msc_version()});
     return snapshot;
+} catch (const std::exception &error) {
+    return std::unexpected(Error{ErrorCode::IO, std::format("cannot capture the snapshot: {}", error.what())});
 }
 
 Result<void> Document::checkpoint(std::string_view name) {
@@ -143,7 +154,9 @@ Result<void> Document::checkpoint(std::string_view name) {
         return std::unexpected(Error{.code = ErrorCode::POISONED,
                                      .message = "restore_checkpoint or reopen the document before taking a checkpoint",
                                      .poisoned = true});
-    Impl::Checkpoint saved{.name = std::string(name), .snapshot = impl_->capture_snapshot()};
+    auto captured = impl_->capture_snapshot();
+    if (!captured) return std::unexpected(captured.error());
+    Impl::Checkpoint saved{.name = std::string(name), .snapshot = std::move(*captured)};
     const auto &snapshot = saved.snapshot;
     const auto charge = [&](std::size_t bytes) {
         if (bytes > impl_->checkpoint_byte_limit - saved.byte_count) return false;
@@ -185,38 +198,47 @@ Result<void> Document::restore_checkpoint(std::string_view name) {
     return impl_->restore_snapshot(found->snapshot, true);
 }
 
-Result<void> Document::Impl::restore_snapshot(const Snapshot &snapshot, bool advance_revision) {
+Result<void> Document::Impl::restore_snapshot(const Snapshot &snapshot, bool advance_revision) try {
     if (advance_revision && revision == std::numeric_limits<std::uint64_t>::max())
         return std::unexpected(Error{ErrorCode::RESOURCE_LIMIT, "document revision exhausted"});
+    LayoutOutputs restored_outputs;
     auto restored = music::load_native_score(*engine->context, snapshot.bytes, "mscz", true);
     mu::engraving::ScoreLoad load;
+    auto &master = *restored->master_score();
+    const auto scores = master.score_list();
+    if (scores.size() != snapshot.versions.size())
+        return std::unexpected(Error{ErrorCode::IO, "the restored snapshot has a different number of linked scores"});
     auto versions = snapshot.versions.begin();
-    for (auto *score : restored->master_score()->score_list()) {
-        if (versions == snapshot.versions.end()) break;
+    for (auto *score : scores) {
         score->set_mscore_version(muse::String(std::u16string_view(versions->version)));
         score->set_mscore_revision(versions->revision);
         score->set_msc_version(versions->msc_version);
         mu::engraving::invalidate_normalization(*score);
         ++versions;
     }
-    auto &master = *restored->master_score();
     mu::engraving::normalize_document(master, {.mode = mu::engraving::NormalizeMode::LOAD});
     master.invalidate_repeat_list();
     master.init_automation();
     master.restore_runtime_tempo_state(snapshot.runtime_tempo);
     master.restore_source_revisions(snapshot.source_revision, snapshot.saved_revision);
     assign_missing_ids(master);
-    poisoned = true;
-    project = std::move(restored);
-    bind_layout_boundary();
-    revision = advance_revision ? revision + 1 : snapshot.revision;
-    for (auto *score : master.score_list()) {
-        score->layout_state.revision = revision;
+    bind_layout_boundary(master, restored_outputs);
+    const auto restored_revision = advance_revision ? revision + 1 : snapshot.revision;
+    for (auto *score : scores) {
+        score->layout_state.revision = restored_revision;
         score->layout_state.font_generation = engine->font_generation;
         score->invalidate_layout(mu::engraving::Fraction(0, 1), mu::engraving::Fraction(-1, 1));
     }
+    // The old project needs its layout stores throughout DOM teardown.
+    project = std::move(restored);
+    layout_outputs.swap(restored_outputs);
+    revision = restored_revision;
     poisoned = false;
     return {};
+} catch (const std::exception &error) {
+    return std::unexpected(Error{ErrorCode::IO, std::format("cannot restore the snapshot: {}", error.what())});
+} catch (...) {
+    return std::unexpected(Error{ErrorCode::IO, "cannot restore the snapshot: the engine threw an unknown exception"});
 }
 
 Result<void> Document::drop_checkpoint(std::string_view name) {

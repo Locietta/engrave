@@ -94,18 +94,18 @@ Result<Step> prepare(EditContext &context, const AddTuplet &op);
 Result<Step> prepare(EditContext &context, const AddText &op);
 Result<Step> prepare(EditContext &context, const Add &op);
 
-// Runs a batch as one transaction. edit() is Document::edit; run() takes steps
-// that are already prepared, for the library's tests that bring their own.
+// Owns references to the current score throughout a single edit transaction.
 struct BatchGuard {
     explicit BatchGuard(Document &document);
-
-    Result<EditResult> edit(const Batch &batch, std::optional<std::uint64_t> expected_revision);
 
     Result<EditResult> run(std::vector<Step> steps);
 
 private:
+    friend struct ::engrave::Document;
+
     Result<void> admit(std::optional<std::uint64_t> expected_revision) const;
-    Result<EditResult> execute(std::vector<Step> steps);
+    Result<std::vector<Step>> prepare_batch(const Batch &batch);
+    Result<EditResult> execute(std::vector<Step> steps, EditMode mode);
 
     Document &document_;
     EditContext context_;

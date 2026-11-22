@@ -34,7 +34,7 @@ struct OpVariant<std::tuple<A...>, std::tuple<B...>, Rest...> : OpVariant<std::t
 // own header under engrave/ops/.
 using Op = detail::OpVariant<PropertyOps, NoteOps, MeasureOps, PartOps, SpannerOps, TextOps>::type;
 
-// Operations prepared together and applied in order, without implicit rollback.
+// Operations prepared together and applied in order.
 struct Batch {
     std::vector<Op> ops;
 };

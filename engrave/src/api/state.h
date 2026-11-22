@@ -75,7 +75,7 @@ struct Document::Impl {
         std::size_t byte_count = 0;
     };
 
-    Snapshot capture_snapshot() const;
+    Result<Snapshot> capture_snapshot() const;
     Result<void> restore_snapshot(const Snapshot &snapshot, bool advance_revision);
 
     std::vector<Checkpoint> checkpoints;
@@ -83,7 +83,8 @@ struct Document::Impl {
     ~Impl();
     std::shared_ptr<EngineState> engine;
     // Declared before project: payloads remain available throughout DOM teardown.
-    std::vector<std::unique_ptr<mu::engraving::rendering::score::LayoutDataStore>> layout_outputs;
+    using LayoutOutputs = std::vector<std::unique_ptr<mu::engraving::rendering::score::LayoutDataStore>>;
+    LayoutOutputs layout_outputs;
     music::ScoreProject project;
     // The source MSCZ's audiosettings.json, read before the DOM exists; a
     // document from any other format, or from a template, has neutral values.
@@ -92,8 +93,13 @@ struct Document::Impl {
     std::vector<Diagnostic> diagnostics;
     // Source mutation failed after writing; reads remain available.
     bool poisoned = false;
-    void bind_layout_boundary();
-    mu::engraving::rendering::score::LayoutDataStore &adopt_layout_output(mu::engraving::Score &score);
+    void bind_layout_boundary(mu::engraving::MasterScore &master, LayoutOutputs &outputs);
+
+    mu::engraving::rendering::score::LayoutDataStore &adopt_layout_output(mu::engraving::Score &score) {
+        return adopt_layout_output(score, layout_outputs);
+    }
+
+    static mu::engraving::rendering::score::LayoutDataStore &adopt_layout_output(mu::engraving::Score &score, LayoutOutputs &outputs);
     void ensure_layout(mu::engraving::Score &score);
     void discard_layout_output(mu::engraving::Score &score);
 

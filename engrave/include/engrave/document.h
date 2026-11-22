@@ -16,6 +16,14 @@
 
 namespace engrave {
 
+// NOLINTNEXTLINE(readability-identifier-naming) -- Preserve the public EditMode spelling.
+enum class EditMode { Atomic, Prefix };
+
+struct EditOptions {
+    std::optional<std::uint64_t> expected_revision;
+    EditMode mode = EditMode::Atomic;
+};
+
 // One open score. A Document keeps the engine runtime alive and remains usable
 // after the Engine is destroyed. Calls and destruction must still occur on
 // the thread that created the Engine.
@@ -130,6 +138,11 @@ struct Document {
     // exports remain available; restore_checkpoint or reopen permits edits and native save.
     // Each batch that changed source advances the revision once, including failed batches.
     Result<EditResult> edit(const Batch &batch, std::optional<std::uint64_t> expected_revision = {});
+
+    // Atomic edits restore the pre-batch source after an execution failure.
+    // An indexed rejection reports zero applied operations and no ID changes.
+    // A failed restore poisons the document. Prefix selects the legacy behavior above.
+    Result<EditResult> edit(const Batch &batch, const EditOptions &options);
 
     // Named in-memory native snapshots share a 64 MiB budget. Replacing a name
     // never evicts another checkpoint; ResourceLimit leaves existing snapshots intact.

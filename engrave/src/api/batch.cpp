@@ -27,8 +27,49 @@
 
 namespace engrave {
 Result<EditResult> Document::edit(const Batch &batch, std::optional<std::uint64_t> expected_revision) {
+    return edit(batch, EditOptions{.expected_revision = expected_revision, .mode = EditMode::Prefix});
+}
+
+Result<EditResult> Document::edit(const Batch &batch, const EditOptions &options) {
     impl_->engine->check_thread();
-    return api::BatchGuard(*this).edit(batch, expected_revision);
+    std::optional<Impl::Snapshot> rollback;
+    const auto attempt = [&]() -> Result<EditResult> {
+        api::BatchGuard guard(*this);
+        if (auto admitted = guard.admit(options.expected_revision); !admitted) return std::unexpected(admitted.error());
+        auto steps = guard.prepare_batch(batch);
+        if (!steps) return std::unexpected(steps.error());
+        if (options.mode == EditMode::Atomic && !steps->empty()) {
+            auto captured = impl_->capture_snapshot();
+            if (!captured) return std::unexpected(captured.error());
+            rollback.emplace(std::move(*captured));
+        }
+        return guard.execute(std::move(*steps), options.mode);
+    };
+    if (options.mode == EditMode::Prefix) return attempt();
+
+    Result<EditResult> result;
+    try {
+        result = attempt();
+    } catch (const std::exception &exception) {
+        result = std::unexpected(Error{ErrorCode::EDIT_REJECTED, exception.what()});
+    } catch (...) {
+        result = std::unexpected(Error{ErrorCode::EDIT_REJECTED, "the engine threw an unknown exception"});
+    }
+    if (result || !rollback) return result;
+
+    // The guard, its closures and the registry diff must be gone before the
+    // restore replaces the DOM they reference.
+    auto error = std::move(result.error());
+    if (auto restored = impl_->restore_snapshot(*rollback, false); !restored) {
+        impl_->poisoned = true;
+        error.poisoned = true;
+        error.message += "; rollback failed: " + restored.error().message;
+        return std::unexpected(std::move(error));
+    }
+    error.poisoned = false;
+    error.applied_ops.clear();
+    if (!error.op_index) return std::unexpected(std::move(error));
+    return EditResult{.rejection = BatchRejection{*error.op_index, std::move(error)}, .revision = impl_->revision};
 }
 
 namespace api {
@@ -191,8 +232,7 @@ Result<void> BatchGuard::admit(std::optional<std::uint64_t> expected_revision) c
     return {};
 }
 
-Result<EditResult> BatchGuard::edit(const Batch &batch, std::optional<std::uint64_t> expected_revision) {
-    if (auto admitted = admit(expected_revision); !admitted) return std::unexpected(admitted.error());
+Result<std::vector<Step>> BatchGuard::prepare_batch(const Batch &batch) {
     context_.created_.assign(batch.ops.size(), {});
     std::vector<Step> steps;
     steps.reserve(batch.ops.size());
@@ -206,16 +246,16 @@ Result<EditResult> BatchGuard::edit(const Batch &batch, std::optional<std::uint6
         }
         steps.push_back(std::move(*step));
     }
-    return execute(std::move(steps));
+    return steps;
 }
 
 Result<EditResult> BatchGuard::run(std::vector<Step> steps) {
     if (auto admitted = admit({}); !admitted) return std::unexpected(admitted.error());
     context_.created_.assign(steps.size(), {});
-    return execute(std::move(steps));
+    return execute(std::move(steps), EditMode::Prefix);
 }
 
-Result<EditResult> BatchGuard::execute(std::vector<Step> steps) {
+Result<EditResult> BatchGuard::execute(std::vector<Step> steps, EditMode mode) {
     auto &document = DocumentAccess::impl(document_);
     EditResult result{.revision = document.revision};
     if (steps.empty()) return result;
@@ -246,6 +286,11 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps) {
         manager->end_transaction(true);
         MScore::set_error(MsError::MS_NO_ERROR);
     };
+    const auto report_failure = [&](Error error) -> Result<EditResult> {
+        error.poisoned = document.poisoned;
+        error.applied_ops = std::move(applied_ops);
+        return std::unexpected(std::move(error));
+    };
     const auto check_engine = [&](std::optional<std::size_t> op) {
         if (engine_failed())
             failure = Error{ErrorCode::EDIT_REJECTED, std::format("the engine refused it: {}", MScore::error_to_string(MScore::error)), op};
@@ -267,10 +312,13 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps) {
                 }
             } catch (const std::exception &error) {
                 failure = Error{ErrorCode::EDIT_REJECTED, std::format("the engine failed: {}", error.what()), i};
+            } catch (...) {
+                if (mode == EditMode::Prefix) throw;
+                failure = Error{ErrorCode::EDIT_REJECTED, "the engine threw an unknown exception", i};
             }
             if (!failure) check_engine(i);
             if (failure) {
-                if (master.cmd_state().mutation_count == marking) {
+                if (mode == EditMode::Prefix && master.cmd_state().mutation_count == marking) {
                     result.rejection = BatchRejection{i, std::move(*failure)};
                     failure.reset();
                     MScore::set_error(MsError::MS_NO_ERROR);
@@ -308,19 +356,17 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps) {
         }
     } catch (const std::exception &error) {
         close_failed_batch();
-        Error rejected{ErrorCode::EDIT_REJECTED, std::format("the engine failed: {}", error.what()),
-                       context_.op_ < steps.size() ? std::optional(context_.op_) : std::nullopt};
-        rejected.poisoned = document.poisoned;
-        rejected.applied_ops = std::move(applied_ops);
-        return std::unexpected(std::move(rejected));
+        return report_failure({ErrorCode::EDIT_REJECTED, std::format("the engine failed: {}", error.what()),
+                               context_.op_ < steps.size() ? std::optional(context_.op_) : std::nullopt});
     } catch (...) {
         close_failed_batch();
+        if (mode == EditMode::Atomic)
+            return report_failure({ErrorCode::EDIT_REJECTED, "the engine threw an unknown exception",
+                                   context_.op_ < steps.size() ? std::optional(context_.op_) : std::nullopt});
         throw;
     }
     close_failed_batch();
-    failure->poisoned = document.poisoned;
-    failure->applied_ops = std::move(applied_ops);
-    return std::unexpected(std::move(*failure));
+    return report_failure(std::move(*failure));
 }
 } // namespace api
 } // namespace engrave
