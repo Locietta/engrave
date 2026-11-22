@@ -123,34 +123,39 @@ Document::~Document() {
     EngineState::release(std::move(engine));
 }
 
+Document::Impl::Snapshot Document::Impl::capture_snapshot() const {
+    auto &master = *project->master_score();
+    Snapshot snapshot;
+    snapshot.bytes = music::export_native_score(*engine->context, project, "mscz", music::ExportOptions{.transaction_snapshot = true}, {});
+    snapshot.runtime_tempo = master.runtime_tempo_state();
+    snapshot.source_revision = master.source_revision();
+    snapshot.saved_revision = master.saved_revision();
+    snapshot.revision = revision;
+    for (const auto *score : master.score_list())
+        snapshot.versions.push_back({score->mscore_version().to_std_u16_string(), score->mscore_revision(), score->msc_version()});
+    return snapshot;
+}
+
 Result<void> Document::checkpoint(std::string_view name) {
     impl_->engine->check_thread();
     if (impl_->poisoned)
         return std::unexpected(Error{.code = ErrorCode::POISONED,
                                      .message = "restore_checkpoint or reopen the document before taking a checkpoint",
                                      .poisoned = true});
-    auto &master = *impl_->project->master_score();
-    Impl::Checkpoint saved;
-    saved.name = name;
-    saved.bytes =
-        music::export_native_score(*impl_->engine->context, impl_->project, "mscz", music::ExportOptions{.transaction_snapshot = true}, {});
-    saved.runtime_tempo = master.runtime_tempo_state();
-    saved.source_revision = master.source_revision();
-    saved.saved_revision = master.saved_revision();
-    for (const auto *score : master.score_list())
-        saved.versions.push_back({score->mscore_version(), score->mscore_revision(), score->msc_version()});
+    Impl::Checkpoint saved{.name = std::string(name), .snapshot = impl_->capture_snapshot()};
+    const auto &snapshot = saved.snapshot;
     const auto charge = [&](std::size_t bytes) {
         if (bytes > impl_->checkpoint_byte_limit - saved.byte_count) return false;
         saved.byte_count += bytes;
         return true;
     };
-    if (!charge(sizeof(saved)) || !charge(saved.name.capacity()) || !charge(saved.bytes.capacity()) ||
-        !charge(saved.versions.capacity() * sizeof(Impl::Checkpoint::Versions)))
+    if (!charge(sizeof(saved)) || !charge(saved.name.capacity() + 1) || !charge(snapshot.bytes.capacity() + 1) ||
+        !charge(snapshot.versions.capacity() * sizeof(Impl::Snapshot::Versions)))
         return std::unexpected(Error{ErrorCode::RESOURCE_LIMIT, "checkpoint byte limit exceeded"});
-    for (const auto &versions : saved.versions)
-        if (!charge(versions.version.size() * sizeof(char16_t)))
+    for (const auto &versions : snapshot.versions)
+        if (!charge((versions.version.capacity() + 1) * sizeof(char16_t)))
             return std::unexpected(Error{ErrorCode::RESOURCE_LIMIT, "checkpoint byte limit exceeded"});
-    if (const auto &timeline = saved.runtime_tempo.override_timeline) {
+    if (const auto &timeline = snapshot.runtime_tempo.override_timeline) {
         // A pause node holds its value, three links, and alignment/color storage.
         constexpr auto pause_bytes = sizeof(mu::engraving::PausesMap::value_type) + 4 * sizeof(void *);
         if (!charge(timeline->points().capacity() * sizeof(mu::engraving::TempoTimePoint)) ||
@@ -176,36 +181,40 @@ Result<void> Document::restore_checkpoint(std::string_view name) {
     impl_->engine->check_thread();
     const auto found = std::ranges::find(impl_->checkpoints, name, &Impl::Checkpoint::name);
     if (found == impl_->checkpoints.end()) return std::unexpected(Error{ErrorCode::NOT_FOUND, "checkpoint not found"});
-    if (impl_->revision == std::numeric_limits<std::uint64_t>::max())
+    return impl_->restore_snapshot(found->snapshot, true);
+}
+
+Result<void> Document::Impl::restore_snapshot(const Snapshot &snapshot, bool advance_revision) {
+    if (advance_revision && revision == std::numeric_limits<std::uint64_t>::max())
         return std::unexpected(Error{ErrorCode::RESOURCE_LIMIT, "document revision exhausted"});
-    auto project = music::load_native_score(*impl_->engine->context, found->bytes, "mscz", true);
+    auto restored = music::load_native_score(*engine->context, snapshot.bytes, "mscz", true);
     mu::engraving::ScoreLoad load;
-    auto versions = found->versions.begin();
-    for (auto *score : project->master_score()->score_list()) {
-        if (versions == found->versions.end()) break;
-        score->set_mscore_version(versions->version);
+    auto versions = snapshot.versions.begin();
+    for (auto *score : restored->master_score()->score_list()) {
+        if (versions == snapshot.versions.end()) break;
+        score->set_mscore_version(muse::String(std::u16string_view(versions->version)));
         score->set_mscore_revision(versions->revision);
         score->set_msc_version(versions->msc_version);
         mu::engraving::invalidate_normalization(*score);
         ++versions;
     }
-    auto &master = *project->master_score();
+    auto &master = *restored->master_score();
     mu::engraving::normalize_document(master, {.mode = mu::engraving::NormalizeMode::LOAD});
     master.invalidate_repeat_list();
     master.init_automation();
-    master.restore_runtime_tempo_state(found->runtime_tempo);
-    master.restore_source_revisions(found->source_revision, found->saved_revision);
+    master.restore_runtime_tempo_state(snapshot.runtime_tempo);
+    master.restore_source_revisions(snapshot.source_revision, snapshot.saved_revision);
     assign_missing_ids(master);
-    impl_->poisoned = true;
-    impl_->project = std::move(project);
-    impl_->bind_layout_boundary();
-    ++impl_->revision;
+    poisoned = true;
+    project = std::move(restored);
+    bind_layout_boundary();
+    revision = advance_revision ? revision + 1 : snapshot.revision;
     for (auto *score : master.score_list()) {
-        score->layout_state.revision = impl_->revision;
-        score->layout_state.font_generation = impl_->engine->font_generation;
+        score->layout_state.revision = revision;
+        score->layout_state.font_generation = engine->font_generation;
         score->invalidate_layout(mu::engraving::Fraction(0, 1), mu::engraving::Fraction(-1, 1));
     }
-    impl_->poisoned = false;
+    poisoned = false;
     return {};
 }
 

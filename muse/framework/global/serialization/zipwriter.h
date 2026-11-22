@@ -32,7 +32,9 @@ struct IODevice;
 } // namespace io
 
 struct ZipWriter {
-    explicit ZipWriter(io::IODevice *device);
+    enum class Compression { DEFLATE, STORE };
+
+    explicit ZipWriter(io::IODevice *device, Compression compression = Compression::DEFLATE);
     ~ZipWriter();
 
     void close();

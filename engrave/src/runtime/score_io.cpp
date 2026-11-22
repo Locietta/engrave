@@ -162,7 +162,7 @@ ScoreProject load_native_score(const EngineContext &context, const std::string &
         params.mode = engraving::MscIoMode::ZIP;
         engraving::MscReader reader(params);
         check(reader.open());
-        if (!reader.image_file_names().empty())
+        if (!transaction_snapshot && !reader.image_file_names().empty())
             throw std::invalid_argument("Embedded score images are not yet supported by the native backend");
         engraving::rw::ReadInOutData inout;
         inout.transaction_snapshot = transaction_snapshot;
@@ -264,6 +264,7 @@ std::string export_native_score(const EngineContext &context, const ScoreProject
             engraving::MscWriter::Params params;
             params.device = &buffer;
             params.main_file_name = u"score.mscx";
+            params.compress = !options.transaction_snapshot;
             engraving::MscWriter writer(params);
             check(writer.open());
             if (options.excerpt_id == -1) {

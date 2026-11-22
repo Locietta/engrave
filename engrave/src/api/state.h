@@ -54,21 +54,29 @@ struct Engine::Impl {
 };
 
 struct Document::Impl {
-    struct Checkpoint {
+    struct Snapshot {
         struct Versions {
-            muse::String version;
+            std::u16string version;
             int revision = 0;
             int msc_version = 0;
         };
 
-        std::string name;
         std::string bytes;
         std::vector<Versions> versions;
         mu::engraving::RuntimeTempoState runtime_tempo;
         std::uint64_t source_revision = 0;
         std::uint64_t saved_revision = 0;
+        std::uint64_t revision = 0;
+    };
+
+    struct Checkpoint {
+        std::string name;
+        Snapshot snapshot;
         std::size_t byte_count = 0;
     };
+
+    Snapshot capture_snapshot() const;
+    Result<void> restore_snapshot(const Snapshot &snapshot, bool advance_revision);
 
     std::vector<Checkpoint> checkpoints;
     std::size_t checkpoint_byte_limit = 64 * 1024 * 1024;

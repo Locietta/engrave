@@ -178,6 +178,25 @@ TEST(Checkpoint, RestoresRuntimeTempoForPlayback) {
     EXPECT_DOUBLE_EQ(engrave::harness::master_of(*document).tempo_timeline().utick2utime(1920), 8.0 / 9.0);
 }
 
+TEST(Checkpoint, InternalRestoreRecoversRevisionWithoutNamedStorage) {
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &state = engrave::DocumentAccess::impl(*document);
+    state.checkpoint_byte_limit = 0;
+    const auto before = native_source(*document);
+    const auto revision = document->revision();
+    const auto snapshot = state.capture_snapshot();
+    const auto note = find_id(*document, "Note");
+    ASSERT_TRUE(document->edit({{SetProperty{note, "color", Color{255, 0, 0}}}}));
+    ASSERT_GT(document->revision(), revision);
+    ASSERT_TRUE(state.restore_snapshot(snapshot, false));
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_EQ(native_source(*document), before);
+    const auto missing = document->restore_checkpoint("before");
+    ASSERT_FALSE(missing);
+    EXPECT_EQ(missing.error().code, ErrorCode::NOT_FOUND);
+}
+
 TEST(Checkpoint, PreservesSubToleranceAuthoredOffset) {
     auto document = open(fixture_name);
     ASSERT_TRUE(document);
@@ -206,7 +225,7 @@ TEST(Checkpoint, RestoresSnapshotAbovePublicImportLimit) {
     auto &master = engrave::harness::master_of(*document);
     master.meta_tags()[u"large metadata"] = muse::String::from_std_string(payload);
     ASSERT_TRUE(document->checkpoint("large"));
-    ASSERT_GT(engrave::DocumentAccess::impl(*document).checkpoints.front().bytes.size(), 8u * 1024 * 1024);
+    ASSERT_GT(engrave::DocumentAccess::impl(*document).checkpoints.front().snapshot.bytes.size(), 8u * 1024 * 1024);
     master.meta_tags()[u"large metadata"] = u"changed";
     ASSERT_TRUE(document->restore_checkpoint("large"));
     EXPECT_TRUE(engrave::harness::master_of(*document).meta_tags().at(u"large metadata").to_std_string() == payload);

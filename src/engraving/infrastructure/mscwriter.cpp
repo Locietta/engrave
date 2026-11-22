@@ -85,7 +85,7 @@ bool MscWriter::has_error() const { return writer_ ? writer_->has_error() : had_
 MscWriter::Writer *MscWriter::writer() const {
     if (!writer_) {
         switch (params_.mode) {
-            case MscIoMode::ZIP: writer_ = new Writer(std::in_place_type<ZipFileWriter>); break;
+            case MscIoMode::ZIP: writer_ = new Writer(std::in_place_type<ZipFileWriter>, params_.compress); break;
             case MscIoMode::DIR: writer_ = new Writer(std::in_place_type<DirWriter>); break;
             case MscIoMode::XML_FILE: writer_ = new Writer(std::in_place_type<XmlFileWriter>); break;
             case MscIoMode::UNKNOWN: UNREACHABLE; break;
@@ -213,7 +213,7 @@ Ret MscWriter::ZipFileWriter::open(io::IODevice *device, const PathT &) {
         }
     }
 
-    zip_ = new ZipWriter(device_);
+    zip_ = new ZipWriter(device_, compress_ ? ZipWriter::Compression::DEFLATE : ZipWriter::Compression::STORE);
 
     return true;
 }

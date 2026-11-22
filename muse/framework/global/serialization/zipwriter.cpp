@@ -32,10 +32,11 @@ struct ZipWriter::Impl {
     bool is_closed = false;
 };
 
-ZipWriter::ZipWriter(io::IODevice *device) {
+ZipWriter::ZipWriter(io::IODevice *device, Compression compression) {
     device_ = device;
     impl_ = new Impl();
     impl_->zip = new ZipContainer(device_);
+    if (compression == Compression::STORE) impl_->zip->set_compression_policy(ZipContainer::NEVER_COMPRESS);
 }
 
 ZipWriter::~ZipWriter() {

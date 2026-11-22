@@ -42,6 +42,7 @@ struct MscWriter {
         muse::io::PathT file_path;
         muse::String main_file_name;
         MscIoMode mode = MscIoMode::ZIP;
+        bool compress = true;
     };
 
     MscWriter() = default;
@@ -70,6 +71,8 @@ struct MscWriter {
 private:
 
     struct ZipFileWriter {
+        explicit ZipFileWriter(bool compress) : compress_(compress) {}
+
         ~ZipFileWriter();
         muse::Ret open(muse::io::IODevice *device, const muse::io::PathT &file_path);
         void close();
@@ -80,6 +83,7 @@ private:
     private:
         muse::io::IODevice *device_ = nullptr;
         muse::ZipWriter *zip_ = nullptr;
+        bool compress_;
     };
 
     struct DirWriter {
@@ -114,8 +118,8 @@ private:
     };
 
     struct Writer {
-        template <typename T>
-        explicit Writer(std::in_place_type_t<T> type) : implementation(type) {}
+        template <typename T, typename... Args>
+        explicit Writer(std::in_place_type_t<T> type, Args &&...args) : implementation(type, std::forward<Args>(args)...) {}
 
         muse::Ret open(muse::io::IODevice *device, const muse::io::PathT &file_path) {
             return std::visit([&](auto &backend) -> muse::Ret { return backend.open(device, file_path); }, implementation);
