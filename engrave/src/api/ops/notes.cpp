@@ -264,7 +264,9 @@ Result<Step> prepare_entry(EditContext &context, const SegmentAddress &address, 
         EngravingItem *last = nullptr;
         score->set_note_rest_at(start, track, first, duration, stem, false, {}, false, &last);
         const auto piece_at = [&](const mu::engraving::Fraction &offset) -> ChordRest * {
-            auto *segment = score->tick2segment(offset, true, mu::engraving::SegmentType::CHORD_REST, false);
+            auto *current = measure;
+            while (current && offset >= current->end_tick()) current = current->next_measure();
+            auto *segment = current ? current->find_segment(mu::engraving::SegmentType::CHORD_REST, offset) : nullptr;
             auto *item = segment ? segment->element(track) : nullptr;
             return item && item->is_chord_rest() ? mu::engraving::to_chord_rest(item) : nullptr;
         };

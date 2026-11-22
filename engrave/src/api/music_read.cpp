@@ -46,7 +46,13 @@ using mu::engraving::Tie;
 
 constexpr int max_measures = 128;
 constexpr std::size_t max_rows = 32768;
+constexpr std::size_t max_text_bytes = 8 * 1024 * 1024;
 constexpr std::size_t max_scan_work = 8 * 1024 * 1024;
+
+struct ReadBudget {
+    std::size_t rows = max_rows;
+    std::size_t text_bytes = max_text_bytes;
+};
 
 std::unexpected<Error> music_limit() {
     return std::unexpected(Error{ErrorCode::RESOURCE_LIMIT, "too much music in one window; narrow the measure, staff or voice range"});
@@ -57,6 +63,8 @@ bool charge(std::size_t &remaining, std::size_t cost) {
     remaining -= cost;
     return true;
 }
+
+bool charge_text(ReadBudget &budget, std::string_view text) { return charge(budget.text_bytes, text.size()); }
 
 Fraction written(Tick value) { return {value.numerator64(), value.denominator64()}; }
 
@@ -86,9 +94,8 @@ std::optional<TieLink> tie_link(const Tie *tie, bool incoming) {
     return TieLink{*id, optional_id(incoming ? tie->start_note() : tie->end_note())};
 }
 
-Result<std::vector<NoteMusic>> read_notes(const Chord &chord, const Staff &staff, Tick tick, std::size_t &budget) {
-    if (chord.notes().size() > budget) return music_limit();
-    budget -= chord.notes().size();
+Result<std::vector<NoteMusic>> read_notes(const Chord &chord, const Staff &staff, Tick tick, ReadBudget &budget) {
+    if (!charge(budget.rows, chord.notes().size())) return music_limit();
     const bool drums = staff.is_drum_staff(tick);
     const auto *kit = drums ? staff.origin_part(tick)->instrument(tick)->drumset() : nullptr;
     const auto transpose = staff.transpose(tick);
@@ -99,7 +106,11 @@ Result<std::vector<NoteMusic>> read_notes(const Chord &chord, const Staff &staff
         const int pitch = note->pitch();
         if (drums) {
             DrumNote drum{pitch};
-            if (kit && mu::engraving::pitch_is_valid(pitch) && kit->is_valid(pitch)) drum.kit_name = kit->name(pitch).to_std_string();
+            if (kit && mu::engraving::pitch_is_valid(pitch) && kit->is_valid(pitch)) {
+                std::string name = kit->name(pitch).to_std_string();
+                if (!charge_text(budget, name)) return music_limit();
+                drum.kit_name = std::move(name);
+            }
             row.pitch = std::move(drum);
         } else {
             row.pitch = PitchedNote{pitch, spelling(pitch, note->tpc1()), spelling(pitch - transpose.chromatic, note->tpc2())};
@@ -127,11 +138,10 @@ GraceKind grace_kind(NoteType kind) {
 }
 
 Result<std::vector<GraceMusic>> read_graces(const mu::engraving::GraceNotesView &graces, const Staff &staff, Tick tick,
-                                            std::size_t &budget) {
+                                            ReadBudget &budget) {
     std::vector<GraceMusic> result;
     for (const auto *grace : graces) {
-        if (budget == 0) return music_limit();
-        --budget;
+        if (!charge(budget.rows, 1)) return music_limit();
         auto notes = read_notes(*grace, staff, tick, budget);
         if (!notes) return std::unexpected(std::move(notes.error()));
         result.push_back({music_id(*grace), grace_kind(grace->note_type()), reduced(grace->ticks()), std::move(*notes)});
@@ -140,14 +150,12 @@ Result<std::vector<GraceMusic>> read_graces(const mu::engraving::GraceNotesView 
 }
 
 Result<MusicEvent> read_event(const ChordRest &source, const Staff &staff, const Measure &measure, MusicWindow &window,
-                              std::set<ElementId> &seen_tuplets, std::size_t &budget) {
-    if (budget == 0) return music_limit();
-    --budget;
+                              std::set<ElementId> &seen_tuplets, ReadBudget &budget) {
+    if (!charge(budget.rows, 1)) return music_limit();
     const auto tick = source.tick();
     MusicEvent event{music_id(source), reduced(tick - measure.tick()), reduced(source.ticks()), reduced(source.actual_ticks())};
     for (auto *tuplet = source.tuplet(); tuplet; tuplet = tuplet->tuplet()) {
-        if (budget == 0) return music_limit();
-        --budget;
+        if (!charge(budget.rows, 1)) return music_limit();
         const auto id = music_id(*tuplet);
         event.tuplet_path.push_back(id);
         if (seen_tuplets.insert(id).second) {
@@ -176,14 +184,13 @@ Result<MusicEvent> read_event(const ChordRest &source, const Staff &staff, const
 }
 
 Result<void> read_signatures(const mu::engraving::Segment &segment, const std::vector<int> &staves, MeasureMusic &measure,
-                             std::size_t &budget) {
+                             ReadBudget &budget) {
     const auto tick = reduced(segment.tick());
     for (int staff : staves) {
         const auto *item = segment.element(mu::engraving::staff2track(staff));
         if (!item || item->generated()) continue;
         if (!item->is_time_sig() && !item->is_key_sig()) continue;
-        if (budget == 0) return music_limit();
-        --budget;
+        if (!charge(budget.rows, 1)) return music_limit();
         if (item->is_time_sig()) {
             measure.signature_changes.push_back({"TimeSig", tick, staff, written(mu::engraving::to_time_sig(item)->sig())});
         } else {
@@ -193,11 +200,11 @@ Result<void> read_signatures(const mu::engraving::Segment &segment, const std::v
     }
     for (const auto *item : segment.annotations()) {
         if (!item || item->generated() || !item->is_tempo_text()) continue;
-        if (budget == 0) return music_limit();
-        --budget;
+        if (!charge(budget.rows, 1)) return music_limit();
         const auto *tempo = mu::engraving::to_tempo_text(item);
-        measure.signature_changes.push_back(
-            {"Tempo", tick, -1, {}, 0, std::round(tempo->tempo().val * 60.0 * 1e4) / 1e4, tempo->plain_text().to_std_string()});
+        std::string text = tempo->plain_text().to_std_string();
+        if (!charge_text(budget, text)) return music_limit();
+        measure.signature_changes.push_back({"Tempo", tick, -1, {}, 0, std::round(tempo->tempo().val * 60.0 * 1e4) / 1e4, std::move(text)});
     }
     return {};
 }
@@ -267,7 +274,7 @@ bool span_selected(const Spanner &source, const std::vector<int> &staves, const 
 }
 
 Result<void> read_spans(const Score &score, Tick begin, Tick end, const std::vector<int> &staves, const std::vector<int> &voices,
-                        MusicWindow &window, std::size_t &budget, std::size_t &work) {
+                        MusicWindow &window, ReadBudget &budget, std::size_t &work) {
     std::set<ElementId> seen;
     auto append = [&](const Spanner &source) -> Result<void> {
         if (!charge(work, 1)) return music_limit();
@@ -286,17 +293,19 @@ Result<void> read_spans(const Score &score, Tick begin, Tick end, const std::vec
             finish = finish->prev_measure();
         if (!finish && end_tick == score.last_measure()->end_tick()) finish = score.last_measure();
         if (!start || !finish) return {};
-        if (!charge(budget, 1)) return music_limit();
+        if (!charge(budget.rows, 1)) return music_limit();
+        std::string type_name = source.type_name();
+        if (!charge_text(budget, type_name)) return music_limit();
         seen.insert(*id);
         SpanMusic span{*id,
-                       source.type_name(),
+                       std::move(type_name),
                        span_position(*start, start_tick, source.track()),
                        span_position(*finish, end_tick, source.effective_track2()),
                        source_anchor(source, *start, start_tick, false),
                        source_anchor(source, *finish, end_tick, true)};
         if (source.is_volta()) {
             const auto &volta = static_cast<const mu::engraving::Volta &>(source);
-            if (!charge(budget, volta.endings().size())) return music_limit();
+            if (!charge(budget.rows, volta.endings().size())) return music_limit();
             window.voltas.push_back({std::move(span), volta.endings(), volta.volta_type() == mu::engraving::Volta::Type::CLOSED});
         } else {
             window.spanners.push_back(std::move(span));
@@ -367,18 +376,20 @@ Result<MusicWindow> Document::read_music(const MusicRange &range) const {
     MusicWindow window{.score = range.score, .revision = impl_->revision};
     const auto begin = measure->tick();
     auto end = begin;
-    auto budget = max_rows;
+    ReadBudget budget;
     auto work = max_scan_work;
-    if (staves->size() > budget) return music_limit();
-    budget -= staves->size();
+    if (!charge(budget.rows, staves->size())) return music_limit();
     for (int staff_index : *staves) {
         const auto &staff = *score.staff(staff_index);
         const auto *meter = staff.time_sig(begin);
         const auto transpose = staff.transpose(begin);
         const auto key = staff.concert_key(begin);
+        std::string part_name = staff.part()->part_name().to_std_string();
+        std::string instrument_id = staff.origin_part(begin)->instrument_id(begin).to_std_string();
+        if (!charge_text(budget, part_name) || !charge_text(budget, instrument_id)) return music_limit();
         window.staves.push_back({staff_index,
-                                 staff.part()->part_name().to_std_string(),
-                                 staff.origin_part(begin)->instrument_id(begin).to_std_string(),
+                                 std::move(part_name),
+                                 std::move(instrument_id),
                                  written(meter ? meter->sig() : measure->timesig()),
                                  key == mu::engraving::Key::INVALID ? 0 : static_cast<int>(key),
                                  {transpose.diatonic, transpose.chromatic},
