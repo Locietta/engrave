@@ -447,8 +447,10 @@ protected:
         ArticulationPattern pattern;
         pattern.emplace(0, std::move(segment));
         profile_ = std::make_shared<ArticulationsProfile>();
-        for (const ArticulationType type : {ArticulationType::STANDARD, ArticulationType::STACCATO, ArticulationType::TENUTO,
-                                            ArticulationType::ACCENT, ArticulationType::TREMOLO32ND, ArticulationType::PIZZICATO}) {
+        for (const ArticulationType type :
+             {ArticulationType::STANDARD, ArticulationType::STACCATO, ArticulationType::TENUTO, ArticulationType::ACCENT,
+              ArticulationType::TREMOLO32ND, ArticulationType::PIZZICATO, ArticulationType::STACCATISSIMO, ArticulationType::TREMOLO8TH,
+              ArticulationType::PEDAL, ArticulationType::TRILL, ArticulationType::LEGATO}) {
             profile_->set_pattern(type, pattern);
         }
         profiles_.profiles.fill(profile_);
@@ -459,6 +461,19 @@ protected:
 };
 
 namespace {
+constexpr duration_t quarter_at_120 = 500000;
+
+std::unique_ptr<MasterScore> read_model_fixture(const String &file) {
+    std::unique_ptr<MasterScore> score(ScoreRW::read_score(String(u"playback/playbackmodel_data/") + file));
+    if (score) score->init_automation();
+    return score;
+}
+
+const TrackEvents *first_part_track(const PlaybackScore &playback, const MasterScore &score) {
+    const Part *part = score.parts().front();
+    return playback.find({part->id(), part->instrument_id()});
+}
+
 const std::vector<std::pair<String, bool>> &builder_fixtures() {
     static const std::vector<std::pair<String, bool>> fixtures{
         {u"playback/playbackmodel_data/dynamics/dynamics.mscx", false},
@@ -476,6 +491,181 @@ const std::vector<std::pair<String, bool>> &builder_fixtures() {
 
 } // namespace
 
+TEST_F(PlaybackScoreBuilderTests, UnrollsRepeatsAndJumps) {
+    const std::pair<String, size_t> fixtures[]{
+        {u"repeat_range/repeat_range.mscx", 6 * 4},
+        {u"repeat_with_2_voltas/repeat_with_2_voltas.mscx", 7 * 4},
+        {u"da_capo_al_fine/da_capo_al_fine.mscx", 8 * 4},
+        {u"dal_segno_al_coda/dal_segno_al_coda.mscx", 8 * 4},
+        {u"dal_segno_al_fine/dal_segno_al_fine.mscx", 9 * 4},
+        {u"da_capo_al_coda/da_capo_al_coda.mscx", 11 * 4},
+        {u"single_measure_repeat/single_measure_repeat.mscx", 2 * 4 + 4 * 8 + 1},
+        {u"multi_measure_repeat/multi_measure_repeat.mscx", 8 * 4 + 1},
+    };
+    for (const auto &[file, count] : fixtures) {
+        SCOPED_TRACE(file.to_std_string());
+        const auto score = read_model_fixture(file);
+        ASSERT_TRUE(score);
+        const auto playback = PlaybackScoreBuilder{profiles_}.build(score.get());
+        const auto *track = first_part_track(playback, *score);
+        ASSERT_TRUE(track);
+        EXPECT_EQ(track->notes.size(), count);
+    }
+}
+
+TEST_F(PlaybackScoreBuilderTests, TremoloStaysOnTimeAfterRepeats) {
+    const auto score = read_model_fixture(u"repeat_and_tremolo/repeat_and_tremolo.mscx");
+    ASSERT_TRUE(score);
+    const auto playback = PlaybackScoreBuilder{profiles_}.build(score.get());
+    const auto *track = first_part_track(playback, *score);
+    ASSERT_TRUE(track);
+    // Half-note offsets include the repeat and the rest before the final three tremolos.
+    constexpr std::array offsets{0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12};
+    constexpr duration_t half_note = 2 * quarter_at_120;
+    ASSERT_EQ(track->notes.size(), offsets.size() * 16);
+    for (size_t group = 0; group < offsets.size(); ++group) {
+        const timestamp_t start = offsets[group] * half_note;
+        for (int stroke = 0; stroke < 16; ++stroke) {
+            const auto &note = track->notes[group * 16 + stroke];
+            EXPECT_EQ(note.group_timestamp, start);
+            EXPECT_EQ(note.actual_timestamp, start + stroke * (half_note / 16));
+        }
+    }
+}
+
+TEST_F(PlaybackScoreBuilderTests, PreservesTiesThroughMeasureRepeats) {
+    const auto score = read_model_fixture(u"measure_repeat_tied_notes.mscx");
+    ASSERT_TRUE(score);
+    const auto playback = PlaybackScoreBuilder{profiles_}.build(score.get());
+    const auto *track = first_part_track(playback, *score);
+    ASSERT_TRUE(track);
+    constexpr std::array measure_offsets{1, 2, 4, 5};
+    const duration_t whole_note = 4 * quarter_at_120;
+    ASSERT_EQ(track->notes.size(), measure_offsets.size());
+    for (size_t i = 0; i < measure_offsets.size(); ++i) {
+        EXPECT_EQ(track->notes[i].actual_timestamp, measure_offsets[i] * whole_note);
+        EXPECT_EQ(track->notes[i].actual_duration, whole_note);
+    }
+}
+
+TEST_F(PlaybackScoreBuilderTests, PreservesTiedDurationAfterTempoChangesAndRepeats) {
+    const auto score = read_model_fixture(u"repeat_tempo_changes_and_tie/repeat_tempo_changes_and_tie.mscx");
+    ASSERT_TRUE(score);
+    const auto playback = PlaybackScoreBuilder{profiles_}.build(score.get());
+    const auto *track = first_part_track(playback, *score);
+    ASSERT_TRUE(track);
+    ASSERT_EQ(track->notes.size(), 1u);
+    EXPECT_EQ(track->notes.front().nominal_duration, 8 * quarter_at_120);
+}
+
+TEST_F(PlaybackScoreBuilderTests, IntegratesTempoChangesWithinNotes) {
+    const auto score = read_model_fixture(u"tempo_changes_during_notes/tempo_changes_during_notes.mscx");
+    ASSERT_TRUE(score);
+    const auto playback = PlaybackScoreBuilder{profiles_}.build(score.get());
+    const auto *track = first_part_track(playback, *score);
+    ASSERT_TRUE(track);
+
+    const auto quarter = [](int bpm) { return duration_t{60000000} / bpm; };
+    constexpr std::array stepped_tempo{100, 100, 10, 10, 10, 10, 100, 100};
+    constexpr std::array ritenuto{100, 95, 90, 85, 80, 75, 70, 65};
+    const auto tied_duration = [&](const auto &tempos) {
+        duration_t duration = 0;
+        for (int bpm : tempos) duration += quarter(bpm);
+        return duration;
+    };
+    std::vector<duration_t> expected{tied_duration(stepped_tempo), tied_duration(ritenuto)};
+    for (const auto &tempos : {stepped_tempo, ritenuto}) {
+        for (int bpm : tempos) expected.insert(expected.end(), 2, quarter(bpm) / 2);
+    }
+    expected.push_back(tied_duration(stepped_tempo));
+    expected.push_back(tied_duration(ritenuto));
+
+    ASSERT_EQ(track->notes.size(), expected.size());
+    for (size_t i = 0; i < expected.size(); ++i) {
+        SCOPED_TRACE(i);
+        const auto &note = track->notes[i];
+        EXPECT_NEAR(note.nominal_duration, expected[i], 2000);
+        if (i >= expected.size() - 2) {
+            const auto articulations = track->note_articulations(note);
+            ASSERT_EQ(articulations.size(), 1u);
+            EXPECT_EQ(articulations.front().type, ArticulationType::PEDAL);
+            EXPECT_NEAR(articulations.front().timestamp, note.nominal_timestamp, 2000);
+            EXPECT_NEAR(articulations.front().overall_duration, expected[i], 2000);
+        }
+    }
+}
+
+TEST_F(PlaybackScoreBuilderTests, AppliesSpannersToTheirCoveredNotes) {
+    const auto score = read_model_fixture(u"spanners/spanners.mscx");
+    ASSERT_TRUE(score);
+    const auto playback = PlaybackScoreBuilder{profiles_}.build(score.get());
+    const auto *track = first_part_track(playback, *score);
+    ASSERT_TRUE(track);
+    constexpr std::array types{ArticulationType::PEDAL, ArticulationType::TRILL, ArticulationType::LEGATO};
+    size_t next = 0;
+    for (size_t beat = 0; beat < types.size() * 4; ++beat) {
+        SCOPED_TRACE(beat);
+        const auto start = static_cast<timestamp_t>(beat) * quarter_at_120;
+        ASSERT_LT(next, track->notes.size());
+        ASSERT_EQ(track->notes[next].group_timestamp, start);
+        const bool covered = beat % 4 == 1 || beat % 4 == 2;
+        const auto expected = covered ? types[beat / 4] : ArticulationType::STANDARD;
+        // A trill expands a beat into multiple records with the same group timestamp.
+        do {
+            const auto articulations = track->note_articulations(track->notes[next++]);
+            ASSERT_EQ(articulations.size(), 1u);
+            EXPECT_EQ(articulations.front().type, expected);
+            if (covered) {
+                EXPECT_EQ(articulations.front().timestamp, (beat / 4 * 4 + 1) * quarter_at_120);
+                EXPECT_EQ(articulations.front().overall_duration, 2 * quarter_at_120);
+            }
+        } while (next < track->notes.size() && track->notes[next].group_timestamp == start);
+    }
+    EXPECT_EQ(next, track->notes.size());
+}
+
+TEST_F(PlaybackScoreBuilderTests, ResetsPizzicatoAtArco) {
+    const auto score = read_model_fixture(u"pizz_to_arco/pizz_to_arco.mscx");
+    ASSERT_TRUE(score);
+    const auto playback = PlaybackScoreBuilder{profiles_}.build(score.get());
+    const auto *track = first_part_track(playback, *score);
+    ASSERT_TRUE(track);
+    ASSERT_EQ(track->notes.size(), 4u);
+    for (size_t i = 0; i < track->notes.size(); ++i) {
+        SCOPED_TRACE(i);
+        const auto &note = track->notes[i];
+        EXPECT_EQ(note.group_timestamp, i * quarter_at_120);
+        const auto articulations = track->note_articulations(note);
+        ASSERT_EQ(articulations.size(), i == 0 ? 2u : 1u);
+        EXPECT_TRUE(contains_articulation(articulations, i < 2 ? ArticulationType::PIZZICATO : ArticulationType::STANDARD));
+        if (i == 0) EXPECT_TRUE(contains_articulation(articulations, ArticulationType::STACCATISSIMO));
+    }
+}
+
+TEST_F(PlaybackScoreBuilderTests, ResolvesSparseDynamicsAcrossHairpins) {
+    const auto score = read_model_fixture(u"dynamics/dynamics.mscx");
+    ASSERT_TRUE(score);
+    const auto playback = PlaybackScoreBuilder{profiles_}.build(score.get());
+    const auto *track = first_part_track(playback, *score);
+    ASSERT_TRUE(track);
+    ASSERT_FALSE(track->dynamic_layers.empty());
+    const auto curve = track->layer_points(track->dynamic_layers.front());
+    ASSERT_FALSE(curve.empty());
+    EXPECT_LT(curve.size(), 10u);
+    const auto level_at = [&](timestamp_t time) { return dynamic_level_from_normalized(evaluate_curve_at(curve, time)); };
+    const auto piano = dynamic_level_from_type(mpe::DynamicType::P);
+    const auto forte = dynamic_level_from_type(mpe::DynamicType::F);
+    const auto pianissimo = dynamic_level_from_type(mpe::DynamicType::PP);
+    EXPECT_EQ(level_at(0), piano);
+    EXPECT_EQ(level_at(4 * quarter_at_120), piano);
+    EXPECT_EQ(level_at(8 * quarter_at_120), forte);
+    EXPECT_EQ(level_at(12 * quarter_at_120), forte);
+    // The second hairpin approaches its target one tick before the sudden pp.
+    EXPECT_NEAR(level_at(16 * quarter_at_120 - quarter_at_120 / 480), forte + dynamic_level_step, 1);
+    EXPECT_EQ(level_at(16 * quarter_at_120), pianissimo);
+    EXPECT_EQ(curve.back().at, 16 * quarter_at_120);
+}
+
 TEST_F(PlaybackScoreBuilderTests, RendersFixtureNotesAndOptionalMetronome) {
     for (const auto &[path, metronome] : builder_fixtures()) {
         const std::unique_ptr<MasterScore> score(ScoreRW::read_score(path));
@@ -487,7 +677,7 @@ TEST_F(PlaybackScoreBuilderTests, RendersFixtureNotesAndOptionalMetronome) {
 
         const auto *clicks = flat.find(playback_metronome_track_id());
         ASSERT_TRUE(clicks) << path.to_std_string();
-        EXPECT_EQ(clicks->notes.empty(), !metronome) << path.to_std_string();
+        EXPECT_EQ(clicks->notes.size(), metronome ? 6u * 5u : 0u) << path.to_std_string();
         std::size_t notes = 0;
         for (const auto &[id, track] : flat.tracks)
             if (id != playback_metronome_track_id()) notes += track.notes.size();

@@ -36,7 +36,8 @@ struct EngineContext {
     // parent of the runtime cache directory (empty: the system temporary
     // directory). Throws std::invalid_argument when the resources are missing,
     // before any process state changes; std::runtime_error for a second context
-    // in the process or a failed initialisation, which cannot be retried.
+    // in the process or a failed initialisation. Failed initialisation tears
+    // down the partial context so another attempt can proceed.
     explicit EngineContext(const std::string &assets, const std::string &cache_root = {});
     ~EngineContext();
 

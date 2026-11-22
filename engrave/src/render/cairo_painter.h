@@ -53,6 +53,9 @@ struct CairoPainter {
     CairoPainter(const CairoPainter &) = delete;
     CairoPainter &operator=(const CairoPainter &) = delete;
 
+    static void clear_font_cache();
+    static size_t cached_font_count();
+
     cairo_t *cairo_context() const;
 
     bool is_active() const;

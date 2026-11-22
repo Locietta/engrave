@@ -4,6 +4,7 @@
 //
 #include <algorithm>
 #include <barrier>
+#include <chrono>
 #include <cstdint>
 #include <cstdio>
 #include <filesystem>
@@ -18,10 +19,13 @@
 #include <tuple>
 #include <vector>
 
+#include <cairo/cairo.h>
 #include <gtest/gtest.h>
 
 #include "core_test_env.h"
 #include "engrave/src/api/sniff.h"
+#include "engrave/src/render/cairo_painter.h"
+#include "engrave/src/runtime/engine_context.h"
 #include "engrave/src/score/json.h"
 #include "engraving/dom/drumset.h"
 #include "engraving/dom/mscore.h"
@@ -1088,6 +1092,66 @@ TEST_F(EngineLifecycle, FontFailureReleasesInitializedRuntime) {
     const auto retried = engrave::Engine::create({.resources = g_resources});
     ASSERT_TRUE(retried) << retried.error().message;
     EXPECT_TRUE((*retried)->runtime_fonts().empty());
+}
+
+TEST_F(EngineLifecycle, CairoFontsRefreshAcrossResourceDirectories) {
+    using muse::draw::CairoPainter;
+    namespace fs = std::filesystem;
+    const auto id = std::chrono::steady_clock::now().time_since_epoch().count();
+    const auto alternate = fs::temp_directory_path() / ("engrave-cairo-restart-" + std::to_string(id));
+    ASSERT_TRUE(fs::create_directory(alternate));
+
+    struct Cleanup {
+        const fs::path &path;
+
+        ~Cleanup() {
+            std::error_code error;
+            fs::remove_all(path, error);
+        }
+    } cleanup{alternate};
+
+    fs::copy(g_resources, alternate, fs::copy_options::recursive);
+
+    const fs::path roman = "fonts/edwin/Edwin-Roman.otf";
+    fs::copy_file(g_resources / "fonts/FreeSerif.ttf", alternate / roman, fs::copy_options::overwrite_existing);
+    const auto render = [](const engrave::EngineOptions &options, std::string_view postscript_name) {
+        EXPECT_EQ(CairoPainter::cached_font_count(), 0u);
+        auto engine = engrave::Engine::create(options);
+        ASSERT_TRUE(engine) << engine.error().message;
+        auto document = (*engine)->create_document({.template_id = "Treble_Clef", .title = "Cairo font restart"});
+        ASSERT_TRUE(document) << document.error().message;
+        const auto pdf = (*document)->render({.format = engrave::RenderFormat::PDF});
+        ASSERT_TRUE(pdf) << pdf.error().message;
+        EXPECT_NE(text_of(pdf->document).find(postscript_name), std::string::npos);
+        EXPECT_GT(CairoPainter::cached_font_count(), 0u);
+    };
+
+    render({.resources = g_resources}, "Edwin-Roman");
+    render({.resources = alternate}, "FreeSerif");
+    render({.resources = alternate, .fonts = {g_resources / roman}}, "Edwin-Roman");
+    EXPECT_EQ(CairoPainter::cached_font_count(), 0u);
+}
+
+TEST_F(EngineLifecycle, CairoContextKeepsItsFontUsableAfterEngineTeardown) {
+    using namespace muse::draw;
+    const auto path = g_resources.u8string();
+    auto surface = std::unique_ptr<cairo_surface_t, decltype(&cairo_surface_destroy)>(
+        cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 200, 80), cairo_surface_destroy);
+    auto cr = std::unique_ptr<cairo_t, decltype(&cairo_destroy)>(cairo_create(surface.get()), cairo_destroy);
+    {
+        const music::EngineContext context(std::string(path.begin(), path.end()));
+        CairoPainter painter(cr.get(), context.fonts_database(), 72);
+        Font font(u"Edwin", Font::Type::TEXT);
+        font.set_point_size_f(16);
+        painter.set_font(font);
+        painter.draw_text(muse::PointF(4, 20), muse::String(u"A"));
+        ASSERT_EQ(CairoPainter::cached_font_count(), 1u);
+    }
+    EXPECT_EQ(CairoPainter::cached_font_count(), 0u);
+    cairo_text_extents_t extent{};
+    cairo_text_extents(cr.get(), "W", &extent);
+    EXPECT_EQ(cairo_status(cr.get()), CAIRO_STATUS_SUCCESS);
+    EXPECT_GT(extent.width, 0);
 }
 
 TEST_F(EngineLifecycle, LastDocumentReleasesRuntimeForAnotherEngine) {

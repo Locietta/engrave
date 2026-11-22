@@ -4,7 +4,7 @@
  * Cairo implementation of muse::draw::CairoPainter.
  *
  * Text uses the font bytes actually registered in music::RuntimeFontsDatabase.  FreeType
- * memory faces are cached for the process lifetime, Cairo FT font faces are
+ * memory faces are cached for the engine lifetime, Cairo FT font faces are
  * created on top of them, and HarfBuzz performs shaping so glyph advances and
  * mark offsets are honoured.
  */
@@ -270,6 +270,7 @@ struct CairoStateGuard {
 // ------------------------------------------------------------ font resources
 
 struct FtFaceEntry {
+    std::shared_ptr<FT_LibraryRec_> library;
     FontDataKey key;
     std::span<const uint8_t> data;
     std::shared_ptr<const void> resource_owner;
@@ -282,17 +283,9 @@ struct FtFaceEntry {
     int height = 0;
     int underline_position_value = 0;
     int underline_thickness_value = 0;
-    // Lazily created; mutable so text drawing can use a const face entry.
-    mutable std::array<cairo_font_face_t *, 4> cairo_faces{nullptr, nullptr, nullptr, nullptr};
-    mutable std::array<FT_Face, 4> variant_faces{nullptr, nullptr, nullptr, nullptr};
+    std::array<FT_Face, 4> variant_faces{};
 
     ~FtFaceEntry() {
-        for (cairo_font_face_t *&f : cairo_faces) {
-            if (f) {
-                cairo_font_face_destroy(f);
-                f = nullptr;
-            }
-        }
         for (FT_Face variant : variant_faces) {
             if (variant) FT_Done_Face(variant);
         }
@@ -305,6 +298,21 @@ struct FtFaceEntry {
             ft = nullptr;
         }
     }
+};
+
+struct CachedFont {
+    CachedFont() = default;
+    CachedFont(const CachedFont &) = delete;
+    CachedFont &operator=(const CachedFont &) = delete;
+
+    std::shared_ptr<FtFaceEntry> entry = std::make_shared<FtFaceEntry>();
+    mutable std::array<cairo_font_face_t *, 4> cairo_faces{};
+
+    ~CachedFont() {
+        for (cairo_font_face_t *face : cairo_faces) {
+            if (face) cairo_font_face_destroy(face);
+        }
+    }
 
     cairo_font_face_t *cairo_face(bool synth_bold, bool synth_italic) const {
         const size_t index = (synth_bold ? 1u : 0u) | (synth_italic ? 2u : 0u);
@@ -315,11 +323,13 @@ struct FtFaceEntry {
 
         // Cairo can reuse a face for the same FT_Face; synthesis flags must not
         // mutate the face used by a previously rendered plain style.
-        if (!variant_faces[index] && FT_New_Memory_Face(ft->glyph->library, data.data(), static_cast<FT_Long>(data.size()), ft->face_index,
-                                                        &variant_faces[index]) != 0) {
+        FT_Face &variant = entry->variant_faces[index];
+        if (!variant && FT_New_Memory_Face(entry->library.get(), entry->data.data(), static_cast<FT_Long>(entry->data.size()),
+                                           entry->ft->face_index, &variant) != 0) {
             throw std::runtime_error("CairoPainter: cannot create independent font style face");
         }
-        cairo_font_face_t *face = cairo_ft_font_face_create_for_ft_face(variant_faces[index], 0);
+        auto owner = std::make_unique<std::shared_ptr<FtFaceEntry>>(entry);
+        cairo_font_face_t *face = cairo_ft_font_face_create_for_ft_face(variant, 0);
         cairo_status_t status = cairo_font_face_status(face);
         if (status != CAIRO_STATUS_SUCCESS) {
             cairo_font_face_destroy(face);
@@ -343,13 +353,36 @@ struct FtFaceEntry {
             }
         }
 
+        // Scaled fonts can keep the Cairo face alive after the cache drops its
+        // reference. The user data holds the FT resources without a cycle.
+        static cairo_user_data_key_t key;
+        status = cairo_font_face_set_user_data(face, &key, owner.get(),
+                                               [](void *data) { delete static_cast<std::shared_ptr<FtFaceEntry> *>(data); });
+        if (status != CAIRO_STATUS_SUCCESS) {
+            cairo_font_face_destroy(face);
+            throw std::runtime_error(std::string("CairoPainter: cannot retain FT font resources: ") + cairo_status_to_string(status));
+        }
+        owner.release();
         slot = face;
         return slot;
     }
 };
 
 struct FontCache {
-    std::shared_ptr<FtFaceEntry> get(const Font &font, const music::RuntimeFontsDatabase &db) {
+    void clear() {
+        std::lock_guard<std::mutex> lock(mutex_);
+        by_request_.clear();
+        by_actual_.clear();
+        active_.reset();
+        ft_library_.reset();
+    }
+
+    size_t size() {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return by_actual_.size();
+    }
+
+    std::shared_ptr<CachedFont> get(const Font &font, const music::RuntimeFontsDatabase &db) {
         const FontDataKey requested = data_key_for_font(font);
         if (!requested.valid()) {
             throw std::runtime_error("CairoPainter: text drawing requires a non-empty font family");
@@ -389,16 +422,20 @@ struct FontCache {
         }
 
         if (!ft_library_) {
-            if (FT_Init_FreeType(&ft_library_) != 0) {
+            FT_Library library = nullptr;
+            if (FT_Init_FreeType(&library) != 0) {
                 throw std::runtime_error("CairoPainter: FT_Init_FreeType failed");
             }
+            ft_library_ = std::shared_ptr<FT_LibraryRec_>(library, FT_Done_FreeType);
         }
 
         if (font_data.data.size() > static_cast<size_t>(std::numeric_limits<FT_Long>::max())) {
             throw std::runtime_error("CairoPainter: font file is too large for FreeType");
         }
 
-        auto entry = std::make_shared<FtFaceEntry>();
+        auto cached = std::make_shared<CachedFont>();
+        auto &entry = cached->entry;
+        entry->library = ft_library_;
         entry->key = font_data.key;
         entry->resource_owner = db.retain_font(font_data.key);
         entry->data = font_data.data;
@@ -406,8 +443,8 @@ struct FontCache {
             throw std::runtime_error("CairoPainter: empty font file");
         }
 
-        FT_Error ft_error =
-            new_matching_memory_face(ft_library_, entry->data.data(), static_cast<FT_Long>(entry->data.size()), font_data.key, &entry->ft);
+        FT_Error ft_error = new_matching_memory_face(ft_library_.get(), entry->data.data(), static_cast<FT_Long>(entry->data.size()),
+                                                     font_data.key, &entry->ft);
         if (ft_error != 0 || !entry->ft) {
             throw std::runtime_error("CairoPainter: FT_New_Memory_Face failed for family '" + font_data.key.family().id().to_std_string() +
                                      "'");
@@ -429,9 +466,9 @@ struct FontCache {
             entry->hb_upem = entry->ft_upem;
         }
 
-        by_actual_[actual_key] = entry;
-        by_request_[request_key] = entry;
-        return entry;
+        by_actual_[actual_key] = cached;
+        by_request_[request_key] = cached;
+        return cached;
     }
 
 private:
@@ -441,17 +478,17 @@ private:
     using ActualKey = std::tuple<FontDataKey, Font::Type, std::shared_ptr<const muse::ByteArray>>;
 
     std::shared_ptr<const music::ActiveTable> active_;
-    FT_Library ft_library_ = nullptr;
+    std::shared_ptr<FT_LibraryRec_> ft_library_;
     std::mutex mutex_;
-    std::map<ActualKey, std::shared_ptr<FtFaceEntry>> by_actual_;
-    std::map<CacheKey, std::shared_ptr<FtFaceEntry>> by_request_;
+    std::map<ActualKey, std::shared_ptr<CachedFont>> by_actual_;
+    std::map<CacheKey, std::shared_ptr<CachedFont>> by_request_;
 };
 
 FontCache &font_cache() {
-    // Deliberately process-lifetime: Cairo/FreeType font faces must outlive all
-    // painters, and avoiding static destruction removes a shutdown-order hazard.
-    static FontCache *cache = new FontCache();
-    return *cache;
+    // Engine teardown empties the cache. Keep the shell available during
+    // static teardown, when the last engine owner may still be destroyed.
+    static FontCache &cache = *new FontCache();
+    return cache;
 }
 
 struct ShapedLine {
@@ -481,6 +518,10 @@ double line_height_for(const FtFaceEntry &entry, double pixel_size) {
 }
 
 } // namespace
+
+void CairoPainter::clear_font_cache() { font_cache().clear(); }
+
+size_t CairoPainter::cached_font_count() { return font_cache().size(); }
 
 // ------------------------------------------------------------------- Impl
 
@@ -567,7 +608,7 @@ private:
     void update_view_transform();
     void set_source_color(const Color &color);
     double font_size_pixels(const Font &font) const;
-    std::shared_ptr<FtFaceEntry> face_for(const Font &font);
+    std::shared_ptr<CachedFont> face_for(const Font &font);
 
     void build_path(const PainterPath &path);
     void apply_pen();
@@ -585,9 +626,9 @@ private:
                                                double max_width, bool anywhere);
     std::vector<ShapedLine> layout_lines(const FtFaceEntry &entry, const Font &font, const std::u16string &text, const RectF &rect,
                                          TextFlags text_flags);
-    void apply_font_state(const FtFaceEntry &entry, const Font &font, double pixel_size);
+    void apply_font_state(const CachedFont &cached, const Font &font, double pixel_size);
     void draw_text_decorations(const FtFaceEntry &entry, const Font &font, double pixel_size, double x, double baseline, double width);
-    void draw_shaped_line(const FtFaceEntry &entry, const Font &font, const ShapedLine &line, double x, double baseline, bool justify,
+    void draw_shaped_line(const CachedFont &cached, const Font &font, const ShapedLine &line, double x, double baseline, bool justify,
                           double target_width);
     void draw_text_at_point(const Font &font, const PointF &point, const String &text);
     void draw_text_in_rect(const Font &font, const RectF &rect, Alignment alignment, TextFlags text_flags, const String &text);
@@ -915,7 +956,7 @@ double CairoPainter::Impl::font_size_pixels(const Font &font) const {
     throw std::runtime_error("CairoPainter: font has neither a point size nor a pixel size");
 }
 
-std::shared_ptr<FtFaceEntry> CairoPainter::Impl::face_for(const Font &font) { return font_cache().get(font, fonts); }
+std::shared_ptr<CachedFont> CairoPainter::Impl::face_for(const Font &font) { return font_cache().get(font, fonts); }
 
 void CairoPainter::Impl::apply_pen() {
     if (state.pen.style() == PenStyle::NO_PEN) {
@@ -1577,13 +1618,14 @@ std::vector<ShapedLine> CairoPainter::Impl::layout_lines(const FtFaceEntry &entr
     return lines;
 }
 
-void CairoPainter::Impl::apply_font_state(const FtFaceEntry &entry, const Font &font, double pixel_size) {
+void CairoPainter::Impl::apply_font_state(const CachedFont &cached, const Font &font, double pixel_size) {
+    const FtFaceEntry &entry = *cached.entry;
     const bool face_bold = (entry.ft->style_flags & FT_STYLE_FLAG_BOLD) != 0;
     const bool face_italic = (entry.ft->style_flags & FT_STYLE_FLAG_ITALIC) != 0;
     const bool synth_bold = font.bold() && !entry.key.bold() && !face_bold;
     const bool synth_italic = font.italic() && !entry.key.italic() && !face_italic;
 
-    cairo_set_font_face(cr, entry.cairo_face(synth_bold, synth_italic));
+    cairo_set_font_face(cr, cached.cairo_face(synth_bold, synth_italic));
     cairo_set_font_size(cr, pixel_size);
 
     cairo_font_options_t *options = cairo_font_options_create();
@@ -1635,7 +1677,7 @@ void CairoPainter::Impl::draw_text_decorations(const FtFaceEntry &entry, const F
     ensure_ok("text decoration");
 }
 
-void CairoPainter::Impl::draw_shaped_line(const FtFaceEntry &entry, const Font &font, const ShapedLine &line, double x, double baseline,
+void CairoPainter::Impl::draw_shaped_line(const CachedFont &cached, const Font &font, const ShapedLine &line, double x, double baseline,
                                           bool justify, double target_width) {
     if (line.glyphs.empty()) {
         return;
@@ -1645,7 +1687,7 @@ void CairoPainter::Impl::draw_shaped_line(const FtFaceEntry &entry, const Font &
     }
 
     const double pixel_size = font_size_pixels(font);
-    apply_font_state(entry, font, pixel_size);
+    apply_font_state(cached, font, pixel_size);
     set_source_color(state.pen.color());
 
     std::vector<char> is_space(line.glyphs.size(), 0);
@@ -1677,11 +1719,12 @@ void CairoPainter::Impl::draw_shaped_line(const FtFaceEntry &entry, const Font &
     ensure_ok("drawText");
 
     const double drawn_width = line.width + extra * double(space_count);
-    draw_text_decorations(entry, font, pixel_size, x, baseline, drawn_width);
+    draw_text_decorations(*cached.entry, font, pixel_size, x, baseline, drawn_width);
 }
 
 void CairoPainter::Impl::draw_text_at_point(const Font &font, const PointF &point, const String &text) {
-    const std::shared_ptr<FtFaceEntry> entry = face_for(font);
+    const auto cached = face_for(font);
+    const auto &entry = cached->entry;
     const double pixel_size = font_size_pixels(font);
     const double line_height = line_height_for(*entry, pixel_size);
 
@@ -1690,14 +1733,15 @@ void CairoPainter::Impl::draw_text_at_point(const Font &font, const PointF &poin
     double baseline = point.y();
     for (const std::u16string &paragraph : paragraphs) {
         const ShapedLine line = shape_text(*entry, font, paragraph);
-        draw_shaped_line(*entry, font, line, point.x(), baseline, false, 0.0);
+        draw_shaped_line(*cached, font, line, point.x(), baseline, false, 0.0);
         baseline += line_height;
     }
 }
 
 void CairoPainter::Impl::draw_text_in_rect(const Font &font, const RectF &rect, Alignment alignment, TextFlags text_flags,
                                            const String &text) {
-    const std::shared_ptr<FtFaceEntry> entry = face_for(font);
+    const auto cached = face_for(font);
+    const auto &entry = cached->entry;
     const double pixel_size = font_size_pixels(font);
     const std::u16string prepared = normalize_text(text.to_std_u16_string(), true);
     std::vector<ShapedLine> lines = layout_lines(*entry, font, prepared, rect, text_flags);
@@ -1741,7 +1785,7 @@ void CairoPainter::Impl::draw_text_in_rect(const Font &font, const RectF &rect, 
         const bool justify = alignment.test_flag(ALIGN_JUSTIFY) && (i + 1) < line_count &&
                              (text_flags.test_flag(TEXT_WORD_WRAP) || text_flags.test_flag(TEXT_WRAP_ANYWHERE));
 
-        draw_shaped_line(*entry, font, line, x, first_baseline + double(i) * line_height, justify, rect.width());
+        draw_shaped_line(*cached, font, line, x, first_baseline + double(i) * line_height, justify, rect.width());
     }
 }
 

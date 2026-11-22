@@ -6,6 +6,7 @@
 #include <stdexcept>
 
 #include "draw/fontmetrics.h"
+#include "engrave/src/render/cairo_painter.h"
 #include "engrave/src/runtime/fonts_database.h"
 #include "engraving/dom/drumset.h"
 #include "engraving/dom/figuredbass.h"
@@ -148,6 +149,7 @@ void EngineContext::Impl::teardown() noexcept {
     MScore::set_error(MsError::MS_NO_ERROR);
 
     if (assets) {
+        CairoPainter::clear_font_cache();
         FontMetrics::set_provider(nullptr);
         try {
             assets->shutdown();
