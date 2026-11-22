@@ -77,8 +77,13 @@ def _cc_pch_impl(ctx):
             "-fpch-instantiate-templates",
             "-Xclang",
             "-fno-pch-timestamp",
+            # Record input paths relative to the execroot for disk cache reuse.
             "-Xclang",
-            "-fmodule-file-home-is-cwd",
+            "-relocatable-pch",
+            "-Xclang",
+            "-isysroot",
+            "-Xclang",
+            ".",
         ]
     )
     sys_includes = [comp_ctx.system_includes]
@@ -115,7 +120,6 @@ def _cc_pch_impl(ctx):
             transitive = [cc_toolchain.all_files, comp_ctx.headers],
         ),
         outputs = [pch_out],
-        execution_requirements = {"no-sandbox": "1"},
         mnemonic = "CppPch",
         progress_message = "Precompiling C++ header %{input}",
     )

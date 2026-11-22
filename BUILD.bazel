@@ -130,12 +130,12 @@ cc_library(
             "muse/framework/mpe/**/*.h",
             "muse/framework/mpe/**/*.hpp",
         ],
-        exclude = ["muse/framework/mpe/tests/**"],
         allow_empty = True,
+        exclude = ["muse/framework/mpe/tests/**"],
     ),
     copts = ENGINE_COPTS,
-    includes = ["muse/framework/mpe"],
     implementation_deps = ["@glaze"],
+    includes = ["muse/framework/mpe"],
     deps = [
         ":muse_global",
         "@amc",
@@ -152,8 +152,8 @@ cc_library(
             "src/importexport/**/*.h",
             "src/importexport/**/*.hpp",
         ],
-        exclude = ["src/engraving/tests/**"],
         allow_empty = True,
+        exclude = ["src/engraving/tests/**"],
     ),
     includes = [
         "src/engraving",
@@ -200,6 +200,10 @@ cc_library(
             "-fno-validate-pch",
             "-include-pch",
             "$(execpath :engraving_pch)",
+            "-Xclang",
+            "-isysroot",
+            "-Xclang",
+            ".",
         ],
         "//conditions:default": [],
     }),
@@ -455,6 +459,7 @@ cc_library(
 # ---------------------------------------------------------------------------
 
 TEST_SOURCE_ROOT_DEFINE = 'ENGRAVE_TEST_SOURCE_ROOT=\\"%s\\"' % ENGRAVE_SOURCE_ROOT
+
 ENGRAVING_DATA_ROOT_DEFINE = 'ENGRAVING_TESTS_DATA_ROOT=\\"%s\\"' % ENGRAVING_TESTS_DATA_ROOT
 
 cc_library(
