@@ -185,6 +185,9 @@ EngravingItem *ConnectorInfoReader::release_connector() {
 }
 
 void ConnectorInfoReader::read_add_connector(ChordRest *item, ConnectorInfoReader *info, bool paste_mode) {
+    if (!info || !info->connector() || !info->connector()->is_spanner()) {
+        return;
+    }
     const ElementType type = info->type();
     switch (type) {
         case ElementType::SLUR:
@@ -252,6 +255,9 @@ void ConnectorInfoReader::read_add_connector(ChordRest *item, ConnectorInfoReade
 }
 
 void ConnectorInfoReader::read_add_connector(Measure *item, ConnectorInfoReader *info, bool paste_mode) {
+    if (!info || !info->connector() || !info->connector()->is_spanner()) {
+        return;
+    }
     const ElementType type = info->type();
     switch (type) {
         case ElementType::HAIRPIN:
@@ -294,6 +300,9 @@ void ConnectorInfoReader::read_add_connector(Measure *item, ConnectorInfoReader 
 }
 
 void ConnectorInfoReader::read_add_connector(Note *item, ConnectorInfoReader *info, bool paste_mode) {
+    if (!info || !info->connector() || !info->connector()->is_spanner()) {
+        return;
+    }
     const ElementType type = info->type();
     const Location &l = info->location();
     switch (type) {
@@ -350,6 +359,10 @@ void ConnectorInfoReader::read_add_connector(Score *item, ConnectorInfoReader *i
     if (!paste_mode) {
         // How did we get there?
         LOGD("Score::readAddConnector is called not in paste mode.");
+        return;
+    }
+
+    if (!info || !info->connector() || !info->connector()->is_spanner()) {
         return;
     }
 

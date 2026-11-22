@@ -474,6 +474,73 @@ TEST(Handles, H10MalformedIdsInTheInput) {
     expect_inv(*document);
 }
 
+TEST(Handles, LegacyMalformedEidAndMissingSpannerPayload) {
+    const std::string bad_eid_460 = R"(<?xml version="1.0" encoding="UTF-8"?>
+<museScore version="4.60">
+  <Score>
+    <Part id="1">
+      <Staff><StaffType group="pitched"><name>stdNormal</name></StaffType></Staff>
+      <Instrument id="piano"><trackName>Piano</trackName></Instrument>
+    </Part>
+    <Staff id="1">
+      <Measure>
+        <voice>
+          <TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
+          <Chord>
+            <eid>!_A</eid>
+            <durationType>whole</durationType>
+            <Note><pitch>60</pitch><tpc>14</tpc></Note>
+          </Chord>
+        </voice>
+      </Measure>
+    </Staff>
+  </Score>
+</museScore>
+)";
+    auto repaired = open_text(bad_eid_460);
+    ASSERT_TRUE(repaired);
+    EXPECT_EQ(master_of(*repaired).eid_register()->repairs().malformed, 1u);
+    auto strict = g_engine->open(as_bytes(bad_eid_460), {.strict_ids = true});
+    ASSERT_FALSE(strict);
+    EXPECT_EQ(strict.error().code, ErrorCode::INVALID_INPUT);
+
+    // Matching start/end legacy Slur connectors without a <Slur> payload must not crash.
+    const std::string missing_payload_460 = R"(<?xml version="1.0" encoding="UTF-8"?>
+<museScore version="4.60">
+  <Score>
+    <Part id="1">
+      <Staff><StaffType group="pitched"><name>stdNormal</name></StaffType></Staff>
+      <Instrument id="piano"><trackName>Piano</trackName></Instrument>
+    </Part>
+    <Staff id="1">
+      <Measure>
+        <voice>
+          <TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
+          <Chord>
+            <durationType>half</durationType>
+            <Spanner type="Slur">
+              <next><location><fractions>1/2</fractions></location></next>
+            </Spanner>
+            <Note><pitch>60</pitch><tpc>14</tpc></Note>
+          </Chord>
+          <Chord>
+            <durationType>half</durationType>
+            <Spanner type="Slur">
+              <prev><location><fractions>-1/2</fractions></location></prev>
+            </Spanner>
+            <Note><pitch>62</pitch><tpc>16</tpc></Note>
+          </Chord>
+        </voice>
+      </Measure>
+    </Staff>
+  </Score>
+</museScore>
+)";
+    auto safe = open_text(missing_payload_460);
+    ASSERT_TRUE(safe);
+    expect_inv(*safe);
+}
+
 // --- H11 ------------------------------------------------------------------
 
 TEST(Handles, H11StaleHandles) {

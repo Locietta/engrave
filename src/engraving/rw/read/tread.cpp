@@ -525,11 +525,6 @@ void TRead::read_score_spanners(Score *score, XmlReader &e, ReadContext &ctx) {
 void TRead::read_item_eid(EngravingObject *item, XmlReader &xml, ReadContext &ctx) {
     AsciiStringView s = xml.read_ascii_text();
     EID eid = EID::from_std_string(s);
-    if (ctx.is_legacy_format()) {
-        IF_ASSERT_FAILED(eid.is_valid()) { return; }
-        item->set_eid(eid);
-        return;
-    }
 
     if (!eid.is_valid()) {
         // Malformed text: the element keeps no id and gets a fresh one from the
