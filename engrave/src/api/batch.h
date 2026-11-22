@@ -74,6 +74,8 @@ Result<Step> prepare(EditContext &context, const SetProperty &op);
 Result<Step> prepare(EditContext &context, const ResetProperty &op);
 Result<Step> prepare(EditContext &context, const SetStyle &op);
 Result<Step> prepare(EditContext &context, const EnterNotes &op);
+Result<Step> prepare(EditContext &context, const AddGraceChord &op);
+Result<Step> prepare(EditContext &context, const EnterDrums &op);
 Result<Step> prepare(EditContext &context, const SetPitch &op);
 Result<Step> prepare(EditContext &context, const SetDuration &op);
 Result<Step> prepare(EditContext &context, const Remove &op);

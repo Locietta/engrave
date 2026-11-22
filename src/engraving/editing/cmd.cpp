@@ -325,13 +325,8 @@ void Score::expand_voice(Segment *s, track_idx_t track) {
     }
 }
 
-///   Create a grace note in front of a normal note.
-///   \arg ch is the chord of the normal note
-///   \arg pitch is the pitch of the grace note
-///   \arg is the grace note type
-///   \len is the visual duration of the grace note (1/16 or 1/32)
-
-Note *Score::set_grace_note(Chord *ch, int pitch, NoteType type, int len) {
+// The index is in storage order. The after-grace view traverses that order in reverse.
+Note *Score::set_grace_note(Chord *ch, int pitch, NoteType type, int len, std::size_t index) {
     Chord *chord = Factory::create_chord(this->dummy());
     Note *note = Factory::create_note(chord);
 
@@ -359,6 +354,7 @@ Note *Score::set_grace_note(Chord *ch, int pitch, NoteType type, int len) {
     chord->set_duration_type(d);
     chord->set_ticks(d.fraction());
     chord->set_note_type(type);
+    chord->set_grace_index(index);
     chord->set_show_stem_slash_in_advance();
     chord->mutldata()->set_mag(ch->staff()->staff_mag(chord->tick()) * style().style_d(Sid::GRACE_NOTE_MAG));
 

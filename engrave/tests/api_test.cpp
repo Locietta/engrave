@@ -36,6 +36,7 @@
 #include "engraving/dom/measure.h"
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/note.h"
+#include "engraving/dom/pitchspelling.h"
 #include "engraving/dom/repeatlist.h"
 #include "engraving/dom/tie.h"
 #include "engraving/dom/volta.h"
@@ -1260,11 +1261,12 @@ TEST_F(EngineLifecycle, LastDocumentReleasesRuntimeForAnotherEngine) {
     EXPECT_NE(text_of(render->pages.front()).find("<svg"), std::string::npos);
 }
 
-std::unique_ptr<engrave::Document> notation_score(int bars, bool pickup = false) {
-    std::string xml = R"(<museScore version="4.70"><Score><Division>480</Division>
-<Part id="1"><Staff/><trackName>Piano</trackName><Instrument id="piano">
-<instrumentId>keyboard.piano</instrumentId><Channel><program value="0"/></Channel></Instrument></Part>
-<Staff id="1">)";
+std::unique_ptr<engrave::Document> notation_score(int bars, bool pickup = false, std::string_view part = {}) {
+    constexpr std::string_view piano = R"(<Part id="1"><Staff/><trackName>Piano</trackName><Instrument id="piano">
+<instrumentId>keyboard.piano</instrumentId><Channel><program value="0"/></Channel></Instrument></Part>)";
+    std::string xml = R"(<museScore version="4.70"><Score><Division>480</Division>)";
+    xml += part.empty() ? piano : part;
+    xml += R"(<Staff id="1">)";
     for (int bar = 0; bar < bars; ++bar) {
         xml += pickup && bar == 0 ? R"(<Measure len="1/4">)" : "<Measure>";
         xml += "<voice>";
@@ -1514,6 +1516,193 @@ TEST(NotationEdits, RepeatBarlinesPatchLinkedScoresAndVoltasChooseThePass) {
     check(score);
     auto saved = document->export_score({.format = Format::MSCZ});
     ASSERT_TRUE(saved) << saved.error().message;
+    auto reopened = g_engine->open(*saved);
+    ASSERT_TRUE(reopened) << reopened.error().message;
+    check(harness::master_of(**reopened));
+}
+
+TEST(NotationEdits, GraceChordsPreserveWrittenSpellingAndOrderOnBothSides) {
+    using namespace engrave;
+    using namespace mu::engraving;
+    using Tick = mu::engraving::Fraction;
+    constexpr auto clarinet = R"(<Part id="1"><Staff/><trackName>Clarinet</trackName><Instrument id="clarinet">
+<instrumentId>wind.reed.clarinet.bflat</instrumentId><transposeDiatonic>-1</transposeDiatonic><transposeChromatic>-2</transposeChromatic>
+<Channel><program value="71"/></Channel></Instrument></Part>)";
+    auto document = notation_score(1, false, clarinet);
+    ASSERT_TRUE(document);
+    const auto bar = harness::find_id(*document, "Measure");
+    const auto part = harness::find_id(*document, "Part");
+    const auto at = SegmentAddress{bar, 0, 0, {0, 1}, "ChordRest"};
+    const auto result = document->edit({{
+        GenerateExcerpts{{part}},
+        EnterNotes{at, {1, 4}, {{60}}},
+        AddGraceChord{OpRef{1, 0}, {GraceKind::Acciaccatura, {1, 16}, {{61, TPC_D_B}, {66, TPC_F_S}}}},
+        AddGraceChord{OpRef{1, 0}, {GraceKind::Grace8After, {1, 8}, {{62}}}},
+        AddGraceChord{OpRef{1, 0}, {GraceKind::Appoggiatura, {1, 8}, {{63}}}},
+        AddGraceChord{OpRef{1, 0}, {GraceKind::Grace16After, {1, 16}, {{64}}}},
+        AddGraceChord{OpRef{1, 0}, {GraceKind::Grace4, {1, 4}, {{65}}}},
+        AddGraceChord{OpRef{1, 0}, {GraceKind::Grace32After, {1, 32}, {{67}}}},
+        AddGraceChord{OpRef{1, 0}, {GraceKind::Grace16, {1, 16}, {{68}}}},
+        AddGraceChord{OpRef{1, 0}, {GraceKind::Grace32, {1, 32}, {{69}}}},
+    }});
+    ASSERT_TRUE(result) << result.error().message;
+    ASSERT_FALSE(result->rejection) << result->rejection->error.message;
+    const auto &created = result->ops[2].created;
+    ASSERT_EQ(created.size(), 3u);
+    ASSERT_TRUE(created[0] && created[1] && created[2]);
+    EXPECT_TRUE(harness::element(*document, *created[0]).is_chord());
+    EXPECT_EQ(to_note(&harness::element(*document, *created[1]))->pitch(), 61);
+    EXPECT_EQ(to_note(&harness::element(*document, *created[2]))->pitch(), 66);
+
+    auto check = [](MasterScore &master) {
+        ASSERT_EQ(master.score_list().size(), 2u);
+        for (auto *score : master.score_list()) {
+            auto *element = score->find_cr(Tick(0, 1), 0);
+            ASSERT_TRUE(element && element->is_chord());
+            const auto *chord = to_chord(element);
+            EXPECT_EQ(chord->ticks(), Tick(1, 4));
+            const auto before = chord->grace_notes_before();
+            const auto after = chord->grace_notes_after();
+            ASSERT_EQ(before.size(), 5u);
+            ASSERT_EQ(after.size(), 3u);
+
+            const std::vector<NoteType> before_types{NoteType::ACCIACCATURA, NoteType::APPOGGIATURA, NoteType::GRACE4, NoteType::GRACE16,
+                                                     NoteType::GRACE32};
+            const std::vector<NoteType> after_types{NoteType::GRACE8_AFTER, NoteType::GRACE16_AFTER, NoteType::GRACE32_AFTER};
+            for (std::size_t i = 0; i < before.size(); ++i) EXPECT_EQ(before.at(i)->note_type(), before_types[i]);
+            for (std::size_t i = 0; i < after.size(); ++i) EXPECT_EQ(after.at(i)->note_type(), after_types[i]);
+            ASSERT_EQ(before.at(0)->notes().size(), 2u);
+            const auto *flat = before.at(0)->find_note(61);
+            const auto *sharp = before.at(0)->find_note(66);
+            ASSERT_TRUE(flat && sharp);
+            EXPECT_EQ(flat->tpc1(), TPC_D_B);
+            EXPECT_EQ(flat->tpc2(), TPC_E_B);
+            EXPECT_EQ(sharp->tpc1(), TPC_F_S);
+            EXPECT_EQ(sharp->tpc2(), TPC_G_S);
+            EXPECT_EQ(before.at(0)->ticks(), Tick(1, 16));
+            EXPECT_EQ(before.at(1)->up_note()->pitch(), 63);
+            EXPECT_EQ(after.at(0)->up_note()->pitch(), 62);
+            EXPECT_EQ(after.at(1)->up_note()->pitch(), 64);
+            EXPECT_EQ(after.at(2)->up_note()->pitch(), 67);
+            EXPECT_EQ(after.at(2)->ticks(), Tick(1, 32));
+        }
+    };
+    check(harness::master_of(*document));
+    const auto saved = document->export_score({.format = Format::MSCZ});
+    ASSERT_TRUE(saved);
+    auto reopened = g_engine->open(*saved);
+    ASSERT_TRUE(reopened) << reopened.error().message;
+    check(harness::master_of(**reopened));
+
+    const auto revision = document->revision();
+    const auto wrong_duration = document->edit({{AddGraceChord{*result->ops[1].created[0], {GraceKind::Grace16, {1, 8}, {{60}}}}}});
+    ASSERT_FALSE(wrong_duration);
+    EXPECT_EQ(wrong_duration.error().code, ErrorCode::INVALID_ARGUMENT);
+    const auto nested = document->edit({{AddGraceChord{*created[0], {GraceKind::Appoggiatura, {1, 8}, {{60}}}}}});
+    ASSERT_TRUE(nested);
+    ASSERT_TRUE(nested->rejection);
+    EXPECT_EQ(nested->rejection->error.code, ErrorCode::INVALID_ARGUMENT);
+    const auto leftover_rest = harness::find_id(*document, "Rest");
+    const auto on_rest = document->edit({{AddGraceChord{leftover_rest, {GraceKind::Appoggiatura, {1, 8}, {{60}}}}}});
+    ASSERT_TRUE(on_rest);
+    ASSERT_TRUE(on_rest->rejection);
+    EXPECT_EQ(on_rest->rejection->error.code, ErrorCode::INVALID_ARGUMENT);
+    EXPECT_EQ(document->revision(), revision);
+}
+
+std::unique_ptr<engrave::Document> drum_score(std::string_view drums = {}) {
+    std::string part = R"(<Part id="1"><Staff><StaffType group="percussion"><lines>5</lines></StaffType></Staff>
+<trackName>Drums</trackName><Instrument id="drumset"><useDrumset>1</useDrumset>)";
+    part += drums;
+    part += "<Channel><program value=\"0\"/></Channel></Instrument></Part>";
+    return notation_score(2, false, part);
+}
+
+TEST(NotationEdits, DrumEntryUsesKitAndRequestedVoice) {
+    using namespace engrave;
+    using namespace mu::engraving;
+    using Tick = mu::engraving::Fraction;
+    auto document = drum_score();
+    ASSERT_TRUE(document);
+    auto &score = harness::master_of(*document);
+    const auto bar = harness::find_id(*document, "Measure");
+    const auto at = SegmentAddress{bar, 0, 0, {1, 4}, "ChordRest"};
+    const auto result = document->edit({{EnterDrums{at, {1, 4}, {{36}, {42}, {38}}}}});
+    ASSERT_TRUE(result) << result.error().message;
+    ASSERT_FALSE(result->rejection) << result->rejection->error.message;
+    const auto *leading = score.find_cr(Tick(0, 1), 0);
+    ASSERT_TRUE(leading && leading->is_rest());
+    EXPECT_EQ(leading->end_tick(), Tick(1, 4));
+    const auto *entry = score.find_cr(Tick(1, 4), 0);
+    ASSERT_TRUE(entry && entry->is_chord());
+    const auto *chord = to_chord(entry);
+    ASSERT_EQ(chord->notes().size(), 3u);
+    EXPECT_EQ(chord->stem_direction(), DirectionV::DOWN);
+    const std::vector<std::tuple<int, int, NoteHeadGroup>> mapping{
+        {36, 7, NoteHeadGroup::HEAD_NORMAL}, {42, -1, NoteHeadGroup::HEAD_CROSS}, {38, 3, NoteHeadGroup::HEAD_NORMAL}};
+    for (const auto &[key, line, head] : mapping) {
+        const auto *note = chord->find_note(key);
+        ASSERT_NE(note, nullptr);
+        EXPECT_EQ(note->line(), line);
+        EXPECT_EQ(note->head_group(), head);
+    }
+
+    const auto revision = document->revision();
+    const auto out_of_range = document->edit({{EnterDrums{at, {1, 4}, {{128}}}}});
+    ASSERT_FALSE(out_of_range);
+    EXPECT_EQ(out_of_range.error().code, ErrorCode::INVALID_ARGUMENT);
+    for (const auto &invalid : {EnterDrums{at, {1, 4}, {{127}}}, EnterDrums{at, {1, 1}, {{36}}}}) {
+        const auto result = document->edit({{invalid}});
+        ASSERT_TRUE(result);
+        ASSERT_TRUE(result->rejection);
+        EXPECT_EQ(result->rejection->error.code, ErrorCode::INVALID_ARGUMENT);
+    }
+    EXPECT_EQ(document->revision(), revision);
+    const auto replace = document->edit({{EnterDrums{at, {1, 4}, {}}}});
+    ASSERT_TRUE(replace);
+    ASSERT_FALSE(replace->rejection) << replace->rejection->error.message;
+    auto *replaced = score.find_cr(Tick(1, 4), 0);
+    ASSERT_TRUE(replaced && replaced->is_rest());
+
+    auto pitched = notation_score(1);
+    ASSERT_TRUE(pitched);
+    const auto pitched_bar = harness::find_id(*pitched, "Measure");
+    const auto wrong_staff = pitched->edit({{EnterDrums{SegmentAddress{pitched_bar, 0, 0, {0, 1}, "ChordRest"}, {1, 4}, {{36}}}}});
+    ASSERT_TRUE(wrong_staff);
+    ASSERT_TRUE(wrong_staff->rejection);
+    EXPECT_EQ(wrong_staff->rejection->error.code, ErrorCode::INVALID_ARGUMENT);
+}
+
+TEST(NotationEdits, CustomDrumkitMapsKeysAfterSaveAndReopen) {
+    using namespace engrave;
+    using namespace mu::engraving;
+    using Tick = mu::engraving::Fraction;
+    auto document =
+        drum_score(R"(<Drum pitch="36"><name>High drum</name><head>diamond</head><line>-4</line><stem>1</stem><voice>0</voice></Drum>
+<Drum pitch="72"><name>Low drum</name><head>cross</head><line>10</line><stem>2</stem><voice>1</voice></Drum>)");
+    ASSERT_TRUE(document);
+    const auto bar = harness::find_id(*document, "Measure");
+    const auto result = document->edit({{EnterDrums{SegmentAddress{bar, 0, 2, {1, 2}, "ChordRest"}, {1, 4}, {{36}, {72}}}}});
+    ASSERT_TRUE(result) << result.error().message;
+    ASSERT_FALSE(result->rejection) << result->rejection->error.message;
+    auto check = [](MasterScore &score) {
+        const auto *piece = score.find_cr(Tick(1, 2), 2);
+        ASSERT_TRUE(piece && piece->is_chord());
+        EXPECT_EQ(piece->track(), 2u);
+        const auto *chord = to_chord(piece);
+        ASSERT_EQ(chord->notes().size(), 2u);
+        EXPECT_EQ(chord->stem_direction(), DirectionV::UP);
+        const auto *high = chord->find_note(36);
+        const auto *low = chord->find_note(72);
+        ASSERT_TRUE(high && low);
+        EXPECT_EQ(high->head_group(), NoteHeadGroup::HEAD_DIAMOND);
+        EXPECT_EQ(high->line(), -4);
+        EXPECT_EQ(low->head_group(), NoteHeadGroup::HEAD_CROSS);
+        EXPECT_EQ(low->line(), 10);
+    };
+    check(harness::master_of(*document));
+    const auto saved = document->export_score({.format = Format::MSCZ});
+    ASSERT_TRUE(saved);
     auto reopened = g_engine->open(*saved);
     ASSERT_TRUE(reopened) << reopened.error().message;
     check(harness::master_of(**reopened));

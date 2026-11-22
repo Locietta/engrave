@@ -565,7 +565,8 @@ void Chord::add(EngravingItem *e) {
         case ElementType::CHORD: {
             Chord *gc = to_chord(e);
             assert(gc->note_type() != NoteType::NORMAL);
-            size_t idx = gc->grace_index();
+            // A linked chord may have fewer grace notes than the chord being edited.
+            size_t idx = std::min(gc->grace_index(), grace_notes_.size());
             gc->set_flag(ElementFlag::MOVABLE, true);
             grace_notes_.insert(grace_notes_.begin() + idx, gc);
             for (size_t i = idx; i < grace_notes_.size(); ++i) grace_notes_[i]->set_grace_index(i);

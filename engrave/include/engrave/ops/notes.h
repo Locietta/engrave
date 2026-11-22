@@ -30,6 +30,35 @@ struct EnterNotes {
     std::vector<Pitch> pitches;
 };
 
+// Native grace spellings with fixed values carry the written denominator in their name.
+// NOLINTNEXTLINE(readability-identifier-naming) -- Preserve the public GraceKind spelling.
+enum class GraceKind { Appoggiatura, Acciaccatura, Grace4, Grace8After, Grace16, Grace16After, Grace32, Grace32After };
+
+struct GraceEntry {
+    GraceKind kind;
+    Fraction written_duration;
+    std::vector<Pitch> pitches;
+};
+
+// Adds a grace chord to a principal chord. Before- and after-graces play in
+// insertion order on their respective side. The result lists the new chord, then its notes.
+struct AddGraceChord {
+    Ref principal;
+    GraceEntry grace;
+};
+
+struct DrumKey {
+    int key = 0; // MIDI key in the staff's drumset
+};
+
+// An empty key list enters rests. Notes stay in the requested voice and in one
+// measure and tuplet. The first key determines the single stem direction of the chord.
+struct EnterDrums {
+    SegmentAddress at;
+    Fraction duration;
+    std::vector<DrumKey> keys;
+};
+
 // Sets the pitch and the spelling of a note through the engine's own pitch change,
 // which reaches the note's linked copies in the other scores. A tied note changes on
 // its own, as it does when the score's pitch keys move it, and a note of a tablature
@@ -54,6 +83,6 @@ struct Remove {
     Ref target;
 };
 
-using NoteOps = std::tuple<EnterNotes, SetPitch, SetDuration, Remove>;
+using NoteOps = std::tuple<EnterNotes, SetPitch, SetDuration, Remove, AddGraceChord, EnterDrums>;
 
 } // namespace engrave

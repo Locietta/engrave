@@ -10,15 +10,18 @@
 #include "engrave/src/api/batch.h"
 #include "engrave/src/api/handles.h"
 #include "engraving/dom/chord.h"
+#include "engraving/dom/drumset.h"
 #include "engraving/dom/durationtype.h"
 #include "engraving/dom/engravingitem.h"
 #include "engraving/dom/engravingobject.h"
 #include "engraving/dom/factory.h"
+#include "engraving/dom/instrument.h"
 #include "engraving/dom/interval.h"
 #include "engraving/dom/measure.h"
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/note.h"
 #include "engraving/dom/noteval.h"
+#include "engraving/dom/part.h"
 #include "engraving/dom/pitchspelling.h"
 #include "engraving/dom/rest.h"
 #include "engraving/dom/score.h"
@@ -40,10 +43,12 @@ using mu::engraving::ChordRest;
 using mu::engraving::DirectionV;
 using mu::engraving::EngravingItem;
 using mu::engraving::Note;
+using mu::engraving::NoteType;
 using mu::engraving::NoteVal;
 using mu::engraving::Score;
 using mu::engraving::Segment;
 using mu::engraving::Staff;
+using mu::engraving::TDuration;
 using mu::engraving::Transpose;
 
 std::unexpected<Error> invalid(std::string message) { return std::unexpected(Error{ErrorCode::INVALID_ARGUMENT, std::move(message)}); }
@@ -126,28 +131,56 @@ NoteVal note_value(const Pitch &pitch) {
     return value;
 }
 
-} // namespace
-
-Result<Step> prepare(EditContext &context, const EnterNotes &op) {
-    const auto *at = std::get_if<SegmentAddress>(&op.at);
-    if (!at) return invalid("EnterNotes enters notes at a segment address");
-    if (at->kind != "ChordRest") return invalid(std::format("EnterNotes enters notes in a ChordRest segment, not in a '{}' one", at->kind));
-    const auto duration = to_reduced_engine_fraction(op.duration);
-    if (!duration || op.duration.num <= 0) return invalid("the duration must be a positive fraction of a whole note");
-    for (const Pitch &pitch : op.pitches) {
+Result<std::vector<NoteVal>> note_values(const std::vector<Pitch> &pitches) {
+    std::vector<NoteVal> values;
+    values.reserve(pitches.size());
+    for (const auto &pitch : pitches) {
         if (!mu::engraving::pitch_is_valid(pitch.pitch)) return invalid(std::format("{} is not a pitch", pitch.pitch));
         if (pitch.tpc && !mu::engraving::tpc_is_valid(*pitch.tpc)) return invalid(std::format("{} is not a tonal pitch class", *pitch.tpc));
+        values.push_back(note_value(pitch));
     }
-    std::vector<int> pitches;
-    pitches.reserve(op.pitches.size());
-    for (const Pitch &pitch : op.pitches) pitches.push_back(pitch.pitch);
-    std::ranges::sort(pitches);
-    if (std::ranges::adjacent_find(pitches) != pitches.end()) return invalid("the pitches of one chord must differ");
-    auto target = context.target(op.at);
-    if (!target) return std::unexpected(target.error());
-    const auto tick = *to_reduced_engine_fraction(at->tick);
+    return values;
+}
 
-    return [target = *target, tick, duration = *duration, pitches = op.pitches](EditContext &context) -> Result<void> {
+struct GraceStyle {
+    NoteType type;
+    int denominator;
+};
+
+std::optional<GraceStyle> grace_style(GraceKind kind) {
+    switch (kind) {
+        case GraceKind::Appoggiatura: return GraceStyle{NoteType::APPOGGIATURA, 0};
+        case GraceKind::Acciaccatura: return GraceStyle{NoteType::ACCIACCATURA, 0};
+        case GraceKind::Grace4: return GraceStyle{NoteType::GRACE4, 4};
+        case GraceKind::Grace8After: return GraceStyle{NoteType::GRACE8_AFTER, 8};
+        case GraceKind::Grace16: return GraceStyle{NoteType::GRACE16, 16};
+        case GraceKind::Grace16After: return GraceStyle{NoteType::GRACE16_AFTER, 16};
+        case GraceKind::Grace32: return GraceStyle{NoteType::GRACE32, 32};
+        case GraceKind::Grace32After: return GraceStyle{NoteType::GRACE32_AFTER, 32};
+    }
+    return std::nullopt;
+}
+
+Result<void> validate_chord(const std::vector<NoteVal> &values) {
+    std::vector<int> keys;
+    keys.reserve(values.size());
+    for (const auto &value : values) keys.push_back(value.pitch);
+    std::ranges::sort(keys);
+    if (std::ranges::adjacent_find(keys) != keys.end()) return invalid("the pitches or drum keys of one chord must differ");
+    return {};
+}
+
+Result<Step> prepare_entry(EditContext &context, const SegmentAddress &address, Fraction length, std::vector<NoteVal> values,
+                           bool percussion) {
+    if (address.kind != "ChordRest") return invalid("rhythmic entry requires a ChordRest segment address");
+    const auto duration = to_reduced_engine_fraction(length);
+    if (!duration || length.num <= 0) return invalid("the duration must be a positive fraction of a whole note");
+    if (auto valid = validate_chord(values); !valid) return std::unexpected(valid.error());
+    auto target = context.target(Ref{Address{address}});
+    if (!target) return std::unexpected(target.error());
+    const auto tick = *to_reduced_engine_fraction(address.tick);
+
+    return [target = *target, tick, duration = *duration, values = std::move(values), percussion](EditContext &context) -> Result<void> {
         const auto &at = std::get<SegmentAddress>(target.ref);
         const auto location = context.writable_measure(at);
         if (!location) return std::unexpected(location.error());
@@ -157,8 +190,17 @@ Result<Step> prepare(EditContext &context, const EnterNotes &op) {
         if (start && id_class(*start) == IdClass::LAYOUT) return invalid("layout builds this segment; it cannot be edited");
         const auto track = mu::engraving::staff2track(at.staff, at.voice);
         const Staff *staff = score->staff(at.staff);
-        if (staff->is_tab_staff(tick) || staff->is_drum_staff(tick))
-            return invalid("EnterNotes enters notes on a pitched staff, not on a tablature or a drum set");
+
+        const mu::engraving::Drumset *kit = nullptr;
+        if (percussion) {
+            if (staff->is_drum_staff(tick)) kit = staff->part()->instrument(tick)->drumset();
+            if (!kit) return invalid("EnterDrums requires a percussion staff with a drumset");
+            for (const auto &value : values) {
+                if (!kit->is_valid(value.pitch)) return invalid(std::format("key {} is absent from the staff's drumset", value.pitch));
+            }
+        } else if (staff->is_tab_staff(tick) || staff->is_drum_staff(tick)) {
+            return invalid("EnterNotes requires a pitched staff");
+        }
 
         const bool interior = measure->tick() < tick && tick < measure->end_tick();
         auto *covering = interior && (!start || !start->element(track)) ? rest_covering(*measure, tick, track) : nullptr;
@@ -170,6 +212,12 @@ Result<Step> prepare(EditContext &context, const EnterNotes &op) {
         const auto shortest = mu::engraving::TDuration(mu::engraving::DurationType::V_1024TH).fraction();
         if (shortest.denominator() % duration.denominator() != 0)
             return invalid("the duration cannot be written with ordinary note values");
+        if (kit) {
+            auto limit = measure->end_tick();
+            if (tuplet) limit = std::min(limit, tuplet->tick() + tuplet->actual_ticks());
+            if (mu::engraving::actual_ticks(duration, tuplet, staff->time_stretch(tick)) > limit - tick)
+                return invalid("drum entry must fit within its measure and tuplet");
+        }
         if (covering || open_voice) {
             const auto begin = covering ? covering->tick() : measure->tick();
             const auto end = covering ? covering->end_tick() : measure->end_tick();
@@ -195,9 +243,14 @@ Result<Step> prepare(EditContext &context, const EnterNotes &op) {
             if (!right) return std::unexpected(Error{ErrorCode::EDIT_REJECTED, "the engine could not enter the trailing rest"});
             start = right->segment();
         }
-        const NoteVal first = pitches.empty() ? NoteVal() : note_value(pitches.front());
+        auto mapped_value = [kit](NoteVal value) {
+            if (kit) value.head_group = kit->note_head(value.pitch);
+            return value;
+        };
+        const NoteVal first = values.empty() ? NoteVal() : mapped_value(values.front());
+        const auto stem = kit && !values.empty() ? kit->stem_direction(first.pitch) : DirectionV::AUTO;
         EngravingItem *last = nullptr;
-        score->set_note_rest_at(start, track, first, duration, DirectionV::AUTO, false, {}, false, &last);
+        score->set_note_rest_at(start, track, first, duration, stem, false, {}, false, &last);
         const auto piece_at = [&](const mu::engraving::Fraction &offset) -> ChordRest * {
             auto *segment = score->tick2segment(offset, true, mu::engraving::SegmentType::CHORD_REST, false);
             auto *item = segment ? segment->element(track) : nullptr;
@@ -208,20 +261,20 @@ Result<Step> prepare(EditContext &context, const EnterNotes &op) {
 
         // Stop at the last piece produced by note entry, even if there is a pre-existing
         // chord at the following tick.
-        std::vector<Note *> previous(pitches.size());
+        std::vector<Note *> previous(values.size());
         mu::engraving::Fraction remaining = duration;
         for (;;) {
             context.created(piece);
             remaining -= piece->ticks();
-            if (!pitches.empty()) {
+            if (!values.empty()) {
                 auto *chord = piece->is_chord() ? mu::engraving::to_chord(piece) : nullptr;
                 Note *lead = chord ? chord->find_note(first.pitch) : nullptr;
                 if (!lead || (previous.front() && (!previous.front()->tie_for() || previous.front()->tie_for()->end_note() != lead)))
                     return std::unexpected(Error{ErrorCode::EDIT_REJECTED, "the engine did not connect the entered chord pieces"});
                 context.created(lead);
                 previous.front() = lead;
-                for (std::size_t i = 1; i < pitches.size(); ++i) {
-                    Note *note = mu::engraving::NoteInput::add_note_to_chord(score, chord, note_value(pitches[i]));
+                for (std::size_t i = 1; i < values.size(); ++i) {
+                    Note *note = mu::engraving::NoteInput::add_note_to_chord(score, chord, mapped_value(values[i]));
                     if (previous[i]) {
                         auto *tie = mu::engraving::Factory::create_tie(previous[i]);
                         tie->set_note_span(previous[i], note);
@@ -230,13 +283,83 @@ Result<Step> prepare(EditContext &context, const EnterNotes &op) {
                     context.created(note);
                     previous[i] = note;
                 }
+                if (kit) mu::engraving::update_percussion_notes(chord, kit);
             }
-            if (last == piece || (!previous.empty() && last == previous.front())) break;
+            if (last == piece || (!previous.empty() && last == previous.front())) {
+                if (remaining.is_zero()) return {};
+                break;
+            }
+            if (remaining <= mu::engraving::Fraction(0, 1)) break;
             piece = piece_at(piece->end_tick());
-            if (!piece || remaining <= mu::engraving::Fraction(0, 1)) break;
+            if (!piece) break;
         }
-        if (!remaining.is_zero() || !piece)
-            return std::unexpected(Error{ErrorCode::EDIT_REJECTED, "the engine did not fill the requested duration"});
+        return std::unexpected(Error{ErrorCode::EDIT_REJECTED, "the engine did not fill the requested duration"});
+    };
+}
+
+} // namespace
+
+Result<Step> prepare(EditContext &context, const EnterNotes &op) {
+    const auto *at = std::get_if<SegmentAddress>(&op.at);
+    if (!at) return invalid("EnterNotes enters notes at a segment address");
+    auto values = note_values(op.pitches);
+    if (!values) return std::unexpected(values.error());
+    return prepare_entry(context, *at, op.duration, std::move(*values), false);
+}
+
+Result<Step> prepare(EditContext &context, const EnterDrums &op) {
+    std::vector<NoteVal> values;
+    values.reserve(op.keys.size());
+    for (const auto key : op.keys) {
+        if (key.key < 0 || key.key >= mu::engraving::drum_instruments)
+            return invalid(std::format("drum key {} must be between 0 and 127", key.key));
+        values.emplace_back(key.key);
+    }
+    return prepare_entry(context, op.at, op.duration, std::move(values), true);
+}
+
+Result<Step> prepare(EditContext &context, const AddGraceChord &op) {
+    const auto style = grace_style(op.grace.kind);
+    const auto duration = to_reduced_engine_fraction(op.grace.written_duration);
+    if (!style || !duration || duration->numerator() <= 0 || *duration > mu::engraving::Fraction(1, 4))
+        return invalid("a grace chord needs a written duration of a quarter note or shorter");
+    TDuration written;
+    written.set_val(duration->ticks());
+    if (written.fraction() != *duration || (style->denominator && *duration != mu::engraving::Fraction(1, style->denominator)))
+        return invalid("the written duration does not fit the grace kind");
+    if (op.grace.pitches.empty()) return invalid("a grace chord needs at least one pitch");
+    auto values = note_values(op.grace.pitches);
+    if (!values) return std::unexpected(values.error());
+    if (auto valid = validate_chord(*values); !valid) return std::unexpected(valid.error());
+    auto target = context.target(op.principal);
+    if (!target) return std::unexpected(target.error());
+
+    return [target = *target, type = style->type, length = duration->ticks(),
+            values = std::move(*values)](EditContext &context) -> Result<void> {
+        auto item = edited_item(context, target);
+        if (!item) return std::unexpected(item.error());
+        if (!(*item)->is_chord()) return invalid("a grace chord requires a principal chord");
+        auto *principal = mu::engraving::to_chord(*item);
+        if (principal->is_grace()) return invalid("a grace chord requires a principal chord");
+        const auto tick = principal->tick();
+        if (principal->staff()->is_tab_staff(tick) || principal->staff()->is_drum_staff(tick))
+            return invalid("AddGraceChord requires a pitched staff");
+        auto *score = principal->score();
+
+        const auto &first = values.front();
+        // The native after-grace view plays the stored chords in reverse order.
+        const bool after = bool(type & (NoteType::GRACE8_AFTER | NoteType::GRACE16_AFTER | NoteType::GRACE32_AFTER));
+        const auto index = after ? 0 : principal->grace_notes().size();
+        Note *note = score->set_grace_note(principal, first.pitch, type, length, index);
+        auto *chord = note->chord();
+        const auto [tpc1, tpc2] =
+            spell(*note, first.pitch, first.tpc1 == mu::engraving::TPC_INVALID ? std::nullopt : std::optional{first.tpc1});
+        mu::engraving::EditNote::undo_change_pitch(score, note, first.pitch, tpc1, tpc2);
+        context.created(chord);
+        context.created(note);
+        for (std::size_t i = 1; i < values.size(); ++i) {
+            context.created(mu::engraving::NoteInput::add_note_to_chord(score, chord, values[i]));
+        }
         return {};
     };
 }
