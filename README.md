@@ -38,7 +38,7 @@ Capabilities can be queried programmatically via `Engine::capabilities()`.
   - Layout always uses pages; native `layoutMode` values are preserved on read/write.
   - Inclusive page range selection (`first_page` to `last_page`).
 - **Audio Synthesis** (`Document::render_audio` via FluidSynth):
-  - Encoders: **WAV** (16, 24, 32-bit float), **FLAC** (16, 24-bit), **Opus** (Ogg container, 48 kHz), **MP3** (128 kbps default, 32–512 kbps), **AAC** (128 kbps, ADTS).
+  - Encoders: **WAV** (16, 24, 32-bit float), **FLAC** (16, 24-bit), **Opus** (Ogg container, 48 kHz), **MP3** (128 kbps default, 32–512 kbps).
   - Multi-track mixing: Per-track volume (dB), stereo pan/balance, mute, solo, and SoundFont selection.
   - Reverb: Aux send/return with Muse Reverb DSP.
   - Streaming: Delivers encoded bytes chunk-by-chunk to a caller-supplied `ByteSink`.
@@ -56,7 +56,7 @@ Capabilities can be queried programmatically via `Engine::capabilities()`.
 - **Python** 3 and **Git** (for asset installation and manifest verification)
 - **[Pixi](https://pixi.sh/)**: Cairo, FreeType, and zlib are conda-forge builds pinned in `pixi.toml` / `pixi.lock`. Run `pixi install --locked` once; `bazel/deps.bzl` exposes them as `@pixi_deps//:cairo`, `@pixi_deps//:freetype`, and `@pixi_deps//:zlib`. A superproject consuming `@engrave` via Bzlmod supplies its own Pixi prefix via `--repo_env=ENGRAVE_PIXI_PREFIX=...`. Windows binaries need `.pixi/envs/default/Library/bin` on `PATH` at run time; Linux binaries load `.pixi/envs/default/lib`.
 
-All other C/C++ third-party dependencies (HarfBuzz, libflac, LAME, libopus, libopusenc, fdk-aac, pugixml, utfcpp, glaze, proxy, amc, unordered_dense, GoogleTest) are fetched from hash-pinned archives in `MODULE.bazel` (`bazel/deps.bzl`) and built via `bazel/third_party/*.BUILD.bazel`. `glaze` is the engine's only JSON library.
+All other C/C++ third-party dependencies (HarfBuzz, libflac, LAME, libopus, libopusenc, pugixml, utfcpp, glaze, proxy, amc, unordered_dense, GoogleTest) are fetched from hash-pinned archives in `MODULE.bazel` (`bazel/deps.bzl`) and built via `bazel/third_party/*.BUILD.bazel`. `glaze` is the engine's only JSON library.
 
 ### Build Commands (Windows and Linux)
 

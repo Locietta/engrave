@@ -22,7 +22,6 @@ enum struct AudioFormat {
     FLAC, // 16-bit or 24-bit
     OPUS, // 128 kbps Opus in an Ogg container, which the encoder resamples to 48 kHz
     MP3,  // 128 kbps
-    AAC,  // 128 kbps, ADTS
 };
 
 std::string_view to_string(AudioFormat format) noexcept;
@@ -74,7 +73,7 @@ struct AudioOptions {
     ScoreSel score;
     AudioFormat format = AudioFormat::WAV;
     // Encoder settings; 0 keeps the format's default. bitrate_kbps applies to
-    // Opus, Mp3 and Aac (32..512); bit_depth to Wav (16, 24 or 32) and Flac
+    // Opus and MP3 (32..512); bit_depth to WAV (16, 24 or 32) and FLAC
     // (16 or 24).
     std::int32_t bitrate_kbps = 0;
     std::int32_t bit_depth = 0;

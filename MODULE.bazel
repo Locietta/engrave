@@ -13,7 +13,6 @@ use_repo(
     engrave_deps,
     "amc",
     "engrave_config",
-    "fdk_aac",
     "glaze",
     "gtest",
     "harfbuzz",

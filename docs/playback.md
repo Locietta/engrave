@@ -4,7 +4,7 @@ This document describes the architecture, data flow, ownership model, and determ
 
 ## Pipeline Overview
 
-Audio rendering transforms an in-memory musical score into an encoded audio stream (such as WAV, FLAC, Ogg Opus, MP3, or AAC) through a data-oriented execution pipeline:
+Audio rendering transforms an in-memory musical score into a WAV, FLAC, Ogg Opus, or MP3 stream through a data-oriented execution pipeline:
 
 ```
 Score (DOM)

@@ -99,9 +99,6 @@ std::string audio_format_from_path(const fs::path &path) {
     if (ext == ".mp3") {
         return "mp3";
     }
-    if (ext == ".aac") {
-        return "aac";
-    }
     throw std::invalid_argument("unsupported audio extension: " + ext);
 }
 
@@ -118,7 +115,7 @@ music::EngineAudioFormat parse_audio_format(const std::string &name) {
     if (name == "mp3") {
         return music::EngineAudioFormat::MP3;
     }
-    return music::EngineAudioFormat::AAC;
+    throw std::invalid_argument("unsupported audio format: " + name);
 }
 
 std::string read_file(const fs::path &path) {

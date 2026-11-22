@@ -27,7 +27,6 @@
 
 #include "../offlinecancellation.h"
 #include "../offlinetiming.h"
-#include "aacencoder.h"
 #include "audio/common/audioerrors.h"
 #include "flacencoder.h"
 #include "global/defer.h"
@@ -46,7 +45,6 @@ static encode::UniqueEncoder create_encoder(const SoundTrackFormat &format, io::
         case SoundTrackType::OGG: return std::make_unique<encode::OggEncoder>(format, dst_device);
         case SoundTrackType::FLAC: return std::make_unique<encode::FlacEncoder>(format, dst_device);
         case SoundTrackType::WAV: return std::make_unique<encode::WavEncoder>(format, dst_device);
-        case SoundTrackType::AAC: return std::make_unique<encode::AacEncoder>(format, dst_device);
         case SoundTrackType::UNDEFINED: break;
     }
 

@@ -127,18 +127,6 @@ def decode_audio(path: Path) -> tuple[np.ndarray, int]:
     return audio, int(rate)
 
 
-def decode_with_ffmpeg(source: Path, destination: Path) -> tuple[np.ndarray, int] | None:
-    ffmpeg = shutil.which("ffmpeg")
-    if not ffmpeg:
-        return None
-    subprocess.run(
-        [ffmpeg, "-y", "-loglevel", "error", "-i", str(source), str(destination)],
-        capture_output=True,
-        check=True,
-    )
-    return decode_audio(destination)
-
-
 CROSS_PLATFORM_TOLERANCES = {
     "peak": 0.025,
     "rms": 0.002,
@@ -161,14 +149,13 @@ SINE_LEVEL_RMS = 0.1751
 
 SINE_LEVEL_RMS_RELATIVE_TOLERANCE = 0.02
 
-DECODED_RATE = {"wav": 44100, "flac": 44100, "ogg": 48000, "mp3": 44100, "aac": 44100}
+DECODED_RATE = {"wav": 44100, "flac": 44100, "ogg": 48000, "mp3": 44100}
 
 DECODED_DURATION_TOLERANCE = {
     "wav": 0.001,
     "flac": 0.001,
     "ogg": 0.05,
     "mp3": 0.15,
-    "aac": 0.15,
 }
 
 
@@ -816,9 +803,9 @@ def test_determinism_and_decoding(
     out_dir: Path,
     evidence: dict[str, Any],
 ) -> None:
-    print("[4/6] Testing determinism, decoded durations and non-ASCII paths across wav, flac, ogg, mp3, aac...")
+    print("[4/6] Testing determinism, decoded durations and non-ASCII paths across wav, flac, ogg, mp3...")
     score_path = REPO_ROOT / "tests/data/inputs" / "golden" / "hairpins_and_repeats.mscx"
-    formats = ["wav", "flac", "ogg", "mp3", "aac"]
+    formats = ["wav", "flac", "ogg", "mp3"]
     det_results = {}
 
     with ThreadPoolExecutor(max_workers=min(6, os.cpu_count() or 2)) as pool:
@@ -850,22 +837,7 @@ def test_determinism_and_decoding(
             "expected_duration": round(expected_dur, 6),
         }
 
-        if fmt == "aac":
-            dec_wav = out_dir / "aac_decoded.wav"
-            decoded = decode_with_ffmpeg(out1, dec_wav)
-            if dec_wav.exists():
-                dec_wav.unlink()
-            if decoded is None:
-                # ADTS syncword check: 12 bits 0xFFF (0xFF followed by 0xF0..0xFF)
-                assert len(data1) > 7, "AAC file too small for ADTS header"
-                assert data1[0] == 0xFF and (data1[1] & 0xF0) == 0xF0, "Invalid ADTS header in AAC export"
-                dec_info["decoder"] = "adts_header_validated"
-                det_results[fmt] = dec_info
-                continue
-            audio, sr = decoded
-            dec_info["decoder"] = "ffmpeg"
-        else:
-            audio, sr = decode_audio(out1)
+        audio, sr = decode_audio(out1)
 
         dec_info["decoded_sr"] = sr
         assert sr == DECODED_RATE[fmt], f"Format {fmt} decoded sample rate {sr} != {DECODED_RATE[fmt]}"
@@ -913,22 +885,7 @@ def test_determinism_and_decoding(
         )
         assert out_path.is_file() and out_path.stat().st_size > 0, f"Missing non-ASCII {fmt} output"
         expected_dur = res.get("playTime", 0.0) + 3.0
-        if fmt == "aac":
-            dec_wav = out_dir / "nonascii_aac_decoded.wav"
-            decoded = decode_with_ffmpeg(out_path, dec_wav)
-            if dec_wav.exists():
-                dec_wav.unlink()
-            if decoded is None:
-                data = out_path.read_bytes()
-                assert len(data) > 7 and data[0] == 0xFF and (data[1] & 0xF0) == 0xF0
-                nonascii_results[fmt] = {
-                    "bytes": len(data),
-                    "decoder": "adts_header_validated",
-                }
-                continue
-            audio, sr = decoded
-        else:
-            audio, sr = decode_audio(out_path)
+        audio, sr = decode_audio(out_path)
         decoded_dur = len(audio) / sr
         assert abs(decoded_dur - expected_dur) <= DECODED_DURATION_TOLERANCE[fmt], (
             f"Non-ASCII {fmt} decoded duration {decoded_dur:.6f} != {expected_dur:.6f}"

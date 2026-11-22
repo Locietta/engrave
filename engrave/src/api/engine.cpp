@@ -176,7 +176,7 @@ Capabilities Engine::capabilities() const {
         .import_formats = {Format::MSCZ, Format::MSCX, Format::MUSIC_XML, Format::MXL, Format::MIDI, Format::GUITAR_PRO, Format::MNX},
         .export_formats = {Format::MSCX, Format::MSCZ, Format::MUSIC_XML, Format::MXL, Format::MIDI},
         .render_formats = {RenderFormat::PDF, RenderFormat::PNG, RenderFormat::SVG},
-        .audio_formats = {AudioFormat::WAV, AudioFormat::FLAC, AudioFormat::OPUS, AudioFormat::MP3, AudioFormat::AAC},
+        .audio_formats = {AudioFormat::WAV, AudioFormat::FLAC, AudioFormat::OPUS, AudioFormat::MP3},
         .soundfonts = impl_->state->soundfonts,
         .audio_sample_rate = impl_->state->audio_sample_rate,
     };

@@ -5,7 +5,7 @@
 //   engrave_output_probe --assets=DIR --soundfont=FILE... --render=SCORE --out=DIR
 //   engrave_output_probe --assets=DIR --positions=SCORE --out=DIR
 //   engrave_output_probe --assets=DIR --export=SCORE --out=DIR
-//   engrave_output_probe --assets=DIR --soundfont=FILE... --audio=SCORE --format=wav|flac|ogg|mp3|aac
+//   engrave_output_probe --assets=DIR --soundfont=FILE... --audio=SCORE --format=wav|flac|ogg|mp3
 //                        --out=FILE [--no-repeats] [--sample-rate=HZ]
 //   engrave_output_probe --assets=DIR (--soundfont=FILE... | --no-audio) --capture=SCORE --out=DIR
 //
@@ -43,7 +43,6 @@ std::string_view extension_of(engrave::AudioFormat format) {
         case engrave::AudioFormat::FLAC: return "flac";
         case engrave::AudioFormat::OPUS: return "ogg";
         case engrave::AudioFormat::MP3: return "mp3";
-        case engrave::AudioFormat::AAC: return "aac";
     }
     return "bin";
 }
@@ -155,8 +154,6 @@ int run_audio(engrave::Engine &engine, const std::filesystem::path &score, const
         audio.format = engrave::AudioFormat::OPUS;
     else if (format == "mp3")
         audio.format = engrave::AudioFormat::MP3;
-    else if (format == "aac")
-        audio.format = engrave::AudioFormat::AAC;
     else
         return usage();
     audio.sample_rate = sample_rate;

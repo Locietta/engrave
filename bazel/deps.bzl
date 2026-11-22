@@ -411,13 +411,6 @@ def _engrave_deps_impl(_mctx):
         strip_prefix = "harfbuzz-12.3.0",
         urls = ["https://github.com/harfbuzz/harfbuzz/releases/download/12.3.0/harfbuzz-12.3.0.tar.xz"],
     )
-    http_archive(
-        name = "fdk_aac",
-        build_file = Label("//bazel/third_party:fdk_aac.BUILD.bazel"),
-        sha256 = "e25671cd96b10bad896aa42ab91a695a9e573395262baed4e4a2ff178d6a3a78",
-        strip_prefix = "fdk-aac-2.0.3",
-        urls = ["https://github.com/mstorsjo/fdk-aac/archive/refs/tags/v2.0.3.tar.gz"],
-    )
     configured_archive(
         name = "libflac",
         build_file = Label("//bazel/third_party:libflac.BUILD.bazel"),

@@ -67,7 +67,6 @@ std::string_view to_string(AudioFormat format) noexcept {
         case AudioFormat::FLAC: return "FLAC";
         case AudioFormat::OPUS: return "Opus";
         case AudioFormat::MP3: return "MP3";
-        case AudioFormat::AAC: return "AAC";
     }
     return "Unknown";
 }

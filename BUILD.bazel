@@ -361,7 +361,6 @@ cc_library(
     ),
     copts = ENGINE_COPTS,
     implementation_deps = [
-        "@fdk_aac",
         "@lame",
         "@libflac",
         "@libopus",

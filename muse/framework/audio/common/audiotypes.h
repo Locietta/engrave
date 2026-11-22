@@ -105,7 +105,7 @@ struct OutputSpec {
     }
 };
 
-enum class SoundTrackType { UNDEFINED = -1, MP3, OGG, FLAC, WAV, AAC };
+enum class SoundTrackType { UNDEFINED = -1, MP3, OGG, FLAC, WAV };
 
 enum class AudioSampleFormat { UNDEFINED = 0, INT16, INT24, FLOAT32 };
 
@@ -136,7 +136,6 @@ struct SoundTrackFormat {
 
             case SoundTrackType::MP3:
             case SoundTrackType::OGG:
-            case SoundTrackType::AAC:
                 // For lossy, bitrate must be positive
                 return bit_rate > 0;
 

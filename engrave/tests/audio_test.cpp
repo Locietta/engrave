@@ -265,11 +265,6 @@ TEST(Audio, EachEncoderWritesItsContainer) {
                                      (std::to_integer<std::uint8_t>(b[0]) == 0xff && (std::to_integer<std::uint8_t>(b[1]) & 0xe0) == 0xe0));
          },
          "MP3"},
-        {engrave::AudioFormat::AAC,
-         [](std::span<const std::byte> b) {
-             return b.size() > 4 && std::to_integer<std::uint8_t>(b[0]) == 0xff && (std::to_integer<std::uint8_t>(b[1]) & 0xf0) == 0xf0;
-         },
-         "AAC"},
     };
 
     for (const Case &entry : cases) {
@@ -311,8 +306,8 @@ TEST(Audio, TheSinkReceivesTheStreamInChunks) {
 TEST(Audio, EncodedFileBudgetDoesNotPublishPartialAudio) {
     auto document = detail::open_score(detail::audio_score());
     ASSERT_TRUE(document);
-    for (const auto format : {engrave::AudioFormat::WAV, engrave::AudioFormat::FLAC, engrave::AudioFormat::OPUS, engrave::AudioFormat::MP3,
-                              engrave::AudioFormat::AAC}) {
+    for (const auto format :
+         {engrave::AudioFormat::WAV, engrave::AudioFormat::FLAC, engrave::AudioFormat::OPUS, engrave::AudioFormat::MP3}) {
         SCOPED_TRACE(engrave::to_string(format));
         engrave::AudioOptions options;
         options.format = format;
@@ -592,7 +587,7 @@ TEST(Audio, OptionsAreValidated) {
     EXPECT_EQ(code_of(options), engrave::ErrorCode::INVALID_ARGUMENT) << "a bitrate for a lossless format";
     options = {};
     options.bitrate_kbps = 1000;
-    options.format = engrave::AudioFormat::AAC;
+    options.format = engrave::AudioFormat::MP3;
     EXPECT_EQ(code_of(options), engrave::ErrorCode::INVALID_ARGUMENT) << "a bitrate above the range";
 
     options = {};

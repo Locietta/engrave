@@ -14,7 +14,6 @@ enum class AudioOutputCodec {
     FLAC,
     OGG,
     MP3,
-    AAC,
 };
 
 inline constexpr std::uint64_t k_audio_output_limit = 1024ULL * 1024 * 1024;
@@ -23,7 +22,7 @@ inline constexpr std::uint64_t k_non_audio_output_limit = 256ULL * 1024 * 1024;
 // Upper bound of the file an audio export of `duration_secs` will produce with
 // the encoder settings in engine_audio.cpp: stereo output at `sample_rate` (44100
 // unless the engine renders another rate), FLAC Int16, and 128 kbps for
-// Ogg/MP3/AAC (engine_audio.h). The bound is deliberately loose (1 MiB of
+// Ogg Opus and MP3 (engine_audio.h). The bound is deliberately loose (1 MiB of
 // container/header slack); a real encode is never larger.
 inline std::uint64_t projected_audio_bytes(AudioOutputCodec codec, double duration_secs, int sample_rate = 44100) noexcept {
     if (!(duration_secs > 0.0) || sample_rate <= 0) {
@@ -34,8 +33,7 @@ inline std::uint64_t projected_audio_bytes(AudioOutputCodec codec, double durati
         case AudioOutputCodec::WAV: return 44 + frames * 8;           // Float32 stereo
         case AudioOutputCodec::FLAC: return 1024 * 1024 + frames * 4; // Int16, uncompressed worst case
         case AudioOutputCodec::OGG:
-        case AudioOutputCodec::MP3:
-        case AudioOutputCodec::AAC: return 1024 * 1024 + static_cast<std::uint64_t>(duration_secs * 16000.0); // 128 kbps
+        case AudioOutputCodec::MP3: return 1024 * 1024 + static_cast<std::uint64_t>(duration_secs * 16000.0); // 128 kbps
     }
     return 0;
 }

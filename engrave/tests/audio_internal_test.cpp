@@ -394,8 +394,8 @@ TEST(AudioInternal, BudgetFailureRemovesTheIntermediateAndAllowsRecovery) {
     const auto output_utf8 = output.generic_u8string();
     request.output_path.assign(output_utf8.begin(), output_utf8.end());
     request.max_bytes = 64;
-    for (const auto format : {music::EngineAudioFormat::WAV, music::EngineAudioFormat::FLAC, music::EngineAudioFormat::OGG,
-                              music::EngineAudioFormat::MP3, music::EngineAudioFormat::AAC}) {
+    for (const auto format :
+         {music::EngineAudioFormat::WAV, music::EngineAudioFormat::FLAC, music::EngineAudioFormat::OGG, music::EngineAudioFormat::MP3}) {
         request.format = format;
         const auto failed = music::export_score_audio(audio, master, request);
         EXPECT_FALSE(failed.ok);

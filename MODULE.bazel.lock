@@ -365,7 +365,7 @@
   "moduleExtensions": {
     "//bazel:deps.bzl%engrave_deps": {
       "general": {
-        "bzlTransitiveDigest": "Alqgb1ka49XU0BLXrQzZRxh5FZTLaviTNGGIN3mW9iA=",
+        "bzlTransitiveDigest": "p1hGARH9c1OMpxfafYzgJJH47o6oqULncnILXdGnBnk=",
         "usagesDigest": "vsZZrqAkObMCOZqbg6QBTj6zySET+M08rFXOPqC299Y=",
         "recordedInputs": [
           "REPO_MAPPING:,bazel_tools bazel_tools"
@@ -445,17 +445,6 @@
               "strip_prefix": "harfbuzz-12.3.0",
               "urls": [
                 "https://github.com/harfbuzz/harfbuzz/releases/download/12.3.0/harfbuzz-12.3.0.tar.xz"
-              ]
-            }
-          },
-          "fdk_aac": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
-            "attributes": {
-              "build_file": "@@//bazel/third_party:fdk_aac.BUILD.bazel",
-              "sha256": "e25671cd96b10bad896aa42ab91a695a9e573395262baed4e4a2ff178d6a3a78",
-              "strip_prefix": "fdk-aac-2.0.3",
-              "urls": [
-                "https://github.com/mstorsjo/fdk-aac/archive/refs/tags/v2.0.3.tar.gz"
               ]
             }
           },

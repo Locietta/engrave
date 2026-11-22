@@ -183,9 +183,8 @@ TEST(Output, CapabilitiesListTheRenderAndAudioFormats) {
     const engrave::Capabilities capabilities = g_engine->capabilities();
     EXPECT_EQ(capabilities.render_formats,
               (std::vector<engrave::RenderFormat>{engrave::RenderFormat::PDF, engrave::RenderFormat::PNG, engrave::RenderFormat::SVG}));
-    EXPECT_EQ(capabilities.audio_formats,
-              (std::vector<engrave::AudioFormat>{engrave::AudioFormat::WAV, engrave::AudioFormat::FLAC, engrave::AudioFormat::OPUS,
-                                                 engrave::AudioFormat::MP3, engrave::AudioFormat::AAC}));
+    EXPECT_EQ(capabilities.audio_formats, (std::vector<engrave::AudioFormat>{engrave::AudioFormat::WAV, engrave::AudioFormat::FLAC,
+                                                                             engrave::AudioFormat::OPUS, engrave::AudioFormat::MP3}));
     // Audio suites sharing this process's Engine call set_soundfonts(g_soundfonts),
     // which replaces startup paths with retained staging copies; check startup paths
     // recorded before RUN_ALL_TESTS() and active SoundFont count regardless of suite order.

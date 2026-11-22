@@ -52,7 +52,6 @@ music::EngineAudioFormat engine_format(AudioFormat format) {
         case AudioFormat::FLAC: return music::EngineAudioFormat::FLAC;
         case AudioFormat::OPUS: return music::EngineAudioFormat::OGG;
         case AudioFormat::MP3: return music::EngineAudioFormat::MP3;
-        case AudioFormat::AAC: return music::EngineAudioFormat::AAC;
     }
     return music::EngineAudioFormat::WAV;
 }
@@ -63,12 +62,11 @@ const char *file_extension(AudioFormat format) {
         case AudioFormat::FLAC: return ".flac";
         case AudioFormat::OPUS: return ".ogg";
         case AudioFormat::MP3: return ".mp3";
-        case AudioFormat::AAC: return ".aac";
     }
     return ".audio";
 }
 
-bool is_lossy(AudioFormat format) { return format == AudioFormat::OPUS || format == AudioFormat::MP3 || format == AudioFormat::AAC; }
+bool is_lossy(AudioFormat format) { return format == AudioFormat::OPUS || format == AudioFormat::MP3; }
 
 AudioMix to_mix(const music::AudioOutputParams &output) { return {output.volume_db, output.balance, output.muted, output.solo}; }
 
@@ -191,7 +189,7 @@ Result<AudioRenderResult> Document::render_audio(const AudioOptions &options, co
     }
     if (options.bitrate_kbps != 0) {
         if (!is_lossy(options.format))
-            return fail(ErrorCode::INVALID_ARGUMENT, "bitrate_kbps applies to Opus, MP3 and AAC, not to a lossless format");
+            return fail(ErrorCode::INVALID_ARGUMENT, "bitrate_kbps applies to Opus and MP3, not to a lossless format");
         if (options.bitrate_kbps < 32 || options.bitrate_kbps > 512)
             return fail(ErrorCode::INVALID_ARGUMENT, std::format("bitrate_kbps must be between 32 and 512, not {}", options.bitrate_kbps));
     }

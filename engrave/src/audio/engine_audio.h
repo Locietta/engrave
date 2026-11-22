@@ -113,7 +113,6 @@ enum class EngineAudioFormat {
     FLAC,
     OGG,
     MP3,
-    AAC,
 };
 
 // Per-track mix override. Entries are indexed by the public trackId returned
@@ -147,7 +146,7 @@ struct AudioRenderRequest {
     double master_balance = 0.0;
     // Indexed by engine_audio_tracks(master, excerpt_id) order.
     std::vector<EngineAudioTrackParams> tracks;
-    // Encoder settings. bit_rate is in kbps and applies to MP3, Ogg and AAC;
+    // Encoder settings. bit_rate is in kbps and applies to MP3 and Ogg Opus;
     // bit_depth is 16 or 24 for WAV and FLAC, and 32 for a Float32 WAV. 0 keeps
     // the format's default (128 kbps; Float32 WAV, Int16 FLAC).
     int bit_rate = 0;
@@ -200,8 +199,7 @@ struct AudioRenderResult {
 // Renders `master` with the engine and writes one audio file. The request
 // format selects the upstream encoder defaults, which bit_rate/bit_depth can
 // override (engine_audio.cpp validates neither: the caller does).
-//   WAV  Float32, FLAC Int16, MP3 128 kbps, OGG 128 kbps (Opus in Ogg),
-//   AAC  128 kbps (ADTS; desktop AacWriter reuses exportMp3Bitrate).
+//   WAV Float32, FLAC Int16, MP3 128 kbps, OGG 128 kbps (Opus in Ogg).
 // The engine renders at the rate initialize_engine_audio() fixed, in 4096-frame
 // chunks. Ogg/Opus is resampled to 48 kHz inside libopusenc (upstream OggWriter
 // behavior too), so the decoded Ogg stream is 48 kHz while its duration follows

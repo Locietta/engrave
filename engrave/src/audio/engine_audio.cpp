@@ -220,12 +220,6 @@ SoundTrackFormat make_soundtrack_format(EngineAudioFormat format, const AudioRen
             result.sample_format = AudioSampleFormat::UNDEFINED;
             result.bit_rate = 128;
             break;
-        case EngineAudioFormat::AAC:
-            // Desktop AacWriter reuses exportMp3Bitrate for the AAC bitrate.
-            result.type = SoundTrackType::AAC;
-            result.sample_format = AudioSampleFormat::UNDEFINED;
-            result.bit_rate = 128;
-            break;
     }
 
     // Caller overrides; the API validates them against the format.
@@ -246,7 +240,6 @@ const char *audio_format_name(EngineAudioFormat format) {
         case EngineAudioFormat::FLAC: return "FLAC";
         case EngineAudioFormat::OGG: return "Ogg";
         case EngineAudioFormat::MP3: return "MP3";
-        case EngineAudioFormat::AAC: return "AAC";
     }
     return "audio";
 }
@@ -257,7 +250,6 @@ AudioOutputCodec audio_output_codec_of(EngineAudioFormat format) {
         case EngineAudioFormat::FLAC: return AudioOutputCodec::FLAC;
         case EngineAudioFormat::OGG: return AudioOutputCodec::OGG;
         case EngineAudioFormat::MP3: return AudioOutputCodec::MP3;
-        case EngineAudioFormat::AAC: return AudioOutputCodec::AAC;
     }
     return AudioOutputCodec::WAV;
 }
