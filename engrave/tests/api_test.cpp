@@ -1020,6 +1020,27 @@ TEST(Open, FallsBackToTheExtension) {
     EXPECT_NE(document.error().message.find("MusicXML"), std::string::npos) << document.error().message;
 }
 
+TEST(Open, MusicXmlPartGroupsOnlyApplyWhenClosed) {
+    const std::string part_list = R"(<score-partwise version="4.0"><part-list>
+<part-group number="1" type="start"><group-symbol>bracket</group-symbol></part-group>
+<score-part id="P1"><part-name>Flute</part-name></score-part>
+<score-part id="P2"><part-name>Oboe</part-name></score-part>)";
+    constexpr std::string_view body = R"(</part-list>
+<part id="P1"><measure number="1"><note><rest/><duration>4</duration></note></measure></part>
+<part id="P2"><measure number="1"><note><rest/><duration>4</duration></note></measure></part>
+</score-partwise>)";
+    for (bool closed : {true, false}) {
+        SCOPED_TRACE(closed);
+        std::string xml = part_list;
+        if (closed) xml += R"(<part-group number="1" type="stop"/>)";
+        xml += body;
+        auto document = g_engine->open(bytes_of(xml), {.format = Format::MUSIC_XML});
+        ASSERT_TRUE(document) << document.error().message;
+        const auto result = exported(**document, Format::MUSIC_XML);
+        EXPECT_EQ(result.find("<group-symbol>bracket</group-symbol>") != std::string::npos, closed);
+    }
+}
+
 TEST(Open, ReportsCallerErrors) {
     const auto expect_error = [](const engrave::Result<std::unique_ptr<engrave::Document>> &result, ErrorCode code) {
         ASSERT_FALSE(result);

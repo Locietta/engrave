@@ -22,6 +22,8 @@
 
 #include "importmusicxmlpass1.h"
 
+#include <utility>
+
 #include "../shared/musicxmlsupport.h"
 #include "../shared/musicxmltypes.h"
 #include "engraving/dom/box.h"
@@ -1407,17 +1409,6 @@ void MusicXmlParserPass1::score_partwise() {
         }
     }
 
-    // add brackets where required
-
-    /*
-     LOGD("partGroupList");
-     for (size_t i = 0; i < partGroupList.size(); i++) {
-     MusicXmlPartGroup* pg = partGroupList[i];
-     LOGD("part-group span %d start %d type %hhd barlinespan %d",
-     pg->span, pg->start, pg->type, pg->barlineSpan);
-     }
-     */
-
     // set of (typically multi-staff) parts containing one or more explicit brackets
     // spanning only that part: these won't get an implicit brace later
     // e.g. a two-staff piano part with an explicit brace
@@ -1425,21 +1416,20 @@ void MusicXmlParserPass1::score_partwise() {
 
     // handle the explicit brackets
     const std::vector<Part *> &il = score_->parts();
-    for (size_t i = 0; i < part_group_list.size(); i++) {
-        MusicXmlPartGroup *pg = part_group_list[i];
+    for (const auto &group : part_group_list) {
         // determine span in staves
         // and span all barlines except last if applicable
         size_t staves_span = 0;
-        for (int j = 0; j < pg->span; j++) {
-            Part *spanned_part = il.at(pg->start + j);
+        for (int j = 0; j < group.span; j++) {
+            Part *spanned_part = il.at(group.start + j);
             staves_span += spanned_part->nstaves();
 
-            if (!pg->barline_span) {
+            if (!group.barline_span) {
                 continue;
             }
 
             for (Staff *spanned_staff : spanned_part->staves()) {
-                if ((j == pg->span - 1) && (spanned_staff == spanned_part->staves().back())) {
+                if ((j == group.span - 1) && (spanned_staff == spanned_part->staves().back())) {
                     // Very last staff of group,
                     continue;
                 }
@@ -1449,17 +1439,17 @@ void MusicXmlParserPass1::score_partwise() {
         }
         // add bracket and set the span
         // TODO: use group-symbol default-x to determine horizontal order of brackets
-        Staff *staff = il.at(pg->start)->staff(0);
-        if (pg->type != BracketType::NO_BRACKET && !is_redundant_bracket(staff, pg->type, staves_span)) {
-            EditStaffBrackets::set_bracket_type(score_, staff->idx(), pg->column, pg->type);
-            EditStaffBrackets::set_bracket_span(score_, staff->idx(), pg->column, staves_span);
-            if ((score_->brackets(staff->idx()).size() > pg->column) && pg->color.is_valid()) {
-                BracketItem *bracket_item = score_->brackets(staff->idx()).at(pg->column);
-                bracket_item->set_color(pg->color);
+        Staff *staff = il.at(group.start)->staff(0);
+        if (group.type != BracketType::NO_BRACKET && !is_redundant_bracket(staff, group.type, staves_span)) {
+            EditStaffBrackets::set_bracket_type(score_, staff->idx(), group.column, group.type);
+            EditStaffBrackets::set_bracket_span(score_, staff->idx(), group.column, staves_span);
+            if ((score_->brackets(staff->idx()).size() > group.column) && group.color.is_valid()) {
+                BracketItem *bracket_item = score_->brackets(staff->idx()).at(group.column);
+                bracket_item->set_color(group.color);
             }
             // add part to set (skip implicit bracket later)
-            if (pg->span == 1) {
-                part_set.insert(il.at(pg->start));
+            if (group.span == 1) {
+                part_set.insert(il.at(group.start));
             }
         }
 
@@ -2232,8 +2222,6 @@ static void create_part(Score *score, const String &id, PartMap &pm) {
 //   partGroupStart
 //---------------------------------------------------------
 
-typedef std::map<int, MusicXmlPartGroup *> MusicXmlPartGroupMap;
-
 /**
  Store part-group start with number \a n, first part \a p and symbol / \a s in the partGroups
  map \a pgs for later reference, as at this time insufficient information is available to be able
@@ -2241,8 +2229,6 @@ typedef std::map<int, MusicXmlPartGroup *> MusicXmlPartGroupMap;
  */
 
 static void part_group_start(MusicXmlPartGroupMap &pgs, int n, int p, const String &s, bool barline_span, Color color) {
-    //LOGD("partGroupStart number=%d part=%d symbol=%s", n, p, muPrintable(s));
-
     if (pgs.count(n) > 0) {
         LOGD("part-group number=%d already active", n);
         return;
@@ -2266,15 +2252,11 @@ static void part_group_start(MusicXmlPartGroupMap &pgs, int n, int p, const Stri
         return;
     }
 
-    MusicXmlPartGroup *pg = new MusicXmlPartGroup;
-    pg->span = 0;
-    pg->start = p;
-    pg->barline_span = barline_span, pg->type = bracket_type;
+    MusicXmlPartGroup group{.start = p, .type = bracket_type, .barline_span = barline_span, .column = static_cast<size_t>(n)};
     if (color.is_valid()) {
-        pg->color = color;
+        group.color = color;
     }
-    pg->column = static_cast<size_t>(n);
-    pgs[n] = pg;
+    pgs.emplace(n, std::move(group));
 }
 
 //---------------------------------------------------------
@@ -2289,16 +2271,15 @@ static void part_group_start(MusicXmlPartGroupMap &pgs, int n, int p, const Stri
  */
 
 static void part_group_stop(MusicXmlPartGroupMap &pgs, int n, int p, MusicXmlPartGroupList &pgl) {
-    if (pgs.count(n) == 0) {
+    const auto group = pgs.find(n);
+    if (group == pgs.end()) {
         LOGD("part-group number=%d not active", n);
         return;
     }
 
-    pgs[n]->span = p - pgs[n]->start;
-    //LOGD("partgroupstop number=%d start=%d span=%d type=%hhd",
-    //       n, pgs[n]->start, pgs[n]->span, pgs[n]->type);
-    pgl.push_back(pgs[n]);
-    pgs.erase(n);
+    group->second.span = p - group->second.start;
+    pgl.push_back(std::move(group->second));
+    pgs.erase(group);
 }
 
 //---------------------------------------------------------

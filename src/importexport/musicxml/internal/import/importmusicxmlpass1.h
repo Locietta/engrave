@@ -85,9 +85,9 @@ struct MusicXmlPartGroup {
     size_t column = 0;
 };
 
-typedef std::vector<MusicXmlPartGroup *> MusicXmlPartGroupList;
+using MusicXmlPartGroupList = std::vector<MusicXmlPartGroup>;
 typedef std::map<muse::String, engraving::Part *> PartMap;
-typedef std::map<int, MusicXmlPartGroup *> MusicXmlPartGroupMap;
+using MusicXmlPartGroupMap = std::map<int, MusicXmlPartGroup>;
 
 //---------------------------------------------------------
 //   CreditWords
