@@ -58,6 +58,11 @@ constexpr std::strong_ordering compare_fraction(std::int64_t a, std::int64_t b, 
 
 } // namespace detail
 
+struct Transposition {
+    int diatonic = 0;
+    int chromatic = 0;
+};
+
 // A fraction of a whole note, also used for written time signatures. The
 // denominator is positive and the terms are not necessarily reduced. Ordering
 // and equality compare values; inspect num and den to distinguish notation.

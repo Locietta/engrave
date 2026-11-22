@@ -620,6 +620,7 @@ cc_binary(
         "engrave/tests/layout_headers_test.cpp",
         "engrave/tests/mnx_import_test.cpp",
         "engrave/tests/mnx_model_test.cpp",
+        "engrave/tests/music_api_test.cpp",
         "engrave/tests/propertyvalue_test.cpp",
         "engrave/tests/read_export470_test.cpp",
         "engrave/tests/read_layoutbounds_test.cpp",

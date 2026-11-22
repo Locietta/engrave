@@ -76,11 +76,6 @@ struct TemplateInfo {
     std::filesystem::path path; // the template's .mscx
 };
 
-struct Transposition {
-    int diatonic = 0;
-    int chromatic = 0;
-};
-
 struct DrumInfo {
     int key = 0;
     int line = 0;
