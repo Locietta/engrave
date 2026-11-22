@@ -105,7 +105,7 @@ std::optional<bool> api::settable(std::string_view type, Pid pid) {
 }
 
 std::vector<TypeInfo> Engine::describe() const {
-    impl_->state.check_thread();
+    impl_->state->check_thread();
     std::vector<TypeInfo> types;
     types.reserve(std::size(type_pids));
     for (const TypePids &row : type_pids) types.push_back(type_info(row));
@@ -113,14 +113,14 @@ std::vector<TypeInfo> Engine::describe() const {
 }
 
 Result<TypeInfo> Engine::describe(std::string_view type) const {
-    impl_->state.check_thread();
+    impl_->state->check_thread();
     const auto it = std::ranges::find(type_pids, type, &TypePids::type);
     if (it == std::end(type_pids)) return std::unexpected(Error{ErrorCode::NOT_FOUND, std::format("no element type '{}'", type)});
     return type_info(*it);
 }
 
 std::vector<StyleInfo> Engine::describe_styles() const {
-    impl_->state.check_thread();
+    impl_->state->check_thread();
     std::vector<StyleInfo> styles;
     styles.reserve(StyleDef::style_values.size());
     for (const StyleDef::StyleValue &value : StyleDef::style_values) {

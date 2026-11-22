@@ -49,16 +49,16 @@ Result<int> excerpt_id_of(mu::engraving::MasterScore &master, const ScoreSel &se
     return std::unexpected(Error{ErrorCode::STALE_HANDLE, "the selected excerpt is not part of the document"});
 }
 
-std::unique_ptr<Document> Document::Impl::make(EngineState &engine, music::ScoreProject project,
+std::unique_ptr<Document> Document::Impl::make(const std::shared_ptr<EngineState> &engine, music::ScoreProject project,
                                                music::ScoreAudioMixDefaults audio_defaults, std::vector<Diagnostic> diagnostics) {
     auto impl = std::make_unique<Impl>();
-    impl->engine = &engine;
+    impl->engine = engine;
     impl->project = std::move(project);
     impl->project->master_score()->invalidate_repeat_list();
     impl->project->master_score()->init_automation();
     impl->bind_layout_boundary();
     for (auto *score : impl->project->master_score()->score_list()) {
-        score->layout_state.font_generation = engine.font_generation;
+        score->layout_state.font_generation = engine->font_generation;
         score->layout_state.revision = impl->revision;
     }
     impl->audio_defaults = std::move(audio_defaults);
@@ -66,7 +66,6 @@ std::unique_ptr<Document> Document::Impl::make(EngineState &engine, music::Score
     // Every path that produces a document (open, create, and later a restore) hands
     // out ids here, so that an element always has one before a caller can name it.
     assign_missing_ids(*impl->project->master_score());
-    ++engine.live_documents;
     return std::unique_ptr<Document>(new Document(std::move(impl)));
 }
 
@@ -119,7 +118,9 @@ music::EngineContext &DocumentAccess::context(Document &document) { return *docu
 
 Document::~Document() {
     impl_->engine->check_thread();
-    --impl_->engine->live_documents;
+    auto engine = impl_->engine;
+    impl_.reset();
+    EngineState::release(std::move(engine));
 }
 
 Result<void> Document::checkpoint(std::string_view name) {

@@ -22,7 +22,6 @@ PROJECTION = (
     b"pitch 2 0:0 5000:-12\nexpression 0\ngroup 500 0\nend-projection 1\n"
 )
 DEFERRED_STUB = b"DEFERRED: independent flat-record projection extractors arrive in step 4b\n"
-B_FILES = ("B.txt", "B_legacy.txt")
 
 
 class PlaybackHarnessTests(unittest.TestCase):
@@ -39,19 +38,16 @@ class PlaybackHarnessTests(unittest.TestCase):
                 "D.json": b"{}\n",
             }.items():
                 (root / "case/44100" / name).write_bytes(data)
-        # The left (older) executable predates dump B; the right one carries both extractors.
+        # The left executable may predate dump B.
         (left / "case/44100/B.txt").write_bytes(DEFERRED_STUB)
-        for name in B_FILES:
-            (right / "case/44100" / name).write_bytes(PROJECTION)
+        (right / "case/44100/B.txt").write_bytes(PROJECTION)
         return left, right
 
-    def assert_rejected(self, files, transform, message=""):
-        """Applies transform to the named right-hand B files; the comparison must fail."""
+    def assert_rejected(self, transform, message=""):
         with tempfile.TemporaryDirectory() as temp:
             left, right = self.captures(temp)
-            for name in files:
-                path = right / "case/44100" / name
-                path.write_bytes(transform(path.read_bytes()))
+            path = right / "case/44100/B.txt"
+            path.write_bytes(transform(path.read_bytes()))
             with self.assertRaisesRegex(AssertionError, message):
                 compare(left, right)
 
@@ -66,7 +62,7 @@ class PlaybackHarnessTests(unittest.TestCase):
             self.assertEqual(metadata["sha256"], hashlib.sha256(samples).hexdigest())
             self.assertEqual((metadata["rate"], metadata["channels"], metadata["frames"]), (48000, 2, 1))
             path.write_bytes(path.read_bytes()[:-1])
-            with self.assertRaisesRegex(AssertionError, "truncated"):
+            with self.assertRaisesRegex(ValueError, "truncated PCM"):
                 pcm_metadata(path)
 
     def test_first_difference_and_missing_evidence(self):
@@ -83,24 +79,17 @@ class PlaybackHarnessTests(unittest.TestCase):
                 compare(left, right)
 
     def test_projection_is_required_of_the_new_executable(self):
-        # B compares the two extractors inside the new executable, not against
-        # an older executable that may still have a stub.
-        self.assert_rejected(["B.txt"], lambda _: DEFERRED_STUB, "deferred or not a projection")
-        self.assert_rejected(B_FILES, lambda _: DEFERRED_STUB, "deferred or not a projection")
-        for name in B_FILES:
-            with self.subTest(missing=name), tempfile.TemporaryDirectory() as temp:
-                left, right = self.captures(temp)
-                (right / "case/44100" / name).unlink()
-                with self.assertRaisesRegex(AssertionError, "dump B is missing"):
-                    compare(left, right)
-        self.assert_rejected(["B.txt"], lambda b: b.replace(b"6500", b"6501"), "flat records vs legacy")
+        self.assert_rejected(lambda _: DEFERRED_STUB, "deferred or not a projection")
+        with tempfile.TemporaryDirectory() as temp:
+            left, right = self.captures(temp)
+            (right / "case/44100/B.txt").unlink()
+            with self.assertRaisesRegex(AssertionError, "dump B is missing"):
+                compare(left, right)
 
     def test_truncated_projection_fails_closed(self):
-        # Every cut, at a line boundary or inside a line, in either file or in both identically
         for cut in range(len(PROJECTION)):
-            for files in (["B.txt"], ["B_legacy.txt"], B_FILES):
-                with self.subTest(cut=cut, files=files):
-                    self.assert_rejected(files, lambda b, cut=cut: b[:cut])
+            with self.subTest(cut=cut):
+                self.assert_rejected(lambda b, cut=cut: b[:cut])
 
     def test_malformed_projection_fails_closed(self):
         cases = {
@@ -126,12 +115,10 @@ class PlaybackHarnessTests(unittest.TestCase):
         }
         for label, (old, new) in cases.items():
             self.assertIn(old, PROJECTION, label)
-            for files in (["B.txt"], ["B_legacy.txt"], B_FILES):
-                with self.subTest(label, files=files):
-                    self.assert_rejected(files, lambda b, old=old, new=new: b.replace(old, new))
+            with self.subTest(label):
+                self.assert_rejected(lambda b, old=old, new=new: b.replace(old, new))
 
     def test_projection_must_match_dump_a_inventory(self):
-        # Well-formed and identical in both files, but not what dump A recorded
         cases = {
             "lost empty group": (b"groups 2", b"groups 1", b"group 500 0\n", b""),
             "event order": (
@@ -146,9 +133,7 @@ class PlaybackHarnessTests(unittest.TestCase):
         }
         for label, (a, b, c, d) in cases.items():
             with self.subTest(label):
-                self.assert_rejected(
-                    B_FILES, lambda p, a=a, b=b, c=c, d=d: p.replace(a, b).replace(c, d), "differs from dump A"
-                )
+                self.assert_rejected(lambda p, a=a, b=b, c=c, d=d: p.replace(a, b).replace(c, d), "differs from dump A")
 
     def test_left_projection_is_a_known_stub_or_complete(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -162,14 +147,10 @@ class PlaybackHarnessTests(unittest.TestCase):
             stub.unlink()
             with self.assertRaisesRegex(AssertionError, "dump B is missing"):
                 compare(left, right)
-            # A real left projection needs its legacy pair and is checked in full
             stub.write_bytes(PROJECTION)
-            with self.assertRaisesRegex(AssertionError, "dump B is missing"):
-                compare(left, right)
-            (left / "case/44100/B_legacy.txt").write_bytes(PROJECTION)
             compare(left, right)
-            stub.write_bytes(PROJECTION.replace(b"6500", b"6501"))  # B_legacy intact
-            with self.assertRaisesRegex(AssertionError, "flat records vs legacy"):
+            stub.write_bytes(PROJECTION.replace(b"6500", b"6501"))
+            with self.assertRaisesRegex(AssertionError, "B.txt: first byte difference at offset"):
                 compare(left, right)
 
     def test_newline_bytes_are_not_normalized(self):

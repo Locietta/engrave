@@ -40,7 +40,7 @@ class MixedWitnessControls(unittest.TestCase):
                         index = 0 if "mixed_score_a" in path.name else 1
                         value = index if fault != "identical" else 0
                         rate = 44100 if fault == "rate" else requested
-                        for dump in ("A.txt", "C.txt", "B.txt", "B_legacy.txt"):
+                        for dump in ("A.txt", "B.txt", "C.txt"):
                             content = f"score-{index}".encode()
                             if not target.name.startswith("fresh") and dump == fault:
                                 content += b"corrupted"

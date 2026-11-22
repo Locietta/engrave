@@ -31,12 +31,8 @@ their uninstrumented code paths.
   frozen, and groups are rebuilt from records, cold events, and empty-group
   marks. Serialization uses const legacy accessors, UTF-16 code units for MPE
   strings, original-width integers, and hexadecimal float bits.
-- **`B.txt` and `B_legacy.txt` (Dump B)**: Flat-record projection compared
-  against an independent legacy `PlaybackModel` oracle loaded from the same
-  score. The probe fails if the two projections differ (`--corrupt-flat` alters
-  one flat record as a negative control). `--measure` runs skip the oracle. Dual
-  execution (one walk feeding both stores) stays test-only in harness unit
-  tests.
+- **`B.txt` (Dump B)**: Flat-record projection of the track setup, dynamics,
+  group order, and event fields, including hexadecimal float bits.
 - **`C.txt` (Dump C v2)**: FluidSynth setup calls (using the exact call
   arguments) and ordered raw MIDI event slices.
 - **WAV + metadata**: A FLOAT32 WAV, build metadata, and phase measurements.
@@ -69,15 +65,15 @@ pixi run python vendor/engrave/tests/integration/test_playback_dod.py measure --
   records (A/C), `total_frames` (C), or provenance fail even if both captures
   omit them. Optional `--expect-exe-sha256 OLD NEW` checks each capture against
   an expected executable hash.
-- Dump B is an internal new-binary oracle rather than an old/new comparison: the
-  comparator requires real, byte-equal `B.txt` and `B_legacy.txt` on the right
-  (new) capture, and checks the left capture's B only when present.
+- The comparator validates Dump B against Dump A's inventory and compares
+  complete projections byte for byte. The older left capture may contain
+  the original deferred-projection marker.
 
 ## Timing vs. Allocation Measurements
 
 - Use the **uncounted** `playback_probe --measure` for wall-time baselines and
   the separate `playback_counting_probe` for allocations. `--measure` disables
-  A/C capture; allocation hooking adds overhead and must not supply normal
+  A/B/C capture; allocation hooking adds overhead and must not supply normal
   wall-time baselines.
 - Measurements cover the first export (including teardown) after score import
   and resource bootstrap. Peak working set is process-wide.

@@ -19,6 +19,7 @@
 #include "engraving/internal/engravingfontsprovider.h"
 #include "engraving/rendering/score/scorerenderer.h"
 #include "engraving/style/defaultstyle.h"
+#include "global/settings.h"
 #include "importexport/musicxml/internal/musicxmlconfiguration.h"
 #include "mpe/internal/articulationprofilesrepository.h"
 #include "resource_filesystem.h"
@@ -133,27 +134,31 @@ struct EngineContext::Impl {
 
 // Reverse of the constructor; tolerates a partially built context.
 void EngineContext::Impl::teardown() noexcept {
-    try {
-        if (catalog_started) clear_instrument_templates();
-        engraving = EngravingServices();
-        context_configuration.reset();
-        music_xml.reset();
-        articulation_profiles.reset();
-        renderer.reset();
-        configuration.reset();
-        if (engraving_fonts) engraving_fonts->deinit();
-        engraving_fonts.reset();
-        if (assets) {
-            FontMetrics::set_provider(nullptr);
+    if (catalog_started) clear_instrument_templates();
+    engraving = EngravingServices();
+    context_configuration.reset();
+    music_xml.reset();
+    articulation_profiles.reset();
+    renderer.reset();
+    configuration.reset();
+    if (engraving_fonts) engraving_fonts->deinit();
+    engraving_fonts.reset();
+    muse::settings()->reset();
+    MScore::test_mode = false;
+    MScore::set_error(MsError::MS_NO_ERROR);
+
+    if (assets) {
+        FontMetrics::set_provider(nullptr);
+        try {
             assets->shutdown();
-            assets.reset();
+        } catch (const std::exception &error) {
+            std::fprintf(stderr, "engrave: engine teardown failed: %s\n", error.what());
         }
-        if (file_system) {
-            io::set_file_system(nullptr);
-            file_system.reset();
-        }
-    } catch (const std::exception &error) {
-        std::fprintf(stderr, "engrave: engine teardown failed: %s\n", error.what());
+        assets.reset();
+    }
+    if (file_system) {
+        io::set_file_system(nullptr);
+        file_system.reset();
     }
 }
 

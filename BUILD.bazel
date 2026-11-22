@@ -484,7 +484,6 @@ cc_binary(
         "src/engraving/tests/playback/flatplaybackscore_tests.cpp",
         "src/engraving/tests/playback/playbackcontext_tests.cpp",
         "src/engraving/tests/playback/playbackeventsrendering_tests.cpp",
-        "src/engraving/tests/playback/playbackmodel_tests.cpp",
         "src/engraving/tests/repeat_tests.cpp",
         "src/engraving/tests/savehiddenparts_tests.cpp",
         "src/engraving/tests/text_parsing_tests.cpp",

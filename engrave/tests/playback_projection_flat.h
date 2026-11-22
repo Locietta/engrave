@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #pragma once
 
-// Dump B, flat side: serializes the flat records of a PlaybackScore. Groups are rebuilt from the
-// records' (group key, emission ordinal) pairs and the empty-group marks. It reads only the flat
-// store and shares no code with the legacy extractor (playback_projection_legacy.h).
+// Dump B reconstructs groups from the records' (group key, emission ordinal)
+// pairs and the empty-group marks.
 
 #include <algorithm>
 #include <bit>

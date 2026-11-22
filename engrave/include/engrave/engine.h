@@ -61,9 +61,9 @@ struct RuntimeFontInfo {
     bool bold = false;
     bool italic = false;
     // Absolute path to the engine-owned copy, not the caller's source file.
-    // Treat it as read-only. It remains available until Engine destruction,
-    // even if another font replaces this entry. A snapshot does not extend
-    // that lifetime; copy the file while the Engine is alive if needed later.
+    // Treat it as read-only. It remains available until the Engine and its
+    // Documents are destroyed, even if another font replaces this entry.
+    // A snapshot does not extend that lifetime.
     std::filesystem::path path;
     // crc32:<8 lowercase hex>:<byte size>; non-cryptographic and may collide.
     std::string content_fingerprint;
@@ -102,17 +102,15 @@ struct CreateOptions {
     std::string lyricist;
 };
 
-// The engine runtime. A process has at most one Engine, created once: a
-// second create() aborts, even after the first Engine was destroyed. Every
-// call on the Engine and its Documents must come from the thread that created
-// it; a call from another thread aborts.
+// A process can use one engine runtime at a time. Every call on an Engine
+// or its Documents, including destruction, must come from the thread
+// that created the Engine. Calling from another thread aborts.
 struct Engine {
-    // Fails without consuming the one Engine of the process when the
-    // resources or a font path do not exist. A font that exists but cannot be
-    // used fails after the runtime started, so the process cannot retry.
+    // Validates options before checking whether an Engine or its Documents
+    // still hold the runtime. In that case create returns Unsupported.
+    // A failed initialization releases the runtime for retry.
     static Result<std::unique_ptr<Engine>> create(const EngineOptions &options);
 
-    // Aborts while Documents are still open.
     ~Engine();
     Engine(const Engine &) = delete;
     Engine &operator=(const Engine &) = delete;

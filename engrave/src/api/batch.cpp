@@ -248,7 +248,7 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps) {
         }
         if (!failure) {
             context_.op_ = steps.size();
-            auto changes = manager->prepare_commit();
+            manager->prepare_commit();
             if (check_engine({})) {
                 assign_missing_ids(master);
                 warn_mismatched_ties(master, context_.repitched_, result.diagnostics);
@@ -264,7 +264,7 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps) {
                                                             std::nullopt);
                     }
                 const bool changed = master.cmd_state().mutation_count != 0;
-                manager->commit_prepared(changes);
+                manager->commit_prepared();
                 if (changed) ++document.revision;
                 result.applied = applied_ops.size();
                 result.ops.resize(result.applied);

@@ -89,8 +89,8 @@ struct TransactionManager {
     void transaction(const muse::TranslatableString &description, std::function<void(Transaction &)> func);
     void begin_transaction(const muse::TranslatableString &description);
     void end_transaction(bool failed = false);
-    ScoreChanges prepare_commit();
-    void commit_prepared(const ScoreChanges &changes);
+    void prepare_commit();
+    void commit_prepared();
 
     Transaction *current_transaction() { return active_ ? &transaction_ : nullptr; }
 

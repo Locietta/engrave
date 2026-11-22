@@ -51,5 +51,6 @@ private:
     static std::map<muse::String, std::vector<SymId>> read_smufl_ranges_json();
 
     static std::array<Code, size_t(SymId::LAST_SYM) + 1> s_sym_id_codes;
+    static std::map<muse::String, std::vector<SymId>> s_ranges;
 };
 } // namespace mu::engraving

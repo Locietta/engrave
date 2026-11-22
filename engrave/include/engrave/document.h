@@ -16,9 +16,9 @@
 
 namespace engrave {
 
-// One open score. Every call must come from the thread that created the
-// Engine, and the Document must be destroyed before the Engine; destroying it
-// closes the score.
+// One open score. A Document keeps the engine runtime alive and remains usable
+// after the Engine is destroyed. Calls and destruction must still occur on
+// the thread that created the Engine.
 struct Document {
     ~Document();
     Document(const Document &) = delete;

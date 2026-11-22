@@ -44,7 +44,6 @@
 #include "engraving/playback/flatplaybackscore.h"
 #include "global/flatmap.h"
 #ifdef ENGRAVE_PLAYBACK_HARNESS
-#include "engraving/playback/playbackmodel.h"
 #endif
 #include "engrave/src/runtime/resource_filesystem.h"
 #include "engraving/playback/playbackwalk.h"
@@ -682,20 +681,7 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
         if (test::PlaybackCapture::track) test::PlaybackCapture::track(id.part_id.to_uint64(), id.instrument_id, events);
     }
     if (test::PlaybackCapture::synth) *test::PlaybackCapture::synth << "total_frames " << total_frames << '\n';
-    if (FlatPlaybackCapture::projection) {
-        // The legacy model is the test oracle (design E1): a separate walk of the same score
-        PlaybackModel oracle(&state.profiles);
-        oracle.set_play_repeats(request.use_repeats);
-        oracle.set_play_chord_symbols(false);
-        oracle.set_is_metronome_enabled(false);
-        oracle.load(master_score);
-        const InstrumentTrackIdSet ids = oracle.existing_track_id_set();
-        std::vector<InstrumentTrackId> ordered(ids.cbegin(), ids.cend());
-        std::sort(ordered.begin(), ordered.end());
-        FlatPlaybackCapture::LegacyTracks legacy;
-        for (const auto &id : ordered) legacy.emplace_back(id, &oracle.resolve_track_playback_data(id));
-        FlatPlaybackCapture::projection(playback, legacy);
-    }
+    if (FlatPlaybackCapture::projection) FlatPlaybackCapture::projection(playback);
 #endif
     auto tracks_timer = std::make_unique<OfflineTimer>(OfflineTiming::current().tracks);
     for (const auto &[track_id, events] : playback.tracks) {

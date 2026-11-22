@@ -51,6 +51,13 @@ CoreTestEnv &core_env() {
     return env;
 }
 
+void CoreTestEnv::set_engine(std::unique_ptr<engrave::Engine> replacement) {
+    describe_anchor.reset();
+    engine = std::move(replacement);
+    handles_test::g_engine = engine.get();
+    read_test::g_engine = engine.get();
+}
+
 engrave::Document &CoreTestEnv::ensure_describe_anchor() {
     if (!describe_anchor) {
         const std::string anchor =
@@ -126,7 +133,7 @@ int main(int argc, char **argv) {
             std::fprintf(stderr, "Engine::create: %s (pass --assets=<resources>)\n", created.error().message.c_str());
             return 1;
         }
-        env.engine = std::move(*created);
+        env.set_engine(std::move(*created));
     }
 
     handles_test::g_program = env.program;
@@ -135,17 +142,12 @@ int main(int argc, char **argv) {
     handles_test::g_engine_args = env.engine_args;
     handles_test::g_deterministic = env.deterministic;
     handles_test::g_update_inventory = env.update_inventory;
-    handles_test::g_engine = env.engine.get();
 
     read_test::g_assets = env.assets;
     read_test::g_corpus = env.inputs_corpus;
-    read_test::g_engine = env.engine.get();
 
     const int result = RUN_ALL_TESTS();
 
-    handles_test::g_engine = nullptr;
-    read_test::g_engine = nullptr;
-    env.describe_anchor.reset();
-    env.engine.reset();
+    env.set_engine(nullptr);
     return result;
 }

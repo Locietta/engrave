@@ -43,23 +43,7 @@ struct FlatEventsSink {
 
 static_assert(PlaybackEventSink<FlatEventsSink>);
 
-#ifdef ENGRAVE_PLAYBACK_HARNESS
-//! Dual execution (test only): freezes the list, then hands it to the legacy map exactly as EventsMapSink alone
-struct DualEventsSink {
-    EventsMapSink legacy;
-    FlatEventsSink flat;
-
-    void operator()(const muse::mpe::timestamp_t key, muse::mpe::PlaybackEventList &&list) const {
-        muse::mpe::freeze_events(flat.track, key, list, flat.progress);
-        legacy(key, std::move(list));
-    }
-};
-
-static_assert(PlaybackEventSink<DualEventsSink>);
-#endif
-
-//! Builds the flat store of one export from the shared score walk (playbackwalk.h), without the legacy
-//! model: no score listener, no incremental-update bookkeeping. Owner thread only
+//! Builds an export snapshot on the score's owner thread.
 struct PlaybackScoreBuilder {
     // Resolved profile data, owned by this builder.
     muse::mpe::ArticulationProfileBundle profiles;

@@ -67,7 +67,7 @@ CHORD_PARTS = frozenset(range(14, 22))
 PATTERN = (0, 2, 4, 7, 4, 2, 0, -3)
 
 # (first measure, dynamic name, MusicXML sound-dynamics value). MuseScore maps
-# these to note velocities/expression in the PlaybackModel.
+# these to note velocities and expression in the playback builder.
 DYNAMICS = (
     (0, "mf", 80),
     (32, "pp", 33),

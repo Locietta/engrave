@@ -35,18 +35,20 @@ using namespace mu::engraving;
 namespace json = muse::json;
 
 std::array<Smufl::Code, size_t(SymId::LAST_SYM) + 1> Smufl::s_sym_id_codes{{}};
+std::map<String, std::vector<SymId>> Smufl::s_ranges;
 
 const Smufl::Code Smufl::code(SymId id) { return s_sym_id_codes.at(static_cast<size_t>(id)); }
 
 char32_t Smufl::smufl_code(SymId id) { return s_sym_id_codes.at(static_cast<size_t>(id)).smufl_code; }
 
 bool Smufl::init() {
-    bool ok = load_glyph_names_json();
-
+    const bool ok = load_glyph_names_json();
+    s_ranges = read_smufl_ranges_json();
     return ok;
 }
 
 bool Smufl::load_glyph_names_json() {
+    s_sym_id_codes.fill({});
     File file(":/fonts/smufl/glyphnames.json");
     if (!file.open(IODevice::READ_ONLY)) {
         LOGE() << "could not open glyph names JSON file.";
@@ -99,10 +101,7 @@ bool Smufl::load_glyph_names_json() {
     return true;
 }
 
-const std::map<String, std::vector<SymId>> &Smufl::smufl_ranges() {
-    static std::map<String, std::vector<SymId>> ranges = read_smufl_ranges_json();
-    return ranges;
-}
+const std::map<String, std::vector<SymId>> &Smufl::smufl_ranges() { return s_ranges; }
 
 std::map<String, std::vector<SymId>> Smufl::read_smufl_ranges_json() {
     std::map<String, std::vector<SymId>> ranges;

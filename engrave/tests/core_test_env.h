@@ -23,6 +23,7 @@ struct CoreTestEnv {
     std::unique_ptr<engrave::Engine> engine;
     std::unique_ptr<engrave::Document> describe_anchor;
 
+    void set_engine(std::unique_ptr<engrave::Engine> replacement);
     engrave::Document &ensure_describe_anchor();
 };
 

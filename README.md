@@ -107,7 +107,7 @@ Public headers live under `engrave/include/engrave/`:
 
 The engine operates on a single dedicated owner thread per process (see `engrave/include/engrave/engine.h`):
 
-- **Single Instance Per Process**: A process has at most one `Engine`. A second `Engine::create()` aborts once a prior call has claimed the process-global singleton (`s_engine_created` in `engrave/src/api/engine.cpp`). Early validation errors (missing resources or nonexistent font/SoundFont paths) return `ErrorCode::NOT_FOUND` or `ErrorCode::INVALID_ARGUMENT` before claiming the singleton, allowing retries; runtime font-load failures happen after the claim. Once claimed, any later `Engine::create()` aborts even after the first `Engine` is destroyed.
+- **One Active Runtime Per Process**: `Engine::create()` validates options and returns `ErrorCode::UNSUPPORTED` while an Engine or its Documents are active. Documents remain usable on the original thread after their Engine is destroyed. Once the Engine and its last Document are destroyed, the process can create another Engine. Initialization failures also allow retries.
 - **Open Documents at Teardown**: Destroying an `Engine` while any `Document` is still open aborts the process. Destroy all documents first.
 - **Owner Thread Affiliation**: Every `Engine` and `Document` call must occur on the thread that created the engine; calling from another thread aborts.
 

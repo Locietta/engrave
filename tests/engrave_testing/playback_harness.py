@@ -316,15 +316,11 @@ def dump_a_inventory(path):
 
 
 def validate_projection(root, name):
-    """Dump B is an oracle inside one executable: flat records against the independent legacy extractor,
-    both complete, byte-equal, and matching dump A's track, dynamics, group and event inventory."""
-    flat, legacy = root / name / "B.txt", root / name / "B_legacy.txt"
-    for path in (flat, legacy):
-        if not path.exists():
-            raise AssertionError(f"{path}: dump B is missing")
-    inventories = [projection_inventory(path) for path in (flat, legacy)]
-    compare_bytes(legacy, flat, f"{name}/B.txt (flat records vs legacy extractor)")
-    if inventories[0] != dump_a_inventory(root / name / "A.txt"):
+    """Requires a complete dump B with the same track, dynamics, group and event inventory as dump A."""
+    path = root / name / "B.txt"
+    if not path.exists():
+        raise AssertionError(f"{path}: dump B is missing")
+    if projection_inventory(path) != dump_a_inventory(root / name / "A.txt"):
         raise AssertionError(f"{root / name}: dump B inventory differs from dump A")
 
 
@@ -393,14 +389,14 @@ def compare(left, right, expect_exe_sha256=None):
         for dump in ("A.txt", "C.txt", "D.json"):
             a, b = left / name / dump, right / name / dump
             compare_bytes(a, b, f"{name}/{dump}")
-        # B is required of the new (right) executable; an older left one may predate it.
         validate_projection(right, name)
         if left_projection(left, name):
+            compare_bytes(left / name / "B.txt", right / name / "B.txt", f"{name}/B.txt")
             left_projections += 1
     label = "DIAGNOSTIC PASS" if diagnostic else "PASS"
     print(
         f"{label}: {len(lm)} renders, dumps A/C/D byte-identical; "
-        f"B verified in the right executable ({len(lm)}) and the left ({left_projections})"
+        f"B validated in the right capture ({len(lm)}) and byte-identical to the left where available ({left_projections})"
     )
 
 
@@ -478,11 +474,9 @@ def mixed_score_witness(exe, assets, font, output, rate=44100):
         run_probe(exe, assets, font, scores[order[0]], targets[0], options)
         for i, target in zip(order, targets):
             fresh = output / f"fresh-{i}"
-            for dump in ("A.txt", "C.txt", "audio.wav"):
+            for dump in ("A.txt", "B.txt", "C.txt", "audio.wav"):
                 if (target / dump).read_bytes() != (fresh / dump).read_bytes():
                     raise ValueError(f"mixed witness mismatch: {name}, {target}, {dump}")
-            if (target / "B.txt").read_bytes() != (target / "B_legacy.txt").read_bytes():
-                raise ValueError(f"mixed witness projection mismatch: {target}")
     for target in [output / f"fresh-{i}" for i in (0, 1)] + [
         output / f"{order}-{j}" for order in ("010", "101") for j in range(3)
     ]:
@@ -496,7 +490,6 @@ def mixed_score_witness(exe, assets, font, output, rate=44100):
             orders=["A/B/A", "B/A/B"],
             exports=8,
             rate=rate,
-            compared=["A", "C", "PCM"],
-            projection="B verified",
+            compared=["A", "B", "C", "PCM"],
         ),
     )

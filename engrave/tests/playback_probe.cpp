@@ -19,7 +19,6 @@
 #include "engrave/src/score/score_excerpts.h"
 #include "playback_dump.h"
 #include "playback_projection_flat.h"
-#include "playback_projection_legacy.h"
 #include <engrave/engine.h>
 
 #ifdef _WIN32
@@ -45,14 +44,14 @@ int export_probe(int argc, char **argv, std::unique_ptr<engrave::Engine> &engine
     try {
         if (argc < 5)
             throw std::invalid_argument("playback_probe ASSETS FONT SCORE OUTDIR [--rate N] [--no-repeats] [--no-reverb] [--mute-part N] "
-                                        "[--excerpt N] [--measure] [--corrupt-flat] [--cancel-phase 1..5] [--cancel-poll N]");
+                                        "[--excerpt N] [--measure] [--cancel-phase 1..5] [--cancel-poll N]");
         using namespace muse::audio;
         const auto dir = std::filesystem::u8path(argv[4]);
         std::filesystem::create_directories(dir);
         music::AudioRenderRequest request;
         request.output_path = utf8(dir / "audio.wav");
         int rate = 44100, cancel_phase = 0, cancel_poll = 1, mute_part = -1;
-        bool measure = false, corrupt_flat = false;
+        bool measure = false;
         for (int i = 5; i < argc; ++i) {
             std::string arg = argv[i];
             const auto number = [&] {
@@ -67,9 +66,6 @@ int export_probe(int argc, char **argv, std::unique_ptr<engrave::Engine> &engine
                 request.reverb = false;
             else if (arg == "--measure")
                 measure = true;
-
-            else if (arg == "--corrupt-flat")
-                corrupt_flat = true;
             else if (arg == "--cancel-phase")
                 cancel_phase = number();
             else if (arg == "--cancel-poll")
@@ -105,11 +101,10 @@ int export_probe(int argc, char **argv, std::unique_ptr<engrave::Engine> &engine
         for (std::size_t i = 0; i < tracks.size(); ++i)
             if (static_cast<int>(tracks[i].part_index) == mute_part) request.tracks[i].muted = true;
         test::PlaybackCapture::ids.clear();
-        std::ofstream a, c;
-        std::string projection_error;
-        bool projection_written = false;
+        std::ofstream a, b, c;
         if (!measure) {
             a.open(dir / "A.txt", std::ios::binary);
+            b.open(dir / "B.txt", std::ios::binary);
             c.open(dir / "C.txt", std::ios::binary);
             a << "legacy-mpe-v1\n";
             c << "synth-input-v2\n";
@@ -123,46 +118,10 @@ int export_probe(int argc, char **argv, std::unique_ptr<engrave::Engine> &engine
                 music::test::FlatDump{a}.track(id, instrument, events);
             };
             test::PlaybackCapture::synth = &c;
-            // Dump B: the export's flat records against an independent extractor over the legacy oracle model, in this binary
-            music::FlatPlaybackCapture::projection = [&](const mu::engraving::PlaybackScore &flat,
-                                                         const music::FlatPlaybackCapture::LegacyTracks &legacy) {
-                mu::engraving::PlaybackScore copy;
-                const mu::engraving::PlaybackScore *projected = &flat;
-                if (corrupt_flat) {
-                    // Negative control: one flat field changes, so the projections must differ
-                    copy = flat;
-                    for (auto &[id, track] : copy.tracks) {
-                        if (!track.notes.empty()) {
-                            track.notes[0].actual_duration += 1;
-                            projected = &copy;
-                            break;
-                        }
-                    }
-                    if (projected != &copy) projection_error = "corrupt-flat: no note record to corrupt";
-                }
-                music::test::FlatProjection flat_projection;
-                flat_projection.score(*projected);
-                std::vector<music::test::LegacyProjectionTrack> tracks;
-                for (const auto &[id, data] : legacy) tracks.push_back({id.part_id.to_uint64(), id.instrument_id, data});
-                music::test::LegacyProjection legacy_projection;
-                legacy_projection.score(tracks);
-                const std::string flat_text = flat_projection.str();
-                const auto write = [&](const char *name, const std::string &text) {
-                    std::ofstream stream(dir / name, std::ios::binary);
-                    stream << text;
-                    stream.flush();
-                    if (!stream) projection_error = std::string("dump B write failed: ") + name;
-                };
-                write("B.txt", flat_text);
-                write("B_legacy.txt", legacy_projection.out);
-                projection_written = true;
-                if (flat_text != legacy_projection.out && projection_error.empty()) {
-                    const auto at =
-                        std::mismatch(flat_text.begin(), flat_text.end(), legacy_projection.out.begin(), legacy_projection.out.end())
-                            .first -
-                        flat_text.begin();
-                    projection_error = "dump B mismatch: flat records differ from the legacy extractor at byte " + std::to_string(at);
-                }
+            music::FlatPlaybackCapture::projection = [&](const mu::engraving::PlaybackScore &flat) {
+                music::test::FlatProjection projection;
+                projection.score(flat);
+                b << projection.str();
             };
         }
 
@@ -205,10 +164,10 @@ int export_probe(int argc, char **argv, std::unique_ptr<engrave::Engine> &engine
         music::FlatPlaybackCapture::dump_note = {};
         if (!measure) {
             a.flush();
+            b.flush();
             c.flush();
-            if (!a || !c) throw std::runtime_error("dump write failed");
-            if (!projection_error.empty()) throw std::runtime_error(projection_error);
-            if (!projection_written) throw std::runtime_error("dump B was not captured");
+            if (!a || !b || !c) throw std::runtime_error("dump write failed");
+            if (b.tellp() == 0) throw std::runtime_error("dump B was not captured");
         }
         std::ofstream stats(dir / "metrics.txt", std::ios::binary);
         stats.precision(12);

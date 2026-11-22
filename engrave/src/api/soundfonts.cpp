@@ -7,7 +7,7 @@
 
 namespace engrave {
 Result<void> Engine::set_soundfonts(const std::vector<std::filesystem::path> &files) {
-    impl_->state.check_thread();
+    impl_->state->check_thread();
     std::vector<std::filesystem::path> retained;
     for (const auto &file : files) {
         std::error_code ec;
@@ -15,7 +15,7 @@ Result<void> Engine::set_soundfonts(const std::vector<std::filesystem::path> &fi
             return std::unexpected(Error{ErrorCode::NOT_FOUND, "no SoundFont file '" + utf8(file) + "'"});
         try {
             retained.push_back(
-                path_from_utf8(impl_->state.context->assets().freeze_sound_font(utf8(std::filesystem::absolute(file))).path));
+                path_from_utf8(impl_->state->context->assets().freeze_sound_font(utf8(std::filesystem::absolute(file))).path));
         } catch (const std::runtime_error &error) {
             return std::unexpected(Error{ErrorCode::INVALID_INPUT, error.what()});
         }
@@ -26,7 +26,7 @@ Result<void> Engine::set_soundfonts(const std::vector<std::filesystem::path> &fi
         std::string error;
         if (!music::validate_engine_soundfonts(paths, &error)) return std::unexpected(Error{ErrorCode::INVALID_INPUT, error});
     }
-    impl_->state.soundfonts.swap(retained);
+    impl_->state->soundfonts.swap(retained);
     return {};
 }
 

@@ -38,11 +38,11 @@ struct EngineState {
     std::filesystem::path cache_dir;
     std::vector<std::filesystem::path> soundfonts;
     std::int32_t audio_sample_rate = 44100;
-    std::size_t live_documents = 0;
     std::uint64_t font_generation = 0;
-    unsigned audio_render_index = 0; // names the temporary files of one process
-    // The engine's services; destroyed with the Engine, after its last Document.
+    unsigned audio_render_index = 0;
     std::unique_ptr<music::EngineContext> context;
+
+    static void release(std::shared_ptr<EngineState> state) noexcept;
 
     void check_thread() const noexcept {
         check(std::this_thread::get_id() == owner, "engrave called from a thread other than the Engine's");
@@ -50,7 +50,7 @@ struct EngineState {
 };
 
 struct Engine::Impl {
-    EngineState state;
+    std::shared_ptr<EngineState> state;
 };
 
 struct Document::Impl {
@@ -73,7 +73,7 @@ struct Document::Impl {
     std::vector<Checkpoint> checkpoints;
     std::size_t checkpoint_byte_limit = 64 * 1024 * 1024;
     ~Impl();
-    EngineState *engine = nullptr;
+    std::shared_ptr<EngineState> engine;
     // Declared before project: payloads remain available throughout DOM teardown.
     std::vector<std::unique_ptr<mu::engraving::rendering::score::LayoutDataStore>> layout_outputs;
     music::ScoreProject project;
@@ -89,8 +89,8 @@ struct Document::Impl {
     void ensure_layout(mu::engraving::Score &score);
     void discard_layout_output(mu::engraving::Score &score);
 
-    static std::unique_ptr<Document> make(EngineState &engine, music::ScoreProject project, music::ScoreAudioMixDefaults audio_defaults,
-                                          std::vector<Diagnostic> diagnostics);
+    static std::unique_ptr<Document> make(const std::shared_ptr<EngineState> &engine, music::ScoreProject project,
+                                          music::ScoreAudioMixDefaults audio_defaults, std::vector<Diagnostic> diagnostics);
 };
 
 // Internal access for engine integration and tests.

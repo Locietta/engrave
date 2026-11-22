@@ -32,10 +32,13 @@ void Settings::load() {
 
 void Settings::reload() { load(); }
 
-void Settings::reset([[maybe_unused]] bool keep_default_settings, [[maybe_unused]] bool notify_about_changes,
-                     [[maybe_unused]] bool notify_other_instances) {
+void Settings::reset(bool keep_default_settings, [[maybe_unused]] bool notify_about_changes, [[maybe_unused]] bool notify_other_instances) {
     local_settings_.clear();
     is_transaction_started_ = false;
+    if (!keep_default_settings) {
+        items_.clear();
+        return;
+    }
     for (auto &[k, item] : items_) {
         item.value = item.default_value;
     }

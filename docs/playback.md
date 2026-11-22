@@ -210,7 +210,7 @@ arbitrary score topologies or unpolled codec frames.
 The render pipeline guarantees deterministic, byte-identical output across runs on the same platform:
 
 - **Dump A**: Full MPE event dump (`A.txt`), serialized in the legacy text schema from the flat store records.
-- **Dump B**: Flat-record projection (`B.txt`), compared against an independent legacy oracle projection (`B_legacy.txt`) loaded from `PlaybackModel` within the same binary.
+- **Dump B**: Flat-record projection (`B.txt`), verified against Dump A's inventory and compared between captures that contain a complete projection.
 - **Dump C**: Synthesizer input dump (`C.txt`), capturing instrumented FluidSynth setup operations (such as channel configurations, SoundFont loads, and program selections) and the ordered raw MIDI event slices delivered to the synthesizer.
 - **Dump D**: PCM hash (`D.json`), SHA-256 hash of the decoded 32-bit float WAV audio chunk.
 

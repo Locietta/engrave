@@ -493,7 +493,7 @@ void TransactionManager::begin_transaction([[maybe_unused]] const muse::Translat
     active_ = true;
 }
 
-ScoreChanges TransactionManager::prepare_commit() {
+void TransactionManager::prepare_commit() {
     if (!active_) throw std::logic_error("no active mutation batch");
     if (master_score_->read_only() || (MScore::error != MsError::MS_NO_ERROR && !MScore::error_is_warning))
         throw std::runtime_error("the engine rejected the mutation batch");
@@ -514,13 +514,11 @@ ScoreChanges TransactionManager::prepare_commit() {
         if (changes.tick_to == -1 || changes.tick_to < tick) changes.tick_to = tick;
     }
     master_score_->update_automation(changes);
-    return changes;
 }
 
-void TransactionManager::commit_prepared(const ScoreChanges &changes) {
+void TransactionManager::commit_prepared() {
     const bool changed = master_score_->cmd_state().mutation_count != 0;
     if (changed) {
-        master_score_->notify_changes(changes);
         if (MScore::error != MsError::MS_NO_ERROR && !MScore::error_is_warning)
             throw std::runtime_error("the engine rejected batch finalization");
         master_score_->advance_source_revision();
@@ -536,8 +534,8 @@ void TransactionManager::end_transaction(bool failed) {
         return;
     }
     if (!failed) {
-        auto changes = prepare_commit();
-        commit_prepared(changes);
+        prepare_commit();
+        commit_prepared();
         return;
     }
     if (master_score_->cmd_state().mutation_count != 0) master_score_->advance_source_revision();

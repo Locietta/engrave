@@ -41,7 +41,6 @@
 #include "linkedobjects.h"
 #include "log.h"
 #include "part.h"
-#include "playback/playbackmodel.h"
 #include "repeatlist.h"
 #include "rest.h"
 #include "rw/mscloader.h"
@@ -298,33 +297,6 @@ void MasterScore::set_loop_boundary_tick(LoopBoundaryType type, Fraction tick) {
     }
 
     loop_boundaries_[size_t(type)] = tick;
-}
-
-void MasterScore::add_changes_listener(PlaybackModel *listener) {
-    if (std::find(changes_listeners_.begin(), changes_listeners_.end(), listener) == changes_listeners_.end()) {
-        changes_listeners_.push_back(listener);
-    }
-}
-
-void MasterScore::remove_changes_listener(PlaybackModel *listener) {
-    changes_listeners_.erase(std::remove(changes_listeners_.begin(), changes_listeners_.end(), listener), changes_listeners_.end());
-}
-
-void MasterScore::reload_playback_models() {
-    const auto listeners = changes_listeners_;
-    for (auto *listener : listeners) {
-        if (std::find(changes_listeners_.begin(), changes_listeners_.end(), listener) != changes_listeners_.end()) listener->reload();
-    }
-}
-
-void MasterScore::notify_changes(const ScoreChanges &changes) {
-    // A listener may detach while it handles the changes.
-    const std::vector<PlaybackModel *> listeners = changes_listeners_;
-    for (PlaybackModel *listener : listeners) {
-        if (std::find(changes_listeners_.begin(), changes_listeners_.end(), listener) != changes_listeners_.end()) {
-            listener->on_score_changes(changes);
-        }
-    }
 }
 
 //---------------------------------------------------------

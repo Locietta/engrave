@@ -194,7 +194,6 @@ struct ShowAnchors {
 // A cache that follows the committed changes of a master score (the playback
 // model). MasterScore calls it synchronously, in registration order, when a
 // transaction commits or an undo/redo completes.
-struct PlaybackModel;
 
 //   @P composer        string            composer of the score (read only)
 //   @P duration        int               duration of score in seconds (read only)

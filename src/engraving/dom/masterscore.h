@@ -119,11 +119,6 @@ public:
 
     TimeSigMap *sigmap() const override { return sigmap_; }
 
-    void add_changes_listener(PlaybackModel *listener);
-    void remove_changes_listener(PlaybackModel *listener);
-    void notify_changes(const ScoreChanges &changes);
-    void reload_playback_models();
-
     AutomationDataConstPtr automation_data() const override;
     void set_automation_data(AutomationDataPtr data);
     // Source setup outside an edit batch; the host exposes no point-edit operation.
@@ -277,7 +272,6 @@ private:
     std::vector<Excerpt *> excerpts_;
     std::vector<PartChannelSettingsLink> playback_settings_links_;
     Score *playback_score_ = nullptr;
-    std::vector<PlaybackModel *> changes_listeners_;
 
     bool read_only_ = false;
 

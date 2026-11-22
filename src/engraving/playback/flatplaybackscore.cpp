@@ -143,6 +143,3 @@ PlaybackScore PlaybackScoreBuilder::build(Score *score, const std::function<void
 
 // The renderer entry points for the flat sinks live with the sinks, not in the renderer unit
 ENGRAVE_INSTANTIATE_PLAYBACK_EVENTS_RENDERER(mu::engraving::FlatEventsSink);
-#ifdef ENGRAVE_PLAYBACK_HARNESS
-ENGRAVE_INSTANTIATE_PLAYBACK_EVENTS_RENDERER(mu::engraving::DualEventsSink);
-#endif

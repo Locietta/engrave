@@ -14,7 +14,7 @@ namespace engrave {
 // Failures the immediate caller can act on are returned as Result<T>. Engine
 // exceptions during an edit become EditRejected and report whether source was
 // partially written; allocation, callbacks and output failures can throw.
-// Contract violations (a call from another thread, a second Engine) abort.
+// Calls on an Engine or Document from another thread abort.
 enum struct ErrorCode {
     INVALID_ARGUMENT,   // an option the caller passed is invalid
     INVALID_INPUT,      // the score data is malformed or the importer rejected it

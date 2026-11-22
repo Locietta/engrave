@@ -2,10 +2,8 @@
 //
 //   engrave_api_test --assets=<resources> [gtest options]
 //
-// One Engine serves the whole process, as the API requires; the death tests
-// re-run main in a child process, which creates its own.
-
 #include <algorithm>
+#include <barrier>
 #include <cstdint>
 #include <cstdio>
 #include <filesystem>
@@ -25,6 +23,9 @@
 #include "core_test_env.h"
 #include "engrave/src/api/sniff.h"
 #include "engrave/src/score/json.h"
+#include "engraving/dom/drumset.h"
+#include "engraving/dom/mscore.h"
+#include "global/settings.h"
 #include <engrave/engrave.h>
 
 namespace {
@@ -1033,21 +1034,122 @@ TEST(Open, ReportsCallerErrors) {
     expect_error(g_engine->open(g_resources), ErrorCode::INVALID_ARGUMENT);
 }
 
-TEST(Contract, SecondEngineAborts) {
-    EXPECT_DEATH(std::ignore = engrave::Engine::create({.resources = g_resources}), "one Engine per process");
+TEST(Contract, ActiveEngineRejectsAnotherCreateAfterValidatingOptions) {
+    const auto invalid = engrave::Engine::create({.resources = g_resources, .audio_sample_rate = 100});
+    ASSERT_FALSE(invalid);
+    EXPECT_EQ(invalid.error().code, ErrorCode::INVALID_ARGUMENT);
+    const auto active = engrave::Engine::create({.resources = g_resources});
+    ASSERT_FALSE(active);
+    EXPECT_EQ(active.error().code, ErrorCode::UNSUPPORTED);
 }
 
 TEST(Contract, CallFromAnotherThreadAborts) {
     EXPECT_DEATH(std::thread([] { std::ignore = g_engine->templates(); }).join(), "thread other than");
 }
 
-TEST(Contract, EngineDestroyedBeforeItsDocumentsAborts) {
-    EXPECT_DEATH(
-        {
-            auto document = treble_clef();
-            g_engine.reset();
-        },
-        "while Documents were open");
+struct EngineLifecycle : ::testing::Test {
+    void SetUp() override { engrave::test::core_env().set_engine(nullptr); }
+
+    void TearDown() override {
+        auto &env = engrave::test::core_env();
+        auto created = engrave::Engine::create({.resources = env.assets, .deterministic_ids = env.deterministic});
+        ASSERT_TRUE(created) << created.error().message;
+        env.set_engine(std::move(*created));
+    }
+};
+
+TEST_F(EngineLifecycle, ConcurrentStartsHaveOneOwner) {
+    const engrave::EngineOptions options{.resources = g_resources};
+    std::barrier rendezvous(2);
+    std::optional<ErrorCode> worker_error;
+    std::jthread worker([&] {
+        rendezvous.arrive_and_wait();
+        auto result = engrave::Engine::create(options);
+        if (!result) worker_error = result.error().code;
+        rendezvous.arrive_and_wait();
+    });
+    rendezvous.arrive_and_wait();
+    const auto result = engrave::Engine::create(options);
+    rendezvous.arrive_and_wait();
+    worker.join();
+
+    EXPECT_EQ(result.has_value(), worker_error.has_value());
+    if (worker_error) EXPECT_EQ(*worker_error, ErrorCode::UNSUPPORTED);
+    if (!result) EXPECT_EQ(result.error().code, ErrorCode::UNSUPPORTED);
+}
+
+TEST_F(EngineLifecycle, FontFailureReleasesInitializedRuntime) {
+    const auto bad_font = g_resources / "engraving/instruments/instruments.xml";
+    const auto failed = engrave::Engine::create({.resources = g_resources, .fonts = {bad_font}, .deterministic_ids = true});
+    ASSERT_FALSE(failed);
+    EXPECT_EQ(failed.error().code, ErrorCode::INVALID_INPUT);
+    EXPECT_FALSE(mu::engraving::MScore::test_mode);
+
+    const auto retried = engrave::Engine::create({.resources = g_resources});
+    ASSERT_TRUE(retried) << retried.error().message;
+    EXPECT_TRUE((*retried)->runtime_fonts().empty());
+}
+
+TEST_F(EngineLifecycle, LastDocumentReleasesRuntimeForAnotherEngine) {
+    using mu::engraving::MsError;
+    using mu::engraving::MScore;
+    using mu::engraving::sm_drumset;
+
+    auto first = engrave::Engine::create({.resources = g_resources});
+    ASSERT_TRUE(first) << first.error().message;
+    auto document = (*first)->create_document({.template_id = "Treble_Clef"});
+    ASSERT_TRUE(document) << document.error().message;
+    auto other = (*first)->create_document({.template_id = "Treble_Clef"});
+    ASSERT_TRUE(other) << other.error().message;
+    ASSERT_TRUE((*document)->page_count());
+    first->reset();
+
+    const auto before = (*document)->outline();
+    ASSERT_TRUE(before) << before.error().message;
+    const auto edited = (*document)->edit({.ops = {engrave::InsertMeasures{.count = 2}}});
+    ASSERT_TRUE(edited) << edited.error().message;
+    ASSERT_FALSE(edited->rejection);
+    const auto measures = (*document)->query({.types = {"Measure"}});
+    ASSERT_TRUE(measures) << measures.error().message;
+    EXPECT_EQ(measures->total, static_cast<std::size_t>(before->measure_count + 2));
+    const auto saved = (*document)->export_score({.format = Format::MSCZ});
+    ASSERT_TRUE(saved) << saved.error().message;
+    EXPECT_DEATH(std::thread([&] { std::ignore = (*document)->outline(); }).join(), "thread other than");
+
+    document->reset();
+    const auto active = engrave::Engine::create({.resources = g_resources});
+    ASSERT_FALSE(active);
+    EXPECT_EQ(active.error().code, ErrorCode::UNSUPPORTED);
+
+    const muse::Settings::Key key{"test", "engine_lifetime"};
+    muse::settings()->set_local_value(key, muse::Val(true));
+    muse::settings()->begin_transaction();
+    sm_drumset->set_percussion_panel_columns(42);
+    MScore::test_mode = true;
+    MScore::set_error(MsError::NO_NOTE_SELECTED, true);
+    other->reset();
+    EXPECT_FALSE(MScore::test_mode);
+    EXPECT_EQ(MScore::error, MsError::MS_NO_ERROR);
+    EXPECT_FALSE(MScore::error_is_warning);
+
+    const auto second = engrave::Engine::create({.resources = g_resources});
+    ASSERT_TRUE(second) << second.error().message;
+    EXPECT_FALSE(muse::settings()->items().contains(key));
+    EXPECT_NO_THROW(muse::settings()->begin_transaction());
+    muse::settings()->rollback_transaction();
+    EXPECT_EQ(sm_drumset->percussion_panel_columns(), 8u);
+    const auto reopened = (*second)->open(*saved);
+    ASSERT_TRUE(reopened) << reopened.error().message;
+    const auto after = (*reopened)->outline();
+    ASSERT_TRUE(after) << after.error().message;
+    EXPECT_EQ(after->measure_count, before->measure_count + 2);
+    const auto edit_again = (*reopened)->edit({.ops = {engrave::InsertMeasures{.count = 1}}});
+    ASSERT_TRUE(edit_again) << edit_again.error().message;
+    ASSERT_FALSE(edit_again->rejection);
+    const auto render = (*reopened)->render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(render) << render.error().message;
+    ASSERT_FALSE(render->pages.empty());
+    EXPECT_NE(text_of(render->pages.front()).find("<svg"), std::string::npos);
 }
 
 TEST(JsonHelpers, ParseMatchesTheOldWireRules) {

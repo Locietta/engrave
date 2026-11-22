@@ -3,9 +3,7 @@
 
 #include <iterator>
 
-//! NOTE: the score walk shared by the legacy PlaybackModel (test oracle, design exception E1) and the
-//! listener-free PlaybackScoreBuilder (production export). The walk is the former PlaybackModel load
-//! code, moved unchanged; only its writes go through a Store, selected at compile time:
+//! The score walk sends rendered events and playback context to a Store:
 //!
 //!   bool contains(const InstrumentTrackId &) const;           // the track already exists
 //!   void touch(const InstrumentTrackId &);                    // creates the track
@@ -13,8 +11,6 @@
 //!   const PlaybackSetupData *find_setup(const InstrumentTrackId &) const;
 //!   void apply_context(const InstrumentTrackId &, PlaybackPartData &, Walk &, bool last_track); // dynamics and context events
 //!   void emit(const InstrumentTrackId &, Render);             // creates the track, render(sink)
-//!
-//! A track is created exactly where the legacy model created its map entry, so every store sees the same tracks
 
 #include <functional>
 
