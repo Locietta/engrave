@@ -66,9 +66,6 @@ Result<SegmentAddress> chord_rest_address(const Address &address) {
     if (at->kind != "ChordRest") {
         return invalid(std::format("text attaches to a ChordRest segment, not to a '{}' one", at->kind));
     }
-    if (at->staff < 0 || at->voice < 0 || static_cast<std::size_t>(at->voice) >= mu::engraving::voices) {
-        return invalid(std::format("a staff has no voice {}", at->voice));
-    }
     return *at;
 }
 
@@ -165,10 +162,9 @@ Result<void> check_pair(const EngravingObject &anchor, std::string_view child) {
 
 // The track the new item belongs to. A segment address names it, since a segment
 // has no staff of its own; a chord or a rest has one.
-Result<mu::engraving::track_idx_t> anchor_track(const EngravingObject &anchor, const Ref &ref) {
+Result<mu::engraving::track_idx_t> anchor_track(const EngravingObject &anchor, const Target &target) {
     if (anchor.type() == ElementType::SEGMENT) {
-        const auto *address = std::get_if<Address>(&ref);
-        const auto *at = address ? std::get_if<SegmentAddress>(address) : nullptr;
+        const auto *at = std::get_if<SegmentAddress>(&target.ref);
         if (!at) return invalid("an item added to a segment is named by a segment address");
         return address_track(*at, *mu::engraving::to_segment(&anchor)->score());
     }
@@ -236,9 +232,6 @@ Result<Step> prepare(EditContext &context, const AddText &op) {
     if (op.text.empty()) return invalid("a text has at least one character");
     auto target = context.target(op.at);
     if (!target) return std::unexpected(target.error());
-    if (auto track = address_track(*at, *mu::engraving::to_segment(target->object)->score()); !track) {
-        return std::unexpected(track.error());
-    }
     return [target = *target, at = *at, style = *style, text = op.text, name = op.style](EditContext &context) -> Result<void> {
         auto object = context.object(target);
         if (!object) return std::unexpected(object.error());
@@ -293,17 +286,16 @@ Result<Step> prepare(EditContext &context, const Add &op) {
     }
     auto anchor = context.target(op.anchor);
     if (!anchor) return std::unexpected(anchor.error());
-    // An OpRef's element exists only when the step runs; the step checks the pair
-    // for it as well, since an earlier operation decides its type.
+    // Deferred anchors are checked when the step runs against the live score.
     if (anchor->object) {
         if (auto pair = check_pair(*anchor->object, name); !pair) return std::unexpected(pair.error());
-        if (auto track = anchor_track(*anchor->object, op.anchor); !track) return std::unexpected(track.error());
+        if (auto track = anchor_track(*anchor->object, *anchor); !track) return std::unexpected(track.error());
     }
     return [anchor = *anchor, type, name, props = std::move(*props)](EditContext &context) -> Result<void> {
         auto object = context.object(anchor);
         if (!object) return std::unexpected(object.error());
         if (auto pair = check_pair(**object, name); !pair) return std::unexpected(pair.error());
-        auto track = anchor_track(**object, anchor.ref);
+        auto track = anchor_track(**object, anchor);
         if (!track) return std::unexpected(track.error());
         if (!(*object)->is_engraving_item()) return invalid("an item is added to an element");
         std::unique_ptr<EngravingItem> created(mu::engraving::Factory::create_item(type, mu::engraving::to_engraving_item(*object)));

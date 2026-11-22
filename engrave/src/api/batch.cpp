@@ -14,9 +14,11 @@
 #include "engrave/src/runtime/score_io.h"
 #include "engraving/dom/engravingobject.h"
 #include "engraving/dom/masterscore.h"
+#include "engraving/dom/measure.h"
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/note.h"
 #include "engraving/dom/score.h"
+#include "engraving/dom/segment.h"
 #include "engraving/dom/tempotimeline.h"
 #include "engraving/dom/tie.h"
 #include "engraving/editing/cmd.h"
@@ -80,13 +82,36 @@ Result<Target> EditContext::target(const Ref &ref) const {
             return fail(ErrorCode::INVALID_ARGUMENT,
                         std::format("an OpRef names operation {}, which does not run before this one", made->op));
         }
-        return Target{ref, nullptr, epoch_};
+        return Target{*made};
     }
-    const Result<Resolved> found =
-        std::holds_alternative<ElementId>(ref) ? resolve(master_, std::get<ElementId>(ref)) : resolve(master_, std::get<Address>(ref));
+    if (const auto *address = std::get_if<Address>(&ref)) {
+        const auto *segment = std::get_if<SegmentAddress>(address);
+        if (!segment) {
+            const auto found = resolve(master_, *address);
+            if (!found) return std::unexpected(found.error());
+            return fail(ErrorCode::INVALID_ARGUMENT, "layout builds this element; it cannot be edited");
+        }
+        if (auto valid = validate_segment_address(*segment); !valid) return std::unexpected(valid.error());
+        if (segment->staff < 0) return fail(ErrorCode::INVALID_ARGUMENT, std::format("a score has no staff {}", segment->staff));
+        if (segment->voice < 0 || static_cast<std::size_t>(segment->voice) >= mu::engraving::voices)
+            return fail(ErrorCode::INVALID_ARGUMENT, std::format("a staff has no voice {}", segment->voice));
+        return Target{*segment};
+    }
+    const auto id = std::get<ElementId>(ref);
+    const auto found = resolve(master_, id);
     if (!found) return std::unexpected(found.error());
-    if (!found->writable) return fail(ErrorCode::INVALID_ARGUMENT, "layout builds this element; it cannot be edited");
-    return Target{ref, found->object, epoch_, master_.eid_register()->handle_of(found->object)};
+    return Target{id, found->object, epoch_, master_.eid_register()->handle_of(found->object)};
+}
+
+Result<mu::engraving::Measure *> EditContext::writable_measure(const SegmentAddress &address) const {
+    const auto measure = segment_measure(master_, address);
+    if (!measure) return measure;
+    const auto &score = *(*measure)->score();
+    if (score.read_only() || id_class(**measure) == IdClass::LAYOUT)
+        return fail(ErrorCode::INVALID_ARGUMENT, "the measure cannot be edited");
+    if (static_cast<std::size_t>(address.staff) >= score.nstaves())
+        return fail(ErrorCode::INVALID_ARGUMENT, std::format("the score has no staff {}", address.staff));
+    return measure;
 }
 
 Result<EngravingObject *> EditContext::object(const Target &target) const {
@@ -103,11 +128,20 @@ Result<EngravingObject *> EditContext::object(const Target &target) const {
         }
         return object;
     }
+    if (const auto *address = std::get_if<SegmentAddress>(&target.ref)) {
+        const auto measure = writable_measure(*address);
+        if (!measure) return std::unexpected(measure.error());
+        auto *segment = find_segment(**measure, *address);
+        if (!segment) return std::unexpected(missing_segment(*address));
+        if (id_class(*segment) == IdClass::LAYOUT)
+            return fail(ErrorCode::INVALID_ARGUMENT, "layout builds this element; it cannot be edited");
+        return segment;
+    }
     if (target.epoch == epoch_) {
         if (auto *object = master_.eid_register()->live_item(target.handle)) return object;
         return fail(ErrorCode::STALE_HANDLE, "the prepared source element is no longer live");
     }
-    const Result<Target> again = this->target(target.ref);
+    const auto again = resolve(master_, std::get<ElementId>(target.ref));
     if (!again) return std::unexpected(again.error());
     return again->object;
 }

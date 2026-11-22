@@ -5,6 +5,7 @@
 #include <functional>
 #include <optional>
 #include <string_view>
+#include <variant>
 #include <vector>
 
 #include "engraving/infrastructure/sourcehandle.h"
@@ -15,16 +16,17 @@
 namespace mu::engraving {
 struct EngravingObject;
 struct MasterScore;
+struct Measure;
 struct Score;
 } // namespace mu::engraving
 
 namespace engrave::api {
 
-// A reference as far as it resolves before the batch runs: the element an id or an
-// address names, or an OpRef to what an earlier operation will create.
+// Only EIDs can supply a preflight object. Segment positions and OpRefs depend
+// on what the preceding operations leave in the score.
 struct Target {
-    Ref ref;
-    mu::engraving::EngravingObject *object = nullptr; // preflight view only; null for an OpRef
+    std::variant<ElementId, OpRef, SegmentAddress> ref;
+    mu::engraving::EngravingObject *object = nullptr;
     std::size_t epoch = 0;
     mu::engraving::SourceHandle handle;
 };
@@ -39,13 +41,11 @@ struct EditContext {
     // The operation being prepared or run.
     std::size_t op() const { return op_; }
 
-    // While preparing: NotFound or StaleHandle for an id or address that names
-    // nothing live, InvalidArgument for an OpRef that does not name an earlier
-    // operation.
     Result<Target> target(const Ref &ref) const;
     // While running: the live element. A target is resolved again when an earlier
     // operation changed more than properties, since it may have removed it.
     Result<mu::engraving::EngravingObject *> object(const Target &target) const;
+    Result<mu::engraving::Measure *> writable_measure(const SegmentAddress &address) const;
     // The master score or the excerpt a selection names.
     Result<mu::engraving::Score *> score(const ScoreSel &selection) const;
 

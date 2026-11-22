@@ -25,7 +25,9 @@
 #include "engraving/dom/chord.h"
 #include "engraving/dom/chordline.h"
 #include "engraving/dom/chordlist.h"
+#include "engraving/dom/drumset.h"
 #include "engraving/dom/factory.h"
+#include "engraving/dom/instrument.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
 #include "engraving/dom/mmrest.h"
@@ -476,6 +478,135 @@ TEST(Edit, LaterExcerptTargetIsCheckedBeforeAnyExcerptIsCreated) {
     EXPECT_EQ(result->rejection->error.code, ErrorCode::INVALID_ARGUMENT);
     EXPECT_EQ(native_source(*document), before);
     EXPECT_TRUE(document->edit({{SetProperty{note, "color", Color{255, 0, 0}}}}));
+}
+
+TEST(Edit, SegmentAddressesResolveAfterEarlierNoteEntry) {
+    auto made = g_engine->create_document({.template_id = "Treble_Clef"});
+    ASSERT_TRUE(made);
+    auto &document = **made;
+    auto &master = engrave::harness::master_of(document);
+    const auto measure = engrave::from_engine(master.first_measure()->eid());
+    const engrave::SegmentAddress beat_one{measure, 0, 0, {0, 1}, "ChordRest"};
+    const engrave::SegmentAddress beat_two{measure, 0, 0, {1, 4}, "ChordRest"};
+    const auto missing = document.get(engrave::Address{beat_two});
+    ASSERT_FALSE(missing);
+    EXPECT_EQ(missing.error().code, ErrorCode::STALE_HANDLE);
+
+    const auto batch = document.edit({{engrave::EnterNotes{beat_one, {1, 4}, {{60}}}, engrave::EnterNotes{beat_two, {1, 4}, {{62}}},
+                                       engrave::AddText{beat_two, "Staff", "second beat"}}});
+    ASSERT_TRUE(batch) << batch.error().message;
+    ASSERT_FALSE(batch->rejection) << batch->rejection->error.message;
+    ASSERT_EQ(batch->applied, 3u);
+    for (const auto &[tick, pitch] : {std::pair{mu::engraving::Fraction{0, 1}, 60}, {{1, 4}, 62}}) {
+        const auto *entered = master.find_cr(tick, 0);
+        ASSERT_TRUE(entered && entered->is_chord());
+        EXPECT_EQ(mu::engraving::to_chord(entered)->notes().front()->pitch(), pitch);
+        EXPECT_EQ(entered->ticks(), (mu::engraving::Fraction{1, 4}));
+    }
+    const auto chords = document.query({.types = {"Chord"}, .measure_count = 1});
+    ASSERT_TRUE(chords);
+    ASSERT_EQ(chords->elements.size(), 2u);
+    EXPECT_EQ(chords->elements.front().tick.num, 0);
+    EXPECT_EQ(chords->elements.front().tick.den, 1);
+    const auto &chord = chords->elements.back();
+    EXPECT_EQ(chord.tick.num, 1);
+    EXPECT_EQ(chord.tick.den, 4);
+    EXPECT_EQ(chord.duration.num, 1);
+    EXPECT_EQ(chord.duration.den, 4);
+}
+
+TEST(Edit, OpensMeasureRestAtBeatTwoInPrimaryAndUnusedVoices) {
+    for (int voice : {0, 1}) {
+        SCOPED_TRACE(voice);
+        auto made = g_engine->create_document({.template_id = "Treble_Clef"});
+        ASSERT_TRUE(made);
+        auto &document = **made;
+        auto &master = engrave::harness::master_of(document);
+        const auto measure = engrave::from_engine(master.first_measure()->eid());
+        const engrave::SegmentAddress beat_two{measure, 0, voice, {1, 4}, "ChordRest"};
+        const auto result = document.edit({{engrave::EnterNotes{beat_two, {1, 4}, {{64}}}}});
+        ASSERT_TRUE(result) << result.error().message;
+        ASSERT_FALSE(result->rejection) << result->rejection->error.message;
+        const auto *leading = master.find_cr({0, 1}, voice);
+        const auto *chord = master.find_cr({1, 4}, voice);
+        const auto *trailing = master.find_cr({1, 2}, voice);
+        ASSERT_TRUE(leading && leading->is_rest());
+        ASSERT_TRUE(chord && chord->is_chord());
+        ASSERT_TRUE(trailing && trailing->is_rest());
+        EXPECT_EQ(leading->actual_ticks(), (mu::engraving::Fraction{1, 4}));
+        EXPECT_EQ(chord->actual_ticks(), (mu::engraving::Fraction{1, 4}));
+        EXPECT_EQ(mu::engraving::to_chord(chord)->notes().front()->pitch(), 64);
+        EXPECT_EQ(trailing->actual_ticks(), (mu::engraving::Fraction{1, 2}));
+        if (voice == 1) EXPECT_TRUE(master.find_cr({0, 1}, 0)->is_full_measure_rest());
+    }
+}
+
+TEST(Edit, InstrumentCatalogMatchesAddedParts) {
+    const auto catalog = g_engine->instruments();
+    std::set<std::string> ids;
+    for (const auto &entry : catalog) EXPECT_TRUE(ids.insert(entry.id).second) << entry.id;
+
+    auto made = g_engine->create_document({.template_id = "Treble_Clef"});
+    ASSERT_TRUE(made);
+    auto &document = **made;
+    auto &master = engrave::harness::master_of(document);
+
+    struct Expected {
+        std::string_view id;
+        int staves;
+        int diatonic;
+        int chromatic;
+        bool drums;
+    };
+
+    for (const Expected expected : {Expected{"piano", 2, 0, 0, false},
+                                    {"bb-clarinet", 1, -1, -2, false},
+                                    {"horn", 1, -4, -7, false},
+                                    {"drumset", 1, 0, 0, true},
+                                    {"percussion-synthesizer", 1, 0, 0, true}}) {
+        SCOPED_TRACE(expected.id);
+        const auto entry = std::ranges::find(catalog, expected.id, &engrave::InstrumentInfo::id);
+        ASSERT_NE(entry, catalog.end());
+        EXPECT_EQ(entry->staff_count, expected.staves);
+        EXPECT_EQ(entry->transpose.diatonic, expected.diatonic);
+        EXPECT_EQ(entry->transpose.chromatic, expected.chromatic);
+        EXPECT_EQ(entry->uses_drumset, expected.drums);
+        EXPECT_FALSE(entry->group_id.empty());
+        if (expected.id == "piano") EXPECT_EQ(entry->name, "Piano");
+
+        const auto added = document.edit({{engrave::AddPart{entry->id}}});
+        ASSERT_TRUE(added) << added.error().message;
+        ASSERT_EQ(added->applied, 1u);
+        const auto &part = *master.parts().back();
+        EXPECT_EQ(part.nstaves(), expected.staves);
+        const auto &instrument = *part.instrument();
+        EXPECT_EQ(instrument.id().to_std_string(), expected.id);
+        EXPECT_EQ(instrument.transpose().diatonic, expected.diatonic);
+        EXPECT_EQ(instrument.transpose().chromatic, expected.chromatic);
+        if (!expected.drums) {
+            EXPECT_TRUE(entry->drums.empty());
+            EXPECT_EQ(instrument.drumset(), nullptr);
+            continue;
+        }
+        const auto *kit = instrument.drumset();
+        ASSERT_NE(kit, nullptr);
+        const auto bass = std::ranges::find(entry->drums, 35, &engrave::DrumInfo::key);
+        ASSERT_NE(bass, entry->drums.end());
+        EXPECT_EQ(bass->name, expected.id == "drumset" ? "Bass Drum 2" : "Acoustic Bass Drum");
+        EXPECT_EQ(bass->line, 8);
+        EXPECT_EQ(bass->default_voice, 1);
+        std::size_t count = 0;
+        for (int key = 0; key < mu::engraving::drum_instruments; ++key) {
+            if (!kit->is_valid(key)) continue;
+            ASSERT_LT(count, entry->drums.size());
+            const auto &drum = entry->drums[count++];
+            EXPECT_EQ(drum.key, key);
+            EXPECT_EQ(drum.line, kit->line(key));
+            EXPECT_EQ(drum.default_voice, kit->voice(key));
+            EXPECT_EQ(drum.name, kit->name(key).to_std_string());
+        }
+        EXPECT_EQ(entry->drums.size(), count);
+    }
 }
 
 TEST(Edit, MultinoteEntryAcrossBarlineLeavesNoPartialChord) {

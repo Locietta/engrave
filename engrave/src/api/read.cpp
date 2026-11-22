@@ -74,15 +74,19 @@ std::unexpected<Error> fail(ErrorCode code, std::string message) { return std::u
 // Ticks per whole note: the engine divides a quarter note into Constants::DIVISION.
 constexpr std::int64_t whole_note_ticks = 4 * mu::engraving::Constants::division;
 
-// A position or length in ticks, as a fraction of a whole note.  Not reduced, so
-// that a tick is the same fraction wherever it is reported.
+// Outline positions retain their tick-grid representation.
 Fraction whole_notes(int ticks) { return {ticks, whole_note_ticks}; }
 
 // Whether a is before b. Inputs have positive denominators; comparisons cover
 // the full int64 range without overflowing on unreduced fractions.
 bool before(const Fraction &a, const Fraction &b) { return a < b; }
 
-Fraction fraction_of(const mu::engraving::Fraction &value) { return {value.numerator(), value.denominator()}; }
+Fraction fraction_of(const mu::engraving::Fraction &value) { return {value.numerator64(), value.denominator64()}; }
+
+Fraction musical_time(mu::engraving::Fraction value) {
+    value.reduce();
+    return fraction_of(value);
+}
 
 std::string plain_text(const muse::String &text) { return text.to_std_string(); }
 
@@ -167,15 +171,15 @@ struct MeasureIndex {
     }
 };
 
-int duration_ticks(const EngravingItem &item) {
+mu::engraving::Fraction duration_of(const EngravingItem &item) {
     if (item.is_chord_rest()) {
         const auto &rest = static_cast<const ChordRest &>(item);
         // A grace note has no length of its own in this model.
-        if (rest.is_chord() && mu::engraving::to_chord(&rest)->is_grace()) return 0;
-        return rest.actual_ticks().ticks();
+        if (rest.is_chord() && mu::engraving::to_chord(&rest)->is_grace()) return {};
+        return rest.actual_ticks();
     }
-    if (item.is_spanner()) return static_cast<const Spanner &>(item).ticks().ticks();
-    return 0;
+    if (item.is_spanner()) return static_cast<const Spanner &>(item).ticks();
+    return {};
 }
 
 // The position of an element and the measure it sits in.
@@ -190,13 +194,13 @@ Where where_of(const EngravingObject &object, const MeasureIndex &index) {
     Where where;
     if (object.is_measure()) {
         const Measure *measure = mu::engraving::to_measure(&object);
-        where.tick = whole_notes(measure->tick().ticks());
-        where.duration = whole_notes(measure->ticks().ticks());
+        where.tick = musical_time(measure->tick());
+        where.duration = musical_time(measure->ticks());
         where.measure_index = index.index_of(measure);
     } else if (object.is_engraving_item()) {
         const auto &item = static_cast<const EngravingItem &>(object);
-        where.tick = whole_notes(item.tick().ticks());
-        where.duration = whole_notes(duration_ticks(item));
+        where.tick = musical_time(item.tick());
+        where.duration = musical_time(duration_of(item));
         where.measure_index = index.index_of_tick(item.tick().ticks());
     } else {
         return where; // the score, a part or a staff: not at a position

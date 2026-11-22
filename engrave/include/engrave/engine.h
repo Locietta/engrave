@@ -76,6 +76,28 @@ struct TemplateInfo {
     std::filesystem::path path; // the template's .mscx
 };
 
+struct Transposition {
+    int diatonic = 0;
+    int chromatic = 0;
+};
+
+struct DrumInfo {
+    int key = 0;
+    int line = 0;
+    int default_voice = 0;
+    std::string name;
+};
+
+struct InstrumentInfo {
+    std::string id;
+    std::string name;
+    std::string group_id;
+    int staff_count = 0;
+    Transposition transpose;
+    bool uses_drumset = false;
+    std::vector<DrumInfo> drums;
+};
+
 // Inputs larger than this are rejected with ResourceLimit.
 inline constexpr std::size_t max_input_bytes = 8 * 1024 * 1024;
 
@@ -139,6 +161,9 @@ struct Engine {
     // The templates listed in resources/templates/categories.json, in that
     // file's order.
     std::vector<TemplateInfo> templates() const;
+
+    // Catalog order, with the first definition of each ID used by AddPart.
+    std::vector<InstrumentInfo> instruments() const;
 
     // Unsupported for MSCX/MSCZ written before MuseScore 4.6 (mscVersion < 460).
     Result<std::unique_ptr<Document>> open(std::span<const std::byte> data, const OpenOptions &options = {});

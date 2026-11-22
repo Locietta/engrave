@@ -425,44 +425,52 @@ Result<Score *> select_score(MasterScore &master, const ScoreSel &selection) {
     return mu::engraving::to_score(found->object);
 }
 
+Result<void> validate_segment_address(const SegmentAddress &address) {
+    if (segment_type_of(address.kind) == SegmentType::INVALID)
+        return fail(ErrorCode::INVALID_ARGUMENT, std::format("'{}' is not a segment type", address.kind));
+    const Fraction &tick = address.tick;
+    if (tick.num < std::numeric_limits<int>::min() || tick.num > std::numeric_limits<int>::max() || tick.den <= 0 ||
+        tick.den > std::numeric_limits<int>::max()) {
+        return fail(ErrorCode::INVALID_ARGUMENT, "a segment tick must fit the engine's fraction with a positive denominator");
+    }
+    return {};
+}
+
+Result<Measure *> segment_measure(MasterScore &master, const SegmentAddress &address) {
+    const auto measure = resolve(master, address.measure);
+    if (!measure) return std::unexpected(measure.error());
+    if (!measure->object->is_measure()) return fail(ErrorCode::INVALID_ARGUMENT, "a segment address names a measure");
+    return mu::engraving::to_measure(measure->object);
+}
+
+Segment *find_segment(Measure &measure, const SegmentAddress &address) {
+    const SegmentType kind = segment_type_of(address.kind);
+    // Compare absolute ticks to avoid overflow in the subtraction from the bar's start.
+    for (Segment *candidate = measure.first(); candidate; candidate = candidate->next()) {
+        if (!candidate->is_type(kind)) continue;
+        const auto position = candidate->tick();
+        if (position.denominator64() > 0 &&
+            detail::compare_fraction(position.numerator64(), position.denominator64(), address.tick.num, address.tick.den) == 0) {
+            return candidate;
+        }
+    }
+    return nullptr;
+}
+
+Error missing_segment(const SegmentAddress &address) {
+    return {ErrorCode::STALE_HANDLE, std::format("no {} segment at tick {}/{}", address.kind, address.tick.num, address.tick.den)};
+}
+
 Result<Resolved> resolve(MasterScore &master, const Address &address) {
     return std::visit(
         [&master](const auto &value) -> Result<Resolved> {
             using T = std::decay_t<decltype(value)>;
             if constexpr (std::is_same_v<T, SegmentAddress>) {
-                const Result<Resolved> measure = resolve(master, value.measure);
-                if (!measure) return measure;
-                if (measure->object->type() != ElementType::MEASURE) {
-                    return fail(ErrorCode::INVALID_ARGUMENT, "a segment address names a measure");
-                }
-                const SegmentType kind = segment_type_of(value.kind);
-                if (kind == SegmentType::INVALID) {
-                    return fail(ErrorCode::INVALID_ARGUMENT, std::format("'{}' is not a segment type", value.kind));
-                }
-                const Fraction &tick = value.tick;
-                if (tick.num < std::numeric_limits<int>::min() || tick.num > std::numeric_limits<int>::max() || tick.den <= 0 ||
-                    tick.den > std::numeric_limits<int>::max()) {
-                    return fail(ErrorCode::INVALID_ARGUMENT, "a segment tick must fit the engine's fraction with a positive denominator");
-                }
-                Measure *found = mu::engraving::to_measure(measure->object);
-                // findSegment subtracts the measure tick before comparing. Large
-                // denominators can overflow that intermediate. Compare absolute
-                // ticks without narrowing the engine's unreduced 64-bit terms.
-                Segment *segment = nullptr;
-                for (Segment *candidate = found->first(); candidate; candidate = candidate->next()) {
-                    if (!candidate->is_type(kind)) continue;
-                    const auto position = candidate->tick();
-                    if (position.denominator64() > 0 &&
-                        detail::compare_fraction(position.numerator64(), position.denominator64(), tick.num, tick.den) == 0) {
-                        segment = candidate;
-                        break;
-                    }
-                }
-                if (!segment) {
-                    return fail(ErrorCode::STALE_HANDLE,
-                                std::format("no {} segment at tick {}/{}", value.kind, value.tick.num, value.tick.den));
-                }
-                return Resolved{segment, true};
+                const auto measure = segment_measure(master, value);
+                if (!measure) return std::unexpected(measure.error());
+                if (auto valid = validate_segment_address(value); !valid) return std::unexpected(valid.error());
+                if (auto *segment = find_segment(**measure, value)) return Resolved{segment, id_class(*segment) != IdClass::LAYOUT};
+                return std::unexpected(missing_segment(value));
             } else if constexpr (std::is_same_v<T, PageAddress>) {
                 const Result<Score *> selected = select_score(master, value.score);
                 if (!selected) return fail(ErrorCode::STALE_HANDLE, selected.error().message);

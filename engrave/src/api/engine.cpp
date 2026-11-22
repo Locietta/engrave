@@ -8,6 +8,7 @@
 #include <mutex>
 #include <new>
 #include <stdexcept>
+#include <unordered_set>
 
 #include "engrave/src/api/handles.h"
 #include "engrave/src/api/mnx.h"
@@ -16,6 +17,9 @@
 #include "engrave/src/runtime/runtime_assets.h"
 #include "engrave/src/runtime/version.h"
 #include "engrave/src/score/json.h"
+#include "engraving/dom/drumset.h"
+#include "engraving/dom/instrtemplate.h"
+#include "engraving/dom/instrument.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/text.h"
@@ -196,6 +200,36 @@ std::vector<TemplateInfo> Engine::templates() const {
             std::string title = id;
             std::ranges::replace(title, '_', ' ');
             result.push_back({std::move(id), std::move(title), category.at("title").get<std::string>(), mscx});
+        }
+    }
+    return result;
+}
+
+std::vector<InstrumentInfo> Engine::instruments() const {
+    impl_->state->check_thread();
+    std::vector<InstrumentInfo> result;
+    std::unordered_set<std::string> seen;
+    for (const auto *group : mu::engraving::instrument_catalog().groups) {
+        for (const auto *entry : group->instrument_templates) {
+            auto id = entry->id.to_std_string();
+            if (!seen.insert(id).second) continue;
+
+            InstrumentInfo info{
+                .id = std::move(id),
+                .name = entry->track_name.to_std_string(),
+                .group_id = group->id.to_std_string(),
+                .staff_count = static_cast<int>(entry->staff_count),
+                .transpose = {entry->transpose.diatonic, entry->transpose.chromatic},
+                .uses_drumset = entry->use_drumset,
+            };
+            if (info.uses_drumset) {
+                const auto instrument = mu::engraving::Instrument::from_template(entry);
+                const auto &kit = *instrument.drumset();
+                for (int key = 0; key < mu::engraving::drum_instruments; ++key) {
+                    if (kit.is_valid(key)) info.drums.push_back({key, kit.line(key), kit.voice(key), kit.name(key).to_std_string()});
+                }
+            }
+            result.push_back(std::move(info));
         }
     }
     return result;

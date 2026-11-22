@@ -23,6 +23,8 @@ struct EID;
 struct EngravingItem;
 struct EngravingObject;
 struct MasterScore;
+struct Measure;
+struct Segment;
 struct Score;
 } // namespace mu::engraving
 
@@ -98,6 +100,11 @@ struct Resolved {
 // table; it does not enumerate or repair source objects.
 Result<Resolved> resolve(mu::engraving::MasterScore &score, const ElementId &id);
 Result<Resolved> resolve(mu::engraving::MasterScore &score, const Address &address);
+
+Result<void> validate_segment_address(const SegmentAddress &address);
+Result<mu::engraving::Measure *> segment_measure(mu::engraving::MasterScore &master, const SegmentAddress &address);
+mu::engraving::Segment *find_segment(mu::engraving::Measure &measure, const SegmentAddress &address);
+Error missing_segment(const SegmentAddress &address);
 
 // Whether an object still hangs off one of the document's scores. Weaker than
 // resolve(): an element on a hidden staff is in the score but outside the walk that
