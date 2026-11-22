@@ -230,6 +230,7 @@ public:
     void set_fingering(std::vector<int> v);
 
     static FretDiagram *make_from_harmony_or_fret_diagram(const EngravingItem *harmony_or_fret_diagram);
+    static void clear_harmony_caches();
 
     bool is_in_fret_box() const;
     bool is_custom(const String &harmony_name_for_compare) const;

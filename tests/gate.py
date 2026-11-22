@@ -726,8 +726,10 @@ def _compare_goldens(a, sources, platform, suffix, run, start):
         engine=subprocess.check_output(["git", "-C", str(a.engine_source), "rev-parse", "HEAD"], text=True).strip(),
     )
     if a.no_audio:
-        report.update(no_audio=True, goldens_only=a.goldens_only)
+        report["no_audio"] = True
         print(f"{len(inventory)} fixtures: {counts}", flush=True)
+    if a.goldens_only:
+        report["goldens_only"] = True
     (a.output / "report.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     if any(c[k] for c in (counts, dual) for k in ("different", "missing-golden")):
         return 1

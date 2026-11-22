@@ -884,8 +884,6 @@ private:
     friend struct rw::Reader;
     friend struct write::Writer;
 
-    static std::set<Score *> valid_scores;
-
     ChordRest *find_chord_rest_ending_before_tick_in_staff_and_voice(const Fraction &tick, staff_idx_t staff_idx, bool force_voice,
                                                                      voice_idx_t voice) const;
 

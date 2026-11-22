@@ -110,9 +110,32 @@ using namespace muse;
 using namespace mu::engraving;
 
 namespace mu::engraving {
-std::set<Score *> Score::valid_scores;
+namespace {
+// Trivial flag outlives non-local static destruction so global Documents torn
+// down at process exit never touch a destroyed registry set.
+bool s_valid_scores_alive = false;
 
-bool Score::is_alive(const Score *score) { return valid_scores.find(const_cast<Score *>(score)) != valid_scores.end(); }
+std::set<Score *> &valid_scores_registry() {
+    struct Guard {
+        std::set<Score *> scores;
+
+        Guard() { s_valid_scores_alive = true; }
+
+        ~Guard() { s_valid_scores_alive = false; }
+    };
+
+    static Guard registry;
+    return registry.scores;
+}
+} // namespace
+
+bool Score::is_alive(const Score *score) {
+    if (!s_valid_scores_alive) {
+        return false;
+    }
+    const auto &scores = valid_scores_registry();
+    return scores.find(const_cast<Score *>(score)) != scores.end();
+}
 
 bool no_seq = false;
 bool no_midi = false;
@@ -143,7 +166,7 @@ static void mark_instruments_as_primary(std::vector<Part *> &parts) {
 
 Score::Score(const EngravingServices &services) : EngravingObject(ElementType::SCORE, nullptr), services_(services), selection_(this) {
     score_ = this;
-    Score::valid_scores.insert(this);
+    valid_scores_registry().insert(this);
     master_score_ = nullptr;
 
     engraving_font_ = engraving_fonts()->font_by_name("Leland");
@@ -178,7 +201,7 @@ std::vector<System *> &Score::systems() {
 }
 
 Score::Score(MasterScore *parent, bool force_part_style /* = true */) : Score{parent->services()} {
-    Score::valid_scores.insert(this);
+    valid_scores_registry().insert(this);
     master_score_ = parent;
 
     if (DefaultStyle::default_style_for_parts()) {
@@ -219,7 +242,7 @@ Score::Score(MasterScore *parent, bool force_part_style /* = true */) : Score{pa
 }
 
 Score::Score(MasterScore *parent, const MStyle &s) : Score{parent} {
-    Score::valid_scores.insert(this);
+    valid_scores_registry().insert(this);
     style_ = s;
     update_padding_tables();
 }
@@ -234,7 +257,9 @@ Score::~Score() {
         master_score_->eid_register()->on_item_destroyed(this);
     }
 
-    Score::valid_scores.erase(this);
+    if (s_valid_scores_alive) {
+        valid_scores_registry().erase(this);
+    }
 
     if (layout_data_store_) renderer()->release_layout_data_store(*this);
     for (MeasureBase *m = measures_.first(); m;) {
@@ -355,11 +380,11 @@ void Score::on_element_destruction(EngravingItem *e) {
     // its own score is being deleted (e.g. when an excerpt is removed), as long as
     // the master score, and with it the register, is still alive
     MasterScore *master_score = score->master_score();
-    if (master_score && Score::valid_scores.find(master_score) != Score::valid_scores.end()) {
+    if (master_score && Score::is_alive(master_score)) {
         master_score->eid_register()->on_item_destroyed(e);
     }
 
-    if (Score::valid_scores.find(score) == Score::valid_scores.end()) {
+    if (!Score::is_alive(score)) {
         // The score is already deleted
         return;
     }

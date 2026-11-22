@@ -1087,12 +1087,16 @@ struct EngineLifecycle : ::testing::Test {
 
 using EngineLifecycleDeathTest = EngineLifecycle;
 constinit std::unique_ptr<engrave::Engine> engine_until_exit;
+constinit std::unique_ptr<engrave::Document> document_until_exit;
 
-TEST_F(EngineLifecycleDeathTest, GlobalEngineCanBeDestroyedAtProcessExit) {
+TEST_F(EngineLifecycleDeathTest, GlobalEngineAndDocumentCanBeDestroyedAtProcessExit) {
     EXPECT_EXIT(
         {
             auto engine = engrave::Engine::create({.resources = g_resources});
             if (!engine) std::exit(EXIT_FAILURE);
+            auto document = (*engine)->create_document({.template_id = "Treble_Clef"});
+            if (!document) std::exit(EXIT_FAILURE);
+            document_until_exit = std::move(*document);
             engine_until_exit = std::move(*engine);
             muse::settings()->begin_transaction();
             std::exit(EXIT_SUCCESS);

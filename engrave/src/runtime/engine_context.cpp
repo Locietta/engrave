@@ -9,6 +9,7 @@
 #include "engrave/src/runtime/fonts_database.h"
 #include "engraving/dom/drumset.h"
 #include "engraving/dom/figuredbass.h"
+#include "engraving/dom/fret.h"
 #include "engraving/dom/imageStore.h"
 #include "engraving/dom/instrtemplate.h"
 #include "engraving/dom/mscore.h"
@@ -200,6 +201,7 @@ EngineContext::EngineContext(const std::string &assets, const std::string &cache
 
         Drumset::init_drumset();
         FiguredBass::read_config_file(String());
+        FretDiagram::clear_harmony_caches();
 
         d.music_xml->init();
 

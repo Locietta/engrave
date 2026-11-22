@@ -84,6 +84,11 @@ struct HarmonyMapKey {
 static std::map<HarmonyMapKey /*key*/, std::vector<DiagramInfo>> s_harmony_to_diagram_map;
 static std::unordered_map<String /*pattern*/, std::vector<String /*harmonyName*/>> s_diagram_pattern_to_harmonies_map;
 
+void FretDiagram::clear_harmony_caches() {
+    s_harmony_to_diagram_map.clear();
+    s_diagram_pattern_to_harmonies_map.clear();
+}
+
 static const muse::io::PathT harmony_to_diagram_file_path(":/data/harmony_to_diagram.xml");
 
 static int canonical_enharmonic_tpc(int tpc) {
