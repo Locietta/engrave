@@ -2547,6 +2547,9 @@ void Score::undo_add_element(EngravingItem *element, bool add_to_linked_staves, 
             muse::remove(staff_list, ostaff);
         }
 
+        const Score *origin = element->score();
+        const auto voice = element->voice();
+        const auto track_delta = is_system_line ? to_spanner(element)->effective_track2() - strack : 0;
         bool original_added = false;
         for (Staff *staff : staff_list) {
             if (!staff) {
@@ -2558,8 +2561,8 @@ void Score::undo_add_element(EngravingItem *element, bool add_to_linked_staves, 
             size_t ntrack = staff_idx * ::mu::engraving::voices;
             EngravingItem *ne;
 
-            if (ostaff && staff->score() == ostaff->score() && staff == staff_list.front() && !original_added) {
-                // add the element itself to the first system object staff in the score
+            // The original must attach to the originating score, even when another score was visited first.
+            if (!element_to_relink && !original_added && score == origin && (!is_system_line || !ctrl_modifier || staff == ostaff)) {
                 ne = element;
                 original_added = true;
             } else {
@@ -2567,14 +2570,12 @@ void Score::undo_add_element(EngravingItem *element, bool add_to_linked_staves, 
                 ne = element->linked_clone();
                 ne->set_score(score);
                 ne->set_selected(false);
-                ne->set_track(staff_idx * ::mu::engraving::voices + element->voice());
             }
 
             if (is_system_line) {
                 Spanner *nsp = to_spanner(ne);
-                Spanner *sp = to_spanner(element);
-                long long diff = sp->track2() - sp->track();
-                nsp->set_track2(nsp->track() + diff);
+                nsp->set_track(ntrack + voice);
+                nsp->set_track2(nsp->track() + track_delta);
                 nsp->compute_start_element();
                 nsp->compute_end_element();
                 do_undo_add_element(nsp);
@@ -2706,15 +2707,16 @@ void Score::undo_add_element(EngravingItem *element, bool add_to_linked_staves, 
          et != ElementType::LYRICS && et != ElementType::SLUR && et != ElementType::HAMMER_ON_PULL_OFF && et != ElementType::TIE &&
          et != ElementType::NOTE && et != ElementType::INSTRUMENT_CHANGE && et != ElementType::HAIRPIN && et != ElementType::OTTAVA &&
          et != ElementType::TRILL && et != ElementType::VIBRATO && et != ElementType::TEXTLINE && et != ElementType::PEDAL &&
-         et != ElementType::LET_RING && et != ElementType::PALM_MUTE && et != ElementType::WHAMMY_BAR &&
-         et != ElementType::PARTIAL_LYRICSLINE && et != ElementType::BREATH && et != ElementType::DYNAMIC &&
-         et != ElementType::EXPRESSION && et != ElementType::STAFF_TEXT && et != ElementType::STAVE_SHARING_LABEL &&
-         et != ElementType::SYSTEM_TEXT && et != ElementType::TRIPLET_FEEL && et != ElementType::PLAYTECH_ANNOTATION &&
-         et != ElementType::CAPO && et != ElementType::STRING_TUNINGS && et != ElementType::STICKING &&
-         et != ElementType::TREMOLO_SINGLECHORD && et != ElementType::TREMOLO_TWOCHORD && et != ElementType::ARPEGGIO &&
-         et != ElementType::CHORD_BRACKET && et != ElementType::SYMBOL && et != ElementType::IMAGE && et != ElementType::TREMOLOBAR &&
-         et != ElementType::FRET_DIAGRAM && et != ElementType::FERMATA && et != ElementType::HARMONY && et != ElementType::HARP_DIAGRAM &&
-         et != ElementType::FIGURED_BASS && et != ElementType::CLEF && et != ElementType::AMBITUS && et != ElementType::PLAY_COUNT_TEXT)) {
+         et != ElementType::LET_RING && et != ElementType::PALM_MUTE && et != ElementType::WHAMMY_BAR && et != ElementType::RASGUEADO &&
+         et != ElementType::HARMONIC_MARK && et != ElementType::PICK_SCRAPE && et != ElementType::PARTIAL_LYRICSLINE &&
+         et != ElementType::BREATH && et != ElementType::DYNAMIC && et != ElementType::EXPRESSION && et != ElementType::STAFF_TEXT &&
+         et != ElementType::STAVE_SHARING_LABEL && et != ElementType::SYSTEM_TEXT && et != ElementType::TRIPLET_FEEL &&
+         et != ElementType::PLAYTECH_ANNOTATION && et != ElementType::CAPO && et != ElementType::STRING_TUNINGS &&
+         et != ElementType::STICKING && et != ElementType::TREMOLO_SINGLECHORD && et != ElementType::TREMOLO_TWOCHORD &&
+         et != ElementType::ARPEGGIO && et != ElementType::CHORD_BRACKET && et != ElementType::SYMBOL && et != ElementType::IMAGE &&
+         et != ElementType::TREMOLOBAR && et != ElementType::FRET_DIAGRAM && et != ElementType::FERMATA && et != ElementType::HARMONY &&
+         et != ElementType::HARP_DIAGRAM && et != ElementType::FIGURED_BASS && et != ElementType::CLEF && et != ElementType::AMBITUS &&
+         et != ElementType::PLAY_COUNT_TEXT)) {
         do_undo_add_element(element);
         return;
     }
@@ -2953,7 +2955,8 @@ void Score::undo_add_element(EngravingItem *element, bool add_to_linked_staves, 
             }
         } else if (element->is_slur() || element->is_hairpin() || element->is_ottava() || element->is_trill() || element->is_vibrato() ||
                    element->is_text_line() || element->is_pedal() || element->is_let_ring() || element->is_palm_mute() ||
-                   element->is_whammy_bar() || element->is_partial_lyrics_line()) {
+                   element->is_whammy_bar() || element->is_rasgueado() || element->is_harmonic_mark() || element->is_pick_scrape() ||
+                   element->is_partial_lyrics_line()) {
             Spanner *sp = to_spanner(element);
             Spanner *nsp = to_spanner(ne);
             track_idx_t tr2 = sp->effective_track2();

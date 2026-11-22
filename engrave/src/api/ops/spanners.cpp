@@ -3,6 +3,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -99,20 +100,24 @@ Result<std::vector<std::pair<Pid, PropertyValue>>> properties(const std::vector<
     return resolved;
 }
 
-// Sets the properties of an operation, as SetProperty does: a styled property
-// that is given a value of its own stops following the style.
-Result<void> set_properties(EngravingObject &object, const std::vector<std::pair<Pid, PropertyValue>> &props) {
-    for (const auto &[pid, value] : props) {
-        const std::optional<bool> listed = settable(object.type_name(), pid);
-        if (!listed) return invalid(std::format("a {} has no property '{}'", object.type_name(), name_of(pid)));
+Result<void> validate_properties(std::string_view type, const std::vector<std::pair<Pid, PropertyValue>> &props) {
+    for (const auto &property : props) {
+        const Pid pid = property.first;
+        const std::optional<bool> listed = settable(type, pid);
+        if (!listed) return invalid(std::format("a {} has no property '{}'", type, name_of(pid)));
         if (!*listed) {
-            return invalid(std::format("'{}' of a {} is changed by structural operations only", name_of(pid), object.type_name()));
+            return invalid(std::format("'{}' of a {} is changed by structural operations only", name_of(pid), type));
         }
-        const PropertyFlags flags = object.property_flags(pid);
-        static_cast<EngravingItem &>(object).undo_change_property(pid, value,
-                                                                  flags == PropertyFlags::STYLED ? PropertyFlags::UNSTYLED : flags);
     }
     return {};
+}
+
+// Apply through the attached item so changes also reach its linked copies.
+void set_properties(EngravingItem &object, const std::vector<std::pair<Pid, PropertyValue>> &props) {
+    for (const auto &[pid, value] : props) {
+        const PropertyFlags flags = object.property_flags(pid);
+        object.undo_change_property(pid, value, flags == PropertyFlags::STYLED ? PropertyFlags::UNSTYLED : flags);
+    }
 }
 
 } // namespace
@@ -136,6 +141,7 @@ Result<Step> prepare(EditContext &context, const AddSpanner &op) {
 
         Spanner *spanner = nullptr;
         if (type == ElementType::SLUR) {
+            if (auto valid = validate_properties(mu::engraving::TConv::to_xml(type).ascii(), props); !valid) return valid;
             // The engine's own slur: it follows the chain of tied notes up to the note
             // the slur has to end at.
             spanner = score->add_slur(*first, *last, nullptr);
@@ -149,6 +155,7 @@ Result<Step> prepare(EditContext &context, const AddSpanner &op) {
                 return invalid(
                     std::format("AddSpanner places spanners that run from one segment to the next; a {} is not one", placed->type_name()));
             }
+            if (auto valid = validate_properties(placed->type_name(), props); !valid) return valid;
             // All spanners of this kind live on one staff: the one the start names.
             Segment *start_segment = (*first)->segment();
             Segment *end_segment = (*last)->segment();
@@ -158,7 +165,7 @@ Result<Step> prepare(EditContext &context, const AddSpanner &op) {
                                                     (*first)->staff_idx(), start_segment, end_segment);
             spanner = placed;
         }
-        if (auto set = set_properties(*spanner, props); !set) return set;
+        set_properties(*spanner, props);
         context.created(spanner);
         return {};
     };
@@ -191,9 +198,10 @@ Result<Step> prepare(EditContext &context, const AddSpannerToBarEnd &op) {
         if (!item || !item->is_spanner() || mu::engraving::to_spanner(item.get())->anchor() != Spanner::Anchor::SEGMENT) {
             return invalid("a bar-end spanner must be anchored to segments");
         }
+        if (auto valid = validate_properties(item->type_name(), props); !valid) return valid;
         auto *spanner = mu::engraving::to_spanner(item.release());
         add_at_ticks(spanner, mu::engraving::staff2track((*first)->staff_idx()), from, to);
-        if (auto set = set_properties(*spanner, props); !set) return set;
+        set_properties(*spanner, props);
         context.created(spanner);
         return {};
     };
@@ -224,6 +232,12 @@ Result<Step> prepare(EditContext &context, const AddVolta &op) {
         Score *score = (*start)->score();
         if ((*end)->score() != score) return invalid("a volta begins and ends in one score");
         if ((*end)->tick() < (*start)->tick()) return invalid("the last measure precedes the first");
+        // Playback closes a volta at either repeat barline within its span.
+        for (auto *measure = *start;; measure = measure->next_measure()) {
+            if ((measure != *start && measure->repeat_start()) || (measure != *end && measure->repeat_end()))
+                return invalid("a volta cannot cross a repeat barline");
+            if (measure == *end) break;
+        }
         auto *volta = mu::engraving::Factory::create_volta(score->dummy());
         volta->set_endings(endings);
         volta->set_text(muse::String::from_std_string(text));

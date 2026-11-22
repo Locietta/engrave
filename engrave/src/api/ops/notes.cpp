@@ -213,10 +213,18 @@ Result<Step> prepare_entry(EditContext &context, const SegmentAddress &address, 
         if (shortest.denominator() % duration.denominator() != 0)
             return invalid("the duration cannot be written with ordinary note values");
         if (kit) {
+            const auto entry_end = tick + mu::engraving::actual_ticks(duration, tuplet, staff->time_stretch(tick));
             auto limit = measure->end_tick();
             if (tuplet) limit = std::min(limit, tuplet->tick() + tuplet->actual_ticks());
-            if (mu::engraving::actual_ticks(duration, tuplet, staff->time_stretch(tick)) > limit - tick)
-                return invalid("drum entry must fit within its measure and tuplet");
+            if (entry_end > limit) return invalid("drum entry must fit within its measure and tuplet");
+            // Gap creation can delete a later tuplet as a unit, even when only its first note overlaps.
+            for (auto *segment = measure->first(mu::engraving::SegmentType::CHORD_REST); segment && segment->tick() < entry_end;
+                 segment = segment->next(mu::engraving::SegmentType::CHORD_REST)) {
+                const auto *item = segment->element(track);
+                if (!item || !item->is_chord_rest()) continue;
+                const auto *rhythm = mu::engraving::to_chord_rest(item);
+                if (rhythm->end_tick() > tick && rhythm->tuplet() != tuplet) return invalid("drum entry cannot cross a tuplet boundary");
+            }
         }
         if (covering || open_voice) {
             const auto begin = covering ? covering->tick() : measure->tick();
@@ -228,20 +236,22 @@ Result<Step> prepare_entry(EditContext &context, const SegmentAddress &address, 
             const auto visible = covering ? covering->get_property(mu::engraving::Pid::VISIBLE) : mu::engraving::PropertyValue{};
             const auto color = covering ? covering->get_property(mu::engraving::Pid::COLOR) : mu::engraving::PropertyValue{};
             if (covering) score->undo_remove_element(covering);
-            auto left = score->set_rests(begin, track, *leading, true, tuplet);
+            const auto left = score->set_rests(begin, track, *leading, true, tuplet);
             if (left.empty()) return std::unexpected(Error{ErrorCode::EDIT_REJECTED, "the engine could not enter the leading rest"});
+            const auto right = score->set_rests(tick, track, *trailing, true, tuplet);
+            if (right.empty()) return std::unexpected(Error{ErrorCode::EDIT_REJECTED, "the engine could not enter the trailing rest"});
             // Empty secondary voices normally start with implicit gaps. This split
             // authors the leading silence so normalization retains it as a rest.
-            for (auto *rest : left) {
-                rest->set_gap(false);
-                if (visible.is_valid()) {
-                    rest->undo_change_property(mu::engraving::Pid::VISIBLE, visible);
-                    rest->undo_change_property(mu::engraving::Pid::COLOR, color);
+            for (auto *rest : left) rest->set_gap(false);
+            if (covering) {
+                for (const auto *side : {&left, &right}) {
+                    for (auto *rest : *side) {
+                        rest->undo_change_property(mu::engraving::Pid::VISIBLE, visible);
+                        rest->undo_change_property(mu::engraving::Pid::COLOR, color);
+                    }
                 }
             }
-            auto *right = score->set_rest(tick, track, *trailing, true, tuplet);
-            if (!right) return std::unexpected(Error{ErrorCode::EDIT_REJECTED, "the engine could not enter the trailing rest"});
-            start = right->segment();
+            start = right.front()->segment();
         }
         auto mapped_value = [kit](NoteVal value) {
             if (kit) value.head_group = kit->note_head(value.pitch);
