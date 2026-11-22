@@ -310,6 +310,56 @@ const mu::engraving::Chord *chord_at(const mu::engraving::Score &score, mu::engr
     return rhythm && rhythm->is_chord() ? mu::engraving::to_chord(rhythm) : nullptr;
 }
 
+TEST(MusicWrite, BarChecksFollowPickupAndMeasureBoundaries) {
+    auto document = open_fixture(piano_fixture);
+    ASSERT_TRUE(document) << document.error().message;
+    const auto outline = (*document)->outline();
+    ASSERT_TRUE(outline) << outline.error().message;
+    Phrase phrase{.lanes = {{{outline->measures.at(0).id, {0, 1}},
+                             PitchDomain::Concert,
+                             {PhraseEvent{{1, 8}, {{c4}}}, BarCheck{}, PhraseEvent{{1, 1}, {{e4}}}, BarCheck{}, PhraseEvent{{3, 4}, {{g4}}},
+                              BarCheck{}}}}};
+    const auto written = (*document)->write_phrase(phrase);
+    ASSERT_TRUE(written) << written.error().message;
+    ASSERT_FALSE(written->rejection);
+
+    phrase.lanes[0].items = {BarCheck{}};
+    const auto bar_only = (*document)->write_phrase(phrase);
+    ASSERT_FALSE(bar_only);
+    EXPECT_EQ(bar_only.error().message, "lane 0: a lane needs at least one musical event or tuplet");
+
+    phrase.lanes[0].items = {PhraseEvent{{1, 8}, {{c4}}}, BarCheck{}, PhraseEvent{{0, 1}, {{e4}}}};
+    const auto bad_duration = (*document)->write_phrase(phrase);
+    ASSERT_FALSE(bad_duration);
+    EXPECT_TRUE(bad_duration.error().message.starts_with("lane 0, item 2: "));
+}
+
+TEST(MusicWrite, BarChecksUseTheStretchedStaffCursor) {
+    constexpr std::string_view source = R"(<museScore version="4.70"><Score><Division>480</Division>
+<Part id="1"><Staff/><Staff/><trackName>Piano</trackName><Instrument id="piano"/></Part>
+<Staff id="1"><Measure><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
+<Rest><durationType>measure</durationType></Rest></voice></Measure></Staff>
+<Staff id="2"><Measure><voice><TimeSig><sigN>8</sigN><sigD>4</sigD><stretchN>2</stretchN><stretchD>1</stretchD></TimeSig>
+<Rest><durationType>measure</durationType></Rest></voice></Measure></Staff>
+</Score></museScore>)";
+    auto document = open_fixture(source);
+    ASSERT_TRUE(document) << document.error().message;
+    const auto &score = read_test::master_of(**document);
+    ASSERT_EQ(score.staff(1)->time_stretch({0, 1}), mu::engraving::Fraction(2, 1));
+    const auto outline = (*document)->outline();
+    ASSERT_TRUE(outline) << outline.error().message;
+    EXPECT_EQ(outline->measures.at(0).duration, (Fraction{1, 1}));
+    Phrase phrase{.lanes = {{{outline->measures.at(0).id, {0, 1}, 1, 1}, PitchDomain::Concert, {PhraseEvent{{1, 1}, {{c4}}}, BarCheck{}}}}};
+    const auto halfway = (*document)->write_phrase(phrase);
+    ASSERT_FALSE(halfway);
+    EXPECT_EQ(halfway.error().message, "lane 0, item 1: bar check is not at a measure boundary");
+
+    phrase.lanes[0].items.insert(phrase.lanes[0].items.begin() + 1, PhraseEvent{{1, 1}, {{e4}}});
+    const auto written = (*document)->write_phrase(phrase);
+    ASSERT_TRUE(written) << written.error().message;
+    ASSERT_FALSE(written->rejection) << written->rejection->error.message;
+}
+
 TEST(MusicWrite, PianoPhraseCrossesPickupAndMeterChangeWithSelectiveTies) {
     auto document = open_fixture(piano_fixture);
     ASSERT_TRUE(document) << document.error().message;

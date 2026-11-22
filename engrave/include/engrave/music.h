@@ -173,7 +173,9 @@ struct TupletGroup {
     std::vector<PhraseEvent> members;
 };
 
-using PhraseItem = std::variant<PhraseEvent, TupletGroup>;
+struct BarCheck {};
+
+using PhraseItem = std::variant<PhraseEvent, TupletGroup, BarCheck>;
 
 struct PhraseLane {
     Position start;

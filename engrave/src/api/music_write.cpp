@@ -388,7 +388,8 @@ Result<void> lower_lane(const PhraseLane &lane, const mu::engraving::Score &scor
     auto prefix_error = [](Error error, const PhraseLocation &at) {
         return std::unexpected(Error{error.code, at.prefix() + error.message});
     };
-    if (lane.items.empty()) return invalid(location.prefix() + "a lane needs at least one item");
+    if (std::ranges::all_of(lane.items, [](const auto &item) { return std::holds_alternative<BarCheck>(item); }))
+        return invalid(location.prefix() + "a lane needs at least one musical event or tuplet");
     if (lane.domain != PitchDomain::Concert && lane.domain != PitchDomain::Written)
         return invalid(location.prefix() + "unknown pitch domain");
     if (start.staff < 0 || static_cast<std::size_t>(start.staff) >= score.nstaves() || start.voice < 0 ||
@@ -413,8 +414,12 @@ Result<void> lower_lane(const PhraseLane &lane, const mu::engraving::Score &scor
             [&](const auto &entry) -> Result<void> {
                 if constexpr (std::is_same_v<std::decay_t<decltype(entry)>, PhraseEvent>)
                     return builder.add_event(entry);
-                else
+                else if constexpr (std::is_same_v<std::decay_t<decltype(entry)>, TupletGroup>)
                     return builder.add_tuplet(entry);
+                else {
+                    if (!builder.cursor.measure || builder.cursor.tick == builder.cursor.measure->tick()) return {};
+                    return invalid("bar check is not at a measure boundary");
+                }
             },
             lane.items[item]);
         if (!result) return prefix_error(std::move(result.error()), builder.location);
