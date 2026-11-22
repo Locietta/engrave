@@ -2004,6 +2004,7 @@ bool Measure::set_property(Pid property_id, const PropertyValue &value) {
         case Pid::BREAK_MMR: set_break_multi_measure_rest(value.to_bool()); break;
         case Pid::REPEAT_COUNT:
             set_repeat_count(value.to_int());
+            score()->invalidate_repeat_list();
             score()->undo_update_play_count_text(this);
             break;
         case Pid::USER_STRETCH: set_user_stretch(value.to_double()); break;

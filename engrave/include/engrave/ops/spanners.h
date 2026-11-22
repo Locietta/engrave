@@ -28,6 +28,26 @@ struct AddSpanner {
     std::vector<std::pair<std::string, Value>> props;
 };
 
+struct MeasureEnd {
+    ElementId measure;
+};
+
+// Places a segment-anchored line through the trailing edge of an authored measure.
+struct AddSpannerToBarEnd {
+    std::string type;
+    Ref start;
+    MeasureEnd end;
+    std::vector<std::pair<std::string, Value>> props;
+};
+
+// The bracket spans both named measures, even when they are the same measure.
+struct AddVolta {
+    Ref first_measure;
+    Ref last_measure;
+    std::vector<int> endings;
+    bool closed = true;
+};
+
 // Ties note to the next note of the same pitch in its voice, and to the tie jump
 // points when a repeat lies between them. It changes nothing else: EditRejected
 // when the note is already tied, when nothing follows it, or when the note it
@@ -51,6 +71,6 @@ struct AddTuplet {
     int normal = 2;
 };
 
-using SpannerOps = std::tuple<AddSpanner, AddTie, AddTuplet>;
+using SpannerOps = std::tuple<AddSpanner, AddTie, AddTuplet, AddSpannerToBarEnd, AddVolta>;
 
 } // namespace engrave

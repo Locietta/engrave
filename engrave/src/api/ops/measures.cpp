@@ -160,6 +160,32 @@ Result<Step> prepare(EditContext &context, const RemoveMeasures &op) {
     };
 }
 
+Result<Step> prepare(EditContext &context, const SetRepeatBarlines &op) {
+    auto target = context.target(op.measure);
+    if (!target) return std::unexpected(target.error());
+    if (target->object && !target->object->is_measure()) return invalid("repeat barlines belong to a measure");
+    if (op.count && *op.count < 2) return invalid("a repeat must have at least two passes");
+    return [target = *target, start = op.start, end = op.end, count = op.count](EditContext &context) -> Result<void> {
+        auto measure = measure_of(context, target);
+        if (!measure) return std::unexpected(measure.error());
+        for (Score *score : (*measure)->score()->score_list()) {
+            Measure *linked = score->tick2measure((*measure)->tick());
+            if (!linked || linked->tick() != (*measure)->tick()) return refused("the linked measure could not be found");
+            for (auto staff = mu::engraving::staff_idx_t{0}; staff < score->nstaves(); ++staff) {
+                if ((start.value_or(false) && linked->is_measure_repeat_group_with_prev_m(staff)) ||
+                    (end.value_or(false) && linked->is_measure_repeat_group_with_next_m(staff))) {
+                    return refused("a repeat barline cannot split a measure repeat group");
+                }
+            }
+            if (start) linked->undo_change_property(mu::engraving::Pid::REPEAT_START, *start);
+            if (end) linked->undo_change_property(mu::engraving::Pid::REPEAT_END, *end);
+            if (count) linked->undo_change_property(mu::engraving::Pid::REPEAT_COUNT, *count);
+            if (end) score->undo_update_play_count_text(linked);
+        }
+        return {};
+    };
+}
+
 Result<Step> prepare(EditContext &context, const SetTimeSig &op) {
     auto measure = context.target(op.measure);
     if (!measure) return std::unexpected(measure.error());

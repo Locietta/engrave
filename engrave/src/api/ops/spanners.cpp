@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <format>
 #include <memory>
 #include <optional>
@@ -16,6 +17,7 @@
 #include "engraving/dom/engravingobject.h"
 #include "engraving/dom/factory.h"
 #include "engraving/dom/masterscore.h"
+#include "engraving/dom/measure.h"
 #include "engraving/dom/note.h"
 #include "engraving/dom/property.h"
 #include "engraving/dom/score.h"
@@ -25,6 +27,7 @@
 #include "engraving/dom/tie.h"
 #include "engraving/dom/tuplet.h"
 #include "engraving/dom/utils.h"
+#include "engraving/dom/volta.h"
 #include "engraving/editing/editspanner.h"
 #include "engraving/editing/transaction/transaction.h"
 #include "engraving/style/style.h"
@@ -64,6 +67,22 @@ Result<ChordRest *> chord_rest(const EditContext &context, const Target &target)
     if (found->is_note()) found = mu::engraving::to_note(found)->chord();
     if (!found->is_chord_rest()) return invalid(std::format("{} is not a chord or a rest", found->type_name()));
     return mu::engraving::to_chord_rest(found);
+}
+
+Result<mu::engraving::Measure *> measure_endpoint(const EditContext &context, const Target &target) {
+    auto object = context.object(target);
+    if (!object) return std::unexpected(object.error());
+    if (!(*object)->is_measure()) return invalid("the endpoint must be a measure");
+    return mu::engraving::to_measure(*object);
+}
+
+void add_at_ticks(Spanner *spanner, mu::engraving::track_idx_t track, const mu::engraving::Fraction &start,
+                  const mu::engraving::Fraction &end) {
+    spanner->set_track(track);
+    spanner->set_track2(track);
+    spanner->set_tick(start);
+    spanner->set_tick2(end);
+    spanner->score()->undo_add_element(spanner, true);
 }
 
 // The properties of an operation, checked against the catalogue's kinds.
@@ -141,6 +160,77 @@ Result<Step> prepare(EditContext &context, const AddSpanner &op) {
         }
         if (auto set = set_properties(*spanner, props); !set) return set;
         context.created(spanner);
+        return {};
+    };
+}
+
+Result<Step> prepare(EditContext &context, const AddSpannerToBarEnd &op) {
+    auto start = context.target(op.start);
+    if (!start) return std::unexpected(start.error());
+    auto end = context.target(Ref{op.end.measure});
+    if (!end) return std::unexpected(end.error());
+    if (auto measure = measure_endpoint(context, *end); !measure) return std::unexpected(measure.error());
+    const ElementType type = mu::engraving::TConv::from_xml(muse::AsciiStringView(op.type), ElementType::INVALID);
+    if (type == ElementType::INVALID) return invalid(std::format("no element type '{}'", op.type));
+    if (type == ElementType::SLUR || type == ElementType::TIE) return invalid("slurs and ties require musical endpoints");
+    auto props = properties(op.props);
+    if (!props) return std::unexpected(props.error());
+    return [start = *start, end = *end, type, props = std::move(*props)](EditContext &context) -> Result<void> {
+        auto first = chord_rest(context, start);
+        if (!first) return std::unexpected(first.error());
+        auto measure = measure_endpoint(context, end);
+        if (!measure) return std::unexpected(measure.error());
+        Score *score = (*first)->score();
+        if ((*measure)->score() != score) return invalid("a spanner starts and ends in one score");
+        if (!(*first)->segment()) return invalid("the starting chord or rest must occupy a segment");
+        const auto from = (*first)->tick();
+        const auto to = (*measure)->end_tick();
+        if (to <= from) return invalid("the barline must follow the start of the spanner");
+
+        std::unique_ptr<EngravingItem> item(mu::engraving::Factory::create_item(type, score->dummy()));
+        if (!item || !item->is_spanner() || mu::engraving::to_spanner(item.get())->anchor() != Spanner::Anchor::SEGMENT) {
+            return invalid("a bar-end spanner must be anchored to segments");
+        }
+        auto *spanner = mu::engraving::to_spanner(item.release());
+        add_at_ticks(spanner, mu::engraving::staff2track((*first)->staff_idx()), from, to);
+        if (auto set = set_properties(*spanner, props); !set) return set;
+        context.created(spanner);
+        return {};
+    };
+}
+
+Result<Step> prepare(EditContext &context, const AddVolta &op) {
+    auto first = context.target(op.first_measure);
+    if (!first) return std::unexpected(first.error());
+    auto last = context.target(op.last_measure);
+    if (!last) return std::unexpected(last.error());
+    if ((first->object && !first->object->is_measure()) || (last->object && !last->object->is_measure()))
+        return invalid("a volta spans measures");
+    auto endings = op.endings;
+    std::ranges::sort(endings);
+    if (endings.empty() || endings.front() < 1 || std::ranges::adjacent_find(endings) != endings.end())
+        return invalid("volta endings must be distinct positive pass numbers");
+    std::string text;
+    for (int ending : endings) {
+        if (!text.empty()) text += ", ";
+        text += std::format("{}.", ending);
+    }
+    return [first = *first, last = *last, endings = std::move(endings), text = std::move(text),
+            closed = op.closed](EditContext &context) -> Result<void> {
+        auto start = measure_endpoint(context, first);
+        if (!start) return std::unexpected(start.error());
+        auto end = measure_endpoint(context, last);
+        if (!end) return std::unexpected(end.error());
+        Score *score = (*start)->score();
+        if ((*end)->score() != score) return invalid("a volta begins and ends in one score");
+        if ((*end)->tick() < (*start)->tick()) return invalid("the last measure precedes the first");
+        auto *volta = mu::engraving::Factory::create_volta(score->dummy());
+        volta->set_endings(endings);
+        volta->set_text(muse::String::from_std_string(text));
+        volta->set_volta_type(closed ? mu::engraving::Volta::Type::CLOSED : mu::engraving::Volta::Type::OPEN);
+        add_at_ticks(volta, 0, (*start)->tick(), (*end)->end_tick());
+        score->invalidate_repeat_list();
+        context.created(volta);
         return {};
     };
 }

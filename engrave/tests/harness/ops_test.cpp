@@ -939,20 +939,6 @@ TEST(Edit, InstrumentCatalogMatchesAddedParts) {
     }
 }
 
-TEST(Edit, MultinoteEntryAcrossBarlineLeavesNoPartialChord) {
-    auto document = open(fixture_name);
-    ASSERT_TRUE(document);
-    auto *measure = engrave::harness::master_of(*document).first_measure();
-    const engrave::SegmentAddress at{engrave::from_engine(measure->eid()), 0, 0, {0, 1}, "ChordRest"};
-    const auto before = native_source(*document);
-    const auto result = document->edit({{engrave::EnterNotes{at, {4, 1}, {{60}, {64}}}}});
-    ASSERT_TRUE(result);
-    ASSERT_TRUE(result->rejection);
-    EXPECT_EQ(result->applied, 0u);
-    EXPECT_EQ(result->rejection->error.code, ErrorCode::INVALID_ARGUMENT);
-    EXPECT_EQ(native_source(*document), before);
-}
-
 TEST(Edit, NoteEntryRejectsAStaffRemovedByThePrefix) {
     auto made = g_engine->create_document({.template_id = "Treble_Clef"});
     ASSERT_TRUE(made);
@@ -974,14 +960,14 @@ TEST(Edit, NoteEntryRejectsAStaffRemovedByThePrefix) {
     EXPECT_TRUE(document.edit({}));
 }
 
-TEST(Edit, SplitNotationRejectsBeforeReplacingTheMeasureRest) {
+TEST(Edit, UnnotatableDurationLeavesTheColoredMeasureRest) {
     auto made = g_engine->create_document({.template_id = "Treble_Clef"});
     ASSERT_TRUE(made);
     auto &document = **made;
     auto &master = engrave::harness::master_of(document);
     const auto rest = engrave::from_engine(master.find_cr({0, 1}, 0)->eid());
     const engrave::SegmentAddress at{engrave::from_engine(master.first_measure()->eid()), 0, 0, {0, 1}, "ChordRest"};
-    const auto result = document.edit({{SetProperty{rest, "color", Color{255, 0, 0}}, engrave::EnterNotes{at, {5, 16}, {{60}, {64}}}}});
+    const auto result = document.edit({{SetProperty{rest, "color", Color{255, 0, 0}}, engrave::EnterNotes{at, {1, 3}, {{60}, {64}}}}});
     ASSERT_TRUE(result);
     ASSERT_TRUE(result->rejection);
     EXPECT_EQ(result->applied, 1u);

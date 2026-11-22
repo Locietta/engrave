@@ -29,8 +29,16 @@
 #include "engrave/src/runtime/engine_context.h"
 #include "engrave/src/runtime/runtime_assets.h"
 #include "engrave/src/score/json.h"
+#include "engrave/tests/harness/harness.h"
+#include "engraving/dom/chord.h"
 #include "engraving/dom/drumset.h"
+#include "engraving/dom/masterscore.h"
+#include "engraving/dom/measure.h"
 #include "engraving/dom/mscore.h"
+#include "engraving/dom/note.h"
+#include "engraving/dom/repeatlist.h"
+#include "engraving/dom/tie.h"
+#include "engraving/dom/volta.h"
 #include "global/settings.h"
 #include <engrave/engrave.h>
 
@@ -1250,6 +1258,265 @@ TEST_F(EngineLifecycle, LastDocumentReleasesRuntimeForAnotherEngine) {
     ASSERT_TRUE(render) << render.error().message;
     ASSERT_FALSE(render->pages.empty());
     EXPECT_NE(text_of(render->pages.front()).find("<svg"), std::string::npos);
+}
+
+std::unique_ptr<engrave::Document> notation_score(int bars, bool pickup = false) {
+    std::string xml = R"(<museScore version="4.70"><Score><Division>480</Division>
+<Part id="1"><Staff/><trackName>Piano</trackName><Instrument id="piano">
+<instrumentId>keyboard.piano</instrumentId><Channel><program value="0"/></Channel></Instrument></Part>
+<Staff id="1">)";
+    for (int bar = 0; bar < bars; ++bar) {
+        xml += pickup && bar == 0 ? R"(<Measure len="1/4">)" : "<Measure>";
+        xml += "<voice>";
+        if (bar == 0) xml += "<TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>";
+        xml += "<Rest><durationType>measure</durationType></Rest></voice></Measure>";
+    }
+    xml += "</Staff></Score></museScore>";
+    auto opened = g_engine->open(bytes_of(xml));
+    EXPECT_TRUE(opened) << opened.error().message;
+    return opened ? std::move(*opened) : nullptr;
+}
+
+TEST(NotationEdits, SegmentLinesReachPickupAndFinalBarlines) {
+    using namespace engrave;
+    using Tick = mu::engraving::Fraction;
+    auto document = notation_score(2, true);
+    ASSERT_TRUE(document);
+    auto &score = harness::master_of(*document);
+    const auto pickup = harness::find_id(*document, "Measure");
+    const auto final =
+        harness::find_id(*document, "Measure", [](const auto &object) { return mu::engraving::to_measure(&object)->tick() == Tick(1, 4); });
+    const auto result = document->edit({{
+        EnterNotes{SegmentAddress{pickup, 0, 0, {0, 1}, "ChordRest"}, {1, 4}, {{60}}},
+        AddSpannerToBarEnd{"HairPin", OpRef{0, 0}, {final}, {}},
+        AddSpannerToBarEnd{"TextLine", OpRef{0, 0}, {pickup}, {}},
+    }});
+    ASSERT_TRUE(result) << result.error().message;
+    ASSERT_FALSE(result->rejection) << result->rejection->error.message;
+    auto check = [](mu::engraving::Score &score) {
+        const auto lines = score.spanner_list();
+        ASSERT_EQ(lines.size(), 2u);
+        for (const auto *line : lines) {
+            EXPECT_EQ(line->tick(), Tick(0, 1));
+            if (line->is_hairpin()) {
+                EXPECT_EQ(line->tick2(), Tick(5, 4));
+            } else {
+                EXPECT_TRUE(line->is_text_line());
+                EXPECT_EQ(line->tick2(), Tick(1, 4));
+            }
+            ASSERT_FALSE(line->spanner_segments().empty());
+        }
+    };
+    auto render = document->render({.format = RenderFormat::SVG});
+    ASSERT_TRUE(render) << render.error().message;
+    check(score);
+    auto saved = document->export_score({.format = Format::MSCZ});
+    ASSERT_TRUE(saved) << saved.error().message;
+    auto reopened = g_engine->open(*saved);
+    ASSERT_TRUE(reopened) << reopened.error().message;
+    render = (*reopened)->render({.format = RenderFormat::SVG});
+    ASSERT_TRUE(render) << render.error().message;
+    check(harness::master_of(**reopened));
+
+    const auto start = *result->ops[0].created[0];
+    const auto rejected = document->edit({{AddSpannerToBarEnd{"Slur", start, {final}, {}}}});
+    ASSERT_FALSE(rejected);
+    EXPECT_EQ(rejected.error().code, ErrorCode::INVALID_ARGUMENT);
+}
+
+TEST(NotationEdits, ChordContinuationsTieEveryPitchAndPreserveTheLeadingRest) {
+    using namespace engrave;
+    using Tick = mu::engraving::Fraction;
+    const std::vector<Pitch> pitches{{67}, {60}, {64}};
+    for (const auto &[duration, piece_count] : {std::pair{F{1, 2}, 2u}, std::pair{F{23, 16}, 3u}}) {
+        SCOPED_TRACE(piece_count);
+        auto document = notation_score(3);
+        ASSERT_TRUE(document);
+        auto &score = harness::master_of(*document);
+        const auto part = harness::find_id(*document, "Part");
+        const auto first_bar = harness::find_id(*document, "Measure");
+        const auto first_rest = harness::find_id(*document, "Rest");
+        const Color color{42, 82, 120, 255};
+        const auto result = document->edit({{
+            GenerateExcerpts{{part}},
+            SetProperty{first_rest, "visible", false},
+            SetProperty{first_rest, "color", color},
+            EnterNotes{SegmentAddress{first_bar, 0, 0, {3, 4}, "ChordRest"}, duration, pitches},
+        }});
+        ASSERT_TRUE(result) << result.error().message;
+        ASSERT_FALSE(result->rejection) << result->rejection->error.message;
+        const auto &ids = result->ops[3].created;
+        ASSERT_EQ(ids.size(), piece_count * 4);
+        for (std::size_t i = 0; i < ids.size(); ++i) {
+            ASSERT_TRUE(ids[i]);
+            auto &object = harness::element(*document, *ids[i]);
+            if (i % 4 == 0) {
+                EXPECT_TRUE(object.is_chord());
+            } else {
+                ASSERT_TRUE(object.is_note());
+                EXPECT_EQ(mu::engraving::to_note(&object)->pitch(), pitches[(i % 4) - 1].pitch);
+            }
+        }
+        auto check = [&](mu::engraving::MasterScore &master) {
+            const auto scores = master.score_list();
+            ASSERT_EQ(scores.size(), 2u);
+            for (auto *copy : scores) {
+                for (const auto &[start, end] : {std::pair{Tick(0, 1), Tick(1, 2)}, std::pair{Tick(1, 2), Tick(3, 4)}}) {
+                    auto *leading = copy->find_cr(start, 0);
+                    ASSERT_TRUE(leading && leading->is_rest());
+                    EXPECT_EQ(leading->tick(), start);
+                    EXPECT_EQ(leading->end_tick(), end);
+                    EXPECT_FALSE(leading->visible());
+                    EXPECT_EQ(leading->color().red(), 42);
+                    EXPECT_EQ(leading->color().green(), 82);
+                    EXPECT_EQ(leading->color().blue(), 120);
+                }
+
+                std::vector<Tick> ticks{Tick(3, 4), Tick(1, 1)};
+                if (piece_count == 3) ticks.emplace_back(2, 1);
+                const Tick final_tick = piece_count == 3 ? Tick(35, 16) : Tick(5, 4);
+                std::vector<mu::engraving::Chord *> chords;
+                for (const Tick &tick : ticks) {
+                    auto *piece = copy->find_cr(tick, 0);
+                    ASSERT_TRUE(piece && piece->is_chord());
+                    ASSERT_EQ(piece->tick(), tick);
+                    auto *chord = mu::engraving::to_chord(piece);
+                    ASSERT_EQ(chord->notes().size(), pitches.size());
+                    chords.push_back(chord);
+                }
+                EXPECT_EQ(chords.back()->end_tick(), final_tick);
+                for (const auto &pitch : pitches) {
+                    mu::engraving::Note *previous = nullptr;
+                    for (auto *chord : chords) {
+                        auto *note = chord->find_note(pitch.pitch);
+                        ASSERT_NE(note, nullptr);
+                        if (previous) {
+                            auto *tie = previous->tie_for();
+                            ASSERT_NE(tie, nullptr);
+                            EXPECT_EQ(tie->start_note(), previous);
+                            EXPECT_EQ(tie->end_note(), note);
+                            EXPECT_EQ(note->tie_back(), tie);
+                        } else {
+                            EXPECT_EQ(note->tie_back(), nullptr);
+                        }
+                        previous = note;
+                    }
+                    EXPECT_EQ(previous->tie_for(), nullptr);
+                }
+            }
+        };
+        check(score);
+        auto saved = document->export_score({.format = Format::MSCZ});
+        ASSERT_TRUE(saved) << saved.error().message;
+        auto reopened = g_engine->open(*saved);
+        ASSERT_TRUE(reopened) << reopened.error().message;
+        check(harness::master_of(**reopened));
+    }
+}
+
+TEST(NotationEdits, ChordSplitsIntoThreeWrittenValuesWithinOneMeasure) {
+    using namespace engrave;
+    using Tick = mu::engraving::Fraction;
+    auto document = notation_score(1);
+    ASSERT_TRUE(document);
+    const auto measure = harness::find_id(*document, "Measure");
+    const auto result = document->edit({{EnterNotes{SegmentAddress{measure, 0, 0, {0, 1}, "ChordRest"}, {21, 32}, {{60}, {64}, {67}}}}});
+    ASSERT_TRUE(result) << result.error().message;
+    ASSERT_FALSE(result->rejection) << result->rejection->error.message;
+    auto &score = harness::master_of(*document);
+    auto *initial = score.find_cr(Tick(0, 1), 0);
+    auto *middle = score.find_cr(Tick(1, 2), 0);
+    auto *final = score.find_cr(Tick(5, 8), 0);
+    ASSERT_TRUE(initial && initial->is_chord());
+    ASSERT_TRUE(middle && middle->is_chord());
+    ASSERT_TRUE(final && final->is_chord());
+    EXPECT_EQ(initial->end_tick(), Tick(1, 2));
+    EXPECT_EQ(middle->end_tick(), Tick(5, 8));
+    EXPECT_EQ(final->end_tick(), Tick(21, 32));
+    for (const int pitch : {60, 64, 67}) {
+        auto *start_note = mu::engraving::to_chord(initial)->find_note(pitch);
+        auto *middle_note = mu::engraving::to_chord(middle)->find_note(pitch);
+        auto *end_note = mu::engraving::to_chord(final)->find_note(pitch);
+        ASSERT_TRUE(start_note && middle_note && end_note);
+        ASSERT_NE(start_note->tie_for(), nullptr);
+        ASSERT_NE(middle_note->tie_for(), nullptr);
+        EXPECT_EQ(start_note->tie_for()->start_note(), start_note);
+        EXPECT_EQ(start_note->tie_for()->end_note(), middle_note);
+        EXPECT_EQ(middle_note->tie_for()->start_note(), middle_note);
+        EXPECT_EQ(middle_note->tie_for()->end_note(), end_note);
+        EXPECT_EQ(middle_note->tie_back(), start_note->tie_for());
+        EXPECT_EQ(end_note->tie_back(), middle_note->tie_for());
+    }
+}
+
+TEST(NotationEdits, RepeatBarlinesPatchLinkedScoresAndVoltasChooseThePass) {
+    using namespace engrave;
+    using Tick = mu::engraving::Fraction;
+    auto document = notation_score(3);
+    ASSERT_TRUE(document);
+    auto &score = harness::master_of(*document);
+    const auto part = harness::find_id(*document, "Part");
+    std::vector<ElementId> bars;
+    for (int bar = 0; bar < 3; ++bar) {
+        bars.push_back(harness::find_id(*document, "Measure",
+                                        [bar](const auto &object) { return mu::engraving::to_measure(&object)->tick() == Tick(bar, 1); }));
+    }
+    const auto traversal = [](const mu::engraving::Score &score) {
+        std::vector<int> order;
+        for (const auto *segment : score.expanded_repeat_list()) {
+            for (const auto *measure : segment->measure_list()) order.push_back(measure->tick().ticks() / Tick(1, 1).ticks());
+        }
+        return order;
+    };
+    const auto apply = [&](std::vector<Op> ops) {
+        auto result = document->edit({std::move(ops)});
+        ASSERT_TRUE(result) << result.error().message;
+        ASSERT_FALSE(result->rejection) << result->rejection->error.message;
+    };
+    EXPECT_EQ(traversal(score), (std::vector{0, 1, 2}));
+    apply({GenerateExcerpts{{part}}, SetRepeatBarlines{.measure = bars[0], .start = true},
+           SetRepeatBarlines{.measure = bars[1], .end = true, .count = 3}});
+    ASSERT_EQ(score.score_list().size(), 2u);
+    for (auto *copy : score.score_list()) {
+        EXPECT_TRUE(copy->first_measure()->repeat_start());
+        EXPECT_TRUE(copy->tick2measure(Tick(1, 1))->repeat_end());
+        EXPECT_EQ(copy->tick2measure(Tick(1, 1))->repeat_count(), 3);
+    }
+    EXPECT_EQ(traversal(score), (std::vector{0, 1, 0, 1, 0, 1, 2}));
+    apply({SetRepeatBarlines{.measure = bars[1], .count = 2}});
+    EXPECT_EQ(traversal(score), (std::vector{0, 1, 0, 1, 2}));
+    apply({SetRepeatBarlines{.measure = bars[0], .start = false}, SetRepeatBarlines{.measure = bars[1], .end = false}});
+    for (auto *copy : score.score_list()) {
+        EXPECT_FALSE(copy->first_measure()->repeat_start());
+        EXPECT_FALSE(copy->tick2measure(Tick(1, 1))->repeat_end());
+        EXPECT_EQ(copy->tick2measure(Tick(1, 1))->repeat_count(), 2);
+    }
+    EXPECT_EQ(traversal(score), (std::vector{0, 1, 2}));
+    apply({SetRepeatBarlines{.measure = bars[0], .start = true}, SetRepeatBarlines{.measure = bars[1], .end = true},
+           AddVolta{bars[1], bars[1], {1}}, AddVolta{bars[2], bars[2], {2}, false}});
+    auto check = [&](mu::engraving::MasterScore &master) {
+        EXPECT_EQ(traversal(master), (std::vector{0, 1, 0, 2}));
+        for (auto *copy : master.score_list()) {
+            const auto spans = copy->spanner_list();
+            ASSERT_EQ(spans.size(), 2u);
+            for (std::size_t i = 0; i < spans.size(); ++i) {
+                ASSERT_TRUE(spans[i]->is_volta());
+                auto *volta = mu::engraving::to_volta(spans[i]);
+                const auto pass = static_cast<int>(i + 1);
+                EXPECT_EQ(volta->tick(), Tick(pass, 1));
+                EXPECT_EQ(volta->tick2(), Tick(pass + 1, 1));
+                EXPECT_EQ(volta->endings(), std::vector{pass});
+                EXPECT_EQ(volta->text().to_std_string(), std::to_string(pass) + ".");
+                EXPECT_EQ(volta->volta_type(), i == 0 ? mu::engraving::Volta::Type::CLOSED : mu::engraving::Volta::Type::OPEN);
+            }
+        }
+    };
+    check(score);
+    auto saved = document->export_score({.format = Format::MSCZ});
+    ASSERT_TRUE(saved) << saved.error().message;
+    auto reopened = g_engine->open(*saved);
+    ASSERT_TRUE(reopened) << reopened.error().message;
+    check(harness::master_of(**reopened));
 }
 
 TEST(JsonHelpers, ParseMatchesTheOldWireRules) {

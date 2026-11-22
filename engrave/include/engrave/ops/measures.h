@@ -63,6 +63,14 @@ struct SetLayoutBreak {
     bool on;
 };
 
-using MeasureOps = std::tuple<InsertMeasures, RemoveMeasures, SetTimeSig, SetKeySig, InsertClef, SetLayoutBreak>;
+// Unset fields retain their values. A count of two restores the default pass count.
+struct SetRepeatBarlines {
+    Ref measure;
+    std::optional<bool> start;
+    std::optional<bool> end;
+    std::optional<int> count;
+};
+
+using MeasureOps = std::tuple<InsertMeasures, RemoveMeasures, SetTimeSig, SetKeySig, InsertClef, SetLayoutBreak, SetRepeatBarlines>;
 
 } // namespace engrave

@@ -13,6 +13,7 @@
 #include "engraving/dom/durationtype.h"
 #include "engraving/dom/engravingitem.h"
 #include "engraving/dom/engravingobject.h"
+#include "engraving/dom/factory.h"
 #include "engraving/dom/interval.h"
 #include "engraving/dom/measure.h"
 #include "engraving/dom/mscore.h"
@@ -23,6 +24,7 @@
 #include "engraving/dom/score.h"
 #include "engraving/dom/segment.h"
 #include "engraving/dom/staff.h"
+#include "engraving/dom/tie.h"
 #include "engraving/dom/tuplet.h"
 #include "engraving/dom/utils.h"
 #include "engraving/editing/editnote.h"
@@ -165,13 +167,9 @@ Result<Step> prepare(EditContext &context, const EnterNotes &op) {
         auto *tuplet = covering ? covering->tuplet() : nullptr;
         if (const auto *item = start ? start->element(track) : nullptr; item && item->is_chord_rest())
             tuplet = mu::engraving::to_chord_rest(item)->tuplet();
-        if (pitches.size() > 1) {
-            if (!mu::engraving::TDuration::is_valid(duration)) return invalid("a chord of several pitches must fit one notated duration");
-            auto limit = measure->end_tick();
-            if (tuplet) limit = std::min(limit, tuplet->tick() + tuplet->actual_ticks());
-            if (mu::engraving::actual_ticks(duration, tuplet, staff->time_stretch(tick)) > limit - tick)
-                return invalid("a chord of several pitches must end within its bar and tuplet");
-        }
+        const auto shortest = mu::engraving::TDuration(mu::engraving::DurationType::V_1024TH).fraction();
+        if (shortest.denominator() % duration.denominator() != 0)
+            return invalid("the duration cannot be written with ordinary note values");
         if (covering || open_voice) {
             const auto begin = covering ? covering->tick() : measure->tick();
             const auto end = covering ? covering->end_tick() : measure->end_tick();
@@ -179,41 +177,66 @@ Result<Step> prepare(EditContext &context, const EnterNotes &op) {
             const auto trailing = split_duration(end - tick, mu::engraving::actual_ticks({1, 1}, tuplet, staff->time_stretch(tick)));
             if (!leading || !trailing) return invalid("the entry position does not split into notated rests");
             // make_gap visits only the chord/rests at and after its start.
+            const auto visible = covering ? covering->get_property(mu::engraving::Pid::VISIBLE) : mu::engraving::PropertyValue{};
+            const auto color = covering ? covering->get_property(mu::engraving::Pid::COLOR) : mu::engraving::PropertyValue{};
             if (covering) score->undo_remove_element(covering);
             auto left = score->set_rests(begin, track, *leading, true, tuplet);
             if (left.empty()) return std::unexpected(Error{ErrorCode::EDIT_REJECTED, "the engine could not enter the leading rest"});
             // Empty secondary voices normally start with implicit gaps. This split
             // authors the leading silence so normalization retains it as a rest.
-            for (auto *rest : left) rest->set_gap(false);
+            for (auto *rest : left) {
+                rest->set_gap(false);
+                if (visible.is_valid()) {
+                    rest->undo_change_property(mu::engraving::Pid::VISIBLE, visible);
+                    rest->undo_change_property(mu::engraving::Pid::COLOR, color);
+                }
+            }
             auto *right = score->set_rest(tick, track, *trailing, true, tuplet);
             if (!right) return std::unexpected(Error{ErrorCode::EDIT_REJECTED, "the engine could not enter the trailing rest"});
             start = right->segment();
         }
-        NoteVal first = pitches.empty() ? NoteVal() : note_value(pitches.front());
-        if (!score->set_note_rest_at(start, track, first, duration))
-            return std::unexpected(Error{ErrorCode::EDIT_REJECTED, "the engine could not enter a note at this position"});
-        // The first piece of the entry sits where the address points; the rest of a
-        // duration that reached past a barline is tied to it.
-        Segment *entered_at = score->tick2segment(tick, true, mu::engraving::SegmentType::CHORD_REST);
-        EngravingItem *entered = entered_at ? entered_at->element(track) : nullptr;
-        if (!entered || !entered->is_chord_rest())
-            return std::unexpected(Error{ErrorCode::EDIT_REJECTED, "the engine left no chord or rest at this position"});
-        context.created(entered);
-        if (!entered->is_chord()) return {};
-        Chord *chord = mu::engraving::to_chord(entered);
-        for (Note *note : chord->notes()) context.created(note);
-        // The engine's own note input adds a pitch to a tied chord by following the tie
-        // chain, which the API does not reach: NoteInput::addNoteToTiedChord has no input
-        // state of its own and works through the score's cursor and selection. A chord of
-        // several pitches is entered whole, so its entry has to end in its own bar.
-        if (pitches.size() > 1 && !chord->notes().empty() && (chord->notes().front()->tie_for() || chord->notes().front()->tie_back())) {
-            return invalid("a chord of several pitches must end in the bar its entry starts in");
+        const NoteVal first = pitches.empty() ? NoteVal() : note_value(pitches.front());
+        EngravingItem *last = nullptr;
+        score->set_note_rest_at(start, track, first, duration, DirectionV::AUTO, false, {}, false, &last);
+        const auto piece_at = [&](const mu::engraving::Fraction &offset) -> ChordRest * {
+            auto *segment = score->tick2segment(offset, true, mu::engraving::SegmentType::CHORD_REST, false);
+            auto *item = segment ? segment->element(track) : nullptr;
+            return item && item->is_chord_rest() ? mu::engraving::to_chord_rest(item) : nullptr;
+        };
+        auto *piece = piece_at(tick);
+        if (!piece || !last) return std::unexpected(Error{ErrorCode::EDIT_REJECTED, "the engine left no chord or rest at this position"});
+
+        // Stop at the last piece produced by note entry, even if there is a pre-existing
+        // chord at the following tick.
+        std::vector<Note *> previous(pitches.size());
+        mu::engraving::Fraction remaining = duration;
+        for (;;) {
+            context.created(piece);
+            remaining -= piece->ticks();
+            if (!pitches.empty()) {
+                auto *chord = piece->is_chord() ? mu::engraving::to_chord(piece) : nullptr;
+                Note *lead = chord ? chord->find_note(first.pitch) : nullptr;
+                if (!lead || (previous.front() && (!previous.front()->tie_for() || previous.front()->tie_for()->end_note() != lead)))
+                    return std::unexpected(Error{ErrorCode::EDIT_REJECTED, "the engine did not connect the entered chord pieces"});
+                context.created(lead);
+                previous.front() = lead;
+                for (std::size_t i = 1; i < pitches.size(); ++i) {
+                    Note *note = mu::engraving::NoteInput::add_note_to_chord(score, chord, note_value(pitches[i]));
+                    if (previous[i]) {
+                        auto *tie = mu::engraving::Factory::create_tie(previous[i]);
+                        tie->set_note_span(previous[i], note);
+                        score->undo_add_element(tie);
+                    }
+                    context.created(note);
+                    previous[i] = note;
+                }
+            }
+            if (last == piece || (!previous.empty() && last == previous.front())) break;
+            piece = piece_at(piece->end_tick());
+            if (!piece || remaining <= mu::engraving::Fraction(0, 1)) break;
         }
-        for (std::size_t i = 1; i < pitches.size(); ++i) {
-            NoteVal value = note_value(pitches[i]);
-            if (!mu::engraving::NoteInput::add_note_to_chord(score, chord, value))
-                return std::unexpected(Error{ErrorCode::EDIT_REJECTED, std::format("the engine could not add pitch {}", pitches[i].pitch)});
-        }
+        if (!remaining.is_zero() || !piece)
+            return std::unexpected(Error{ErrorCode::EDIT_REJECTED, "the engine did not fill the requested duration"});
         return {};
     };
 }

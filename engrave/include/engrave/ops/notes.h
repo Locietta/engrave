@@ -22,9 +22,8 @@ struct Pitch {
 // engine's note entry: what already holds the position is shortened or filled up with
 // rests, a duration that reaches past a barline is split there and tied, and a rest is
 // entered the same way. The operation reports the chord or rest first among what it
-// created (for an OpRef of a later operation), then its notes.
-// A chord of several pitches is entered whole, so its entry has to end in the bar it
-// starts in.
+// created (for an OpRef of a later operation), then its notes in input order.
+// Any continuation pieces follow in score order, each with its own notes.
 struct EnterNotes {
     Address at;
     Fraction duration; // of a whole note, e.g. {1, 4} for a quarter
