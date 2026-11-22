@@ -843,7 +843,7 @@ void TRead::read(FretDiagram *d, XmlReader &e, ReadContext &ctx) {
         }
     }
 
-    if (d->harmony() && ctx.msc_version() >= 460 && ctx.msc_version() < 500) {
+    if (d->harmony() && ctx.is_legacy_format() && ctx.msc_version() >= 460 && ctx.msc_version() < 500) {
         // A bug in 4.6 caused user offset and alignment of chord symbols attached to fret diagrams to be lost
         // Continue to ignore this for 4.6 - 4.7.x files only
         Harmony *harmony = d->harmony();
