@@ -45,6 +45,7 @@ struct FontsDatabase {
     FontDataKey actual_font(const FontDataKey &require_key, Font::Type type) const;
     std::vector<FontDataKey> substitution_fonts(const FontDataKey &require_key) const;
     FontData font_data(const FontDataKey &require_key, Font::Type type) const;
+    std::shared_ptr<const ByteArray> font_bytes(const FontDataKey &key) const;
 
     uint64_t revision() const;
 
@@ -54,6 +55,7 @@ private:
         int id = -1;
         FontDataKey key;
         std::span<const uint8_t> bytes;
+        std::shared_ptr<const ByteArray> owner;
 
         bool valid() const { return id > -1; }
     };
@@ -67,7 +69,7 @@ private:
     std::map<FontDataKey, FontInfo> fonts_;
     // Stable resource storage, including retired versions borrowed by old faces.
     // Every FontsEngine/FontFace using this database must be destroyed first.
-    std::vector<std::unique_ptr<const ByteArray>> font_bytes_;
+    std::vector<std::shared_ptr<const ByteArray>> font_bytes_;
     uint64_t revision_ = 0;
     int font_id_ = -1;
 };

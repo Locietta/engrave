@@ -92,13 +92,13 @@ int FontsDatabase::add_font(const FontDataKey &key, std::shared_ptr<io::IODevice
         return -1;
     }
     device->seek(0);
-    auto bytes = std::make_unique<const ByteArray>(device->read_all());
+    auto bytes = std::make_shared<const ByteArray>(device->read_all());
     if (bytes->empty()) {
         LOGE() << "failed read font: " << key.family().id();
         return -1;
     }
     const std::span<const uint8_t> view(bytes->const_data(), bytes->size());
-    font_bytes_.push_back(std::move(bytes));
+    font_bytes_.push_back(bytes);
 
     const int id = ++font_id_;
 
@@ -108,7 +108,7 @@ int FontsDatabase::add_font(const FontDataKey &key, std::shared_ptr<io::IODevice
         fonts_.erase(it);
     }
 
-    fonts_.insert({key, FontInfo{id, key, view}});
+    fonts_.insert({key, FontInfo{id, key, view, std::move(bytes)}});
     ++revision_;
 
     return id;
@@ -155,6 +155,11 @@ FontData FontsDatabase::font_data(const FontDataKey &require_key, Font::Type typ
     }
 
     return FontData{key, info.bytes};
+}
+
+std::shared_ptr<const ByteArray> FontsDatabase::font_bytes(const FontDataKey &key) const {
+    const FontInfo &info = font_info(key);
+    return info.valid() ? info.owner : nullptr;
 }
 
 uint64_t FontsDatabase::revision() const { return revision_; }

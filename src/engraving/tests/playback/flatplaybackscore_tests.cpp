@@ -10,6 +10,7 @@
 #include <stdexcept>
 #include <string>
 #include <tuple>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -664,6 +665,73 @@ TEST_F(PlaybackScoreBuilderTests, ResolvesSparseDynamicsAcrossHairpins) {
     EXPECT_NEAR(level_at(16 * quarter_at_120 - quarter_at_120 / 480), forte + dynamic_level_step, 1);
     EXPECT_EQ(level_at(16 * quarter_at_120), pianissimo);
     EXPECT_EQ(curve.back().at, 16 * quarter_at_120);
+}
+
+TEST_F(PlaybackScoreBuilderTests, ResolvesSetupDataForMultiInstrumentScore) {
+    const auto score = read_model_fixture(u"playback_setup_instruments/playback_setup_instruments.mscx");
+    ASSERT_TRUE(score);
+    ASSERT_EQ(score->parts().size(), 12u);
+
+    constexpr bool supports_snd = true;
+    const std::unordered_map<String, PlaybackSetupData> expected_setup_data{
+        {u"sopranissimo-saxophone", {SoundId::SAXOPHONE, SoundCategory::WINDS, {SoundSubCategory::SOPRANISSIMO}, supports_snd}},
+        {u"marching-tenor-drums",
+         {SoundId::DRUM, SoundCategory::PERCUSSIONS, {SoundSubCategory::MARCHING, SoundSubCategory::SNARE, SoundSubCategory::TENOR}}},
+        {u"hand-clap", {SoundId::CLAP, SoundCategory::PERCUSSIONS, {SoundSubCategory::HAND}}},
+        {u"guitar-steel",
+         {SoundId::GUITAR, SoundCategory::STRINGS, {SoundSubCategory::ACOUSTIC, SoundSubCategory::STEEL, SoundSubCategory::PLUCKED}}},
+        {u"bass-steel-drums",
+         {SoundId::STEEL_DRUMS, SoundCategory::PERCUSSIONS, {SoundSubCategory::METAL, SoundSubCategory::STEEL, SoundSubCategory::BASS}}},
+        {u"alto-viol", {SoundId::VIOL, SoundCategory::STRINGS, {SoundSubCategory::ALTO}, supports_snd}},
+        {u"f-wagner-tuba", {SoundId::TUBA, SoundCategory::WINDS, {SoundSubCategory::WAGNER}, supports_snd}},
+        {u"bass-harmonica-hohner",
+         {SoundId::HARMONICA, SoundCategory::WINDS, {SoundSubCategory::BASS, SoundSubCategory::HOHNER}, supports_snd}},
+        {u"chinese-tom-toms", {SoundId::TOM_TOMS, SoundCategory::PERCUSSIONS, {SoundSubCategory::CHINESE}}},
+        {u"electric-piano", {SoundId::PIANO, SoundCategory::KEYBOARDS, {SoundSubCategory::ELECTRIC}}},
+        {u"crystal-synth",
+         {SoundId::SYNTHESIZER, SoundCategory::KEYBOARDS, {SoundSubCategory::ELECTRIC, SoundSubCategory::FX_CRYSTAL}, supports_snd}},
+        {u"boy-soprano", {SoundId::CHOIR, SoundCategory::VOICES, {SoundSubCategory::SOPRANO, SoundSubCategory::BOY}, supports_snd}},
+    };
+
+    const auto playback = PlaybackScoreBuilder{profiles_}.build(score.get());
+    for (const Part *part : score->parts()) {
+        for (const auto &pair : part->instruments()) {
+            const String &instrument_id = pair.second->id();
+            const TrackEvents *track = playback.find({part->id(), instrument_id});
+            ASSERT_TRUE(track) << instrument_id.to_std_string();
+            EXPECT_EQ(track->setup, expected_setup_data.at(instrument_id)) << instrument_id.to_std_string();
+        }
+    }
+}
+
+TEST_F(PlaybackScoreBuilderTests, FallsBackToStandardArticulationWhenUnsupported) {
+    const auto score = read_model_fixture(u"wrong_articulations/wrong_articulations.mscx");
+    ASSERT_TRUE(score);
+    ASSERT_EQ(score->parts().size(), 2u);
+
+    const Part *winds_part = score->parts().at(0);
+    const Part *voice_part = score->parts().at(1);
+    ASSERT_EQ(winds_part->instrument_id(), "winds");
+    ASSERT_EQ(voice_part->instrument_id(), "voice");
+
+    auto standard_only_profile = std::make_shared<ArticulationsProfile>();
+    standard_only_profile->set_pattern(ArticulationType::STANDARD, profile_->pattern(ArticulationType::STANDARD));
+    muse::mpe::ArticulationProfileBundle standard_only_bundle;
+    standard_only_bundle.profiles.fill(standard_only_profile);
+
+    const auto playback = PlaybackScoreBuilder{standard_only_bundle}.build(score.get());
+    for (const Part *part : {winds_part, voice_part}) {
+        const std::string instrument_id = part->instrument_id().to_std_string();
+        const TrackEvents *track = playback.find({part->id(), part->instrument_id()});
+        ASSERT_TRUE(track) << instrument_id;
+        ASSERT_EQ(track->notes.size(), 8u) << instrument_id;
+        for (const NoteRecord &note : track->notes) {
+            const auto articulations = track->note_articulations(note);
+            ASSERT_EQ(articulations.size(), 1u) << instrument_id;
+            EXPECT_EQ(articulations.front().type, ArticulationType::STANDARD) << instrument_id;
+            EXPECT_GT(note.actual_duration, 0) << instrument_id;
+        }
+    }
 }
 
 TEST_F(PlaybackScoreBuilderTests, RendersFixtureNotesAndOptionalMetronome) {

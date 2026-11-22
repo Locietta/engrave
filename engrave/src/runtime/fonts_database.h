@@ -137,10 +137,11 @@ struct RuntimeFontsDatabase {
     }
 
     // Cairo surfaces/cache entries can outlive the engine registry. Their spans
-    // retain the resource owner explicitly, without copying any font bytes.
+    // retain only the individual font bytes, without copying or holding the
+    // entire built-in font database alive.
     std::shared_ptr<const void> retain_font(const FontDataKey &key) const {
         if (const FontRecord *record = find_record(*active_, key)) return record->bytes;
-        return database_;
+        return database_->font_bytes(key);
     }
 
 private:
