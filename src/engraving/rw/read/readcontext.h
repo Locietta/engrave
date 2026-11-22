@@ -5,7 +5,7 @@
  * MuseScore Studio
  * Music Composition & Notation
  *
- * Copyright (C) 2021 MuseScore Limited and others
+ * Copyright (C) 2026 MuseScore Limited
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -25,10 +25,9 @@
 #include <memory>
 #include <vector>
 
+#include "../infrastructure/eid.h"
 #include "../types/types.h"
-#include "connectorinforeader.h"
 #include "dom/authoredoverride.h"
-#include "dom/connector.h"
 #include "dom/interval.h"
 #include "dom/location.h"
 #include "engraving/internal/engravingfontsprovider.h"
@@ -39,24 +38,24 @@ struct DummyParent;
 struct EngravingObject;
 struct LinkedObjects;
 struct Measure;
+struct MStyle;
 struct Score;
 struct Spanner;
 struct Staff;
 struct Tuplet;
-struct MStyle;
 } // namespace mu::engraving
 
-namespace mu::engraving::read460 {
+namespace mu::engraving::read {
+struct ConnectorInfoReader;
+
 struct TextStyleMap {
     String name;
     TextStyleType ss;
 };
 
 struct ReadContext {
-    std::map<const EngravingItem *, AuthoredChildKey> child_keys;
 
-    ReadContext() = default;
-    ReadContext(Score *score);
+    ReadContext(Score *score, int format_version, bool input_paste_mode = false);
     ~ReadContext();
 
     Score *score() const;
@@ -67,10 +66,14 @@ struct ReadContext {
 
     bool paste_mode() const { return paste_mode_value; }
 
-    void set_paste_mode(bool v) { paste_mode_value = v; }
+    bool transaction_snapshot = false;
+    std::map<const EngravingItem *, AuthoredChildKey> child_keys;
 
     String mscore_version() const;
     int msc_version() const;
+
+    // Excerpts can have a different score version from the file that supplied their XML.
+    bool is_legacy_format() const { return format_version_ < 500; }
 
     int file_division() const;
     int file_division(int t) const;
@@ -141,23 +144,32 @@ struct ReadContext {
     void fill_location(Location &, bool force_abs_frac = false) const;
     void set_location(const Location &); // sets a new reading point, taking into account its type (absolute or relative).
 
-    void
-    add_connector_info_later(std::shared_ptr<ConnectorInfoReader> c); // add connector info to be checked after calling checkConnectors()
+    void add_mm_rest_end_measure_eid(Measure *mmrest, EID last_measure_eid);
+    void set_mm_rest_end_measures();
+
+    void register_pasted_eid(const EID &clipboard_eid, const EID &file_eid);
+    EID resolve_pasted_eid(const EID &clipboard_eid) const;
+
+    void add_note_anchored_spanner_start_el(Spanner *spanner, EID start_element_eid);
+    void add_note_anchored_spanner_end_el(Spanner *spanner, EID end_element_eid);
+    void connect_note_anchored_spanners();
+
+    void add_connector_info_later(std::shared_ptr<ConnectorInfoReader> connector);
     void check_connectors();
     void reconnect_broken_connectors();
     void clear_orphaned_connectors();
 
 private:
-    void add_connector_info(std::shared_ptr<ConnectorInfoReader>);
-    void remove_connector(const ConnectorInfoReader *); // Removes the whole ConnectorInfo chain from the connectors list.
+    void add_connector_info(std::shared_ptr<ConnectorInfoReader> connector);
+    void remove_connector(const ConnectorInfoReader *connector);
 
-    Score *score_ = nullptr;
-
-    bool paste_mode_value = false; // modifies read behaviour on paste operation
+    Score *score_;
+    int format_version_;
 
     std::vector<std::shared_ptr<ConnectorInfoReader>> connectors;
-    std::vector<std::shared_ptr<ConnectorInfoReader>>
-        pending_connectors; // connectors that are pending to be updated and added to _connectors. That will happen when checkConnectors() is called.
+    std::vector<std::shared_ptr<ConnectorInfoReader>> pending_connectors;
+
+    bool paste_mode_value = false; // modifies read behaviour on paste operation
 
     Fraction tick_value{Fraction(0, 1)};
     Fraction tick_offset_value{Fraction(0, 1)};
@@ -178,5 +190,13 @@ private:
     PropertyIdSet properties_to_skip_;
 
     Fraction time_sig_for_next_measure_ = Fraction(0, 1);
+
+    std::unordered_map<Measure *, EID> mm_rest_end_measures_;
+
+    // On pasting we must create new EIDs for the elements, as the serialized EIDs could be used elsewhere in the score
+    // This map preserves the link between the old EID used to reference items within the section of the score which was copied and the newly created EID
+    std::unordered_map<EID, EID> pasted_ei_ds_;
+
+    std::map<Spanner *, std::pair<EID, EID>> incomplete_note_anchored_spanners_;
 };
-} // namespace mu::engraving::read460
+} // namespace mu::engraving::read

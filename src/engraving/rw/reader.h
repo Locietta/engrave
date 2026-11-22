@@ -23,12 +23,9 @@
 
 #include <memory>
 #include <type_traits>
-#include <utility>
 #include <variant>
 
 #include "../types/types.h"
-#include "read460/read460.h"
-#include "read500/read500.h"
 #include "types/ret.h"
 #include "xmlreader.h"
 
@@ -51,6 +48,10 @@ struct TremoloSingleChord;
 struct TremoloTwoChord;
 } // namespace mu::engraving
 
+namespace mu::engraving::read {
+struct ReadContext;
+} // namespace mu::engraving::read
+
 namespace mu::engraving::compat {
 struct TremoloCompat;
 } // namespace mu::engraving::compat
@@ -59,21 +60,16 @@ namespace mu::engraving::rw {
 struct ReadInOutData;
 
 struct Reader {
-    template <typename T>
-    explicit Reader(std::in_place_type_t<T> type) : implementation_(type) {}
+    explicit Reader(int format_version) : format_version_(format_version) {}
 
-    muse::Ret read_score_file(Score *score, XmlReader &xml, rw::ReadInOutData *out) {
-        return std::visit([&](auto &reader) -> muse::Ret { return reader.read_score_file(score, xml, out); }, implementation_);
-    }
+    muse::Ret read_score_file(Score *score, XmlReader &xml, ReadInOutData *out);
 
     using Supported =
         std::variant<std::monostate, Accidental *, ChordRest *, Harmony *, Spanner *, StaffTypeChange *, Symbol *, Text *, Tuplet *>;
 
     template <typename T>
     static void check_supported_static(T item) {
-        if constexpr (std::is_same<T, EngravingItem *>::value) {
-            // supported
-        } else {
+        if constexpr (!std::is_same_v<T, EngravingItem *>) {
             [[maybe_unused]] Supported check(item);
         }
     }
@@ -86,20 +82,13 @@ struct Reader {
         do_read_item(static_cast<EngravingItem *>(item), xml);
     }
 
-    //! NOTE Needs refactoring - reading should be separated from insertion
-    //! (we read the elements into some structure, then inserted them)
-
-    // compat
-    void read_tremolo_compat(engraving::compat::TremoloCompat *item, XmlReader &xml) {
-        return std::visit([&](auto &reader) -> void { return reader.read_tremolo_compat(item, xml); }, implementation_);
-    }
+    void read_tremolo_compat(engraving::compat::TremoloCompat *item, XmlReader &xml);
 
 private:
-    void do_read_item(EngravingItem *item, XmlReader &xml) {
-        return std::visit([&](auto &reader) -> void { return reader.do_read_item(item, xml); }, implementation_);
-    }
+    static bool read_score_tag(Score *score, XmlReader &xml, read::ReadContext &ctx);
+    void do_read_item(EngravingItem *item, XmlReader &xml);
 
-    std::variant<read460::Read460, read500::Read500> implementation_;
+    int format_version_;
 };
 
 using ReaderPtr = std::shared_ptr<Reader>;

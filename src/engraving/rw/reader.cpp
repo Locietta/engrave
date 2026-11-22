@@ -5,7 +5,7 @@
  * MuseScore Studio
  * Music Composition & Notation
  *
- * Copyright (C) 2021 MuseScore Limited and others
+ * Copyright (C) 2026 MuseScore Limited
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -19,57 +19,45 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "read460.h"
+#include "reader.h"
 
-#include "../compat/readstyle.h"
-#include "../compat/tremolocompat.h"
-#include "../editing/noteinput.h"
-#include "../editing/transaction/transaction.h"
-#include "../editing/transpose.h"
-#include "../inoutdata.h"
-#include "../types/types.h"
-#include "dom/anchors.h"
-#include "dom/beam.h"
-#include "dom/breath.h"
+#include "compat/mmrestsources.h"
+#include "compat/readstyle.h"
+#include "compat/tremolocompat.h"
 #include "dom/chord.h"
-#include "dom/dynamic.h"
+#include "dom/dummyparent.h"
 #include "dom/excerpt.h"
 #include "dom/factory.h"
-#include "dom/figuredbass.h"
-#include "dom/fret.h"
-#include "dom/harmony.h"
 #include "dom/lyrics.h"
 #include "dom/masterscore.h"
 #include "dom/measure.h"
-#include "dom/measurerepeat.h"
-#include "dom/note.h"
 #include "dom/part.h"
 #include "dom/score.h"
+#include "dom/scoreorder.h"
+#include "dom/sharedpart.h"
 #include "dom/spanner.h"
 #include "dom/staff.h"
 #include "dom/text.h"
-#include "dom/tie.h"
-#include "dom/tremolotwochord.h"
-#include "dom/tuplet.h"
-#include "engraving/dom/dummyparent.h"
-#include "engraving/dom/scoreorder.h"
-#include "engraving/rw/compat/mmrestsources.h"
+#include "dom/utils.h"
 #include "engravingerrors.h"
+#include "inoutdata.h"
 #include "log.h"
-#include "staffread.h"
-#include "tread.h"
+#include "read/staffread.h"
+#include "read/tread.h"
 
 using namespace mu::engraving;
-using namespace mu::engraving::read460;
+using namespace mu::engraving::read;
+using namespace mu::engraving::rw;
 
-muse::Ret Read460::read_score_file(Score *score, XmlReader &e, rw::ReadInOutData *data) {
-    ReadContext ctx(score);
+muse::Ret Reader::read_score_file(Score *score, XmlReader &e, ReadInOutData *data) {
+    ReadContext ctx(score, format_version_);
     if (data) {
         if (data->overridden_spatium.has_value()) {
             ctx.set_spatium(data->overridden_spatium.value());
         }
 
         ctx.set_properties_to_skip(data->properties_to_skip);
+        ctx.transaction_snapshot = !ctx.is_legacy_format() && data->transaction_snapshot;
     }
 
     while (e.read_next_start_element()) {
@@ -103,7 +91,9 @@ muse::Ret Read460::read_score_file(Score *score, XmlReader &e, rw::ReadInOutData
         ex->set_tracks_mapping(ctx.tracks());
     }
 
-    ctx.clear_orphaned_connectors();
+    if (ctx.is_legacy_format()) {
+        ctx.clear_orphaned_connectors();
+    }
 
     if (data) {
         data->settings_compat = ctx.setting_compat();
@@ -112,13 +102,13 @@ muse::Ret Read460::read_score_file(Score *score, XmlReader &e, rw::ReadInOutData
     return muse::make_ok();
 }
 
-bool Read460::read_score_tag(Score *score, XmlReader &e, ReadContext &ctx) {
+bool Reader::read_score_tag(Score *score, XmlReader &e, ReadContext &ctx) {
     std::vector<int> sys_staves;
     while (e.read_next_start_element()) {
         ctx.set_track(muse::nidx);
         const AsciiStringView tag(e.name());
         if (tag == "eid") {
-            TRead::read_item_eid(score, e);
+            TRead::read_item_eid(score, e, ctx);
         } else if (tag == "Staff") {
             StaffRead::read_staff(score, e, ctx);
         } else if (tag == "Synthesizer") {
@@ -181,16 +171,24 @@ bool Read460::read_score_tag(Score *score, XmlReader &e, ReadContext &ctx) {
                     e.skip_current_element();
                 }
             }
+        } else if (!ctx.is_legacy_format() && tag == "PageLocks") {
+            TRead::read_page_locks(score, e);
         } else if (tag == "SystemLocks") {
             TRead::read_system_locks(score, e);
         } else if (tag == "SystemDividers") {
             TRead::read_system_dividers(score, e, ctx);
+        } else if (!ctx.is_legacy_format() && tag == "SpannerMap") {
+            TRead::read_score_spanners(score, e, ctx);
         } else if (tag == "Part") {
             Part *part = new Part(score);
             TRead::read(part, e, ctx);
             score->append_part(part);
-        } else if ((tag == "HairPin") || (tag == "Ottava") || (tag == "TextLine") || (tag == "Volta") || (tag == "Trill") ||
-                   (tag == "Slur") || (tag == "Pedal")) {
+        } else if (!ctx.is_legacy_format() && tag == "SharedPart") {
+            SharedPart *shared_part = new SharedPart(score);
+            TRead::read(shared_part, e, ctx);
+            score->append_part(shared_part);
+        } else if (ctx.is_legacy_format() && (tag == "HairPin" || tag == "Ottava" || tag == "TextLine" || tag == "Volta" ||
+                                              tag == "Trill" || tag == "Slur" || tag == "Pedal")) {
             Spanner *s = to_spanner(Factory::create_item_by_name(tag, score->dummy()));
             TRead::read_item(s, e, ctx);
             score->add_spanner(s);
@@ -250,7 +248,12 @@ bool Read460::read_score_tag(Score *score, XmlReader &e, ReadContext &ctx) {
             e.unknown();
         }
     }
-    ctx.reconnect_broken_connectors();
+    if (ctx.is_legacy_format()) {
+        ctx.reconnect_broken_connectors();
+    } else {
+        ctx.set_mm_rest_end_measures();
+        ctx.connect_note_anchored_spanners();
+    }
     if (e.error() != muse::XmlStreamReader::NO_ERROR) {
         if (e.error() == muse::XmlStreamReader::CUSTOM_ERROR) {
             LOGE() << e.error_string();
@@ -312,14 +315,12 @@ bool Read460::read_score_tag(Score *score, XmlReader &e, ReadContext &ctx) {
     return true;
 }
 
-void Read460::read_tremolo_compat(compat::TremoloCompat *tc, XmlReader &xml) {
-    ReadContext ctx(static_cast<EngravingObject *>(tc->parent)->score());
-    ctx.set_paste_mode(true);
+void Reader::read_tremolo_compat(compat::TremoloCompat *tc, XmlReader &xml) {
+    ReadContext ctx(static_cast<EngravingObject *>(tc->parent)->score(), format_version_, /* paste_mode = */ true);
     TRead::read(tc, xml, ctx);
 }
 
-void Read460::do_read_item(EngravingItem *item, XmlReader &xml) {
-    ReadContext ctx(item->score());
-    ctx.set_paste_mode(true);
+void Reader::do_read_item(EngravingItem *item, XmlReader &xml) {
+    ReadContext ctx(item->score(), format_version_, /* paste_mode = */ true);
     TRead::read_item(item, xml, ctx);
 }

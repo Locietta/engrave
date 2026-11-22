@@ -35,7 +35,7 @@
 #include "note.h"
 #include "pitchspelling.h"
 #include "rw/harmonytodiagramreader.h"
-#include "rw/read460/tread.h"
+#include "rw/read/tread.h"
 #include "score.h"
 #include "segment.h"
 #include "staff.h"
@@ -228,10 +228,10 @@ void FretDiagram::update_diagram(const String &harmony_name) {
 
     clear();
 
-    read460::ReadContext ctx(score());
+    read::ReadContext ctx(score(), /* format_version = */ 470);
     XmlReader reader(diagram_xml.to_utf8());
 
-    read460::TRead::read(this, reader, ctx);
+    read::TRead::read(this, reader, ctx);
 
     trigger_layout();
     return;

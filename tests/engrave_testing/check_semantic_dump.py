@@ -21,7 +21,7 @@ Only the fields both representations expose are compared:
   excerpts    count and names
 
 Grace notes need one projection decision.  MuseScore attaches every grace note to
-the *following* chord (``read460/measureread.cpp`` collects them and calls
+the *following* chord (``read/measureread.cpp`` collects them and calls
 ``chord->add()`` on the next normal chord), so a grace-after's DOM tick is its
 parent's tick.  ``parse_mscx`` sees only the MSCX stream and records a grace-after
 at the previous main event's tick.  Both placements describe the same notation,

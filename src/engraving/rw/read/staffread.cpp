@@ -5,7 +5,7 @@
  * MuseScore Studio
  * Music Composition & Notation
  *
- * Copyright (C) 2021 MuseScore Limited and others
+ * Copyright (C) 2026 MuseScore Limited
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -30,7 +30,7 @@
 #include "tread.h"
 
 using namespace mu::engraving;
-using namespace mu::engraving::read460;
+using namespace mu::engraving::read;
 
 void StaffRead::read_staff(Score *score, XmlReader &e, ReadContext &ctx) {
     int staff = e.int_attribute("id", 1) - 1;
@@ -62,7 +62,7 @@ void StaffRead::read_staff(Score *score, XmlReader &e, ReadContext &ctx) {
                 measure->check_measure(staff);
                 if (!measure->is_mm_rest()) {
                     score->measures()->append(measure);
-                    if (m && ctx.legacy_mmrests.contains(m)) {
+                    if (ctx.is_legacy_format() && m && ctx.legacy_mmrests.contains(m)) {
                         ctx.legacy_mmrests.at(m)->set_next(measure);
                     }
                     score->check_spanner(ctx.tick(), ctx.tick() + measure->ticks(), /*removeOrphans*/ false);

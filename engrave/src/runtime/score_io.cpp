@@ -72,7 +72,7 @@ void finish_load(engraving::EngravingProject &project) {
     auto *score = project.master_score();
     score->connect_ties();
     // 5.0 moved the post-load MIDI wiring out of EngravingProject::setupMasterScore
-    // into the MSCX reader (rw/read500/read500.cpp:307-315), so a score that did not
+    // into the MSCX reader, so a score that did not
     // come from MSCX keeps an empty MasterScore::midiMapping(): every InstrChannel
     // still has channel() == -1 (dom/instrument.cpp:319) and
     // MasterScore::playbackChannel() indexes midiMapping_ with it

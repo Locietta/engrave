@@ -40,18 +40,10 @@
 #include "tread.h"
 
 using namespace mu::engraving;
-using namespace mu::engraving::read460;
-
-//---------------------------------------------------------
-//   ConnectorInfoReader
-//---------------------------------------------------------
+using namespace mu::engraving::read;
 
 ConnectorInfoReader::ConnectorInfoReader(XmlReader &e, ReadContext *ctx, EngravingItem *current, int track)
     : ConnectorInfo(current, track), reader_(&e), ctx_(ctx), connector_(nullptr), connector_receiver_(current) {}
-
-//---------------------------------------------------------
-//   readPositionInfo
-//---------------------------------------------------------
 
 static Location read_position_info(ReadContext *ctx, int track) {
     Location info = ctx->location();
@@ -59,18 +51,10 @@ static Location read_position_info(ReadContext *ctx, int track) {
     return info;
 }
 
-//---------------------------------------------------------
-//   ConnectorInfoReader
-//---------------------------------------------------------
-
 ConnectorInfoReader::ConnectorInfoReader(XmlReader &e, ReadContext *ctx, Score *current, int track)
     : ConnectorInfo(current, read_position_info(ctx, track)), reader_(&e), ctx_(ctx), connector_(nullptr), connector_receiver_(current) {
     set_current_updated(true);
 }
-
-//---------------------------------------------------------
-//   ConnectorInfoReader::read
-//---------------------------------------------------------
 
 bool ConnectorInfoReader::read() {
     XmlReader &e = *reader_;
@@ -105,10 +89,6 @@ bool ConnectorInfoReader::read() {
     return true;
 }
 
-//---------------------------------------------------------
-//   ConnectorInfoReader::readEndpointLocation
-//---------------------------------------------------------
-
 void ConnectorInfoReader::read_endpoint_location(Location &l) {
     XmlReader &e = *reader_;
     while (e.read_next_start_element()) {
@@ -124,10 +104,6 @@ void ConnectorInfoReader::read_endpoint_location(Location &l) {
 
 Fraction ConnectorInfoReader::cur_tick() const { return ctx_->tick(); }
 
-//---------------------------------------------------------
-//   ConnectorInfoReader::update
-//---------------------------------------------------------
-
 void ConnectorInfoReader::update() {
     if (!current_updated()) {
         update_current_info(ctx_->paste_mode());
@@ -139,10 +115,6 @@ void ConnectorInfoReader::update() {
         next_loc_.to_absolute(current_loc_);
     }
 }
-
-//---------------------------------------------------------
-//   ConnectorInfoReader::addToScore
-//---------------------------------------------------------
 
 struct ReadAddConnectorVisitor : rtti::Visitor<ReadAddConnectorVisitor> {
 
@@ -170,10 +142,6 @@ void ConnectorInfoReader::add_to_score(bool paste_mode) {
     }
 }
 
-//---------------------------------------------------------
-//   ConnectorInfoReader::readConnector
-//---------------------------------------------------------
-
 void ConnectorInfoReader::read_connector(std::shared_ptr<ConnectorInfoReader> info, XmlReader &e, ReadContext &ctx) {
     if (!info->read()) {
         e.skip_current_element();
@@ -181,10 +149,6 @@ void ConnectorInfoReader::read_connector(std::shared_ptr<ConnectorInfoReader> in
     }
     ctx.add_connector_info_later(info);
 }
-
-//---------------------------------------------------------
-//   ConnectorInfoReader::connector
-//---------------------------------------------------------
 
 EngravingItem *ConnectorInfoReader::connector() {
     // connector should be contained in the first node normally.
@@ -195,15 +159,7 @@ EngravingItem *ConnectorInfoReader::connector() {
     return nullptr;
 }
 
-//---------------------------------------------------------
-//   ConnectorInfoReader::connector
-//---------------------------------------------------------
-
 const EngravingItem *ConnectorInfoReader::connector() const { return const_cast<ConnectorInfoReader *>(this)->connector(); }
-
-//---------------------------------------------------------
-//   ConnectorInfoReader::releaseConnector
-//---------------------------------------------------------
 
 EngravingItem *ConnectorInfoReader::release_connector() {
     ConnectorInfoReader *i = static_cast<ConnectorInfoReader *>(find_first());

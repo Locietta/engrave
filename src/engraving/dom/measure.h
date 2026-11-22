@@ -40,14 +40,6 @@ namespace mu::engraving::read410 {
 struct MeasureRead;
 } // namespace mu::engraving::read410
 
-namespace mu::engraving::read460 {
-struct MeasureRead;
-} // namespace mu::engraving::read460
-
-namespace mu::engraving::read500 {
-struct MeasureRead;
-} // namespace mu::engraving::read500
-
 namespace mu::engraving::write {
 struct MeasureWrite;
 } // namespace mu::engraving::write

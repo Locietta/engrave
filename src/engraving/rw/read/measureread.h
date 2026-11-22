@@ -5,7 +5,7 @@
  * MuseScore Studio
  * Music Composition & Notation
  *
- * Copyright (C) 2021 MuseScore Limited and others
+ * Copyright (C) 2026 MuseScore Limited
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -25,12 +25,15 @@
 #include "readcontext.h"
 
 namespace mu::engraving {
-struct MeasureBase;
+struct Measure;
 } // namespace mu::engraving
 
-namespace mu::engraving::read460 {
-struct StaffRead {
+namespace mu::engraving::read {
+struct MeasureRead {
 
-    static void read_staff(Score *score, XmlReader &, ReadContext &ctx);
+    static void read_measure(Measure *measure, XmlReader &xml, ReadContext &ctx, int staff_idx);
+
+private:
+    static void read_voice(Measure *measure, XmlReader &e, ReadContext &ctx, int staff_idx, bool irregular);
 };
-} // namespace mu::engraving::read460
+} // namespace mu::engraving::read

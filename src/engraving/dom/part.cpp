@@ -713,7 +713,7 @@ Fraction Part::current_harp_diagram_tick(const Fraction &tick) const {
 //    (MScoreTextToMusicXml::toPlainText, documented for MuseScore 1.3 part
 //    names). Convert to plain text here, once, for all of them.
 //    The same commit dropped the fallback to Instrument::trackName() that
-//    read114/read206/read460 applied when no part name was stored
+//    the legacy readers applied when no part name was stored
 //    ("if (partName.isEmpty()) partName = instrument()->trackName()"),
 //    which loses the part name of scores without a <longName> element;
 //    keep 4.7's fallback semantics.

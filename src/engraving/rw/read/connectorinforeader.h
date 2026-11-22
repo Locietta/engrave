@@ -24,18 +24,13 @@
 #include "../../dom/connector.h"
 #include "../xmlreader.h"
 
-//---------------------------------------------------------
-//   @@ ConnectorInfoReader
-///    Helper class for reading beams, tuplets and spanners.
-//---------------------------------------------------------
-
 namespace mu::engraving {
 struct ChordRest;
 struct Measure;
 struct Note;
 } // namespace mu::engraving
 
-namespace mu::engraving::read460 {
+namespace mu::engraving::read {
 struct ReadContext;
 
 struct ConnectorInfoReader final : ConnectorInfo {
@@ -50,8 +45,7 @@ public:
 
     EngravingItem *connector();
     const EngravingItem *connector() const;
-    EngravingItem *release_connector(); // returns connector and "forgets" it by
-    // setting an internal pointer to it to zero
+    EngravingItem *release_connector();
 
     bool read();
     void update();
@@ -73,4 +67,4 @@ private:
     EngravingItem *connector_ = nullptr;
     EngravingObject *connector_receiver_ = nullptr;
 };
-} // namespace mu::engraving::read460
+} // namespace mu::engraving::read

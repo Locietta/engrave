@@ -28,9 +28,9 @@ namespace mu::engraving {
 struct MeasureBase;
 } // namespace mu::engraving
 
-namespace mu::engraving::read500 {
+namespace mu::engraving::read {
 struct StaffRead {
 
     static void read_staff(Score *score, XmlReader &, ReadContext &ctx);
 };
-} // namespace mu::engraving::read500
+} // namespace mu::engraving::read

@@ -132,10 +132,10 @@ constexpr Pair add_pairs[] = {
     {"Segment", "Dynamic"},
     {"Segment", "Expression"},
     // Score::addText's STAFF case (editing/edit.cpp:763-771), and the reader's
-    // StaffText (rw/read500/measureread.cpp:487-...).
+    // StaffText (rw/read/measureread.cpp).
     {"Segment", "StaffText"},
     // Score::addText's TEMPO case (editing/edit.cpp:941-1005) and the reader's
-    // TempoText (rw/read500/measureread.cpp:477-486).
+    // TempoText (rw/read/measureread.cpp).
     {"Segment", "Tempo"},
     {"Segment", "Harmony"},
 };

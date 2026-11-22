@@ -183,7 +183,7 @@ namespace mu::engraving::compat {
 struct TremoloCompat;
 } // namespace mu::engraving::compat
 
-namespace mu::engraving::read500 {
+namespace mu::engraving::read {
 struct TRead {
     TRead() = default;
 
@@ -385,6 +385,8 @@ struct TRead {
     static bool read_properties(TextLineBase *b, XmlReader &e, ReadContext &ctx);
     static bool read_properties(Volta *v, XmlReader &e, ReadContext &ctx);
 
+    static void read_spanner(XmlReader &e, ReadContext &ctx, EngravingItem *current, track_idx_t track);
+
     static void read_page_locks(Score *score, XmlReader &e);
     static void read_system_locks(Score *score, XmlReader &e);
     static void read_system_dividers(Score *score, XmlReader &e, ReadContext &ctx);
@@ -420,4 +422,4 @@ private:
 
     static void read(BracketItem *b, XmlReader &xml, ReadContext &ctx);
 };
-} // namespace mu::engraving::read500
+} // namespace mu::engraving::read

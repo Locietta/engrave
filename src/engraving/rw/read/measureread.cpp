@@ -60,7 +60,7 @@
 #include "tread.h"
 
 using namespace mu::engraving;
-using namespace mu::engraving::read500;
+using namespace mu::engraving::read;
 
 void MeasureRead::read_measure(Measure *measure, XmlReader &e, ReadContext &ctx, int staff_idx) {
     IF_ASSERT_FAILED(ctx.is_same_score(measure)) { return; }
@@ -171,7 +171,7 @@ void MeasureRead::read_measure(Measure *measure, XmlReader &e, ReadContext &ctx,
             // set tick to previous measure
             measure->set_tick(ctx.last_measure()->tick());
             ctx.set_tick(ctx.last_measure()->tick());
-        } else if (tag == "mmRestLast") {
+        } else if (!ctx.is_legacy_format() && tag == "mmRestLast") {
             AsciiStringView s = e.read_ascii_text();
             EID eid = EID::from_std_string(s);
             DO_ASSERT(eid.is_valid());
@@ -190,6 +190,9 @@ void MeasureRead::read_measure(Measure *measure, XmlReader &e, ReadContext &ctx,
         } else {
             e.unknown();
         }
+    }
+    if (ctx.is_legacy_format()) {
+        ctx.check_connectors();
     }
     if (measure->is_mm_rest()) {
         Measure *lm = ctx.last_measure();
@@ -328,6 +331,8 @@ void MeasureRead::read_voice(Measure *measure, XmlReader &e, ReadContext &ctx, i
             breath->set_placement(breath->track() & 1 ? PlacementV::BELOW : PlacementV::ABOVE);
             TRead::read(breath, e, ctx);
             segment->add(breath);
+        } else if (ctx.is_legacy_format() && tag == "Spanner") {
+            TRead::read_spanner(e, ctx, measure, ctx.track());
         } else if (tag == "MeasureRepeat" || tag == "RepeatMeasure") {
             //             4.x                       3.x
             segment = measure->get_segment(SegmentType::CHORD_REST, ctx.tick());
@@ -487,12 +492,12 @@ void MeasureRead::read_voice(Measure *measure, XmlReader &e, ReadContext &ctx, i
                 el->set_track(0); // original system object always goes on top
             }
             segment->add(el);
-        } else if (tag == "StaveSharingChange") {
+        } else if (!ctx.is_legacy_format() && tag == "StaveSharingChange") {
             // Indicators are rebuilt from the SharedPart's authored state.
             e.skip_current_element();
-        } else if (tag == "StaveSharingLabel" || tag == "Sticking" || tag == "SystemText" || tag == "PlayTechAnnotation" || tag == "Capo" ||
-                   tag == "StringTunings" || tag == "RehearsalMark" || tag == "InstrumentChange" || tag == "StaffState" ||
-                   tag == "FiguredBass" || tag == "HarpPedalDiagram") {
+        } else if ((!ctx.is_legacy_format() && tag == "StaveSharingLabel") || tag == "Sticking" || tag == "SystemText" ||
+                   tag == "PlayTechAnnotation" || tag == "Capo" || tag == "StringTunings" || tag == "RehearsalMark" ||
+                   tag == "InstrumentChange" || tag == "StaffState" || tag == "FiguredBass" || tag == "HarpPedalDiagram") {
             EngravingItem *el = Factory::create_item_by_name(tag, ctx.dummy());
             if (el->allow_time_anchor()) {
                 segment = measure->get_chord_rest_or_time_tick_segment(ctx.tick());

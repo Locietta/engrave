@@ -21,8 +21,6 @@
  */
 #include "rwregister.h"
 
-#include "read460/read460.h"
-#include "read500/read500.h"
 #include "types/constants.h"
 #include "write/writer.h"
 
@@ -36,11 +34,9 @@ ReaderPtr RWRegister::reader(int version) {
 
     if (version < 460) {
         return nullptr;
-    } else if (version < 500) {
-        return std::make_shared<Reader>(std::in_place_type<read460::Read460>);
     }
 
-    return std::make_shared<Reader>(std::in_place_type<read500::Read500>);
+    return std::make_shared<Reader>(version);
 }
 
 std::unique_ptr<write::Writer> RWRegister::writer() { return std::make_unique<write::Writer>(); }

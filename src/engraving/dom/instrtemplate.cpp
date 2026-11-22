@@ -30,7 +30,7 @@
 #include "global/types/textscan.h"
 #include "io/file.h"
 #include "log.h"
-#include "rw/read460/tread.h"
+#include "rw/read/tread.h"
 #include "rw/write/twrite.h"
 #include "rw/xmlreader.h"
 #include "rw/xmlwriter.h"
@@ -467,7 +467,7 @@ void InstrumentTemplate::read(XmlReader &e) {
             trait.is_hidden_on_score = trait_name.contains(u'(') && trait_name.contains(u')');
             trait.name = trait_name.remove(u'*').remove(u'(').remove(u')');
         } else if (tag == "StringData") {
-            read460::TRead::read(&string_data, e);
+            read::TRead::read(&string_data, e);
         } else if (tag == "drumset") {
             use_drumset = e.read_int();
         } else if (tag == "Drum") {
@@ -486,17 +486,17 @@ void InstrumentTemplate::read(XmlReader &e) {
             drumset->set_percussion_panel_columns(e.read_int());
         } else if (tag == "MidiAction") {
             NamedEventList a;
-            read460::TRead::read(&a, e);
+            read::TRead::read(&a, e);
             midi_actions.push_back(a);
         } else if (tag == "Channel" || tag == "channel") {
             InstrChannel a;
             InstrumentTrackId t_id;
-            read460::ReadContext rctx(nullptr);
-            read460::TRead::read(&a, e, rctx, nullptr, t_id);
+            read::ReadContext rctx(nullptr, /* format_version = */ 470);
+            read::TRead::read(&a, e, rctx, nullptr, t_id);
             channel.push_back(a);
         } else if (tag == "Articulation") {
             MidiArticulation a;
-            read460::TRead::read(&a, e);
+            read::TRead::read(&a, e);
             size_t n = midi_articulations.size();
             size_t i;
             for (i = 0; i < n; ++i) {
@@ -642,7 +642,7 @@ bool load_instrument_templates(const muse::io::PathT &instr_templates_path) {
                     // read global articulation
                     String name(e.attribute("name"));
                     MidiArticulation a = search_articulation(name);
-                    read460::TRead::read(&a, e);
+                    read::TRead::read(&a, e);
                     midi_articulations.push_back(a);
                 } else if (tag == "Genre") {
                     String id_genre(e.attribute("id"));

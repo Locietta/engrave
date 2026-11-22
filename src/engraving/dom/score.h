@@ -69,13 +69,9 @@ namespace mu::engraving::read410 {
 struct Read410;
 } // namespace mu::engraving::read410
 
-namespace mu::engraving::read460 {
-struct Read460;
-} // namespace mu::engraving::read460
-
-namespace mu::engraving::read500 {
-struct Read500;
-} // namespace mu::engraving::read500
+namespace mu::engraving::rw {
+struct Reader;
+} // namespace mu::engraving::rw
 
 namespace mu::engraving::write {
 struct Writer;
@@ -901,8 +897,7 @@ private:
     friend struct read302::Read302;
     friend struct read400::Read400;
     friend struct read410::Read410;
-    friend struct read460::Read460;
-    friend struct read500::Read500;
+    friend struct rw::Reader;
     friend struct write::Writer;
 
     static std::set<Score *> valid_scores;
