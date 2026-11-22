@@ -144,4 +144,46 @@ struct MusicRange {
     std::vector<int> voices; // Empty selects all voices.
 };
 
+// NOLINTNEXTLINE(readability-identifier-naming) -- Preserve the public PitchDomain spelling.
+enum class PitchDomain { Concert, Written };
+
+using EntryPitch = std::variant<SpelledPitch, DrumKey>;
+
+struct PhraseGrace {
+    GraceKind kind;
+    Fraction written_duration;
+    std::vector<EntryPitch> notes;
+};
+
+struct PhraseNote {
+    EntryPitch pitch;
+    bool tie_to_next = false;
+};
+
+struct PhraseEvent {
+    Fraction written_duration;
+    std::vector<PhraseNote> notes; // An empty chord enters a rest.
+    std::vector<PhraseGrace> before;
+    std::vector<PhraseGrace> after;
+};
+
+struct TupletGroup {
+    int actual = 3;
+    int normal = 2;
+    std::vector<PhraseEvent> members;
+};
+
+using PhraseItem = std::variant<PhraseEvent, TupletGroup>;
+
+struct PhraseLane {
+    Position start;
+    PitchDomain domain = PitchDomain::Concert;
+    std::vector<PhraseItem> items;
+};
+
+struct Phrase {
+    ScoreSel score;
+    std::vector<PhraseLane> lanes;
+};
+
 } // namespace engrave

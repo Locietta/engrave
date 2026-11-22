@@ -65,15 +65,15 @@ std::optional<mu::engraving::Fraction> to_reduced_engine_fraction(Fraction value
     return mu::engraving::Fraction(static_cast<int>(value.num), static_cast<int>(value.den));
 }
 
-mu::engraving::Rest *rest_covering(mu::engraving::Measure &measure, const mu::engraving::Fraction &tick, mu::engraving::track_idx_t track) {
+ChordRest *rhythm_covering(mu::engraving::Measure &measure, const mu::engraving::Fraction &tick, mu::engraving::track_idx_t track) {
     EngravingItem *previous = nullptr;
     for (auto *segment = measure.first(mu::engraving::SegmentType::CHORD_REST); segment && segment->tick() < tick;
          segment = segment->next(mu::engraving::SegmentType::CHORD_REST)) {
         if (auto *item = segment->element(track)) previous = item;
     }
-    if (!previous || !previous->is_rest()) return nullptr;
-    auto *rest = mu::engraving::to_rest(previous);
-    return tick < rest->end_tick() ? rest : nullptr;
+    if (!previous || !previous->is_chord_rest()) return nullptr;
+    auto *rhythm = mu::engraving::to_chord_rest(previous);
+    return tick < rhythm->end_tick() ? rhythm : nullptr;
 }
 
 std::optional<mu::engraving::Fraction> split_duration(const mu::engraving::Fraction &length, const mu::engraving::Fraction &unit) {
@@ -193,7 +193,7 @@ Result<Step> prepare_entry(EditContext &context, const SegmentAddress &address, 
 
         const mu::engraving::Drumset *kit = nullptr;
         if (percussion) {
-            if (staff->is_drum_staff(tick)) kit = staff->part()->instrument(tick)->drumset();
+            if (staff->is_drum_staff(tick)) kit = staff->origin_part(tick)->instrument(tick)->drumset();
             if (!kit) return invalid("EnterDrums requires a percussion staff with a drumset");
             for (const auto &value : values) {
                 if (!kit->is_valid(value.pitch)) return invalid(std::format("key {} is absent from the staff's drumset", value.pitch));
@@ -203,7 +203,9 @@ Result<Step> prepare_entry(EditContext &context, const SegmentAddress &address, 
         }
 
         const bool interior = measure->tick() < tick && tick < measure->end_tick();
-        auto *covering = interior && (!start || !start->element(track)) ? rest_covering(*measure, tick, track) : nullptr;
+        auto *covered = interior && (!start || !start->element(track)) ? rhythm_covering(*measure, tick, track) : nullptr;
+        if (covered && !covered->is_rest()) return invalid("the entry position falls inside a sounding event");
+        auto *covering = covered ? mu::engraving::to_rest(covered) : nullptr;
         const bool open_voice = interior && at.voice != 0 && !measure->has_voice(track);
         if (!start && !covering && !open_voice) return std::unexpected(missing_segment(at));
         auto *tuplet = covering ? covering->tuplet() : nullptr;
@@ -343,14 +345,29 @@ Result<Step> prepare(EditContext &context, const AddGraceChord &op) {
     if (auto valid = validate_chord(*values); !valid) return std::unexpected(valid.error());
     auto target = context.target(op.principal);
     if (!target) return std::unexpected(target.error());
+    const bool after = bool(style->type & (NoteType::GRACE8_AFTER | NoteType::GRACE16_AFTER | NoteType::GRACE32_AFTER));
+    const auto event_end = op.event_end ? to_reduced_engine_fraction(*op.event_end) : std::nullopt;
+    if (op.event_end && (!after || !event_end || event_end->numerator() <= 0))
+        return invalid("an event end requires an after-grace and a positive score tick");
 
-    return [target = *target, type = style->type, length = duration->ticks(),
+    return [target = *target, type = style->type, after, event_end, length = duration->ticks(),
             values = std::move(*values)](EditContext &context) -> Result<void> {
         auto item = edited_item(context, target);
         if (!item) return std::unexpected(item.error());
         if (!(*item)->is_chord()) return invalid("a grace chord requires a principal chord");
         auto *principal = mu::engraving::to_chord(*item);
         if (principal->is_grace()) return invalid("a grace chord requires a principal chord");
+        if (event_end) {
+            while (principal->end_tick() < *event_end) {
+                const auto *tie = principal->notes().empty() ? nullptr : principal->notes().front()->tie_for();
+                const auto *next = tie ? tie->end_note() : nullptr;
+                auto *continuation = next ? next->chord() : nullptr;
+                if (!continuation || continuation->track() != principal->track() || continuation->tick() != principal->end_tick())
+                    return invalid("the grace anchor has no tied continuation at the event end");
+                principal = continuation;
+            }
+            if (principal->end_tick() != *event_end) return invalid("the grace anchor does not end at the requested tick");
+        }
         const auto tick = principal->tick();
         if (principal->staff()->is_tab_staff(tick) || principal->staff()->is_drum_staff(tick))
             return invalid("AddGraceChord requires a pitched staff");
@@ -358,7 +375,6 @@ Result<Step> prepare(EditContext &context, const AddGraceChord &op) {
 
         const auto &first = values.front();
         // The native after-grace view plays the stored chords in reverse order.
-        const bool after = bool(type & (NoteType::GRACE8_AFTER | NoteType::GRACE16_AFTER | NoteType::GRACE32_AFTER));
         const auto index = after ? 0 : principal->grace_notes().size();
         Note *note = score->set_grace_note(principal, first.pitch, type, length, index);
         auto *chord = note->chord();

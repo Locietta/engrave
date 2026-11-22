@@ -45,6 +45,8 @@ struct GraceEntry {
 struct AddGraceChord {
     Ref principal;
     GraceEntry grace;
+    // For an after-grace on a held event, anchor to the piece ending at this score tick.
+    std::optional<Fraction> event_end;
 };
 
 struct DrumKey {

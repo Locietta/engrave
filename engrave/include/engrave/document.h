@@ -18,6 +18,7 @@ namespace engrave {
 
 struct MusicRange;
 struct MusicWindow;
+struct Phrase;
 
 // NOLINTNEXTLINE(readability-identifier-naming) -- Preserve the public EditMode spelling.
 enum class EditMode { Atomic, Prefix };
@@ -119,6 +120,10 @@ struct Document {
     // Read source notation in measure order without preparing layout. A window
     // that exceeds the capture budget returns ResourceLimit.
     Result<MusicWindow> read_music(const MusicRange &range) const;
+
+    // Enter lanes as one edit batch. Rejections identify the lane and item,
+    // and the tuplet member when applicable.
+    Result<EditResult> write_phrase(const Phrase &phrase, const EditOptions &options = {});
 
     // The elements that match, in a stable order. Only layout_boxes prepares
     // geometry. NotFound for a property name the

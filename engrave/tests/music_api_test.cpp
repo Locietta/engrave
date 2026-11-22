@@ -279,4 +279,306 @@ TEST(MusicRead, NoteOwnedLineCrossesAWindowWithoutEitherAnchor) {
     EXPECT_EQ(body.measure_repeat_count, 1);
 }
 
+constexpr std::string_view piano_fixture = R"(<museScore version="4.70"><Score><Division>480</Division>
+<Part id="1"><Staff/><Staff/><trackName>Piano</trackName>
+<Instrument id="piano"><instrumentId>keyboard.piano</instrumentId><Channel><program value="0"/></Channel></Instrument>
+</Part>
+<Staff id="1"><Measure len="1/8"><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
+<Chord><durationType>eighth</durationType><Note><pitch>64</pitch><tpc>18</tpc></Note></Chord></voice></Measure>
+<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>
+<Measure><voice><TimeSig><sigN>6</sigN><sigD>8</sigD></TimeSig>
+<Rest><durationType>measure</durationType></Rest></voice></Measure></Staff>
+<Staff id="2"><Measure len="1/8"><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
+<Rest><durationType>measure</durationType></Rest></voice></Measure>
+<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>
+<Measure><voice><TimeSig><sigN>6</sigN><sigD>8</sigD></TimeSig>
+<Rest><durationType>measure</durationType></Rest></voice></Measure></Staff>
+</Score></museScore>)";
+
+constexpr SpelledPitch c4{StepName::C, 0, 4};
+constexpr SpelledPitch e4{StepName::E, 0, 4};
+constexpr SpelledPitch g4{StepName::G, 0, 4};
+
+Result<std::unique_ptr<Document>> reload(Document &document) {
+    auto bytes = document.export_score({.format = Format::MSCZ});
+    if (!bytes) return std::unexpected(std::move(bytes.error()));
+    return test::core_env().engine->open(*bytes);
+}
+
+const mu::engraving::Chord *chord_at(const mu::engraving::Score &score, mu::engraving::Fraction tick, mu::engraving::track_idx_t track) {
+    auto *rhythm = score.find_cr(tick, track);
+    return rhythm && rhythm->is_chord() ? mu::engraving::to_chord(rhythm) : nullptr;
+}
+
+TEST(MusicWrite, PianoPhraseCrossesPickupAndMeterChangeWithSelectiveTies) {
+    auto document = open_fixture(piano_fixture);
+    ASSERT_TRUE(document) << document.error().message;
+    const auto source = (*document)->outline();
+    ASSERT_TRUE(source) << source.error().message;
+    const auto &bars = source->measures;
+    const Phrase phrase{.lanes = {
+                            {{bars.at(0).id, {0, 1}},
+                             PitchDomain::Concert,
+                             {PhraseEvent{{1, 2}, {{c4, true}, {e4}}}, PhraseEvent{{1, 4}, {{c4}, {e4}}}, PhraseEvent{{1, 8}},
+                              PhraseEvent{{1, 2}, {{g4}}, {}, {{GraceKind::Grace8After, {1, 8}, {e4}}}}}},
+                            {{bars.at(1).id, {1, 8}, 0, 1}, PitchDomain::Concert, {PhraseEvent{{1, 4}, {{g4}}}}},
+                            {{bars.at(1).id, {1, 4}, 1, 0}, PitchDomain::Concert, {PhraseEvent{{1, 4}, {{c4}}}}},
+                        }};
+    const auto revision = (*document)->revision();
+    const auto written = (*document)->write_phrase(phrase, {.expected_revision = revision});
+    ASSERT_TRUE(written) << written.error().message;
+    ASSERT_FALSE(written->rejection) << written->rejection->error.message;
+    EXPECT_EQ(written->revision, revision + 1);
+
+    auto reopened = reload(**document);
+    ASSERT_TRUE(reopened) << reopened.error().message;
+    for (auto *copy : {document->get(), reopened->get()}) {
+        const auto window = copy->read_music({.measure_count = 3});
+        ASSERT_TRUE(window) << window.error().message;
+        const auto &voices = window->measures.at(1).voices;
+        ASSERT_EQ(voices.size(), 3u);
+        EXPECT_EQ(voices[1].staff, 0);
+        EXPECT_EQ(voices[1].voice, 1);
+        expect_fraction(voices[1].events.at(1).offset, 1, 8);
+        EXPECT_TRUE(std::holds_alternative<RestMusic>(voices[1].events.at(0).body));
+        EXPECT_EQ(voices[2].staff, 1);
+        EXPECT_EQ(voices[2].voice, 0);
+        expect_fraction(voices[2].events.at(1).offset, 1, 4);
+        expect_fraction(voices[0].events.at(0).written_duration, 3, 8);
+        expect_fraction(window->measures.at(2).measure.duration, 3, 4);
+
+        const auto &score = read_test::master_of(*copy);
+        const auto *pickup = chord_at(score, {0, 1}, 0);
+        const auto *continued = chord_at(score, {1, 8}, 0);
+        const auto *next = chord_at(score, {1, 2}, 0);
+        ASSERT_TRUE(pickup && continued && next);
+        for (int midi : {60, 64}) {
+            const auto *a = pickup->find_note(midi);
+            const auto *b = continued->find_note(midi);
+            ASSERT_TRUE(a && b && a->tie_for());
+            EXPECT_EQ(a->tie_for()->end_note(), b);
+        }
+        const auto *c = continued->find_note(60);
+        ASSERT_TRUE(c->tie_for());
+        EXPECT_EQ(c->tie_for()->end_note(), next->find_note(60));
+        EXPECT_EQ(continued->find_note(64)->tie_for(), nullptr);
+        const auto *crossing = chord_at(score, {7, 8}, 0);
+        const auto *crossed = chord_at(score, {9, 8}, 0);
+        ASSERT_TRUE(crossing && crossed && crossing->find_note(67)->tie_for());
+        EXPECT_EQ(crossing->find_note(67)->tie_for()->end_note(), crossed->find_note(67));
+        EXPECT_TRUE(crossing->grace_notes_after().empty());
+        const auto after = crossed->grace_notes_after();
+        ASSERT_EQ(after.size(), 1u);
+        EXPECT_NE(after.front()->find_note(64), nullptr);
+    }
+}
+
+TEST(MusicWrite, ConcertAndWrittenEnharmonicsRoundTripOnClarinet) {
+    auto document = open_fixture(clarinet_fixture);
+    ASSERT_TRUE(document) << document.error().message;
+    const auto outline = (*document)->outline();
+    ASSERT_TRUE(outline) << outline.error().message;
+    const auto bar = outline->measures.at(2).id;
+    constexpr SpelledPitch b_sharp{StepName::B, 1, 3};
+    constexpr SpelledPitch c_flat{StepName::C, -1, 4};
+    const Phrase phrase{.lanes = {
+                            {{bar, {0, 1}}, PitchDomain::Concert, {PhraseEvent{{1, 8}, {{b_sharp}}}, PhraseEvent{{1, 8}, {{c_flat}}}}},
+                            {{bar, {1, 4}}, PitchDomain::Written, {PhraseEvent{{1, 8}, {{b_sharp}}}, PhraseEvent{{1, 8}, {{c_flat}}}}},
+                        }};
+    const auto edit = (*document)->write_phrase(phrase);
+    ASSERT_TRUE(edit) << edit.error().message;
+    ASSERT_FALSE(edit->rejection) << edit->rejection->error.message;
+    auto reopened = reload(**document);
+    ASSERT_TRUE(reopened) << reopened.error().message;
+    for (auto *copy : {document->get(), reopened->get()}) {
+        const auto window = copy->read_music({.first_measure = 2});
+        ASSERT_TRUE(window) << window.error().message;
+        const auto &events = window->measures.at(0).voices.at(0).events;
+        auto pitch_at = [&](std::size_t index) {
+            return std::get<PitchedNote>(std::get<ChordMusic>(events.at(index).body).notes.at(0).pitch);
+        };
+        const auto concert_sharp = pitch_at(0);
+        EXPECT_EQ(concert_sharp.midi, 60);
+        expect_pitch(concert_sharp.concert, StepName::B, 1, 3);
+        expect_pitch(concert_sharp.written, StepName::C, 2, 4);
+        const auto concert_flat = pitch_at(1);
+        EXPECT_EQ(concert_flat.midi, 59);
+        expect_pitch(concert_flat.concert, StepName::C, -1, 4);
+        expect_pitch(concert_flat.written, StepName::D, -1, 4);
+        const auto written_sharp = pitch_at(2);
+        EXPECT_EQ(written_sharp.midi, 58);
+        expect_pitch(written_sharp.concert, StepName::A, 1, 3);
+        expect_pitch(written_sharp.written, StepName::B, 1, 3);
+        const auto written_flat = pitch_at(3);
+        EXPECT_EQ(written_flat.midi, 57);
+        expect_pitch(written_flat.concert, StepName::B, -2, 3);
+        expect_pitch(written_flat.written, StepName::C, -1, 4);
+    }
+}
+
+TEST(MusicWrite, TupletMembersAndOrderedGracesSurviveNativeSave) {
+    auto document = open_fixture(piano_fixture);
+    ASSERT_TRUE(document) << document.error().message;
+    const auto outline = (*document)->outline();
+    ASSERT_TRUE(outline) << outline.error().message;
+    const auto bar = outline->measures.at(1).id;
+    const TupletGroup triplet{
+        .members =
+            {
+                {{1, 8},
+                 {{c4, true}, {g4}},
+                 {{GraceKind::Appoggiatura, {1, 8}, {e4}}, {GraceKind::Acciaccatura, {1, 16}, {g4}}},
+                 {{GraceKind::Grace8After, {1, 8}, {c4}}, {GraceKind::Grace16After, {1, 16}, {e4}}}},
+                {{1, 8}, {{c4}}, {{GraceKind::Appoggiatura, {1, 8}, {c4}}}},
+                {{1, 8}},
+            },
+    };
+    const auto edit = (*document)->write_phrase({.lanes = {{{bar, {1, 8}}, PitchDomain::Concert, {triplet}}}});
+    ASSERT_TRUE(edit) << edit.error().message;
+    ASSERT_FALSE(edit->rejection) << edit->rejection->error.message;
+
+    auto reopened = reload(**document);
+    ASSERT_TRUE(reopened) << reopened.error().message;
+    for (auto *copy : {document->get(), reopened->get()}) {
+        const auto window = copy->read_music({.first_measure = 1, .staves = {0}});
+        ASSERT_TRUE(window) << window.error().message;
+        ASSERT_EQ(window->tuplets.size(), 1u);
+        const auto &events = window->measures.at(0).voices.at(0).events;
+        ASSERT_GE(events.size(), 4u);
+        for (std::size_t i = 1; i <= 3; ++i) {
+            EXPECT_EQ(events[i].tuplet_path, (std::vector{window->tuplets[0].id}));
+            expect_fraction(events[i].written_duration, 1, 8);
+            expect_fraction(events[i].elapsed_duration, 1, 12);
+        }
+        expect_fraction(events[1].offset, 1, 8);
+        expect_fraction(events[2].offset, 5, 24);
+        expect_fraction(events[3].offset, 7, 24);
+        EXPECT_TRUE(std::holds_alternative<RestMusic>(events[3].body));
+        const auto &first = std::get<ChordMusic>(events[1].body);
+        ASSERT_EQ(first.before.size(), 2u);
+        ASSERT_EQ(first.after.size(), 2u);
+        EXPECT_EQ(first.before[0].kind, GraceKind::Appoggiatura);
+        EXPECT_EQ(first.before[1].kind, GraceKind::Acciaccatura);
+        EXPECT_EQ(first.after[0].kind, GraceKind::Grace8After);
+        EXPECT_EQ(first.after[1].kind, GraceKind::Grace16After);
+        const auto &dom = read_test::master_of(*copy);
+        const auto *from = chord_at(dom, {1, 4}, 0);
+        const auto *to = chord_at(dom, {1, 3}, 0);
+        ASSERT_TRUE(from && to && from->tuplet());
+        EXPECT_EQ(from->tuplet(), to->tuplet());
+        ASSERT_TRUE(from->find_note(60)->tie_for());
+        EXPECT_EQ(from->find_note(60)->tie_for()->end_note(), to->find_note(60));
+        EXPECT_EQ(from->find_note(67)->tie_for(), nullptr);
+    }
+}
+
+TEST(MusicWrite, CustomKitAcceptsKeysAndRejectsMixedPitches) {
+    auto document = open_fixture(drum_fixture);
+    ASSERT_TRUE(document) << document.error().message;
+    const auto outline = (*document)->outline();
+    ASSERT_TRUE(outline) << outline.error().message;
+    Phrase phrase{
+        .lanes = {{{outline->measures.at(0).id, {1, 4}}, PitchDomain::Concert, {PhraseEvent{{1, 8}, {{DrumKey{36}}}}}}},
+    };
+    const auto edit = (*document)->write_phrase(phrase);
+    ASSERT_TRUE(edit) << edit.error().message;
+    ASSERT_FALSE(edit->rejection) << edit->rejection->error.message;
+    auto reopened = reload(**document);
+    ASSERT_TRUE(reopened) << reopened.error().message;
+    const auto window = (*reopened)->read_music({});
+    ASSERT_TRUE(window) << window.error().message;
+    const auto &entered = std::get<ChordMusic>(window->measures.at(0).voices.at(0).events.at(1).body);
+    ASSERT_EQ(entered.notes.size(), 1u);
+    EXPECT_EQ(std::get<DrumNote>(entered.notes[0].pitch).kit_name, "Custom low drum");
+    const auto revision = (*document)->revision();
+    auto &notes = std::get<PhraseEvent>(phrase.lanes[0].items[0]).notes;
+    notes.push_back({c4});
+    const auto mixed = (*document)->write_phrase(phrase);
+    read_test::expect_code(mixed, ErrorCode::INVALID_ARGUMENT, "mixed pitched and drum notes");
+    ASSERT_FALSE(mixed);
+    EXPECT_NE(mixed.error().message.find("lane 0, item 0"), std::string::npos);
+    notes = {{DrumKey{72}}};
+    const auto unmapped = (*document)->write_phrase(phrase);
+    read_test::expect_code(unmapped, ErrorCode::INVALID_ARGUMENT, "unmapped kit key");
+    EXPECT_EQ((*document)->revision(), revision);
+}
+
+TEST(MusicWrite, RejectionLeavesEarlierLanesUnchanged) {
+    auto document = open_fixture(piano_fixture);
+    ASSERT_TRUE(document) << document.error().message;
+    const auto outline = (*document)->outline();
+    ASSERT_TRUE(outline) << outline.error().message;
+    const auto pickup = outline->measures.at(0).id;
+    const auto bar = outline->measures.at(1).id;
+    const auto setup = (*document)->edit({{EnterNotes{SegmentAddress{pickup, 1, 0, {1, 16}, "ChordRest"}, {1, 16}, {{60}}}}});
+    ASSERT_TRUE(setup) << setup.error().message;
+    ASSERT_FALSE(setup->rejection) << setup->rejection->error.message;
+    const PhraseLane bass{{bar, {0, 1}, 1, 0}, PitchDomain::Concert, {PhraseEvent{{1, 8}, {{c4}}}}};
+    const auto revision = (*document)->revision();
+    const Phrase runtime_failure{
+        .lanes = {bass, {{pickup, {1, 16}}, PitchDomain::Concert, {PhraseEvent{{1, 16}, {{g4}}}}}},
+    };
+    const auto rejected = (*document)->write_phrase(runtime_failure);
+    ASSERT_TRUE(rejected) << rejected.error().message;
+    ASSERT_TRUE(rejected->rejection);
+    EXPECT_EQ(rejected->applied, 0u);
+    EXPECT_TRUE(rejected->created.empty());
+    EXPECT_EQ(rejected->revision, revision);
+    EXPECT_NE(rejected->rejection->error.message.find("lane 1, item 0"), std::string::npos);
+    EXPECT_NE(rejected->rejection->error.message.find("inside a sounding event"), std::string::npos);
+    EXPECT_EQ(chord_at(read_test::master_of(**document), {1, 8}, 4), nullptr);
+
+    const Phrase validation_failure{
+        .lanes = {bass,
+                  {{bar, {0, 1}}, PitchDomain::Concert, {PhraseEvent{{1, 8}, {{g4}}}, PhraseEvent{{1, 8}}, PhraseEvent{{0, 1}, {{c4}}}}}},
+    };
+    const auto invalid = (*document)->write_phrase(validation_failure);
+    read_test::expect_code(invalid, ErrorCode::INVALID_ARGUMENT, "late invalid duration");
+    ASSERT_FALSE(invalid);
+    EXPECT_NE(invalid.error().message.find("lane 1, item 2"), std::string::npos);
+    EXPECT_EQ((*document)->revision(), revision);
+    EXPECT_EQ(chord_at(read_test::master_of(**document), {1, 8}, 4), nullptr);
+}
+
+TEST(MusicWrite, APrincipalCannotSustainPastAnInternalInstrumentChange) {
+    constexpr std::string_view source = R"(<museScore version="4.70"><Score><Division>480</Division>
+<Part id="1"><Staff/><trackName>Piano</trackName><Instrument id="piano"/></Part>
+<Staff id="1"><Measure><voice><Rest><durationType>quarter</durationType></Rest>
+<InstrumentChange><Instrument id="drumset"><useDrumset>1</useDrumset></Instrument></InstrumentChange>
+<Rest><durationType>half</durationType><dots>1</dots><duration>3/4</duration></Rest>
+</voice></Measure></Staff></Score></museScore>)";
+    auto document = open_fixture(source);
+    ASSERT_TRUE(document) << document.error().message;
+    const auto &score = read_test::master_of(**document);
+    EXPECT_FALSE(score.staff(0)->is_drum_staff({0, 1}));
+    ASSERT_TRUE(score.staff(0)->is_drum_staff({1, 4}));
+    const auto outline = (*document)->outline();
+    ASSERT_TRUE(outline) << outline.error().message;
+    const auto bar = outline->measures.at(0).id;
+    const auto revision = (*document)->revision();
+    const auto result = (*document)->write_phrase({.lanes = {{{bar, {0, 1}}, PitchDomain::Concert, {PhraseEvent{{1, 2}, {{c4}}}}}}});
+    read_test::expect_code(result, ErrorCode::INVALID_ARGUMENT, "instrument change inside a principal duration");
+    ASSERT_FALSE(result);
+    EXPECT_NE(result.error().message.find("lane 0, item 0"), std::string::npos);
+    EXPECT_EQ((*document)->revision(), revision);
+}
+
+TEST(MusicWrite, HugeFractionTermsAreRejectedBeforeComparingLanes) {
+    auto document = open_fixture(piano_fixture);
+    ASSERT_TRUE(document) << document.error().message;
+    const auto outline = (*document)->outline();
+    ASSERT_TRUE(outline) << outline.error().message;
+    const auto bar = outline->measures.at(1).id;
+    const Phrase phrase{.lanes = {
+                            {{bar, {1073741823, 2147483647}}, PitchDomain::Concert, {PhraseEvent{{1, 1024}, {{c4}}}}},
+                            {{bar, {1610612735, 2147483647}}, PitchDomain::Concert, {PhraseEvent{{1, 1024}, {{g4}}}}},
+                        }};
+    const auto revision = (*document)->revision();
+    const auto result = (*document)->write_phrase(phrase);
+    read_test::expect_code(result, ErrorCode::INVALID_ARGUMENT, "engine fraction range");
+    ASSERT_FALSE(result);
+    EXPECT_NE(result.error().message.find("fraction range"), std::string::npos);
+    EXPECT_EQ((*document)->revision(), revision);
+}
+
 } // namespace

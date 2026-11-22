@@ -252,15 +252,42 @@ Result<Step> prepare(EditContext &context, const AddVolta &op) {
 Result<Step> prepare(EditContext &context, const AddTie &op) {
     auto target = context.target(op.note);
     if (!target) return std::unexpected(target.error());
-    return [target = *target](EditContext &context) -> Result<void> {
+    std::optional<Target> end_target;
+    if (op.end_note) {
+        auto end = context.target(*op.end_note);
+        if (!end) return std::unexpected(end.error());
+        end_target = *end;
+    }
+    return [target = *target, end_target](EditContext &context) -> Result<void> {
         auto object = context.object(target);
         if (!object) return std::unexpected(object.error());
         if (!(*object)->is_note()) return invalid(std::format("{} is not a note", (*object)->type_name()));
         Note *note = mu::engraving::to_note(*object);
+        Note *end = nullptr;
+        if (end_target) {
+            auto destination = context.object(*end_target);
+            if (!destination) return std::unexpected(destination.error());
+            if (!(*destination)->is_note()) return invalid("the tie destination must be a note");
+            end = mu::engraving::to_note(*destination);
+            const auto matches = [note](const Note *other) {
+                return other && other->score() == note->score() && other->track() == note->track() && other->pitch() == note->pitch() &&
+                       other->chord() && !other->chord()->is_grace();
+            };
+            if (!matches(end) || !note->chord() || note->chord()->is_grace())
+                return rejected("the tie requires principal notes of the same pitch and track");
+            // Rhythmic entry may have written a held event in several tied pieces.
+            while (note->tie_for() && note->chord()->end_tick() < end->tick()) {
+                auto *continuation = note->tie_for()->end_note();
+                if (!matches(continuation) || continuation->tick() != note->chord()->end_tick()) break;
+                note = continuation;
+            }
+            if (note->tick() >= end->tick() || note->chord()->end_tick() != end->tick())
+                return rejected("the tie destination must be contiguous with the source");
+        }
         if (note->tie_for()) return rejected("the note already has a tie");
         Score *score = note->score();
         score->master_score()->update_repeat_list(false);
-        Note *end = mu::engraving::search_tie_note(note);
+        if (!end_target) end = mu::engraving::search_tie_note(note);
         if (!end) return rejected("no note of the same pitch follows this one");
         if (end->tie_back()) return rejected("the note to tie to already has a tie");
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -57,6 +58,9 @@ struct AddVolta {
 // EditResult::created and can be addressed by id or OpRef.
 struct AddTie {
     Ref note;
+    // An explicit destination must be a contiguous principal note of the same
+    // pitch and track. Existing continuation ties lead to the source piece.
+    std::optional<Ref> end_note;
 };
 
 // Divides every chord or rest from first to last into a tuplet of actual notes in
