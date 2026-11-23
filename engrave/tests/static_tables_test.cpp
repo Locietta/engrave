@@ -65,6 +65,23 @@ TEST(StaticTables, TextStyleNamesKeepLegacyAliases) {
 #endif
 }
 
+TEST(StaticTables, TremoloLabelsAndLegacyTextPlacement) {
+    EXPECT_TRUE(TConv::to_xml(TremoloType::R16) == "r16");
+    EXPECT_EQ(TConv::from_xml("r16", TremoloType::INVALID_TREMOLO), TremoloType::R16);
+    const auto &label = TConv::user_name(TremoloType::R16);
+    EXPECT_EQ(label.str, String(u"16th through stem"));
+    EXPECT_STREQ(label.context, "engraving/tremolotype");
+    EXPECT_EQ(label.default_n, -1);
+    EXPECT_EQ(&label, &TConv::user_name(TremoloType::R16));
+    EXPECT_TRUE(TConv::user_name(TremoloType::INVALID_TREMOLO).is_empty());
+
+    EXPECT_TRUE(TConv::to_xml(TextPlace::BELOW) == "below");
+    EXPECT_EQ(TConv::from_xml("2", TextPlace::AUTO), TextPlace::BELOW);
+#ifdef NDEBUG
+    EXPECT_EQ(TConv::from_xml("unknown", TextPlace::ABOVE), TextPlace::ABOVE);
+#endif
+}
+
 TEST(StaticTables, EmbellishmentOrdinalsAndNoteSequences) {
     constexpr auto double_grace = static_cast<EmbellishmentType>(9);
     EXPECT_EQ(TConv::to_xml(double_grace), String(u"9"));

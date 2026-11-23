@@ -12,11 +12,9 @@ std::expected<Root, ReadError> read_document(std::string_view text) {
         text.remove_prefix(3);
         skipped = 3;
     }
-    // glaze reads a null-terminated buffer; std::string provides the terminator.
-    const std::string buffer(text);
     Root root{};
-    if (const auto error = glz::read<detail::read_opts>(root, buffer))
-        return std::unexpected(ReadError{glz::format_error(error, buffer), skipped + error.count});
+    if (const auto error = glz::read<detail::read_opts>(root, text))
+        return std::unexpected(ReadError{glz::format_error(error, text), skipped + error.count});
     return root;
 }
 

@@ -61,9 +61,7 @@ struct ReadOpts : glz::opts {
     bool error_on_missing_array_elements = true; // a fraction has exactly two elements
 };
 
-inline constexpr ReadOpts read_opts{{.error_on_unknown_keys = true, .error_on_missing_keys = true}};
-// The same, for a slice of the input that is not null-terminated.
-inline constexpr ReadOpts slice_opts{{.null_terminated = false, .error_on_unknown_keys = true, .error_on_missing_keys = true}};
+inline constexpr ReadOpts read_opts{{.null_terminated = false, .error_on_unknown_keys = true, .error_on_missing_keys = true}};
 inline constexpr glz::opts peek_opts{.null_terminated = false, .error_on_unknown_keys = false};
 
 struct TypeKey {
@@ -120,8 +118,7 @@ void read_tagged(Variant &value, auto &ctx, auto &it, auto end, std::span<const 
     if (value.index() != index) emplace_index(value, index, std::make_index_sequence<std::variant_size_v<Variant>>{});
     std::visit(
         [&](auto &alternative) {
-            if (const auto ec = glz::read<slice_opts>(alternative, raw.str))
-                fail(ctx, it, begin + ec.count, ec.ec, ec.custom_error_message);
+            if (const auto ec = glz::read<read_opts>(alternative, raw.str)) fail(ctx, it, begin + ec.count, ec.ec, ec.custom_error_message);
         },
         value);
 }

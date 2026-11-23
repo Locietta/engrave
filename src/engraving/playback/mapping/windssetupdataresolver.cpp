@@ -22,15 +22,13 @@
 
 #include "windssetupdataresolver.h"
 
-#include <array>
-
-#include "playback/utils/sortedtable.h"
+#include "setupdatatable.h"
 
 using namespace mu::engraving;
 using namespace muse::mpe;
 
 PlaybackSetupData WindsSetupDataResolver::do_resolve(const Instrument *instrument) {
-    static const auto setup_data_map = mu::engraving::make_sorted_table<std::string, PlaybackSetupData>({
+    static constexpr auto setup_data = sorted_setup_data({
         {"winds", {SoundId::WINDS_GROUP, SoundCategory::WINDS}},
         {"eb-piccolo", {SoundId::PICCOLO, SoundCategory::WINDS}},
         {"db-piccolo", {SoundId::PICCOLO, SoundCategory::WINDS}},
@@ -397,22 +395,9 @@ PlaybackSetupData WindsSetupDataResolver::do_resolve(const Instrument *instrumen
         {"kazoo", {SoundId::KAZOO, SoundCategory::WINDS}},
     });
 
-    auto search = setup_data_map.find(instrument->id().to_std_string());
-    if (search == setup_data_map.cend()) {
-        static PlaybackSetupData empty;
-        return empty;
+    auto result = resolve_setup_data(setup_data, instrument->id().to_std_string());
+    if (result.sound_id() == SoundId::FLUTE) {
+        result.add(instrument->is_primary() ? SoundSubCategory::PRIMARY : SoundSubCategory::SECONDARY);
     }
-
-    static constexpr auto support_primary_and_secondary_categories = mu::engraving::sorted_values<SoundId>({
-        SoundId::FLUTE,
-    });
-
-    if (muse::contains(support_primary_and_secondary_categories, search->second.sound_id())) {
-        SoundSubCategory category = instrument->is_primary() ? SoundSubCategory::PRIMARY : SoundSubCategory::SECONDARY;
-        PlaybackSetupData setup_data = search->second;
-        setup_data.add(category);
-        return setup_data;
-    }
-
-    return search->second;
+    return result;
 }

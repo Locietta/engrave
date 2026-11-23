@@ -22,14 +22,14 @@
 
 #include "voicessetupdataresolver.h"
 
-#include "playback/utils/sortedtable.h"
+#include "setupdatatable.h"
 
 using namespace mu::engraving;
 using namespace muse::mpe;
 using namespace muse;
 
 PlaybackSetupData VoicesSetupDataResolver::do_resolve(const Instrument *instrument) {
-    static const auto setup_data_map = mu::engraving::make_sorted_table<std::string, mpe::PlaybackSetupData>({
+    static constexpr auto setup_data = sorted_setup_data({
         {"boy-soprano", {SoundId::CHOIR, SoundCategory::VOICES, {SoundSubCategory::SOPRANO, SoundSubCategory::BOY}}},
         {"soprano", {SoundId::CHOIR, SoundCategory::VOICES, {SoundSubCategory::SOPRANO}}},
         {"soprano-c-clef", {SoundId::CHOIR, SoundCategory::VOICES, {SoundSubCategory::SOPRANO}}},
@@ -49,11 +49,5 @@ PlaybackSetupData VoicesSetupDataResolver::do_resolve(const Instrument *instrume
         {"men", {SoundId::CHOIR, SoundCategory::VOICES, {SoundSubCategory::MALE}}},
     });
 
-    auto search = setup_data_map.find(instrument->id().to_std_string());
-    if (search == setup_data_map.cend()) {
-        static PlaybackSetupData empty;
-        return empty;
-    }
-
-    return search->second;
+    return resolve_setup_data(setup_data, instrument->id().to_std_string());
 }

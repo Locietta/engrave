@@ -23,14 +23,14 @@
 #include "percussionssetupdataresolver.h"
 
 #include "log.h"
-#include "playback/utils/sortedtable.h"
+#include "setupdatatable.h"
 
 using namespace mu::engraving;
 using namespace muse;
 using namespace muse::mpe;
 
 PlaybackSetupData PercussionsSetupDataResolver::do_resolve(const Instrument *instrument) {
-    static const auto setup_data_map = mu::engraving::make_sorted_table<std::string, mpe::PlaybackSetupData>({
+    static constexpr auto setup_data = sorted_setup_data({
         {"timpani", {SoundId::TIMPANI, SoundCategory::PERCUSSIONS}},
         {"roto-toms", {SoundId::ROTO_TOMS, SoundCategory::PERCUSSIONS}},
         {"tubaphone", {SoundId::TUBAPHONE, SoundCategory::PERCUSSIONS, {SoundSubCategory::METAL}}},
@@ -217,20 +217,11 @@ PlaybackSetupData PercussionsSetupDataResolver::do_resolve(const Instrument *ins
          {SoundId::SYNTHESIZER, SoundCategory::PERCUSSIONS, {SoundSubCategory::ELECTRIC, SoundSubCategory::PERCUSSIVE}}},
     });
 
-    auto search = setup_data_map.find(instrument->id().to_std_string());
-    if (search == setup_data_map.cend()) {
-        if (instrument->use_drumset()) {
-            LOGW() << "Unable to resolve setup data for instrument, id: " << instrument->id() << ", family: " << instrument->family()
-                   << "; fallback to drumset";
-
-            static const PlaybackSetupData drumset_fallback{SoundId::DRUMSET, SoundCategory::PERCUSSIONS};
-
-            return drumset_fallback;
-        }
-
-        static const PlaybackSetupData empty;
-        return empty;
+    auto result = resolve_setup_data(setup_data, instrument->id().to_std_string());
+    if (result.category == SoundCategory::UNDEFINED && instrument->use_drumset()) {
+        LOGW() << "Unable to resolve setup data for instrument, id: " << instrument->id() << ", family: " << instrument->family()
+               << "; fallback to drumset";
+        return {SoundId::DRUMSET, SoundCategory::PERCUSSIONS};
     }
-
-    return search->second;
+    return result;
 }

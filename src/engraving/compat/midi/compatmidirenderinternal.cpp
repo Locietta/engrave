@@ -69,6 +69,57 @@
 #include "types/constants.h"
 
 namespace mu::engraving {
+static const muse::FlatSet<OrnamentStyle> baroque = {OrnamentStyle::BAROQUE};
+static const muse::FlatSet<OrnamentStyle> defstyle = {OrnamentStyle::DEFAULT};
+// An empty style set matches every ornament style.
+static const muse::FlatSet<OrnamentStyle> any;
+
+const std::vector<OrnamentExcursion> excursions = {
+    //  articulation type            set of  duration       body         repeatp      suffix
+    //                               styles          prefix                    sustainp
+    {SymId::ORNAMENT_TURN, any, thirty_second_ticks, {}, {1, 0, -1, 0}, false, true, {}},
+    {SymId::ORNAMENT_TURN_INVERTED, any, thirty_second_ticks, {}, {-1, 0, 1, 0}, false, true, {}},
+    {SymId::ORNAMENT_TURN_SLASH, any, thirty_second_ticks, {}, {-1, 0, 1, 0}, false, true, {}},
+    {SymId::ORNAMENT_TRILL, baroque, thirty_second_ticks, {1, 0}, {1, 0}, true, true, {}},
+    {SymId::ORNAMENT_TRILL, defstyle, thirty_second_ticks, {0, 1}, {0, 1}, true, true, {}},
+    {SymId::BRASS_MUTE_CLOSED, baroque, thirty_second_ticks, {0, -1}, {0, -1}, true, true, {}},
+    {SymId::ORNAMENT_MORDENT, any, thirty_second_ticks, {}, {0, -1, 0}, false, true, {}},
+    {SymId::ORNAMENT_SHORT_TRILL, defstyle, thirty_second_ticks, {}, {0, 1, 0}, false, true, {}}, // inverted mordent
+    {SymId::ORNAMENT_SHORT_TRILL, baroque, thirty_second_ticks, {1, 0, 1}, {0}, false, true, {}}, // short trill
+    {SymId::ORNAMENT_TREMBLEMENT, any, thirty_second_ticks, {1, 0}, {1, 0}, false, true, {}},
+    {SymId::BRASS_MUTE_CLOSED, defstyle, thirty_second_ticks, {}, {0}, false, true, {}}, // regular hand-stopped brass
+    {SymId::ORNAMENT_PRALL_MORDENT, any, thirty_second_ticks, {}, {1, 0, -1, 0}, false, true, {}},
+    {SymId::ORNAMENT_LINE_PRALL, any, thirty_second_ticks, {2, 2, 2}, {1, 0}, true, true, {}},
+    {SymId::ORNAMENT_UP_PRALL, any, sixteenth_ticks, {-1, 0}, {1, 0}, true, true, {1, 0}},    // p 144 Ex 152 [1]
+    {SymId::ORNAMENT_UP_MORDENT, any, sixteenth_ticks, {-1, 0}, {1, 0}, true, true, {-1, 0}}, // p 144 Ex 152 [1]
+    {SymId::ORNAMENT_PRECOMP_MORDENT_UPPER_PREFIX,
+     any,
+     sixteenth_ticks,
+     {1, 1, 1, 0},
+     {1, 0},
+     true,
+     true,
+     {}}, // p136 Cadence Appuyee [1] [2]
+    {SymId::ORNAMENT_DOWN_MORDENT,
+     any,
+     sixteenth_ticks,
+     {1, 1, 1, 0},
+     {1, 0},
+     true,
+     true,
+     {-1, 0}},                                                                                     // p136 Cadence Appuyee + mordent [1] [2]
+    {SymId::ORNAMENT_PRALL_UP, any, sixteenth_ticks, {1, 0}, {1, 0}, true, true, {-1, 0}},         // p136 Double Cadence [1]
+    {SymId::ORNAMENT_PRALL_DOWN, any, sixteenth_ticks, {1, 0}, {1, 0}, true, true, {-1, 0, 0, 0}}, // p144 ex 153 [1]
+    {SymId::ORNAMENT_PRECOMP_SLIDE, any, thirty_second_ticks, {}, {0}, false, true, {}}
+
+    // [1] Some of the articulations/ornaments in the excursions table above come from
+    // Baroque Music, Style and Performance A Handbook, by Robert Donington,(c) 1982
+    // ISBN 0-393-30052-8, W. W. Norton & Company, Inc.
+
+    // [2] In some cases, the example from [1] does not preserve the timing.
+    // For example, illustrates 2+1/4 counts per half note.
+};
+
 static PitchWheelSpecs g_wheel_spec;
 static constexpr int let_ring_max_ticks = Constants::division * 16;
 // TODO this should be a (configurable?) constant somewhere

@@ -148,6 +148,32 @@ TEST(MnxModel, ErrorsAreLocated) {
     EXPECT_EQ(text.substr(result.error().offset, 5), "bogus") << result.error().message;
     EXPECT_TRUE(result.error().message.starts_with("6:")) << result.error().message;
     EXPECT_NE(result.error().message.find("unknown_key"), std::string::npos) << result.error().message;
+
+    const std::string bom = "\xEF\xBB\xBF" + text + "outside the view";
+    const auto bounded = model::read_document(std::string_view(bom).substr(0, text.size() + 3));
+    ASSERT_FALSE(bounded);
+    EXPECT_EQ(bounded.error().offset, result.error().offset + 3);
+    EXPECT_EQ(bounded.error().message, result.error().message);
+}
+
+TEST(MnxModel, ReadsBoundedDocument) {
+    const auto text = with_content(R"({"duration": {"base": "whole"}, "rest": {}})");
+    const std::string buffer = text + "trailing data";
+    EXPECT_TRUE(model::read_document(std::string_view(buffer).substr(0, text.size())));
+    EXPECT_FALSE(model::read_document(buffer));
+    EXPECT_FALSE(model::read_document(std::string_view(buffer).substr(0, text.size() - 1)));
+
+    // Exact-size heap allocations with no trailing NUL catch over-reads under ASan.
+    auto check_exact = [](std::string_view sample, bool expect_ok) {
+        std::vector<char> exact(sample.begin(), sample.end());
+        const auto parsed = model::read_document(std::string_view(exact.data(), exact.size()));
+        EXPECT_EQ(parsed.has_value(), expect_ok) << sample;
+    };
+    check_exact(text, true);
+    check_exact(text + "  \n\t", true);
+    check_exact(std::string_view(text).substr(0, text.size() - 1), false);
+    check_exact(" \n\t", false);
+    check_exact("\xEF\xBB\xBF" + text + "!", false);
 }
 
 namespace {
