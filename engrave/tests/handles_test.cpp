@@ -1292,7 +1292,8 @@ TEST(Handles, BatchDiffRetainsDestroyedIdentityAcrossSlotReuse) {
     auto *chord = note->chord();
     const auto old_id = engine_id(*note);
     ElementId new_id;
-    auto result = engrave::api::BatchGuard(*document).run({[&](engrave::api::EditContext &) -> engrave::Result<void> {
+    std::vector<engrave::api::Step> steps;
+    steps.emplace_back([&](engrave::api::EditContext &) -> engrave::Result<void> {
         auto *replacement = note->clone();
         master.apply_element_remove(note);
         delete note;
@@ -1300,7 +1301,8 @@ TEST(Handles, BatchDiffRetainsDestroyedIdentityAcrossSlotReuse) {
         chord->add(replacement);
         new_id = engine_id(*replacement);
         return {};
-    }});
+    });
+    auto result = engrave::api::BatchGuard(*document).run(std::move(steps));
     ASSERT_TRUE(result);
     EXPECT_TRUE(std::ranges::contains(result->created, new_id));
     EXPECT_TRUE(std::ranges::contains(result->replaced, old_id));
@@ -1350,14 +1352,16 @@ TEST(Handles, RemovedExcerptDetachesBeamsBeforeTheNextOperation) {
     engrave::assign_missing_ids(master);
     const auto id = engine_id(*beam);
     ASSERT_TRUE(engrave::resolve(master, id));
-    auto result = engrave::api::BatchGuard(*document).run({[&](engrave::api::EditContext &) -> engrave::Result<void> {
-                                                               master.apply_excerpt(excerpt, false);
-                                                               return {};
-                                                           },
-                                                           [&](engrave::api::EditContext &) -> engrave::Result<void> {
-                                                               EXPECT_FALSE(engrave::resolve(master, id));
-                                                               return {};
-                                                           }});
+    std::vector<engrave::api::Step> steps;
+    steps.emplace_back([&](engrave::api::EditContext &) -> engrave::Result<void> {
+        master.apply_excerpt(excerpt, false);
+        return {};
+    });
+    steps.emplace_back([&](engrave::api::EditContext &) -> engrave::Result<void> {
+        EXPECT_FALSE(engrave::resolve(master, id));
+        return {};
+    });
+    auto result = engrave::api::BatchGuard(*document).run(std::move(steps));
     ASSERT_TRUE(result);
     EXPECT_TRUE(std::ranges::contains(result->removed, id));
     EXPECT_FALSE(engrave::resolve(master, id));
@@ -1379,14 +1383,16 @@ TEST(Handles, RegeneratedExcerptReplacesIdsAtTheOriginalScoreIndex) {
             break;
         }
     ASSERT_TRUE(engrave::resolve(master, old_id));
-    auto result = engrave::api::BatchGuard(*document).run({[&](engrave::api::EditContext &) -> engrave::Result<void> {
-                                                               master.apply_excerpt(excerpt, false);
-                                                               return {};
-                                                           },
-                                                           [&](engrave::api::EditContext &) -> engrave::Result<void> {
-                                                               music::generate_score_excerpts(&master);
-                                                               return {};
-                                                           }});
+    std::vector<engrave::api::Step> steps;
+    steps.emplace_back([&](engrave::api::EditContext &) -> engrave::Result<void> {
+        master.apply_excerpt(excerpt, false);
+        return {};
+    });
+    steps.emplace_back([&](engrave::api::EditContext &) -> engrave::Result<void> {
+        music::generate_score_excerpts(&master);
+        return {};
+    });
+    auto result = engrave::api::BatchGuard(*document).run(std::move(steps));
     ASSERT_TRUE(result);
     EXPECT_TRUE(std::ranges::contains(result->replaced, old_id));
     EXPECT_FALSE(std::ranges::contains(result->removed, old_id));

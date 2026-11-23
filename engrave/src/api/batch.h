@@ -2,12 +2,12 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <optional>
 #include <string_view>
 #include <variant>
 #include <vector>
 
+#include "engrave/src/global/fn.h"
 #include "engraving/infrastructure/sourcehandle.h"
 #include <engrave/document.h>
 #include <engrave/edit.h>
@@ -68,7 +68,16 @@ private:
 };
 
 // Applies an operation after all independent inputs have been prepared.
-using Step = std::function<Result<void>(EditContext &)>;
+struct Step {
+    template <class F>
+        requires(!std::same_as<std::remove_cvref_t<F>, Step> && std::invocable<F &, EditContext &>)
+    Step(F &&fn) : apply_(music::make_unique_fn<Result<void>(EditContext &)>(std::forward<F>(fn))) {}
+
+    Result<void> operator()(EditContext &context) { return (*apply_)(context); }
+
+private:
+    music::UniqueFn<Result<void>(EditContext &)> apply_;
+};
 
 Result<Step> prepare(EditContext &context, const SetProperty &op);
 Result<Step> prepare(EditContext &context, const ResetProperty &op);

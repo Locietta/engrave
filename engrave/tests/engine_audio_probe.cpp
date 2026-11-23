@@ -318,15 +318,16 @@ int main(int argc, char **argv) {
         if (capture_midi) {
             constexpr std::size_t k_max_midi_events = 1000000;
             midi_events.reserve(4096);
-            music::set_engine_audio_midi_event_hook(context.audio(),
-                                                    [&midi_event_count, &midi_events](const muse::midi::Event &event, std::uint64_t frame) {
-                                                        ++midi_event_count;
-                                                        if (midi_events.size() < k_max_midi_events) {
-                                                            Json json = midi_event_json(event);
-                                                            json["frame"] = frame;
-                                                            midi_events.push_back(std::move(json));
-                                                        }
-                                                    });
+            music::set_engine_audio_midi_event_hook(
+                context.audio(), music::make_unique_fn<music::MidiEventCallback>(
+                                     [&midi_event_count, &midi_events](const muse::midi::Event &event, std::uint64_t frame) {
+                                         ++midi_event_count;
+                                         if (midi_events.size() < k_max_midi_events) {
+                                             Json json = midi_event_json(event);
+                                             json["frame"] = frame;
+                                             midi_events.push_back(std::move(json));
+                                         }
+                                     }));
         }
         const music::AudioRenderResult result = music::export_score_audio(context.audio(), master, request);
         if (capture_midi) {

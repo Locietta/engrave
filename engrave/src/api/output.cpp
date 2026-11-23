@@ -74,7 +74,7 @@ Result<RenderOutput> Document::render(const RenderOptions &options) {
     backend.png_dpi = options.dpi;
     backend.draw_page_background = options.background;
     backend.transparent = options.transparent;
-    backend.cancelled = options.cancelled;
+    if (options.cancelled) backend.cancelled = music::make_unique_fn<bool() const>(options.cancelled);
     backend.first_page = first;
     backend.last_page = last;
     const std::string format = backend_name(options.format);
@@ -128,30 +128,34 @@ Result<Positions> Document::positions(PositionKind kind, const ScoreSel &selecti
                 throw Stop{ErrorCode::RESOURCE_LIMIT};
             bytes += amount;
         };
-        const music::PositionVisitor estimate{[&](int, double, double, double, double, int) {
-                                                  count(sizeof(PositionElement));
-                                                  ++element_count;
-                                              },
-                                              [&](int, int) {
-                                                  count(sizeof(PositionEvent));
-                                                  ++event_count;
-                                              }};
+
         const bool segments = kind == PositionKind::SEGMENT;
-        const auto [width, height] = music::visit_score_positions(*selected, segments, estimate, false);
+        const auto [width, height] = music::visit_score_positions(*selected, segments,
+                                                                  {[&](int, double, double, double, double, int) {
+                                                                       count(sizeof(PositionElement));
+                                                                       ++element_count;
+                                                                   },
+                                                                   [&](int, int) {
+                                                                       count(sizeof(PositionEvent));
+                                                                       ++event_count;
+                                                                   }},
+                                                                  false);
         Positions result;
         result.page_width = width;
         result.page_height = height;
         result.elements.reserve(element_count);
         result.events.reserve(event_count);
-        const music::PositionVisitor emit{[&](int id, double x, double y, double sx, double sy, int page) {
-                                              poll();
-                                              result.elements.push_back({id, x, y, sx, sy, page});
-                                          },
-                                          [&](int id, int time) {
-                                              poll();
-                                              result.events.push_back({id, time});
-                                          }};
-        music::visit_score_positions(*selected, segments, emit, true, element_count);
+
+        music::visit_score_positions(*selected, segments,
+                                     {[&](int id, double x, double y, double sx, double sy, int page) {
+                                          poll();
+                                          result.elements.push_back({id, x, y, sx, sy, page});
+                                      },
+                                      [&](int id, int time) {
+                                          poll();
+                                          result.events.push_back({id, time});
+                                      }},
+                                     true, element_count);
         poll();
         return result;
     } catch (const Stop &stop) {

@@ -41,7 +41,7 @@ std::string render_score(const EngineContext &engine, mu::engraving::Score *scor
 std::string render_score(const EngineContext &engine, mu::engraving::Score *score, const std::string &format,
                          const ExportOptions &options) {
     const auto poll = [&] {
-        if (options.cancelled && options.cancelled()) throw RenderCancelled{};
+        if (options.cancelled && (*options.cancelled)()) throw RenderCancelled{};
     };
     poll();
     using namespace mu::engraving;

@@ -12,13 +12,13 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
 #include <vector>
 
 #include "audio/engine/internal/export/audioencoder.h"
+#include "engrave/src/global/fn.h"
 #include "engraving/types/types.h"
 #include "midi/miditypes.h"
 
@@ -66,7 +66,8 @@ private:
 // Startup flush reports all-notes-off, sustain and pitch bend for last_staff
 // when available. An empty hook disables capture. Calls run on the engine
 // thread; the hook must not re-enter the engine.
-using EngineAudioMidiEventHook = std::function<void(const muse::midi::Event &, std::uint64_t frame)>;
+using MidiEventCallback = void(const muse::midi::Event &, std::uint64_t);
+using EngineAudioMidiEventHook = UniqueFn<MidiEventCallback>;
 void set_engine_audio_midi_event_hook(EngineAudio &audio, EngineAudioMidiEventHook hook);
 
 // Initialises the engine's audio services and loads its SoundFonts:
@@ -130,11 +131,13 @@ struct EngineAudioTrackParams {
     int soundfont = -1;
 };
 
+using EncoderFactory = muse::audio::encode::UniqueEncoder(const muse::audio::SoundTrackFormat &, muse::io::IODevice &) const;
+
 struct AudioRenderRequest {
     EngineAudioFormat format = EngineAudioFormat::WAV;
     std::string output_path;
     // Internal test seam; an empty factory uses the format's built-in encoder.
-    std::function<muse::audio::encode::UniqueEncoder(const muse::audio::SoundTrackFormat &, muse::io::IODevice &)> encoder_factory;
+    UniqueFn<EncoderFactory> encoder_factory;
     // -1 renders the master score. A non-negative value renders the master
     // score with every part that is absent from, or invisible in, that excerpt
     // muted, like MasterNotation::initNotationSoloMuteState
@@ -164,7 +167,7 @@ struct AudioRenderRequest {
     // must enforce it out of process: for the synchronous export the parent's
     // duration-derived deadline is the real limit (engine_audio.cpp).
     std::int64_t timeout_ms = 0;
-    std::function<bool()> cancelled;
+    UniqueFn<bool() const> cancelled;
 };
 
 struct AudioRenderResult {

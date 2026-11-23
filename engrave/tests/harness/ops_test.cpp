@@ -1072,7 +1072,9 @@ void expect_chord_line(const ChordLine &line, const ChordLine::AppearanceState &
     }
 }
 
-engrave::Result<engrave::EditResult> chord_line_batch(engrave::Document &document, std::vector<engrave::api::Step> steps) {
+engrave::Result<engrave::EditResult> chord_line_batch(engrave::Document &document, engrave::api::Step step) {
+    std::vector<engrave::api::Step> steps;
+    steps.push_back(std::move(step));
     return engrave::api::BatchGuard(document).run(std::move(steps));
 }
 
@@ -1089,27 +1091,27 @@ TEST(ChordLineEdit, PathAssignmentResetAndMode) {
     auto &line = chord_line(*document);
     seed_controls(line);
     const auto source = line.appearance_state();
-    ASSERT_TRUE(chord_line_batch(*document, {set_line(line, Pid::PATH, PropertyValue::from_value(edited_path()))}));
+    ASSERT_TRUE(chord_line_batch(*document, set_line(line, Pid::PATH, PropertyValue::from_value(edited_path()))));
     EXPECT_FALSE(line.has_source_offsets());
     EXPECT_TRUE(line.modified());
-    ASSERT_TRUE(chord_line_batch(*document, {[&line](engrave::api::EditContext &) -> engrave::Result<void> {
+    ASSERT_TRUE(chord_line_batch(*document, [&line](engrave::api::EditContext &) -> engrave::Result<void> {
         line.undo_reset_property(Pid::PATH);
         return {};
-    }}));
+    }));
     EXPECT_FALSE(line.modified());
     EXPECT_FALSE(line.has_source_offsets());
     seed_controls(line);
-    ASSERT_TRUE(chord_line_batch(*document, {[&line](engrave::api::EditContext &) -> engrave::Result<void> {
+    ASSERT_TRUE(chord_line_batch(*document, [&line](engrave::api::EditContext &) -> engrave::Result<void> {
         line.undo_reset_property(Pid::PATH);
         return {};
-    }}));
+    }));
     EXPECT_TRUE(line.has_source_offsets());
     EXPECT_FALSE(line.modified());
     const std::array<muse::PointF, 4> zero{};
     EXPECT_EQ(line.source_offsets(), zero);
     seed_controls(line);
     ASSERT_TRUE(chord_line_batch(*document,
-                                 {set_line(line, Pid::SIZE_SPATIUM_DEPENDENT, !line.get_property(Pid::SIZE_SPATIUM_DEPENDENT).to_bool())}));
+                                 set_line(line, Pid::SIZE_SPATIUM_DEPENDENT, !line.get_property(Pid::SIZE_SPATIUM_DEPENDENT).to_bool())));
     EXPECT_EQ(line.source_offsets(), source.controls);
 }
 
@@ -1118,7 +1120,7 @@ TEST(ChordLineEdit, PathEditAndOffsetResetSurviveNativeReopen) {
     ASSERT_TRUE(document);
     auto &line = chord_line(*document);
     seed_controls(line);
-    ASSERT_TRUE(chord_line_batch(*document, {set_line(line, Pid::PATH, PropertyValue::from_value(edited_path()))}));
+    ASSERT_TRUE(chord_line_batch(*document, set_line(line, Pid::PATH, PropertyValue::from_value(edited_path()))));
     const auto expected = edited_path();
     for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
         SCOPED_TRACE(format == engrave::Format::MSCX ? "MSCX" : "MSCZ");
@@ -1139,10 +1141,10 @@ TEST(ChordLineEdit, PathEditAndOffsetResetSurviveNativeReopen) {
         }
     }
     seed_controls(line);
-    ASSERT_TRUE(chord_line_batch(*document, {[&line](engrave::api::EditContext &) -> engrave::Result<void> {
+    ASSERT_TRUE(chord_line_batch(*document, [&line](engrave::api::EditContext &) -> engrave::Result<void> {
         line.undo_reset_property(Pid::PATH);
         return {};
-    }}));
+    }));
     for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
         SCOPED_TRACE(format == engrave::Format::MSCX ? "MSCX" : "MSCZ");
         const auto saved = document->export_score({.format = format, .native_version = "5.00"});
@@ -1163,10 +1165,10 @@ TEST(ChordLineEdit, StyleScalePreservesAuthoredPaths) {
     auto &score = engrave::harness::master_of(*document);
     const auto before = line.appearance_state();
     const double old_spatium = score.style().spatium();
-    ASSERT_TRUE(chord_line_batch(*document, {[&score, old_spatium](engrave::api::EditContext &) -> engrave::Result<void> {
+    ASSERT_TRUE(chord_line_batch(*document, [&score, old_spatium](engrave::api::EditContext &) -> engrave::Result<void> {
         score.undo_change_style_val(mu::engraving::Sid::SPATIUM, old_spatium * 2.0);
         return {};
-    }}));
+    }));
     for (size_t i = 0; i < 4; ++i) EXPECT_EQ(line.source_offsets()[i], before.controls[i] * 2.0);
 }
 
@@ -1176,7 +1178,7 @@ TEST(ChordLineEdit, EmptyAssignmentIsNotReset) {
     auto &line = chord_line(*document);
     seed_controls(line);
     const auto before = line.appearance_state();
-    ASSERT_TRUE(chord_line_batch(*document, {set_line(line, Pid::PATH, PropertyValue::from_value(PainterPath()))}));
+    ASSERT_TRUE(chord_line_batch(*document, set_line(line, Pid::PATH, PropertyValue::from_value(PainterPath()))));
     EXPECT_FALSE(line.has_source_offsets());
     EXPECT_TRUE(line.modified());
     EXPECT_TRUE(line.get_property(Pid::PATH).value<PainterPath>().is_empty());
@@ -1193,7 +1195,7 @@ TEST(ChordLineEdit, EmptyCachedPathAssignmentSwitchesRepresentation) {
     engrave::harness::master_of(*document).do_layout();
     ASSERT_TRUE(line.get_property(Pid::PATH).value<PainterPath>().is_empty());
     const auto before = line.appearance_state();
-    ASSERT_TRUE(chord_line_batch(*document, {set_line(line, Pid::PATH, PropertyValue::from_value(PainterPath()))}));
+    ASSERT_TRUE(chord_line_batch(*document, set_line(line, Pid::PATH, PropertyValue::from_value(PainterPath()))));
     EXPECT_FALSE(line.has_source_offsets());
     EXPECT_TRUE(line.modified());
 }
@@ -1224,7 +1226,7 @@ TEST(ChordLineEdit, DefaultPathResetKeepsPartLinked) {
     ASSERT_TRUE(document->edit({{ResetProperty{engrave::from_engine(part_line->eid()), "path"}}}));
     EXPECT_EQ(document->revision(), revision);
     EXPECT_TRUE(part_line->is_appearance_linked_to_master());
-    ASSERT_TRUE(chord_line_batch(*document, {set_line(master_line, Pid::VISIBLE, false)}));
+    ASSERT_TRUE(chord_line_batch(*document, set_line(master_line, Pid::VISIBLE, false)));
     EXPECT_FALSE(part_line->get_property(Pid::VISIBLE).to_bool());
 }
 
@@ -1232,7 +1234,7 @@ TEST(ChordLineEdit, LegacyPathSurvivesDisplayCacheReplacement) {
     auto document = open(fixture_name);
     ASSERT_TRUE(document);
     auto &line = chord_line(*document);
-    ASSERT_TRUE(chord_line_batch(*document, {set_line(line, Pid::PATH, PropertyValue::from_value(edited_path()))}));
+    ASSERT_TRUE(chord_line_batch(*document, set_line(line, Pid::PATH, PropertyValue::from_value(edited_path()))));
     const auto before = line.appearance_state();
     const auto path = line.legacy_absolute_path();
     line.mutldata()->path = PainterPath();

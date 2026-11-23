@@ -109,20 +109,22 @@ int export_probe(int argc, char **argv, std::unique_ptr<engrave::Engine> &engine
             a << "legacy-mpe-v1\n";
             c << "synth-input-v2\n";
             // Dump A from the new path: each NoteEvent as the builder freezes it, then the flat track
-            music::FlatPlaybackCapture::dump_note = [](const muse::mpe::NoteEvent &event) {
-                std::ostringstream text;
-                music::test::LegacyDump{text}.note(event);
-                return text.str();
-            };
+            music::FlatPlaybackCapture::dump_note =
+                music::make_unique_fn<music::FlatPlaybackCapture::DumpNote>([](const muse::mpe::NoteEvent &event) {
+                    std::ostringstream text;
+                    music::test::LegacyDump{text}.note(event);
+                    return text.str();
+                });
             test::PlaybackCapture::track = [&](auto id, const auto &instrument, const auto &events) {
                 music::test::FlatDump{a}.track(id, instrument, events);
             };
             test::PlaybackCapture::synth = &c;
-            music::FlatPlaybackCapture::projection = [&](const mu::engraving::PlaybackScore &flat) {
-                music::test::FlatProjection projection;
-                projection.score(flat);
-                b << projection.str();
-            };
+            music::FlatPlaybackCapture::projection =
+                music::make_unique_fn<music::FlatPlaybackCapture::Projection>([&](const mu::engraving::PlaybackScore &flat) {
+                    music::test::FlatProjection projection;
+                    projection.score(flat);
+                    b << projection.str();
+                });
         }
 
         Clock::time_point requested{}, observed{};
@@ -130,7 +132,7 @@ int export_probe(int argc, char **argv, std::unique_ptr<engrave::Engine> &engine
         std::vector<double> release_batches;
         release_batches.reserve(1024);
         int polls = 0;
-        request.cancelled = [&] {
+        request.cancelled = music::make_unique_fn<bool() const>([&] {
             if (measure && OfflineCancellation::phase == OfflineCancellation::Phase::EVENT_RELEASE) {
                 const auto now = Clock::now();
                 if (release_poll != Clock::time_point{}) release_batches.push_back(milliseconds(release_poll, now));
@@ -147,7 +149,7 @@ int export_probe(int argc, char **argv, std::unique_ptr<engrave::Engine> &engine
                 // The following poll observes the request, including engine work between polls.
             }
             return false;
-        };
+        });
 #ifdef ENGRAVE_PLAYBACK_COUNTING
         install_allocation_hooks();
         // Allocation data cover only export, including teardown, excluding import/bootstrap/capture.

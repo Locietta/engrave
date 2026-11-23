@@ -4,9 +4,9 @@
 #pragma once
 
 #include <cstddef>
-#include <functional>
 #include <utility>
 
+#include "engrave/src/global/fn.h"
 #include "engrave/src/score/json.h"
 
 namespace mu::engraving {
@@ -19,8 +19,8 @@ namespace music {
 SortedJson score_positions(mu::engraving::Score *score, bool segments);
 
 struct PositionVisitor {
-    std::function<void(int, double, double, double, double, int)> element;
-    std::function<void(int, int)> event;
+    FnRef<void(int, double, double, double, double, int)> element;
+    FnRef<void(int, int)> event;
 };
 
 // The counting pass does not build an id index. The emitting pass can reserve
