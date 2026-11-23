@@ -1,9 +1,11 @@
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <optional>
-#include <set>
 #include <tuple>
 #include <utility>
+
+#include <ankerl/unordered_dense.h>
 
 #include "engrave/src/api/handles.h"
 #include "engrave/src/api/state.h"
@@ -32,6 +34,18 @@
 
 namespace engrave {
 namespace {
+
+struct ElementIdHash {
+    using is_avalanching = void;
+
+    std::uint64_t operator()(const ElementId &id) const noexcept {
+        const auto h1 = ankerl::unordered_dense::hash<std::uint64_t>{}(id.hi);
+        const auto h2 = ankerl::unordered_dense::hash<std::uint64_t>{}(id.lo);
+        return ankerl::unordered_dense::hash<std::uint64_t>{}(h1 ^ (h2 + 0x9e3779b97f4a7c15ULL + (h1 << 6) + (h1 >> 2)));
+    }
+};
+
+using ElementIdSet = ankerl::unordered_dense::set<ElementId, ElementIdHash>;
 
 using Tick = mu::engraving::Fraction;
 using mu::engraving::Chord;
@@ -151,7 +165,7 @@ Result<std::vector<GraceMusic>> read_graces(const mu::engraving::GraceNotesView 
 }
 
 Result<MusicEvent> read_event(const ChordRest &source, const Staff &staff, const Measure &measure, MusicWindow &window,
-                              std::set<ElementId> &seen_tuplets, ReadBudget &budget) {
+                              ElementIdSet &seen_tuplets, ReadBudget &budget) {
     if (!charge(budget.rows, 1)) return music_limit();
     const auto tick = source.tick();
     MusicEvent event{music_id(source), reduced(tick - measure.tick()), reduced(source.ticks()), reduced(source.actual_ticks())};
@@ -276,7 +290,7 @@ bool span_selected(const Spanner &source, const std::vector<int> &staves, const 
 
 Result<void> read_spans(const Score &score, Tick begin, Tick end, const std::vector<int> &staves, const std::vector<int> &voices,
                         MusicWindow &window, ReadBudget &budget, std::size_t &work) {
-    std::set<ElementId> seen;
+    ElementIdSet seen;
     auto append = [&](const Spanner &source) -> Result<void> {
         if (!charge(work, 1)) return music_limit();
         const auto start_tick = source.tick();
@@ -410,7 +424,7 @@ Result<MusicWindow> Document::read_music(const MusicRange &range) const {
                                  staff.is_drum_staff(begin)});
     }
 
-    std::set<ElementId> seen_tuplets;
+    ElementIdSet seen_tuplets;
     for (int index = 0; index < range.measure_count; ++index, measure = measure->next_measure()) {
         if (!measure) return std::unexpected(Error{ErrorCode::INVALID_ARGUMENT, "the music window ends past the end of the score"});
         MeasureMusic bar{{music_id(*measure), range.first_measure + index, reduced(measure->tick()), reduced(measure->ticks())},

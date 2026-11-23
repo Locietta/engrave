@@ -6,8 +6,9 @@
 #include <mutex>
 #include <span>
 #include <string>
-#include <unordered_map>
 #include <vector>
+
+#include <ankerl/unordered_dense.h>
 
 #include "global/types/bytearray.h"
 #include "global/types/datetime.h"
@@ -81,7 +82,7 @@ private:
     std::filesystem::path resource_root_;
     bool has_resource_root_ = false;
     mutable std::mutex streams_mutex_;
-    std::unordered_map<muse::io::StreamId, std::unique_ptr<Stream>> streams_;
+    ankerl::unordered_dense::map<muse::io::StreamId, std::unique_ptr<Stream>> streams_;
     muse::io::StreamId next_stream_id_ = 0;
 };
 

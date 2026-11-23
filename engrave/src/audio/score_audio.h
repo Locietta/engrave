@@ -1,13 +1,13 @@
 #pragma once
 
 #include <cstdint>
-#include <map>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "audio_mix.h"
 #include "engraving/types/types.h"
+#include "global/flatmap.h"
 
 namespace mu::engraving {
 struct Score;
@@ -46,6 +46,8 @@ struct TrackSoloMute {
     bool operator==(const TrackSoloMute &) const = default;
 };
 
+using TrackSoloMuteMap = muse::FlatMap<std::pair<std::string, std::string>, TrackSoloMute>;
+
 // Per-document default mix read from an MSCZ archive's audiosettings.json.
 // Tracks are keyed by the same (partId, instrumentId) identities that
 // score_audio_track_info() reports. Volume and balance are project-wide (from
@@ -56,12 +58,11 @@ struct TrackSoloMute {
 // yields neutral defaults.
 struct ScoreAudioMixDefaults {
     AudioOutputParams master;
-    std::map<std::pair<std::string, std::string>, AudioOutputParams> tracks;
-    std::map<std::string, std::map<std::pair<std::string, std::string>, TrackSoloMute>> excerpt_tracks_by_name;
-    std::vector<std::map<std::pair<std::string, std::string>, TrackSoloMute>> excerpt_tracks_by_index;
+    muse::FlatMap<std::pair<std::string, std::string>, AudioOutputParams> tracks;
+    muse::FlatMap<std::string, TrackSoloMuteMap> excerpt_tracks_by_name;
+    std::vector<TrackSoloMuteMap> excerpt_tracks_by_index;
 
-    const std::map<std::pair<std::string, std::string>, TrackSoloMute> *
-    get_excerpt_map(int excerpt_id, const std::string &excerpt_name = "") const noexcept {
+    const TrackSoloMuteMap *get_excerpt_map(int excerpt_id, const std::string &excerpt_name = "") const noexcept {
         if (!excerpt_name.empty()) {
             auto it = excerpt_tracks_by_name.find(excerpt_name);
             if (it != excerpt_tracks_by_name.end()) return &it->second;

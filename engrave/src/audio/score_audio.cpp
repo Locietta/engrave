@@ -9,14 +9,14 @@
 
 #include <algorithm>
 #include <cstddef>
-#include <map>
 #include <optional>
-#include <set>
 #include <stdexcept>
 #include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
+
+#include <amc/flatset.hpp>
 
 #include "engraving/dom/instrument.h"
 #include "engraving/dom/part.h"
@@ -83,8 +83,8 @@ std::vector<ScoreAudioTrackInfo> score_audio_track_info(Score *score) {
 
         // Part::instrumentTrackIdList() dereferences every instrument, so
         // dedupe here after skipping malformed entries. The order matches the
-        // engine: instruments are stored by their first tick in a std::map.
-        std::set<muse::String> seen_instruments;
+        // engine's iteration by first instrument tick.
+        amc::FlatSet<muse::String> seen_instruments;
         for ([[maybe_unused]] const auto &[tick, instrument] : part->instruments()) {
             if (!instrument) {
                 continue;
@@ -237,7 +237,7 @@ ScoreAudioMixDefaults score_audio_mix_defaults(const std::string &mscz_bytes) {
             const auto *tracks = json::member(*settings, "tracks").get_if<glz::generic::array_t>();
             if (!tracks || tracks->size() > max_audio_settings_tracks) continue;
 
-            std::map<std::pair<std::string, std::string>, TrackSoloMute> solo_mute_map;
+            TrackSoloMuteMap solo_mute_map;
             for_each_track(*settings, [&](auto key, const glz::generic &track) {
                 TrackSoloMute state;
                 apply_solo_mute(state, json::member(track, "soloMuteState"));
@@ -255,8 +255,7 @@ ScoreAudioMixDefaults score_audio_mix_defaults(const std::string &mscz_bytes) {
 
 AudioMix score_audio_default_mix(const ScoreAudioMixDefaults &defaults, const std::vector<ScoreAudioTrackInfo> &tracks, int excerpt_id,
                                  const std::string &excerpt_name) {
-    const std::map<std::pair<std::string, std::string>, TrackSoloMute> *excerpt_solo_mute =
-        excerpt_id >= 0 ? defaults.get_excerpt_map(excerpt_id, excerpt_name) : nullptr;
+    const TrackSoloMuteMap *excerpt_solo_mute = excerpt_id >= 0 ? defaults.get_excerpt_map(excerpt_id, excerpt_name) : nullptr;
 
     AudioMix mix;
     mix.master = defaults.master;

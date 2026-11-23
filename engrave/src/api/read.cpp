@@ -14,10 +14,11 @@
 #include <string_view>
 #include <tuple>
 #include <type_traits>
-#include <unordered_map>
 #include <utility>
 #include <variant>
 #include <vector>
+
+#include <ankerl/unordered_dense.h>
 
 #include "engrave/src/api/handles.h"
 #include "engrave/src/api/pid_support.h"
@@ -531,7 +532,7 @@ Result<QueryResult> Document::query(const Query &request) {
     const ScoreSel selection = selection_of(score);
     // The properties of each type the query meets, so that a property an element does
     // not have is left out rather than read.
-    std::unordered_map<std::string, std::vector<Pid>> type_props;
+    ankerl::unordered_dense::map<std::string, std::vector<Pid>> type_props;
 
     const auto matches = [&](const LiveId &entry) -> std::optional<Where> {
         const EngravingObject &object = *entry.object;

@@ -9,7 +9,6 @@
 #include <iterator>
 #include <limits>
 #include <optional>
-#include <set>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -17,6 +16,7 @@
 #include <utility>
 #include <vector>
 
+#include <amc/flatset.hpp>
 #include <ankerl/unordered_dense.h>
 #include <pugixml.hpp>
 
@@ -368,7 +368,7 @@ bool project_inline_chord_list(pugi::xml_node root, const Score &score, bool emb
     ankerl::unordered_dense::map<std::string_view, pugi::xml_node> symbols;
     ankerl::unordered_dense::map<std::string_view, std::vector<pugi::xml_node>> tokens;
     std::vector<pugi::xml_node> unmatched_fonts;
-    std::set<pugi::xml_node> unmatched_tokens;
+    amc::FlatSet<pugi::xml_node> unmatched_tokens;
     for (auto font : baseline.children("font")) {
         poll();
         unmatched_fonts.push_back(font);

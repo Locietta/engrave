@@ -7,10 +7,10 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
+
+#include <ankerl/unordered_dense.h>
 
 #include "engraving/dom/chord.h"
 #include "engraving/dom/engravingobject.h"
@@ -85,9 +85,9 @@ Part *item_part(EngravingItem *item) {
 // does not repeat that work for every 128-measure block.
 struct QueryCapture {
     std::vector<Measure *> measures;
-    std::unordered_map<const Measure *, size_t> measure_indices;
-    std::unordered_map<const Measure *, std::string> measure_ids;
-    std::unordered_map<const Part *, std::unordered_set<const Chord *>> spanned_chords;
+    ankerl::unordered_dense::map<const Measure *, size_t> measure_indices;
+    ankerl::unordered_dense::map<const Measure *, std::string> measure_ids;
+    ankerl::unordered_dense::map<const Part *, ankerl::unordered_dense::set<const Chord *>> spanned_chords;
     std::vector<Spanner *> spanners;
 };
 
@@ -99,7 +99,7 @@ QueryCapture make_query_capture(Score *score) {
 
     // Chord-anchored slurs and other spanners are not exposed through Note's
     // spanner lists, so collect their chords per part in the same pass.
-    std::unordered_set<const Spanner *> seen;
+    ankerl::unordered_dense::set<const Spanner *> seen;
     for (const auto &entry : score->spanner_map().map()) {
         Spanner *spanner = entry.second;
         if (!spanner || !seen.insert(spanner).second) continue;
@@ -163,7 +163,7 @@ std::vector<NoteView> capture_region_notes(QueryCapture &capture, Score *score, 
         return voice_matches(voice, anchor) && anchor_inside(capture, part, first, last, anchor);
     };
     const auto spanned = capture.spanned_chords.find(part);
-    const std::unordered_set<const Chord *> *spanned_chords = spanned == capture.spanned_chords.end() ? nullptr : &spanned->second;
+    const auto *spanned_chords = spanned == capture.spanned_chords.end() ? nullptr : &spanned->second;
 
     for (size_t index = first; index < last; ++index) {
         Measure *measure = capture.measures[index];
@@ -358,7 +358,7 @@ ScoreReadProjection snapshot_score_projection(mu::engraving::MasterScore *score)
         if (it != capture.measure_indices.end()) result.measure_index = it->second;
         return result;
     };
-    std::unordered_set<const Spanner *> captured;
+    ankerl::unordered_dense::set<const Spanner *> captured;
     const auto capture_span = [&](Spanner *span) {
         if (!span || !captured.insert(span).second) return true;
         if (projection.spans.size() == ::music::max_projection_spans) return false;

@@ -17,7 +17,6 @@
 #include <cstdint>
 #include <cstring>
 #include <limits>
-#include <map>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -25,18 +24,20 @@
 #include <utility>
 #include <vector>
 
+#include <ankerl/unordered_dense.h>
 #include <cairo/cairo-ft.h>
 #include <cairo/cairo.h>
 #include <ft2build.h>
 
-#include "cairo_font_cache.h"
 #include FT_FREETYPE_H
 
 #include <hb-ft.h>
 #include <hb.h>
 
+#include "cairo_font_cache.h"
 #include "draw/internal/fontfaceutils.h"
 #include "engrave/src/runtime/fonts_database.h"
+#include "global/flatmap.h"
 
 namespace muse::draw {
 namespace {
@@ -110,7 +111,7 @@ std::vector<cairo_rectangle_t> subtract_rects(const cairo_rectangle_t &backgroun
     const double background_left = background.x;
     const double background_right = background.x + background.width;
 
-    std::map<std::pair<double, double>, size_t> previous_spans;
+    muse::FlatMap<std::pair<double, double>, size_t> previous_spans;
     for (size_t yi = 0; yi + 1 < ys.size(); ++yi) {
         const double y0 = ys[yi];
         const double y1 = ys[yi + 1];
@@ -139,7 +140,7 @@ std::vector<cairo_rectangle_t> subtract_rects(const cairo_rectangle_t &backgroun
             }
         }
 
-        std::map<std::pair<double, double>, size_t> current_spans;
+        muse::FlatMap<std::pair<double, double>, size_t> current_spans;
         auto emit_run = [&](double x0, double x1) {
             if (!(x1 > x0)) {
                 return;
@@ -180,7 +181,7 @@ std::vector<cairo_rectangle_t> subtract_rects(const cairo_rectangle_t &backgroun
             emit_run(cursor, background_right);
         }
 
-        previous_spans.swap(current_spans);
+        previous_spans = std::move(current_spans);
     }
 
     return result;
@@ -471,8 +472,8 @@ private:
     const music::RuntimeFontsDatabase &db;
     std::shared_ptr<const music::ActiveTable> active_;
     std::shared_ptr<FT_LibraryRec_> ft_library_;
-    std::map<ActualKey, std::shared_ptr<CachedFont>> by_actual_;
-    std::map<CacheKey, std::shared_ptr<CachedFont>> by_request_;
+    muse::FlatMap<ActualKey, std::shared_ptr<CachedFont>> by_actual_;
+    muse::FlatMap<CacheKey, std::shared_ptr<CachedFont>> by_request_;
 };
 
 CairoFontCache::CairoFontCache(const music::RuntimeFontsDatabase &fonts) : impl_(std::make_unique<Impl>(fonts)) {}
@@ -548,7 +549,7 @@ struct CairoPainter::Impl {
     // PDF/SVG surfaces may report CLIP_NOT_REPRESENTABLE even for an unclipped
     // context.  In that case we conservatively assume the surface bounds.
     bool base_clip_known = true;
-    std::map<unsigned int, CachedSurface> surfaces;
+    ankerl::unordered_dense::map<unsigned int, CachedSurface> surfaces;
 
     Impl(cairo_t *context, CairoFontCache &font_cache, double device_dpi);
     ~Impl();

@@ -37,7 +37,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
-#include <map>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -57,6 +56,7 @@
 #include "engraving/dom/textbase.h"
 #include "engraving/dom/timesig.h"
 #include "engraving/style/style.h"
+#include "global/flatmap.h"
 #include "global/realfn.h"
 #include "global/types/string.h"
 
@@ -315,7 +315,7 @@ SortedJson track_json(const InstrumentTrackId &id, const MetadataTrack &track) {
 
 SortedJson tracks_json_array(const Score *score, const std::vector<MetadataTrack> &tracks) {
     SortedJson json_tracks_array = make_array<SortedJson>();
-    std::map<InstrumentTrackId, SortedJson> sorted_json_tracks;
+    muse::FlatMap<InstrumentTrackId, SortedJson> sorted_json_tracks;
 
     for (const MetadataTrack &track : tracks) {
         std::uint64_t part_id_value = 0;

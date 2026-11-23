@@ -2,12 +2,12 @@
 #include <format>
 #include <iterator>
 #include <limits>
-#include <map>
 #include <numeric>
 #include <optional>
-#include <set>
 #include <type_traits>
 #include <utility>
+
+#include <amc/flatset.hpp>
 
 #include "engrave/src/api/batch.h"
 #include "engrave/src/api/handles.h"
@@ -26,6 +26,7 @@
 #include "engraving/dom/tuplet.h"
 #include "engraving/editing/transpose.h"
 #include "engraving/engravingproject.h"
+#include "global/flatmap.h"
 #include <engrave/music.h>
 
 namespace engrave {
@@ -137,7 +138,7 @@ struct PhraseBatch {
     Batch batch;
     std::vector<PhraseLocation> locations;
     // AddTie needs both notes on the same physical track.
-    std::map<mu::engraving::track_idx_t, std::map<Tick, ChordRefs>> rhythms;
+    muse::FlatMap<mu::engraving::track_idx_t, muse::FlatMap<Tick, ChordRefs>> rhythms;
 
     std::size_t append(Op op, const PhraseLocation &location) {
         const auto index = batch.ops.size();
@@ -264,7 +265,7 @@ struct LaneBuilder {
 
     Result<std::size_t> enter(const PhraseEvent &event, Tick duration, Tick end, bool drums, bool continue_ties) {
         ChordRefs result{.end = end, .location = location};
-        std::set<int> seen;
+        amc::FlatSet<int> seen;
         std::vector<Pitch> pitches;
         std::vector<DrumKey> keys;
         const auto *kit = drums ? staff.origin_part(cursor.tick)->instrument(cursor.tick)->drumset() : nullptr;
@@ -372,14 +373,14 @@ struct LaneBuilder {
     }
 };
 
-using LaneIntervals = std::map<mu::engraving::track_idx_t, std::map<Tick, Tick>>;
+using LaneIntervals = muse::FlatMap<mu::engraving::track_idx_t, muse::FlatMap<Tick, Tick>>;
 
 Result<void> check_overlap(LaneIntervals &intervals, mu::engraving::track_idx_t track, Tick start, Tick end) {
     auto &same_track = intervals[track];
     const auto next = same_track.lower_bound(start);
     if ((next != same_track.end() && next->first < end) || (next != same_track.begin() && std::prev(next)->second > start))
         return invalid("the lane overlaps another lane on the same track");
-    same_track.emplace_hint(next, start, end);
+    same_track.emplace(start, end);
     return {};
 }
 

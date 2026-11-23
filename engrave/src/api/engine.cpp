@@ -8,7 +8,8 @@
 #include <mutex>
 #include <new>
 #include <stdexcept>
-#include <unordered_set>
+
+#include <ankerl/unordered_dense.h>
 
 #include "engrave/src/api/handles.h"
 #include "engrave/src/api/mnx.h"
@@ -208,7 +209,7 @@ std::vector<TemplateInfo> Engine::templates() const {
 std::vector<InstrumentInfo> Engine::instruments() const {
     impl_->state->check_thread();
     std::vector<InstrumentInfo> result;
-    std::unordered_set<std::string> seen;
+    ankerl::unordered_dense::set<std::string> seen;
     for (const auto *group : mu::engraving::instrument_catalog().groups) {
         for (const auto *entry : group->instrument_templates) {
             auto id = entry->id.to_std_string();
