@@ -1711,7 +1711,7 @@ void Score::remove_chord_rest(ChordRest *cr, bool clear_segment) {
     std::set<Segment *> segments;
     for (EngravingObject *e : cr->link_list()) {
         if (cr->is_chord()) {
-            std::set<Spanner *> starting_spanners = to_chord(e)->starting_spanners();
+            auto starting_spanners = to_chord(e)->starting_spanners();
             for (Spanner *spanner : starting_spanners) {
                 if (spanner->is_trill() || spanner->is_slur()) {
                     do_undo_remove_element(spanner);

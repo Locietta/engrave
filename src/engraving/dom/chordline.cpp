@@ -26,6 +26,8 @@
 #include <functional>
 #include <stdexcept>
 
+#include <ankerl/unordered_dense.h>
+
 #include "../style/style.h"
 #include "../types/constants.h"
 #include "../types/typesconv.h"
@@ -77,7 +79,7 @@ const TranslatableString &ChordLine::chord_line_type_name() const { return TConv
 //---------------------------------------------------------
 
 static Note::SlideType slide_type(ChordLineType type) {
-    static const std::unordered_map<ChordLineType, Note::SlideType> chord_line_to_slide_types{
+    static const ankerl::unordered_dense::map<ChordLineType, Note::SlideType> chord_line_to_slide_types{
         {ChordLineType::FALL, Note::SlideType::DOWN_FROM_NOTE},
         {ChordLineType::DOIT, Note::SlideType::UP_FROM_NOTE},
         {ChordLineType::SCOOP, Note::SlideType::UP_TO_NOTE},

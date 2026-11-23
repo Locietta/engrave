@@ -24,13 +24,14 @@
 #define MU_ENGRAVING_CLEFLIST_H
 
 #include "clef.h"
+#include "global/flatmap.h"
 
 namespace mu::engraving {
 //---------------------------------------------------------
 //   ClefList
 //---------------------------------------------------------
 
-struct ClefList : std::map<int, ClefTypeList> {
+struct ClefList : muse::FlatMap<int, ClefTypeList> {
 public:
     ClefList() {}
 

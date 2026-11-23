@@ -22,6 +22,8 @@
 
 #include "compatutils.h"
 
+#include <amc/flatset.hpp>
+
 #include "dom/articulation.h"
 #include "dom/capo.h"
 #include "dom/chord.h"
@@ -455,7 +457,7 @@ void CompatUtils::split_articulations(MasterScore *master_score) {
                     if (a->is_linked()) {
                         continue; // only worry about main artics, links will be done later
                     }
-                    std::set<SymId> ids = mu::engraving::split_articulations({a->sym_id()});
+                    amc::FlatSet<SymId> ids = mu::engraving::split_articulations({a->sym_id()});
                     if (ids.size() <= 1) {
                         continue;
                     }

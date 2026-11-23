@@ -22,7 +22,9 @@
 
 #pragma once
 
-#include <map>
+#include <memory>
+
+#include <gtl/btree.hpp>
 
 #include "../types/types.h"
 #include "global/types/string.h"
@@ -464,7 +466,19 @@ struct ChordFont {
 //    Reads chord XML files and stores the list of known chords
 //---------------------------------------------------------
 
-struct ChordList : std::map<int, ChordDescription> {
+// Parsing a later harmony can insert a chord while earlier descriptions are still referenced.
+struct ChordDescriptions : gtl::btree_map<int, std::unique_ptr<ChordDescription>> {
+    ChordDescriptions() = default;
+    ChordDescriptions(const ChordDescriptions &);
+    ChordDescriptions(ChordDescriptions &&) = default;
+
+    ChordDescriptions &operator=(ChordDescriptions other) {
+        swap(other);
+        return *this;
+    }
+};
+
+struct ChordList : ChordDescriptions {
 
 public:
     ChordList owned_copy() const;
@@ -522,7 +536,7 @@ private:
     void read(XmlReader &xml, int msc_version);
     void write(XmlWriter &xml) const;
 
-    std::map<String, ChordSymbol> symbols_;
+    gtl::btree_map<String, ChordSymbol> symbols_;
     bool auto_adjust_ = false;
     bool stack_modifiers_ = false;
     bool exclude_mods_h_align_ = false;

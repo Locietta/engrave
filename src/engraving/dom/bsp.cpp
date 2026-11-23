@@ -25,7 +25,8 @@
 #include <algorithm>
 #include <cmath>
 #include <functional>
-#include <unordered_set>
+
+#include <ankerl/unordered_dense.h>
 
 #include "engravingitem.h"
 
@@ -61,7 +62,7 @@ public:
 struct FindItemBspTreeVisitor : BspTreeVisitor {
 public:
     std::vector<EngravingItem *> found_items;
-    std::unordered_set<EngravingItem *> seen;
+    ankerl::unordered_dense::set<EngravingItem *> seen;
 
     void visit(std::vector<EngravingItem *> &items) override {
         for (auto item : items) {

@@ -52,7 +52,7 @@ KeySigEvent KeyList::key(int tick) const {
 void KeyList::set_key(int tick, KeySigEvent k) {
     auto i = find(tick);
     if (i == end()) {
-        insert(std::pair<int, KeySigEvent>(tick, k));
+        emplace(tick, k);
     } else {
         i->second = k;
     }

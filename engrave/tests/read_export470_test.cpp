@@ -1651,7 +1651,7 @@ TEST(Export470, RefusesCustomChordActionsThatCannotBeSerialized) {
     auto document = open_path(write470_fixture().parent_path() / "custom_chordlist.mscx");
     ASSERT_TRUE(document);
     using namespace mu::engraving;
-    auto &description = master_of(*document).chord_list()->at(801);
+    auto &description = *master_of(*document).chord_list()->at(801);
     description.render_list.push_back(std::make_shared<RenderActionMoveTextWidth>(u"diamond"));
     for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
         const auto result = document->export_score_with_warnings({.format = format, .native_version = "4.70"});

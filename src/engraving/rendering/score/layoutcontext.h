@@ -27,6 +27,8 @@
 #include <unordered_set>
 #include <vector>
 
+#include <gtl/btree.hpp>
+
 #include "../../dom/mscore.h"
 #include "../../style/style.h"
 #include "../../types/fraction.h"
@@ -203,7 +205,7 @@ struct DomAccessor {
     void undo_change_parent(EngravingItem *element, EngravingItem *parent, staff_idx_t staff, bool change_links_parents = true);
 
     void add_unmanaged_spanner(Spanner *s);
-    const std::set<Spanner *> &unmanaged_spanners() const;
+    const gtl::btree_set<Spanner *> &unmanaged_spanners() const;
 
 private:
     LayoutContext *get_score_ = nullptr;

@@ -22,6 +22,8 @@
 
 #include "gradualtempochange.h"
 
+#include <ankerl/unordered_dense.h>
+
 #include "engraving/style/styletypes.h"
 #include "log.h"
 #include "measure.h"
@@ -90,7 +92,7 @@ static const ElementStyle tempo_style{
 
 static const ElementStyle tempo_segment_style{{Sid::TEMPO_CHANGE_MIN_DISTANCE, Pid::MIN_DISTANCE}};
 
-static const std::unordered_map<GradualTempoChangeType, double> default_factors_map{
+static const ankerl::unordered_dense::map<GradualTempoChangeType, double> default_factors_map{
     {GradualTempoChangeType::ACCELERANDO, 1.33}, {GradualTempoChangeType::ALLARGANDO, 0.75}, {GradualTempoChangeType::CALANDO, 0.5},
     {GradualTempoChangeType::LENTANDO, 0.75},    {GradualTempoChangeType::MORENDO, 0.5},     {GradualTempoChangeType::PRECIPITANDO, 1.15},
     {GradualTempoChangeType::RALLENTANDO, 0.75}, {GradualTempoChangeType::RITARDANDO, 0.75}, {GradualTempoChangeType::SMORZANDO, 0.5},

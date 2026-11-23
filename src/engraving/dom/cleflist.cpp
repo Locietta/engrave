@@ -63,7 +63,7 @@ ClefTypeList ClefList::clef(int tick) const {
 void ClefList::set_clef(int tick, ClefTypeList ctl) {
     auto i = find(tick);
     if (i == end()) {
-        insert(std::pair<int, ClefTypeList>(tick, ctl));
+        emplace(tick, ctl);
     } else {
         i->second = ctl;
     }

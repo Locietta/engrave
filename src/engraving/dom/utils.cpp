@@ -24,7 +24,9 @@
 
 #include <algorithm>
 #include <cmath>
-#include <map>
+
+#include <ankerl/unordered_dense.h>
+#include <gtl/btree.hpp>
 
 #include "accidental.h"
 #include "arpeggio.h"
@@ -35,6 +37,7 @@
 #include "containers.h"
 #include "drumset.h"
 #include "fret.h"
+#include "global/flatmap.h"
 #include "harmony.h"
 #include "keysig.h"
 #include "laissezvib.h"
@@ -736,7 +739,7 @@ Segment *skip_tuplet(Tuplet *tuplet) {
 //    replace ascii with bravura symbols
 
 SymIdList time_sig_sym_ids_from_string(const String &string, TimeSigStyle time_sig_style) {
-    static const std::map<Char, SymId> dict = {
+    static const muse::FlatMap<Char, SymId> dict = {
         {'+', SymId::TIME_SIG_PLUS_SMALL},
         {'0', SymId::TIME_SIG0},
         {'1', SymId::TIME_SIG1},
@@ -775,7 +778,7 @@ SymIdList time_sig_sym_ids_from_string(const String &string, TimeSigStyle time_s
         {59674, SymId::MENSURAL_PROLATION11},
     };
 
-    static const std::map<Char, SymId> dict_large = {
+    static const muse::FlatMap<Char, SymId> dict_large = {
         {'+', SymId::TIME_SIG_PLUS_SMALL_LARGE},
         {'0', SymId::TIME_SIG0_LARGE},
         {'1', SymId::TIME_SIG1_LARGE},
@@ -801,7 +804,7 @@ SymIdList time_sig_sym_ids_from_string(const String &string, TimeSigStyle time_s
         {u'×', SymId::TIME_SIG_MULTIPLY_LARGE},
     };
 
-    static const std::map<Char, SymId> dict_narrow = {
+    static const muse::FlatMap<Char, SymId> dict_narrow = {
         {'+', SymId::TIME_SIG_PLUS_SMALL_NARROW},
         {'0', SymId::TIME_SIG0_NARROW},
         {'1', SymId::TIME_SIG1_NARROW},
@@ -955,7 +958,7 @@ void collect_chords_overlapping_rests(Segment *segment, staff_idx_t staff_idx, s
     track_idx_t start_track = staff_idx * ::mu::engraving::voices;
     track_idx_t end_track = start_track + ::mu::engraving::voices;
 
-    std::set<track_idx_t> tracks_to_check;
+    gtl::btree_set<track_idx_t> tracks_to_check;
     for (track_idx_t track = start_track; track < end_track; ++track) {
         EngravingItem *item = segment->effective_element(track);
         if (!item || !item->is_rest()) {
@@ -1059,8 +1062,8 @@ std::vector<EngravingItem *> collect_system_objects(const Score *score, const st
     return result;
 }
 
-std::unordered_set<EngravingItem *> collect_elements_anchored_to_chord_rest(const ChordRest *cr) {
-    std::unordered_set<EngravingItem *> elems;
+ankerl::unordered_dense::set<EngravingItem *> collect_elements_anchored_to_chord_rest(const ChordRest *cr) {
+    ankerl::unordered_dense::set<EngravingItem *> elems;
     for (EngravingItem *lyric : cr->lyrics()) {
         elems.emplace(lyric);
     }
@@ -1096,9 +1099,9 @@ std::unordered_set<EngravingItem *> collect_elements_anchored_to_chord_rest(cons
     return elems;
 }
 
-std::unordered_set<EngravingItem *> collect_elements_anchored_to_note(const Note *note, bool include_forward_ties_spanners,
-                                                                      bool include_backward_ties_spanners) {
-    std::unordered_set<EngravingItem *> elems;
+ankerl::unordered_dense::set<EngravingItem *> collect_elements_anchored_to_note(const Note *note, bool include_forward_ties_spanners,
+                                                                                bool include_backward_ties_spanners) {
+    ankerl::unordered_dense::set<EngravingItem *> elems;
     LaissezVib *lv = note->laissez_vib();
     if (lv && !lv->segments_empty()) {
         elems.emplace(lv);

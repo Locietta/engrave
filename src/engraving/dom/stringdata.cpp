@@ -22,11 +22,10 @@
 
 #include "stringdata.h"
 
-#include <map>
-
 #include "chord.h"
 #include "defer.h"
 #include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
+#include "global/flatmap.h"
 #include "note.h"
 #include "part.h"
 #include "segment.h"
@@ -169,7 +168,7 @@ void StringData::fret_chords(Chord *chord) const {
     const bool skip_dead_notes = chord->configuration()->keep_dead_notes_unchanged_on_transpose();
 
     // we need the notes sorted in order of string (from highest to lowest) and then pitch
-    std::map<int, Note *> sorted_notes;
+    muse::FlatMap<int, Note *> sorted_notes;
     int count = 0;
     // if chord parent is not a segment, the chord is special (usually a grace chord):
     // fret it by itself, ignoring the segment
@@ -716,7 +715,7 @@ void StringData::sort_chord_notes_use_same_string(const Chord *chord) const {
 //    Notes without a string assigned yet, are sorted according to the lowest string which can accommodate them.
 //---------------------------------------------------------
 
-void StringData::sort_chord_notes(std::map<int, Note *> &sorted_notes, const Chord *chord, int *count) const {
+void StringData::sort_chord_notes(muse::FlatMap<int, Note *> &sorted_notes, const Chord *chord, int *count) const {
     bool use_same_string = chord->configuration()->prefer_same_string_for_transpose();
     const bool skip_dead_notes = chord->configuration()->keep_dead_notes_unchanged_on_transpose();
     int transp = chord->staff() ? chord->origin_part()->instrument(chord->tick())->transpose().chromatic : 0;

@@ -22,10 +22,14 @@
 
 #include "articulation.h"
 
+#include <amc/flatset.hpp>
+#include <ankerl/unordered_dense.h>
+
 #include "beam.h"
 #include "chord.h"
 #include "chordrest.h"
 #include "engraving/style/styletypes.h"
+#include "global/flatmap.h"
 #include "log.h"
 #include "measure.h"
 #include "note.h"
@@ -516,33 +520,33 @@ void Articulation::compute_categories() {
 }
 
 bool Articulation::is_basic_articulation() const {
-    static const std::set<SymId> articulations{SymId::ARTIC_ACCENT_ABOVE,
-                                               SymId::ARTIC_ACCENT_BELOW,
-                                               SymId::ARTIC_STACCATO_ABOVE,
-                                               SymId::ARTIC_STACCATO_BELOW,
-                                               SymId::ARTIC_TENUTO_ABOVE,
-                                               SymId::ARTIC_TENUTO_BELOW,
-                                               SymId::ARTIC_MARCATO_ABOVE,
-                                               SymId::ARTIC_MARCATO_BELOW,
+    static const amc::FlatSet<SymId> articulations{SymId::ARTIC_ACCENT_ABOVE,
+                                                   SymId::ARTIC_ACCENT_BELOW,
+                                                   SymId::ARTIC_STACCATO_ABOVE,
+                                                   SymId::ARTIC_STACCATO_BELOW,
+                                                   SymId::ARTIC_TENUTO_ABOVE,
+                                                   SymId::ARTIC_TENUTO_BELOW,
+                                                   SymId::ARTIC_MARCATO_ABOVE,
+                                                   SymId::ARTIC_MARCATO_BELOW,
 
-                                               SymId::ARTIC_ACCENT_STACCATO_ABOVE,
-                                               SymId::ARTIC_ACCENT_STACCATO_BELOW,
-                                               SymId::ARTIC_MARCATO_STACCATO_ABOVE,
-                                               SymId::ARTIC_MARCATO_STACCATO_BELOW,
-                                               SymId::ARTIC_MARCATO_TENUTO_ABOVE,
-                                               SymId::ARTIC_MARCATO_TENUTO_BELOW,
-                                               SymId::ARTIC_TENUTO_STACCATO_ABOVE,
-                                               SymId::ARTIC_TENUTO_STACCATO_BELOW,
-                                               SymId::ARTIC_TENUTO_ACCENT_ABOVE,
-                                               SymId::ARTIC_TENUTO_ACCENT_BELOW,
-                                               SymId::ARTIC_STACCATISSIMO_ABOVE,
-                                               SymId::ARTIC_STACCATISSIMO_BELOW,
-                                               SymId::ARTIC_STACCATISSIMO_STROKE_ABOVE,
-                                               SymId::ARTIC_STACCATISSIMO_STROKE_BELOW,
-                                               SymId::ARTIC_STACCATISSIMO_WEDGE_ABOVE,
-                                               SymId::ARTIC_STACCATISSIMO_WEDGE_BELOW,
-                                               SymId::ARTIC_STRESS_ABOVE,
-                                               SymId::ARTIC_STRESS_BELOW};
+                                                   SymId::ARTIC_ACCENT_STACCATO_ABOVE,
+                                                   SymId::ARTIC_ACCENT_STACCATO_BELOW,
+                                                   SymId::ARTIC_MARCATO_STACCATO_ABOVE,
+                                                   SymId::ARTIC_MARCATO_STACCATO_BELOW,
+                                                   SymId::ARTIC_MARCATO_TENUTO_ABOVE,
+                                                   SymId::ARTIC_MARCATO_TENUTO_BELOW,
+                                                   SymId::ARTIC_TENUTO_STACCATO_ABOVE,
+                                                   SymId::ARTIC_TENUTO_STACCATO_BELOW,
+                                                   SymId::ARTIC_TENUTO_ACCENT_ABOVE,
+                                                   SymId::ARTIC_TENUTO_ACCENT_BELOW,
+                                                   SymId::ARTIC_STACCATISSIMO_ABOVE,
+                                                   SymId::ARTIC_STACCATISSIMO_BELOW,
+                                                   SymId::ARTIC_STACCATISSIMO_STROKE_ABOVE,
+                                                   SymId::ARTIC_STACCATISSIMO_STROKE_BELOW,
+                                                   SymId::ARTIC_STACCATISSIMO_WEDGE_ABOVE,
+                                                   SymId::ARTIC_STACCATISSIMO_WEDGE_BELOW,
+                                                   SymId::ARTIC_STRESS_ABOVE,
+                                                   SymId::ARTIC_STRESS_BELOW};
     SymId sym_id = static_cast<SymId>(subtype());
     return articulations.find(sym_id) != articulations.end();
 }
@@ -616,21 +620,11 @@ struct ArticulationGroup {
     SymId first;
     SymId second;
 
-    bool operator<(const ArticulationGroup &other) const {
-        if ((first == other.first && second == other.second) || (first == other.second && second == other.first)) {
-            return false;
-        }
-
-        if (first != other.first) {
-            return first < other.first;
-        }
-
-        return second < other.second;
-    }
+    bool operator<(const ArticulationGroup &other) const { return std::minmax(first, second) < std::minmax(other.first, other.second); }
 };
 
 namespace mu::engraving {
-static const std::map<SymId, ArticulationGroup> articulation_above_split_groups = {
+static const ankerl::unordered_dense::map<SymId, ArticulationGroup> articulation_above_split_groups = {
     {SymId::ARTIC_ACCENT_STACCATO_ABOVE, {SymId::ARTIC_STACCATO_ABOVE, SymId::ARTIC_ACCENT_ABOVE}},
     {SymId::ARTIC_TENUTO_ACCENT_ABOVE, {SymId::ARTIC_TENUTO_ABOVE, SymId::ARTIC_ACCENT_ABOVE}},
     {SymId::ARTIC_TENUTO_STACCATO_ABOVE, {SymId::ARTIC_TENUTO_ABOVE, SymId::ARTIC_STACCATO_ABOVE}},
@@ -638,7 +632,7 @@ static const std::map<SymId, ArticulationGroup> articulation_above_split_groups 
     {SymId::ARTIC_MARCATO_TENUTO_ABOVE, {SymId::ARTIC_TENUTO_ABOVE, SymId::ARTIC_MARCATO_ABOVE}},
 };
 
-static const std::map<SymId, ArticulationGroup> articulation_below_split_group = {
+static const ankerl::unordered_dense::map<SymId, ArticulationGroup> articulation_below_split_group = {
     {SymId::ARTIC_ACCENT_STACCATO_BELOW, {SymId::ARTIC_STACCATO_BELOW, SymId::ARTIC_ACCENT_BELOW}},
     {SymId::ARTIC_TENUTO_ACCENT_BELOW, {SymId::ARTIC_TENUTO_BELOW, SymId::ARTIC_ACCENT_BELOW}},
     {SymId::ARTIC_TENUTO_STACCATO_BELOW, {SymId::ARTIC_TENUTO_BELOW, SymId::ARTIC_STACCATO_BELOW}},
@@ -646,7 +640,7 @@ static const std::map<SymId, ArticulationGroup> articulation_below_split_group =
     {SymId::ARTIC_MARCATO_TENUTO_BELOW, {SymId::ARTIC_TENUTO_BELOW, SymId::ARTIC_MARCATO_BELOW}},
 };
 
-static const std::map<ArticulationGroup, SymId> articulation_above_join_groups = {
+static const muse::FlatMap<ArticulationGroup, SymId> articulation_above_join_groups = {
     {{SymId::ARTIC_STACCATO_ABOVE, SymId::ARTIC_ACCENT_ABOVE}, SymId::ARTIC_ACCENT_STACCATO_ABOVE},
     {{SymId::ARTIC_TENUTO_ABOVE, SymId::ARTIC_ACCENT_ABOVE}, SymId::ARTIC_TENUTO_ACCENT_ABOVE},
     {{SymId::ARTIC_TENUTO_ABOVE, SymId::ARTIC_STACCATO_ABOVE}, SymId::ARTIC_TENUTO_STACCATO_ABOVE},
@@ -654,7 +648,7 @@ static const std::map<ArticulationGroup, SymId> articulation_above_join_groups =
     {{SymId::ARTIC_TENUTO_ABOVE, SymId::ARTIC_MARCATO_ABOVE}, SymId::ARTIC_MARCATO_TENUTO_ABOVE},
 };
 
-static const std::map<SymId, SymId> articulation_placements = {
+static const muse::FlatMap<SymId, SymId> articulation_placements = {
     {SymId::ARTIC_STACCATISSIMO_ABOVE, SymId::ARTIC_STACCATISSIMO_BELOW},
     {SymId::ARTIC_STACCATISSIMO_STROKE_ABOVE, SymId::ARTIC_STACCATISSIMO_STROKE_BELOW},
     {SymId::ARTIC_STACCATISSIMO_WEDGE_ABOVE, SymId::ARTIC_STACCATISSIMO_WEDGE_BELOW},
@@ -668,8 +662,8 @@ static const std::map<SymId, SymId> articulation_placements = {
     {SymId::ARTIC_MARCATO_ABOVE, SymId::ARTIC_MARCATO_BELOW},
     {SymId::ARTIC_ACCENT_ABOVE, SymId::ARTIC_ACCENT_BELOW}};
 
-std::set<SymId> split_articulations(const std::set<SymId> &articulation_symbol_ids) {
-    std::set<SymId> result;
+amc::FlatSet<SymId> split_articulations(const amc::FlatSet<SymId> &articulation_symbol_ids) {
+    amc::FlatSet<SymId> result;
     for (const SymId &articulation_symbol_id : articulation_symbol_ids) {
         auto artic = ::mu::engraving::articulation_above_split_groups.find(articulation_symbol_id);
         if (artic != ::mu::engraving::articulation_above_split_groups.end()) {
@@ -693,14 +687,14 @@ std::set<SymId> split_articulations(const std::set<SymId> &articulation_symbol_i
     return result;
 }
 
-std::set<SymId> join_articulations(const std::set<SymId> &articulation_symbol_ids) {
+amc::FlatSet<SymId> join_articulations(const amc::FlatSet<SymId> &articulation_symbol_ids) {
     SymIdList result;
 
     SymIdList vsymbol_ids(articulation_symbol_ids.begin(), articulation_symbol_ids.end());
 
     std::sort(vsymbol_ids.begin(), vsymbol_ids.end(), [](SymId l, SymId r) { return l > r; });
 
-    std::set<SymId> splitted_symbols;
+    amc::FlatSet<SymId> splitted_symbols;
 
     auto symbol_selected = [&splitted_symbols](const SymId &symbol_id) -> bool {
         return splitted_symbols.find(symbol_id) != splitted_symbols.end();
@@ -735,12 +729,12 @@ std::set<SymId> join_articulations(const std::set<SymId> &articulation_symbol_id
 
     std::sort(result.begin(), result.end(), [](SymId l, SymId r) { return l < r; });
 
-    return std::set<SymId>(result.begin(), result.end());
+    return amc::FlatSet<SymId>(result.begin(), result.end());
 }
 
-std::set<SymId> update_articulations(const std::set<SymId> &articulation_symbol_ids, SymId articulation_symbol_id,
-                                     ArticulationsUpdateMode update_mode) {
-    std::set<SymId> splitted_articulations = split_articulations(articulation_symbol_ids);
+amc::FlatSet<SymId> update_articulations(const amc::FlatSet<SymId> &articulation_symbol_ids, SymId articulation_symbol_id,
+                                         ArticulationsUpdateMode update_mode) {
+    amc::FlatSet<SymId> splitted_articulations = split_articulations(articulation_symbol_ids);
 
     switch (articulation_symbol_id) {
         case SymId::ARTIC_MARCATO_ABOVE: {
@@ -796,8 +790,8 @@ std::set<SymId> update_articulations(const std::set<SymId> &articulation_symbol_
     return splitted_articulations;
 }
 
-std::set<SymId> flip_articulations(const std::set<SymId> &articulation_symbol_ids, PlacementV placement) {
-    std::set<SymId> result;
+amc::FlatSet<SymId> flip_articulations(const amc::FlatSet<SymId> &articulation_symbol_ids, PlacementV placement) {
+    amc::FlatSet<SymId> result;
     switch (placement) {
         case PlacementV::ABOVE:
             for (const SymId &articulation_symbol_id : articulation_symbol_ids) {

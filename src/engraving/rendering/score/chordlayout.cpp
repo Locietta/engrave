@@ -1910,7 +1910,7 @@ void ChordLayout::layout_voice_offsets(System *system, staff_idx_t staff_idx, La
     };
     const auto include_slur_extents = [&ctx, &cr_system_x](Chord *chord, double &top, double &bottom) {
         std::vector<Slur *> slurs;
-        for (const std::set<Spanner *> *spanners : {&chord->starting_spanners(), &chord->ending_spanners()}) {
+        for (const auto *spanners : {&chord->starting_spanners(), &chord->ending_spanners()}) {
             for (Spanner *spanner : *spanners) {
                 if (spanner->is_slur() && !muse::contains(slurs, to_slur(spanner))) {
                     slurs.push_back(to_slur(spanner));
@@ -1992,7 +1992,7 @@ void ChordLayout::layout_voice_offsets(System *system, staff_idx_t staff_idx, La
     };
     std::vector<SpannerSegment *> shifted_slur_segments;
     const auto shift_chord_slurs = [system, &shifted_slur_segments](Chord *chord, double dy) {
-        for (const std::set<Spanner *> *spanners : {&chord->starting_spanners(), &chord->ending_spanners()}) {
+        for (const auto *spanners : {&chord->starting_spanners(), &chord->ending_spanners()}) {
             for (Spanner *spanner : *spanners) {
                 if (!spanner->is_slur()) {
                     continue;

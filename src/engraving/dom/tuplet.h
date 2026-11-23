@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include <set>
+#include <gtl/btree.hpp>
 
 #include "../types/types.h"
 #include "durationelement.h"
@@ -177,7 +177,7 @@ private:
     Fraction add_missing_element(const Fraction &start_tick, const Fraction &end_tick);
 
     // All DurationElements where `tuplet()` returns this tuplet
-    std::set<DurationElement *> all_elements_;
+    gtl::btree_set<DurationElement *> all_elements_;
 
     // Those DurationElements that are currently really part of this tuplet
     std::vector<DurationElement *> current_elements_;

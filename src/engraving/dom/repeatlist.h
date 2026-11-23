@@ -24,8 +24,9 @@
 #define MU_ENGRAVING_REPEATLIST_H
 
 #include <memory>
-#include <set>
 #include <vector>
+
+#include <gtl/btree.hpp>
 
 #include "types/string.h"
 
@@ -125,8 +126,8 @@ private:
     bool expanded_ = false;
     bool score_changed_ = true;
 
-    std::set<std::pair<Jump const *const, int>> jumps_taken_; // take the jumps only once, so track them during unwind
-    std::vector<RepeatListElementList> rl_elements_;          // all elements of the score that influence the RepeatList
+    gtl::btree_set<std::pair<Jump const *, int>> jumps_taken_; // take the jumps only once, so track them during unwind
+    std::vector<RepeatListElementList> rl_elements_;           // all elements of the score that influence the RepeatList
 };
 } // namespace mu::engraving
 #endif

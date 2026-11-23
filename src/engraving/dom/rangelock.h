@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include <map>
+#include <gtl/btree.hpp>
 
 #include "measurebase.h"
 
@@ -65,6 +65,6 @@ private:
         bool operator()(const MeasureBase *a, const MeasureBase *b) const { return a->is_before(b); }
     };
 
-    std::map<const MeasureBase *, const RangeLock *, Ordering> range_locks_;
+    gtl::btree_map<const MeasureBase *, const RangeLock *, Ordering> range_locks_;
 };
 } // namespace mu::engraving

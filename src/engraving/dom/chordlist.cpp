@@ -71,6 +71,12 @@ void own_actions(std::vector<RenderActionPtr> &actions) {
 }
 } // namespace
 
+ChordDescriptions::ChordDescriptions(const ChordDescriptions &other) {
+    for (const auto &[id, description] : other) {
+        emplace(id, std::make_unique<ChordDescription>(*description));
+    }
+}
+
 ChordList ChordList::owned_copy() const {
     // Reuse the music-domain representation, including its configuration and
     // private IDs, but share no render-action objects with the live list.
@@ -81,7 +87,7 @@ ChordList ChordList::owned_copy() const {
     own_actions(result.render_list_bass_offset);
     for (auto &token : result.chord_token_list) own_actions(token.render_list);
     for (auto &entry : result) {
-        auto &description = entry.second;
+        auto &description = *entry.second;
         own_actions(description.render_list);
         own_actions(description.render_list_stacked);
         for (auto &parsed : description.parsed_chords) {
@@ -2088,7 +2094,7 @@ void ChordList::read(XmlReader &e, int msc_version) {
             // if no id attribute (id == 0), then assign it a private id
             // user chords that match these ChordDescriptions will be treated as normal recognized chords
             // except that the id will not be written to the score file
-            ChordDescription cd = (id && muse::contains(*this, id)) ? muse::take(*this, id) : ChordDescription(id);
+            ChordDescription cd = (id && muse::contains(*this, id)) ? std::move(*muse::take(*this, id)) : ChordDescription(id);
 
             // record updated id
             id = cd.id;
@@ -2101,7 +2107,7 @@ void ChordList::read(XmlReader &e, int msc_version) {
             // generate any missing info (including new parsed chords)
             cd.complete(0, this);
             // add to list
-            insert({id, cd});
+            emplace(id, std::make_unique<ChordDescription>(std::move(cd)));
         } else if (tag == "renderRoot") {
             read_render_list(e.read_text(), render_list_root, msc_version);
         } else if (tag == "renderFunction") {
@@ -2167,7 +2173,7 @@ void ChordList::write(XmlWriter &xml) const {
     }
     for (const auto &p : *this) {
         if (budget && !budget->poll()) throw WriteBudgetStop{};
-        const ChordDescription &cd = p.second;
+        const ChordDescription &cd = *p.second;
         cd.write(xml);
     }
 }
@@ -2288,7 +2294,7 @@ const ChordDescription *ChordList::description(int id) const {
     if (it == this->end()) {
         return nullptr;
     }
-    return &it->second;
+    return it->second.get();
 }
 
 ChordSymbol ChordList::symbol(const String &s) const { return muse::value(symbols_, s); }

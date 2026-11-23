@@ -23,7 +23,7 @@
 #ifndef MU_ENGRAVING_GROUPS_H
 #define MU_ENGRAVING_GROUPS_H
 
-#include <unordered_map>
+#include <ankerl/unordered_dense.h>
 
 #include "../types/groupnode.h"
 #include "../types/types.h"
@@ -71,7 +71,7 @@ struct Groups {
     static BeamMode grace_beam_mode(const ChordRest *cr);
     static BeamMode actual_beam_mode(const ChordRest *cr, const ChordRest *prev);
     static BeamMode actual_beam_mode(const ChordRest *cr, const ChordRest *prev,
-                                     const std::unordered_map<int, TDuration> *beat_subdivision);
+                                     const ankerl::unordered_dense::map<int, TDuration> *beat_subdivision);
 
 private:
     GroupNodes nodes_;

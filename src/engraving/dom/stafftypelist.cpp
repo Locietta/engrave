@@ -44,7 +44,7 @@ const StaffType &StaffTypeList::staff_type(const Fraction &tick) const {
         return first_staff_type_;
     }
 
-    return (--i)->second;
+    return *(--i)->second;
 }
 
 //---------------------------------------------------------
@@ -62,7 +62,7 @@ StaffType &StaffTypeList::staff_type(const Fraction &tick) {
     if (i == staff_type_changes_.begin()) {
         return first_staff_type_;
     }
-    return (--i)->second;
+    return *(--i)->second;
 }
 
 //---------------------------------------------------------
@@ -80,11 +80,11 @@ StaffType *StaffTypeList::set_staff_type(const Fraction &tick, const StaffType &
     auto i = staff_type_changes_.find(tick.ticks());
     StaffType *nst;
     if (i == staff_type_changes_.end()) {
-        auto k = staff_type_changes_.insert(std::pair<int, StaffType>(tick.ticks(), st));
-        nst = &(k.first->second);
+        auto k = staff_type_changes_.emplace(tick.ticks(), std::make_unique<StaffType>(st));
+        nst = k.first->second.get();
     } else {
-        i->second = st;
-        nst = &i->second;
+        *i->second = st;
+        nst = i->second.get();
     }
     return nst;
 }

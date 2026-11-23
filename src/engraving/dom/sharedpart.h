@@ -21,12 +21,14 @@
  */
 #pragma once
 
+#include <gtl/btree.hpp>
+
 #include "global/flatmap.h"
 #include "part.h"
 
 namespace mu::engraving {
 // Map from origin track to shared track
-using SharedTrackMap = std::map<track_idx_t, track_idx_t>;
+using SharedTrackMap = gtl::btree_map<track_idx_t, track_idx_t>;
 std::string dump(const SharedTrackMap &map);
 
 struct AuthoredStaveSharingState {

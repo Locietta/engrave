@@ -979,7 +979,7 @@ void SystemLayout::layout_lyrics(const ElementsToLayout &elements, LayoutContext
     // the underlying operation may invalidate some of the iterators.
     // TODO: figure out why lyrics lines are in this "unmanagedSpanners" container
     bool dash_on_first_note_syllable = ctx.conf().style().style_b(Sid::LYRICS_SHOW_DASH_IF_SYLLABLE_ON_FIRST_NOTE);
-    std::set<Spanner *> unmanaged_spanners = ctx.dom().unmanaged_spanners();
+    auto unmanaged_spanners = ctx.dom().unmanaged_spanners();
     for (Spanner *sp : unmanaged_spanners) {
         if (!sp->system_flag() && sp->staff() && !sp->staff()->layout_show()) {
             continue;

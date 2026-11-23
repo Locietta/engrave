@@ -21,7 +21,7 @@
  */
 #include "spanner.h"
 
-#include <set>
+#include <ankerl/unordered_dense.h>
 
 #include "../editing/navigation.h"
 #include "anchors.h"
@@ -918,7 +918,7 @@ void Spanner::set_end_element(EngravingItem *e) {
 }
 
 Spanner *Spanner::next_spanner(EngravingItem *e, staff_idx_t active_staff) {
-    std::multimap<int, Spanner *> mmap = score()->spanner();
+    const auto mmap = score()->spanner();
     auto range = mmap.equal_range(tick().ticks());
     if (range.first != range.second) { // range not empty
         for (auto i = range.first; i != range.second; ++i) {
@@ -949,7 +949,7 @@ Spanner *Spanner::next_spanner(EngravingItem *e, staff_idx_t active_staff) {
 }
 
 Spanner *Spanner::prev_spanner(EngravingItem *e, staff_idx_t active_staff) {
-    std::multimap<int, Spanner *> mmap = score()->spanner();
+    const auto mmap = score()->spanner();
     auto range = mmap.equal_range(tick().ticks());
     if (range.first != range.second) { // range not empty
         for (auto i = range.first; i != range.second; ++i) {
@@ -1026,7 +1026,7 @@ void Spanner::set_ticks(const Fraction &f) {
 }
 
 bool Spanner::is_voice_specific() const {
-    static const std::unordered_set<ElementType> voice_specific_spanners{
+    static const ankerl::unordered_dense::set<ElementType> voice_specific_spanners{
         ElementType::TRILL,
         ElementType::HAIRPIN,
         ElementType::LET_RING,

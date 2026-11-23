@@ -30,8 +30,9 @@
 #include <functional>
 #include <iterator>
 #include <optional>
-#include <set>
 #include <vector>
+
+#include <amc/flatset.hpp>
 
 #include "articulation.h"
 #include "chordrest.h"
@@ -381,13 +382,13 @@ public:
 
     const std::vector<Articulation *> &articulations() const { return articulations_; }
 
-    std::set<SymId> articulation_symbol_ids() const;
+    amc::FlatSet<SymId> articulation_symbol_ids() const;
     Articulation *has_articulation(const Articulation *);
     Tapping *tapping() const;
 
     bool has_single_articulation() const { return articulations_.size() == 1; }
 
-    void update_articulations(const std::set<SymId> &new_articulation_ids,
+    void update_articulations(const amc::FlatSet<SymId> &new_articulation_ids,
                               ArticulationsUpdateMode replace_mode = ArticulationsUpdateMode::INSERT);
 
     void local_spatium_changed(double old_value, double new_value) override;
@@ -427,9 +428,9 @@ public:
 
     Ornament *find_ornament(bool for_playback = false) const;
 
-    const std::set<Spanner *> &starting_spanners() const { return starting_spanners_; }
+    const amc::FlatSet<Spanner *> &starting_spanners() const { return starting_spanners_; }
 
-    const std::set<Spanner *> &ending_spanners() const { return ending_spanners_; }
+    const amc::FlatSet<Spanner *> &ending_spanners() const { return ending_spanners_; }
 
     void add_starting_spanner(Spanner *spanner) { starting_spanners_.insert(spanner); }
 
@@ -440,8 +441,8 @@ public:
     void remove_ending_spanner(Spanner *spanner) { ending_spanners_.erase(spanner); }
 
     void remove_spanner_borrowers(auto is_retired) {
-        std::erase_if(starting_spanners_, is_retired);
-        std::erase_if(ending_spanners_, is_retired);
+        erase_if(starting_spanners_, is_retired);
+        erase_if(ending_spanners_, is_retired);
     }
 
     bool should_have_stem() const;
@@ -537,8 +538,8 @@ private:
 
     bool is_ui_item_ = false;
 
-    std::set<Spanner *> starting_spanners_; // spanners starting on this item
-    std::set<Spanner *> ending_spanners_;   // spanners ending on this item
+    amc::FlatSet<Spanner *> starting_spanners_; // spanners starting on this item
+    amc::FlatSet<Spanner *> ending_spanners_;   // spanners ending on this item
 
     AutoOnOff combine_voice_ = AutoOnOff::AUTO;
 

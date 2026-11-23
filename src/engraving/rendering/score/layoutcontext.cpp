@@ -356,9 +356,9 @@ void DomAccessor::add_unmanaged_spanner(Spanner *s) {
     score()->add_unmanaged_spanner(s);
 }
 
-const std::set<Spanner *> &DomAccessor::unmanaged_spanners() const {
+const gtl::btree_set<Spanner *> &DomAccessor::unmanaged_spanners() const {
     IF_ASSERT_FAILED(score()) {
-        static const std::set<Spanner *> dummy;
+        static const gtl::btree_set<Spanner *> dummy;
         return dummy;
     }
     return score()->unmanaged_spanners();

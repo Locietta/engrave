@@ -223,7 +223,7 @@ void TimeSigMap::add(int tick, const Fraction &f) {
 }
 
 void TimeSigMap::add(int tick, const SigEvent &ev) {
-    (*this)[tick] = ev;
+    insert_or_assign(tick, ev);
     normalize();
 }
 

@@ -23,7 +23,6 @@
 #include "rest.h"
 
 #include <cmath>
-#include <set>
 
 #include "../editing/addremoveelement.h"
 #include "../editing/editchord.h"

@@ -22,7 +22,7 @@
 #ifndef MU_ENGRAVING_SCOREORDER_H
 #define MU_ENGRAVING_SCOREORDER_H
 
-#include <map>
+#include <gtl/btree.hpp>
 
 #include "../types/types.h"
 #include "types/translatablestring.h"
@@ -65,7 +65,7 @@ struct InstrumentOverwrite {
 struct ScoreOrder {
     String id;
     TranslatableString name;
-    std::map<String, InstrumentOverwrite> instrument_map;
+    gtl::btree_map<String, InstrumentOverwrite> instrument_map;
     std::vector<ScoreGroup> groups;
     bool customized = false;
 

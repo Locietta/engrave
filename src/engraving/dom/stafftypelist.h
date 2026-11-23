@@ -23,6 +23,9 @@
 #ifndef MU_ENGRAVING_STAFFTYPELIST_H
 #define MU_ENGRAVING_STAFFTYPELIST_H
 
+#include <memory>
+
+#include "global/flatmap.h"
 #include "stafftype.h"
 
 namespace mu::engraving {
@@ -44,11 +47,11 @@ struct StaffTypeList {
 
     std::pair<int, int> staff_type_range(const Fraction &) const;
 
-    const std::map<int, StaffType> &staff_type_changes() const { return staff_type_changes_; }
+    const muse::FlatMap<int, std::unique_ptr<StaffType>> &staff_type_changes() const { return staff_type_changes_; }
 
 private:
     StaffType first_staff_type_; // staff type at tick 0
-    std::map<int, StaffType> staff_type_changes_;
+    muse::FlatMap<int, std::unique_ptr<StaffType>> staff_type_changes_;
 };
 } // namespace mu::engraving
 

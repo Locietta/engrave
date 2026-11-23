@@ -39,7 +39,7 @@ using namespace mu;
 using namespace mu::engraving;
 
 Note *NoteInput::add_note_to_chord(Score *score, Chord *chord, const NoteVal &note_val, bool force_accidental,
-                                   const std::set<SymId> &articulation_ids) {
+                                   const amc::FlatSet<SymId> &articulation_ids) {
     Note *note = Factory::create_note(chord);
     note->set_track(chord->track());
     note->set_nval(note_val);
@@ -65,7 +65,7 @@ Note *NoteInput::add_note_to_chord(Score *score, Chord *chord, const NoteVal &no
 }
 
 Note *NoteInput::add_note(Transaction &, Score *score, Chord *chord, const NoteVal &note_val, bool force_accidental,
-                          const std::set<SymId> &articulation_ids, InputState *external_input_state) {
+                          const amc::FlatSet<SymId> &articulation_ids, InputState *external_input_state) {
     InputState &is = external_input_state ? (*external_input_state) : score->input_state();
 
     Note *note = add_note_to_chord(score, chord, note_val, force_accidental, articulation_ids);

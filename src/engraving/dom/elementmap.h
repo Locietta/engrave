@@ -23,7 +23,7 @@
 #ifndef MU_ENGRAVING_ELEMENTMAP_H
 #define MU_ENGRAVING_ELEMENTMAP_H
 
-#include <unordered_map>
+#include <ankerl/unordered_dense.h>
 
 namespace mu::engraving {
 struct EngravingItem;
@@ -32,7 +32,7 @@ struct EngravingItem;
 //   ElementMap
 //---------------------------------------------------------
 
-struct ElementMap : std::unordered_map<EngravingItem *, EngravingItem *> {
+struct ElementMap : ankerl::unordered_dense::map<EngravingItem *, EngravingItem *> {
 public:
     ElementMap() {}
 

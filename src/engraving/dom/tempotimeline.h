@@ -23,15 +23,16 @@
 #pragma once
 
 #include <cstddef>
-#include <map>
 #include <optional>
 #include <vector>
+
+#include <gtl/btree.hpp>
 
 #include "engraving/automation/automationtypes.h"
 #include "engraving/types/bps.h"
 
 namespace mu::engraving {
-using PausesMap = std::map<int, double>;                 // utick -> held seconds
+using PausesMap = gtl::btree_map<int, double>;           // utick -> held seconds
 using TempoValues = std::vector<std::pair<int, double>>; // utick -> bps, sorted by utick, no duplicate uticks
 
 struct TempoTimePoint {

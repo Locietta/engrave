@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <ankerl/unordered_dense.h>
+
 #include "../types/types.h"
 #include "draw/types/geometry.h"
 #include "interval.h"
@@ -93,9 +95,9 @@ extern bool move_down_when_adding_staves(EngravingItem *item, staff_idx_t start_
 extern void collect_chords_and_rest(Segment *segment, staff_idx_t staff_idx, std::vector<Chord *> &chords, std::vector<Rest *> &rests);
 extern void collect_chords_overlapping_rests(Segment *segment, staff_idx_t staff_idx, std::vector<Chord *> &chords);
 extern std::vector<EngravingItem *> collect_system_objects(const Score *score, const std::vector<Staff *> &staves = {});
-extern std::unordered_set<EngravingItem *> collect_elements_anchored_to_chord_rest(const ChordRest *cr);
-extern std::unordered_set<EngravingItem *> collect_elements_anchored_to_note(const Note *cr, bool include_forward_ties_spanners,
-                                                                             bool include_backward_ties_spanners);
+extern ankerl::unordered_dense::set<EngravingItem *> collect_elements_anchored_to_chord_rest(const ChordRest *cr);
+extern ankerl::unordered_dense::set<EngravingItem *> collect_elements_anchored_to_note(const Note *cr, bool include_forward_ties_spanners,
+                                                                                       bool include_backward_ties_spanners);
 
 extern MeasureBeat find_beat(const Score *score, int tick);
 

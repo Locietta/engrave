@@ -22,6 +22,9 @@
 
 #include "harppedaldiagram.h"
 
+#include <amc/flatset.hpp>
+#include <ankerl/unordered_dense.h>
+
 #include "engraving/style/styletypes.h"
 #include "log.h"
 #include "part.h"
@@ -60,13 +63,14 @@ static const ElementStyle harp_pedal_text_diagram_style{
 };
 
 void HarpPedalDiagram::set_playable_tpcs() {
-    std::set<int> playable_tpcs;
-    static const std::map<HarpStringType, int> string2step = {{HarpStringType::C, 0}, {HarpStringType::D, 1}, {HarpStringType::E, 2},
-                                                              {HarpStringType::F, 3}, {HarpStringType::G, 4}, {HarpStringType::A, 5},
-                                                              {HarpStringType::B, 6}};
-    static const std::map<PedalPosition, AccidentalVal> position2accidental_val = {{PedalPosition::FLAT, AccidentalVal::FLAT},
-                                                                                   {PedalPosition::NATURAL, AccidentalVal::NATURAL},
-                                                                                   {PedalPosition::SHARP, AccidentalVal::SHARP}};
+    amc::FlatSet<int> playable_tpcs;
+    static const ankerl::unordered_dense::map<HarpStringType, int> string2step = {
+        {HarpStringType::C, 0}, {HarpStringType::D, 1}, {HarpStringType::E, 2}, {HarpStringType::F, 3},
+        {HarpStringType::G, 4}, {HarpStringType::A, 5}, {HarpStringType::B, 6}};
+    static const ankerl::unordered_dense::map<PedalPosition, AccidentalVal> position2accidental_val = {
+        {PedalPosition::FLAT, AccidentalVal::FLAT},
+        {PedalPosition::NATURAL, AccidentalVal::NATURAL},
+        {PedalPosition::SHARP, AccidentalVal::SHARP}};
 
     for (size_t i = 0; i < pedal_state_.size(); i++) {
         int string_step = string2step.at(HarpStringType(i));

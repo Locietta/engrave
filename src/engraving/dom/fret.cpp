@@ -22,6 +22,9 @@
 
 #include "fret.h"
 
+#include <ankerl/unordered_dense.h>
+#include <gtl/btree.hpp>
+
 #include "../editing/addremoveelement.h"
 #include "anchors.h"
 #include "chord.h"
@@ -81,8 +84,8 @@ struct HarmonyMapKey {
     }
 };
 
-static std::map<HarmonyMapKey /*key*/, std::vector<DiagramInfo>> s_harmony_to_diagram_map;
-static std::unordered_map<String /*pattern*/, std::vector<String /*harmonyName*/>> s_diagram_pattern_to_harmonies_map;
+static gtl::btree_map<HarmonyMapKey /*key*/, std::vector<DiagramInfo>> s_harmony_to_diagram_map;
+static ankerl::unordered_dense::map<String /*pattern*/, std::vector<String /*harmonyName*/>> s_diagram_pattern_to_harmonies_map;
 
 void FretDiagram::clear_harmony_caches() {
     s_harmony_to_diagram_map.clear();
@@ -433,10 +436,7 @@ void FretDiagram::remove_barres(int string, int fret /*= 0*/) {
     }
 }
 
-void FretDiagram::remove_marker(int s) {
-    auto it = markers_.find(s);
-    markers_.erase(it);
-}
+void FretDiagram::remove_marker(int s) { markers_.erase(s); }
 
 //    take a fret value of 0 to mean remove all dots
 
@@ -901,8 +901,7 @@ void FretDiagram::read_harmony_to_diagram_file(const muse::io::PathT &file_path)
 
     XmlReader reader(&file);
 
-    std::unordered_map<String, rw::HarmonyToDiagramReader::FretDiagramInfo> harmony_to_diagram_map =
-        rw::HarmonyToDiagramReader::read(reader);
+    auto harmony_to_diagram_map = rw::HarmonyToDiagramReader::read(reader);
 
     const ChordList *chord_list = score()->chord_list();
     const NoteSpellingType spelling_type = NoteSpellingType::STANDARD;

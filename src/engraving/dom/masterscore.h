@@ -25,6 +25,8 @@
 #include <array>
 #include <memory>
 
+#include <ankerl/unordered_dense.h>
+
 #include "../infrastructure/eidregister.h"
 #include "engraving/infrastructure/localfileinfoprovider.h"
 #include "instrument.h"
@@ -192,8 +194,9 @@ public:
 
     bool export_midi_mapping() { return !is_simple_midi_mapping_; }
 
-    int get_next_free_midi_mapping(std::set<int> &occupied_midi_channels, unsigned int &search_midi_mapping_from, int p = -1, int ch = -1);
-    int get_next_free_drum_midi_mapping(std::set<int> &occupied_midi_channels);
+    int get_next_free_midi_mapping(ankerl::unordered_dense::set<int> &occupied_midi_channels, unsigned int &search_midi_mapping_from,
+                                   int p = -1, int ch = -1);
+    int get_next_free_drum_midi_mapping(ankerl::unordered_dense::set<int> &occupied_midi_channels);
     void rebuild_and_update_expressive(Synthesizer *synth);
     void update_expressive(Synthesizer *synth);
     void update_expressive(Synthesizer *synth, bool expressive, bool force = false);
@@ -243,8 +246,8 @@ private:
     void remove_deleted_midi_mapping();
 
     int update_midi_mapping();
-    void do_update_midi_mapping(int &maxport, std::set<int> &occupied_midi_channels, unsigned int &search_midi_mapping_from, Part *part,
-                                InstrChannel *channel, bool use_drumset);
+    void do_update_midi_mapping(int &maxport, ankerl::unordered_dense::set<int> &occupied_midi_channels,
+                                unsigned int &search_midi_mapping_from, Part *part, InstrChannel *channel, bool use_drumset);
 
     friend struct EngravingProject;
     friend struct compat::ScoreAccess;

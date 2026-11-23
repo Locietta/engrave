@@ -22,6 +22,10 @@
 
 #include "excerpt.h"
 
+#include <amc/flatset.hpp>
+#include <ankerl/unordered_dense.h>
+#include <gtl/btree.hpp>
+
 #include "../editing/addremoveelement.h"
 #include "../editing/transaction/transaction.h"
 #include "../editing/transpose.h"
@@ -522,7 +526,7 @@ void MasterScore::init_excerpt(Excerpt *excerpt) {
 
 void MasterScore::init_parts(Excerpt *excerpt) {
     int nstaves{1}; // Initialise to 1 to force writing of the first part.
-    std::set<ID> assigned_staves_ids;
+    ankerl::unordered_dense::set<uint64_t> assigned_staves_ids;
     for (Staff *excerpt_staff : excerpt->excerpt_score()->staves()) {
         const LinkedObjects *ls = excerpt_staff->links();
         if (ls == 0) {
@@ -535,7 +539,7 @@ void MasterScore::init_parts(Excerpt *excerpt) {
             }
 
             Staff *linked_master_staff = to_staff(le);
-            if (muse::contains(assigned_staves_ids, linked_master_staff->id())) {
+            if (muse::contains(assigned_staves_ids, linked_master_staff->id().to_uint64())) {
                 continue;
             }
 
@@ -546,7 +550,7 @@ void MasterScore::init_parts(Excerpt *excerpt) {
             //! In fact, excerpts are just viewers for the master score
             excerpt_staff->set_id(linked_master_staff->id());
             excerpt_part->set_id(master_part->id());
-            assigned_staves_ids.insert(linked_master_staff->id());
+            assigned_staves_ids.insert(linked_master_staff->id().to_uint64());
 
             // For instruments with multiple staves, every staff will point to the
             // same part. To prevent adding the same part several times to the excerpt,
@@ -575,7 +579,7 @@ void MasterScore::init_empty_excerpt(Excerpt *excerpt) {
 }
 
 static bool score_contains_spanner(const Score *score, Spanner *spanner) {
-    const std::multimap<int, Spanner *> &spanners = score->spanner();
+    const auto &spanners = score->spanner();
 
     for (auto it = spanners.cbegin(); it != spanners.cend(); ++it) {
         const Spanner *cur_spanner = it->second;
@@ -887,7 +891,8 @@ static MeasureBase *clone_measure(MeasureBase *mb, Score *score, const Score *os
             TremoloTwoChord *prev_tremolo = nullptr;
             for (Segment *oseg = m->first(); oseg; oseg = oseg->next()) {
                 Segment *ns = nullptr; //create segment later, on demand
-                for (EngravingItem *e : oseg->annotations()) {
+                const auto annotations = oseg->annotations();
+                for (EngravingItem *e : annotations) {
                     if (e->generated() || e->exclude_from_other_parts()) {
                         continue;
                     }
@@ -1134,8 +1139,7 @@ void Excerpt::clone_staves(Score *source_score, Score *dst_score, const std::vec
         return;
     }
 
-    for (auto i : source_score->spanner()) {
-        Spanner *s = i.second;
+    for (Spanner *s : source_score->spanner_list()) {
         if (s->exclude_from_other_parts()) {
             continue;
         }
@@ -1369,8 +1373,7 @@ void Excerpt::clone_staff(Staff *src_staff, Staff *dst_staff, bool clone_spanner
     }
 
     if (clone_spanners) {
-        for (auto i : score->spanner()) {
-            Spanner *s = i.second;
+        for (Spanner *s : score->spanner_list()) {
             staff_idx_t staff_idx = s->staff_idx();
             track_idx_t dst_track = muse::nidx;
             track_idx_t dst_track2 = muse::nidx;
@@ -1423,7 +1426,7 @@ void Excerpt::clone_staff2(Staff *src_staff, Staff *dst_staff, const Fraction &s
     track_idx_t s_track = src_staff_idx * ::mu::engraving::voices;
     track_idx_t e_track = s_track + ::mu::engraving::voices;
 
-    std::map<track_idx_t, track_idx_t> map;
+    gtl::btree_map<track_idx_t, track_idx_t> map;
     for (track_idx_t i = s_track; i < e_track; i++) {
         if (!oex && !ex) {
             map.insert({i, dst_staff_idx * ::mu::engraving::voices + i % ::mu::engraving::voices});
@@ -1518,7 +1521,8 @@ void Excerpt::clone_staff2(Staff *src_staff, Staff *dst_staff, const Fraction &s
                     }
                 }
 
-                for (EngravingItem *e : oseg->annotations()) {
+                const auto annotations = oseg->annotations();
+                for (EngravingItem *e : annotations) {
                     if (e->generated() || e->exclude_from_other_parts()) {
                         continue;
                     }
@@ -1633,8 +1637,7 @@ void Excerpt::clone_staff2(Staff *src_staff, Staff *dst_staff, const Fraction &s
         }
     }
 
-    for (auto i : oscore->spanner()) {
-        Spanner *s = i.second;
+    for (Spanner *s : oscore->spanner_list()) {
         if (!(s->tick() >= start_tick && s->tick2() <= end_tick) || s->exclude_from_other_parts()) {
             continue;
         }
@@ -1741,10 +1744,10 @@ std::vector<Excerpt *> Excerpt::create_excerpts_from_parts(const std::vector<Par
 
 void Excerpt::create_linked_tabs(MasterScore *score) {
     // store map of all initial spanners
-    std::unordered_map<staff_idx_t, std::vector<Spanner *>> spanners;
+    gtl::btree_map<staff_idx_t, std::vector<Spanner *>> spanners;
     // for moving initial spanner to new index
-    std::unordered_map<staff_idx_t, staff_idx_t> index_mapping;
-    std::set<staff_idx_t> staff_indexes_to_copy;
+    ankerl::unordered_dense::map<staff_idx_t, staff_idx_t> index_mapping;
+    amc::FlatSet<staff_idx_t> staff_indexes_to_copy;
     constexpr size_t staves_in_part = 2;
 
     for (auto it = score->spanner().cbegin(); it != score->spanner().cend(); ++it) {

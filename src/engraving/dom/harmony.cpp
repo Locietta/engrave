@@ -80,7 +80,7 @@ const ChordDescription *HarmonyInfo::descr(const String &name, const ParsedChord
         return nullptr;
     }
     for (const auto &p : *chord_list()) {
-        const ChordDescription &cd = p.second;
+        const ChordDescription &cd = *p.second;
         for (const String &s : cd.names) {
             if (s == name) {
                 return &cd;
@@ -147,8 +147,8 @@ const ChordDescription *HarmonyInfo::generate_description() {
     // remove parsed chord from description
     // so we will only match it literally in the future
     cd.parsed_chords.clear();
-    chord_list()->insert({cd.id, cd});
-    return &chord_list()->at(cd.id);
+    const int id = cd.id;
+    return chord_list()->emplace(id, std::make_unique<ChordDescription>(std::move(cd))).first->second.get();
 }
 
 ParsedChord *HarmonyInfo::get_parsed_chord() {
@@ -206,7 +206,7 @@ String Harmony::harmony_name() const {
             const ChordDescription *new_extension = nullptr;
             const ChordList *cl = score()->chord_list();
             for (const auto &p : *cl) {
-                const ChordDescription &cd = p.second;
+                const ChordDescription &cd = *p.second;
                 if (cd.chord == hc && !cd.names.empty()) {
                     new_extension = &cd;
                     break;

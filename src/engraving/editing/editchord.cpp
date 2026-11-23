@@ -22,6 +22,8 @@
 
 #include "editchord.h"
 
+#include <amc/flatset.hpp>
+
 #include "../dom/arpeggio.h"
 #include "../dom/articulation.h"
 #include "../dom/chord.h"
@@ -71,7 +73,7 @@ bool EditChord::toggle_articulation(Score *score, EngravingItem *el, Articulatio
         return true;
     }
 
-    std::set<SymId> new_sub_component_ids = split_articulations({a->sym_id()});
+    amc::FlatSet<SymId> new_sub_component_ids = split_articulations({a->sym_id()});
     for (const SymId &id : new_sub_component_ids) {
         Articulation *artic_copy = a->clone();
         artic_copy->set_sym_id(id);

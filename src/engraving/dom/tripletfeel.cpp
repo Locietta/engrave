@@ -22,6 +22,8 @@
 
 #include "tripletfeel.h"
 
+#include <ankerl/unordered_dense.h>
+
 #include "engraving/style/styletypes.h"
 #include "score.h"
 #include "types/string.h"
@@ -31,7 +33,7 @@ namespace mu::engraving {
 static const ElementStyle triplet_feel_style{{Sid::SUB_TITLE_FONT_SIZE, Pid::FONT_SIZE}, // TODO: add styles
                                              {Sid::TEMPO_FONT_STYLE, Pid::FONT_STYLE}};
 
-static const std::map<TripletFeelType, String> tuplet_symbols = {
+static const ankerl::unordered_dense::map<TripletFeelType, String> tuplet_symbols = {
     {TripletFeelType::TRIPLET_8TH, String(u"%1textBlackNoteShortStem%2"
                                           "%1textCont8thBeamShortStem%2"
                                           "%1textBlackNoteFrac8thShortStem%2"
@@ -99,7 +101,7 @@ static const std::map<TripletFeelType, String> tuplet_symbols = {
                                    "%1textCont8thBeamShortStem%2"
                                    "%1textBlackNoteFrac8thShortStem%2")}};
 
-static const std::map<TripletFeelType, TranslatableString> triplet_feel_names = {
+static const ankerl::unordered_dense::map<TripletFeelType, TranslatableString> triplet_feel_names = {
     {TripletFeelType::TRIPLET_8TH, TranslatableString("engraving/tripletfeel", "Triplet 8th")},
     {TripletFeelType::TRIPLET_16TH, TranslatableString("engraving/tripletfeel", "Triplet 16th")},
     {TripletFeelType::DOTTED_8TH, TranslatableString("engraving/tripletfeel", "Dotted 8th")},

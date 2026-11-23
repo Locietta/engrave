@@ -255,7 +255,7 @@ engrave::Result<std::string> export_native_score(const EngineContext &context, c
             // then inflates it again. Write that XML directly so its output
             // cap applies before the uncompressed result is allocated.
             auto effective_tags = project->master_score()->meta_tags();
-            for (const auto &[key, value] : score->meta_tags()) effective_tags.insert_or_assign(key, value);
+            for (const auto &[key, value] : score->meta_tags()) effective_tags[key] = value;
             engraving::rw::WriteInOutData inout(score);
             inout.ctx.set_standalone(true);
             inout.ctx.set_inline_style(true);
@@ -273,7 +273,7 @@ engrave::Result<std::string> export_native_score(const EngineContext &context, c
             } else {
                 // Excerpt archives use the export style and inherit master metadata unless the excerpt overrides it.
                 auto effective_tags = project->master_score()->meta_tags();
-                for (const auto &[key, value] : score->meta_tags()) effective_tags.insert_or_assign(key, value);
+                for (const auto &[key, value] : score->meta_tags()) effective_tags[key] = value;
                 ByteArray style_data, score_data;
                 io::Buffer style_buffer(&style_data), score_buffer(&score_data);
                 style_buffer.open(io::IODevice::WRITE_ONLY);

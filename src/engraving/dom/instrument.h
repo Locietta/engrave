@@ -28,6 +28,7 @@
 #include "../compat/midi/midicoreevent.h"
 #include "clef.h"
 #include "global/containers.h"
+#include "global/flatmap.h"
 #include "interval.h"
 #include "notifier.h"
 #include "stafflabel.h"
@@ -464,7 +465,7 @@ private:
 //   InstrumentList
 //---------------------------------------------------------
 
-struct InstrumentList : std::map<const int, Instrument *> {
+struct InstrumentList : muse::FlatMap<int, Instrument *> {
 
 public:
     InstrumentList() {}

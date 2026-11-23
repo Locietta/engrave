@@ -22,6 +22,8 @@
 
 #include "spannermap.h"
 
+#include <gtl/btree.hpp>
+
 #include "log.h"
 #include "part.h"
 #include "spanner.h"
@@ -29,12 +31,6 @@
 using namespace mu;
 
 namespace mu::engraving {
-//---------------------------------------------------------
-//   SpannerMap
-//---------------------------------------------------------
-
-SpannerMap::SpannerMap() : std::multimap<int, Spanner *>() { dirty_ = true; }
-
 //---------------------------------------------------------
 //   update
 //   updates the internal lookup tree, not the map itself
@@ -92,8 +88,8 @@ const SpannerMap::IntervalList &SpannerMap::find_overlapping(int start, int stop
 }
 
 void SpannerMap::collect_intervals(IntervalList &regular_intervals, IntervalList &collision_free_intervals) const {
-    using IntervalsByType = std::map<ElementType, IntervalList>;
-    using IntervalsByPart = std::map<ID, IntervalsByType>;
+    using IntervalsByType = gtl::btree_map<ElementType, IntervalList>;
+    using IntervalsByPart = gtl::btree_map<ID, IntervalsByType>;
 
     IntervalsByPart intervals_by_part;
 

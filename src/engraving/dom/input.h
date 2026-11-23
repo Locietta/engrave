@@ -23,8 +23,6 @@
 #ifndef MU_ENGRAVING_INPUT_H
 #define MU_ENGRAVING_INPUT_H
 
-#include <set>
-
 #include "../types/types.h"
 #include "accidental.h"
 #include "chord.h"

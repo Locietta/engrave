@@ -23,9 +23,8 @@
 #ifndef MU_ENGRAVING_SPANNERMAP_H
 #define MU_ENGRAVING_SPANNERMAP_H
 
-#include <map>
-
 #include "engraving/thirdparty/intervaltree/IntervalTree.h"
+#include <gtl/btree.hpp>
 
 namespace mu::engraving {
 struct Spanner;
@@ -34,38 +33,31 @@ struct Spanner;
 //   SpannerMap
 //---------------------------------------------------------
 
-struct SpannerMap : private std::multimap<int, Spanner *> {
-    typedef typename std::multimap<int, Spanner *>::const_reverse_iterator const_reverse_it;
-    typedef typename std::multimap<int, Spanner *>::const_iterator const_it;
+struct SpannerMap : private gtl::btree_multimap<int, Spanner *> {
+    using Map = gtl::btree_multimap<int, Spanner *>;
 
     using IntervalList = std::vector<interval_tree::Interval<Spanner *>>;
-
-    SpannerMap();
 
     const IntervalList &find_contained(int start, int stop, bool exclude_collisions = false) const;
     const IntervalList &find_overlapping(int start, int stop, bool exclude_collisions = false) const;
 
-    const std::multimap<int, Spanner *> &map() const { return *this; }
+    const Map &map() const { return *this; }
 
     void collect_intervals(IntervalList &regular_intervals, IntervalList &collision_free_intervals) const;
 
-    const_reverse_it crbegin() const { return std::multimap<int, Spanner *>::crbegin(); }
-
-    const_reverse_it crend() const { return std::multimap<int, Spanner *>::crend(); }
-
-    const_it cbegin() const { return std::multimap<int, Spanner *>::cbegin(); }
-
-    const_it cend() const { return std::multimap<int, Spanner *>::cend(); }
+    using Map::cbegin;
+    using Map::cend;
+    using Map::crbegin;
+    using Map::crend;
+    using Map::empty;
 
     void add_spanner(Spanner *s);
     bool remove_spanner(Spanner *s);
 
     void clear() {
-        std::multimap<int, Spanner *>::clear();
+        Map::clear();
         dirty_ = true;
     }
-
-    bool empty() const { return std::multimap<int, Spanner *>::empty(); }
 
     void update() const;
 
@@ -76,7 +68,7 @@ struct SpannerMap : private std::multimap<int, Spanner *> {
 
 private:
 
-    mutable bool dirty_ = false;
+    mutable bool dirty_ = true;
     mutable interval_tree::IntervalTree<Spanner *> tree_;
     mutable interval_tree::IntervalTree<Spanner *> collision_free_tree_;
     mutable std::vector<interval_tree::Interval<Spanner *>> results_;

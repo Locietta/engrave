@@ -45,7 +45,7 @@ struct WriteContext {
     WriteContext(const Score *s, bool clipboard_mode = false) : score_(s), clipboardmode_value(clipboard_mode) {}
 
     std::unordered_set<const Segment *> written_segments;
-    const std::map<muse::String, muse::String> *metadata_override = nullptr;
+    const gtl::btree_map<muse::String, muse::String> *metadata_override = nullptr;
 
     EngravingConfiguration *configuration() const;
 

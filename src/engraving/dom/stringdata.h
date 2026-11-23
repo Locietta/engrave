@@ -23,11 +23,11 @@
 #pragma once
 
 #include <cstddef>
-#include <map>
 #include <vector>
 
 #include "../types/fraction.h"
 #include "../types/types.h"
+#include "global/flatmap.h"
 
 namespace mu::engraving {
 struct Chord;
@@ -96,7 +96,7 @@ struct StringData {
 private:
 
     int fret(int pitch, int string, int pitch_offset) const;
-    void sort_chord_notes(std::map<int, Note *> &sorted_notes, const Chord *chord, int *count) const;
+    void sort_chord_notes(muse::FlatMap<int, Note *> &sorted_notes, const Chord *chord, int *count) const;
     void sort_chord_notes_use_same_string(const Chord *chord) const;
     bool has_pending_pitch_change(const Chord *chord) const;
     void update_frets_on_same_strings(const Chord *chord) const;

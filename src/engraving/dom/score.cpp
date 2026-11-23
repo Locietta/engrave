@@ -28,7 +28,10 @@
 #include "score.h"
 
 #include <cmath>
-#include <map>
+
+#include <amc/flatset.hpp>
+#include <ankerl/unordered_dense.h>
+#include <gtl/btree.hpp>
 
 #include "../rendering/paddingtable.h"
 #include "anchors.h"
@@ -115,9 +118,9 @@ namespace {
 // down at process exit never touch a destroyed registry set.
 bool s_valid_scores_alive = false;
 
-std::set<Score *> &valid_scores_registry() {
+ankerl::unordered_dense::set<Score *> &valid_scores_registry() {
     struct Guard {
-        std::set<Score *> scores;
+        ankerl::unordered_dense::set<Score *> scores;
 
         Guard() { s_valid_scores_alive = true; }
 
@@ -144,7 +147,7 @@ bool midi_output_trace = false;
 
 static void mark_instruments_as_primary(std::vector<Part *> &parts) {
 
-    std::unordered_map<String /*instrumentId*/, int /*count*/> instrument_count;
+    ankerl::unordered_dense::map<String /*instrumentId*/, int /*count*/> instrument_count;
 
     for (Part *part : parts) {
         Instrument *instrument = part->instrument();
@@ -1046,7 +1049,11 @@ String Score::meta_tag(const String &s) const {
     return muse::value(master_score_->meta_tags_, s);
 }
 
-void Score::set_meta_tag(const String &tag, const String &val) { meta_tags_.insert_or_assign(tag, val); }
+void Score::set_meta_tag(const String &tag, const String &val) {
+    String key(tag);
+    String value(val);
+    meta_tags_[std::move(key)] = std::move(value);
+}
 
 void Score::set_synthesizer_state(const SynthesizerState &s) {
     // TODO: make undoable
@@ -1094,11 +1101,11 @@ void Score::split_staff(staff_idx_t staff_idx, int split_point) {
         Note *nnote;
     };
 
-    std::map<Note *, OldTie> old_ties;
+    ankerl::unordered_dense::map<Note *, OldTie> old_ties;
 
     // Notes under the split point can be part of a tuplet, so keep track
     // of the tuplet mapping too!
-    std::map<Tuplet *, Tuplet *> tuplet_mapping;
+    ankerl::unordered_dense::map<Tuplet *, Tuplet *> tuplet_mapping;
     Tuplet *tuplet_src[::mu::engraving::voices] = {};
     Tuplet *tuplet_dst[::mu::engraving::voices] = {};
 
@@ -2614,7 +2621,7 @@ void Score::add_spanner(Spanner *s, bool compute_start_end) {
 
 std::vector<Spanner *> Score::spanner_list() const {
     std::vector<Spanner *> result;
-    const std::multimap<int, Spanner *> &spanner_map = spanner_.map();
+    const auto &spanner_map = spanner_.map();
     result.reserve(spanner_map.size());
     for (auto it = spanner_map.begin(); it != spanner_map.end(); ++it) {
         result.push_back(it->second);
@@ -3062,9 +3069,9 @@ int Score::duration_without_repeats() const {
     return lrint(utick2utime(rs->utick + rs->len()));
 }
 
-std::set<staff_idx_t> Score::staff_idx_set_from_range(const track_idx_t track_from, const track_idx_t track_to,
-                                                      StaffAccepted staff_accepted) const {
-    std::set<staff_idx_t> result;
+amc::FlatSet<staff_idx_t> Score::staff_idx_set_from_range(const track_idx_t track_from, const track_idx_t track_to,
+                                                          StaffAccepted staff_accepted) const {
+    amc::FlatSet<staff_idx_t> result;
 
     for (const Part *part : score_->parts()) {
         const TrackRange range = part->track_range();
@@ -3072,7 +3079,7 @@ std::set<staff_idx_t> Score::staff_idx_set_from_range(const track_idx_t track_fr
             continue;
         }
 
-        std::set<staff_idx_t> staff_idx_list = part->stave_idx_list();
+        amc::FlatSet<staff_idx_t> staff_idx_list = part->stave_idx_list();
         if (!staff_accepted) {
             result.insert(staff_idx_list.cbegin(), staff_idx_list.cend());
             continue;

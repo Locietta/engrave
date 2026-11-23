@@ -308,7 +308,7 @@ bool legacy_chord_list(const ChordList &list) {
     }
     for (const auto &[id, description] : list) {
         poll();
-        if ((!description.generated || description.export_ok) && !legacy_chord_actions(description.render_list)) return false;
+        if ((!description->generated || description->export_ok) && !legacy_chord_actions(description->render_list)) return false;
     }
     return true;
 }

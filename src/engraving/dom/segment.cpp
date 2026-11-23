@@ -24,6 +24,8 @@
 
 #include <climits>
 
+#include <gtl/btree.hpp>
+
 #include "../editing/editspanner.h"
 #include "../editing/navigation.h"
 #include "accidental.h"
@@ -1140,7 +1142,7 @@ void Segment::sort_staves(std::vector<staff_idx_t> &dst) {
         }
     }
     std::swap(elist_, dl);
-    std::map<staff_idx_t, staff_idx_t> map;
+    gtl::btree_map<staff_idx_t, staff_idx_t> map;
     for (staff_idx_t k = 0; k < dst.size(); ++k) {
         map.insert({dst[k], k});
     }
@@ -1763,7 +1765,7 @@ EngravingItem *Segment::last_element_of_segment(staff_idx_t active_staff) const 
 }
 
 Spanner *Segment::first_spanner(staff_idx_t active_staff) const {
-    std::multimap<int, Spanner *> mmap = score()->spanner();
+    const auto mmap = score()->spanner();
     auto range = mmap.equal_range(tick().ticks());
     if (range.first != range.second) { // range not empty
         for (auto i = range.first; i != range.second; ++i) {
@@ -1787,7 +1789,7 @@ Spanner *Segment::first_spanner(staff_idx_t active_staff) const {
 }
 
 Spanner *Segment::last_spanner(staff_idx_t active_staff) const {
-    std::multimap<int, Spanner *> mmap = score()->spanner();
+    const auto mmap = score()->spanner();
     auto range = mmap.equal_range(tick().ticks());
     if (range.first != range.second) { // range not empty
         for (auto i = --range.second;; --i) {

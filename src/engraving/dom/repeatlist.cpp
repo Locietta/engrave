@@ -24,7 +24,6 @@
 
 #include <algorithm>
 #include <list>
-#include <set>
 #include <utility> // std::pair
 
 #include "global/log.h"
@@ -851,7 +850,7 @@ void RepeatList::unwind() {
                     // of the measure, and only taken once
                     if ((playback_count >= start_repeat_reference->get_repeat_count()) ||
                         ((active_volta != nullptr) && (playback_count == active_volta->last_ending()))) {
-                        std::pair<Jump const *const, int> jump_occurrence =
+                        std::pair<Jump const *, int> jump_occurrence =
                             std::make_pair(to_jump((*repeat_list_element_it)->element), playback_count);
                         if (jumps_taken_.find(jump_occurrence) == jumps_taken_.end()) { // Not yet processed
                             // Processing it now

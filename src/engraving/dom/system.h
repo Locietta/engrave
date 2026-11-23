@@ -48,7 +48,7 @@ struct SysStaff {
 
     ~SysStaff();
 
-    const std::unordered_map<InstrumentNameRole, InstrumentName *> &instrument_names() const { return instrument_names_; }
+    const muse::FlatMap<InstrumentNameRole, InstrumentName *> &instrument_names() const { return instrument_names_; }
 
     InstrumentName *name(InstrumentNameRole role) const;
     void add_instrument_name(InstrumentName *n);
@@ -86,7 +86,7 @@ struct SysStaff {
     Skyline &skyline() { return skyline_; }
 
 private:
-    std::unordered_map<InstrumentNameRole, InstrumentName *> instrument_names_;
+    muse::FlatMap<InstrumentNameRole, InstrumentName *> instrument_names_;
 
     RectF bbox_; // Bbox of StaffLines.
     Skyline skyline_;

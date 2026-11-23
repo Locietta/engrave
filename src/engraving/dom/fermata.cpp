@@ -22,6 +22,8 @@
 
 #include "fermata.h"
 
+#include <ankerl/unordered_dense.h>
+
 #include "chord.h"
 #include "chordrest.h"
 #include "engraving/style/styletypes.h"
@@ -201,7 +203,7 @@ void Fermata::set_sym_id_and_time_stretch(SymId id) {
 }
 
 FermataType Fermata::fermata_type() const {
-    static const std::unordered_map<SymId, FermataType> fermata_types = {
+    static const ankerl::unordered_dense::map<SymId, FermataType> fermata_types = {
         {SymId::FERMATA_ABOVE, FermataType::NORMAL},
         {SymId::FERMATA_BELOW, FermataType::NORMAL},
         {SymId::FERMATA_LONG_ABOVE, FermataType::LONG},

@@ -28,6 +28,8 @@
 #include <set>
 #include <unordered_map>
 
+#include <ankerl/unordered_dense.h>
+
 #include "beamtremololayout.h"
 #include "chordlayout.h"
 #include "containers.h"
@@ -682,7 +684,7 @@ void BeamLayout::create_beams(LayoutContext &ctx, Measure *measure) {
         Beam *beam = nullptr; // current beam
         BeamMode bm = BeamMode::AUTO;
         ChordRest *prev = nullptr;
-        std::unordered_map<int, TDuration> beat_subdivision;
+        ankerl::unordered_dense::map<int, TDuration> beat_subdivision;
 
         // if this measure is simple meter (actually X/4),
         // then perform a prepass to determine the subdivision of each beat

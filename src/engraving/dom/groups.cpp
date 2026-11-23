@@ -22,7 +22,7 @@
 
 #include "groups.h"
 
-#include <unordered_map>
+#include <ankerl/unordered_dense.h>
 
 #include "chordrest.h"
 #include "durationtype.h"
@@ -186,7 +186,7 @@ BeamMode Groups::actual_beam_mode(const ChordRest *cr, const ChordRest *prev) {
     TimeSig *ts = stf->time_sig(measure->tick());
     bool check_beats = ts && ts->denominator() == 4;
 
-    std::unordered_map<int, TDuration> beat_subdivision;
+    ankerl::unordered_dense::map<int, TDuration> beat_subdivision;
     if (check_beats && cr->rtick().is_not_zero()) {
         Fraction stretch = ts->stretch();
         Fraction tick = cr->rtick() * stretch;
@@ -210,7 +210,8 @@ BeamMode Groups::actual_beam_mode(const ChordRest *cr, const ChordRest *prev) {
     return actual_beam_mode(cr, prev, &beat_subdivision);
 }
 
-BeamMode Groups::actual_beam_mode(const ChordRest *cr, const ChordRest *prev, const std::unordered_map<int, TDuration> *beat_subdivision) {
+BeamMode Groups::actual_beam_mode(const ChordRest *cr, const ChordRest *prev,
+                                  const ankerl::unordered_dense::map<int, TDuration> *beat_subdivision) {
     // do not beam rests set to BeamMode::AUTO or with only other rests
     if (cr->is_rest() && cr->beam_mode() == BeamMode::AUTO) {
         return BeamMode::NONE;

@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include <map>
+#include <gtl/btree.hpp>
 
 #include "../types/fraction.h"
 
@@ -48,7 +48,7 @@ enum class HDuration : signed char {
 ///     allow for chord symbol playback
 //-----------------------------------------
 struct RealizedHarmony {
-    using PitchMap = std::multimap<int, int>; //map from pitch to tpc
+    using PitchMap = gtl::btree_multimap<int, int>; //map from pitch to tpc
 
     RealizedHarmony() : harmony_(0), notes_(PitchMap()), dirty_(1) {}
 

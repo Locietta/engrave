@@ -23,7 +23,7 @@
 #ifndef MU_ENGRAVING_ARTICULATION_H
 #define MU_ENGRAVING_ARTICULATION_H
 
-#include <set>
+#include <amc/flatset.hpp>
 
 #include "chordrest.h"
 #include "engravingitem.h"
@@ -82,11 +82,11 @@ constexpr bool operator&(ArticulationShowIn a1, ArticulationShowIn a2) {
 
 enum class ArticulationsUpdateMode : unsigned char { INSERT, REMOVE };
 
-std::set<SymId> update_articulations(const std::set<SymId> &articulation_symbol_ids, SymId articulation_symbol_id,
-                                     ArticulationsUpdateMode update_mode = ArticulationsUpdateMode::INSERT);
-std::set<SymId> split_articulations(const std::set<SymId> &articulation_symbol_ids);
-std::set<SymId> join_articulations(const std::set<SymId> &articulation_symbol_ids);
-std::set<SymId> flip_articulations(const std::set<SymId> &articulation_symbol_ids, PlacementV placement);
+amc::FlatSet<SymId> update_articulations(const amc::FlatSet<SymId> &articulation_symbol_ids, SymId articulation_symbol_id,
+                                         ArticulationsUpdateMode update_mode = ArticulationsUpdateMode::INSERT);
+amc::FlatSet<SymId> split_articulations(const amc::FlatSet<SymId> &articulation_symbol_ids);
+amc::FlatSet<SymId> join_articulations(const amc::FlatSet<SymId> &articulation_symbol_ids);
+amc::FlatSet<SymId> flip_articulations(const amc::FlatSet<SymId> &articulation_symbol_ids, PlacementV placement);
 
 //---------------------------------------------------------
 //   @@ Articulation

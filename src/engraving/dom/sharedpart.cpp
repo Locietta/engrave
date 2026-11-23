@@ -23,6 +23,8 @@
 
 #include <sstream>
 
+#include <ankerl/unordered_dense.h>
+
 #include "rendering/score/layoutdatastore.h"
 #include "rendering/score/scorerenderer.h"
 #include "score.h"
@@ -51,7 +53,7 @@ void SharedPart::add_origin_part(Part *p, size_t position) {
     if (position != muse::nidx) {
         origin_parts_.insert(origin_parts_.begin() + std::min(position, origin_parts_.size()), p);
     } else if (muse::contains(parts, p)) {
-        std::unordered_map<Part *, size_t> order;
+        ankerl::unordered_dense::map<Part *, size_t> order;
         for (size_t i = 0; i < parts.size(); ++i) {
             order[parts[i]] = i;
         }

@@ -22,6 +22,8 @@
 
 #include "staff.h"
 
+#include <gtl/btree.hpp>
+
 #include "../editing/editcapo.h"
 #include "../editing/editstaffbrackets.h"
 #include "../editing/transpose.h"
@@ -635,20 +637,21 @@ const CapoParams &Staff::capo(const Fraction &tick) const {
 }
 
 void Staff::insert_capo_params(const Fraction &tick, const CapoParams &params, bool ignore_notation_update) {
+    const CapoParams new_params = params;
     if (ignore_notation_update) {
-        capo_map_.insert_or_assign(tick.ticks(), params);
+        capo_map_[tick.ticks()] = new_params;
         return;
     }
-    auto is_need_update = [](const CapoParams &old_params, const CapoParams &new_params) -> bool {
-        return !(old_params.active == new_params.active && old_params.transpose_mode == new_params.transpose_mode &&
-                 old_params.fret_position == new_params.fret_position && old_params.ignored_strings == new_params.ignored_strings);
+    auto is_need_update = [](const CapoParams &old_params, const CapoParams &next_params) -> bool {
+        return !(old_params.active == next_params.active && old_params.transpose_mode == next_params.transpose_mode &&
+                 old_params.fret_position == next_params.fret_position && old_params.ignored_strings == next_params.ignored_strings);
     };
 
     int start_tick = tick.ticks();
     int end_tick = -1;
 
     if (auto it = capo_map_.find(start_tick); it == capo_map_.end()) {
-        auto result = capo_map_.insert({start_tick, params});
+        auto result = capo_map_.insert({start_tick, new_params});
         if (const auto next_it = std::next(result.first); next_it != capo_map_.end()) {
             end_tick = next_it->first;
         }
@@ -657,27 +660,27 @@ void Staff::insert_capo_params(const Fraction &tick, const CapoParams &params, b
             CapoParams old_params = prev_it->second;
             // We don't need to apply any changes if the previous capo is inactive
             if (old_params.active) {
-                EditCapo::update_notation_for_capo_change(old_params, params, this, start_tick, end_tick);
+                EditCapo::update_notation_for_capo_change(old_params, new_params, this, start_tick, end_tick);
             }
             // This is an undo action
-        } else if (CapoParams::TransposeMode::PLAYBACK_ONLY != params.transpose_mode && params.active) {
+        } else if (CapoParams::TransposeMode::PLAYBACK_ONLY != new_params.transpose_mode && new_params.active) {
             CapoParams old_params;
             old_params.transpose_mode = CapoParams::TransposeMode::PLAYBACK_ONLY;
-            old_params.fret_position = params.fret_position;
-            old_params.active = params.active;
-            old_params.ignored_strings = params.ignored_strings;
-            EditCapo::update_notation_for_capo_change(old_params, params, this, start_tick, end_tick);
+            old_params.fret_position = new_params.fret_position;
+            old_params.active = new_params.active;
+            old_params.ignored_strings = new_params.ignored_strings;
+            EditCapo::update_notation_for_capo_change(old_params, new_params, this, start_tick, end_tick);
         }
     } else {
         CapoParams old_params = it->second;
-        if (!is_need_update(old_params, params)) {
+        if (!is_need_update(old_params, new_params)) {
             return;
         }
-        auto result = capo_map_.insert_or_assign(start_tick, params);
-        if (const auto next_it = std::next(result.first); next_it != capo_map_.end()) {
+        it->second = new_params;
+        if (const auto next_it = std::next(it); next_it != capo_map_.end()) {
             end_tick = next_it->first;
         }
-        EditCapo::update_notation_for_capo_change(old_params, params, this, start_tick, end_tick);
+        EditCapo::update_notation_for_capo_change(old_params, new_params, this, start_tick, end_tick);
     }
 }
 
@@ -720,7 +723,7 @@ bool Staff::should_merge_matching_rests() const {
 }
 
 int Staff::channel(const Fraction &tick, voice_idx_t voice) const {
-    const std::map<int, int> &map = channel_list_[voice];
+    const gtl::btree_map<int, int> &map = channel_list_[voice];
     if (map.empty()) {
         return 0;
     }
@@ -868,7 +871,7 @@ void Staff::init(const Staff *s) {
 
     set_staff_type(Fraction(0, 1), s->staff_type_list_.staff_type(Fraction(0, 1)));
     for (const auto &st_pair : s->staff_type_list_.staff_type_changes()) {
-        const StaffType &st = st_pair.second;
+        const StaffType &st = *st_pair.second;
         StaffType new_staff_type(st);
         set_staff_type(Fraction::from_ticks(st_pair.first), new_staff_type);
     }
@@ -926,8 +929,8 @@ void Staff::update_ottava() {
         const Spanner *s = i.second;
         if (s->is_ottava() && s->staff_idx() == staff_idx && s->play_spanner()) {
             const Ottava *o = to_ottava(s);
-            pitch_offset_map_.insert_or_assign(o->tick().ticks(), o->pitch_shift());
-            pitch_offset_map_.insert_or_assign(o->tick2().ticks(), 0);
+            pitch_offset_map_[o->tick().ticks()] = o->pitch_shift();
+            pitch_offset_map_[o->tick2().ticks()] = 0;
         }
     }
 }
@@ -955,16 +958,14 @@ void Staff::insert_time(const Fraction &tick, const Fraction &len) {
     }
 
     KeyList kl2;
-    for (auto i = keys_.lower_bound(tick.ticks()); i != keys_.end();) {
-        KeySigEvent kse = i->second;
-        Fraction t = Fraction::from_ticks(i->first);
-        if (t + len < score()->end_tick()) {
-            keys_.erase(i++);
-            kl2[(t + len).ticks()] = kse;
-        } else {
-            ++i;
-        }
+    const auto first_key = keys_.lower_bound(tick.ticks());
+    auto key = first_key;
+    for (; key != keys_.end(); ++key) {
+        const Fraction shifted = Fraction::from_ticks(key->first) + len;
+        if (shifted >= score()->end_tick()) break;
+        kl2.emplace(shifted.ticks(), key->second);
     }
+    keys_.erase(first_key, key);
     keys_.insert(kl2.begin(), kl2.end());
 
     // check if there is a clef at the end of measure
@@ -981,16 +982,12 @@ void Staff::insert_time(const Fraction &tick, const Fraction &len) {
     }
 
     ClefList cl2;
-    for (auto i = clefs_.lower_bound(tick.ticks()); i != clefs_.end();) {
-        ClefTypeList ctl = i->second;
-        Fraction t = Fraction::from_ticks(i->first);
-        if (clef && tick == t) {
-            ++i;
-            continue;
-        }
-        clefs_.erase(i++);
-        cl2.set_clef((t + len).ticks(), ctl);
+    auto first_clef = clefs_.lower_bound(tick.ticks());
+    if (clef && first_clef != clefs_.end() && tick == Fraction::from_ticks(first_clef->first)) ++first_clef;
+    for (auto it = first_clef; it != clefs_.end(); ++it) {
+        cl2.set_clef((Fraction::from_ticks(it->first) + len).ticks(), it->second);
     }
+    clefs_.erase(first_clef, clefs_.end());
     clefs_.insert(cl2.begin(), cl2.end());
 
     // check if there is a clef at the end of measure

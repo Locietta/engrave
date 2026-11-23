@@ -31,7 +31,10 @@
 #include <functional>
 #include <memory>
 #include <optional>
-#include <set>
+
+#include <amc/flatset.hpp>
+#include <ankerl/unordered_dense.h>
+#include <gtl/btree.hpp>
 
 #include "../automation/automationtypes_fwd.h"
 #include "../editing/cmd.h"
@@ -338,10 +341,10 @@ public:
 
     // Musical insertion with explicit targets; no selection or input cursor changes.
     Segment *set_note_rest_at(Segment *, track_idx_t track, NoteVal nval, Fraction, DirectionV stem_direction = DirectionV::AUTO,
-                              bool force_accidental = false, const std::set<SymId> &articulation_ids = {}, bool rhythmic = false,
+                              bool force_accidental = false, const amc::FlatSet<SymId> &articulation_ids = {}, bool rhythmic = false,
                               EngravingItem **last_entered = nullptr);
     Segment *set_note_rest(Segment *, track_idx_t track, NoteVal nval, Fraction, DirectionV stem_direction = DirectionV::AUTO,
-                           bool force_accidental = false, const std::set<SymId> &articulation_ids = {}, bool rhythmic = false,
+                           bool force_accidental = false, const amc::FlatSet<SymId> &articulation_ids = {}, bool rhythmic = false,
                            InputState *external_input_state = nullptr);
     void change_c_rlen(ChordRest *cr, const TDuration &);
     void change_c_rlen(ChordRest *cr, const Fraction &, bool fill_with_rest = true);
@@ -415,8 +418,8 @@ public:
     bool has_shared_parts() const;
 
     using StaffAccepted = std::function<bool(const Staff &)>;
-    std::set<staff_idx_t> staff_idx_set_from_range(const track_idx_t track_from, const track_idx_t track_to,
-                                                   StaffAccepted staff_accepted = StaffAccepted()) const;
+    amc::FlatSet<staff_idx_t> staff_idx_set_from_range(const track_idx_t track_from, const track_idx_t track_to,
+                                                       StaffAccepted staff_accepted = StaffAccepted()) const;
 
     void append_part(const InstrumentTemplate *);
     void sort_system_objects(std::vector<staff_idx_t> &dst);
@@ -702,11 +705,11 @@ public:
 
     void set_master_score(MasterScore *s) { master_score_ = s; }
 
-    const std::map<String, String> &meta_tags() const { return meta_tags_; }
+    const gtl::btree_map<String, String> &meta_tags() const { return meta_tags_; }
 
-    std::map<String, String> &meta_tags() { return meta_tags_; }
+    gtl::btree_map<String, String> &meta_tags() { return meta_tags_; }
 
-    void set_meta_tags(const std::map<String, String> &t) { meta_tags_ = t; }
+    void set_meta_tags(const gtl::btree_map<String, String> &t) { meta_tags_ = t; }
 
     String meta_tag(const String &tag) const;
     void set_meta_tag(const String &tag, const String &val);
@@ -775,7 +778,7 @@ public:
 
     void append_measures(int num_measures);
 
-    const std::multimap<int, Spanner *> &spanner() const { return spanner_.map(); }
+    const SpannerMap::Map &spanner() const { return spanner_.map(); }
 
     SpannerMap &spanner_map() { return spanner_; }
 
@@ -787,7 +790,7 @@ public:
     void add_spanner(Spanner *, bool compute_start_end = true);
     void check_spanner(const Fraction &start_tick, const Fraction &last_tick, bool remove_orphans = true);
 
-    const std::set<Spanner *> &unmanaged_spanners() const { return unmanaged_spanner_; }
+    const gtl::btree_set<Spanner *> &unmanaged_spanners() const { return unmanaged_spanner_; }
 
     void add_unmanaged_spanner(Spanner *);
     void remove_unmanaged_spanner(Spanner *);
@@ -940,7 +943,7 @@ private:
     RangeLocks page_locks_;
 
     SpannerMap spanner_;
-    std::set<Spanner *> unmanaged_spanner_;
+    gtl::btree_set<Spanner *> unmanaged_spanner_;
 
     std::vector<std::vector<BracketItem *>> brackets_;
 
@@ -949,7 +952,7 @@ private:
     //
 
     // Authored entries never participate in layout; systems own generated clones.
-    std::map<size_t, std::array<std::unique_ptr<SystemDivider>, 2>> system_dividers_;
+    gtl::btree_map<size_t, std::array<std::unique_ptr<SystemDivider>, 2>> system_dividers_;
 
     InputState is_;
     MStyle style_;
@@ -973,7 +976,7 @@ private:
 
     bool is_open_ = false;
 
-    std::map<String, String> meta_tags_;
+    gtl::btree_map<String, String> meta_tags_;
 
     Selection selection_;
 

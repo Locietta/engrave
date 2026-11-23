@@ -24,6 +24,10 @@
 
 #include <algorithm>
 
+#include <amc/flatset.hpp>
+#include <ankerl/unordered_dense.h>
+#include <gtl/btree.hpp>
+
 #include "chordrest.h"
 #include "containers.h"
 #include "engraving/dom/dummyparent.h"
@@ -166,8 +170,8 @@ size_t Part::layout_visible_staves_count() const { return std::ranges::count_if(
 
 const std::vector<Staff *> &Part::staves() const { return staves_; }
 
-std::set<staff_idx_t> Part::stave_idx_list() const {
-    std::set<staff_idx_t> result;
+amc::FlatSet<staff_idx_t> Part::stave_idx_list() const {
+    amc::FlatSet<staff_idx_t> result;
 
     for (const Staff *stave : staves_) {
         if (!stave) {
@@ -555,7 +559,7 @@ TrackRange Part::track_range() const {
 
 InstrumentTrackIdList Part::instrument_track_id_list() const {
     InstrumentTrackIdList result;
-    std::set<String> seen;
+    ankerl::unordered_dense::set<String> seen;
 
     for (const auto &pair : instruments_) {
         String instr_id = pair.second->id();
@@ -601,19 +605,18 @@ void Part::insert_time(const Fraction &tick, const Fraction &len) {
 
     InstrumentList il;
 
-    for (auto i = instruments_.lower_bound(tick.ticks()); i != instruments_.end();) {
-        Instrument *instrument = i->second;
-        int t = i->first;
-        instruments_.erase(i++);
-        il[t + len.ticks()] = instrument;
+    const auto first = instruments_.lower_bound(tick.ticks());
+    for (auto it = first; it != instruments_.end(); ++it) {
+        il[it->first + len.ticks()] = it->second;
     }
+    instruments_.erase(first, instruments_.end());
     instruments_.insert(il.begin(), il.end());
 
-    std::map<int, HarpPedalDiagram *> hd2;
+    gtl::btree_map<int, HarpPedalDiagram *> hd2;
     for (auto h = harp_diagrams_.lower_bound(tick.ticks()); h != harp_diagrams_.end();) {
         HarpPedalDiagram *diagram = h->second;
         int t = h->first;
-        harp_diagrams_.erase(h++);
+        h = harp_diagrams_.erase(h);
         hd2[t + len.ticks()] = diagram;
     }
     harp_diagrams_.insert(hd2.begin(), hd2.end());

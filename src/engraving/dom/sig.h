@@ -23,9 +23,9 @@
 #pragma once
 
 #include <cassert>
-#include <map>
 
 #include "../types/types.h"
+#include "global/flatmap.h"
 
 namespace mu::engraving {
 int ticks_beat(int n);
@@ -152,7 +152,7 @@ private:
 //   SigList
 //---------------------------------------------------------
 
-struct TimeSigMap : std::map<int, SigEvent> {
+struct TimeSigMap : muse::FlatMap<int, SigEvent> {
 
 public:
     TimeSigMap() {}

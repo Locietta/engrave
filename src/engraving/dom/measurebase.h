@@ -28,6 +28,8 @@
  Definition of MeasureBase class.
 */
 
+#include <gtl/btree.hpp>
+
 #include "engravingitem.h"
 
 namespace mu::engraving {
@@ -238,7 +240,7 @@ private:
     // At a tick there can be any number of MeasureBases
     // There can only be one Measure
     // There can be any number of Boxes
-    std::multimap<int, MeasureBase *> tick_index_;
+    gtl::btree_multimap<int, MeasureBase *> tick_index_;
 };
 } // namespace mu::engraving
 #endif
