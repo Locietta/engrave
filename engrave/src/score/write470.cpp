@@ -1271,8 +1271,9 @@ Result<ExportOutput> export_score(const music::EngineContext &context, const mus
     } restore{budget, budget ? budget->output : std::nullopt};
 
     if (budget) budget->output.reset();
-    const std::string source = music::export_native_score(context, project, "mscx", options, {});
+    auto source = music::export_native_score(context, project, "mscx", options, {});
     if (budget) budget->output = restore.limit;
+    if (!source) return std::unexpected(std::move(source.error()));
 
     struct ProgressScope {
         testing::Write470Progress previous = testing::progress;
@@ -1283,9 +1284,9 @@ Result<ExportOutput> export_score(const music::EngineContext &context, const mus
     } progress_scope;
 
     poll();
-    charge_xml(source.size());
+    charge_xml(source->size());
     pugi::xml_document xml;
-    if (!xml.load_buffer(source.data(), source.size(), pugi::parse_default | pugi::parse_ws_pcdata))
+    if (!xml.load_buffer(source->data(), source->size(), pugi::parse_default | pugi::parse_ws_pcdata))
         throw std::runtime_error("could not parse the engine's score output");
     auto root = xml.child("museScore");
     auto score_node = root.child("Score");

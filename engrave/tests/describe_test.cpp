@@ -132,8 +132,13 @@ struct Corpus {
             return;
         }
         try {
-            projects.push_back(music::load_native_score(
-                engrave::DocumentAccess::context(engrave::test::core_env().ensure_describe_anchor()), bytes, backend_name(*format)));
+            auto project = music::load_native_score(engrave::DocumentAccess::context(engrave::test::core_env().ensure_describe_anchor()),
+                                                    bytes, backend_name(*format));
+            if (!project) {
+                unreadable.push_back(file);
+                return;
+            }
+            projects.push_back(*std::move(project));
         } catch (const std::exception &) {
             unreadable.push_back(file);
             return;

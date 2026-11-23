@@ -38,7 +38,8 @@ int main(int argc, char **argv) {
 <note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><type>whole</type></note>
 <barline location="right"><repeat direction="backward"/></barline></measure></part>
 </score-partwise>)",
-                                                      "musicxml");
+                                                      "musicxml")
+                                 .value();
         auto *score = project->master_score();
         // Loading no longer lays out; positions are a geometry consumer.
         score->ensure_layout();
@@ -64,7 +65,8 @@ int main(int argc, char **argv) {
 <measure number="4"><note><rest/><duration>4</duration><voice>1</voice></note></measure>
 <measure number="5"><note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><type>whole</type></note></measure>
 </part></score-partwise>)",
-                                                     "musicxml");
+                                                     "musicxml")
+                                .value();
         auto *mm_score = mmrest->master_score();
         mm_score->ensure_layout(); // multi-measure rests are display topology built by layout
         auto *mm_first = mm_score->first_measure_mm();

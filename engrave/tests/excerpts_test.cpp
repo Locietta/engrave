@@ -43,7 +43,7 @@ void save(const std::filesystem::path &path, const std::string &bytes) {
 
 std::string finalized_native_export(const music::EngineContext &context, const music::ScoreProject &project) {
     engrave::assign_missing_ids(*project->master_score());
-    return music::export_native_score(context, project, "mscz", 0, "");
+    return music::export_native_score(context, project, "mscz", 0, "").value();
 }
 
 std::string export_selection(const music::EngineContext &context, mu::engraving::Score *score, bool midi) {
@@ -119,7 +119,7 @@ void test_chordline_playback(const music::EngineContext &context, const std::fil
         expect(play != std::string::npos, "Fixture missing explicit playback flag");
         input.replace(play, disabled_play.size(), "<play>1</play>");
     }
-    auto project = music::load_native_score(context, input, "mscx");
+    auto project = music::load_native_score(context, input, "mscx").value();
     auto *master = project->master_score();
     expect(music::list_score_excerpts(master).empty(), "Chordline fixture already has excerpts");
     auto *original = check_chordline_playback(master, enabled, "master before generation");
@@ -132,7 +132,7 @@ void test_chordline_playback(const music::EngineContext &context, const std::fil
 
     const auto archive = finalized_native_export(context, project);
     save(out / (enabled ? "chordline-enabled.mscz" : "chordline-disabled.mscz"), archive);
-    auto reopened = music::load_native_score(context, archive, "mscz");
+    auto reopened = music::load_native_score(context, archive, "mscz").value();
     auto *reopened_master = reopened->master_score();
     expect(music::list_score_excerpts(reopened_master).size() == 1, "Saved chordline excerpt lost");
     expect(!music::generate_score_excerpts(reopened_master), "Saved chordline excerpt regenerated");
@@ -142,7 +142,7 @@ void test_chordline_playback(const music::EngineContext &context, const std::fil
 
 void test_instrument_lifetimes(const music::EngineContext &context) {
     using namespace mu::engraving;
-    auto project = music::load_native_score(context, fixture, "musicxml");
+    auto project = music::load_native_score(context, fixture, "musicxml").value();
     auto *master = project->master_score();
     auto *part = master->parts().front();
     auto *old_playback = master->playback_channel(part->instrument()->channel(0));
@@ -193,7 +193,7 @@ void test_repeat_lifetimes(const char *assets) {
     for (int iteration = 0; iteration < 3; ++iteration) {
         music::EngineContext context(assets);
         test_instrument_lifetimes(context);
-        auto project = music::load_native_score(context, endings, "musicxml");
+        auto project = music::load_native_score(context, endings, "musicxml").value();
         auto *master = project->master_score();
         const int bar = Fraction(1, 1).ticks();
         const auto &repeat = master->expanded_repeat_list();
@@ -206,7 +206,7 @@ void test_repeat_lifetimes(const char *assets) {
         master->update_repeat_list(false);
         expect(repeat.utick2tick(3 * bar) == 2 * bar, "Rebuilding repeats lost the second ending");
         master->ensure_layout();
-        expect(music::render_score(context, master, "pdf", 0).starts_with("%PDF-"), "Repeated score PDF rendering failed");
+        expect(music::render_score(context, master, "pdf", 0).value().starts_with("%PDF-"), "Repeated score PDF rendering failed");
     }
     std::cout << "Three context and document lifecycles passed, including instrument replacement, excerpt cloning, and repeat playback\n";
 }
@@ -222,7 +222,7 @@ int main(int argc, char **argv) {
         music::EngineContext context(argv[1]);
         test_chordline_playback(context, out, false);
         test_chordline_playback(context, out, true);
-        auto project = music::load_native_score(context, fixture, "musicxml");
+        auto project = music::load_native_score(context, fixture, "musicxml").value();
         auto *master = project->master_score();
         expect(music::list_score_excerpts(master).empty(), "Unexpected initial excerpts");
         expect(music::generate_score_excerpts(master), "No excerpts generated");
@@ -240,7 +240,7 @@ int main(int argc, char **argv) {
             expect(records[i].part_ids.at(0) == master->parts()[i]->id().to_std_string(), "Excerpt part ID mismatch");
             save(out / ("part" + std::to_string(i) + ".musicxml"), export_selection(context, selected, false));
             save(out / ("part" + std::to_string(i) + ".mid"), export_selection(context, selected, true));
-            save(out / ("part" + std::to_string(i) + ".svg"), music::render_score(context, selected, "svg", 0));
+            save(out / ("part" + std::to_string(i) + ".svg"), music::render_score(context, selected, "svg", 0).value());
         }
         for (int invalid : {-2, 2}) {
             bool rejected = false;
@@ -253,7 +253,7 @@ int main(int argc, char **argv) {
         }
         const auto archive = finalized_native_export(context, project);
         save(out / "with-excerpts.mscz", archive);
-        auto reopened = music::load_native_score(context, archive, "mscz");
+        auto reopened = music::load_native_score(context, archive, "mscz").value();
         expect(music::list_score_excerpts(reopened->master_score()).size() == 2, "Saved excerpts lost on reopen");
         expect(!music::generate_score_excerpts(reopened->master_score()), "Loaded excerpts were regenerated");
         for (int i = 0; i < 2; ++i) {
@@ -262,7 +262,7 @@ int main(int argc, char **argv) {
             expect(selected->parts().size() == 1 && selected->npages() > 0, "Reopened excerpt invalid");
             save(out / ("reopened-part" + std::to_string(i) + ".musicxml"), export_selection(context, selected, false));
         }
-        auto hidden = music::load_native_score(context, fixture, "musicxml");
+        auto hidden = music::load_native_score(context, fixture, "musicxml").value();
         hidden->master_score()->parts()[1]->set_show(false);
         expect(music::generate_score_excerpts(hidden->master_score()), "Visible excerpt missing");
         expect(music::list_score_excerpts(hidden->master_score()).size() == 1, "Hidden part generated excerpt");
@@ -290,7 +290,7 @@ int main(int argc, char **argv) {
         }
         expect(duplicate_rejected, "Duplicate metadata track accepted");
         save(out / "metadata.json", music::dump_json(metadata, 2));
-        auto track_project = music::load_native_score(context, fixture, "musicxml");
+        auto track_project = music::load_native_score(context, fixture, "musicxml").value();
         auto *tracks_score = track_project->master_score();
         tracks_score->parts()[0]->set_id(muse::ID(uint64_t(10)));
         tracks_score->parts()[1]->set_id(muse::ID(uint64_t(2)));

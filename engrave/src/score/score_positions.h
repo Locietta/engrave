@@ -4,6 +4,7 @@
 #pragma once
 
 #include <cstddef>
+#include <optional>
 #include <utility>
 
 #include "engrave/src/global/fn.h"
@@ -19,12 +20,12 @@ namespace music {
 SortedJson score_positions(mu::engraving::Score *score, bool segments);
 
 struct PositionVisitor {
-    FnRef<void(int, double, double, double, double, int)> element;
-    FnRef<void(int, int)> event;
+    FnRef<bool(int, double, double, double, double, int)> element;
+    FnRef<bool(int, int)> event;
 };
 
 // The counting pass does not build an id index. The emitting pass can reserve
 // the exact count before the shared traversal begins.
-std::pair<double, double> visit_score_positions(mu::engraving::Score *score, bool segments, const PositionVisitor &visitor,
-                                                bool resolve_ids, std::size_t element_count = 0);
+std::optional<std::pair<double, double>> visit_score_positions(mu::engraving::Score *score, bool segments, const PositionVisitor &visitor,
+                                                               bool resolve_ids, std::size_t element_count = 0);
 } // namespace music

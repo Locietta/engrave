@@ -129,8 +129,10 @@ Document::~Document() {
 Result<Document::Impl::Snapshot> Document::Impl::capture_snapshot() const try {
     auto &master = *project->master_score();
     Snapshot snapshot;
-    snapshot.bytes = music::export_native_score(*engine->context, project, "mscz",
-                                                music::ExportOptions{.transaction_snapshot = true, .compress = false}, {});
+    auto exported = music::export_native_score(*engine->context, project, "mscz",
+                                               music::ExportOptions{.transaction_snapshot = true, .compress = false}, {});
+    if (!exported) return std::unexpected(Error{ErrorCode::IO, std::format("cannot capture the snapshot: {}", exported.error().message)});
+    snapshot.bytes = *std::move(exported);
     // Restore reads each snapshot entry at most once, so the central directory
     // bounds its decompression budget without inflating any entry.
     auto buffer = muse::io::Buffer::opened(muse::io::IODevice::READ_ONLY, muse::ByteArray(snapshot.bytes.data(), snapshot.bytes.size()));
@@ -203,8 +205,9 @@ Result<void> Document::Impl::restore_snapshot(const Snapshot &snapshot, bool adv
         return std::unexpected(Error{ErrorCode::RESOURCE_LIMIT, "document revision exhausted"});
     LayoutOutputs restored_outputs;
     auto restored = music::load_native_score(*engine->context, snapshot.bytes, "mscz", true);
+    if (!restored) return std::unexpected(Error{ErrorCode::IO, std::format("cannot restore the snapshot: {}", restored.error().message)});
     mu::engraving::ScoreLoad load;
-    auto &master = *restored->master_score();
+    auto &master = *(*restored)->master_score();
     const auto scores = master.score_list();
     if (scores.size() != snapshot.versions.size())
         return std::unexpected(Error{ErrorCode::IO, "the restored snapshot has a different number of linked scores"});
@@ -230,7 +233,7 @@ Result<void> Document::Impl::restore_snapshot(const Snapshot &snapshot, bool adv
         score->invalidate_layout(mu::engraving::Fraction(0, 1), mu::engraving::Fraction(-1, 1));
     }
     // The old project needs its layout stores throughout DOM teardown.
-    project = std::move(restored);
+    project = *std::move(restored);
     layout_outputs.swap(restored_outputs);
     revision = restored_revision;
     poisoned = false;
@@ -314,9 +317,10 @@ Result<ExportOutput> Document::export_score_with_warnings(const ExportOptions &o
     if (!options.capture.max_bytes && !options.capture.max_working_bytes && !options.capture.cancelled) {
         if (options.native_version == "4.70")
             return write470::export_score(*impl_->engine->context, impl_->project, **selected, name, backend);
-        const std::string data = music::export_native_score(*impl_->engine->context, impl_->project, name, backend, {});
-        const auto *bytes = reinterpret_cast<const std::byte *>(data.data());
-        return ExportOutput{std::vector<std::byte>(bytes, bytes + data.size()), {}};
+        auto data = music::export_native_score(*impl_->engine->context, impl_->project, name, backend, {});
+        if (!data) return std::unexpected(std::move(data.error()));
+        const auto *bytes = reinterpret_cast<const std::byte *>(data->data());
+        return ExportOutput{std::vector<std::byte>(bytes, bytes + data->size()), {}};
     }
     muse::io::WriteBudget budget;
     budget.output = options.capture.max_bytes;
@@ -339,10 +343,11 @@ Result<ExportOutput> Document::export_score_with_warnings(const ExportOptions &o
             if (result && !budget.output_size(result->bytes.size())) return stopped();
             return result;
         }
-        const std::string data = music::export_native_score(*impl_->engine->context, impl_->project, name, backend, {});
-        if (!budget.poll() || !budget.output_size(data.size())) return stopped();
-        const auto *bytes = reinterpret_cast<const std::byte *>(data.data());
-        return ExportOutput{std::vector<std::byte>(bytes, bytes + data.size()), {}};
+        auto data = music::export_native_score(*impl_->engine->context, impl_->project, name, backend, {});
+        if (!data) return std::unexpected(std::move(data.error()));
+        if (!budget.poll() || !budget.output_size(data->size())) return stopped();
+        const auto *bytes = reinterpret_cast<const std::byte *>(data->data());
+        return ExportOutput{std::vector<std::byte>(bytes, bytes + data->size()), {}};
     } catch (...) {
         if (budget.failure != muse::io::WriteBudget::Failure::NONE) return stopped();
         throw;

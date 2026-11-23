@@ -269,7 +269,7 @@ int main(int argc, char **argv) {
     try {
         if (argc != 2) throw std::invalid_argument("Usage: score_edit_test ASSETS");
         music::EngineContext context(argv[1]);
-        const auto project = music::load_native_score(context, k_two_part_score, "musicxml");
+        const auto project = music::load_native_score(context, k_two_part_score, "musicxml").value();
         auto *score = project->master_score();
         expect(score->parts().size() == 2, "Fixture did not import two parts");
 
@@ -506,9 +506,9 @@ int main(int argc, char **argv) {
 
         // Round-trip the edited master score through MusicXML: the persisted
         // sounding pitches and ties must match the live DOM semantics.
-        const std::string exported = music::export_native_score(context, project, "musicxml", 0, "");
+        const std::string exported = music::export_native_score(context, project, "musicxml", 0, "").value();
         expect(exported.find("<score-partwise") != std::string::npos, "MusicXML export was empty");
-        const auto reimported = music::load_native_score(context, exported, "musicxml");
+        const auto reimported = music::load_native_score(context, exported, "musicxml").value();
         auto *reimported_score = reimported->master_score();
         const ScoreRegionView piano_export = music::query_score_region(reimported_score, make_region(0, 0, total_measures));
         const ScoreRegionView clarinet_export = music::query_score_region(reimported_score, make_region(1, 0, total_measures));
@@ -524,7 +524,7 @@ int main(int argc, char **argv) {
         // An unopened headless excerpt must follow linked master edits and be
         // fully updated by endCmd. Exercise its exported written transposition,
         // rather than only checking the master note's in-memory pitch.
-        const auto excerpt_project = music::load_native_score(context, k_two_part_score, "musicxml");
+        const auto excerpt_project = music::load_native_score(context, k_two_part_score, "musicxml").value();
         auto *excerpt_master = excerpt_project->master_score();
         expect(music::generate_score_excerpts(excerpt_master), "Excerpt fixture generation failed");
         expect(music::list_score_excerpts(excerpt_master).size() == 2, "Excerpt fixture did not produce two parts");
@@ -536,8 +536,8 @@ int main(int argc, char **argv) {
         expect(has_scope(excerpt_change.write_scopes, 1, 1, true), "Linked excerpt edit did not expand its dependency to the whole part");
         music::ExportOptions excerpt_options;
         excerpt_options.excerpt_id = 1;
-        const auto excerpt_xml = music::export_native_score(context, excerpt_project, "musicxml", excerpt_options, "");
-        const auto excerpt_reopened = music::load_native_score(context, excerpt_xml, "musicxml");
+        const auto excerpt_xml = music::export_native_score(context, excerpt_project, "musicxml", excerpt_options, "").value();
+        const auto excerpt_reopened = music::load_native_score(context, excerpt_xml, "musicxml").value();
         expect(excerpt_reopened->master_score()->parts().size() == 1, "Excerpt export contained other parts");
         const auto excerpt_export_region = music::query_score_region(excerpt_reopened->master_score(), make_region(0, 1, 1));
         expect(excerpt_export_region.notes.size() == 1 && excerpt_export_region.notes[0].pitch == 73,
@@ -546,7 +546,7 @@ int main(int argc, char **argv) {
         // A whole-score projection must not inherit the public 4096-note
         // per-region cap: 4224 notes in one 128-measure block are inside the
         // documented 16384-note projection bound.
-        const auto dense_project = music::load_native_score(context, dense_projection_score(), "musicxml");
+        const auto dense_project = music::load_native_score(context, dense_projection_score(), "musicxml").value();
         auto *dense_score = dense_project->master_score();
         const auto dense_projection = music::snapshot_score_projection(dense_score);
         expect(dense_projection.complete, "Dense score projection was unavailable");
@@ -571,7 +571,7 @@ int main(int argc, char **argv) {
 
         // A spanner anchored only to another voice is outside the requested
         // voice window and must not set has_cross_region_spanners.
-        const auto voice_project = music::load_native_score(context, k_voice_spanner_score, "musicxml");
+        const auto voice_project = music::load_native_score(context, k_voice_spanner_score, "musicxml").value();
         auto *voice_score = voice_project->master_score();
         const ScoreRegionView other_voice = music::query_score_region(voice_score, make_region(0, 0, 4, 0));
         expect(!other_voice.has_cross_region_spanners, "Another-voice spanner was reported as cross-region");
@@ -587,7 +587,7 @@ int main(int argc, char **argv) {
         // A contained slur in another voice is outside a voice-0 window, while
         // a voice-1 window that cuts the voice-1 slur across the barline must
         // report it. Both live and projected region queries share this filter.
-        const auto filter_project = music::load_native_score(context, k_voice_filter_score, "musicxml");
+        const auto filter_project = music::load_native_score(context, k_voice_filter_score, "musicxml").value();
         auto *filter_score = filter_project->master_score();
         expect(!music::query_score_region(filter_score, make_region(0, 0, 1, 0)).has_cross_region_spanners,
                "Voice-0 region reported a voice-1 spanner as cross-region");
@@ -609,7 +609,7 @@ int main(int argc, char **argv) {
 
         // A slur with one anchor in the queried voice and the other in another
         // voice is a voice-window crossing, not an ignorable other-voice span.
-        const auto cross_project = music::load_native_score(context, k_cross_voice_span_score, "musicxml");
+        const auto cross_project = music::load_native_score(context, k_cross_voice_span_score, "musicxml").value();
         auto *cross_score = cross_project->master_score();
         expect(music::query_score_region(cross_score, make_region(0, 0, 1, 0)).has_cross_region_spanners,
                "Voice-0 region lost a cross-voice slur");

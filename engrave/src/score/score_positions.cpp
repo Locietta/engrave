@@ -35,8 +35,8 @@ System *layout_system(Measure *measure) {
 }
 } // namespace
 
-std::pair<double, double> visit_score_positions(mu::engraving::Score *score, bool segments, const PositionVisitor &visitor,
-                                                bool resolve_ids, std::size_t element_count) {
+std::optional<std::pair<double, double>> visit_score_positions(mu::engraving::Score *score, bool segments, const PositionVisitor &visitor,
+                                                               bool resolve_ids, std::size_t element_count) {
     if (!score || !score->master_score() || score->pages().empty() || !score->pages().front())
         throw std::invalid_argument("A laid-out score with pages is required");
 
@@ -56,8 +56,9 @@ std::pair<double, double> visit_score_positions(mu::engraving::Score *score, boo
         const auto id = checked_int(static_cast<double>(next_id++));
         const auto page_index = score->page_idx(page);
         if (page_index >= score->pages().size()) throw std::runtime_error("Layout page is not in score");
-        visitor.element(id, x, y, width, height, static_cast<int>(page_index));
+        if (!visitor.element(id, x, y, width, height, static_cast<int>(page_index))) return false;
         if (resolve_ids) ids.push_back({item, static_cast<std::size_t>(id)});
+        return true;
     };
     // Scale 1.0 preserves webmscore's raw layout units (1200 DPI), independent of PNG DPI.
     if (segments) {
@@ -76,14 +77,16 @@ std::pair<double, double> visit_score_positions(mu::engraving::Score *score, boo
                 }
             }
             // Preserve upstream truncation specifically for segment x/y coordinates.
-            add_element(segment, checked_int(segment->page_pos().x()), checked_int(segment->page_pos().y()), width, system->height(),
-                        system->page());
+            if (!add_element(segment, checked_int(segment->page_pos().x()), checked_int(segment->page_pos().y()), width, system->height(),
+                             system->page()))
+                return std::nullopt;
         }
     } else {
         for (auto *measure = score->first_measure_mm(); measure; measure = measure->next_measure_mm()) {
             auto *system = layout_system(measure);
-            add_element(measure, measure->page_pos().x(), system->page_pos().y(), measure->ldata()->bbox().width(), system->height(),
-                        system->page());
+            if (!add_element(measure, measure->page_pos().x(), system->page_pos().y(), measure->ldata()->bbox().width(), system->height(),
+                             system->page()))
+                return std::nullopt;
         }
     }
 
@@ -99,7 +102,7 @@ std::pair<double, double> visit_score_positions(mu::engraving::Score *score, boo
             id = static_cast<int>(it->id);
         }
         const auto time = checked_int(std::nearbyint(score->utick2utime(tick) * 1000.0));
-        visitor.event(id, time);
+        return visitor.event(id, time);
     };
     for (const auto *repeat : repeats) {
         if (repeat->len() <= 0) continue;
@@ -108,22 +111,22 @@ std::pair<double, double> visit_score_positions(mu::engraving::Score *score, boo
         for (auto *measure = score->tick2measure_mm(Fraction::from_ticks(repeat->tick)); measure; measure = measure->next_measure_mm()) {
             if (segments) {
                 for (auto *segment = measure->first(SegmentType::CHORD_REST); segment; segment = segment->next(SegmentType::CHORD_REST))
-                    add_event(segment, segment->tick().ticks() + offset);
+                    if (!add_event(segment, segment->tick().ticks() + offset)) return std::nullopt;
             } else {
-                add_event(measure, measure->tick().ticks() + offset);
+                if (!add_event(measure, measure->tick().ticks() + offset)) return std::nullopt;
             }
             if (measure->end_tick().ticks() >= end_tick) break;
         }
     }
     const auto *page = score->pages().front();
-    return {page->width(), page->height()};
+    return std::pair{page->width(), page->height()};
 }
 
 SortedJson score_positions(mu::engraving::Score *score, bool segments) {
     SortedJson elements = make_array<SortedJson>();
     SortedJson events = make_array<SortedJson>();
 
-    const auto [width, height] = visit_score_positions(
+    const auto [width, height] = *visit_score_positions(
         score, segments,
         {[&](int id, double x, double y, double width, double height, int page) {
              if (segments) {
@@ -136,8 +139,12 @@ SortedJson score_positions(mu::engraving::Score *score, bool segments) {
              } else {
                  array_push(elements, SortedJson{{"id", id}, {"x", x}, {"y", y}, {"sx", width}, {"sy", height}, {"page", page}});
              }
+             return true;
          },
-         [&](int id, int time) { array_push(events, SortedJson{{"elid", id}, {"position", time}}); }},
+         [&](int id, int time) {
+             array_push(events, SortedJson{{"elid", id}, {"position", time}});
+             return true;
+         }},
         true);
     SortedJson result = make_object<SortedJson>();
     result["pageSize"] = SortedJson{{"width", width}, {"height", height}};

@@ -242,6 +242,14 @@ int main(int argc, char **argv) {
         return 2;
     }
 
+    const auto report_failure = [&](const std::string &message) {
+        out["ok"] = false;
+        out["error"] = message;
+        out["peakWorkingSetBytes"] = peak_working_set_bytes();
+        out["peakWorkingSetMiB"] = peak_working_set_bytes() / (1024.0 * 1024.0);
+        std::cout << music::dump_json(out, 2) << '\n';
+        return 1;
+    };
     try {
         out["assets"] = assets;
         out["score"] = to_utf8(score_path);
@@ -258,7 +266,8 @@ int main(int argc, char **argv) {
         auto runtime_start = std::chrono::steady_clock::now();
         music::EngineContext context(assets);
         auto score = music::load_native_score(context, score_bytes, score_format);
-        mu::engraving::MasterScore *master = score->master_score();
+        if (!score) return report_failure(score.error().message);
+        mu::engraving::MasterScore *master = (*score)->master_score();
         out["loadSeconds"] = seconds_since(runtime_start);
 
         auto engine_start = std::chrono::steady_clock::now();
@@ -353,10 +362,7 @@ int main(int argc, char **argv) {
         out["peakWorkingSetBytes"] = peak_working_set_bytes();
         out["peakWorkingSetMiB"] = peak_working_set_bytes() / (1024.0 * 1024.0);
     } catch (const std::exception &e) {
-        out["ok"] = false;
-        out["error"] = e.what();
-        out["peakWorkingSetBytes"] = peak_working_set_bytes();
-        out["peakWorkingSetMiB"] = peak_working_set_bytes() / (1024.0 * 1024.0);
+        return report_failure(e.what());
     }
 
     std::cout << music::dump_json(out, 2) << '\n';

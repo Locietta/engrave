@@ -39,7 +39,11 @@ int main(int argc, char **argv) {
         const std::string bytes{std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>()};
         music::EngineContext context(args[0]);
         auto project = music::load_native_score(context, bytes, format);
-        auto *master = project->master_score();
+        if (!project) {
+            std::cerr << "semantic_dump: " << project.error().message << '\n';
+            return 1;
+        }
+        auto *master = (*project)->master_score();
         if (generate) music::generate_score_excerpts(master);
         std::cout << music::dump_json(music::semantic_dump(master), 1) << '\n';
         return 0;

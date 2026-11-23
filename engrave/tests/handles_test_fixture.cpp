@@ -144,7 +144,8 @@ std::string export_mscx(engrave::Document &document, int excerpt_id) {
     music::ExportOptions options;
     options.excerpt_id = excerpt_id;
     return music::export_native_score(engrave::DocumentAccess::context(document), engrave::DocumentAccess::project(document), "mscx",
-                                      options, {});
+                                      options, {})
+        .value();
 }
 
 /// The snapshot path: write the score and read it back into a new document.

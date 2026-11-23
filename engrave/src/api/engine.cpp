@@ -257,10 +257,14 @@ Result<std::unique_ptr<Document>> Engine::open(std::span<const std::byte> data, 
             if (!opened) return fail(ErrorCode::INVALID_INPUT, std::format("cannot read the data as MNX: {}", opened.error()));
             project = *std::move(opened);
         } else {
-            project = music::load_native_score(*impl_->state->context, bytes, backend_name(*format));
+            auto loaded = music::load_native_score(*impl_->state->context, bytes, backend_name(*format));
+            if (!loaded) {
+                if (loaded.error().code == ErrorCode::UNSUPPORTED) return std::unexpected(std::move(loaded.error()));
+                return fail(ErrorCode::INVALID_INPUT,
+                            std::format("cannot read the data as {}: {}", to_string(*format), loaded.error().message));
+            }
+            project = *std::move(loaded);
         }
-    } catch (const music::UnsupportedScoreVersion &error) {
-        return fail(ErrorCode::UNSUPPORTED, error.what());
     } catch (const std::bad_alloc &) {
         throw;
     } catch (const std::exception &error) {
@@ -316,9 +320,12 @@ Result<std::unique_ptr<Document>> Engine::create_document(const CreateOptions &o
 
     music::ScoreProject project;
     try {
-        project = music::load_native_score_dir(*impl_->state->context, utf8(std::filesystem::absolute(mscx)));
-    } catch (const music::UnsupportedScoreVersion &error) {
-        return fail(ErrorCode::UNSUPPORTED, error.what());
+        auto loaded = music::load_native_score_dir(*impl_->state->context, utf8(std::filesystem::absolute(mscx)));
+        if (!loaded) {
+            if (loaded.error().code == ErrorCode::UNSUPPORTED) return std::unexpected(std::move(loaded.error()));
+            return fail(ErrorCode::INVALID_INPUT, std::format("cannot read the template '{}': {}", utf8(mscx), loaded.error().message));
+        }
+        project = *std::move(loaded);
     } catch (const std::bad_alloc &) {
         throw;
     } catch (const std::exception &error) {

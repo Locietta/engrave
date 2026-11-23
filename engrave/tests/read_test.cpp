@@ -3868,10 +3868,17 @@ TEST(Read, PositionCaptureLimitsAndCancellation) {
             EXPECT_EQ(bounded->events[i].elid, original->events[i].elid);
             EXPECT_EQ(bounded->events[i].position, original->events[i].position);
         }
-        int checks = 0;
-        const auto cancelled = document->positions(kind, {}, {.cancelled = [&] { return ++checks == 3; }});
-        expect_code(cancelled, ErrorCode::CANCELLED, "cancelled position capture");
-        EXPECT_EQ(checks, 3);
+        ASSERT_FALSE(original->events.empty());
+        const std::size_t elements = original->elements.size();
+        const auto pass = elements + original->events.size();
+        for (const std::size_t stop : {3uz, 3 + elements, 3 + pass, 3 + pass + elements, 3 + 2 * pass}) {
+            std::size_t checks = 0;
+            const auto cancelled = document->positions(kind, {}, {.cancelled = [&] { return ++checks == stop; }});
+            ASSERT_FALSE(cancelled);
+            EXPECT_EQ(cancelled.error().code, ErrorCode::CANCELLED);
+            EXPECT_EQ(cancelled.error().message, "position capture cancelled");
+            EXPECT_EQ(checks, stop);
+        }
     }
 }
 
