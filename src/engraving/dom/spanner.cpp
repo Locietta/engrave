@@ -21,12 +21,11 @@
  */
 #include "spanner.h"
 
-#include <ankerl/unordered_dense.h>
-
 #include "../editing/navigation.h"
 #include "anchors.h"
 #include "chord.h"
 #include "chordrest.h"
+#include "global/hashmap.h"
 #include "line.h"
 #include "location.h"
 #include "log.h"
@@ -1026,7 +1025,7 @@ void Spanner::set_ticks(const Fraction &f) {
 }
 
 bool Spanner::is_voice_specific() const {
-    static const ankerl::unordered_dense::set<ElementType> voice_specific_spanners{
+    static const muse::HashSet<ElementType> voice_specific_spanners{
         ElementType::TRILL,
         ElementType::HAIRPIN,
         ElementType::LET_RING,

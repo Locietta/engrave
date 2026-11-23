@@ -5,9 +5,6 @@
 #include <optional>
 #include <tuple>
 
-#include <amc/flatset.hpp>
-#include <ankerl/unordered_dense.h>
-
 #include "compatmidigrace.h"
 #include "dom/arpeggio.h"
 #include "dom/articulation.h"
@@ -40,6 +37,8 @@
 #include "easeinout.h"
 #include "editing/navigation.h"
 #include "global/flatmap.h"
+#include "global/flatset.h"
+#include "global/hashmap.h"
 #include "global/realfn.h"
 #include "log.h"
 #include "types/bps.h"
@@ -1353,12 +1352,12 @@ int CompatMidiRender::slide_length_chord_dependent(Chord *chord) {
     return (double) NoteEvent::note_length * ::mu::engraving::slide_duration / current_ticks;
 }
 
-amc::FlatSet<size_t> CompatMidiRender::get_notes_indexes_to_render(Chord *chord) {
-    amc::FlatSet<size_t> notes_indexes_to_render;
+muse::FlatSet<size_t> CompatMidiRender::get_notes_indexes_to_render(Chord *chord) {
+    muse::FlatSet<size_t> notes_indexes_to_render;
 
     auto &notes = chord->notes();
     /// not adding sounds for the same pitches in chord (for example, on different strings)
-    ankerl::unordered_dense::map<int, int> longest_play_ticks_for_pitch;
+    muse::HashMap<int, int> longest_play_ticks_for_pitch;
 
     for (Note *note : notes) {
         int pitch = note->pitch();

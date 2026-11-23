@@ -26,8 +26,6 @@
 #include <stdexcept>
 #include <vector>
 
-#include <amc/flatset.hpp>
-
 #include "../editing/addremoveelement.h"
 #include "../editing/editchord.h"
 #include "../editing/editnote.h"
@@ -44,6 +42,7 @@
 #include "drumset.h"
 #include "engraving/dom/dummyparent.h"
 #include "factory.h"
+#include "global/flatset.h"
 #include "guitarbend.h"
 #include "hook.h"
 #include "infrastructure/eidregister.h"
@@ -1315,7 +1314,7 @@ Tapping *Chord::tapping() const {
     return tappings.size() > 0 ? tappings.front() : nullptr;
 }
 
-void Chord::update_articulations(const amc::FlatSet<SymId> &new_articulation_ids, ArticulationsUpdateMode update_mode) {
+void Chord::update_articulations(const muse::FlatSet<SymId> &new_articulation_ids, ArticulationsUpdateMode update_mode) {
     Articulation *staccato = nullptr;
     Articulation *accent = nullptr;
     Articulation *marcato = nullptr;
@@ -1369,7 +1368,7 @@ void Chord::update_articulations(const amc::FlatSet<SymId> &new_articulation_ids
             }
         }
     }
-    amc::FlatSet<SymId> new_artics;
+    muse::FlatSet<SymId> new_artics;
     // get symbol id's for correct direction
     for (const SymId &id : new_articulation_ids) {
         if (id == SymId::ARTIC_ACCENT_ABOVE || id == SymId::ARTIC_ACCENT_BELOW) {
@@ -1954,8 +1953,8 @@ void Chord::undo_change_property(Pid id, const PropertyValue &new_value, Propert
     ChordRest::undo_change_property(id, new_value, ps);
 }
 
-amc::FlatSet<SymId> Chord::articulation_symbol_ids() const {
-    amc::FlatSet<SymId> result;
+muse::FlatSet<SymId> Chord::articulation_symbol_ids() const {
+    muse::FlatSet<SymId> result;
     for (const Articulation *artic : articulations_) {
         result.insert(artic->sym_id());
     }

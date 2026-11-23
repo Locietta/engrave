@@ -24,9 +24,8 @@
 
 #include <memory>
 
-#include <gtl/btree.hpp>
-
 #include "../types/types.h"
+#include "global/btree.h"
 #include "global/types/string.h"
 
 namespace muse::io {
@@ -467,7 +466,7 @@ struct ChordFont {
 //---------------------------------------------------------
 
 // Parsing a later harmony can insert a chord while earlier descriptions are still referenced.
-struct ChordDescriptions : gtl::btree_map<int, std::unique_ptr<ChordDescription>> {
+struct ChordDescriptions : muse::BTreeMap<int, std::unique_ptr<ChordDescription>> {
     ChordDescriptions() = default;
     ChordDescriptions(const ChordDescriptions &);
     ChordDescriptions(ChordDescriptions &&) = default;
@@ -536,7 +535,7 @@ private:
     void read(XmlReader &xml, int msc_version);
     void write(XmlWriter &xml) const;
 
-    gtl::btree_map<String, ChordSymbol> symbols_;
+    muse::BTreeMap<String, ChordSymbol> symbols_;
     bool auto_adjust_ = false;
     bool stack_modifiers_ = false;
     bool exclude_mods_h_align_ = false;

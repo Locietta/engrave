@@ -22,9 +22,6 @@
 
 #include "engravingcompat.h"
 
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
-
 #include "dom/beam.h"
 #include "dom/box.h"
 #include "dom/chord.h"
@@ -46,6 +43,8 @@
 #include "editing/reset.h"
 #include "editing/transaction/transaction.h"
 #include "engraving/rendering/score/scorerenderer.h"
+#include "global/btree.h"
+#include "global/hashmap.h"
 #include "rw/compat/compatutils.h"
 #include "types/types.h"
 
@@ -629,10 +628,10 @@ void AlignmentMigration500::migrate_snapped_and_same_item_type_alignment(MasterS
     for (Score *score : master_score->score_list()) {
         std::vector<EngravingItem *> snapped_candidates;
 
-        gtl::btree_map<RowKey, std::vector<EngravingItem *>> harmony_groups;
-        gtl::btree_map<RowKey, std::vector<EngravingItem *>> harmony_on_fret_diagram_groups;
-        gtl::btree_map<RowKey, std::vector<EngravingItem *>> fret_groups;
-        gtl::btree_map<RowKey, std::vector<EngravingItem *>> sticking_groups;
+        muse::BTreeMap<RowKey, std::vector<EngravingItem *>> harmony_groups;
+        muse::BTreeMap<RowKey, std::vector<EngravingItem *>> harmony_on_fret_diagram_groups;
+        muse::BTreeMap<RowKey, std::vector<EngravingItem *>> fret_groups;
+        muse::BTreeMap<RowKey, std::vector<EngravingItem *>> sticking_groups;
 
         bool align_chord_symbols = score->style().style_b(Sid::VERTICALLY_ALIGN_CHORD_SYMBOLS);
 
@@ -672,7 +671,7 @@ void AlignmentMigration500::migrate_snapped_and_same_item_type_alignment(MasterS
             }
         });
 
-        ankerl::unordered_dense::set<EngravingItem *> visited;
+        muse::HashSet<EngravingItem *> visited;
         for (EngravingItem *item : snapped_candidates) {
             if (muse::contains(visited, item)) {
                 continue;

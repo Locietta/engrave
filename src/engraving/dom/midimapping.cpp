@@ -20,9 +20,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <ankerl/unordered_dense.h>
-
 #include "excerpt.h"
+#include "global/hashmap.h"
 #include "instrument.h"
 #include "log.h"
 #include "masterscore.h"
@@ -102,8 +101,8 @@ void MasterScore::check_midi_mapping() {
 //   getNextFreeMidiMapping
 //---------------------------------------------------------
 
-int MasterScore::get_next_free_midi_mapping(ankerl::unordered_dense::set<int> &occupied_midi_channels,
-                                            unsigned int &search_midi_mapping_from, int p, int ch) {
+int MasterScore::get_next_free_midi_mapping(muse::HashSet<int> &occupied_midi_channels, unsigned int &search_midi_mapping_from, int p,
+                                            int ch) {
     if (ch != -1 && p != -1) {
         return p * 16 + ch;
     } else if (ch != -1 && p == -1) {
@@ -134,7 +133,7 @@ int MasterScore::get_next_free_midi_mapping(ankerl::unordered_dense::set<int> &o
 //   getNextFreeDrumMidiMapping
 //---------------------------------------------------------
 
-int MasterScore::get_next_free_drum_midi_mapping(ankerl::unordered_dense::set<int> &occupied_midi_channels) {
+int MasterScore::get_next_free_drum_midi_mapping(muse::HashSet<int> &occupied_midi_channels) {
     for (int i = 0;; i++) {
         if (!muse::contains(occupied_midi_channels, i * 16 + 9)) {
             occupied_midi_channels.insert(i * 16 + 9);
@@ -253,8 +252,8 @@ void MasterScore::remove_deleted_midi_mapping() {
 
 int MasterScore::update_midi_mapping() {
     int maxport = 0;
-    ankerl::unordered_dense::set<int> occupied_midi_channels; // each entry is port*16+channel, port range: 0-inf, channel: 0-15
-    unsigned int search_midi_mapping_from = 0;                // makes getting next free MIDI mapping faster
+    muse::HashSet<int> occupied_midi_channels; // each entry is port*16+channel, port range: 0-inf, channel: 0-15
+    unsigned int search_midi_mapping_from = 0; // makes getting next free MIDI mapping faster
 
     for (const MidiMapping &mm : midi_mapping_) {
         if (mm.port() == -1 || mm.channel() == -1) {
@@ -279,8 +278,8 @@ int MasterScore::update_midi_mapping() {
     return maxport;
 }
 
-void MasterScore::do_update_midi_mapping(int &maxport, ankerl::unordered_dense::set<int> &occupied_midi_channels,
-                                         unsigned int &search_midi_mapping_from, Part *part, InstrChannel *channel, bool use_drumset) {
+void MasterScore::do_update_midi_mapping(int &maxport, muse::HashSet<int> &occupied_midi_channels, unsigned int &search_midi_mapping_from,
+                                         Part *part, InstrChannel *channel, bool use_drumset) {
     bool channel_exists = false;
     for (const MidiMapping &mapping : midi_mapping_) {
         const bool valid_channel_index = channel->channel() >= 0 && channel->channel() < static_cast<int>(midi_mapping_.size());

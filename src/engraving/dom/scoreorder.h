@@ -22,9 +22,8 @@
 #ifndef MU_ENGRAVING_SCOREORDER_H
 #define MU_ENGRAVING_SCOREORDER_H
 
-#include <gtl/btree.hpp>
-
 #include "../types/types.h"
+#include "global/btree.h"
 #include "types/translatablestring.h"
 
 namespace mu::engraving {
@@ -65,7 +64,7 @@ struct InstrumentOverwrite {
 struct ScoreOrder {
     String id;
     TranslatableString name;
-    gtl::btree_map<String, InstrumentOverwrite> instrument_map;
+    muse::BTreeMap<String, InstrumentOverwrite> instrument_map;
     std::vector<ScoreGroup> groups;
     bool customized = false;
 

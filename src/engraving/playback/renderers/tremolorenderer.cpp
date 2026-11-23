@@ -22,11 +22,10 @@
 
 #include "tremolorenderer.h"
 
-#include <ankerl/unordered_dense.h>
-
 #include "dom/chord.h"
 #include "dom/tremolosinglechord.h"
 #include "dom/tremolotwochord.h"
+#include "global/hashmap.h"
 #include "log.h"
 #include "noterenderer.h"
 #include "playback/metaparsers/notearticulationsparser.h"
@@ -51,7 +50,7 @@ static bool contain_equal_tremolo(const Chord *c1, const Chord *c2) {
 
 static timestamp_t tremolo_timestamp_from(const Note *note, const RenderingContext &ctx) {
     const Note *original_note = note;
-    ankerl::unordered_dense::set<const Note *> notes{note};
+    muse::HashSet<const Note *> notes{note};
     int position_tick_offset = ctx.position_tick_offset;
 
     if (note->incoming_partial_tie()) {
@@ -86,7 +85,7 @@ static timestamp_t tremolo_timestamp_from(const Note *note, const RenderingConte
 }
 
 static duration_t tremolo_duration(const Note *note, const timestamp_t tremolo_timestamp_from, const RenderingContext &ctx) {
-    ankerl::unordered_dense::set<const Note *> notes{note};
+    muse::HashSet<const Note *> notes{note};
     int position_tick_offset = ctx.position_tick_offset;
 
     if (note->outgoing_partial_tie()) {

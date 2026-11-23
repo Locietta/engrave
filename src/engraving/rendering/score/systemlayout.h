@@ -23,12 +23,11 @@
 
 #include <vector>
 
-#include <gtl/btree.hpp>
-
 #include "../../dom/measure.h"
 #include "../../dom/segment.h"
 #include "../../dom/sharedpart.h"
 #include "../../types/types.h"
+#include "global/btree.h"
 #include "layoutcontext.h"
 
 namespace mu::engraving {
@@ -97,8 +96,8 @@ private:
         Measure *measure = nullptr;
         double measure_width = 0.0;
         double measure_pos = 0.0;
-        gtl::btree_map<EngravingItem *, PointF> element_positions;
-        gtl::btree_map<EngravingItem *, double> element_widths;
+        muse::BTreeMap<EngravingItem *, PointF> element_positions;
+        muse::BTreeMap<EngravingItem *, double> element_widths;
         std::vector<std::pair<SharedPart *, RenderedStaveSharingStates>> stave_sharing_states;
         bool cur_header = false;
         bool cur_trailer = false;

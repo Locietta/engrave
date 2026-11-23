@@ -27,8 +27,6 @@
 
 #include <assert.h>
 
-#include <amc/flatset.hpp>
-
 #include "../dom/accidental.h"
 #include "../dom/articulation.h"
 #include "../dom/barline.h"
@@ -83,6 +81,7 @@
 #include "editspanner.h"
 #include "editsystemlocks.h"
 #include "engraving/dom/dummyparent.h"
+#include "global/flatset.h"
 #include "infrastructure/messagebox.h"
 #include "log.h"
 #include "navigation.h"
@@ -517,7 +516,7 @@ GuitarBend *Score::add_guitar_bend(GuitarBendType type, Note *note, Note *end_no
 //    return segment of last created note/rest
 
 Segment *Score::set_note_rest_at(Segment *segment, track_idx_t track, NoteVal nval, Fraction sd, DirectionV stem_direction,
-                                 bool force_accidental, const amc::FlatSet<SymId> &articulation_ids, bool rhythmic,
+                                 bool force_accidental, const muse::FlatSet<SymId> &articulation_ids, bool rhythmic,
                                  EngravingItem **last_entered) {
     assert(segment->segment_type() == SegmentType::CHORD_REST);
     bool is_rest = nval.is_rest();
@@ -687,7 +686,7 @@ Segment *Score::set_note_rest_at(Segment *segment, track_idx_t track, NoteVal nv
 }
 
 Segment *Score::set_note_rest(Segment *segment, track_idx_t track, NoteVal nval, Fraction sd, DirectionV stem_direction,
-                              bool force_accidental, const amc::FlatSet<SymId> &articulation_ids, bool rhythmic,
+                              bool force_accidental, const muse::FlatSet<SymId> &articulation_ids, bool rhythmic,
                               InputState *external_input_state) {
     assert(segment->segment_type() == SegmentType::CHORD_REST);
     EngravingItem *nr = nullptr;

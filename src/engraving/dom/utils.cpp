@@ -25,9 +25,6 @@
 #include <algorithm>
 #include <cmath>
 
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
-
 #include "accidental.h"
 #include "arpeggio.h"
 #include "barline.h"
@@ -37,7 +34,9 @@
 #include "containers.h"
 #include "drumset.h"
 #include "fret.h"
+#include "global/btree.h"
 #include "global/flatmap.h"
+#include "global/hashmap.h"
 #include "harmony.h"
 #include "keysig.h"
 #include "laissezvib.h"
@@ -958,7 +957,7 @@ void collect_chords_overlapping_rests(Segment *segment, staff_idx_t staff_idx, s
     track_idx_t start_track = staff_idx * ::mu::engraving::voices;
     track_idx_t end_track = start_track + ::mu::engraving::voices;
 
-    gtl::btree_set<track_idx_t> tracks_to_check;
+    muse::BTreeSet<track_idx_t> tracks_to_check;
     for (track_idx_t track = start_track; track < end_track; ++track) {
         EngravingItem *item = segment->effective_element(track);
         if (!item || !item->is_rest()) {
@@ -1062,8 +1061,8 @@ std::vector<EngravingItem *> collect_system_objects(const Score *score, const st
     return result;
 }
 
-ankerl::unordered_dense::set<EngravingItem *> collect_elements_anchored_to_chord_rest(const ChordRest *cr) {
-    ankerl::unordered_dense::set<EngravingItem *> elems;
+muse::HashSet<EngravingItem *> collect_elements_anchored_to_chord_rest(const ChordRest *cr) {
+    muse::HashSet<EngravingItem *> elems;
     for (EngravingItem *lyric : cr->lyrics()) {
         elems.emplace(lyric);
     }
@@ -1099,9 +1098,9 @@ ankerl::unordered_dense::set<EngravingItem *> collect_elements_anchored_to_chord
     return elems;
 }
 
-ankerl::unordered_dense::set<EngravingItem *> collect_elements_anchored_to_note(const Note *note, bool include_forward_ties_spanners,
-                                                                                bool include_backward_ties_spanners) {
-    ankerl::unordered_dense::set<EngravingItem *> elems;
+muse::HashSet<EngravingItem *> collect_elements_anchored_to_note(const Note *note, bool include_forward_ties_spanners,
+                                                                 bool include_backward_ties_spanners) {
+    muse::HashSet<EngravingItem *> elems;
     LaissezVib *lv = note->laissez_vib();
     if (lv && !lv->segments_empty()) {
         elems.emplace(lv);

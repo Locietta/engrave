@@ -25,12 +25,11 @@
 #include <span>
 #include <vector>
 
-#include <gtl/btree.hpp>
-
 #include "dom/chord.h"
 #include "dom/measurerepeat.h"
 #include "dom/mmrest.h"
 #include "dom/rest.h"
+#include "global/btree.h"
 #include "layoutcontext.h"
 
 namespace mu::engraving {
@@ -80,7 +79,7 @@ struct OffsetInfo {
     double center_adjust_up = 0.0;   // adjustment to upstem chord needed after centering donwstem chord
     double center_adjust_down = 0.0; // adjustment to downstem chord needed after centering upstem chord
 
-    gtl::btree_set<track_idx_t> tracks_to_adjust;
+    muse::BTreeSet<track_idx_t> tracks_to_adjust;
 };
 
 struct ChordLayout {

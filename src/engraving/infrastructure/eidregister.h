@@ -28,10 +28,10 @@
 #include <vector>
 
 #include <amc/vector.hpp>
-#include <ankerl/unordered_dense.h>
 
 #include "../types/types.h"
 #include "eid.h"
+#include "global/hashmap.h"
 #include "sourcehandle.h"
 
 namespace mu::engraving {
@@ -134,7 +134,7 @@ private:
     uint64_t document_ = 0;
     amc::vector<Slot> slots_;
     uint32_t free_slot_ = 0;
-    ankerl::unordered_dense::map<EID, SourceHandle> eid_to_handle_;
+    muse::HashMap<EID, SourceHandle> eid_to_handle_;
     bool membership_ready_ = false;
     bool tracking_ = false;
     std::vector<TouchedSlot> touched_;

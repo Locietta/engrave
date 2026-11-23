@@ -21,8 +21,7 @@
  */
 #pragma once
 
-#include <ankerl/unordered_dense.h>
-
+#include "global/hashmap.h"
 #include "xmlreader.h"
 
 namespace mu::engraving::rw {
@@ -32,6 +31,6 @@ struct HarmonyToDiagramReader {
         String pattern;
     };
 
-    static ankerl::unordered_dense::map<String, FretDiagramInfo> read(XmlReader &reader);
+    static muse::HashMap<String, FretDiagramInfo> read(XmlReader &reader);
 };
 } // namespace mu::engraving::rw

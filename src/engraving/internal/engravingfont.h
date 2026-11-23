@@ -22,12 +22,11 @@
 #pragma once
 #include <memory>
 
-#include <ankerl/unordered_dense.h>
-
 #include "draw/types/font.h"
 #include "draw/types/geometry.h"
 #include "engraving/types/propertyvalue.h"
 #include "global/flatmap.h"
+#include "global/hashmap.h"
 #include "global/types/string.h"
 #include "infrastructure/shape.h"
 #include "infrastructure/smufl.h"
@@ -58,7 +57,7 @@ struct EngravingFont {
     const std::string &name() const;
     const std::string &family() const;
 
-    ankerl::unordered_dense::map<Sid, PropertyValue> engraving_defaults() const;
+    muse::HashMap<Sid, PropertyValue> engraving_defaults() const;
     double text_enclosure_thickness();
 
     char32_t sym_code(SymId id) const;
@@ -139,7 +138,7 @@ private:
     std::shared_ptr<muse::io::IODevice> font_device_;
     std::shared_ptr<muse::io::IODevice> metadata_device_;
 
-    ankerl::unordered_dense::map<Sid, PropertyValue> engraving_defaults_;
+    muse::HashMap<Sid, PropertyValue> engraving_defaults_;
     double text_enclosure_thickness_ = 0;
 };
 } // namespace mu::engraving

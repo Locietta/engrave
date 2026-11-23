@@ -27,9 +27,6 @@
 #include <tuple>
 #include <vector>
 
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
-
 #include "../dom/excerpt.h"
 #include "../dom/factory.h"
 #include "../dom/layoutbreak.h"
@@ -53,6 +50,7 @@
 #include "edittremolo.h"
 #include "engraving/dom/dummyparent.h"
 #include "global/containers.h"
+#include "global/hashmap.h"
 #include "log.h"
 #include "transaction/transaction.h"
 
@@ -627,7 +625,7 @@ void EditTimeSig::add_time_sig(Transaction &tx, Score *score, Measure *fm, staff
             }
         }
         // add the time signatures
-        ankerl::unordered_dense::map<track_idx_t, TimeSig *> master_time_sigs;
+        muse::HashMap<track_idx_t, TimeSig *> master_time_sigs;
         for (Score *lscore : score->score_list()) {
             Measure *nfm = lscore->tick2measure(tick);
             seg = nfm->undo_get_segment(SegmentType::TIME_SIG, nfm->tick());

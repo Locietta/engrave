@@ -23,8 +23,6 @@
 
 #include <cfloat>
 
-#include <gtl/btree.hpp>
-
 #include "arpeggiolayout.h"
 #include "beamlayout.h"
 #include "chordbracketlayout.h"
@@ -57,6 +55,7 @@
 #include "editing/editkeysig.h"
 #include "engraving/dom/dummyparent.h"
 #include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
+#include "global/btree.h"
 #include "horizontalspacing.h"
 #include "layoutcontext.h"
 #include "log.h"
@@ -2062,7 +2061,7 @@ void MeasureLayout::stretch_measure_in_practice_mode(Measure *m, double target_w
     //    compute stretch
     //---------------------------------------------------
 
-    gtl::btree_multimap<double, Segment *> springs;
+    muse::BTreeMultiMap<double, Segment *> springs;
 
     Segment *seg = m->rendered_first();
     while (seg && !seg->enabled()) {

@@ -24,9 +24,6 @@
 
 #include <algorithm>
 
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
-
 #include "engraving/automation/automationdata.h"
 #include "engraving/automation/dynamicvalues.h"
 #include "engraving/automation/tempovalues.h"
@@ -45,7 +42,9 @@
 #include "engraving/dom/tempotext.h"
 #include "engraving/dom/volta.h"
 #include "engraving/types/constants.h"
+#include "global/btree.h"
 #include "global/containers.h"
+#include "global/hashmap.h"
 #include "global/log.h"
 #include "global/realfn.h"
 
@@ -230,7 +229,7 @@ static ChangeRelevance classify_changes(const ScoreChanges &changes) {
     // so the old points on staves outside the new assignment must also be cleared
     result.dynamics |= muse::contains(changes.changed_property_id_set, Pid::VOICE_ASSIGNMENT);
 
-    static const ankerl::unordered_dense::set<Pid> repeat_properties{
+    static const muse::HashSet<Pid> repeat_properties{
         Pid::REPEAT_START,
         Pid::REPEAT_END,
         Pid::REPEAT_JUMP,
@@ -688,7 +687,7 @@ void ScoreAutomationController::add_dynamic_points(const DynamicInfo &info, cons
     IF_ASSERT_FAILED(key.is_valid()) { return; }
 
     AutomationCurve &curve = ctx.curves[key];
-    gtl::btree_map<utick_t, int> &tick_prio_map = ctx.dynamic_priorities[key];
+    muse::BTreeMap<utick_t, int> &tick_prio_map = ctx.dynamic_priorities[key];
 
     if (const auto *ordinary = std::get_if<DynamicInfo::Ordinary>(&info.kind)) {
         AutomationPoint point;
@@ -816,7 +815,7 @@ void ScoreAutomationController::add_hairpin_points(const Hairpin *hairpin, int t
 
 void ScoreAutomationController::add_hairpin_points(const HairpinInfo &info, const AutomationCurveKey &key, UpdateContext &ctx) {
     AutomationCurve &curve = ctx.curves[key];
-    gtl::btree_map<utick_t, int> &tick_prio_map = ctx.dynamic_priorities[key];
+    muse::BTreeMap<utick_t, int> &tick_prio_map = ctx.dynamic_priorities[key];
 
     // --- Determine valueFrom
     const AutomationPoint *prev_point = active_point(ctx.curves, key, info.from);
@@ -910,7 +909,7 @@ void ScoreAutomationController::add_measure_repeat_points(UpdateContext &ctx) {
         return;
     }
 
-    ankerl::unordered_dense::map<uint64_t, std::vector<AutomationCurve *>> curves_by_staff;
+    muse::HashMap<uint64_t, std::vector<AutomationCurve *>> curves_by_staff;
     for (auto &[key, curve] : ctx.curves) {
         const std::optional<muse::ID> staff_id = key.staff_id();
         if (staff_id) {
@@ -1197,7 +1196,7 @@ void ScoreAutomationController::fix_anacrusis_tempo(UpdateContext &ctx) {
     }
 }
 
-bool ScoreAutomationController::try_add_dynamic_point(AutomationCurve &curve, gtl::btree_map<utick_t, int> &tick_prio_map, utick_t tick,
+bool ScoreAutomationController::try_add_dynamic_point(AutomationCurve &curve, muse::BTreeMap<utick_t, int> &tick_prio_map, utick_t tick,
                                                       const AutomationPoint &point, int priority) {
     //! See: https://github.com/musescore/MuseScore/issues/23355
     const auto prio_it = tick_prio_map.lower_bound(tick);
@@ -1224,7 +1223,7 @@ bool ScoreAutomationController::try_add_dynamic_point(AutomationCurve &curve, gt
     return true;
 }
 
-void ScoreAutomationController::add_dynamic_point(AutomationCurve &curve, gtl::btree_map<utick_t, int> &tick_prio_map, utick_t tick,
+void ScoreAutomationController::add_dynamic_point(AutomationCurve &curve, muse::BTreeMap<utick_t, int> &tick_prio_map, utick_t tick,
                                                   const AutomationPoint &point, int priority) {
     // If a point with the same priority already exists at this tick, merge them:
     // keep the existing arrival value and use this point's departure value

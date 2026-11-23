@@ -24,15 +24,14 @@
 
 #include <algorithm>
 
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
-
 #include "../editing/addremoveelement.h"
 #include "anchors.h"
 #include "chord.h"
 #include "engraving/dom/dummyparent.h"
 #include "engraving/style/styletypes.h"
 #include "factory.h"
+#include "global/btree.h"
+#include "global/hashmap.h"
 #include "harmony.h"
 #include "io/file.h"
 #include "log.h"
@@ -86,8 +85,8 @@ struct HarmonyMapKey {
     }
 };
 
-static gtl::btree_map<HarmonyMapKey /*key*/, std::vector<DiagramInfo>> s_harmony_to_diagram_map;
-static ankerl::unordered_dense::map<String /*pattern*/, std::vector<String /*harmonyName*/>> s_diagram_pattern_to_harmonies_map;
+static muse::BTreeMap<HarmonyMapKey /*key*/, std::vector<DiagramInfo>> s_harmony_to_diagram_map;
+static muse::HashMap<String /*pattern*/, std::vector<String /*harmonyName*/>> s_diagram_pattern_to_harmonies_map;
 
 void FretDiagram::clear_harmony_caches() {
     s_harmony_to_diagram_map.clear();

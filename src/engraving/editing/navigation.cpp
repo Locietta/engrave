@@ -22,8 +22,6 @@
 
 #include "navigation.h"
 
-#include <gtl/btree.hpp>
-
 #include "../dom/box.h"
 #include "../dom/chord.h"
 #include "../dom/engravingitem.h"
@@ -47,6 +45,7 @@
 #include "../dom/systemlockindicator.h"
 #include "../dom/tapping.h"
 #include "../style/style.h"
+#include "global/btree.h"
 
 using namespace mu;
 
@@ -96,8 +95,8 @@ static bool is_child1before_child2(const ElementPair &child1, const ElementPair 
 //    return a set of children ordered
 //    on the basis of position
 
-static gtl::btree_set<ElementPair, decltype(&is_child1before_child2)> to_child_pairs_set(const EngravingItem *element) {
-    gtl::btree_set<ElementPair, decltype(&is_child1before_child2)> children(&is_child1before_child2);
+static muse::BTreeSet<ElementPair, decltype(&is_child1before_child2)> to_child_pairs_set(const EngravingItem *element) {
+    muse::BTreeSet<ElementPair, decltype(&is_child1before_child2)> children(&is_child1before_child2);
     int index = 0;
 
     for (EngravingObject *object : element->children()) {

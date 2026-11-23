@@ -29,9 +29,6 @@
 
 #include <cmath>
 
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
-
 #include "compat/midi/event.h"
 #include "compatmidigrace.h"
 #include "compatmidirender.h"
@@ -66,6 +63,8 @@
 #include "dom/utils.h"
 #include "dom/vibrato.h"
 #include "dom/volta.h"
+#include "global/btree.h"
+#include "global/hashmap.h"
 #include "log.h"
 #include "types/constants.h"
 
@@ -74,7 +73,7 @@ static PitchWheelSpecs g_wheel_spec;
 static constexpr int let_ring_max_ticks = Constants::division * 16;
 // TODO this should be a (configurable?) constant somewhere
 static constexpr Fraction articulation_change_time_max = Fraction(1, 16);
-ankerl::unordered_dense::map<String, CompatMidiRendererInternal::Context::BuiltInArticulation>
+muse::HashMap<String, CompatMidiRendererInternal::Context::BuiltInArticulation>
     CompatMidiRendererInternal::Context::s_built_in_articulations_values = {
         {u"staccatissimo", {1.0, 30}}, {u"staccato", {1.0, 50}},  {u"portato", {1.0, 67}},    {u"tenuto", {1.0, 100}},
         {u"accent", {1.2, 100}},       {u"marcato", {1.44, 100}}, {u"sforzato", {1.69, 100}},
@@ -121,7 +120,7 @@ static uint32_t get_channel(const Instrument *instr, const Note *note, MidiInstr
                             const CompatMidiRendererInternal::Context &context);
 
 static void fill_score_velocities(const Score *score, CompatMidiRendererInternal::Context &context);
-static void fill_hairpin_velocities(const Hairpin *h, ankerl::unordered_dense::map<staff_idx_t, VelocityMap> &velocities_by_track);
+static void fill_hairpin_velocities(const Hairpin *h, muse::HashMap<staff_idx_t, VelocityMap> &velocities_by_track);
 static void fill_volta_velocities(const Volta *volta, VelocityMap &velo_map);
 
 static double chord_velocity_multiplier(const Chord *chord, const CompatMidiRendererInternal::Context &context);
@@ -342,8 +341,8 @@ static BendPlaybackInfo get_bend_playback_info(const GuitarBend *bend, int bend_
     return bend_info;
 }
 
-static void fill_bend_durations(const Note *bend_start_note, const ankerl::unordered_dense::set<const Note *> &current_notes,
-                                ankerl::unordered_dense::map<const Note *, int> &durations) {
+static void fill_bend_durations(const Note *bend_start_note, const muse::HashSet<const Note *> &current_notes,
+                                muse::HashMap<const Note *, int> &durations) {
     if (!bend_start_note || current_notes.empty()) {
         return;
     }
@@ -355,10 +354,10 @@ static void fill_bend_durations(const Note *bend_start_note, const ankerl::unord
     }
 }
 
-static ankerl::unordered_dense::map<const Note *, int> get_grace_note_bend_durations(const Note *note) {
-    ankerl::unordered_dense::map<const Note *, int> durations;
+static muse::HashMap<const Note *, int> get_grace_note_bend_durations(const Note *note) {
+    muse::HashMap<const Note *, int> durations;
     const Note *bend_start_note = nullptr;
-    ankerl::unordered_dense::set<const Note *> current_notes;
+    muse::HashSet<const Note *> current_notes;
 
     if (note->bend_for() && note->bend_for()->bend_type() == GuitarBendType::SLIGHT_BEND) {
         return {};
@@ -641,7 +640,7 @@ static void render_snd(EventsHolder &events, const Chord *chord, int note_channe
     auto changes = velo_events.changes_in_range(stick, etick);
     auto mult_changes = mult_events.changes_in_range(stick, etick);
 
-    gtl::btree_map<int, int> velocity_map;
+    muse::BTreeMap<int, int> velocity_map;
     for (auto &change : changes) {
         int last_val = -1;
         int end_point = change.second.ticks();
@@ -1760,7 +1759,7 @@ bool CompatMidiRendererInternal::grace_notes_merged(Chord *chord) {
 }
 
 /* static */
-void fill_hairpin_velocities(const Hairpin *h, ankerl::unordered_dense::map<track_idx_t, VelocityMap> &velocities_by_track) {
+void fill_hairpin_velocities(const Hairpin *h, muse::HashMap<track_idx_t, VelocityMap> &velocities_by_track) {
     Staff *st = h->staff();
     Fraction tick = h->tick();
     Fraction tick2 = h->tick2();

@@ -23,11 +23,10 @@
 
 #include <vector>
 
-#include <amc/flatset.hpp>
-
 #include "compatmidirenderinternal.h"
 #include "engraving/types/types.h"
 #include "event.h"
+#include "global/flatset.h"
 
 namespace mu::engraving {
 struct Chord;
@@ -78,7 +77,7 @@ private:
     static int adjust_trailtime(int trailtime, Chord *current_chord, Chord *next_chord);
     static bool note_is_glissando_start(Note *note);
     static int slide_length_chord_dependent(Chord *chord);
-    static amc::FlatSet<size_t> get_notes_indexes_to_render(Chord *chord);
+    static muse::FlatSet<size_t> get_notes_indexes_to_render(Chord *chord);
     static Glissando *back_glissando(Note *note);
     static bool is_glissando_valid(Glissando *glissando);
     static const Drumset *get_drumset(const Chord *chord);

@@ -21,9 +21,8 @@
  */
 #pragma once
 
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
-
+#include "global/btree.h"
+#include "global/hashmap.h"
 #include "shape.h"
 #include "vectorview.h"
 
@@ -178,11 +177,11 @@ private:
     static double additional_padding_for_verticals(const Accidental *acc, const EngravingItem *item, const AccidentalsLayoutContext &ctx);
 
     static void vertically_align_accidentals(AccidentalsLayoutContext &ctx);
-    static void collect_vertical_sets_of_offset_octaves(ankerl::unordered_dense::set<Accidental *> &accidentals_already_grouped,
-                                                        gtl::btree_map<Accidental *, std::vector<Accidental *>> &vertical_sets,
+    static void collect_vertical_sets_of_offset_octaves(muse::HashSet<Accidental *> &accidentals_already_grouped,
+                                                        muse::BTreeMap<Accidental *, std::vector<Accidental *>> &vertical_sets,
                                                         AccidentalsLayoutContext &ctx);
-    static void collect_vertical_sets(ankerl::unordered_dense::set<Accidental *> &accidentals_already_grouped,
-                                      gtl::btree_map<Accidental *, std::vector<Accidental *>> &vertical_sets,
+    static void collect_vertical_sets(muse::HashSet<Accidental *> &accidentals_already_grouped,
+                                      muse::BTreeMap<Accidental *, std::vector<Accidental *>> &vertical_sets,
                                       AccidentalsLayoutContext &ctx);
     static void align_vertical_sets(AccidentalGroups &vert_sets, AccidentalsLayoutContext &ctx);
 

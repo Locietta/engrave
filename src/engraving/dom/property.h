@@ -22,9 +22,8 @@
 
 #pragma once
 
-#include <ankerl/unordered_dense.h>
-
 #include "../types/propertyvalue.h"
+#include "global/hashmap.h"
 #include "global/types/string.h"
 
 namespace mu::engraving {
@@ -549,7 +548,7 @@ enum class PropertyGroup : unsigned char {
     NONE, // Properties that should not be taken into account when propagating
 };
 
-using PropertyIdSet = ankerl::unordered_dense::set<Pid>;
+using PropertyIdSet = muse::HashSet<Pid>;
 
 extern PropertyValue property_from_string(PType type, String value);
 extern String property_to_string(Pid, const PropertyValue &value, bool mscx);

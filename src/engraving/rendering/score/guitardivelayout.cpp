@@ -23,15 +23,14 @@
 
 #include <deque>
 
-#include <amc/flatset.hpp>
-#include <ankerl/unordered_dense.h>
-
 #include "dom/guitarbend.h"
 #include "dom/note.h"
 #include "dom/staff.h"
 #include "dom/stafftype.h"
 #include "dom/system.h"
 #include "dom/whammybar.h"
+#include "global/flatset.h"
+#include "global/hashmap.h"
 #include "horizontalspacing.h"
 #include "textlayout.h"
 #include "tlayout.h"
@@ -63,8 +62,8 @@ void GuitarDiveLayout::update_dive_sequences(const std::vector<GuitarBend *> &be
         // On-staff vs above-staff layout
         DirectionV tab_pos = dive->dive_tab_pos();
 
-        amc::FlatSet<int> dive_levels;
-        ankerl::unordered_dense::set<GuitarBend *> dive_sequence;
+        muse::FlatSet<int> dive_levels;
+        muse::HashSet<GuitarBend *> dive_sequence;
 
         dive_levels.insert(dive->tot_bend_amount_including_preceding_bends());
         dive_sequence.insert(dive);
@@ -301,7 +300,7 @@ PointF GuitarDiveLayout::compute_end_pos_on_staff(GuitarBendSegment *item, Layou
         return PointF(x, y);
     }
 
-    const amc::FlatSet<int> &dive_levels = bend->ldata()->dive_levels();
+    const muse::FlatSet<int> &dive_levels = bend->ldata()->dive_levels();
     std::deque<int> dive_levels_in_this_direction;
     for (int level : dive_levels) {
         if (above_staff && level > 0) {
@@ -346,7 +345,7 @@ PointF GuitarDiveLayout::compute_start_pos_above_staff(GuitarBendSegment *item, 
             double line_dist = item->absolute_from_spatium(staff_type->line_distance());
             const double base_line = -1.5 * line_dist;
             const double increment = spatium;
-            amc::FlatSet<int> dive_levels = bend->ldata()->dive_levels();
+            muse::FlatSet<int> dive_levels = bend->ldata()->dive_levels();
             dive_levels.insert(0); // Because for dives above the staff we need the zero level too
             size_t zero_level = muse::index_of(dive_levels, 0);
             double tot_increment = increment * zero_level;
@@ -385,7 +384,7 @@ PointF GuitarDiveLayout::compute_end_pos_above_staff(GuitarBendSegment *item, La
     int ending_level = bend->tot_bend_amount_including_preceding_bends();
     int starting_level = ending_level - bend->bend_amount_in_quarter_tones();
 
-    amc::FlatSet<int> dive_levels = bend->ldata()->dive_levels();
+    muse::FlatSet<int> dive_levels = bend->ldata()->dive_levels();
     dive_levels.insert(0); // Because for dives above the staff we need the zero level too
 
     size_t ending_idx = muse::index_of(dive_levels, ending_level);

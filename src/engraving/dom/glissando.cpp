@@ -34,10 +34,9 @@ NICE-TO-HAVE TODO:
 #include <algorithm>
 #include <cmath>
 
-#include <amc/flatset.hpp>
-
 #include "chord.h"
 #include "engraving/style/styletypes.h"
+#include "global/flatset.h"
 #include "harppedaldiagram.h"
 #include "log.h"
 #include "measure.h"
@@ -166,7 +165,7 @@ bool Glissando::pitch_steps(const Spanner *spanner, std::vector<int> &pitch_offs
         // Obey harp pedal diagrams if on a harp staff
         if (glissando->is_harp_gliss().value_or(false)) {
             HarpPedalDiagram *hd = spanner->origin_part()->current_harp_diagram(spanner->tick());
-            amc::FlatSet<int> playable_tpcs = hd ? hd->playable_tpcs() : amc::FlatSet<int>({14, 16, 18, 13, 15, 17, 19});
+            muse::FlatSet<int> playable_tpcs = hd ? hd->playable_tpcs() : muse::FlatSet<int>({14, 16, 18, 13, 15, 17, 19});
             std::vector<int> playable_pitches;
             playable_pitches.reserve(playable_tpcs.size());
             for (int t : playable_tpcs) {

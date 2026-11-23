@@ -24,15 +24,14 @@
 #include <memory>
 #include <vector>
 
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
-
 #include "../infrastructure/eid.h"
 #include "../types/types.h"
 #include "dom/authoredoverride.h"
 #include "dom/interval.h"
 #include "dom/location.h"
 #include "engraving/internal/engravingfontsprovider.h"
+#include "global/btree.h"
+#include "global/hashmap.h"
 
 namespace mu::engraving {
 struct Beam;
@@ -69,7 +68,7 @@ struct ReadContext {
     bool paste_mode() const { return paste_mode_value; }
 
     bool transaction_snapshot = false;
-    ankerl::unordered_dense::map<const EngravingItem *, AuthoredChildKey> child_keys;
+    muse::HashMap<const EngravingItem *, AuthoredChildKey> child_keys;
 
     int msc_version() const;
 
@@ -135,7 +134,7 @@ struct ReadContext {
 
     const SettingsCompat &setting_compat() { return settings_compat; }
 
-    gtl::btree_map<Measure *, std::unique_ptr<Measure>> legacy_mmrests;
+    muse::BTreeMap<Measure *, std::unique_ptr<Measure>> legacy_mmrests;
 
     Fraction time_sig_for_next_measure() { return time_sig_for_next_measure_; }
 
@@ -192,12 +191,12 @@ private:
 
     Fraction time_sig_for_next_measure_ = Fraction(0, 1);
 
-    ankerl::unordered_dense::map<Measure *, EID> mm_rest_end_measures_;
+    muse::HashMap<Measure *, EID> mm_rest_end_measures_;
 
     // On pasting we must create new EIDs for the elements, as the serialized EIDs could be used elsewhere in the score
     // This map preserves the link between the old EID used to reference items within the section of the score which was copied and the newly created EID
-    ankerl::unordered_dense::map<EID, EID> pasted_ei_ds_;
+    muse::HashMap<EID, EID> pasted_ei_ds_;
 
-    gtl::btree_map<Spanner *, std::pair<EID, EID>> incomplete_note_anchored_spanners_;
+    muse::BTreeMap<Spanner *, std::pair<EID, EID>> incomplete_note_anchored_spanners_;
 };
 } // namespace mu::engraving::read

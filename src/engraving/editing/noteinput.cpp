@@ -33,13 +33,14 @@
 #include "../dom/staff.h"
 #include "../style/style.h"
 #include "engraving/dom/dummyparent.h"
+#include "global/flatset.h"
 
 using namespace muse;
 using namespace mu;
 using namespace mu::engraving;
 
 Note *NoteInput::add_note_to_chord(Score *score, Chord *chord, const NoteVal &note_val, bool force_accidental,
-                                   const amc::FlatSet<SymId> &articulation_ids) {
+                                   const muse::FlatSet<SymId> &articulation_ids) {
     Note *note = Factory::create_note(chord);
     note->set_track(chord->track());
     note->set_nval(note_val);
@@ -65,7 +66,7 @@ Note *NoteInput::add_note_to_chord(Score *score, Chord *chord, const NoteVal &no
 }
 
 Note *NoteInput::add_note(Transaction &, Score *score, Chord *chord, const NoteVal &note_val, bool force_accidental,
-                          const amc::FlatSet<SymId> &articulation_ids, InputState *external_input_state) {
+                          const muse::FlatSet<SymId> &articulation_ids, InputState *external_input_state) {
     InputState &is = external_input_state ? (*external_input_state) : score->input_state();
 
     Note *note = add_note_to_chord(score, chord, note_val, force_accidental, articulation_ids);

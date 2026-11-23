@@ -22,11 +22,10 @@
 #pragma once
 #include <vector>
 
-#include <ankerl/unordered_dense.h>
-
 #include "../dom/engravingobject.h"
 #include "../types/types.h"
 #include "engraving/dom/property.h"
+#include "global/hashmap.h"
 
 namespace mu::engraving {
 struct ScoreChanges {
@@ -37,7 +36,7 @@ struct ScoreChanges {
 
     bool is_text_editing = false;
 
-    ankerl::unordered_dense::set<EngravingObject *> changed_objects;
+    muse::HashSet<EngravingObject *> changed_objects;
     ElementTypeSet changed_types;
     PropertyIdSet changed_property_id_set;
 

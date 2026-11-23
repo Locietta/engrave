@@ -20,10 +20,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <amc/flatset.hpp>
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
-
 #include "../dom/accidental.h"
 #include "../dom/arpeggio.h"
 #include "../dom/articulation.h"
@@ -116,7 +112,10 @@
 #include "edittimesig.h"
 #include "edittremolo.h"
 #include "engraving/dom/dummyparent.h"
+#include "global/btree.h"
 #include "global/flatmap.h"
+#include "global/flatset.h"
+#include "global/hashmap.h"
 #include "inserttime.h"
 #include "log.h"
 #include "navigation.h"
@@ -1366,7 +1365,7 @@ void Score::delete_measures(MeasureBase *mb_start, MeasureBase *mb_end, bool pre
     }
 
     // get the last deleted timesig & keysig in order to restore after deletion
-    ankerl::unordered_dense::map<staff_idx_t, TimeSig *> last_deleted_time_sigs;
+    muse::HashMap<staff_idx_t, TimeSig *> last_deleted_time_sigs;
 
     for (MeasureBase *mb = mb_end;; mb = mb->prev()) {
         if (mb->is_measure()) {
@@ -1709,7 +1708,7 @@ void Score::cmd_create_tuplet(ChordRest *ocr, Tuplet *tuplet) {
 //    remove slurs
 
 void Score::remove_chord_rest(ChordRest *cr, bool clear_segment) {
-    gtl::btree_set<Segment *> segments;
+    muse::BTreeSet<Segment *> segments;
     for (EngravingObject *e : cr->link_list()) {
         if (cr->is_chord()) {
             auto starting_spanners = to_chord(e)->starting_spanners();
@@ -2738,33 +2737,33 @@ void Score::undo_add_element(EngravingItem *element, bool add_to_linked_staves, 
         staff_idx_t staff_idx = staff->idx();
 
         // Some elements in voice 1 of a staff should be copied to every track which has a linked voice in this staff
-        static const amc::FlatSet<ElementType> voic_e1_copy_types = {ElementType::SYMBOL,
-                                                                     ElementType::IMAGE,
-                                                                     ElementType::TREMOLOBAR,
-                                                                     ElementType::DYNAMIC,
-                                                                     ElementType::EXPRESSION,
-                                                                     ElementType::STAFF_TEXT,
-                                                                     ElementType::PLAYTECH_ANNOTATION,
-                                                                     ElementType::CAPO,
-                                                                     ElementType::STRING_TUNINGS,
-                                                                     ElementType::STICKING,
-                                                                     ElementType::FRET_DIAGRAM,
-                                                                     ElementType::HARMONY,
-                                                                     ElementType::HAIRPIN,
-                                                                     ElementType::OTTAVA,
-                                                                     ElementType::TRILL,
-                                                                     ElementType::SLUR,
-                                                                     ElementType::HAMMER_ON_PULL_OFF,
-                                                                     ElementType::VIBRATO,
-                                                                     ElementType::RASGUEADO,
-                                                                     ElementType::HARMONIC_MARK,
-                                                                     ElementType::PICK_SCRAPE,
-                                                                     ElementType::TEXTLINE,
-                                                                     ElementType::PEDAL,
-                                                                     ElementType::LYRICS,
-                                                                     ElementType::PARTIAL_LYRICSLINE,
-                                                                     ElementType::CLEF,
-                                                                     ElementType::AMBITUS};
+        static const muse::FlatSet<ElementType> voic_e1_copy_types = {ElementType::SYMBOL,
+                                                                      ElementType::IMAGE,
+                                                                      ElementType::TREMOLOBAR,
+                                                                      ElementType::DYNAMIC,
+                                                                      ElementType::EXPRESSION,
+                                                                      ElementType::STAFF_TEXT,
+                                                                      ElementType::PLAYTECH_ANNOTATION,
+                                                                      ElementType::CAPO,
+                                                                      ElementType::STRING_TUNINGS,
+                                                                      ElementType::STICKING,
+                                                                      ElementType::FRET_DIAGRAM,
+                                                                      ElementType::HARMONY,
+                                                                      ElementType::HAIRPIN,
+                                                                      ElementType::OTTAVA,
+                                                                      ElementType::TRILL,
+                                                                      ElementType::SLUR,
+                                                                      ElementType::HAMMER_ON_PULL_OFF,
+                                                                      ElementType::VIBRATO,
+                                                                      ElementType::RASGUEADO,
+                                                                      ElementType::HARMONIC_MARK,
+                                                                      ElementType::PICK_SCRAPE,
+                                                                      ElementType::TEXTLINE,
+                                                                      ElementType::PEDAL,
+                                                                      ElementType::LYRICS,
+                                                                      ElementType::PARTIAL_LYRICSLINE,
+                                                                      ElementType::CLEF,
+                                                                      ElementType::AMBITUS};
 
         track_idx_t linked_track = ostaff->get_linked_track_in_staff(staff, strack);
         if (linked_track == muse::nidx) {
@@ -3534,7 +3533,7 @@ void Score::undo_remove_measures(Measure *m1, Measure *m2, bool preserve_ties, b
     const Fraction start_tick = m1->tick();
     const Fraction end_tick = m2->end_tick();
     std::vector<Spanner *> spanners_to_remove;
-    ankerl::unordered_dense::set<Spanner *> scheduled_spanners;
+    muse::HashSet<Spanner *> scheduled_spanners;
     auto schedule_removal = [&](Spanner *sp) {
         if (scheduled_spanners.insert(sp).second) {
             spanners_to_remove.push_back(sp);
@@ -3608,7 +3607,7 @@ void Score::undo_remove_measures(Measure *m1, Measure *m2, bool preserve_ties, b
         }
     }
 
-    ankerl::unordered_dense::set<const EngravingObject *> removed;
+    muse::HashSet<const EngravingObject *> removed;
     for (Spanner *s : spanners_to_remove) {
         // A copy on a linked staff of this score has gone with the first of its links removed.
         if (removed.contains(s)) {
@@ -3776,7 +3775,7 @@ void Score::undo_remove_stale_tie_jump_points(bool undo) {
         do_undo_reset_partial_slur(to_slur(sp), undo);
     }
 
-    gtl::btree_set<PartialTie *> incoming_partial_ties;
+    muse::BTreeSet<PartialTie *> incoming_partial_ties;
     SegmentType st = SegmentType::CHORD_REST;
     for (Segment *s = m->first(st); s; s = s->next1(st)) {
         for (track_idx_t i = 0; i < tracks; ++i) {

@@ -39,6 +39,7 @@
 #include "engraving/automation/automationdata.h"
 #include "global/containers.h"
 #include "global/flatmap.h"
+#include "global/flatset.h"
 #include "global/realfn.h"
 #include "log.h"
 #include "playbackrelease.h"
@@ -64,7 +65,7 @@ static dynamic_level_t to_dynamic_level(double normalized_value) {
 
 template <typename ByTrackMap, typename ResultMap, typename MergeFn>
 static void collect_by_track_range(const ByTrackMap &by_track_map, const track_idx_t track_from, const track_idx_t track_to,
-                                   const Score *score, const amc::FlatSet<track_idx_t> &used_tracks, ResultMap &result,
+                                   const Score *score, const muse::FlatSet<track_idx_t> &used_tracks, ResultMap &result,
                                    muse::FnRef<void()> checkpoint, MergeFn merge) {
     // Merge sorted track ranges; ties retain track order, then per-track emission order.
     using Iterator = typename ByTrackMap::mapped_type::const_iterator;

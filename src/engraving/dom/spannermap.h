@@ -24,7 +24,8 @@
 #define MU_ENGRAVING_SPANNERMAP_H
 
 #include "engraving/thirdparty/intervaltree/IntervalTree.h"
-#include <gtl/btree.hpp>
+
+#include "global/btree.h"
 
 namespace mu::engraving {
 struct Spanner;
@@ -33,8 +34,8 @@ struct Spanner;
 //   SpannerMap
 //---------------------------------------------------------
 
-struct SpannerMap : private gtl::btree_multimap<int, Spanner *> {
-    using Map = gtl::btree_multimap<int, Spanner *>;
+struct SpannerMap : private muse::BTreeMultiMap<int, Spanner *> {
+    using Map = muse::BTreeMultiMap<int, Spanner *>;
 
     using IntervalList = std::vector<interval_tree::Interval<Spanner *>>;
 

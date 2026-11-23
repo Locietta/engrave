@@ -24,12 +24,11 @@
 #include <functional>
 #include <tuple>
 
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
-
 #include "draw/types/color.h"
 #include "draw/types/geometry.h"
 #include "draw/types/painterpath.h"
+#include "global/btree.h"
+#include "global/hashmap.h"
 #include "global/types/flags.h"
 #include "global/types/id.h"
 #include "global/types/string.h"
@@ -65,7 +64,7 @@ enum class Grip : signed char {
 using staff_idx_t = size_t;
 
 using track_idx_t = size_t;
-using TracksMap = gtl::btree_multimap<track_idx_t, track_idx_t>;
+using TracksMap = muse::BTreeMultiMap<track_idx_t, track_idx_t>;
 
 using voice_idx_t = size_t;
 
@@ -341,7 +340,7 @@ constexpr bool autoplace_applies_to_type(ElementType type) {
     }
 }
 
-inline const ankerl::unordered_dense::set<ElementType> textbase_types{
+inline const muse::HashSet<ElementType> textbase_types{
     ElementType::TEXT,
     ElementType::LYRICS,
     ElementType::DYNAMIC,
@@ -371,7 +370,7 @@ inline const ankerl::unordered_dense::set<ElementType> textbase_types{
     ElementType::HAMMER_ON_PULL_OFF_TEXT,
 };
 
-using ElementTypeSet = ankerl::unordered_dense::set<ElementType>;
+using ElementTypeSet = muse::HashSet<ElementType>;
 
 // ========================================
 // ========================================
@@ -807,8 +806,8 @@ struct OrnamentInterval {
     inline bool operator!=(const OrnamentInterval &interval) const { return !operator==(interval); }
 
     static bool is_perfect_step(IntervalStep step) {
-        static const ankerl::unordered_dense::set<IntervalStep> perfect_steps{IntervalStep::UNISON, IntervalStep::FOURTH,
-                                                                              IntervalStep::FIFTH, IntervalStep::OCTAVE};
+        static const muse::HashSet<IntervalStep> perfect_steps{IntervalStep::UNISON, IntervalStep::FOURTH, IntervalStep::FIFTH,
+                                                               IntervalStep::OCTAVE};
         return muse::contains(perfect_steps, step);
     }
 
@@ -1127,7 +1126,7 @@ enum class TremoloChordType : unsigned char { TREMOLO_NONE, TREMOLO_SINGLE, TREM
 enum class BracketType : signed char { NORMAL, BRACE, SQUARE, LINE, GROUP, NO_BRACKET = -1 };
 
 using InstrumentTrackIdList = std::vector<InstrumentTrackId>;
-using InstrumentTrackIdSet = ankerl::unordered_dense::set<InstrumentTrackId>;
+using InstrumentTrackIdSet = muse::HashSet<InstrumentTrackId>;
 
 enum EmbellishmentType : unsigned char {};
 
@@ -1316,7 +1315,7 @@ struct CapoParams {
         STANDARD_ONLY = 1,
         TAB_ONLY = 2,
     };
-    gtl::btree_set<string_idx_t> ignored_strings;
+    muse::BTreeSet<string_idx_t> ignored_strings;
     int fret_position = 0;
     TransposeMode transpose_mode = TransposeMode::PLAYBACK_ONLY;
     bool active = false;
@@ -1330,7 +1329,7 @@ struct PartAudioSettingsCompat {
 };
 
 struct SettingsCompat {
-    gtl::btree_map<muse::ID /*partid*/, PartAudioSettingsCompat> audio_settings;
+    muse::BTreeMap<muse::ID /*partid*/, PartAudioSettingsCompat> audio_settings;
 };
 
 struct MeasureBeat {

@@ -26,9 +26,8 @@
 #include <cmath>
 #include <functional>
 
-#include <ankerl/unordered_dense.h>
-
 #include "engravingitem.h"
+#include "global/hashmap.h"
 
 using namespace mu;
 
@@ -62,7 +61,7 @@ public:
 struct FindItemBspTreeVisitor : BspTreeVisitor {
 public:
     std::vector<EngravingItem *> found_items;
-    ankerl::unordered_dense::set<EngravingItem *> seen;
+    muse::HashSet<EngravingItem *> seen;
 
     void visit(std::vector<EngravingItem *> &items) override {
         for (auto item : items) {

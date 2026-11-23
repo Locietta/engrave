@@ -25,11 +25,10 @@
 
 #include <optional>
 
-#include <amc/flatset.hpp>
-
 #include "draw/types/geometry.h"
 #include "draw/types/transform.h"
 #include "engraving/types/types.h"
+#include "global/flatset.h"
 #include "global/fn.h"
 
 namespace muse::draw {
@@ -144,7 +143,7 @@ struct Shape {
     std::optional<ShapeElement> get_first() const;
 
     void remove_invisibles();
-    void remove_types(const amc::FlatSet<ElementType> &types);
+    void remove_types(const muse::FlatSet<ElementType> &types);
 
     void add_horizontal_spacing(EngravingItem *item, double left, double right);
 

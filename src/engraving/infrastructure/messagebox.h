@@ -24,13 +24,13 @@
 
 #include <string>
 
-#include <amc/flatset.hpp>
+#include "global/flatset.h"
 
 namespace mu::engraving {
 struct MessageBox {
     enum Button { OK, CANCEL };
 
-    Button warning(const std::string &title, const std::string &text, const amc::FlatSet<Button> &buttons = {OK, CANCEL});
+    Button warning(const std::string &title, const std::string &text, const muse::FlatSet<Button> &buttons = {OK, CANCEL});
 };
 } // namespace mu::engraving
 

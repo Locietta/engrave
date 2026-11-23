@@ -2,8 +2,7 @@
 
 #include <algorithm>
 
-#include <gtl/btree.hpp>
-
+#include "global/btree.h"
 #include "log.h"
 
 using namespace mu::engraving;
@@ -57,7 +56,7 @@ void PitchWheelRenderer::render_channel_pitch_wheel(EventsHolder &pitch_wheel_ev
         staff_idx = staff_idx_by_channel.at(channel);
     }
 
-    gtl::btree_map<int, int, std::greater<>> ranges;
+    muse::BTreeMap<int, int, std::greater<>> ranges;
     generate_ranges(functions.functions, ranges);
 
     for (auto rit = ranges.crbegin(); rit != ranges.crend(); ++rit) {
@@ -144,7 +143,7 @@ int32_t PitchWheelRenderer::calculate_pitch_bend(const std::vector<PitchWheelFun
 // 3           |--------|            handleEndTick();
 // result      |-------------------|
 void PitchWheelRenderer::generate_ranges(const std::vector<PitchWheelFunction> &functions,
-                                         gtl::btree_map<int, int, std::greater<>> &ranges) {
+                                         muse::BTreeMap<int, int, std::greater<>> &ranges) {
     // !NOTE ranges map is reversed. Use reverse iterators
     auto handle_end_tick = [&](const PitchWheelFunction &func) {
         auto lower_range = ranges.upper_bound(func.m_end_tick);

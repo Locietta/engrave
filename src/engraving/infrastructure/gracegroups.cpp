@@ -1,11 +1,10 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 #include <array>
 
-#include <ankerl/unordered_dense.h>
-
 #include "dom/chord.h"
 #include "dom/score.h"
 #include "dom/segment.h"
+#include "global/hashmap.h"
 #include "rendering/score/layoutcontext.h"
 
 using namespace mu::engraving;
@@ -13,7 +12,7 @@ using namespace mu::engraving::rendering::score;
 
 struct LayoutContext::GraceGroups {
     using Groups = std::array<std::unique_ptr<GraceNotesGroup>, 2>;
-    ankerl::unordered_dense::map<const Chord *, Groups> chords;
+    muse::HashMap<const Chord *, Groups> chords;
 };
 
 LayoutContext::LayoutContext(Score *score) : score_(score), configuration_(this), dom_(this) {

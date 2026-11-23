@@ -22,8 +22,7 @@
 
 #include "spannermap.h"
 
-#include <gtl/btree.hpp>
-
+#include "global/btree.h"
 #include "log.h"
 #include "part.h"
 #include "spanner.h"
@@ -88,8 +87,8 @@ const SpannerMap::IntervalList &SpannerMap::find_overlapping(int start, int stop
 }
 
 void SpannerMap::collect_intervals(IntervalList &regular_intervals, IntervalList &collision_free_intervals) const {
-    using IntervalsByType = gtl::btree_map<ElementType, IntervalList>;
-    using IntervalsByPart = gtl::btree_map<ID, IntervalsByType>;
+    using IntervalsByType = muse::BTreeMap<ElementType, IntervalList>;
+    using IntervalsByPart = muse::BTreeMap<ID, IntervalsByType>;
 
     IntervalsByPart intervals_by_part;
 

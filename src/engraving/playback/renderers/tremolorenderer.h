@@ -23,8 +23,7 @@
 #ifndef MU_ENGRAVING_TREMOLORENDERER_H
 #define MU_ENGRAVING_TREMOLORENDERER_H
 
-#include <ankerl/unordered_dense.h>
-
+#include "global/hashmap.h"
 #include "renderbase.h"
 
 namespace mu::engraving {
@@ -35,7 +34,7 @@ struct TremoloRenderer : RenderBase<TremoloRenderer> {
                           muse::mpe::PlaybackEventList &result);
 
 private:
-    using TremoloTimeCache = ankerl::unordered_dense::map<const Note *, muse::mpe::TimestampAndDuration>;
+    using TremoloTimeCache = muse::HashMap<const Note *, muse::mpe::TimestampAndDuration>;
 
     static int step_duration_ticks(const Chord *chord, int tremolo_lines);
     static void build_and_append_events(const Chord *chord, const muse::mpe::ArticulationType type, const int step_duration_ticks,

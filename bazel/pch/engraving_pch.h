@@ -23,8 +23,11 @@
 #include <vector>
 
 #include <amc/vector.hpp>
-#include <ankerl/unordered_dense.h>
 
+#include "global/btree.h"
+#include "global/flatset.h"
+#include "global/fn.h"
+#include "global/hashmap.h"
 #include "global/log.h"
 #include "global/types/bytearray.h"
 #include "global/types/ret.h"

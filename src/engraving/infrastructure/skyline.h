@@ -26,9 +26,8 @@
 #include <cfloat>
 #include <vector>
 
-#include <gtl/btree.hpp>
-
 #include "draw/types/geometry.h"
+#include "global/btree.h"
 #include "global/fn.h"
 #include "shape.h"
 
@@ -96,7 +95,7 @@ private:
         StaffLineEdge(double t, double b) : top(t), bottom(b) {}
     };
 
-    gtl::btree_map<double, StaffLineEdge> staff_line_edges_;
+    muse::BTreeMap<double, StaffLineEdge> staff_line_edges_;
 
     bool has_valid_staff_line_edges() const { return !staff_line_edges_.empty(); }
 };

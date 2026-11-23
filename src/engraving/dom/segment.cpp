@@ -24,8 +24,6 @@
 
 #include <climits>
 
-#include <gtl/btree.hpp>
-
 #include "../editing/editspanner.h"
 #include "../editing/navigation.h"
 #include "accidental.h"
@@ -35,6 +33,7 @@
 #include "chordrest.h"
 #include "clef.h"
 #include "engravingitem.h"
+#include "global/btree.h"
 #include "hammeronpulloff.h"
 #include "harppedaldiagram.h"
 #include "hook.h"
@@ -1142,7 +1141,7 @@ void Segment::sort_staves(std::vector<staff_idx_t> &dst) {
         }
     }
     std::swap(elist_, dl);
-    gtl::btree_map<staff_idx_t, staff_idx_t> map;
+    muse::BTreeMap<staff_idx_t, staff_idx_t> map;
     for (staff_idx_t k = 0; k < dst.size(); ++k) {
         map.insert({dst[k], k});
     }

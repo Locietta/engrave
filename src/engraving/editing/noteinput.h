@@ -25,10 +25,9 @@
 #include <utility>
 #include <vector>
 
-#include <amc/flatset.hpp>
-
 #include "../types/types.h"
 #include "draw/types/geometry.h"
+#include "global/flatset.h"
 #include "global/types/ret.h"
 
 namespace mu::engraving {
@@ -50,9 +49,9 @@ enum class SymId;
 struct NoteInput {
 
     static Note *add_note_to_chord(Score *score, Chord *chord, const NoteVal &note_val, bool force_accidental = false,
-                                   const amc::FlatSet<SymId> &articulation_ids = {});
+                                   const muse::FlatSet<SymId> &articulation_ids = {});
     static Note *add_note(Transaction &tx, Score *score, Chord *chord, const NoteVal &note_val, bool force_accidental = false,
-                          const amc::FlatSet<SymId> &articulation_ids = {}, InputState *external_input_state = nullptr);
+                          const muse::FlatSet<SymId> &articulation_ids = {}, InputState *external_input_state = nullptr);
 
 private:
 };

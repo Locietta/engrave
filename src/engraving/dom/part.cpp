@@ -24,16 +24,15 @@
 
 #include <algorithm>
 
-#include <amc/flatset.hpp>
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
-
 #include "chordrest.h"
 #include "containers.h"
 #include "engraving/dom/dummyparent.h"
 #include "engraving/internal/engravingconfiguration.h"
 #include "factory.h"
 #include "fret.h"
+#include "global/btree.h"
+#include "global/flatset.h"
+#include "global/hashmap.h"
 #include "harppedaldiagram.h"
 #include "instrchange.h"
 #include "instrtemplate.h"
@@ -170,8 +169,8 @@ size_t Part::layout_visible_staves_count() const { return std::ranges::count_if(
 
 const std::vector<Staff *> &Part::staves() const { return staves_; }
 
-amc::FlatSet<staff_idx_t> Part::stave_idx_list() const {
-    amc::FlatSet<staff_idx_t> result;
+muse::FlatSet<staff_idx_t> Part::stave_idx_list() const {
+    muse::FlatSet<staff_idx_t> result;
 
     for (const Staff *stave : staves_) {
         if (!stave) {
@@ -559,7 +558,7 @@ TrackRange Part::track_range() const {
 
 InstrumentTrackIdList Part::instrument_track_id_list() const {
     InstrumentTrackIdList result;
-    ankerl::unordered_dense::set<String> seen;
+    muse::HashSet<String> seen;
 
     for (const auto &pair : instruments_) {
         String instr_id = pair.second->id();
@@ -612,7 +611,7 @@ void Part::insert_time(const Fraction &tick, const Fraction &len) {
     instruments_.erase(first, instruments_.end());
     instruments_.insert(il.begin(), il.end());
 
-    gtl::btree_map<int, HarpPedalDiagram *> hd2;
+    muse::BTreeMap<int, HarpPedalDiagram *> hd2;
     for (auto h = harp_diagrams_.lower_bound(tick.ticks()); h != harp_diagrams_.end();) {
         HarpPedalDiagram *diagram = h->second;
         int t = h->first;

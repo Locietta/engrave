@@ -23,9 +23,8 @@
 
 #include <array>
 
-#include <gtl/btree.hpp>
-
 #include "../types/symid.h"
+#include "global/btree.h"
 #include "types/string.h"
 
 namespace mu::engraving {
@@ -43,15 +42,15 @@ struct Smufl {
     static const Code code(SymId id);
     static char32_t smufl_code(SymId id);
 
-    static const gtl::btree_map<muse::String, std::vector<SymId>> &smufl_ranges();
+    static const muse::BTreeMap<muse::String, std::vector<SymId>> &smufl_ranges();
     static constexpr const char *smufl_all_symbols = "All symbols";
 
 private:
 
     static bool load_glyph_names_json();
-    static gtl::btree_map<muse::String, std::vector<SymId>> read_smufl_ranges_json();
+    static muse::BTreeMap<muse::String, std::vector<SymId>> read_smufl_ranges_json();
 
     static std::array<Code, size_t(SymId::LAST_SYM) + 1> s_sym_id_codes;
-    static gtl::btree_map<muse::String, std::vector<SymId>> s_ranges;
+    static muse::BTreeMap<muse::String, std::vector<SymId>> s_ranges;
 };
 } // namespace mu::engraving

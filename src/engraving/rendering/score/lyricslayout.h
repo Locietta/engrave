@@ -24,8 +24,7 @@
 
 #include <optional>
 
-#include <gtl/btree.hpp>
-
+#include "global/btree.h"
 #include "layoutcontext.h"
 
 namespace mu::engraving {
@@ -54,7 +53,7 @@ private:
         const std::vector<LyricsLineSegment *> &lines() const { return lines_; }
     };
 
-    using LyricsVersesMap = gtl::btree_map<int, LyricsVerse>;
+    using LyricsVersesMap = muse::BTreeMap<int, LyricsVerse>;
 
 public:
     LyricsLayout() = default;

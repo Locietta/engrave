@@ -24,14 +24,14 @@
 #define __RENDERMIDI_H__
 
 #include <memory>
-
-#include <amc/flatset.hpp>
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
+#include <string>
 
 #include "../../dom/measure.h"
 #include "../../dom/mscore.h"
 #include "../../types/types.h"
+#include "global/btree.h"
+#include "global/flatset.h"
+#include "global/hashmap.h"
 #include "pausemap.h"
 #include "pitchwheelrenderer.h"
 #include "velocitymap.h"
@@ -71,7 +71,7 @@ struct Chord;
 //    sustainp - whether the final note of the body should be sustained to fill the remaining duration.
 struct OrnamentExcursion {
     SymId atype;
-    amc::FlatSet<OrnamentStyle> ostyles;
+    muse::FlatSet<OrnamentStyle> ostyles;
     int duration;
     std::vector<int> prefix;
     std::vector<int> body;
@@ -80,9 +80,9 @@ struct OrnamentExcursion {
     std::vector<int> suffix;
 };
 
-static const amc::FlatSet<OrnamentStyle> baroque = {OrnamentStyle::BAROQUE};
-static const amc::FlatSet<OrnamentStyle> defstyle = {OrnamentStyle::DEFAULT};
-static const amc::FlatSet<OrnamentStyle> any; // empty set has the special meaning of any-style, rather than no-styles.
+static const muse::FlatSet<OrnamentStyle> baroque = {OrnamentStyle::BAROQUE};
+static const muse::FlatSet<OrnamentStyle> defstyle = {OrnamentStyle::DEFAULT};
+static const muse::FlatSet<OrnamentStyle> any; // empty set has the special meaning of any-style, rather than no-styles.
 static constexpr int sixteenth_ticks = Constants::division / 4;
 static constexpr int thirty_second_ticks = sixteenth_ticks / 2;
 constexpr int slide_duration = thirty_second_ticks;
@@ -153,7 +153,7 @@ struct CompatMidiRendererInternal {
             bool operator<(const LookupData &other) const;
         };
 
-        gtl::btree_map<int, gtl::btree_map<LookupData, int>> channels_map;
+        muse::BTreeMap<int, muse::BTreeMap<LookupData, int>> channels_map;
         uint32_t max_channel = 0;
 
         uint32_t get_channel(uint32_t instrument_channel, const LookupData &lookup_data);
@@ -171,20 +171,20 @@ struct CompatMidiRendererInternal {
             int gate_time = 100;
         };
 
-        static ankerl::unordered_dense::map<String, BuiltInArticulation> s_built_in_articulations_values;
+        static muse::HashMap<String, BuiltInArticulation> s_built_in_articulations_values;
 
         bool each_string_has_channel = false;   //!to better display the guitar instrument, each string has its own channel
         bool instruments_have_effects = false;  //!when effect is applied, new channel should be used
         bool use_default_articulations = false; //!using default articulations means ignoring the ones stored for each instrument
         bool apply_caesuras = false;            //! to add pauses (caesura) between midi events
         HarmonyChannelSetting harmony_channel_setting = HarmonyChannelSetting::DEFAULT;
-        ankerl::unordered_dense::set<std::string> parts_with_muted_harmony;
+        muse::HashSet<std::string> parts_with_muted_harmony;
 
         int snd_controller = CTRL_BREATH;
 
-        ankerl::unordered_dense::map<track_idx_t, VelocityMap> velocities_by_track;
-        ankerl::unordered_dense::map<track_idx_t, VelocityMap> velocity_multiplications_by_track;
-        ankerl::unordered_dense::map<String, ankerl::unordered_dense::set<String>> articulations_without_values_by_instrument;
+        muse::HashMap<track_idx_t, VelocityMap> velocities_by_track;
+        muse::HashMap<track_idx_t, VelocityMap> velocity_multiplications_by_track;
+        muse::HashMap<String, muse::HashSet<String>> articulations_without_values_by_instrument;
 
         std::shared_ptr<ChannelLookup> channels = std::make_shared<ChannelLookup>();
         std::shared_ptr<PauseMap> pause_map = std::make_shared<PauseMap>();

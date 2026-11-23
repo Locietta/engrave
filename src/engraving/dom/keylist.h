@@ -23,8 +23,7 @@
 #ifndef MU_ENGRAVING_KEYLIST_H
 #define MU_ENGRAVING_KEYLIST_H
 
-#include <gtl/btree.hpp>
-
+#include "global/btree.h"
 #include "key.h"
 
 namespace mu::engraving {
@@ -34,7 +33,7 @@ namespace mu::engraving {
 //    to keep track of key signature changes
 //---------------------------------------------------------
 
-struct KeyList : gtl::btree_map<int, KeySigEvent> {
+struct KeyList : muse::BTreeMap<int, KeySigEvent> {
 public:
     KeyList() {}
 

@@ -23,10 +23,9 @@
 
 #include <cfloat>
 
-#include <amc/flatset.hpp>
-
 #include "dom/engravingitem.h"
 #include "draw/painter.h"
+#include "global/flatset.h"
 #include "log.h"
 
 using namespace mu;
@@ -521,7 +520,7 @@ void Shape::remove_invisibles() {
     muse::remove_if(elements_, [](ShapeElement &shape_element) { return !shape_element.item() || !shape_element.item()->visible(); });
 }
 
-void Shape::remove_types(const amc::FlatSet<ElementType> &types) {
+void Shape::remove_types(const muse::FlatSet<ElementType> &types) {
     muse::remove_if(elements_, [&types](ShapeElement &shape_element) {
         return shape_element.item() && muse::contains(types, shape_element.item()->type());
     });

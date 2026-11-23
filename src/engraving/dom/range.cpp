@@ -29,6 +29,7 @@
 #include "engraving/infrastructure/eidregister.h"
 #include "excerpt.h"
 #include "factory.h"
+#include "global/hashmap.h"
 #include "linkedobjects.h"
 #include "log.h"
 #include "marker.h"
@@ -872,7 +873,7 @@ bool ScoreRange::make_note_endpoint_ref(Note *note, NoteEndpointRef &out) {
 void ScoreRange::backup_note_spanners(const Fraction &stick, const Fraction &etick) {
     Score *score = first_->score();
     const std::vector<staff_idx_t> unique_staves = score->unique_staves();
-    ankerl::unordered_dense::set<const EngravingObject *> seen;
+    muse::HashSet<const EngravingObject *> seen;
     auto collect_from_chord = [&](const Chord *chord) {
         for (Note *note : chord->notes()) {
             for (const auto *list : {&note->spanner_for(), &note->spanner_back()}) {
@@ -916,7 +917,7 @@ void ScoreRange::backup_note_spanners(const Fraction &stick, const Fraction &eti
         }
     };
 
-    ankerl::unordered_dense::set<const Staff *> visited_staves;
+    muse::HashSet<const Staff *> visited_staves;
     for (staff_idx_t staff_idx : unique_staves) {
         Staff *primary = score->staff(staff_idx);
         if (!primary) {
@@ -956,7 +957,7 @@ void ScoreRange::backup_note_spanners(const Fraction &stick, const Fraction &eti
         }
     }
 
-    ankerl::unordered_dense::set<Tie *> seen_ties;
+    muse::HashSet<Tie *> seen_ties;
     std::vector<Tie *> ties_to_remove;
     // Resolving the other endpoint can discover another excerpt-only grace.
     for (size_t i = 0; i < local_graces_.size(); ++i) {
@@ -983,7 +984,7 @@ void ScoreRange::backup_note_spanners(const Fraction &stick, const Fraction &eti
 
 void ScoreRange::restore_note_spanners(Score *score, const TrackList::WrittenChordMap &written_chords) const {
     EIDRegister *registry = score->master_score()->eid_register();
-    ankerl::unordered_dense::set<const Score *> valid_scores;
+    muse::HashSet<const Score *> valid_scores;
     valid_scores.insert(score);
     for (const Score *linked_score : score->score_list()) {
         valid_scores.insert(linked_score);

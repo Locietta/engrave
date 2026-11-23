@@ -21,8 +21,6 @@
  */
 #include "pagelayout.h"
 
-#include <gtl/btree.hpp>
-
 #include "arpeggiolayout.h"
 #include "beamlayout.h"
 #include "chordbracketlayout.h"
@@ -54,6 +52,7 @@
 #include "dom/tremolotwochord.h"
 #include "dom/tuplet.h"
 #include "engraving/dom/dummyparent.h"
+#include "global/btree.h"
 #include "headerfooterlayout.h"
 #include "layoutdatastore.h"
 #include "log.h"
@@ -905,7 +904,7 @@ void PageLayout::distribute_staves(LayoutContext &ctx, Page *page, double footer
         space_remaining -= added_space;
     }
 
-    gtl::btree_set<System *> systems;
+    muse::BTreeSet<System *> systems;
     double system_shift{0.0};
     double staff_shift{0.0};
     System *prv_system{nullptr};

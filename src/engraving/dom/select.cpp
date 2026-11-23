@@ -29,8 +29,6 @@
 
 #include <algorithm>
 
-#include <ankerl/unordered_dense.h>
-
 #include "../types/types.h"
 #include "accidental.h"
 #include "arpeggio.h"
@@ -46,6 +44,7 @@
 #include "fingering.h"
 #include "fret.h"
 #include "global/containers.h"
+#include "global/hashmap.h"
 #include "guitarbend.h"
 #include "harmony.h"
 #include "harppedaldiagram.h"
@@ -359,7 +358,7 @@ void Selection::add(EngravingItem *el) {
     update();
 }
 
-void Selection::append_anchored_elements(const ankerl::unordered_dense::set<EngravingItem *> &elems) {
+void Selection::append_anchored_elements(const muse::HashSet<EngravingItem *> &elems) {
     for (EngravingItem *elem : elems) {
         IF_ASSERT_FAILED(!elem->is_spanner_segment()) {
             LOGE() << "Append whole spanners instead of spanner segments";
@@ -396,7 +395,7 @@ void Selection::append_anchored_elements(const ankerl::unordered_dense::set<Engr
 }
 
 void Selection::append_chord_rest(ChordRest *cr) {
-    const ankerl::unordered_dense::set<EngravingItem *> cr_anchored = collect_elements_anchored_to_chord_rest(cr);
+    const muse::HashSet<EngravingItem *> cr_anchored = collect_elements_anchored_to_chord_rest(cr);
     append_anchored_elements(cr_anchored);
 
     if (cr->is_rest_family()) {
@@ -409,7 +408,7 @@ void Selection::append_chord_rest(ChordRest *cr) {
     Chord *chord = to_chord(cr);
 
     for (Note *note : chord->notes()) {
-        const ankerl::unordered_dense::set<EngravingItem *> note_anchored = collect_elements_anchored_to_note(note, true, false);
+        const muse::HashSet<EngravingItem *> note_anchored = collect_elements_anchored_to_note(note, true, false);
         append_anchored_elements(note_anchored);
 
         el_.push_back(note);
@@ -550,7 +549,7 @@ void Selection::update_selected_elements() {
     track_idx_t end_track = staff_end_ * ::mu::engraving::voices;
 
     // A nested tuplet is selected only when the range contains all its elements.
-    ankerl::unordered_dense::set<Tuplet *> inner_tuplets;
+    muse::HashSet<Tuplet *> inner_tuplets;
 
     for (track_idx_t st = start_track; st < end_track; ++st) {
         for (Segment *s = start_segment_; s && (s != end_segment_); s = s->next1_mm()) {

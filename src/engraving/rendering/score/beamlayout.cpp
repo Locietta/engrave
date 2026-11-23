@@ -26,9 +26,6 @@
 #include <cmath>
 #include <limits>
 
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
-
 #include "beamtremololayout.h"
 #include "chordlayout.h"
 #include "containers.h"
@@ -51,6 +48,8 @@
 #include "dom/tremolotwochord.h"
 #include "dom/tuplet.h"
 #include "dom/utils.h"
+#include "global/btree.h"
+#include "global/hashmap.h"
 #include "layoutcontext.h"
 #include "layoutdatastore.h"
 #include "log.h"
@@ -294,7 +293,7 @@ void BeamLayout::layout1(Beam *item, LayoutContext &ctx) {
             if (const Chord *chord = item->find_chord_with_custom_stem_direction()) {
                 item->set_up(chord->stem_direction() == DirectionV::UP);
             } else {
-                gtl::btree_set<BeamBase::NotePosition> note_pos_set(item->note_positions().begin(), item->note_positions().end());
+                muse::BTreeSet<BeamBase::NotePosition> note_pos_set(item->note_positions().begin(), item->note_positions().end());
                 std::vector<int> note_lines;
                 note_lines.reserve(note_pos_set.size());
                 for (BeamBase::NotePosition pos : note_pos_set) {
@@ -683,7 +682,7 @@ void BeamLayout::create_beams(LayoutContext &ctx, Measure *measure) {
         Beam *beam = nullptr; // current beam
         BeamMode bm = BeamMode::AUTO;
         ChordRest *prev = nullptr;
-        ankerl::unordered_dense::map<int, TDuration> beat_subdivision;
+        muse::HashMap<int, TDuration> beat_subdivision;
 
         // if this measure is simple meter (actually X/4),
         // then perform a prepass to determine the subdivision of each beat

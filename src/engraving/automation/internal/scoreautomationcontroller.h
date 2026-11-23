@@ -25,12 +25,11 @@
 #include <variant>
 #include <vector>
 
-#include <gtl/btree.hpp>
-
 #include "engraving/automation/automationdata.h"
 #include "engraving/automation/automationtypes.h"
 #include "engraving/dom/tempotimeline.h"
 #include "engraving/types/types.h"
+#include "global/btree.h"
 
 namespace mu::engraving {
 struct Score;
@@ -90,7 +89,7 @@ private:
         staff_idx_t from = 0;
         staff_idx_t to = 0;
         bool is_full = true;
-        gtl::btree_set<muse::ID> staff_ids; // only populated when !isFull
+        muse::BTreeSet<muse::ID> staff_ids; // only populated when !isFull
 
         bool contains(staff_idx_t staff_idx) const;
         bool contains(const muse::ID &staff_id) const;
@@ -108,7 +107,7 @@ private:
         std::optional<utick_t> next_measure_u_tick; // next measure in the same repeat pass, if any
     };
 
-    using DynamicPriorities = gtl::btree_map<AutomationCurveKey, gtl::btree_map<utick_t, int>>;
+    using DynamicPriorities = muse::BTreeMap<AutomationCurveKey, muse::BTreeMap<utick_t, int>>;
     using MeasureRepeats = std::vector<std::pair<const MeasureRepeat *, int>>;
 
     struct UpdateContext {
@@ -202,9 +201,9 @@ private:
     static void resolve_pending_tempo_resets(UpdateContext &ctx);
     static void fix_anacrusis_tempo(UpdateContext &ctx);
 
-    static bool try_add_dynamic_point(AutomationCurve &curve, gtl::btree_map<utick_t, int> &tick_prio_map, utick_t tick,
+    static bool try_add_dynamic_point(AutomationCurve &curve, muse::BTreeMap<utick_t, int> &tick_prio_map, utick_t tick,
                                       const AutomationPoint &point, int priority);
-    static void add_dynamic_point(AutomationCurve &curve, gtl::btree_map<utick_t, int> &tick_prio_map, utick_t tick,
+    static void add_dynamic_point(AutomationCurve &curve, muse::BTreeMap<utick_t, int> &tick_prio_map, utick_t tick,
                                   const AutomationPoint &point, int priority);
     static void set_tempo_point(utick_t tick, int tick_offset, real_t normalized_bps, UpdateContext &ctx,
                                 std::optional<EID> item_id = std::nullopt);

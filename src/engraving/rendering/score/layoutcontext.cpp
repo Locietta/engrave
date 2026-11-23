@@ -32,6 +32,7 @@
 #include "editing/transaction/transaction.h"
 #include "engraving/dom/dummyparent.h"
 #include "engraving/rendering/paddingtable.h"
+#include "global/btree.h"
 #include "log.h"
 #include "scorerenderer.h"
 #include "style/defaultstyle.h"
@@ -356,9 +357,9 @@ void DomAccessor::add_unmanaged_spanner(Spanner *s) {
     score()->add_unmanaged_spanner(s);
 }
 
-const gtl::btree_set<Spanner *> &DomAccessor::unmanaged_spanners() const {
+const muse::BTreeSet<Spanner *> &DomAccessor::unmanaged_spanners() const {
     IF_ASSERT_FAILED(score()) {
-        static const gtl::btree_set<Spanner *> dummy;
+        static const muse::BTreeSet<Spanner *> dummy;
         return dummy;
     }
     return score()->unmanaged_spanners();

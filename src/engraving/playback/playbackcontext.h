@@ -22,13 +22,12 @@
 
 #pragma once
 
-#include <amc/flatset.hpp>
-#include <ankerl/unordered_dense.h>
-
 #include "../types/types.h"
 #include "engraving/automation/automationtypes.h"
 #include "global/flatmap.h"
+#include "global/flatset.h"
 #include "global/fn.h"
+#include "global/hashmap.h"
 #include "mpe/events.h"
 #include "mpe/mpetypes.h"
 
@@ -111,15 +110,15 @@ private:
 
     const Score *score_ = nullptr;
 
-    amc::FlatSet<track_idx_t> used_tracks_;
-    mutable ankerl::unordered_dense::map<track_idx_t, const AutomationCurve *> dynamics_curve_by_track_;
+    muse::FlatSet<track_idx_t> used_tracks_;
+    mutable muse::HashMap<track_idx_t, const AutomationCurve *> dynamics_curve_by_track_;
     SoundPresetsByTrack sound_presets_by_track_;
     TextArticulationsByTrack text_articulations_by_track_;
     SyllablesByTrack syllables_by_track_;
     PlayTechniquesByTrack play_techniques_by_track_;
 
-    ankerl::unordered_dense::map<const ChordRest *, int> current_verse_num_by_chord_rest_;
-    muse::FlatMap<track_idx_t, amc::FlatSet<int /*tick*/>> multi_verse_lyrics_position_map_;
+    muse::HashMap<const ChordRest *, int> current_verse_num_by_chord_rest_;
+    muse::FlatMap<track_idx_t, muse::FlatSet<int /*tick*/>> multi_verse_lyrics_position_map_;
 };
 
 using PlaybackContextPtr = std::shared_ptr<PlaybackContext>;

@@ -22,8 +22,7 @@
 
 #pragma once
 
-#include <amc/flatset.hpp>
-
+#include "global/flatset.h"
 #include "textbase.h"
 
 using namespace mu;
@@ -78,7 +77,7 @@ public:
 
     bool is_tpc_playable(int tpc);
 
-    const amc::FlatSet<int> &playable_tpcs() const { return playable_tpcs_; }
+    const muse::FlatSet<int> &playable_tpcs() const { return playable_tpcs_; }
 
     bool position_relative_to_notehead_rest() const override { return true; }
 
@@ -86,7 +85,7 @@ private:
 
     std::array<PedalPosition, ::mu::engraving::harp_string_no> pedal_state_;
 
-    amc::FlatSet<int> playable_tpcs_;
+    muse::FlatSet<int> playable_tpcs_;
 
     bool is_diagram_ = true;
 };

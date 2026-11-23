@@ -30,9 +30,8 @@
 #include <cassert>
 #include <cmath>
 
-#include <gtl/btree.hpp>
-
 #include "containers.h"
+#include "global/btree.h"
 #include "global/unique_fn.h"
 
 using namespace mu;
@@ -240,7 +239,7 @@ void VelocityMap::resolve_hairpin_collisions() {
 
 void VelocityMap::adjust_colliding_hairpins_length(std::vector<bool> &starts_in_hairpin, EndPointsVector &end_points) {
     // moveTo stores the events that need to be moved to a Fraction position
-    gtl::btree_map<Fraction, VelocityEvent> move_to;
+    muse::BTreeMap<Fraction, VelocityEvent> move_to;
     auto i = begin();
     int j = -1;
     while (i != end()) {

@@ -21,7 +21,7 @@
  */
 #pragma once
 
-#include <ankerl/unordered_dense.h>
+#include "global/hashmap.h"
 
 namespace mu::engraving {
 enum class Sid : short {
@@ -2285,6 +2285,6 @@ enum class Sid : short {
 };
 
 using StyleId = Sid;
-using StyleIdSet = ankerl::unordered_dense::set<Sid>;
+using StyleIdSet = muse::HashSet<Sid>;
 
 } // namespace mu::engraving

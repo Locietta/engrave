@@ -24,14 +24,13 @@
 
 #include <climits>
 
-#include <ankerl/unordered_dense.h>
-
 #include "dom/bracket.h"
 #include "dom/factory.h"
 #include "dom/part.h"
 #include "dom/staff.h"
 #include "dom/system.h"
 #include "engraving/dom/dummyparent.h"
+#include "global/hashmap.h"
 #include "style/defaultstyle.h"
 #include "systemlayout.h"
 #include "tlayout.h"
@@ -458,8 +457,8 @@ void SystemHeaderLayout::compute_instrument_names_width(System *system, LayoutCo
     ldata->set_second_column_width(0.0);
     ldata->set_total_names_width(0.0);
 
-    ankerl::unordered_dense::set<Part *> parts_with_individual_staff_names;
-    ankerl::unordered_dense::set<Part *> parts_with_group_names;
+    muse::HashSet<Part *> parts_with_individual_staff_names;
+    muse::HashSet<Part *> parts_with_group_names;
 
     std::vector<InstrumentName *> group_names;
     std::vector<InstrumentName *> instrument_names;
@@ -615,7 +614,7 @@ void SystemHeaderLayout::compute_instrument_names_width(System *system, LayoutCo
 }
 
 void SystemHeaderLayout::set_instrument_names_vertical_pos(System *system, LayoutContext &ctx) {
-    ankerl::unordered_dense::set<const Part *> parts_with_individual_staff_names;
+    muse::HashSet<const Part *> parts_with_individual_staff_names;
 
     for (staff_idx_t staff_idx = 0; staff_idx < ctx.dom().nstaves(); ++staff_idx) {
         SysStaff *s = system->staff(staff_idx);

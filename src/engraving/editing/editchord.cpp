@@ -22,9 +22,6 @@
 
 #include "editchord.h"
 
-#include <amc/flatset.hpp>
-#include <gtl/btree.hpp>
-
 #include "../dom/arpeggio.h"
 #include "../dom/articulation.h"
 #include "../dom/chord.h"
@@ -36,6 +33,8 @@
 #include "../dom/tapping.h"
 #include "../dom/tremolotwochord.h"
 #include "../dom/utils.h"
+#include "global/btree.h"
+#include "global/flatset.h"
 #include "transaction/transaction.h"
 
 using namespace mu::engraving;
@@ -74,7 +73,7 @@ bool EditChord::toggle_articulation(Score *score, EngravingItem *el, Articulatio
         return true;
     }
 
-    amc::FlatSet<SymId> new_sub_component_ids = split_articulations({a->sym_id()});
+    muse::FlatSet<SymId> new_sub_component_ids = split_articulations({a->sym_id()});
     for (const SymId &id : new_sub_component_ids) {
         Articulation *artic_copy = a->clone();
         artic_copy->set_sym_id(id);
@@ -94,7 +93,7 @@ void EditChord::remove_chord_parentheses(Chord *chord, std::vector<Note *> notes
     if (notes.empty()) {
         return;
     }
-    gtl::btree_map<const NoteParenthesisInfo *, std::vector<Note *>> notes_by_group;
+    muse::BTreeMap<const NoteParenthesisInfo *, std::vector<Note *>> notes_by_group;
 
     for (Note *n : notes) {
         const NoteParenthesisInfo *note_paren_info = chord->find_note_parenthesis_info(n);

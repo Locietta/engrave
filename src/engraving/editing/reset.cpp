@@ -24,8 +24,6 @@
 
 #include <vector>
 
-#include <gtl/btree.hpp>
-
 #include "../dom/engravingitem.h"
 #include "../dom/layoutbreak.h"
 #include "../dom/masterscore.h"
@@ -37,6 +35,7 @@
 #include "../dom/spanner.h"
 #include "../rendering/score/layoutdatastore.h"
 #include "editsystemlocks.h"
+#include "global/btree.h"
 #include "global/containers.h"
 #include "log.h"
 #include "transaction/transaction.h"
@@ -68,7 +67,7 @@ static void reset_element_position(EngravingItem *e) {
 }
 
 static void reset_child_positions(Score &score) {
-    gtl::btree_set<EngravingItem *> owners;
+    muse::BTreeSet<EngravingItem *> owners;
     for (auto *spanner : score.spanner_list()) owners.insert(spanner);
     const auto collect = [&](auto &&self, EngravingObject &object) -> void {
         if (!source_object(object)) return;

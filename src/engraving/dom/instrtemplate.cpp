@@ -24,11 +24,10 @@
 
 #include <limits>
 
-#include <ankerl/unordered_dense.h>
-
 #include "bracket.h"
 #include "containers.h"
 #include "drumset.h"
+#include "global/hashmap.h"
 #include "global/types/textscan.h"
 #include "io/file.h"
 #include "log.h"
@@ -112,7 +111,7 @@ static int read_staff_idx(XmlReader &e) {
 }
 
 static TraitType trait_type_from_string(const String &str) {
-    static const ankerl::unordered_dense::map<String, TraitType> types{
+    static const muse::HashMap<String, TraitType> types{
         {u"transposition", TraitType::TRANSPOSITION}, {u"tuning", TraitType::TUNING}, {u"course", TraitType::COURSE}};
 
     return muse::value(types, str.to_lower(), TraitType::UNKNOWN);

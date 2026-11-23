@@ -23,11 +23,10 @@
 #ifndef MU_ENGRAVING_GROUPS_H
 #define MU_ENGRAVING_GROUPS_H
 
-#include <ankerl/unordered_dense.h>
-
 #include "../types/groupnode.h"
 #include "../types/types.h"
 #include "durationtype.h"
+#include "global/hashmap.h"
 
 namespace mu::engraving {
 struct ChordRest;
@@ -70,8 +69,7 @@ struct Groups {
     static BeamMode base_beam_mode(const ChordRest *cr, const ChordRest *prev, TDuration duration);
     static BeamMode grace_beam_mode(const ChordRest *cr);
     static BeamMode actual_beam_mode(const ChordRest *cr, const ChordRest *prev);
-    static BeamMode actual_beam_mode(const ChordRest *cr, const ChordRest *prev,
-                                     const ankerl::unordered_dense::map<int, TDuration> *beat_subdivision);
+    static BeamMode actual_beam_mode(const ChordRest *cr, const ChordRest *prev, const muse::HashMap<int, TDuration> *beat_subdivision);
 
 private:
     GroupNodes nodes_;

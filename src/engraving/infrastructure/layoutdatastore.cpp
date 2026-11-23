@@ -5,8 +5,6 @@
 #include <stdexcept>
 #include <vector>
 
-#include <ankerl/unordered_dense.h>
-
 #include "dom/accidental.h"
 #include "dom/arpeggio.h"
 #include "dom/articulation.h"
@@ -49,6 +47,7 @@
 #include "dom/tremolotwochord.h"
 #include "dom/tuplet.h"
 #include "engraving/dom/dummyparent.h"
+#include "global/hashmap.h"
 #include "rendering/score/layoutdatafactory.h"
 #include "rendering/score/scorerenderer.h"
 
@@ -141,8 +140,7 @@ void add_layout_payload_children(const EngravingItem &owner, const EngravingItem
     }
 }
 
-void collect_owned_subtree(const EngravingItem &item, std::vector<const EngravingItem *> &out,
-                           ankerl::unordered_dense::set<const EngravingItem *> &seen) {
+void collect_owned_subtree(const EngravingItem &item, std::vector<const EngravingItem *> &out, muse::HashSet<const EngravingItem *> &seen) {
     if (!seen.insert(&item).second) return;
     out.push_back(&item);
     const auto visit = [&](const EngravingItem *child) {
@@ -229,7 +227,7 @@ struct LayoutDataStore::Records {
         std::unique_ptr<EngravingItem::LayoutData> data;
     };
 
-    ankerl::unordered_dense::map<const EngravingItem *, Record> items;
+    muse::HashMap<const EngravingItem *, Record> items;
 };
 
 LayoutDataStore::RetireScope::RetireScope(LayoutDataStore &store, std::vector<const EngravingItem *> retired) {
@@ -275,7 +273,7 @@ void LayoutDataStore::register_layout_copy(const EngravingItem &source, Engravin
     // Reconnected ties can move relative to other types; order within a type is stable.
     const auto &source_children = source.children();
     const auto &display_children = display.children();
-    ankerl::unordered_dense::map<ElementType, size_t> ordinals;
+    muse::HashMap<ElementType, size_t> ordinals;
     for (const auto *child : source_children) {
         if (!child->is_engraving_item()) continue;
         size_t ordinal = ordinals[child->type()]++;
@@ -345,7 +343,7 @@ void LayoutDataStore::erase(EngravingItem &item) {
     item.layout_store_ = nullptr;
     if (!clearing_ && !suppress_shape_prune_ && has_borrower_containers()) {
         std::vector<const EngravingItem *> targets;
-        ankerl::unordered_dense::set<const EngravingItem *> seen;
+        muse::HashSet<const EngravingItem *> seen;
         if (!is_retired_in_flight(item)) {
             targets.push_back(&item);
             seen.insert(&item);
@@ -423,7 +421,7 @@ LayoutDataStore::RetireScope LayoutDataStore::begin_retire_scope(std::vector<con
 LayoutDataStore::RetireScope LayoutDataStore::retire_for_disposal(const EngravingItem &item) {
     if (clearing_ || suppress_shape_prune_ || is_retired_in_flight(item)) return {};
     std::vector<const EngravingItem *> targets;
-    ankerl::unordered_dense::set<const EngravingItem *> seen;
+    muse::HashSet<const EngravingItem *> seen;
     collect_owned_subtree(item, targets, seen);
     std::erase_if(targets, [&](const EngravingItem *candidate) { return is_retired_in_flight(*candidate); });
     return begin_retire_scope(std::move(targets));
@@ -431,11 +429,11 @@ LayoutDataStore::RetireScope LayoutDataStore::retire_for_disposal(const Engravin
 
 std::vector<LayoutDataStore::RetireScope> LayoutDataStore::retire_batch_for_disposal(std::span<EngravingItem *const> roots) {
     std::vector<const EngravingItem *> collected;
-    ankerl::unordered_dense::set<const EngravingItem *> seen;
+    muse::HashSet<const EngravingItem *> seen;
     for (const auto *root : roots) {
         if (root) collect_owned_subtree(*root, collected, seen);
     }
-    ankerl::unordered_dense::map<LayoutDataStore *, std::vector<const EngravingItem *>> by_store;
+    muse::HashMap<LayoutDataStore *, std::vector<const EngravingItem *>> by_store;
     for (const auto *item : collected) {
         LayoutDataStore *score_store = (item->score() && Score::is_alive(item->score())) ? item->score()->layout_data_store() : nullptr;
         LayoutDataStore *bound_store = item->layout_store_;
@@ -504,7 +502,7 @@ void LayoutDataStore::retire_beam_borrowers(const BeamBase &beam) {
     if (clearing_ || suppress_shape_prune_ || !has_borrower_containers()) return;
     std::vector<const EngravingItem *> targets;
     if (!is_retired_in_flight(beam)) {
-        ankerl::unordered_dense::set<const EngravingItem *> seen;
+        muse::HashSet<const EngravingItem *> seen;
         collect_owned_subtree(beam, targets, seen);
         std::erase_if(targets, [&](const EngravingItem *candidate) { return is_retired_in_flight(*candidate); });
         std::sort(targets.begin(), targets.end(), std::less<>{});
@@ -527,7 +525,7 @@ void LayoutDataStore::retire_spanner_borrowers(const SpannerSegment &segment) { 
 void LayoutDataStore::retire_shape_borrowers(const EngravingItem &retired) {
     if (clearing_ || suppress_shape_prune_ || !has_borrower_containers() || is_retired_in_flight(retired)) return;
     std::vector<const EngravingItem *> targets;
-    ankerl::unordered_dense::set<const EngravingItem *> seen;
+    muse::HashSet<const EngravingItem *> seen;
     collect_owned_subtree(retired, targets, seen);
     std::erase_if(targets, [&](const EngravingItem *candidate) { return is_retired_in_flight(*candidate); });
     if (targets.empty()) return;
@@ -596,7 +594,7 @@ void LayoutDataStore::retire_shared_auxiliary_output() {
         for (auto *page : output_.pages) page->invalidate_bsp_tree();
         for (auto *system : output_.systems)
             for (auto *staff : system->staves()) staff->skyline().clear();
-        const ankerl::unordered_dense::set<Spanner *> retired(output_.shared_spanners.begin(), output_.shared_spanners.end());
+        const muse::HashSet<Spanner *> retired(output_.shared_spanners.begin(), output_.shared_spanners.end());
         for (auto &record : records_->items.values()) {
             auto *item = record.second.item;
             if (item->is_segment()) to_segment(item)->clear_shapes();

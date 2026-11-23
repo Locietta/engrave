@@ -25,8 +25,6 @@
 #include <limits>
 #include <stdexcept>
 
-#include <ankerl/unordered_dense.h>
-
 #include "../../infrastructure/rtti.h"
 #include "../../style/textstyle.h"
 #include "../../types/symnames.h"
@@ -151,6 +149,7 @@
 #include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
 #include "engraving/internal/engravingfont.h"
 #include "engraving/style/styletypes.h"
+#include "global/hashmap.h"
 #include "global/serialization/textstream.h"
 #include "infrastructure/eidregister.h"
 #include "log.h"
@@ -644,7 +643,7 @@ void TWrite::write_score_spanners(const Score *score, XmlWriter &xml, WriteConte
     if (score->spanner_map().empty()) {
         return;
     }
-    ankerl::unordered_dense::set<Spanner *> pending;
+    muse::HashSet<Spanner *> pending;
     for (const auto &i : score->spanner_map().map()) {
         Spanner *s = i.second;
         if (!s->generated()) {

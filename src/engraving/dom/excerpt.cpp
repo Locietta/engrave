@@ -22,10 +22,6 @@
 
 #include "excerpt.h"
 
-#include <amc/flatset.hpp>
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
-
 #include "../editing/addremoveelement.h"
 #include "../editing/transaction/transaction.h"
 #include "../editing/transpose.h"
@@ -39,6 +35,9 @@
 #include "engraving/dom/dummyparent.h"
 #include "factory.h"
 #include "fret.h"
+#include "global/btree.h"
+#include "global/flatset.h"
+#include "global/hashmap.h"
 #include "guitarbend.h"
 #include "harmony.h"
 #include "layoutbreak.h"
@@ -526,7 +525,7 @@ void MasterScore::init_excerpt(Excerpt *excerpt) {
 
 void MasterScore::init_parts(Excerpt *excerpt) {
     int nstaves{1}; // Initialise to 1 to force writing of the first part.
-    ankerl::unordered_dense::set<uint64_t> assigned_staves_ids;
+    muse::HashSet<uint64_t> assigned_staves_ids;
     for (Staff *excerpt_staff : excerpt->excerpt_score()->staves()) {
         const LinkedObjects *ls = excerpt_staff->links();
         if (ls == 0) {
@@ -1426,7 +1425,7 @@ void Excerpt::clone_staff2(Staff *src_staff, Staff *dst_staff, const Fraction &s
     track_idx_t s_track = src_staff_idx * ::mu::engraving::voices;
     track_idx_t e_track = s_track + ::mu::engraving::voices;
 
-    gtl::btree_map<track_idx_t, track_idx_t> map;
+    muse::BTreeMap<track_idx_t, track_idx_t> map;
     for (track_idx_t i = s_track; i < e_track; i++) {
         if (!oex && !ex) {
             map.insert({i, dst_staff_idx * ::mu::engraving::voices + i % ::mu::engraving::voices});
@@ -1744,10 +1743,10 @@ std::vector<Excerpt *> Excerpt::create_excerpts_from_parts(const std::vector<Par
 
 void Excerpt::create_linked_tabs(MasterScore *score) {
     // store map of all initial spanners
-    gtl::btree_map<staff_idx_t, std::vector<Spanner *>> spanners;
+    muse::BTreeMap<staff_idx_t, std::vector<Spanner *>> spanners;
     // for moving initial spanner to new index
-    ankerl::unordered_dense::map<staff_idx_t, staff_idx_t> index_mapping;
-    amc::FlatSet<staff_idx_t> staff_indexes_to_copy;
+    muse::HashMap<staff_idx_t, staff_idx_t> index_mapping;
+    muse::FlatSet<staff_idx_t> staff_indexes_to_copy;
     constexpr size_t staves_in_part = 2;
 
     for (auto it = score->spanner().cbegin(); it != score->spanner().cend(); ++it) {

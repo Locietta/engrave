@@ -22,11 +22,10 @@
 
 #pragma once
 
-#include <ankerl/unordered_dense.h>
-
 #include "../types/types.h"
 #include "chord.h"
 #include "durationtype.h"
+#include "global/hashmap.h"
 #include "mscore.h"
 #include "pitchspelling.h"
 
@@ -149,7 +148,7 @@ struct Selection {
                                 Box *box = nullptr);
 
 private:
-    void append_anchored_elements(const ankerl::unordered_dense::set<EngravingItem *> &elems);
+    void append_anchored_elements(const muse::HashSet<EngravingItem *> &elems);
     void append_chord_rest(ChordRest *cr);
     void append_tuplet_hierarchy(Tuplet *innermost_tuplet);
     void append_guitar_bend(GuitarBend *guitar_bend);

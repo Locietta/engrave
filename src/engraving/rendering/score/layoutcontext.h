@@ -25,15 +25,14 @@
 #include <memory>
 #include <vector>
 
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
-
 #include "../../dom/mscore.h"
 #include "../../style/style.h"
 #include "../../types/fraction.h"
 #include "../../types/types.h"
 #include "../layoutoptions.h"
 #include "engraving/internal/engravingfont.h"
+#include "global/btree.h"
+#include "global/hashmap.h"
 
 #define LAYOUT_CALL_CLEAR()
 #define LAYOUT_CALL_BEGIN(name, info)
@@ -204,7 +203,7 @@ struct DomAccessor {
     void undo_change_parent(EngravingItem *element, EngravingItem *parent, staff_idx_t staff, bool change_links_parents = true);
 
     void add_unmanaged_spanner(Spanner *s);
-    const gtl::btree_set<Spanner *> &unmanaged_spanners() const;
+    const muse::BTreeSet<Spanner *> &unmanaged_spanners() const;
 
 private:
     LayoutContext *get_score_ = nullptr;
@@ -251,7 +250,7 @@ struct LayoutState {
 
     bool range_done() const { return range_done_; }
 
-    const ankerl::unordered_dense::set<System *> &systems_needing_centering() const { return systems_needing_centering_; }
+    const muse::HashSet<System *> &systems_needing_centering() const { return systems_needing_centering_; }
 
     bool must_recompute_headers_footers() const { return must_recompute_headers_footers_; }
 
@@ -347,7 +346,7 @@ private:
 
     bool range_done_ = false;
 
-    ankerl::unordered_dense::set<System *>
+    muse::HashSet<System *>
         systems_needing_centering_; // systems which have been laid out and still need SystemLayout::centerElementsBetweenStaves
 
     bool must_recompute_headers_footers_ =

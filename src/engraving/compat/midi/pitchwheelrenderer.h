@@ -26,11 +26,10 @@
 #include <limits>
 #include <vector>
 
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
-
 #include "../../types/types.h"
 #include "event.h"
+#include "global/btree.h"
+#include "global/hashmap.h"
 #include "global/unique_fn.h"
 
 namespace mu::engraving {
@@ -47,7 +46,7 @@ struct PitchWheelRenderer {
 
     EventsHolder render_pitch_wheel() const noexcept;
 
-    static void generate_ranges(const std::vector<PitchWheelFunction> &functions, gtl::btree_map<int, int, std::greater<>> &ranges);
+    static void generate_ranges(const std::vector<PitchWheelFunction> &functions, muse::BTreeMap<int, int, std::greater<>> &ranges);
 
 private:
 
@@ -64,11 +63,11 @@ private:
 
     int32_t calculate_pitch_bend(const std::vector<PitchWheelFunction> &functions, int32_t tick) const noexcept;
 
-    gtl::btree_map<uint32_t /*channel*/, PitchWheelFunctions> functions_value;
+    muse::BTreeMap<uint32_t /*channel*/, PitchWheelFunctions> functions_value;
 
     PitchWheelSpecs wheel_spec_value;
 
-    ankerl::unordered_dense::map<int, MidiInstrumentEffect> effect_by_channel;
-    ankerl::unordered_dense::map<int, staff_idx_t> staff_idx_by_channel;
+    muse::HashMap<int, MidiInstrumentEffect> effect_by_channel;
+    muse::HashMap<int, staff_idx_t> staff_idx_by_channel;
 };
 } // namespace mu::engraving

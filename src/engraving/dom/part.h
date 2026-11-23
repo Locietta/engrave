@@ -25,10 +25,9 @@
 #include <memory>
 #include <vector>
 
-#include <amc/flatset.hpp>
-#include <gtl/btree.hpp>
-
 #include "../types/types.h"
+#include "global/btree.h"
+#include "global/flatset.h"
 #include "instrument.h"
 #include "mscore.h"
 
@@ -83,7 +82,7 @@ public:
     size_t visible_staves_count() const;
     size_t layout_visible_staves_count() const;
     const std::vector<Staff *> &staves() const;
-    amc::FlatSet<staff_idx_t> stave_idx_list() const;
+    muse::FlatSet<staff_idx_t> stave_idx_list() const;
     void append_staff(Staff *staff);
     void clear_staves();
 
@@ -145,7 +144,7 @@ public:
     void remove_instrument(Instrument *, const Fraction &);
     const InstrumentList &instruments() const;
 
-    const gtl::btree_map<int, StringTunings *> &string_tunings() const { return string_tunings_; }
+    const muse::BTreeMap<int, StringTunings *> &string_tunings() const { return string_tunings_; }
 
     const StringData *string_data(const Fraction &tick, staff_idx_t staff_idx) const;
     void add_string_tunings(StringTunings *string_tunings);
@@ -154,7 +153,7 @@ public:
 
     void insert_time(const Fraction &tick, const Fraction &len);
 
-    const gtl::btree_map<int, HarpPedalDiagram *> &harp_diagrams() const { return harp_diagrams_; }
+    const muse::BTreeMap<int, HarpPedalDiagram *> &harp_diagrams() const { return harp_diagrams_; }
 
     void add_harp_diagram(HarpPedalDiagram *);
     void remove_harp_diagram(HarpPedalDiagram *);
@@ -224,8 +223,8 @@ private:
 
     PreferSharpFlat prefer_sharp_flat_ = PreferSharpFlat::AUTO;
 
-    gtl::btree_map<int, HarpPedalDiagram *> harp_diagrams_;
-    gtl::btree_map<int, StringTunings *> string_tunings_;
+    muse::BTreeMap<int, HarpPedalDiagram *> harp_diagrams_;
+    muse::BTreeMap<int, StringTunings *> string_tunings_;
 
     SharedPart *shared_part_ = nullptr;
 };

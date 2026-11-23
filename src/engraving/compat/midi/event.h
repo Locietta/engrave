@@ -25,8 +25,7 @@
 
 #include <vector>
 
-#include <gtl/btree.hpp>
-
+#include "global/btree.h"
 #include "midicoreevent.h"
 #include "midiinstrumenteffects.h"
 
@@ -201,7 +200,7 @@ public:
 struct EventsHolder {
 private:
 
-    using events_multimap_t = gtl::btree_multimap<int, NPlayEvent>;
+    using events_multimap_t = muse::BTreeMultiMap<int, NPlayEvent>;
     std::vector<events_multimap_t> channels;
 public:
     [[nodiscard]] size_t size() const { return channels.size(); }

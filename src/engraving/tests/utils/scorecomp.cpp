@@ -28,8 +28,7 @@
 #include <string_view>
 #include <vector>
 
-#include <ankerl/unordered_dense.h>
-
+#include "global/hashmap.h"
 #include "global/io/buffer.h"
 #include "global/serialization/textstream.h"
 #include "log.h"
@@ -126,7 +125,7 @@ ByteArray ScoreComp::canonical_ids(const ByteArray &xml) {
     };
 
     std::vector<Identity> matches;
-    ankerl::unordered_dense::map<std::string_view, size_t> ids;
+    muse::HashMap<std::string_view, size_t> ids;
     for (size_t opening = source.find('<'); opening != source.npos; opening = source.find('<', opening + 1)) {
         const auto tag = std::ranges::find_if(tags, [&](auto candidate) {
             const auto tail = source.substr(opening + 1);

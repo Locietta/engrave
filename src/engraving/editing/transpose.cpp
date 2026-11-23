@@ -22,8 +22,6 @@
 
 #include "transpose.h"
 
-#include <gtl/btree.hpp>
-
 #include "../dom/factory.h"
 #include "../dom/fret.h"
 #include "../dom/harmony.h"
@@ -37,6 +35,7 @@
 #include "../dom/utils.h"
 #include "editkeysig.h"
 #include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
+#include "global/btree.h"
 #include "log.h"
 #include "transaction/transaction.h"
 
@@ -90,7 +89,7 @@ void Transpose::transposition_changed(Transaction &tx, Score *score, Part *part,
     }
 
     // transpose keys first
-    gtl::btree_set<Score *> scores;
+    muse::BTreeSet<Score *> scores;
     for (Staff *ls : part->staff(0)->staff_list()) {
         // TODO: special handling for linked staves within a score
         // could be useful for capo

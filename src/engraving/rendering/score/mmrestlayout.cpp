@@ -23,9 +23,6 @@
 
 #include <algorithm>
 
-#include <amc/flatset.hpp>
-#include <ankerl/unordered_dense.h>
-
 #include "dom/barline.h"
 #include "dom/factory.h"
 #include "dom/layoutbreak.h"
@@ -40,6 +37,8 @@
 #include "dom/staff.h"
 #include "editing/editmeasures.h"
 #include "engraving/dom/dummyparent.h"
+#include "global/flatset.h"
+#include "global/hashmap.h"
 #include "layoutdatastore.h"
 #include "log.h"
 #include "measurelayout.h"
@@ -48,7 +47,7 @@
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
-static const ankerl::unordered_dense::set<ElementType> break_types{
+static const muse::HashSet<ElementType> break_types{
     ElementType::TEMPO_TEXT,
     ElementType::REHEARSAL_MARK,
     ElementType::HARMONY,
@@ -68,9 +67,9 @@ static const ankerl::unordered_dense::set<ElementType> break_types{
     ElementType::FERMATA,
 };
 
-static const ankerl::unordered_dense::set<ElementType> always_break_types{ElementType::TEMPO_TEXT, ElementType::REHEARSAL_MARK};
+static const muse::HashSet<ElementType> always_break_types{ElementType::TEMPO_TEXT, ElementType::REHEARSAL_MARK};
 
-static const ankerl::unordered_dense::set<ElementType> conditional_break_types{
+static const muse::HashSet<ElementType> conditional_break_types{
     ElementType::HARMONY,
     ElementType::STAFF_TEXT,
     ElementType::EXPRESSION,
@@ -550,7 +549,7 @@ bool MMRestLayout::break_multi_measure_rest(const LayoutContext &ctx, Measure *m
         return true;
     }
 
-    static const amc::FlatSet<ElementType> break_spanner_types{
+    static const muse::FlatSet<ElementType> break_spanner_types{
         ElementType::VOLTA,
         ElementType::GRADUAL_TEMPO_CHANGE,
         ElementType::TEXTLINE,

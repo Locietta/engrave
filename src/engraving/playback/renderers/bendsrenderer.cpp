@@ -22,10 +22,9 @@
 
 #include "bendsrenderer.h"
 
-#include <ankerl/unordered_dense.h>
-
 #include "dom/guitarbend.h"
 #include "dom/note.h"
+#include "global/hashmap.h"
 #include "gracechordcontext.h"
 #include "noterenderer.h"
 #include "playback/metaparsers/chordarticulationsparser.h"
@@ -69,7 +68,7 @@ bool BendsRenderer::is_multibend_part(const Note *note) {
     }
 
     const Note *curr_note = note->first_tied_note(::ignore_unplayable);
-    ankerl::unordered_dense::set<const Note *> visited;
+    muse::HashSet<const Note *> visited;
 
     while (curr_note && curr_note->play()) {
         if (!visited.insert(curr_note).second) {
@@ -121,7 +120,7 @@ void BendsRenderer::render(const Note *note, const RenderingContext &ctx, mpe::P
 void BendsRenderer::render_multibend(const Note *start_note, const RenderingContext &start_note_ctx, mpe::PlaybackEventList &result) {
     const Note *curr_note = start_note;
     const GuitarBend *curr_bend = nullptr;
-    ankerl::unordered_dense::set<const Note *> visited;
+    muse::HashSet<const Note *> visited;
 
     mpe::PlaybackEventList bend_events;
     BendTimeFactorMap bend_time_factor_map;

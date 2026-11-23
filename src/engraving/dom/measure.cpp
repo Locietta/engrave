@@ -27,8 +27,6 @@
 
 #include "measure.h"
 
-#include <gtl/btree.hpp>
-
 #include "../editing/editclef.h"
 #include "../editing/editkeysig.h"
 #include "../editing/editmeasurerepeat.h"
@@ -50,6 +48,7 @@
 #include "durationelement.h"
 #include "engraving/dom/dummyparent.h"
 #include "factory.h"
+#include "global/btree.h"
 #include "hook.h"
 #include "key.h"
 #include "keysig.h"
@@ -1034,7 +1033,7 @@ void Measure::move_ticks(const Fraction &diff) {
     if (diff.numerator() == 0) {
         return;
     }
-    gtl::btree_set<Tuplet *> tuplets;
+    muse::BTreeSet<Tuplet *> tuplets;
     set_tick(tick() + diff);
     for (Segment *segment = last(); segment; segment = segment->prev()) {
         if (segment->is_chord_rest_type()) {

@@ -22,8 +22,6 @@
 
 #include "staff.h"
 
-#include <gtl/btree.hpp>
-
 #include "../editing/editcapo.h"
 #include "../editing/editstaffbrackets.h"
 #include "../editing/transpose.h"
@@ -35,6 +33,7 @@
 #include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
 #include "excerpt.h"
 #include "factory.h"
+#include "global/btree.h"
 #include "instrtemplate.h"
 #include "linkedobjects.h"
 #include "masterscore.h"
@@ -637,11 +636,11 @@ const CapoParams &Staff::capo(const Fraction &tick) const {
 }
 
 void Staff::insert_capo_params(const Fraction &tick, const CapoParams &params, bool ignore_notation_update) {
-    const CapoParams new_params = params;
     if (ignore_notation_update) {
-        capo_map_[tick.ticks()] = new_params;
+        capo_map_.insert_or_assign(tick.ticks(), params);
         return;
     }
+    const CapoParams new_params = params;
     auto is_need_update = [](const CapoParams &old_params, const CapoParams &next_params) -> bool {
         return !(old_params.active == next_params.active && old_params.transpose_mode == next_params.transpose_mode &&
                  old_params.fret_position == next_params.fret_position && old_params.ignored_strings == next_params.ignored_strings);
@@ -723,7 +722,7 @@ bool Staff::should_merge_matching_rests() const {
 }
 
 int Staff::channel(const Fraction &tick, voice_idx_t voice) const {
-    const gtl::btree_map<int, int> &map = channel_list_[voice];
+    const muse::BTreeMap<int, int> &map = channel_list_[voice];
     if (map.empty()) {
         return 0;
     }

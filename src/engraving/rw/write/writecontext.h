@@ -21,11 +21,10 @@
  */
 #pragma once
 
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
-
 #include "containers.h"
 #include "engraving/dom/score.h"
+#include "global/btree.h"
+#include "global/hashmap.h"
 
 namespace mu::engraving::write {
 struct WriteRange {
@@ -44,8 +43,8 @@ struct WriteContext {
 
     WriteContext(const Score *s, bool clipboard_mode = false) : score_(s), clipboardmode_value(clipboard_mode) {}
 
-    ankerl::unordered_dense::set<const Segment *> written_segments;
-    const gtl::btree_map<muse::String, muse::String> *metadata_override = nullptr;
+    muse::HashSet<const Segment *> written_segments;
+    const muse::BTreeMap<muse::String, muse::String> *metadata_override = nullptr;
 
     EngravingConfiguration *configuration() const;
 
@@ -114,7 +113,7 @@ private:
     bool standalone_value{false};
     bool inline_style_value{false};
     bool inline_excerpts_value{false};
-    ankerl::unordered_dense::map<const void *, EID> standalone_links;
+    muse::HashMap<const void *, EID> standalone_links;
 
     std::optional<WriteRange> range_value;
 };

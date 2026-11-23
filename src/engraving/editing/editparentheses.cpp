@@ -24,8 +24,6 @@
 
 #include <algorithm>
 
-#include <gtl/btree.hpp>
-
 #include "../dom/accidental.h"
 #include "../dom/chord.h"
 #include "../dom/engravingitem.h"
@@ -34,6 +32,7 @@
 #include "../dom/timesig.h"
 #include "../dom/utils.h"
 #include "editchord.h"
+#include "global/btree.h"
 #include "log.h"
 
 using namespace mu::engraving;
@@ -52,16 +51,16 @@ struct NoteComparator {
     }
 };
 
-static gtl::btree_map<Chord *, gtl::btree_set<Note *, NoteComparator>> get_notes_by_chord(const std::vector<Note *> &notes) {
+static muse::BTreeMap<Chord *, muse::BTreeSet<Note *, NoteComparator>> get_notes_by_chord(const std::vector<Note *> &notes) {
     // Return map of notes by chord
     // Include all notes between highest and lowest in each chord
-    gtl::btree_map<Chord *, gtl::btree_set<Note *, NoteComparator>> notes_by_chord;
+    muse::BTreeMap<Chord *, muse::BTreeSet<Note *, NoteComparator>> notes_by_chord;
     for (Note *note_to_add : notes) {
         Chord *chord = note_to_add->chord();
         auto notes_by_chord_it = notes_by_chord.find(chord);
 
         if (notes_by_chord_it == notes_by_chord.end()) {
-            notes_by_chord.emplace(chord, gtl::btree_set<Note *, NoteComparator>{note_to_add});
+            notes_by_chord.emplace(chord, muse::BTreeSet<Note *, NoteComparator>{note_to_add});
             continue;
         }
 
@@ -90,7 +89,7 @@ static gtl::btree_map<Chord *, gtl::btree_set<Note *, NoteComparator>> get_notes
 } // namespace
 
 void EditParentheses::add_parentheses_to_notes(Transaction &, const std::vector<Note *> &notes) {
-    gtl::btree_map<Chord *, gtl::btree_set<Note *, NoteComparator>> notes_by_chord = get_notes_by_chord(notes);
+    muse::BTreeMap<Chord *, muse::BTreeSet<Note *, NoteComparator>> notes_by_chord = get_notes_by_chord(notes);
 
     for (auto &[chord, note_set] : notes_by_chord) {
         std::vector<Note *> note_vec(note_set.begin(), note_set.end());

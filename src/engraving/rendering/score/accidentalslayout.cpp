@@ -24,15 +24,14 @@
 #include <algorithm>
 #include <cfloat>
 
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
-
 #include "../paddingtable.h"
 #include "dom/accidental.h"
 #include "dom/chord.h"
 #include "dom/ledgerline.h"
 #include "dom/note.h"
 #include "dom/score.h"
+#include "global/btree.h"
+#include "global/hashmap.h"
 #include "layoutcontext.h"
 #include "log.h"
 #include "shape.h"
@@ -371,7 +370,7 @@ AccidentalGroups AccidentalsLayout::split_according_to_accid_displacement(std::v
 
 AccidentalGroups AccidentalsLayout::group_accidentals_by_x_pos(std::vector<Accidental *> &accidentals,
                                                                const AccidentalsLayoutContext &ctx) {
-    gtl::btree_map<double, std::vector<Accidental *>> groups_of_equal_x;
+    muse::BTreeMap<double, std::vector<Accidental *>> groups_of_equal_x;
 
     for (Accidental *acc : accidentals) {
         Shape acc_rough_shape = Shape(acc->sym_bbox(acc->sym_id()), acc);
@@ -454,7 +453,7 @@ AccidentalGroups AccidentalsLayout::split_according_to_note_displacement(std::ve
 AccidentalGroups AccidentalsLayout::group_accidentals_by_note_x_pos(const std::vector<Accidental *> &accidentals) {
     AccidentalGroups sub_groups;
 
-    gtl::btree_map<double, std::vector<Accidental *>> groups_of_equal_note_x;
+    muse::BTreeMap<double, std::vector<Accidental *>> groups_of_equal_note_x;
     for (Accidental *accidental : accidentals) {
         Note *note = accidental->note();
         double x = std::round(note->pos().x() + note->chord()->pos().x());
@@ -524,7 +523,7 @@ void AccidentalsLayout::compute_ordering_with_least_columns(std::vector<Accident
     compute_compact_ordering(compact_ordered, ctx);
 
     auto total_columns = [&](std::vector<Accidental *> &acc_group) {
-        ankerl::unordered_dense::map<Accidental *, int> accidental_column;
+        muse::HashMap<Accidental *, int> accidental_column;
         accidental_column[acc_group.front()] = 0;
         int max_column = 0;
         for (size_t i = 1; i < acc_group.size(); ++i) {
@@ -910,8 +909,8 @@ double AccidentalsLayout::additional_padding_for_verticals(const Accidental *acc
 }
 
 void AccidentalsLayout::vertically_align_accidentals(AccidentalsLayoutContext &ctx) {
-    ankerl::unordered_dense::set<Accidental *> accidentals_already_grouped;
-    gtl::btree_map<Accidental *, std::vector<Accidental *>> vertical_sets;
+    muse::HashSet<Accidental *> accidentals_already_grouped;
+    muse::BTreeMap<Accidental *, std::vector<Accidental *>> vertical_sets;
 
     if (ctx.align_offset_octaves()) {
         collect_vertical_sets_of_offset_octaves(accidentals_already_grouped, vertical_sets, ctx);
@@ -937,8 +936,8 @@ void AccidentalsLayout::vertically_align_accidentals(AccidentalsLayoutContext &c
     align_vertical_sets(vert_sets, ctx);
 }
 
-void AccidentalsLayout::collect_vertical_sets_of_offset_octaves(ankerl::unordered_dense::set<Accidental *> &accidentals_already_grouped,
-                                                                gtl::btree_map<Accidental *, std::vector<Accidental *>> &vertical_sets,
+void AccidentalsLayout::collect_vertical_sets_of_offset_octaves(muse::HashSet<Accidental *> &accidentals_already_grouped,
+                                                                muse::BTreeMap<Accidental *, std::vector<Accidental *>> &vertical_sets,
                                                                 AccidentalsLayoutContext &ctx) {
     for (std::vector<Accidental *> &accidental_group : ctx.accidental_sub_chords) {
         for (size_t i = 0; i < accidental_group.size(); ++i) {
@@ -977,8 +976,8 @@ void AccidentalsLayout::collect_vertical_sets_of_offset_octaves(ankerl::unordere
     }
 }
 
-void AccidentalsLayout::collect_vertical_sets(ankerl::unordered_dense::set<Accidental *> &accidentals_already_grouped,
-                                              gtl::btree_map<Accidental *, std::vector<Accidental *>> &vertical_sets,
+void AccidentalsLayout::collect_vertical_sets(muse::HashSet<Accidental *> &accidentals_already_grouped,
+                                              muse::BTreeMap<Accidental *, std::vector<Accidental *>> &vertical_sets,
                                               AccidentalsLayoutContext &ctx) {
     for (size_t i = 0; i < ctx.all_accidentals.size(); ++i) {
         Accidental *acc1 = ctx.all_accidentals[i];

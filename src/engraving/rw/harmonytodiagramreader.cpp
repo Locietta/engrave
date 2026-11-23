@@ -21,12 +21,12 @@
  */
 #include "harmonytodiagramreader.h"
 
-#include <ankerl/unordered_dense.h>
+#include "global/hashmap.h"
 
 using namespace mu::engraving::rw;
 
-ankerl::unordered_dense::map<muse::String, HarmonyToDiagramReader::FretDiagramInfo> HarmonyToDiagramReader::read(XmlReader &reader) {
-    ankerl::unordered_dense::map<String, HarmonyToDiagramReader::FretDiagramInfo> result;
+muse::HashMap<muse::String, HarmonyToDiagramReader::FretDiagramInfo> HarmonyToDiagramReader::read(XmlReader &reader) {
+    muse::HashMap<String, HarmonyToDiagramReader::FretDiagramInfo> result;
 
     while (reader.read_next_start_element()) {
         if (reader.name() != "Data") {

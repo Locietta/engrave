@@ -22,8 +22,6 @@
 
 #include "noterenderer.h"
 
-#include <ankerl/unordered_dense.h>
-
 #include "dom/arpeggio.h"
 #include "dom/note.h"
 #include "dom/staff.h"
@@ -31,6 +29,7 @@
 #include "dom/tremolosinglechord.h"
 #include "dom/tremolotwochord.h"
 #include "glissandosrenderer.h"
+#include "global/hashmap.h"
 #include "playback/metaparsers/chordarticulationsparser.h"
 #include "playback/metaparsers/notearticulationsparser.h"
 #include "playback/utils/repeatutils.h"
@@ -191,7 +190,7 @@ void NoteRenderer::render_partial_tie(const Note *outgoing_note, NominalNoteCtx 
 }
 
 void NoteRenderer::render_normal_tie(const Note *first_note, NominalNoteCtx &first_note_ctx) {
-    ankerl::unordered_dense::set<const Note *> rendered_notes{first_note};
+    muse::HashSet<const Note *> rendered_notes{first_note};
 
     const RenderingContext &first_chord_ctx = first_note_ctx.chord_ctx;
     const Tie *curr_tie = first_note->tie_for();

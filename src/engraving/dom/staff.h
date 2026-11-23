@@ -24,12 +24,11 @@
 
 #include <vector>
 
-#include <gtl/btree.hpp>
-
 #include "../types/types.h"
 #include "cleflist.h"
 #include "draw/types/color.h"
 #include "engravingitem.h"
+#include "global/btree.h"
 #include "groups.h"
 #include "keylist.h"
 #include "mscore.h"
@@ -303,7 +302,7 @@ private:
     ClefTypeList default_clef_type_;
 
     KeyList keys_;
-    gtl::btree_map<int, TimeSig *> timesigs_;
+    muse::BTreeMap<int, TimeSig *> timesigs_;
 
     bool bar_line_span_ = false; // true - span barline to next staff
     int bar_line_from_ = 0;      // line of start staff to draw the barline from (0 = staff top line, ...)
@@ -320,10 +319,10 @@ private:
 
     StaffTypeList staff_type_list_;
 
-    gtl::btree_map<int, int> channel_list_[::mu::engraving::voices];
-    gtl::btree_map<int, SwingParameters> swing_map_;
-    gtl::btree_map<int, CapoParams> capo_map_;
-    gtl::btree_map<int, int> pitch_offset_map_;
+    muse::BTreeMap<int, int> channel_list_[::mu::engraving::voices];
+    muse::BTreeMap<int, SwingParameters> swing_map_;
+    muse::BTreeMap<int, CapoParams> capo_map_;
+    muse::BTreeMap<int, int> pitch_offset_map_;
     bool playback_voice_[::mu::engraving::voices]{true, true, true, true};
     std::array<bool, ::mu::engraving::voices> visibility_voices_{true, true, true, true};
 

@@ -22,9 +22,8 @@
 
 #pragma once
 
-#include <gtl/btree.hpp>
-
 #include "../types/fraction.h"
+#include "global/btree.h"
 
 namespace mu::engraving {
 struct Harmony;
@@ -48,7 +47,7 @@ enum class HDuration : signed char {
 ///     allow for chord symbol playback
 //-----------------------------------------
 struct RealizedHarmony {
-    using PitchMap = gtl::btree_multimap<int, int>; //map from pitch to tpc
+    using PitchMap = muse::BTreeMultiMap<int, int>; //map from pitch to tpc
 
     RealizedHarmony() : harmony_(0), notes_(PitchMap()), dirty_(1) {}
 

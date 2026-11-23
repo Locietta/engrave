@@ -25,11 +25,10 @@
 #include <optional>
 #include <vector>
 
-#include <ankerl/unordered_dense.h>
-
 #include "../infrastructure/sourcehandle.h"
 #include "../types/fraction.h"
 #include "../types/types.h"
+#include "global/hashmap.h"
 
 namespace mu::engraving {
 struct EngravingItem;
@@ -60,7 +59,7 @@ public:
         Chord *last = nullptr;
     };
 
-    using WrittenChordMap = ankerl::unordered_dense::map<const Chord *, WrittenChordSpan>;
+    using WrittenChordMap = muse::HashMap<const Chord *, WrittenChordSpan>;
 
     TrackList(ScoreRange *r) { range_ = r; }
 
@@ -238,8 +237,8 @@ private:
     std::vector<Tie *> start_ties_;
     std::vector<SpacerBackup> spacers_;
     std::vector<JumpsMarkersBackup> jumps_markers_;
-    ankerl::unordered_dense::map<const Chord *, const Chord *> read_chords_;
-    ankerl::unordered_dense::set<const Chord *> continuation_boundaries_;
+    muse::HashMap<const Chord *, const Chord *> read_chords_;
+    muse::HashSet<const Chord *> continuation_boundaries_;
     std::vector<NoteSpannerBackup> note_spanners_;
     std::vector<LocalGraceBackup> local_graces_;
     std::vector<LocalGraceTieBackup> local_grace_ties_;

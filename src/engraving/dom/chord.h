@@ -31,11 +31,10 @@
 #include <optional>
 #include <vector>
 
-#include <amc/flatset.hpp>
-
 #include "articulation.h"
 #include "chordrest.h"
 #include "draw/types/color.h"
+#include "global/flatset.h"
 #include "global/fn.h"
 
 namespace mu::engraving {
@@ -382,13 +381,13 @@ public:
 
     const std::vector<Articulation *> &articulations() const { return articulations_; }
 
-    amc::FlatSet<SymId> articulation_symbol_ids() const;
+    muse::FlatSet<SymId> articulation_symbol_ids() const;
     Articulation *has_articulation(const Articulation *);
     Tapping *tapping() const;
 
     bool has_single_articulation() const { return articulations_.size() == 1; }
 
-    void update_articulations(const amc::FlatSet<SymId> &new_articulation_ids,
+    void update_articulations(const muse::FlatSet<SymId> &new_articulation_ids,
                               ArticulationsUpdateMode replace_mode = ArticulationsUpdateMode::INSERT);
 
     void local_spatium_changed(double old_value, double new_value) override;
@@ -428,9 +427,9 @@ public:
 
     Ornament *find_ornament(bool for_playback = false) const;
 
-    const amc::FlatSet<Spanner *> &starting_spanners() const { return starting_spanners_; }
+    const muse::FlatSet<Spanner *> &starting_spanners() const { return starting_spanners_; }
 
-    const amc::FlatSet<Spanner *> &ending_spanners() const { return ending_spanners_; }
+    const muse::FlatSet<Spanner *> &ending_spanners() const { return ending_spanners_; }
 
     void add_starting_spanner(Spanner *spanner) { starting_spanners_.insert(spanner); }
 
@@ -538,8 +537,8 @@ private:
 
     bool is_ui_item_ = false;
 
-    amc::FlatSet<Spanner *> starting_spanners_; // spanners starting on this item
-    amc::FlatSet<Spanner *> ending_spanners_;   // spanners ending on this item
+    muse::FlatSet<Spanner *> starting_spanners_; // spanners starting on this item
+    muse::FlatSet<Spanner *> ending_spanners_;   // spanners ending on this item
 
     AutoOnOff combine_voice_ = AutoOnOff::AUTO;
 
