@@ -22,8 +22,9 @@
 #pragma once
 
 #include <cstdint>
-#include <map>
 #include <string>
+
+#include <ankerl/unordered_dense.h>
 
 #include "global/types/bytearray.h"
 
@@ -87,7 +88,7 @@ private:
 
     OpenMode mode_ = OpenMode::UNKNOWN;
     size_t pos_ = 0;
-    std::map<std::string, std::string> meta_;
+    ankerl::unordered_dense::segmented_map<std::string, std::string> meta_;
 
     int error_ = 0;
     std::string error_string_;

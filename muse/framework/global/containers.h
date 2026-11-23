@@ -32,6 +32,8 @@
 #include <unordered_set>
 #include <vector>
 
+#include <amc/flatset.hpp>
+
 #include "sortedrange.h"
 
 //! NOTE useful functions for containers
@@ -251,6 +253,37 @@ inline bool contains(const std::unordered_map<K, V> &m, const K &k) {
     return m.find(k) != m.cend();
 }
 
+template <typename Container, typename K>
+    requires requires(const Container &c, const K &key) {
+        { c.find(key) != c.end() } -> std::convertible_to<bool>;
+    }
+inline bool contains(const Container &c, const K &key) {
+    return c.find(key) != c.end();
+}
+
+template <typename Map>
+inline auto unique_keys(const Map &m) {
+    amc::FlatSet<typename Map::key_type> result;
+    for (const auto &entry : m) {
+        result.insert(entry.first);
+    }
+    return result;
+}
+
+template <typename Map>
+inline auto values(const Map &m, const typename Map::key_type &key) -> std::vector<typename Map::mapped_type> {
+    std::vector<typename Map::mapped_type> result;
+    if constexpr (requires { m.equal_range(key); }) {
+        const auto [first, last] = m.equal_range(key);
+        for (auto it = first; it != last; ++it) {
+            result.push_back(it->second);
+        }
+    } else if (auto it = m.find(key); it != m.end()) {
+        result.push_back(it->second);
+    }
+    return result;
+}
+
 template <typename Map>
 inline auto values(const Map &m) -> std::vector<typename Map::mapped_type> {
     std::vector<typename Map::mapped_type> result;
@@ -314,7 +347,7 @@ inline bool remove(Map &c, const T &k) {
 template <typename Map, typename Predicate>
 inline size_t remove_if(Map &c, Predicate pred) {
     auto old_size = c.size();
-    for (auto first = c.begin(), last = c.end(); first != last;) {
+    for (auto first = c.begin(); first != c.end();) {
         if (pred(*first)) {
             first = c.erase(first);
         } else {
@@ -328,7 +361,7 @@ template <typename Map, typename K>
 inline auto take(Map &m, const K &k) -> typename Map::mapped_type {
     auto it = m.find(k);
     if (it != m.end()) {
-        auto v = it->second;
+        auto v = std::move(it->second);
         m.erase(it);
         return v;
     }
@@ -366,60 +399,44 @@ inline auto sorted_upper_bound(Container &c, const Key &k) {
     }
 }
 
-template <typename Container>
-inline std::ranges::iterator_t<const Container> find_less_or_equal(const Container &c, const sorted_key_t<Container> &k) {
-    if (c.empty()) {
-        return c.end();
+template <bool Inclusive, typename Container>
+auto find_predecessor(Container &c, const sorted_key_t<Container> &k) {
+    if constexpr (requires { typename Container::hasher; }) {
+        const auto key_of = [](const auto &entry) -> const auto & {
+            if constexpr (requires { typename Container::mapped_type; }) {
+                return entry.first;
+            } else {
+                return entry;
+            }
+        };
+        auto best = c.end();
+        for (auto it = c.begin(); it != c.end(); ++it) {
+            const auto &key = key_of(*it);
+            if ((Inclusive ? !(k < key) : key < k) && (best == c.end() || key_of(*best) < key)) {
+                best = it;
+            }
+        }
+        return best;
+    } else {
+        auto bound = [&] {
+            if constexpr (Inclusive) {
+                return sorted_upper_bound(c, k);
+            } else {
+                return c.lower_bound(k);
+            }
+        }();
+        return bound == c.begin() ? c.end() : std::prev(bound);
     }
-
-    auto it = sorted_upper_bound(c, k);
-    if (it == c.begin()) {
-        return c.end();
-    }
-
-    return std::prev(it);
 }
 
 template <typename Container>
-inline std::ranges::iterator_t<Container> find_less_or_equal(Container &c, const sorted_key_t<Container> &k) {
-    if (c.empty()) {
-        return c.end();
-    }
-
-    auto it = sorted_upper_bound(c, k);
-    if (it == c.begin()) {
-        return c.end();
-    }
-
-    return std::prev(it);
+auto find_less_or_equal(Container &c, const sorted_key_t<Container> &k) {
+    return find_predecessor<true>(c, k);
 }
 
 template <typename Container>
-inline typename Container::const_iterator find_less(const Container &c, const typename Container::key_type &k) {
-    if (c.empty()) {
-        return c.cend();
-    }
-
-    auto it = c.lower_bound(k);
-    if (it == c.cbegin()) {
-        return c.cend();
-    }
-
-    return std::prev(it);
-}
-
-template <typename Container>
-inline typename Container::iterator find_less(Container &c, const typename Container::key_type &k) {
-    if (c.empty()) {
-        return c.end();
-    }
-
-    auto it = c.lower_bound(k);
-    if (it == c.begin()) {
-        return c.end();
-    }
-
-    return std::prev(it);
+auto find_less(Container &c, const typename Container::key_type &k) {
+    return find_predecessor<false>(c, k);
 }
 
 template <typename ForwardIterator>

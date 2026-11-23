@@ -89,6 +89,7 @@ cc_library(
     deps = [
         ":public_headers",
         "@amc",
+        "@gtl",
         "@ngcpp_proxy",
         "@pixi_deps//:zlib",
         "@unordered_dense",

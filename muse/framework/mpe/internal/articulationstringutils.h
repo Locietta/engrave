@@ -23,14 +23,15 @@
 #pragma once
 
 #include <string>
-#include <unordered_map>
+
+#include <ankerl/unordered_dense.h>
 
 #include "containers.h"
 #include "mpe/mpetypes.h"
 #include "types/string.h"
 
 namespace muse::mpe {
-static const std::unordered_map<ArticulationFamily, std::string> articulation_family_names{
+static const ankerl::unordered_dense::map<ArticulationFamily, std::string> articulation_family_names{
     {ArticulationFamily::UNDEFINED, "Undefined"},
     {ArticulationFamily::KEYBOARDS, "KeyboardsArticulation"},
     {ArticulationFamily::STRINGS, "StringsArticulation"},
@@ -39,7 +40,7 @@ static const std::unordered_map<ArticulationFamily, std::string> articulation_fa
     {ArticulationFamily::VOICES, "VoicesArticulation"},
 };
 
-static const std::unordered_map<ArticulationType, std::string> articulation_type_names{
+static const ankerl::unordered_dense::map<ArticulationType, std::string> articulation_type_names{
     {ArticulationType::UNDEFINED, "Undefined"},
     {ArticulationType::STANDARD, "Standard"},
     {ArticulationType::STACCATO, "Staccato"},

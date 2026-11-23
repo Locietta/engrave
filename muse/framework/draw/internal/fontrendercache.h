@@ -21,9 +21,9 @@
  */
 #pragma once
 
-#include <map>
 #include <string>
-#include <unordered_map>
+
+#include <ankerl/unordered_dense.h>
 
 #include "draw/types/fontstypes.h"
 #include "global/io/path.h"
@@ -41,9 +41,9 @@ private:
     io::PathT make_file_path(const FaceKey &face, glyph_idx_t glyph_idx, const GlyphImage &image) const;
     void update_cache_revision();
 
-    using GlyphImages = std::unordered_map<glyph_idx_t, GlyphImage>;
+    using GlyphImages = ankerl::unordered_dense::map<glyph_idx_t, GlyphImage>;
 
-    mutable std::map<FaceKey, GlyphImages> cache_;
+    mutable ankerl::unordered_dense::map<FaceKey, GlyphImages, FaceKeyHash> cache_;
     io::PathT cache_dir_path_;
     std::string cache_revision_;
 
@@ -55,7 +55,7 @@ private:
         float range = 0.0f;
     };
 
-    using CacheInfoMap = std::map<std::string, CacheInfo>;
+    using CacheInfoMap = ankerl::unordered_dense::map<std::string, CacheInfo>;
 
     void load_cached_info(CacheInfoMap &map, const io::PathT &dir) const;
 

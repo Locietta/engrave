@@ -282,7 +282,7 @@ DynamicAutomationLayers PlaybackContext::dynamic_level_layers(const track_idx_t 
             entry->second = std::make_shared<const DynamicAutomationMap>(std::move(levels));
         }
 
-        result.emplace_hint(result.end(), static_cast<layer_idx_t>(track_idx), entry->second);
+        result.try_emplace(static_cast<layer_idx_t>(track_idx), entry->second);
     }
 
     return result;

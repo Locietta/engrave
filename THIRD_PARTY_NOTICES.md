@@ -223,8 +223,9 @@ The standalone Bazel build compiles the following third-party dependencies from 
 | **zlib** (conda-forge, Pixi)     | 1.3.2          | zlib License                     | Compression for MSCZ and MXL zip archives                                                                           |
 | **glaze**                        | 9.1.0          | MIT License                      | JSON DOM and parsing for the engine's metadata, semantic dumps, positions and sniffing, and reading and writing MNX |
 | **proxy** (ngcpp/proxy)          | 4.1.0          | MIT License                      | Type-erased audio encoder seam                                                                                      |
-| **amc**                          | 2.8.1          | MIT License                      | Small-buffer vectors in the playback store                                                                          |
-| **unordered_dense**              | 5.3.3          | MIT License                      | Hash maps in the playback store                                                                                     |
+| **amc**                          | 2.8.1          | MIT License                      | Small-buffer vectors and flat sets in the engine                                                                    |
+| **unordered_dense**              | 5.3.3          | MIT License                      | Dense open-addressing hash maps and sets                                                                            |
+| **gtl** (greg7mdp/gtl)           | 1.3.1          | Apache License 2.0               | B-tree ordered maps, sets, and multimaps                                                                            |
 | **cairo** (conda-forge, Pixi)    | 1.18.6         | LGPL-2.1 / MPL-1.1               | Vector (PDF/SVG) and raster (PNG) rendering                                                                         |
 | **GoogleTest** (opt-in tests)    | 1.17.0         | BSD-3-Clause                     | Unit test execution                                                                                                 |
 

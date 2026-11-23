@@ -52,9 +52,9 @@ Never introduce `virtual` functions, abstract base classes, or vtable hierarchie
 
 ## Containers and JSON
 
-- **No node-based associative containers**: Do not use `std::map`, `std::unordered_map`, `std::set`, or `std::unordered_set`. Use:
-  - `ankerl::unordered_dense` (`<ankerl/unordered_dense.h>`) for hash maps and sets.
-  - `amc` flat containers (`<amc/vector.hpp>`, `<amc/flatset.hpp>`) or sorted vectors (`FlatMap`) for compact or ordered data.
+- Use `ankerl::unordered_dense::map` or `set` (`<ankerl/unordered_dense.h>`) for lookup-only data. Use `segmented_map` or `segmented_set` when references or pointers must survive insertion.
+- Use `gtl::btree_map`, `btree_set`, `btree_multimap`, or `btree_multiset` (`<gtl/btree.hpp>`) for large or dynamically mutated ordered containers.
+- Use `muse::FlatMap` (`"global/flatmap.h"`) or `amc::FlatSet` (`<amc/flatset.hpp>`) for small or monotonically built ordered data.
 - **JSON via typed `glaze` structs**: Define plain C++ structs and read/write JSON directly with `glaze` compile-time reflection rather than building or walking untyped dynamic DOM maps. Public `engrave/include/engrave/` headers must not expose any JSON library.
 - **No Boost**: Do not introduce Boost dependencies.
 

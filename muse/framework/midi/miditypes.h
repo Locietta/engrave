@@ -22,9 +22,10 @@
 #pragma once
 
 #include <cstdint>
-#include <map>
 #include <string>
 #include <vector>
+
+#include <gtl/btree.hpp>
 
 #include "midievent.h"
 #include "types/retval.h"
@@ -37,8 +38,8 @@ using tick_t = uint32_t;
 using tempo_t = uint32_t;
 using velocity_t = uint16_t;
 using note_idx_t = uint8_t;
-using TempoMap = std::map<tick_t, tempo_t>;
-using Events = std::map<tick_t, std::vector<Event>>;
+using TempoMap = gtl::btree_map<tick_t, tempo_t>;
+using Events = gtl::btree_map<tick_t, std::vector<Event>>;
 
 static constexpr int modwheel_controller = 1;
 static constexpr int expression_controller = 11;

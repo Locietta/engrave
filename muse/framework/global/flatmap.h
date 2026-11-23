@@ -86,8 +86,8 @@ struct FlatMap {
     using mapped_type = V;
     using value_type = FlatMapEntry<K, V>;
     using key_compare = Compare;
-    static constexpr bool is_amc_storage = std::is_trivially_copyable_v<value_type>;
-    static_assert(is_amc_storage == (std::is_trivially_copyable_v<K> && std::is_trivially_copyable_v<V>) );
+    // A nontrivial key selects std::vector even when the mapped type is recursive.
+    static constexpr bool is_amc_storage = std::conjunction_v<std::is_trivially_copyable<K>, std::is_trivially_copyable<V>>;
     using Storage = std::conditional_t<is_amc_storage, amc::vector<value_type>, std::vector<value_type>>;
     using size_type = std::size_t;
     using difference_type = std::ptrdiff_t;

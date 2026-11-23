@@ -21,10 +21,10 @@
  */
 #pragma once
 
-#include <map>
 #include <string>
 #include <vector>
 
+#include "global/flatmap.h"
 #include "global/io/path.h"
 #include "global/logstream.h"
 #include "val.h"
@@ -72,7 +72,7 @@ private:
 
 struct UriQuery {
 
-    using Params = std::map<std::string /*key*/, Val>;
+    using Params = muse::FlatMap<std::string /*key*/, Val>;
 
     UriQuery() = default;
     explicit UriQuery(const std::string &str);

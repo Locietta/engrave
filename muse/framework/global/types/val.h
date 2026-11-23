@@ -22,7 +22,7 @@
 #ifndef MUSE_GLOBAL_VAL_H
 #define MUSE_GLOBAL_VAL_H
 
-#include <map>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -30,13 +30,31 @@
 #include <variant>
 #include <vector>
 
+#include "global/flatmap.h"
 #include "io/path.h"
 #include "number.h"
 
 namespace muse {
 struct Val;
 using ValList = std::vector<Val>;
-using ValMap = std::map<std::string, Val>;
+using ValMap = muse::FlatMap<std::string, Val>;
+
+// Indirection keeps ValMap uninstantiated while Val is incomplete.
+struct ValMapBox {
+    std::unique_ptr<ValMap> ptr;
+
+    ValMapBox();
+    explicit ValMapBox(const ValMap &map);
+    ValMapBox(const ValMapBox &other);
+    ValMapBox(ValMapBox &&) noexcept;
+    ValMapBox &operator=(const ValMapBox &other);
+    ValMapBox &operator=(ValMapBox &&) noexcept;
+    ~ValMapBox();
+
+    const ValMap &get() const;
+    bool operator==(const ValMapBox &other) const;
+    bool operator<(const ValMapBox &other) const;
+};
 
 struct Val {
     enum class Type { UNDEFINED = 0, BOOL, INT, INT64, DOUBLE, STRING, LIST, MAP, COLOR };
@@ -98,6 +116,8 @@ struct Val {
             return do_to_string();
         } else if constexpr (std::is_same<T, io::PathT>::value) {
             return do_to_path();
+        } else if constexpr (std::is_same<T, Val>::value) {
+            return *this;
         } else if constexpr (std::is_same<T, ValList>::value) {
             return do_to_list();
         } else if constexpr (std::is_same<T, ValMap>::value) {
@@ -116,7 +136,7 @@ struct Val {
                 result.push_back(*value);
             }
             return result;
-        } else if constexpr (IsStringMap<T>()) {
+        } else if constexpr (is_string_map<T>) {
             auto map = do_to_map();
             if (!map) {
                 return std::nullopt;
@@ -152,6 +172,8 @@ struct Val {
             return Val(value);
         } else if constexpr (std::is_same<T, io::PathT>::value) {
             return Val(value);
+        } else if constexpr (std::is_same<T, Val>::value) {
+            return value;
         } else if constexpr (std::is_same<T, ValList>::value) {
             return Val(value);
         } else if constexpr (std::is_same<T, ValMap>::value) {
@@ -162,7 +184,7 @@ struct Val {
                 list.push_back(from_type(item));
             }
             return Val(list);
-        } else if constexpr (IsStringMap<T>()) {
+        } else if constexpr (is_string_map<T>) {
             ValMap map;
             for (const auto &item : value) {
                 map[item.first] = from_type(item.second);
@@ -193,10 +215,11 @@ private:
     struct IsVector<std::vector<U, A>> : std::true_type {};
 
     template <typename T>
-    struct IsStringMap : std::false_type {};
-
-    template <typename U, typename C, typename A>
-    struct IsStringMap<std::map<std::string, U, C, A>> : std::true_type {};
+    static constexpr bool is_string_map = requires(T &m, const std::string &k) {
+        typename T::mapped_type;
+        requires std::is_same_v<typename T::key_type, std::string>;
+        m[k];
+    };
 
     Type value_type() const;
 
@@ -210,7 +233,7 @@ private:
     std::optional<ValMap> do_to_map() const;
 
     //! NOTE Should be sync with valueType method
-    using Value = std::variant<std::monostate, bool, int, int64_t, double, std::string, ValList, ValMap>;
+    using Value = std::variant<std::monostate, bool, int, int64_t, double, std::string, ValList, ValMapBox>;
     Value val_;
     Type type_ = Type::UNDEFINED;
 };

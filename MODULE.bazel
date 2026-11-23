@@ -23,6 +23,7 @@ use_repo(
     "ngcpp_proxy",
     "pixi_deps",
     "pugixml",
+    "gtl",
     "unordered_dense",
     "utfcpp",
 )

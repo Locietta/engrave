@@ -22,10 +22,11 @@
 #pragma once
 
 #include <algorithm>
-#include <map>
 #include <optional>
 #include <type_traits>
 #include <variant>
+
+#include <gtl/btree.hpp>
 
 #include "containers.h"
 #include "realfn.h"
@@ -68,7 +69,7 @@ struct AutomationPoint {
 };
 
 template <typename KeyT>
-using AutomationCurve = std::map<KeyT, AutomationPoint>;
+using AutomationCurve = gtl::btree_map<KeyT, AutomationPoint>;
 
 //! NOTE: this point's ease, if it can have one; nullopt for ArrivalFromPrevious
 inline std::optional<AutomationPoint::Ease> ease(const AutomationPoint &point) noexcept {

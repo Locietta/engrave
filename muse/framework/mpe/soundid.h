@@ -23,7 +23,7 @@
 #ifndef MUSE_MPE_SOUNDID_H
 #define MUSE_MPE_SOUNDID_H
 
-#include <set>
+#include <amc/flatset.hpp>
 
 #include "types/string.h"
 
@@ -452,7 +452,7 @@ enum class SoundSubCategory {
     LAST
 };
 
-using SoundSubCategories = std::set<SoundSubCategory>;
+using SoundSubCategories = amc::FlatSet<SoundSubCategory>;
 
 const String &sound_id_to_string(SoundId id);
 SoundId sound_id_from_string(const String &str);

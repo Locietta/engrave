@@ -368,6 +368,13 @@ def _engrave_deps_impl(_mctx):
         urls = ["https://github.com/AmadeusITGroup/amc/archive/refs/tags/v2.8.1.tar.gz"],
     )
     http_archive(
+        name = "gtl",
+        build_file = Label("//bazel/third_party:gtl.BUILD.bazel"),
+        sha256 = "7252bddc62a9075c9f5935c8348715244a8c7573ba95eccf1ce396f67deb11b2",
+        strip_prefix = "gtl-1.3.1",
+        urls = ["https://github.com/greg7mdp/gtl/archive/refs/tags/v1.3.1.tar.gz"],
+    )
+    http_archive(
         name = "unordered_dense",
         build_file = Label("//bazel/third_party:unordered_dense.BUILD.bazel"),
         sha256 = "862605ef21424c6c92881aac4cf8f09c3abd91c80588446c83892583228eca67",

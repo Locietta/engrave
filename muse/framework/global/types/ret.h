@@ -24,8 +24,9 @@
 #define MUSE_GLOBAL_RET_H
 
 #include <any>
-#include <map>
 #include <string>
+
+#include <ankerl/unordered_dense.h>
 
 #include "global/asserts.h"
 
@@ -170,7 +171,7 @@ struct Ret {
 private:
     int code_ = int(Code::UNDEFINED);
     std::string text_;
-    std::map<std::string, std::any> data_;
+    ankerl::unordered_dense::map<std::string, std::any> data_;
 };
 
 inline muse::Ret make_ok() { return Ret(static_cast<int>(Ret::Code::OK)); }

@@ -40,7 +40,7 @@
 
 namespace muse::audio::synth {
 struct SoundMappingKey {
-    using SubCategories = amc::FlatSet<mpe::SoundSubCategory>;
+    using SubCategories = mpe::SoundSubCategories;
 
     mpe::SoundId id = mpe::SoundId::UNDEFINED;
     SubCategories sub_categories;
@@ -49,9 +49,6 @@ struct SoundMappingKey {
 
     SoundMappingKey(const mpe::SoundId sound_id, std::initializer_list<mpe::SoundSubCategory> categories)
         : id(sound_id), sub_categories(categories) {}
-
-    SoundMappingKey(const mpe::SoundId sound_id, const mpe::SoundSubCategories &categories)
-        : id(sound_id), sub_categories(categories.begin(), categories.end()) {}
 
     SoundMappingKey(const mpe::SoundId sound_id, SubCategories categories) : id(sound_id), sub_categories(std::move(categories)) {}
 

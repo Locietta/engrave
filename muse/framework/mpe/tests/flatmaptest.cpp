@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <functional>
 #include <limits>
-#include <map>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -11,8 +10,10 @@
 #include <vector>
 
 #include <gtest/gtest.h>
+#include <gtl/btree.hpp>
 
 #include "audio/engine/internal/synthesizers/fluidsynth/soundmapping.h"
+#include "global/containers.h"
 #include "global/flatmap.h"
 #include "soundmapping_oracle_fixture.h"
 #include "types/enumset.h"
@@ -38,6 +39,27 @@ std::vector<test::StoredChannelEntry> collect_stored_channels(const ChannelMap &
     return result;
 }
 } // namespace
+
+TEST(MpeFlatMapTest, AssociativeHelpersAcrossStorageTypes) {
+    const auto check_removal = []<class Set>(Set set) {
+        EXPECT_EQ(muse::remove_if(set, [](int key) { return key % 2 == 1; }), 3u);
+        ASSERT_EQ(set.size(), 1u);
+        EXPECT_TRUE(muse::contains(set, 2));
+    };
+    check_removal(amc::FlatSet<int>{1, 7, 2, 5});
+    check_removal(gtl::btree_multiset<int>{1, 1, 2, 5});
+    check_removal(ankerl::unordered_dense::segmented_set<int>{1, 7, 2, 5});
+
+    gtl::btree_multimap<int, int> entries{{2, 20}, {2, 21}, {4, 40}};
+    EXPECT_EQ(muse::values(entries, 2), (std::vector<int>{20, 21}));
+    EXPECT_EQ(muse::unique_keys(entries), (amc::FlatSet<int>{2, 4}));
+
+    const ankerl::unordered_dense::map<int, int> hash{{9, 90}, {3, 30}, {7, 70}};
+    ASSERT_NE(muse::find_less(hash, 7), hash.end());
+    EXPECT_EQ(muse::find_less(hash, 7)->second, 30);
+    ASSERT_NE(muse::find_less_or_equal(hash, 7), hash.end());
+    EXPECT_EQ(muse::find_less_or_equal(hash, 7)->second, 70);
+}
 
 TEST(MpeFlatMapTest, StorageSelectionAndSortedRangeTraits) {
     using TrivialMap = FlatMap<int, int>;
@@ -230,30 +252,30 @@ TEST(MpeFlatMapTest, SoundMappingProgramTablesAndLookups) {
             EXPECT_EQ(actual_subs, exp.sub_categories);
             EXPECT_EQ(it->second, exp.programs);
 
-            const SoundSubCategories std_subs(exp.sub_categories.begin(), exp.sub_categories.end());
-            const SoundMappingKey lookup_key(exp.id, std_subs);
+            const SoundSubCategories sub_categories(exp.sub_categories.begin(), exp.sub_categories.end());
+            const SoundMappingKey lookup_key(exp.id, sub_categories);
             const auto found = table.find(lookup_key);
             ASSERT_NE(found, table.end());
             EXPECT_EQ(found->second, exp.programs);
             EXPECT_EQ(table.at(lookup_key), exp.programs);
 
-            const PlaybackSetupData setup(exp.id, category, SoundSubCategories(std_subs));
+            const PlaybackSetupData setup(exp.id, category, SoundSubCategories(sub_categories));
             EXPECT_EQ(find_programs(setup), exp.programs);
         }
     }
 
-    // Duplicate keys in initializer lists keep the first entry, matching std::map::insert
+    // Duplicate keys in initializer lists keep the first entry, matching single-key insertion
     const std::initializer_list<ProgramMapping::value_type> dup_init = {
         {{SoundId::LUTE, {SoundSubCategory::PLUCKED}}, {midi::Program(8, 25)}},
         {{SoundId::LUTE, {SoundSubCategory::PLUCKED}}, {midi::Program(99, 99)}},
     };
     const ProgramMapping flat_dup(dup_init);
-    std::map<SoundMappingKey, midi::Programs> std_dup;
+    gtl::btree_map<SoundMappingKey, midi::Programs> tree_dup;
     for (const auto &entry : dup_init) {
-        std_dup.insert({entry.first, entry.second});
+        tree_dup.insert({entry.first, entry.second});
     }
-    ASSERT_EQ(flat_dup.size(), std_dup.size());
-    EXPECT_EQ(flat_dup.at({SoundId::LUTE, {SoundSubCategory::PLUCKED}}), std_dup.at({SoundId::LUTE, {SoundSubCategory::PLUCKED}}));
+    ASSERT_EQ(flat_dup.size(), tree_dup.size());
+    EXPECT_EQ(flat_dup.at({SoundId::LUTE, {SoundSubCategory::PLUCKED}}), tree_dup.at({SoundId::LUTE, {SoundSubCategory::PLUCKED}}));
 
     // Unsorted subcategory lists normalize to sorted sets and compare lexicographically
     const SoundMappingKey key_a{SoundId::BELL, {SoundSubCategory::PLATE, SoundSubCategory::METAL}};

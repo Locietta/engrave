@@ -34,6 +34,34 @@ using namespace muse;
 static const std::string val_true("true");
 static const std::string val_false("false");
 
+ValMapBox::ValMapBox() : ptr(std::make_unique<ValMap>()) {}
+
+ValMapBox::ValMapBox(const ValMap &map) : ptr(std::make_unique<ValMap>(map)) {}
+
+ValMapBox::ValMapBox(const ValMapBox &other) : ptr(other.ptr ? std::make_unique<ValMap>(*other.ptr) : std::make_unique<ValMap>()) {}
+
+ValMapBox::ValMapBox(ValMapBox &&) noexcept = default;
+
+ValMapBox &ValMapBox::operator=(const ValMapBox &other) {
+    if (this != &other) {
+        ptr = other.ptr ? std::make_unique<ValMap>(*other.ptr) : std::make_unique<ValMap>();
+    }
+    return *this;
+}
+
+ValMapBox &ValMapBox::operator=(ValMapBox &&) noexcept = default;
+
+ValMapBox::~ValMapBox() = default;
+
+const ValMap &ValMapBox::get() const {
+    static const ValMap empty;
+    return ptr ? *ptr : empty;
+}
+
+bool ValMapBox::operator==(const ValMapBox &other) const { return get() == other.get(); }
+
+bool ValMapBox::operator<(const ValMapBox &other) const { return get() < other.get(); }
+
 Val::Val(bool val) : val_(val), type_(Type::BOOL) {}
 
 Val::Val(int val) : val_(val), type_(Type::INT) {}
@@ -50,7 +78,7 @@ Val::Val(const io::PathT &path) : val_(path.to_std_string()), type_(Type::STRING
 
 Val::Val(const ValList &list) : val_(list), type_(Type::LIST) {}
 
-Val::Val(const ValMap &map) : val_(map), type_(Type::MAP) {}
+Val::Val(const ValMap &map) : val_(ValMapBox(map)), type_(Type::MAP) {}
 
 Val::Type Val::value_type() const {
     // std::monostate, bool, int, int64_t, double, std::string, ValList, ValMap
@@ -84,7 +112,7 @@ std::optional<bool> Val::do_to_bool() const {
             return !str.empty() && str != ::val_false && str != "0" && str != "0.0";
         }
         case Type::LIST: return std::get<ValList>(val_).size() > 0;
-        case Type::MAP: return std::get<ValMap>(val_).size() > 0;
+        case Type::MAP: return !std::get<ValMapBox>(val_).get().empty();
         default: break;
     }
     return std::nullopt;
@@ -217,7 +245,7 @@ std::optional<std::string> Val::do_to_string() const {
         }
         case Type::MAP: {
             std::string str;
-            if (!ValJson::to_string(std::get<ValMap>(val_), str)) {
+            if (!ValJson::to_string(std::get<ValMapBox>(val_).get(), str)) {
                 return std::nullopt;
             }
             return str;
@@ -267,7 +295,7 @@ ValList Val::to_list() const {
 
 std::optional<ValMap> Val::do_to_map() const {
     switch (value_type()) {
-        case Type::MAP: return std::get<ValMap>(val_);
+        case Type::MAP: return std::get<ValMapBox>(val_).get();
         case Type::STRING: {
             ValMap map;
             if (!ValJson::from_string(std::get<std::string>(val_), map)) {

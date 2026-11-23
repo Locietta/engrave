@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-// Generated from main (d6691101b0) std::map implementation in .worktrees/step5-oracle.
+// Generated from main (d6691101b0) implementation in .worktrees/step5-oracle.
 #pragma once
 
 #include <cstdint>

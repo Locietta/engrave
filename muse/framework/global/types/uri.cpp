@@ -23,6 +23,8 @@
 
 #include <iomanip>
 
+#include <ankerl/unordered_dense.h>
+
 #include "global/stringutils.h"
 #include "log.h"
 
@@ -167,7 +169,7 @@ void UriQuery::parse_params(const std::string &uri, Params &out) const {
 
     strings::trim(params_str);
 
-    std::map<std::string, std::string> placeholders;
+    ankerl::unordered_dense::map<std::string, std::string> placeholders;
     std::vector<std::string> quotes_strings;
     extract_quoted_strings(params_str, quotes_strings);
     for (size_t i = 0; i < quotes_strings.size(); ++i) {
@@ -261,7 +263,7 @@ Val UriQuery::param(const std::string &key, const Val &def) const {
     return it->second;
 }
 
-void UriQuery::add_param(const std::string &key, const Val &val) { params_[key] = val; }
+void UriQuery::add_param(const std::string &key, const Val &val) { params_.insert_or_assign(key, val); }
 
 UriQuery &UriQuery::set(const ValMap &vals) {
     params_ = vals;
@@ -269,7 +271,7 @@ UriQuery &UriQuery::set(const ValMap &vals) {
 }
 
 UriQuery &UriQuery::set(const std::string &key, const Val &val) {
-    params_[key] = val;
+    params_.insert_or_assign(key, val);
     return *this;
 }
 

@@ -24,6 +24,8 @@
 
 #include <string>
 
+#include <ankerl/unordered_dense.h>
+
 #include "io/path.h"
 #include "types/val.h"
 
@@ -56,7 +58,11 @@ struct Settings {
         bool is_null() const { return key.is_null(); }
     };
 
-    using Items = std::map<Key, Item>;
+    struct KeyHash {
+        size_t operator()(const Key &key) const { return std::hash<std::string>{}(key.key); }
+    };
+
+    using Items = ankerl::unordered_dense::segmented_map<Key, Item, KeyHash>;
 
     const Items &items() const;
 

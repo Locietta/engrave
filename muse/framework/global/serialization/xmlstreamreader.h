@@ -22,9 +22,9 @@
 #ifndef MUSE_GLOBAL_XMLSTREAMREADER_H
 #define MUSE_GLOBAL_XMLSTREAMREADER_H
 
-#include <map>
 #include <vector>
 
+#include "global/flatmap.h"
 #include "io/iodevice.h"
 #include "types/bytearray.h"
 #include "types/string.h"
@@ -111,7 +111,7 @@ private:
     Xml *xml_ = nullptr;
     TokenType token_ = TokenType::NO_TOKEN;
 
-    std::map<String, String> entities_;
+    muse::FlatMap<String, String> entities_;
 };
 } // namespace muse
 

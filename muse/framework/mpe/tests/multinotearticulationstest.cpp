@@ -20,10 +20,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <map>
-
 #include <gtest/gtest.h>
 
+#include "global/flatmap.h"
 #include "mpe/events.h"
 #include "mpe/tests/utils/articulationutils.h"
 
@@ -88,7 +87,7 @@ protected:
         dynamic_level_t nominal_dynamic_level = 0;
     };
 
-    std::map<size_t, NoteMetaData> initial_data_;
+    muse::FlatMap<size_t, NoteMetaData> initial_data_;
 
     ArticulationPatternSegment standard_pattern_;
 };
@@ -117,7 +116,7 @@ TEST_F(MpeMultiNoteArticulationsTest, StandardPattern) {
     applied_articulations.pre_calculate_average_data();
 
     // [WHEN] Notes sequence with given parameters being built
-    std::map<size_t, NoteEvent> note_events;
+    muse::FlatMap<size_t, NoteEvent> note_events;
 
     for (const auto &pair : initial_data_) {
         NoteEvent note_event(pair.second.nominal_timestamp, pair.second.nominal_duration, pair.second.voice_idx, pair.second.staff_idx,
@@ -147,7 +146,7 @@ TEST_F(MpeMultiNoteArticulationsTest, StandardPattern) {
  *          So the actual PitchCurve of the first two notes would be equal to the data from the "GlissandoPattern" in Articulation Profile
  */
 TEST_F(MpeMultiNoteArticulationsTest, GlissandoPattern) {
-    std::map<size_t, ArticulationMap> applied_articulations;
+    muse::FlatMap<size_t, ArticulationMap> applied_articulations;
 
     // [GIVEN] Articulation pattern "Glissando", which instructs a performer to start on the pitch/rhythm
     //         and slide the pitch up/down to land on the next pitch/rhythm
@@ -207,7 +206,7 @@ TEST_F(MpeMultiNoteArticulationsTest, GlissandoPattern) {
     applied_articulations[3].pre_calculate_average_data();
 
     // [WHEN] Notes sequence with given parameters being built
-    std::map<size_t, NoteEvent> note_events;
+    muse::FlatMap<size_t, NoteEvent> note_events;
 
     for (const auto &pair : initial_data_) {
         NoteEvent note_event(pair.second.nominal_timestamp, pair.second.nominal_duration, pair.second.voice_idx, pair.second.staff_idx,
@@ -239,7 +238,7 @@ TEST_F(MpeMultiNoteArticulationsTest, GlissandoPattern) {
  *          to the data from the "CrescendoPattern" in Articulation Profile
  */
 TEST_F(MpeMultiNoteArticulationsTest, CrescendoPattern) {
-    std::map<size_t, ArticulationMap> applied_articulations;
+    muse::FlatMap<size_t, ArticulationMap> applied_articulations;
 
     // [GIVEN] Articulation pattern "Crescendo", which instructs a performer to gradually increase a volume of every note,
     //         using a certain range of dynamics. In our case there will be a crescendo from forte up to fortissimo
@@ -282,7 +281,7 @@ TEST_F(MpeMultiNoteArticulationsTest, CrescendoPattern) {
     }
 
     // [WHEN] Notes sequence with given parameters being built
-    std::map<size_t, NoteEvent> note_events;
+    muse::FlatMap<size_t, NoteEvent> note_events;
 
     for (const auto &pair : initial_data_) {
         NoteEvent note_event(pair.second.nominal_timestamp, pair.second.nominal_duration, pair.second.voice_idx, pair.second.staff_idx,

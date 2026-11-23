@@ -24,13 +24,15 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
-#include <map>
 #include <memory>
 #include <utility>
 #include <variant>
 #include <vector>
 
+#include <gtl/btree.hpp>
+
 #include "automationpoint.h"
+#include "global/flatmap.h"
 #include "global/types/number.h"
 #include "mpetypes.h"
 #include "playbacksetupdata.h"
@@ -277,12 +279,12 @@ using PlaybackEvent =
     std::variant<std::monostate, NoteEvent, TextArticulationEvent, SoundPresetChangeEvent, SyllableEvent, ControllerChangeEvent>;
 
 using PlaybackEventList = std::vector<PlaybackEvent>;
-using PlaybackEventsMap = std::map<timestamp_t, PlaybackEventList>;
+using PlaybackEventsMap = gtl::btree_map<timestamp_t, PlaybackEventList>;
 
 using DynamicAutomationMap = AutomationCurve<timestamp_t>;
 
-struct DynamicAutomationLayers : std::map<layer_idx_t, std::shared_ptr<const DynamicAutomationMap>> {
-    using Base = std::map<layer_idx_t, std::shared_ptr<const DynamicAutomationMap>>;
+struct DynamicAutomationLayers : muse::FlatMap<layer_idx_t, std::shared_ptr<const DynamicAutomationMap>> {
+    using Base = muse::FlatMap<layer_idx_t, std::shared_ptr<const DynamicAutomationMap>>;
     using Base::Base;
 
     friend bool operator==(const DynamicAutomationLayers &lhs, const DynamicAutomationLayers &rhs) {

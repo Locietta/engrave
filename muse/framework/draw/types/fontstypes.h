@@ -24,6 +24,9 @@
 
 #include <span>
 #include <string>
+#include <tuple>
+
+#include <ankerl/unordered_dense.h>
 
 #include "font.h"
 #include "geometry.h"
@@ -73,6 +76,13 @@ private:
     bool italic_ = false;
 };
 
+struct FontDataKeyHash {
+    size_t operator()(const FontDataKey &key) const {
+        auto parts = std::tuple{std::hash<String>{}(key.family().id()), key.bold(), key.italic()};
+        return ankerl::unordered_dense::hash<decltype(parts)>{}(parts);
+    }
+};
+
 inline FontDataKey data_key_for_font(const Font &f) { return FontDataKey(f.family(), f.bold(), f.italic()); }
 
 struct FontData {
@@ -104,6 +114,13 @@ struct FaceKey {
         } else {
             return pixel_size < o.pixel_size;
         }
+    }
+};
+
+struct FaceKeyHash {
+    size_t operator()(const FaceKey &key) const {
+        auto parts = std::tuple{FontDataKeyHash{}(key.data_key), key.type, key.pixel_size};
+        return ankerl::unordered_dense::hash<decltype(parts)>{}(parts);
     }
 };
 

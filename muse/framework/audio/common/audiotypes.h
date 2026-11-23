@@ -23,15 +23,18 @@
 #pragma once
 
 #include <cmath>
-#include <map>
-#include <set>
 #include <sstream>
 #include <string>
 #include <tuple>
 #include <variant>
 #include <vector>
 
+#include <amc/flatset.hpp>
+#include <ankerl/unordered_dense.h>
+#include <gtl/btree.hpp>
+
 #include "automatablevalue.h"
+#include "global/flatmap.h"
 #include "global/io/iodevice.h"
 #include "global/types/number.h"
 #include "global/types/ratio.h"
@@ -151,7 +154,7 @@ struct AudioEngineConfig {
 };
 
 using AudioSourceName = std::string;
-using AudioUnitConfig = std::map<std::string, std::string>;
+using AudioUnitConfig = muse::FlatMap<std::string, std::string>;
 
 // Audio-pipeline resource id; distinct role from audioplugins::PluginResourceId (both std::string).
 using AudioResourceId = std::string;
@@ -166,7 +169,7 @@ inline AudioResourceIdList to_audio_resource_id_list(const muse::audioplugins::P
 // audioplugins::PluginMeta is the cache-domain twin of AudioResourceMeta;
 // kept separate so neither module depends on the other.
 using AudioResourceVendor = std::string;
-using AudioResourceAttributes = std::map<String, String>;
+using AudioResourceAttributes = muse::FlatMap<String, String>;
 
 struct AudioResourceMeta {
     AudioResourceId id;
@@ -174,13 +177,12 @@ struct AudioResourceMeta {
     AudioResourceAttributes attributes;
     std::string type; // wire-string format identifier; see AudioResourceType enum below
 
-    const String &attribute_val(const String &key) const {
+    String attribute_val(const String &key) const {
         auto search = attributes.find(key);
         if (search != attributes.cend()) {
             return search->second;
         }
-        static const String empty;
-        return empty;
+        return {};
     }
 
     bool is_valid() const { return !id.empty() && !vendor.empty() && !type.empty(); }
@@ -197,7 +199,7 @@ struct AudioResourceMeta {
 };
 
 using AudioResourceMetaList = std::vector<AudioResourceMeta>;
-using AudioResourceMetaSet = std::set<AudioResourceMeta>;
+using AudioResourceMetaSet = gtl::btree_set<AudioResourceMeta>;
 
 inline bool bool_attribute(const AudioResourceMeta &meta, const String &key, bool fallback = false) {
     const String &v = meta.attribute_val(key);
@@ -230,7 +232,7 @@ enum class AudioResourceType {
     MUSE_SAMPLER_SOUND_PACK,
 };
 
-static const std::map<AudioResourceType, std::string> resource_type_names = {
+static const ankerl::unordered_dense::map<AudioResourceType, std::string> resource_type_names = {
     {AudioResourceType::FLUID_SOUNDFONT, std::string(::muse::audio::fluid_soundfont_type_name)},
     {AudioResourceType::VST_PLUGIN, "VstPlugin"},
     {AudioResourceType::NATIVE_EFFECT, std::string(::muse::audio::native_effect_type_name)},
@@ -264,7 +266,7 @@ inline bool has_native_editor_support(const AudioResourceMeta &meta) {
     return bool_attribute(meta, ::muse::audio::has_native_editor_support_attribute);
 }
 
-static const std::map<AudioResourceType, String> resource_type_map = {
+static const ankerl::unordered_dense::map<AudioResourceType, String> resource_type_map = {
     {AudioResourceType::UNDEFINED, u"undefined"},
     {AudioResourceType::MUSE_SAMPLER_SOUND_PACK, u"muse_sampler_sound_pack"},
     {AudioResourceType::FLUID_SOUNDFONT, u"fluid_soundfont"},
@@ -299,7 +301,7 @@ enum class AudioFxCategory {
     FX_OTHER,
 };
 
-inline const std::unordered_map<AudioFxCategory, String> audio_fx_category_to_string_map{
+inline const ankerl::unordered_dense::map<AudioFxCategory, String> audio_fx_category_to_string_map{
     {AudioFxCategory::FX_EQUALIZER, u"EQ"},
     {AudioFxCategory::FX_ANALYZER, u"Analyzer"},
     {AudioFxCategory::FX_DELAY, u"Delay"},
@@ -317,7 +319,7 @@ inline const std::unordered_map<AudioFxCategory, String> audio_fx_category_to_st
     {AudioFxCategory::FX_OTHER, u"Fx"},
 };
 
-using AudioFxCategories = std::set<AudioFxCategory>;
+using AudioFxCategories = amc::FlatSet<AudioFxCategory>;
 using AudioFxChainOrder = int8_t;
 
 struct AudioFxParams {
@@ -351,7 +353,7 @@ struct AudioFxParams {
     bool is_valid() const { return resource_meta.is_valid(); }
 };
 
-using AudioFxChain = std::map<AudioFxChainOrder, AudioFxParams>;
+using AudioFxChain = muse::FlatMap<AudioFxChainOrder, AudioFxParams>;
 
 struct AuxSendParams {
     gain_t signal_amount = 0.f; // [0; 1]
@@ -423,7 +425,7 @@ struct AudioSignalVal {
     inline bool operator==(const AudioSignalVal &other) const { return pressure == other.pressure; }
 };
 
-using AudioSignalValuesMap = std::map<audioch_t, AudioSignalVal>;
+using AudioSignalValuesMap = muse::FlatMap<audioch_t, AudioSignalVal>;
 
 struct AutomatedControlParams {
     volume_db_t volume = 0.f;
@@ -443,7 +445,7 @@ struct AudioDevice {
 
 using AudioDeviceList = std::vector<AudioDevice>;
 
-using SoundPresetAttributes = std::map<String, String>;
+using SoundPresetAttributes = muse::FlatMap<String, String>;
 static const String playing_techniques_attribute(u"playing_techniques");
 
 struct SoundPreset {
@@ -496,7 +498,7 @@ struct InputProcessingProgress {
         Status status = Status::UNDEFINED;
         int error_code = 0;
         std::string error_text;
-        using StatusData = std::map<std::string, std::string>;
+        using StatusData = muse::FlatMap<std::string, std::string>;
         StatusData data;
     };
 
