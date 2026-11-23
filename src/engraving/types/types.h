@@ -341,7 +341,7 @@ constexpr bool autoplace_applies_to_type(ElementType type) {
     }
 }
 
-const static ankerl::unordered_dense::set<ElementType> textbase_types{
+inline const ankerl::unordered_dense::set<ElementType> textbase_types{
     ElementType::TEXT,
     ElementType::LYRICS,
     ElementType::DYNAMIC,

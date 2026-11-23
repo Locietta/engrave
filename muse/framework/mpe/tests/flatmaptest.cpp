@@ -54,11 +54,11 @@ TEST(MpeFlatMapTest, AssociativeHelpersAcrossStorageTypes) {
     EXPECT_EQ(muse::values(entries, 2), (std::vector<int>{20, 21}));
     EXPECT_EQ(muse::unique_keys(entries), (amc::FlatSet<int>{2, 4}));
 
-    const ankerl::unordered_dense::map<int, int> hash{{9, 90}, {3, 30}, {7, 70}};
-    ASSERT_NE(muse::find_less(hash, 7), hash.end());
-    EXPECT_EQ(muse::find_less(hash, 7)->second, 30);
-    ASSERT_NE(muse::find_less_or_equal(hash, 7), hash.end());
-    EXPECT_EQ(muse::find_less_or_equal(hash, 7)->second, 70);
+    const gtl::btree_map<int, int> ordered{{9, 90}, {3, 30}, {7, 70}};
+    ASSERT_NE(muse::find_less(ordered, 7), ordered.end());
+    EXPECT_EQ(muse::find_less(ordered, 7)->second, 30);
+    ASSERT_NE(muse::find_less_or_equal(ordered, 7), ordered.end());
+    EXPECT_EQ(muse::find_less_or_equal(ordered, 7)->second, 70);
 }
 
 TEST(MpeFlatMapTest, StorageSelectionAndSortedRangeTraits) {

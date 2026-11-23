@@ -14,6 +14,7 @@ use_repo(
     "amc",
     "engrave_config",
     "glaze",
+    "gtl",
     "gtest",
     "harfbuzz",
     "lame",
@@ -23,7 +24,6 @@ use_repo(
     "ngcpp_proxy",
     "pixi_deps",
     "pugixml",
-    "gtl",
     "unordered_dense",
     "utfcpp",
 )

@@ -30,6 +30,7 @@
 #include <gtl/btree.hpp>
 
 #include "engraving/dom/sig.h"
+#include "global/flatmap.h"
 #include "importmidi_chord.h"
 #include "importmidi_inner.h"
 #include "importmidi_operations.h"
@@ -41,10 +42,10 @@
 #include "log.h"
 
 namespace mu::iex::midi { namespace MidiTuplet {
-const gtl::btree_map<int, TupletLimits> &tuplets_limits() {
-    const static gtl::btree_map<int, TupletLimits> values = {{2, {{2, 3}, 1, 2, 2, 2}}, {3, {{3, 2}, 1, 3, 3, 2}},
-                                                             {4, {{4, 3}, 3, 4, 3, 3}}, {5, {{5, 4}, 3, 4, 4, 4}},
-                                                             {7, {{7, 8}, 4, 6, 5, 6}}, {9, {{9, 8}, 6, 7, 7, 8}}};
+const muse::FlatMap<int, TupletLimits> &tuplets_limits() {
+    const static muse::FlatMap<int, TupletLimits> values = {{2, {{2, 3}, 1, 2, 2, 2}}, {3, {{3, 2}, 1, 3, 3, 2}},
+                                                            {4, {{4, 3}, 3, 4, 3, 3}}, {5, {{5, 4}, 3, 4, 4, 4}},
+                                                            {7, {{7, 8}, 4, 6, 5, 6}}, {9, {{9, 8}, 6, 7, 7, 8}}};
     return values;
 }
 

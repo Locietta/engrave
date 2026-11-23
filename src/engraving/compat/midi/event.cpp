@@ -79,7 +79,7 @@ Event::Event(const Event &e) : PlayEvent(e) {
     voice_value = e.voice_value;
     notes_value = e.notes_value;
     if (e.edata_value) {
-        edata_value = new unsigned char[e.len_value + 1]; // don鈥檛 forget trailing zero
+        edata_value = new unsigned char[e.len_value + 1]; // Include the trailing zero
         memcpy(edata_value, e.edata_value, e.len_value + 1);
     } else {
         edata_value = 0;

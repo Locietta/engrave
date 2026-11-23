@@ -3,8 +3,10 @@
 #include <gtl/btree.hpp>
 
 #include "engraving/dom/dummyparent.h"
+#include "engraving/dom/fret.h"
 #include "engraving/dom/glissando.h"
 #include "engraving/dom/guitarbend.h"
+#include "engraving/dom/harmony.h"
 #include "engraving/dom/linkedobjects.h"
 #include "engraving/dom/noteline.h"
 #include "engraving/dom/range.h"
@@ -9247,4 +9249,35 @@ TEST(Read, SegmentTextUsesTheAuthoredTextStyleDefaultsAfterRecreation) {
         EXPECT_DOUBLE_EQ(label->size(), 23.0);
         engrave::DocumentAccess::impl(**reopened).discard_layout_output(copy);
     }
+}
+
+TEST(Read, FretDiagramUnnamedHarmonyUsesDeterministicSimplerName) {
+    using namespace mu::engraving;
+    FretDiagram::clear_harmony_caches();
+    auto opened = g_engine->open(as_bytes(read_text(write470_fixture())), {.format = engrave::Format::MSCX});
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto *segment = master.first_measure()->first(SegmentType::CHORD_REST);
+    ASSERT_NE(segment, nullptr);
+
+    auto *diagram = Factory::create_fret_diagram(segment);
+    diagram->set_track(0);
+    diagram->set_strings(6);
+    diagram->set_fret_offset(4);
+    diagram->set_marker(0, FretMarkerType::CROSS);
+    diagram->set_marker(1, FretMarkerType::CROSS);
+    diagram->set_dot(2, 1);
+    diagram->set_dot(3, 2);
+    diagram->set_dot(4, 3);
+    diagram->set_dot(5, 3);
+    ASSERT_EQ(diagram->pattern_from_diagram(), muse::String(u"XX[5-O][6-O][7-O][7-O]"));
+
+    const auto harmonies = diagram->harmonies_from_pattern(diagram->pattern_from_diagram());
+    ASSERT_GE(harmonies.size(), 2u);
+    EXPECT_EQ(harmonies.front(), muse::String(u"a13/g"));
+
+    auto *harmony = Factory::create_harmony(diagram);
+    diagram->add(harmony);
+    EXPECT_EQ(harmony->harmony_name(), muse::String(u"a13/g"));
+    delete diagram;
 }

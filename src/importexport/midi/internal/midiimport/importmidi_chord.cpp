@@ -28,6 +28,7 @@
 #include <utility>
 #include <vector>
 
+#include <amc/flatset.hpp>
 #include <gtl/btree.hpp>
 
 #include "engraving/dom/sig.h"
@@ -334,7 +335,7 @@ void set_to_negative(ReducedFraction &v1, ReducedFraction &v2, ReducedFraction &
 }
 
 bool has_notes_with_equal_pitch(const MidiChord &chord1, const MidiChord &chord2) {
-    gtl::btree_set<int> notes1;
+    amc::FlatSet<int> notes1;
     for (const auto &note : chord1.notes) {
         notes1.insert(note.pitch);
     }

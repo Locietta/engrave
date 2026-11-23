@@ -1,6 +1,6 @@
 #pragma once
 
-#include <iterator>
+#include <cassert>
 #include <list>
 #include <utility>
 
@@ -30,49 +30,49 @@ struct MidiTimeline {
     MidiTimeline(MidiTimeline &&) = default;
 
     MidiTimeline &operator=(MidiTimeline other) {
-        entries.swap(other.entries);
-        index.swap(other.index);
+        entries_.swap(other.entries_);
+        index_.swap(other.index_);
         return *this;
     }
 
-    auto begin() { return entries.begin(); }
+    auto begin() { return entries_.begin(); }
 
-    auto end() { return entries.end(); }
+    auto end() { return entries_.end(); }
 
-    auto begin() const { return entries.begin(); }
+    auto begin() const { return entries_.begin(); }
 
-    auto end() const { return entries.end(); }
+    auto end() const { return entries_.end(); }
 
-    auto cbegin() const { return entries.cbegin(); }
+    auto cbegin() const { return entries_.cbegin(); }
 
-    auto cend() const { return entries.cend(); }
+    auto cend() const { return entries_.cend(); }
 
-    auto rbegin() const { return entries.rbegin(); }
+    auto rbegin() const { return entries_.rbegin(); }
 
-    auto rend() const { return entries.rend(); }
+    auto rend() const { return entries_.rend(); }
 
-    auto size() const { return entries.size(); }
+    auto size() const { return entries_.size(); }
 
-    bool empty() const { return entries.empty(); }
+    bool empty() const { return entries_.empty(); }
 
     auto lower_bound(const ReducedFraction &time) {
-        auto pos = index.lower_bound(time);
-        return pos == index.end() ? end() : pos->second;
+        auto pos = index_.lower_bound(time);
+        return pos == index_.end() ? end() : pos->second;
     }
 
     const_iterator lower_bound(const ReducedFraction &time) const {
-        auto pos = index.lower_bound(time);
-        return pos == index.end() ? end() : const_iterator(pos->second);
+        auto pos = index_.lower_bound(time);
+        return pos == index_.end() ? end() : const_iterator(pos->second);
     }
 
     auto upper_bound(const ReducedFraction &time) {
-        auto pos = index.upper_bound(time);
-        return pos == index.end() ? end() : pos->second;
+        auto pos = index_.upper_bound(time);
+        return pos == index_.end() ? end() : pos->second;
     }
 
     const_iterator upper_bound(const ReducedFraction &time) const {
-        auto pos = index.upper_bound(time);
-        return pos == index.end() ? end() : const_iterator(pos->second);
+        auto pos = index_.upper_bound(time);
+        return pos == index_.end() ? end() : const_iterator(pos->second);
     }
 
     auto equal_range(const ReducedFraction &time) { return std::pair(lower_bound(time), upper_bound(time)); }
@@ -80,33 +80,36 @@ struct MidiTimeline {
     auto equal_range(const ReducedFraction &time) const { return std::pair(lower_bound(time), upper_bound(time)); }
 
     iterator insert(value_type event) {
-        auto pos = index.upper_bound(event.first);
-        auto it = entries.insert(pos == index.end() ? end() : pos->second, std::move(event));
+        auto pos = index_.upper_bound(event.first);
+        auto it = entries_.insert(pos == index_.end() ? end() : pos->second, std::move(event));
         try {
-            index.emplace_hint(pos, it->first, it);
+            index_.emplace_hint(pos, it->first, it);
         } catch (...) {
-            entries.erase(it);
+            entries_.erase(it);
             throw;
         }
         return it;
     }
 
     iterator erase(iterator it) {
-        auto pos = index.lower_bound(it->first);
-        while (pos->second != it) {
+        auto pos = index_.lower_bound(it->first);
+        while (pos != index_.end() && pos->second != it) {
             ++pos;
         }
-        index.erase(pos);
-        return entries.erase(it);
+        assert(pos != index_.end());
+        if (pos != index_.end()) {
+            index_.erase(pos);
+        }
+        return entries_.erase(it);
     }
 
     void clear() {
-        index.clear();
-        entries.clear();
+        index_.clear();
+        entries_.clear();
     }
 
 private:
-    Entries entries;
-    gtl::btree_multimap<ReducedFraction, iterator> index;
+    Entries entries_;
+    gtl::btree_multimap<ReducedFraction, iterator> index_;
 };
 } // namespace mu::iex::midi

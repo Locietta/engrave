@@ -232,7 +232,7 @@ enum class AudioResourceType {
     MUSE_SAMPLER_SOUND_PACK,
 };
 
-static const ankerl::unordered_dense::map<AudioResourceType, std::string> resource_type_names = {
+inline const ankerl::unordered_dense::map<AudioResourceType, std::string> resource_type_names = {
     {AudioResourceType::FLUID_SOUNDFONT, std::string(::muse::audio::fluid_soundfont_type_name)},
     {AudioResourceType::VST_PLUGIN, "VstPlugin"},
     {AudioResourceType::NATIVE_EFFECT, std::string(::muse::audio::native_effect_type_name)},
@@ -266,7 +266,7 @@ inline bool has_native_editor_support(const AudioResourceMeta &meta) {
     return bool_attribute(meta, ::muse::audio::has_native_editor_support_attribute);
 }
 
-static const ankerl::unordered_dense::map<AudioResourceType, String> resource_type_map = {
+inline const ankerl::unordered_dense::map<AudioResourceType, String> resource_type_map = {
     {AudioResourceType::UNDEFINED, u"undefined"},
     {AudioResourceType::MUSE_SAMPLER_SOUND_PACK, u"muse_sampler_sound_pack"},
     {AudioResourceType::FLUID_SOUNDFONT, u"fluid_soundfont"},

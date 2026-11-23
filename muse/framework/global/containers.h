@@ -33,8 +33,6 @@
 
 #include "sortedrange.h"
 
-//! NOTE useful functions for containers
-
 namespace muse {
 static constexpr size_t nidx = static_cast<size_t>(-1);
 
@@ -201,17 +199,10 @@ inline std::pair<bool, T> take(std::list<T> &l, const T &v) {
     return ret;
 }
 
-// ===========================
-// Array
-// ===========================
 template <typename T, size_t size>
 inline bool contains(const std::array<T, size> &s, const T &v) {
     return std::find(s.begin(), s.end(), v) != s.cend();
 }
-
-// ===========================
-// General
-// ===========================
 
 template <typename Container, typename T>
 inline size_t index_of(const Container &c, const T &v) {
@@ -350,33 +341,16 @@ inline auto sorted_upper_bound(Container &c, const Key &k) {
 }
 
 template <bool Inclusive, typename Container>
+    requires(!requires { typename Container::hasher; })
 auto find_predecessor(Container &c, const sorted_key_t<Container> &k) {
-    if constexpr (requires { typename Container::hasher; }) {
-        const auto key_of = [](const auto &entry) -> const auto & {
-            if constexpr (requires { typename Container::mapped_type; }) {
-                return entry.first;
-            } else {
-                return entry;
-            }
-        };
-        auto best = c.end();
-        for (auto it = c.begin(); it != c.end(); ++it) {
-            const auto &key = key_of(*it);
-            if ((Inclusive ? !(k < key) : key < k) && (best == c.end() || key_of(*best) < key)) {
-                best = it;
-            }
+    auto bound = [&] {
+        if constexpr (Inclusive) {
+            return sorted_upper_bound(c, k);
+        } else {
+            return c.lower_bound(k);
         }
-        return best;
-    } else {
-        auto bound = [&] {
-            if constexpr (Inclusive) {
-                return sorted_upper_bound(c, k);
-            } else {
-                return c.lower_bound(k);
-            }
-        }();
-        return bound == c.begin() ? c.end() : std::prev(bound);
-    }
+    }();
+    return bound == c.begin() ? c.end() : std::prev(bound);
 }
 
 template <typename Container>

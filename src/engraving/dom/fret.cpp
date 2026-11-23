@@ -22,6 +22,8 @@
 
 #include "fret.h"
 
+#include <algorithm>
+
 #include <ankerl/unordered_dense.h>
 #include <gtl/btree.hpp>
 
@@ -133,21 +135,18 @@ static HarmonyMapKey create_harmony_map_key(const String &harmony, const NoteSpe
     return HarmonyMapKey(keys, root_tpc, bass_tpc);
 }
 
+static bool is_simpler_harmony_name(const String &a, const String &b) {
+    if (a.size() != b.size()) {
+        return a.size() < b.size();
+    }
+
+    return a < b;
+}
+
 static DiagramInfo resolve_diagram(const std::vector<DiagramInfo> &diagrams) {
-    auto is_simpler = [](const DiagramInfo &a, const DiagramInfo &b) {
-        const String &harmony_name_a = a.harmony_name;
-        const String &harmony_name_b = b.harmony_name;
-
-        if (harmony_name_a.size() != harmony_name_b.size()) {
-            return harmony_name_a.size() < harmony_name_b.size();
-        }
-
-        return harmony_name_a < harmony_name_b;
-    };
-
     DiagramInfo result = diagrams.front();
     for (size_t i = 1; i < diagrams.size(); ++i) {
-        if (!is_simpler(result, diagrams[i])) {
+        if (is_simpler_harmony_name(diagrams[i].harmony_name, result.harmony_name)) {
             result = diagrams[i];
         }
     }
@@ -918,6 +917,11 @@ void FretDiagram::read_harmony_to_diagram_file(const muse::io::PathT &file_path)
 
         s_harmony_to_diagram_map[map_key].push_back({key, value.xml, value.pattern});
         s_diagram_pattern_to_harmonies_map[value.pattern].push_back(key);
+    }
+
+    // Keep pattern-to-harmony lookup independent of dense hash iteration order.
+    for (auto &[pattern, harmonies] : s_diagram_pattern_to_harmonies_map) {
+        std::sort(harmonies.begin(), harmonies.end(), is_simpler_harmony_name);
     }
 }
 
