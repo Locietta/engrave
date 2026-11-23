@@ -23,7 +23,7 @@
 
 #include "events.h"
 #include "flatmap.h"
-#include "global/unique_fn.h"
+#include "global/fn.h"
 
 namespace muse::mpe {
 struct Span {
@@ -138,11 +138,11 @@ static_assert(sizeof(CurvePoint::value) == sizeof(percentage_t) && sizeof(CurveP
 struct FreezeProgress {
     static constexpr std::uint32_t k_stride = 4096;
 
-    muse::UniqueFn<void() const> checkpoint;
+    muse::FnRef<void()> checkpoint;
     std::uint32_t pending = 0;
 #ifdef ENGRAVE_PLAYBACK_HARNESS
     //! Test only: serializes each NoteEvent as it is frozen (new-path dump A); the text goes to TrackEvents::note_dumps
-    muse::UniqueFn<std::string(const NoteEvent &) const> dump_note;
+    muse::FnRef<std::string(const NoteEvent &)> dump_note;
 #endif
 
     void advance() {

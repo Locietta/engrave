@@ -78,7 +78,7 @@ private:
 struct FontDataKeyHash {
     size_t operator()(const FontDataKey &key) const {
         auto parts = std::tuple{std::hash<String>{}(key.family().id()), key.bold(), key.italic()};
-        return ankerl::unordered_dense::hash<decltype(parts)>{}(parts);
+        return muse::Hash<decltype(parts)>{}(parts);
     }
 };
 
@@ -119,7 +119,7 @@ struct FaceKey {
 struct FaceKeyHash {
     size_t operator()(const FaceKey &key) const {
         auto parts = std::tuple{FontDataKeyHash{}(key.data_key), key.type, key.pixel_size};
-        return ankerl::unordered_dense::hash<decltype(parts)>{}(parts);
+        return muse::Hash<decltype(parts)>{}(parts);
     }
 };
 

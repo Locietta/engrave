@@ -665,9 +665,7 @@ void rebase_links(pugi::xml_node root, const std::vector<EmittedBody> &bodies, P
     }
     if (by_node.empty()) return;
 
-    const auto hash = [](const auto &key) {
-        return ankerl::unordered_dense::hash<const LinkedObjects *>{}(key.first) ^ static_cast<std::size_t>(key.second);
-    };
+    const auto hash = [](const auto &key) { return muse::Hash<const LinkedObjects *>{}(key.first) ^ static_cast<std::size_t>(key.second); };
     muse::HashMap<std::pair<const LinkedObjects *, ElementType>, const Spanner *, decltype(hash)> earliest;
     const auto visit = [&](const auto &self, pugi::xml_node node) -> void {
         poll();

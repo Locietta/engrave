@@ -9,6 +9,7 @@ namespace muse {
 
 // Thin wrapper over gtl::btree_map adding aliasing-safe insert_or_assign and
 // centralizing the ordered B-tree backend and allocator parameters.
+// Defaults to gtl::Less<Key> to preserve transparent lookup and three-way comparisons.
 template <class Key, class Value, class Compare = gtl::Less<Key>>
 struct BTreeMap : gtl::btree_map<Key, Value, Compare> {
     using Base = gtl::btree_map<Key, Value, Compare>;

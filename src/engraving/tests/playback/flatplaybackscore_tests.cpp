@@ -311,8 +311,8 @@ TEST(FlatPlaybackStoreTests, FreezeLoopsPollWithinTheStride) {
         // One large context list: a cancellation is observed after exactly one stride
         std::vector<TextArticulationEvent> texts(stride * 2 + 10, make_text(u"t", 1));
         TrackEvents track;
-        FreezeProgress progress;
-        progress.checkpoint = [] { throw Cancelled{}; };
+        auto cancel = [] { throw Cancelled{}; };
+        FreezeProgress progress{.checkpoint = cancel};
         EXPECT_THROW(freeze_cold_events(track, 0, std::span{texts}, progress), Cancelled);
         EXPECT_EQ(track.cold.size(), stride);
     }
@@ -321,9 +321,9 @@ TEST(FlatPlaybackStoreTests, FreezeLoopsPollWithinTheStride) {
         PlaybackEventList list;
         for (std::uint32_t i = 0; i < stride; ++i) list.emplace_back(make_note(0, 6500, false));
         TrackEvents track;
-        FreezeProgress progress;
         std::uint32_t polls = 0;
-        progress.checkpoint = [&polls] { ++polls; };
+        auto bump = [&polls] { ++polls; };
+        FreezeProgress progress{.checkpoint = bump};
         freeze_events(track, 0, list, progress);
         const std::uint64_t records = track.notes.size() + track.articulations.size() + track.curve_points.size();
         EXPECT_EQ(polls, records / stride);
@@ -336,17 +336,17 @@ TEST(FlatPlaybackStoreTests, FreezeLoopsPollWithinTheStride) {
         DynamicAutomationLayers layers;
         layers.emplace(0, std::make_shared<const DynamicAutomationMap>(std::move(curve)));
         TrackEvents track;
-        FreezeProgress progress;
-        progress.checkpoint = [] { throw Cancelled{}; };
+        auto cancel = [] { throw Cancelled{}; };
+        FreezeProgress progress{.checkpoint = cancel};
         EXPECT_THROW(freeze_dynamics(track, layers, progress), Cancelled);
         EXPECT_EQ(track.dynamic_points.size(), stride);
     }
     {
         // The stride continues across calls: small lists still reach a poll
         TrackEvents track;
-        FreezeProgress progress;
         std::uint32_t polls = 0;
-        progress.checkpoint = [&polls] { ++polls; };
+        auto bump = [&polls] { ++polls; };
+        FreezeProgress progress{.checkpoint = bump};
         const std::vector<SyllableEvent> one{make_syllable(u"a", 0)};
         for (std::uint32_t i = 0; i < stride * 3; ++i) freeze_cold_events(track, i, std::span{one}, progress);
         EXPECT_EQ(polls, 3u);

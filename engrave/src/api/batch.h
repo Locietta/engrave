@@ -7,8 +7,8 @@
 #include <variant>
 #include <vector>
 
-#include "engrave/src/global/fn.h"
 #include "engraving/infrastructure/sourcehandle.h"
+#include "global/unique_fn.h"
 #include <engrave/document.h>
 #include <engrave/edit.h>
 #include <engrave/error.h>
@@ -76,7 +76,7 @@ struct Step {
     Result<void> operator()(EditContext &context) { return apply_(context); }
 
 private:
-    music::UniqueFn<Result<void>(EditContext &)> apply_;
+    muse::UniqueFn<Result<void>(EditContext &)> apply_;
 };
 
 Result<Step> prepare(EditContext &context, const SetProperty &op);

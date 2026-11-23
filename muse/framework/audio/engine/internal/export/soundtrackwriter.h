@@ -40,7 +40,7 @@ struct SoundTrackWriter {
 
     SoundTrackWriter(io::IODevice &dst_device, const SoundTrackFormat &format, const secs_t total_duration,
                      engine::OfflineRenderSession *source, muse::UniqueFn<void(uint64_t) const> block_completed = {},
-                     muse::FnRef<encode::UniqueEncoder(const SoundTrackFormat &, io::IODevice &)> encoder_factory = {},
+                     muse::FnRef<encode::UniqueEncoder(const SoundTrackFormat &, io::IODevice &) const> encoder_factory = {},
                      muse::UniqueFn<bool() const> cancelled = {});
 
     Ret write();

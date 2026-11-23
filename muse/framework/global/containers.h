@@ -229,8 +229,8 @@ inline auto unique_keys(const Map &m) {
     return result;
 }
 
-template <typename Map>
-inline auto values(const Map &m, const typename Map::key_type &key) -> std::vector<typename Map::mapped_type> {
+template <typename Map, typename K = typename Map::key_type>
+inline auto values(const Map &m, const K &key) -> std::vector<typename Map::mapped_type> {
     std::vector<typename Map::mapped_type> result;
     if constexpr (requires { m.equal_range(key); }) {
         const auto [first, last] = m.equal_range(key);
@@ -274,8 +274,8 @@ inline auto key(const Map &m, const V &v) -> typename Map::key_type {
     return def;
 }
 
-template <typename Map>
-inline auto value(const Map &m, const typename Map::key_type &k) -> typename Map::mapped_type {
+template <typename Map, typename K = typename Map::key_type>
+inline auto value(const Map &m, const K &k) -> typename Map::mapped_type {
     auto it = m.find(k);
     if (it != m.end()) {
         return it->second;
@@ -284,8 +284,8 @@ inline auto value(const Map &m, const typename Map::key_type &k) -> typename Map
     return def;
 }
 
-template <typename Map>
-inline auto value(const Map &m, const typename Map::key_type &k, const typename Map::mapped_type &def) -> typename Map::mapped_type {
+template <typename Map, typename K = typename Map::key_type>
+inline auto value(const Map &m, const K &k, const typename Map::mapped_type &def) -> typename Map::mapped_type {
     auto it = m.find(k);
     if (it != m.end()) {
         return it->second;

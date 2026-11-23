@@ -113,10 +113,11 @@ PlaybackScore PlaybackScoreBuilder::build(Score *score, muse::FnRef<void()> chec
     }
 
     FlatStore store{result, {}};
-    if (checkpoint) store.progress.checkpoint = checkpoint;
+    store.progress.checkpoint = checkpoint;
 #ifdef ENGRAVE_PLAYBACK_HARNESS
+    auto dump_note_cb = [this](const muse::mpe::NoteEvent &event) { return dump_note ? dump_note(event) : std::string{}; };
     if (dump_note) {
-        store.progress.dump_note = [this](const muse::mpe::NoteEvent &event) { return dump_note ? dump_note(event) : std::string{}; };
+        store.progress.dump_note = muse::FnRef<std::string(const muse::mpe::NoteEvent &)>(dump_note_cb);
     }
 #endif
     if (checkpoint) {

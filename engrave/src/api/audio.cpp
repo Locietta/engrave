@@ -226,7 +226,7 @@ Result<AudioRenderResult> Document::render_audio(const AudioOptions &options, co
     request.bit_depth = options.bit_depth;
     request.max_bytes = options.max_bytes;
     request.max_write_bytes = options.max_write_bytes;
-    if (options.cancelled) request.cancelled = options.cancelled;
+    request.cancelled = options.cancelled;
     request.reverb = options.reverb;
     request.reverb_send = options.reverb_send;
     request.tracks.resize(context->tracks.size());

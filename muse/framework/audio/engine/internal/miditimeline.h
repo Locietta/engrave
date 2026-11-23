@@ -72,7 +72,7 @@ struct CcKeyHash {
     std::uint64_t operator()(const CcKey &key) const noexcept {
         const std::uint64_t packed = (static_cast<std::uint64_t>(key.opcode) << 48) | (static_cast<std::uint64_t>(key.channel) << 40) |
                                      (static_cast<std::uint64_t>(key.controller) << 32) | static_cast<std::uint64_t>(key.value);
-        return ankerl::unordered_dense::hash<std::uint64_t>{}(packed);
+        return muse::Hash<std::uint64_t>{}(packed);
     }
 };
 

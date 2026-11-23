@@ -1,6 +1,6 @@
 #pragma once
 
-#include "engrave/src/global/fn.h"
+#include "global/unique_fn.h"
 
 namespace music {
 
@@ -21,7 +21,7 @@ struct ExportOptions {
     int png_dpi = 144;
     bool draw_page_background = false;
     bool transparent = true;
-    UniqueFn<bool() const> cancelled;
+    muse::UniqueFn<bool() const> cancelled;
     bool midi_expand_repeats = true;
     bool midi_export_rpns = true;
 };

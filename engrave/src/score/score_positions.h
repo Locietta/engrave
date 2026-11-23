@@ -7,8 +7,8 @@
 #include <optional>
 #include <utility>
 
-#include "engrave/src/global/fn.h"
 #include "engrave/src/score/json.h"
+#include "global/fn.h"
 
 namespace mu::engraving {
 struct Score;
@@ -20,8 +20,8 @@ namespace music {
 SortedJson score_positions(mu::engraving::Score *score, bool segments);
 
 struct PositionVisitor {
-    FnRef<bool(int, double, double, double, double, int)> element;
-    FnRef<bool(int, int)> event;
+    muse::FnRef<bool(int, double, double, double, double, int)> element;
+    muse::FnRef<bool(int, int)> event;
 };
 
 // The counting pass does not build an id index. The emitting pass can reserve

@@ -45,7 +45,7 @@ struct UniqueFnBase {
     template <class F>
     static consteval bool valid_target() {
         using Decayed = std::decay_t<F>;
-        if constexpr (!std::is_constructible_v<Decayed, F>) {
+        if constexpr (is_fn_ref_v<Decayed> || !std::is_constructible_v<Decayed, F>) {
             return false;
         } else {
             using Target = std::conditional_t<IsConst, const Decayed, Decayed>;

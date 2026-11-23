@@ -6,17 +6,17 @@
 #ifdef ENGRAVE_PLAYBACK_HARNESS
 #include <string>
 
-#include "engrave/src/global/fn.h"
 #include "engraving/playback/flatplaybackscore.h"
+#include "global/unique_fn.h"
 #include "mpe/events.h"
 
 namespace music {
 struct FlatPlaybackCapture {
     // New-path dump A: serializes each NoteEvent as the builder freezes it (TrackEvents::note_dumps)
     using DumpNote = std::string(const muse::mpe::NoteEvent &);
-    inline static UniqueFn<DumpNote> dump_note;
+    inline static muse::UniqueFn<DumpNote> dump_note;
     using Projection = void(const mu::engraving::PlaybackScore &);
-    inline static UniqueFn<Projection> projection;
+    inline static muse::UniqueFn<Projection> projection;
 };
 } // namespace music
 #endif

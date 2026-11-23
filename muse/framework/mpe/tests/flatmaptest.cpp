@@ -129,7 +129,7 @@ TEST(MpeFlatMapTest, OrderingAndLookupBounds) {
     EXPECT_EQ(map.count(40), 1u);
     EXPECT_EQ(map.count(45), 0u);
     EXPECT_EQ(map.at(20), 200);
-    EXPECT_THROW((void) map.at(99), std::out_of_range);
+    EXPECT_THROW(std::ignore = map.at(99), std::out_of_range);
 
     EXPECT_EQ(map.lower_bound(5)->first, 10);
     EXPECT_EQ(map.lower_bound(20)->first, 20);
@@ -549,6 +549,16 @@ TEST(MpeFlatMapTest, FnRefAndUniqueFnSemantics) {
     ASSERT_TRUE(static_cast<bool>(ref_to_owned));
     EXPECT_EQ(ref_to_owned(7), 22);
 
+    // std::ref unwraps to the underlying target rather than binding the temporary wrapper.
+    int ref_acc = 10;
+    auto ref_lambda = [&ref_acc](int x) {
+        ref_acc += x;
+        return ref_acc;
+    };
+    FnRef<int(int)> unwrapped_ref = std::ref(ref_lambda);
+    EXPECT_EQ(unwrapped_ref(5), 15);
+    EXPECT_EQ(ref_acc, 15);
+
     owned = nullptr;
     EXPECT_FALSE(static_cast<bool>(owned));
 
@@ -558,6 +568,11 @@ TEST(MpeFlatMapTest, FnRefAndUniqueFnSemantics) {
     FnRef<int(int) const> const_ref = const_owned;
     ASSERT_TRUE(static_cast<bool>(const_ref));
     EXPECT_EQ(const_ref(7), 107);
+
+    static_assert(!std::is_constructible_v<UniqueFn<int(int)>, FnRef<int(int)>>);
+    static_assert(!std::is_constructible_v<UniqueFn<int(int) const>, FnRef<int(int)>>);
+    static_assert(!std::is_constructible_v<UniqueFn<int(int) const>, FnRef<int(int) const>>);
+    static_assert(!std::is_assignable_v<UniqueFn<int(int)> &, FnRef<int(int)>>);
 
     UniqueFn<int(int)> null_fp_owned = null_fp;
     EXPECT_FALSE(static_cast<bool>(null_fp_owned));
@@ -570,6 +585,8 @@ TEST(MpeFlatMapTest, VocabularyContainerShimsAndTransparency) {
     ASSERT_TRUE(hmap.contains(sv));
     ASSERT_NE(hmap.find(sv), hmap.end());
     EXPECT_EQ(hmap.find(sv)->second, 2);
+    EXPECT_EQ(muse::value(hmap, sv), 2);
+    EXPECT_EQ(muse::value(hmap, std::string_view("missing"), 99), 99);
     ASSERT_NE(hmap.find("alpha"), hmap.end());
     EXPECT_EQ(hmap.find("alpha")->second, 1);
 

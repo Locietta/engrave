@@ -12,18 +12,19 @@
 
 namespace muse {
 
+template <class Key>
+using Hash = ankerl::unordered_dense::hash<Key>;
+
 // Transparent hash for std::string / std::string_view / non-null C-string lookups.
 struct TransparentStringHash {
     using is_transparent = void;
     using is_avalanching = void;
 
-    [[nodiscard]] std::size_t operator()(std::string_view sv) const noexcept {
-        return ankerl::unordered_dense::hash<std::string_view>{}(sv);
-    }
+    [[nodiscard]] std::size_t operator()(std::string_view sv) const noexcept { return Hash<std::string_view>{}(sv); }
 };
 
 template <class Key>
-using DefaultHash = std::conditional_t<std::same_as<Key, std::string>, TransparentStringHash, ankerl::unordered_dense::hash<Key>>;
+using DefaultHash = std::conditional_t<std::same_as<Key, std::string>, TransparentStringHash, Hash<Key>>;
 
 template <class Key>
 using DefaultKeyEqual = std::conditional_t<std::same_as<Key, std::string>, std::equal_to<>, std::equal_to<Key>>;

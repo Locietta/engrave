@@ -38,9 +38,9 @@ struct ElementIdHash {
     using is_avalanching = void;
 
     std::uint64_t operator()(const ElementId &id) const noexcept {
-        const auto h1 = ankerl::unordered_dense::hash<std::uint64_t>{}(id.hi);
-        const auto h2 = ankerl::unordered_dense::hash<std::uint64_t>{}(id.lo);
-        return ankerl::unordered_dense::hash<std::uint64_t>{}(h1 ^ (h2 + 0x9e3779b97f4a7c15ULL + (h1 << 6) + (h1 >> 2)));
+        const auto h1 = muse::Hash<std::uint64_t>{}(id.hi);
+        const auto h2 = muse::Hash<std::uint64_t>{}(id.lo);
+        return muse::Hash<std::uint64_t>{}(h1 ^ (h2 + 0x9e3779b97f4a7c15ULL + (h1 << 6) + (h1 >> 2)));
     }
 };
 

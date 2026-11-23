@@ -18,8 +18,8 @@
 #include <vector>
 
 #include "audio/engine/internal/export/audioencoder.h"
-#include "engrave/src/global/fn.h"
 #include "engraving/types/types.h"
+#include "global/unique_fn.h"
 #include "midi/miditypes.h"
 
 namespace muse::mpe {
@@ -67,7 +67,7 @@ private:
 // when available. An empty hook disables capture. Calls run on the engine
 // thread; the hook must not re-enter the engine.
 using MidiEventCallback = void(const muse::midi::Event &, std::uint64_t);
-using EngineAudioMidiEventHook = UniqueFn<MidiEventCallback>;
+using EngineAudioMidiEventHook = muse::UniqueFn<MidiEventCallback>;
 void set_engine_audio_midi_event_hook(EngineAudio &audio, EngineAudioMidiEventHook hook);
 
 // Initialises the engine's audio services and loads its SoundFonts:
@@ -137,7 +137,7 @@ struct AudioRenderRequest {
     EngineAudioFormat format = EngineAudioFormat::WAV;
     std::string output_path;
     // Internal test seam; an empty factory uses the format's built-in encoder.
-    UniqueFn<EncoderFactory> encoder_factory;
+    muse::UniqueFn<EncoderFactory> encoder_factory;
     // -1 renders the master score. A non-negative value renders the master
     // score with every part that is absent from, or invisible in, that excerpt
     // muted, like MasterNotation::initNotationSoloMuteState
@@ -159,7 +159,7 @@ struct AudioRenderRequest {
     // sends nothing to the reverb return and renders the dry mix.
     bool reverb = true;
     double reverb_send = 0.30;
-    UniqueFn<bool() const> cancelled;
+    muse::UniqueFn<bool() const> cancelled;
 };
 
 struct AudioRenderResult {

@@ -73,7 +73,7 @@ Result<RenderOutput> Document::render(const RenderOptions &options) {
     backend.png_dpi = options.dpi;
     backend.draw_page_background = options.background;
     backend.transparent = options.transparent;
-    if (options.cancelled) backend.cancelled = options.cancelled;
+    backend.cancelled = options.cancelled;
     backend.first_page = first;
     backend.last_page = last;
     const std::string format = format_name;

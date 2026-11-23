@@ -27,6 +27,12 @@ inline constexpr bool is_std_function_v = false;
 template <class S>
 inline constexpr bool is_std_function_v<std::function<S>> = true;
 
+template <class T>
+inline constexpr bool is_ref_wrapper_v = false;
+
+template <class T>
+inline constexpr bool is_ref_wrapper_v<std::reference_wrapper<T>> = true;
+
 template <class F>
 concept NullableCallable = std::is_pointer_v<std::remove_cvref_t<F>> || std::is_member_pointer_v<std::remove_cvref_t<F>> ||
                            is_std_function_v<std::remove_cvref_t<F>> || requires { typename std::remove_cvref_t<F>::is_nullable_callable; };
@@ -78,6 +84,8 @@ struct FnRefBase {
         using Decayed = std::decay_t<F>;
         if constexpr (is_fn_ref_v<std::remove_cvref_t<F>> || std::is_member_pointer_v<Decayed> || std::is_volatile_v<Raw>) {
             return false;
+        } else if constexpr (is_ref_wrapper_v<std::remove_cvref_t<F>>) {
+            return valid_target<typename std::remove_cvref_t<F>::type &>();
         } else if constexpr (std::is_function_v<Raw> ||
                              (std::is_pointer_v<Decayed> && std::is_function_v<std::remove_pointer_t<Decayed>>) ) {
             constexpr bool invocable =
@@ -104,7 +112,9 @@ struct FnRefBase {
         using Raw = std::remove_reference_t<F>;
         using Decayed = std::decay_t<F>;
 
-        if constexpr (std::is_function_v<Raw>) {
+        if constexpr (is_ref_wrapper_v<std::remove_cvref_t<F>>) {
+            bind(fn.get());
+        } else if constexpr (std::is_function_v<Raw>) {
             using FnPtr = Raw *;
             storage_.fn = reinterpret_cast<void (*)()>(&fn);
             invoke_ = [](FnRefStorage s, Args &&...args) noexcept(IsNoexcept) -> R {

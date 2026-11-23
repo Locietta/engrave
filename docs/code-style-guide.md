@@ -55,11 +55,10 @@ Never introduce `virtual` functions, abstract base classes, or vtable hierarchie
 
 ## Containers and JSON
 
-Use the thin internal vocabulary headers under `muse/framework/global/` instead of including third-party container headers directly:
-
-- `muse::HashMap`, `muse::HashSet`, `muse::SegmentedHashMap`, `muse::SegmentedHashSet` (`"global/hashmap.h"`, backed by `ankerl::unordered_dense`) for lookup-only data (`std::string` keys support transparent `std::string_view` lookup; use `Segmented*` when references or pointers must survive insertion).
-- `muse::BTreeMap`, `muse::BTreeSet`, `muse::BTreeMultiMap`, `muse::BTreeMultiSet` (`"global/btree.h"`, backed by `gtl::btree_*`) for large or dynamically mutated ordered containers (`BTreeMap` provides aliasing-safe `insert_or_assign`).
-- `muse::FlatMap` (`"global/flatmap.h"`) and `muse::FlatSet` (`"global/flatset.h"`, backed by `amc::FlatSet`) for small or monotonically built ordered data.
+- **No node-based associative containers**: Do not use `std::map`, `std::unordered_map`, `std::set`, `std::unordered_set`, `std::multimap`, or `std::multiset`. Use the thin internal vocabulary headers under `muse/framework/global/` instead of including third-party container headers directly:
+  - `muse::HashMap`, `muse::HashSet`, `muse::SegmentedHashMap`, `muse::SegmentedHashSet`, and `muse::Hash` (`"global/hashmap.h"`, backed by `ankerl::unordered_dense`) for lookup-only data (`std::string` keys support transparent `std::string_view` lookup; use `Segmented*` when references or pointers must survive insertion).
+  - `muse::BTreeMap`, `muse::BTreeSet`, `muse::BTreeMultiMap`, `muse::BTreeMultiSet` (`"global/btree.h"`, backed by `gtl::btree_*` with `gtl::Less<Key>` default comparator for transparent lookup and three-way comparisons) for large or dynamically mutated ordered containers (`BTreeMap` provides aliasing-safe `insert_or_assign`).
+  - `muse::FlatMap` (`"global/flatmap.h"`) and `muse::FlatSet` (`"global/flatset.h"`, backed by `amc::FlatSet`) for small or monotonically built ordered data.
 - **JSON via typed `glaze` structs**: Define plain C++ structs and read/write JSON directly with `glaze` compile-time reflection rather than building or walking untyped dynamic DOM maps. Public `engrave/include/engrave/` headers must not expose any JSON library.
 - **No Boost**: Do not introduce Boost dependencies.
 
@@ -77,10 +76,11 @@ Use `#pragma once` (never `#ifndef` include guards). Group includes in the follo
 #include <string_view>
 
 // 3. Third-party headers
-#include <ankerl/unordered_dense.h>
+#include <glaze/glaze.hpp>
 #include <proxy/proxy.h>
 
 // 4. Project headers (muse/..., engraving/..., engrave/...)
+#include "global/hashmap.h"
 #include "global/io/buffer.h"
 #include "global/serialization/xmlstreamreader.h"
 ```
