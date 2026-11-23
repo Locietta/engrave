@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <cstddef>
 #include <format>
-#include <map>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -27,6 +26,7 @@
 #include "engraving/dom/tuplet.h"
 #include "engraving/dom/utils.h"
 #include "engraving/types/fraction.h"
+#include "global/flatmap.h"
 
 namespace engrave::harness { namespace {
 
@@ -41,7 +41,7 @@ using mu::engraving::Tuplet;
 
 // The chord rests of the master score that carry an id, per track, in score order.
 std::vector<std::vector<ChordRest *>> tracks(Document &document) {
-    std::map<mu::engraving::track_idx_t, std::vector<ChordRest *>> by_track;
+    muse::FlatMap<mu::engraving::track_idx_t, std::vector<ChordRest *>> by_track;
     for (EngravingObject *object : document_objects(master_of(document))) {
         if (!object->is_chord_rest() || object->score() != &master_of(document)) continue;
         if (!takes_id(*object) || !object->eid().is_valid()) continue;

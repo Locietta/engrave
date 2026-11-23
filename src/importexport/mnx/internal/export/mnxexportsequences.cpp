@@ -22,12 +22,13 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
-#include <set>
 #include <string>
 #include <tuple>
 #include <type_traits>
 #include <utility>
 #include <vector>
+
+#include <amc/flatset.hpp>
 
 #include "engraving/dom/accidental.h"
 #include "engraving/dom/articulation.h"
@@ -131,7 +132,7 @@ static int calc_written_diatonic_delta(const Note *note) {
 //   export lyrics on a chord/rest into mnxEvent
 //---------------------------------------------------------
 
-static void create_lyrics(model::Event &mnx_event, const ChordRest *cr, std::set<int> &lyric_verses) {
+static void create_lyrics(model::Event &mnx_event, const ChordRest *cr, ankerl::unordered_dense::set<int> &lyric_verses) {
     IF_ASSERT_FAILED(cr) { return; }
 
     const auto lyrics = cr->lyrics();

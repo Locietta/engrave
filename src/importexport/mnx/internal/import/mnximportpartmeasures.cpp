@@ -27,6 +27,8 @@
 #include <variant>
 #include <vector>
 
+#include <ankerl/unordered_dense.h>
+
 #include "engraving/dom/accidental.h"
 #include "engraving/dom/arpeggio.h"
 #include "engraving/dom/barline.h"
@@ -176,7 +178,7 @@ void MnxImporter::build_lyric_line_verse_map() {
     lyric_line_to_verse_.clear();
 
     const auto &line_order = index().lyric_line_order;
-    std::unordered_map<std::string, size_t> line_order_index;
+    ankerl::unordered_dense::map<std::string, size_t> line_order_index;
     line_order_index.reserve(line_order.size());
     for (size_t i = 0; i < line_order.size(); ++i) {
         line_order_index.emplace(line_order[i], i);

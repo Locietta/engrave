@@ -16,12 +16,11 @@
 #include <filesystem>
 #include <format>
 #include <fstream>
-#include <map>
-#include <set>
 #include <string>
 #include <string_view>
 #include <vector>
 
+#include <ankerl/unordered_dense.h>
 #include <gtest/gtest.h>
 
 #include "core_test_env.h"
@@ -87,7 +86,7 @@ const char *backend_name(engrave::Format format) {
 // One loaded corpus score per file, with the first live instance of each type.
 struct Corpus {
     std::vector<music::ScoreProject> projects;
-    std::map<ElementType, EngravingObject *> instances;
+    ankerl::unordered_dense::map<ElementType, EngravingObject *> instances;
     std::vector<std::filesystem::path> unreadable;
 
     void add(EngravingObject *object) { instances.try_emplace(object->type(), object); }
@@ -295,7 +294,7 @@ TEST(ValueCodec, RejectsWhatDoesNotFitTheType) {
 TEST(Describe, ListsEveryImplementedTypeWithSortedProps) {
     const auto types = g_engine->describe();
     EXPECT_EQ(types.size(), 150u) << "the TConv element types that a class declares";
-    std::set<std::string> names;
+    ankerl::unordered_dense::set<std::string> names;
     for (const auto &type : types) {
         EXPECT_TRUE(names.insert(type.type).second) << "duplicate type " << type.type;
         EXPECT_NE(element_type(type.type), ElementType::INVALID) << type.type;
@@ -352,7 +351,7 @@ TEST(Describe, UnknownTypeIsNotFound) {
 TEST(Describe, StylesCoverEveryStyleId) {
     const auto styles = g_engine->describe_styles();
     ASSERT_EQ(styles.size(), size_t(mu::engraving::Sid::STYLES));
-    std::set<std::string> names;
+    ankerl::unordered_dense::set<std::string> names;
     int with_value = 0;
     for (size_t i = 0; i < styles.size(); ++i) {
         const auto &style = styles[i];

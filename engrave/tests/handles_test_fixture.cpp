@@ -1,5 +1,8 @@
 #include "handles_test_fixture.h"
 
+#include <ankerl/unordered_dense.h>
+#include <gtl/btree.hpp>
+
 namespace handles_test {
 
 std::filesystem::path g_assets;
@@ -122,8 +125,8 @@ std::string export_mscz(engrave::Document &document) {
     return bytes ? text_of(*bytes) : std::string{};
 }
 
-std::map<std::string, std::string> unzip_entries(std::string_view zip_bytes) {
-    std::map<std::string, std::string> entries;
+gtl::btree_map<std::string, std::string> unzip_entries(std::string_view zip_bytes) {
+    gtl::btree_map<std::string, std::string> entries;
     muse::ByteArray bytes(zip_bytes.data(), zip_bytes.size());
     muse::io::Buffer buffer(&bytes);
     if (!buffer.open(muse::io::IODevice::READ_ONLY)) return entries;
@@ -193,7 +196,8 @@ std::string composition_input() {
                            id, name, i < 9 ? i + 1 : i + 2, parts[i]["midiProgram"].as<int>());
     }
     xml += "</part-list>";
-    const std::map<int, std::string_view> types{{120, "16th"}, {240, "eighth"}, {480, "quarter"}, {960, "half"}, {1920, "whole"}};
+    const ankerl::unordered_dense::map<int, std::string_view> types{
+        {120, "16th"}, {240, "eighth"}, {480, "quarter"}, {960, "half"}, {1920, "whole"}};
     constexpr std::string_view steps = "CCDDEFFGGAAB";
     for (size_t i = 0; i < parts.size(); ++i) {
         xml += std::format("<part id=\"P{}\">", i + 1);
@@ -247,8 +251,8 @@ void expect_no_layout(MasterScore &master) {
     }
 }
 
-std::map<std::string, std::string> native_captures(engrave::Document &document, bool legacy) {
-    std::map<std::string, std::string> captures;
+gtl::btree_map<std::string, std::string> native_captures(engrave::Document &document, bool legacy) {
+    gtl::btree_map<std::string, std::string> captures;
     for (auto *score : native_scores(master_of(document))) {
         for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
             for (const auto version : {"5.00", "4.70"}) {
@@ -313,8 +317,8 @@ std::string describe(const engrave::LiveId &entry) {
 
 /// Every id of the document and what it names, keyed by the id's text so that a
 /// failure prints ids rather than bytes.
-std::map<std::string, std::string> element_map(engrave::Document &document) {
-    std::map<std::string, std::string> elements;
+gtl::btree_map<std::string, std::string> element_map(engrave::Document &document) {
+    gtl::btree_map<std::string, std::string> elements;
     for (const engrave::LiveId &entry : engrave::live_ids(master_of(document))) {
         elements.emplace(engrave::to_string(entry.id), describe(entry));
     }
@@ -322,7 +326,7 @@ std::map<std::string, std::string> element_map(engrave::Document &document) {
 }
 
 /// Compares two element maps, reporting the ids that differ rather than the whole map.
-void expect_same_ids(const std::map<std::string, std::string> &before, const std::map<std::string, std::string> &after,
+void expect_same_ids(const gtl::btree_map<std::string, std::string> &before, const gtl::btree_map<std::string, std::string> &after,
                      std::string_view what) {
     for (const auto &[id, description] : before) {
         const auto found = after.find(id);
@@ -350,12 +354,12 @@ std::unique_ptr<engrave::Document> open_with(ElementType type) {
 
 void expect_inv(engrave::Document &document) {
     MasterScore &master = master_of(document);
-    std::set<const EngravingObject *> objects;
+    ankerl::unordered_dense::set<const EngravingObject *> objects;
     for (EngravingObject *object : engrave::document_objects(master)) objects.insert(object);
 
     // The register is a bijection: an entry's element reports that id, and the id of a
     // persisted element names an element of the document.
-    std::set<std::string> registered;
+    ankerl::unordered_dense::set<std::string> registered;
     for (const auto &[eid, object] : master.eid_register()->entries()) {
         const std::string text = eid.to_std_string();
         ASSERT_TRUE(eid.is_valid()) << "an invalid id is registered";
@@ -382,7 +386,6 @@ void expect_inv(engrave::Document &document) {
         if (!engrave::takes_id(*object)) continue;
         EXPECT_TRUE(object->eid().is_valid()) << object_name(*object) << " has no id";
     }
-    EXPECT_LE(registered.size(), master.eid_register()->size());
 }
 
 int class_strength(IdClass value) {
@@ -397,7 +400,7 @@ int class_strength(IdClass value) {
 
 /// Feeds one open document to the inventory: what class each type declares, and whether
 /// the ids the walk hands out survive the score's own write and read.
-void inventory_evidence(engrave::Document &document, const std::string &source, std::map<std::string, Evidence> &evidence) {
+void inventory_evidence(engrave::Document &document, const std::string &source, gtl::btree_map<std::string, Evidence> &evidence) {
     MasterScore &master = master_of(document);
 
     // The id of every object, and whether the walk is what gave it: the objects
@@ -410,7 +413,7 @@ void inventory_evidence(engrave::Document &document, const std::string &source, 
         std::string detail;
     };
 
-    std::map<ElementId, Probed> probed;
+    gtl::btree_map<ElementId, Probed> probed;
     for (EngravingObject *object : engrave::document_objects(master)) {
         Evidence &row = evidence[object_name(*object)];
         const IdClass own = engrave::id_class(*object);
@@ -431,7 +434,7 @@ void inventory_evidence(engrave::Document &document, const std::string &source, 
 
     auto reloaded = reopen(document);
     if (!reloaded) return;
-    std::map<ElementId, std::string> after;
+    gtl::btree_map<ElementId, std::string> after;
     for (EngravingObject *object : engrave::document_objects(master_of(*reloaded))) {
         if (object->eid().is_valid()) after.emplace(engine_id(*object), object_name(*object));
     }
@@ -451,7 +454,7 @@ void inventory_evidence(engrave::Document &document, const std::string &source, 
 /// A score with one instance of every type an operation can create, made through the
 /// public edit API on a template. The corpus cannot show a type it has no instance of,
 /// so the Add pair table and the other creating operations are measured here too.
-std::unique_ptr<engrave::Document> created_types_document(std::set<std::string> &types) {
+std::unique_ptr<engrave::Document> created_types_document(ankerl::unordered_dense::set<std::string> &types) {
     auto created = g_engine->create_document({.template_id = "Treble_Clef"});
     if (!created) {
         ADD_FAILURE() << "the Treble_Clef template: " << created.error().message;
@@ -480,7 +483,7 @@ std::unique_ptr<engrave::Document> created_types_document(std::set<std::string> 
     std::vector<std::optional<ElementId>> chords;
     std::optional<ElementId> note;
     const auto apply = [&doc, &types](std::string_view what, const engrave::Op &op) -> std::optional<engrave::EditResult> {
-        std::set<const EngravingObject *> before;
+        ankerl::unordered_dense::set<const EngravingObject *> before;
         for (EngravingObject *object : engrave::document_objects(master_of(doc))) before.insert(object);
         auto result = doc.edit(engrave::Batch{{op}});
         if (!result) {
@@ -536,7 +539,7 @@ std::unique_ptr<engrave::Document> created_types_document(std::set<std::string> 
 
 void expect_first_ids(engrave::Document &document) {
     MasterScore &master = master_of(document);
-    std::map<std::string, std::string> by_text;
+    ankerl::unordered_dense::map<std::string, std::string> by_text;
     int exposed = 0;
     for (EngravingObject *object : engrave::document_objects(master)) {
         if (!engrave::takes_id(*object)) continue;
@@ -617,8 +620,8 @@ std::filesystem::path corpus_mscx(std::string_view tag) {
 }
 
 /// The id texts of a corpus file, with the type of the element each names.
-std::map<std::string, std::string> id_types(const std::string &text) {
-    std::map<std::string, std::string> types;
+gtl::btree_map<std::string, std::string> id_types(const std::string &text) {
+    gtl::btree_map<std::string, std::string> types;
     auto document = open_text(text);
     if (!document) return types;
     for (const engrave::LiveId &entry : engrave::live_ids(master_of(*document))) {

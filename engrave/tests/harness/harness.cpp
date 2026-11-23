@@ -8,8 +8,9 @@
 #include <optional>
 #include <stdexcept>
 #include <tuple>
-#include <unordered_set>
 #include <utility>
+
+#include <ankerl/unordered_dense.h>
 
 #include "engrave/src/api/handles.h"
 #include "engrave/src/api/pid_support.h"
@@ -27,6 +28,7 @@
 #include "engraving/dom/select.h"
 #include "engraving/editing/transaction/transaction.h"
 #include "engraving/infrastructure/eidregister.h"
+#include "global/flatmap.h"
 #include "global/io/buffer.h"
 #include "global/serialization/zipreader.h"
 
@@ -37,12 +39,12 @@ using mu::engraving::MasterScore;
 using mu::engraving::MScore;
 using mu::engraving::Score;
 
-std::map<std::string, std::string> mscz_files(const std::vector<std::byte> &bytes) {
+muse::FlatMap<std::string, std::string> mscz_files(const std::vector<std::byte> &bytes) {
     muse::ByteArray data(reinterpret_cast<const std::uint8_t *>(bytes.data()), bytes.size());
     muse::io::Buffer buffer(&data);
     buffer.open(muse::io::IODevice::READ_ONLY);
     muse::ZipReader zip(&buffer);
-    std::map<std::string, std::string> files;
+    muse::FlatMap<std::string, std::string> files;
     for (const auto &info : zip.file_info_list()) {
         if (!info.is_file) continue;
         const muse::ByteArray file = zip.file_data(info.file_path.to_std_string());
@@ -107,7 +109,7 @@ bool same_layout(const std::vector<std::string> &before, const std::vector<std::
 
 std::string inv(Document &document) {
     MasterScore &master = master_of(document);
-    std::unordered_set<const EngravingObject *> objects;
+    ankerl::unordered_dense::set<const EngravingObject *> objects;
     for (EngravingObject *object : document_objects(master)) objects.insert(object);
     for (const auto &[eid, object] : master.eid_register()->entries()) {
         if (object->eid() != eid) return eid.to_std_string() + ": the reverse entry disagrees";

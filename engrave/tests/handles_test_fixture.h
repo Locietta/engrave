@@ -20,14 +20,14 @@
 #include <fstream>
 #include <iterator>
 #include <limits>
-#include <map>
 #include <memory>
-#include <set>
 #include <string>
 #include <string_view>
 #include <vector>
 
+#include <ankerl/unordered_dense.h>
 #include <gtest/gtest.h>
+#include <gtl/btree.hpp>
 
 #include "engrave/src/api/batch.h"
 #include "engrave/src/api/handles.h"
@@ -201,7 +201,7 @@ void commit(MasterScore &master, const Function &function) {
 std::unique_ptr<engrave::Document> open_path(const std::filesystem::path &path);
 std::unique_ptr<engrave::Document> open_text(std::string_view text, engrave::OpenOptions options = {});
 std::string export_mscz(engrave::Document &document);
-std::map<std::string, std::string> unzip_entries(std::string_view zip_bytes);
+gtl::btree_map<std::string, std::string> unzip_entries(std::string_view zip_bytes);
 /// The engine's own MSCX of the score (or of one of its excerpts). The version it
 /// carries is the current one, so the reader that repairs ids is the one under test.
 std::string export_mscx(engrave::Document &document, int excerpt_id = -1);
@@ -217,7 +217,7 @@ bool written_by_engine(const std::filesystem::path &path);
 std::string composition_input();
 std::vector<Score *> native_scores(MasterScore &master);
 void expect_no_layout(MasterScore &master);
-std::map<std::string, std::string> native_captures(engrave::Document &document, bool legacy = false);
+gtl::btree_map<std::string, std::string> native_captures(engrave::Document &document, bool legacy = false);
 std::string source_native(Score &score);
 
 /// What an element is beyond its id: its type, where it sits, and a payload that a
@@ -226,9 +226,9 @@ std::string payload(const EngravingObject &object);
 std::string describe(const engrave::LiveId &entry);
 /// Every id of the document and what it names, keyed by the id's text so that a
 /// failure prints ids rather than bytes.
-std::map<std::string, std::string> element_map(engrave::Document &document);
+gtl::btree_map<std::string, std::string> element_map(engrave::Document &document);
 /// Compares two element maps, reporting the ids that differ rather than the whole map.
-void expect_same_ids(const std::map<std::string, std::string> &before, const std::map<std::string, std::string> &after,
+void expect_same_ids(const gtl::btree_map<std::string, std::string> &before, const gtl::btree_map<std::string, std::string> &after,
                      std::string_view what);
 /// The first corpus score that has an element of this type with an id.
 std::unique_ptr<engrave::Document> open_with(ElementType type);
@@ -250,11 +250,11 @@ struct Evidence {
 int class_strength(IdClass value);
 /// Feeds one open document to the inventory: what class each type declares, and whether
 /// the ids the walk hands out survive the score's own write and read.
-void inventory_evidence(engrave::Document &document, const std::string &source, std::map<std::string, Evidence> &evidence);
+void inventory_evidence(engrave::Document &document, const std::string &source, gtl::btree_map<std::string, Evidence> &evidence);
 /// A score with one instance of every type an operation can create, made through the
 /// public edit API on a template. The corpus cannot show a type it has no instance of,
 /// so the Add pair table and the other creating operations are measured here too.
-std::unique_ptr<engrave::Document> created_types_document(std::set<std::string> &types);
+std::unique_ptr<engrave::Document> created_types_document(ankerl::unordered_dense::set<std::string> &types);
 
 void expect_first_ids(engrave::Document &document);
 
@@ -275,7 +275,7 @@ std::string with_copied_id(std::string text, std::string_view from, std::string_
 /// A corpus MSCX file that has ids of its own and, if asked, a tag.
 std::filesystem::path corpus_mscx(std::string_view tag);
 /// The id texts of a corpus file, with the type of the element each names.
-std::map<std::string, std::string> id_types(const std::string &text);
+gtl::btree_map<std::string, std::string> id_types(const std::string &text);
 bool warned_about(engrave::Document &document, std::string_view text);
 
 /// Whether the crafted text gives the reader a duplicate to repair.

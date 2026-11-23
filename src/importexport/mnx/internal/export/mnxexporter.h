@@ -22,10 +22,7 @@
 #pragma once
 
 #include <optional>
-#include <set>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 #include <ankerl/unordered_dense.h>
@@ -73,7 +70,9 @@ struct MnxExporter {
     // The exported document; model::write_document serializes it.
     const model::Root &document() const { return root_; }
 
-    const std::unordered_map<engraving::staff_idx_t, std::pair<size_t, int>> &staff_to_part_staff() const { return staff_to_part_staff_; }
+    const ankerl::unordered_dense::map<engraving::staff_idx_t, std::pair<size_t, int>> &staff_to_part_staff() const {
+        return staff_to_part_staff_;
+    }
 
     // utility functions
     engraving::EID get_or_assign_eid(engraving::EngravingObject *item);
@@ -98,8 +97,8 @@ private:
         engraving::voice_idx_t voice{};
         int mnx_part_staff{}; // 1-based staff number within part.
         std::vector<const engraving::Tuplet *> tuplet_stack;
-        std::unordered_set<const engraving::ChordRest *> grace_before_emitted;
-        std::unordered_set<const engraving::ChordRest *> grace_after_emitted;
+        ankerl::unordered_dense::set<const engraving::ChordRest *> grace_before_emitted;
+        ankerl::unordered_dense::set<const engraving::ChordRest *> grace_after_emitted;
     };
 
     void create_global();
@@ -143,12 +142,12 @@ private:
     model::Root root_;
 
     // entity tracking
-    std::unordered_map<const engraving::Measure *, size_t> meas_to_mnx_meas_;
-    std::unordered_map<const engraving::ChordRest *, std::string> cr_to_mnx_event_; // event ids
-    ankerl::unordered_dense::map<std::string, model::Event *> events_by_id_;        // built after the content is complete
-    std::unordered_map<engraving::staff_idx_t, std::pair<size_t, int>> staff_to_part_staff_;
+    ankerl::unordered_dense::map<const engraving::Measure *, size_t> meas_to_mnx_meas_;
+    ankerl::unordered_dense::map<const engraving::ChordRest *, std::string> cr_to_mnx_event_; // event ids
+    ankerl::unordered_dense::map<std::string, model::Event *> events_by_id_;                  // built after the content is complete
+    ankerl::unordered_dense::map<engraving::staff_idx_t, std::pair<size_t, int>> staff_to_part_staff_;
     std::vector<engraving::Staff *> exported_staves_;
-    std::set<int> lyric_verses_; // 1-based verses with lyrics; the lyric line ids, in verse order
+    ankerl::unordered_dense::set<int> lyric_verses_; // 1-based verses with lyrics; sorted into line_order on emit
 
     bool export_beams_{true};
     bool export_rest_positions_{false};

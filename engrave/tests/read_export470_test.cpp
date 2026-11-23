@@ -1,3 +1,4 @@
+#include <ankerl/unordered_dense.h>
 #include <pugixml.hpp>
 
 #include "digest.h"
@@ -36,7 +37,7 @@ TEST(Export470, SelectedExcerptIsStandaloneAndBounded) {
                 muse::io::Buffer buffer(&bytes);
                 if (!buffer.open(muse::io::IODevice::READ_ONLY)) throw std::runtime_error("Cannot open ZIP buffer");
                 muse::ZipReader zip(&buffer);
-                std::map<std::string, std::string> result;
+                ankerl::unordered_dense::map<std::string, std::string> result;
                 for (const auto &entry : zip.file_info_list()) {
                     const auto name = entry.file_path.to_std_string();
                     const auto data = zip.file_data(name);

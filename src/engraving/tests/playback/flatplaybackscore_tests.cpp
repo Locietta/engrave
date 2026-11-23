@@ -10,10 +10,10 @@
 #include <stdexcept>
 #include <string>
 #include <tuple>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
+#include <ankerl/unordered_dense.h>
 #include <gtest/gtest.h>
 
 #include "audio/engine/internal/synthesizers/fluidsynth/fluidsequencer.h"
@@ -673,7 +673,7 @@ TEST_F(PlaybackScoreBuilderTests, ResolvesSetupDataForMultiInstrumentScore) {
     ASSERT_EQ(score->parts().size(), 12u);
 
     constexpr bool supports_snd = true;
-    const std::unordered_map<String, PlaybackSetupData> expected_setup_data{
+    const ankerl::unordered_dense::map<String, PlaybackSetupData> expected_setup_data{
         {u"sopranissimo-saxophone", {SoundId::SAXOPHONE, SoundCategory::WINDS, {SoundSubCategory::SOPRANISSIMO}, supports_snd}},
         {u"marching-tenor-drums",
          {SoundId::DRUM, SoundCategory::PERCUSSIONS, {SoundSubCategory::MARCHING, SoundSubCategory::SNARE, SoundSubCategory::TENOR}}},

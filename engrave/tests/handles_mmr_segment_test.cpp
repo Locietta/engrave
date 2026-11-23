@@ -1,3 +1,5 @@
+#include <ankerl/unordered_dense.h>
+
 #include "engraving/dom/dummyparent.h"
 #include "handles_test_fixture.h"
 
@@ -14,7 +16,7 @@ TEST(HarmonyNames, ColdS13NamesEqualRenderedText) {
             auto &master = master_of(*document);
             master.style().set(Sid::CAPO_POSITION, 2);
             master.style().set(Sid::DISPLAY_CAPO_CHORDS, static_cast<int>(capo));
-            std::map<Harmony *, String> cold;
+            ankerl::unordered_dense::map<Harmony *, String> cold;
             for (auto *object : engrave::document_objects(master)) {
                 if (object->is_harmony()) cold.emplace(to_harmony(object), to_harmony(object)->display_name());
             }

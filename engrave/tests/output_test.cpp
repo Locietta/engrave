@@ -21,7 +21,6 @@
 #include <filesystem>
 #include <fstream>
 #include <iterator>
-#include <set>
 #include <span>
 #include <string>
 #include <string_view>

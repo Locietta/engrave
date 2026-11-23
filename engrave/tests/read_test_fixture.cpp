@@ -1,6 +1,9 @@
 #include "read_test_fixture.h"
 
+#include <gtl/btree.hpp>
+
 #include "engraving/dom/dummyparent.h"
+#include "global/flatmap.h"
 
 namespace read_test {
 
@@ -126,7 +129,7 @@ Row note_row(int tick, std::size_t staff, std::size_t voice, int pitch) {
 std::string value_text(const music::Json &value) { return value.is_string() ? value.get<std::string>() : music::dump_json(value); }
 
 // The rows the semantic dump reports for one score body.
-void oracle_rows(const music::Json &body, std::multiset<Row> &rows) {
+void oracle_rows(const music::Json &body, gtl::btree_multiset<Row> &rows) {
     const music::Json &events = body.at("events");
     for (std::size_t staff = 0; staff < events.size(); ++staff) {
         for (std::size_t voice = 0; voice < events[staff].size(); ++voice) {
@@ -170,7 +173,7 @@ std::int64_t int_property(const engrave::ElementInfo &element, std::string_view 
 }
 
 // The rows a query reports, in the same form as oracle_rows.
-void query_rows(const std::vector<engrave::ElementInfo> &elements, std::multiset<Row> &rows) {
+void query_rows(const std::vector<engrave::ElementInfo> &elements, gtl::btree_multiset<Row> &rows) {
     for (const engrave::ElementInfo &element : elements) {
         const auto tick = static_cast<int>(ticks_of(element.tick));
         const auto staff = static_cast<std::size_t>(element.staff);
@@ -198,10 +201,10 @@ void query_rows(const std::vector<engrave::ElementInfo> &elements, std::multiset
 
 /// Compares two row sets, reporting the rows whose counts differ rather than the whole
 /// set.
-void expect_same_rows(const std::multiset<Row> &expected, const std::multiset<Row> &actual, std::string_view what) {
-    std::map<Row, int> wanted;
+void expect_same_rows(const gtl::btree_multiset<Row> &expected, const gtl::btree_multiset<Row> &actual, std::string_view what) {
+    muse::FlatMap<Row, int> wanted;
     for (const Row &row : expected) ++wanted[row];
-    std::map<Row, int> got;
+    muse::FlatMap<Row, int> got;
     for (const Row &row : actual) ++got[row];
     int reported = 0;
     for (const auto &[row, count] : wanted) {

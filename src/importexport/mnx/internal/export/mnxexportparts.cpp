@@ -23,8 +23,9 @@
 #include <optional>
 #include <string>
 #include <type_traits>
-#include <unordered_set>
 #include <variant>
+
+#include <ankerl/unordered_dense.h>
 
 #include "engraving/dom/arpeggio.h"
 #include "engraving/dom/chord.h"
@@ -545,7 +546,7 @@ void MnxExporter::create_arpeggios(const Part *part, const Measure *measure, mod
     IF_ASSERT_FAILED(part && measure) { return; }
 
     const TrackRange track_range = part->track_range();
-    std::unordered_set<const Arpeggio *> exported_arpeggios;
+    ankerl::unordered_dense::set<const Arpeggio *> exported_arpeggios;
 
     auto is_exported_chord = [this](const Chord *chord) { return chord && cr_to_mnx_event_.find(chord) != cr_to_mnx_event_.end(); };
 
@@ -978,8 +979,11 @@ bool MnxExporter::create_parts() {
 
     if (!lyric_verses_.empty()) {
         /// @todo line metadata if MNX spec expands to include anything we can export.
+        std::vector<int> verses(lyric_verses_.begin(), lyric_verses_.end());
+        std::ranges::sort(verses);
         auto &mnx_line_order = ensure(ensure(root_.global.lyrics).line_order);
-        for (const int verse : lyric_verses_) {
+        mnx_line_order.reserve(verses.size());
+        for (const int verse : verses) {
             mnx_line_order.push_back(std::to_string(verse));
         }
     }

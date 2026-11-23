@@ -5,14 +5,13 @@
 #include <fstream>
 #include <iterator>
 #include <limits>
-#include <map>
 #include <memory>
-#include <set>
 #include <span>
 #include <string>
 #include <tuple>
 #include <vector>
 
+#include <ankerl/unordered_dense.h>
 #include <gtest/gtest.h>
 
 #include "engrave/src/api/handles.h"
@@ -873,7 +872,7 @@ TEST(Edit, ReducesNoteEntryTickAndDurationBeforeSplittingRests) {
 
 TEST(Edit, InstrumentCatalogMatchesAddedParts) {
     const auto catalog = g_engine->instruments();
-    std::set<std::string> ids;
+    ankerl::unordered_dense::set<std::string> ids;
     for (const auto &entry : catalog) EXPECT_TRUE(ids.insert(entry.id).second) << entry.id;
 
     auto made = g_engine->create_document({.template_id = "Treble_Clef"});

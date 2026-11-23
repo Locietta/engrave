@@ -4,13 +4,13 @@
 #include <cstdint>
 #include <filesystem>
 #include <functional>
-#include <map>
 #include <string>
 #include <string_view>
 #include <vector>
 
 #include "engrave/src/api/batch.h"
 #include "engrave/src/score/json.h"
+#include "global/flatmap.h"
 #include <engrave/engrave.h>
 
 namespace mu::engraving {
@@ -29,16 +29,16 @@ using music::parse_json;
 
 // Native interop observations around a committed edit.
 struct Fingerprint {
-    std::map<std::string, std::string> files; // every file of an in-memory MSCZ: scores, excerpts, styles
-    std::string semantic;                     // the semantic dump (no layout, no ids)
-    std::vector<std::string> ids;             // "<id> <type> <score>/<tick>/<track>", sorted
+    muse::FlatMap<std::string, std::string> files; // every file of an in-memory MSCZ: scores, excerpts, styles
+    std::string semantic;                          // the semantic dump (no layout, no ids)
+    std::vector<std::string> ids;                  // "<id> <type> <score>/<tick>/<track>", sorted
     std::uint64_t revision = 0;
     int engine_error = 0;
-    std::vector<std::string> layout;            // per laid-out score: its pages and segment positions,
-                                                // equal to within a unit of 1/1200 inch
-    std::string externals;                      // MIDI mapping, repeats, meta tags, selection, input state
-    std::size_t registered = 0;                 // entries in the id register
-    std::map<std::string, std::size_t> objects; // what the document owns (not layout's), per type
+    std::vector<std::string> layout;                 // per laid-out score: its pages and segment positions,
+                                                     // equal to within a unit of 1/1200 inch
+    std::string externals;                           // MIDI mapping, repeats, meta tags, selection, input state
+    std::size_t registered = 0;                      // entries in the id register
+    muse::FlatMap<std::string, std::size_t> objects; // what the document owns (not layout's), per type
 };
 
 Fingerprint fingerprint(Document &document);

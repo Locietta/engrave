@@ -16,13 +16,12 @@
 #include <filesystem>
 #include <format>
 #include <iterator>
-#include <map>
 #include <memory>
-#include <set>
 #include <string>
 #include <string_view>
 #include <vector>
 
+#include <amc/flatset.hpp>
 #include <gtest/gtest.h>
 
 #include "core_test_env.h"
@@ -38,6 +37,7 @@
 #include "engraving/dom/segment.h"
 #include "engraving/dom/slur.h"
 #include "engraving/dom/spanner.h"
+#include "global/flatmap.h"
 #include "importexport/guitarpro/internal/importgtp.h"
 #include <engrave/engrave.h>
 
@@ -52,7 +52,7 @@ constexpr std::string_view score_extensions[] = {".gp", ".gp3", ".gp4", ".gp5", 
 /// directory opens: the 17 .gpx files with reference scores used to be rejected by the
 /// GPX decoder's length guard (it copied a back-reference only up to its offset and then
 /// reached end of input one or two bytes short of the declared length).
-const std::set<std::string> malformed_fixtures = {
+const amc::FlatSet<std::string> malformed_fixtures = {
     "midi-channel-out-of-range.gp4",
     "unknown-header.gp4",
     "unknown-version-string.gp4",
@@ -102,7 +102,7 @@ TEST(GuitarProImport, EveryTestDataFileOpensOrReturnsAnError) {
     ASSERT_GE(files.size(), 240u) << "the Guitar Pro test data is missing under " << test_data();
 
     std::vector<std::string> errors;
-    std::map<std::string, std::string> rejected;
+    muse::FlatMap<std::string, std::string> rejected;
     std::size_t opened = 0;
     for (const std::filesystem::path &path : files) {
         SCOPED_TRACE(path.filename().string());

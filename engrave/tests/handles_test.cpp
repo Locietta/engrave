@@ -1,3 +1,6 @@
+#include <ankerl/unordered_dense.h>
+#include <gtl/btree.hpp>
+
 #include "engraving/dom/dummyparent.h"
 #include "engraving/dom/guitarbend.h"
 #include "handles_test_fixture.h"
@@ -31,7 +34,7 @@ TEST(Handles, PageQueriesFollowRangeLayoutAndOutputDiscard) {
 
 TEST(Handles, H1Inventory) {
     ASSERT_FALSE(g_corpus.empty());
-    std::map<std::string, Evidence> evidence;
+    gtl::btree_map<std::string, Evidence> evidence;
 
     for (const auto &path : g_corpus) {
         auto document = open_path(path);
@@ -43,7 +46,7 @@ TEST(Handles, H1Inventory) {
     // Not only what the corpus shows: a type an operation can create is measured too,
     // so adding an Add pair or a creating operation fails here until the inventory says
     // what class the new type has.
-    std::set<std::string> created;
+    ankerl::unordered_dense::set<std::string> created;
     if (auto document = created_types_document(created)) {
         SCOPED_TRACE("types created through the edit API");
         inventory_evidence(*document, "created", evidence);
@@ -55,7 +58,7 @@ TEST(Handles, H1Inventory) {
     }
     ASSERT_FALSE(evidence.empty()) << "no corpus score opens";
 
-    std::map<std::string, std::string> observed;
+    gtl::btree_map<std::string, std::string> observed;
     for (const auto &[type, row] : evidence) {
         if (type == "Segment") {
             observed[type] = class_name(IdClass::ADDRESS);
@@ -244,7 +247,7 @@ TEST(Handles, H5bRemovingAPartLeavesNoId) {
     EXPECT_FALSE(export_mscz(*document).empty());
     expect_inv(*document);
 
-    std::set<std::string> seen;
+    ankerl::unordered_dense::set<std::string> seen;
     for (const engrave::LiveId &entry : engrave::live_ids(master)) seen.insert(engrave::to_string(entry.id));
 
     const mu::engraving::InstrumentIndex index = mu::engraving::search_template_index_for_id(muse::String(u"piano"));
@@ -362,9 +365,9 @@ TEST(Handles, H9DuplicateIdsInTheInput) {
     // (a) two elements of the same type claim one id, (b) two types share one id.  Only
     // ids the file itself carries can be duplicated.
     const auto spans = eid_spans(input.master);
-    std::set<std::string> in_file;
+    ankerl::unordered_dense::set<std::string> in_file;
     for (const auto &[start, end] : spans) in_file.insert(input.master.substr(start, end - start));
-    std::map<std::string, std::vector<std::string>> by_type;
+    gtl::btree_map<std::string, std::vector<std::string>> by_type;
     for (const auto &[id, type] : types) {
         if (in_file.contains(id)) by_type[type].push_back(id);
     }
@@ -571,7 +574,7 @@ TEST(Handles, H11StaleHandles) {
     auto other = open_path(corpus_file({".musicxml"}));
     ASSERT_TRUE(other);
     MasterScore &other_master = master_of(*other);
-    std::set<std::string> other_texts;
+    ankerl::unordered_dense::set<std::string> other_texts;
     for (const engrave::LiveId &entry : engrave::live_ids(other_master)) other_texts.insert(engrave::to_string(entry.id));
     int checked = 0;
     for (const engrave::LiveId &entry : same_ids) {

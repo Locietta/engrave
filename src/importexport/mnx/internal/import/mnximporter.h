@@ -21,14 +21,14 @@
  */
 #pragma once
 
-#include <map>
 #include <optional>
 #include <stack>
 #include <string>
 #include <string_view>
-#include <unordered_map>
 #include <variant>
 #include <vector>
+
+#include <ankerl/unordered_dense.h>
 
 #include "engraving/types/propertyvalue.h"
 #include "engraving/types/types.h"
@@ -70,7 +70,7 @@ struct MnxImporter {
     engraving::Score *score() const { return score_; }
 
 private:
-    using GraceNeighborsMap = std::unordered_map<const model::Grace *, std::pair<engraving::ChordRest *, engraving::ChordRest *>>;
+    using GraceNeighborsMap = ankerl::unordered_dense::map<const model::Grace *, std::pair<engraving::ChordRest *, engraving::ChordRest *>>;
 
     const model::Root &root() const { return document_.root; }
 
@@ -167,15 +167,16 @@ private:
     void create_hairpin(const model::DynamicGroup &mnx_hairpin, engraving::Segment *segment, size_t part_index,
                         engraving::track_idx_t cur_track_idx, bool use_voice_assignment);
 
-    // ordered map avoids need for hash on std::pair
-    std::map<std::pair<size_t, int>, engraving::staff_idx_t> mnx_part_staff_to_staff_;
-    std::unordered_map<engraving::staff_idx_t, size_t> staff_to_mnx_part_;
-    std::unordered_map<size_t, engraving::Fraction> mnx_meas_to_tick_;
-    std::unordered_map<engraving::staff_idx_t, std::unordered_map<std::string, std::pair<engraving::Fraction, engraving::Fraction>>>
+    ankerl::unordered_dense::map<std::pair<size_t, int>, engraving::staff_idx_t> mnx_part_staff_to_staff_;
+    ankerl::unordered_dense::map<engraving::staff_idx_t, size_t> staff_to_mnx_part_;
+    ankerl::unordered_dense::map<size_t, engraving::Fraction> mnx_meas_to_tick_;
+    ankerl::unordered_dense::map<engraving::staff_idx_t,
+                                 ankerl::unordered_dense::map<std::string, std::pair<engraving::Fraction, engraving::Fraction>>>
         lyric_line_usage_;
-    std::unordered_map<engraving::staff_idx_t, std::unordered_map<std::string, int>> lyric_line_to_verse_;
+    ankerl::unordered_dense::map<engraving::staff_idx_t, ankerl::unordered_dense::map<std::string, int>> lyric_line_to_verse_;
     // (part, measure) -> the track each imported sequence went to
-    std::map<std::pair<size_t, size_t>, std::unordered_map<const model::Sequence *, engraving::track_idx_t>> part_measure_sequence_tracks_;
+    ankerl::unordered_dense::map<std::pair<size_t, size_t>, ankerl::unordered_dense::map<const model::Sequence *, engraving::track_idx_t>>
+        part_measure_sequence_tracks_;
     // Each part's transposition with keyFifthsFlipAt replaced by the value MuseScore can represent.
     std::vector<std::optional<model::PartTransposition>> part_transpositions_;
 
@@ -187,10 +188,10 @@ private:
 
     std::vector<GroupBarlineOverrideSpan> group_barline_overrides_;
     // event tracking
-    std::unordered_map<const model::Event *, engraving::ChordRest *> mnx_event_to_cr_;
-    std::unordered_map<const model::Note *, engraving::Note *> mnx_note_to_note_;
-    std::unordered_map<const model::KitNote *, engraving::Note *> mnx_kit_note_to_note_;
-    std::map<std::pair<size_t, std::string>, int> mnx_kit_component_to_midi_;
+    ankerl::unordered_dense::map<const model::Event *, engraving::ChordRest *> mnx_event_to_cr_;
+    ankerl::unordered_dense::map<const model::Note *, engraving::Note *> mnx_note_to_note_;
+    ankerl::unordered_dense::map<const model::KitNote *, engraving::Note *> mnx_kit_note_to_note_;
+    ankerl::unordered_dense::map<std::pair<size_t, std::string>, int> mnx_kit_component_to_midi_;
 
     bool use_beams_{};              // if true, only events in mnx beams arrays should be beamed.
     bool use_accidental_display_{}; // if true, all accidentals are force hide or show.
