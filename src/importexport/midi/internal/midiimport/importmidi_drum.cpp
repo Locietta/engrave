@@ -21,8 +21,10 @@
  */
 #include "importmidi_drum.h"
 
-#include <set>
 #include <vector>
+
+#include <ankerl/unordered_dense.h>
+#include <gtl/btree.hpp>
 
 #include "../midishared/midifile.h"
 #include "engraving/dom/drumset.h"
@@ -32,11 +34,12 @@
 #include "importmidi_chord.h"
 #include "importmidi_inner.h"
 #include "importmidi_operations.h"
+#include "importmidi_timeline.h"
 
 namespace mu::iex::midi { namespace MidiDrum {
 #ifndef NDEBUG
 
-bool have_non_zero_voices(const std::multimap<ReducedFraction, MidiChord> &chords) {
+bool have_non_zero_voices(const MidiTimeline<MidiChord> &chords) {
     for (const auto &chord_event : chords) {
         if (chord_event.second.voice != 0) {
             return false;
@@ -47,8 +50,8 @@ bool have_non_zero_voices(const std::multimap<ReducedFraction, MidiChord> &chord
 
 #endif
 
-void split_chord(std::multimap<ReducedFraction, MidiChord>::iterator &chord_it, const std::set<int> &notes_to_move,
-                 std::multimap<ReducedFraction, MidiChord> &chords) {
+void split_chord(MidiTimeline<MidiChord>::iterator &chord_it, const ankerl::unordered_dense::set<int> &notes_to_move,
+                 MidiTimeline<MidiChord> &chords) {
     MidiChord &chord = chord_it->second;
     auto &notes = chord.notes;
 
@@ -76,7 +79,7 @@ void split_chord(std::multimap<ReducedFraction, MidiChord>::iterator &chord_it, 
     }
 }
 
-void split_drum_voices(std::multimap<int, MTrack> &tracks) {
+void split_drum_voices(gtl::btree_multimap<int, MTrack> &tracks) {
     for (auto &track : tracks) {
         MTrack &mtrack = track.second;
         auto &chords = mtrack.chords;
@@ -97,7 +100,7 @@ void split_drum_voices(std::multimap<int, MTrack> &tracks) {
         for (auto chord_it = chords.begin(); chord_it != chords.end(); ++chord_it) {
             auto &notes = chord_it->second.notes;
             // search for the drumset pitches with voice = 1
-            std::set<int> notes_to_move;
+            ankerl::unordered_dense::set<int> notes_to_move;
             for (int i = 0; i != static_cast<int>(notes.size()); ++i) {
                 const int pitch = notes[i].pitch;
                 if (drumset->is_valid(pitch) && drumset->voice(pitch) == 1) {
@@ -113,7 +116,7 @@ void split_drum_voices(std::multimap<int, MTrack> &tracks) {
     }
 }
 
-MTrack &get_new_track(std::map<int, MTrack> &new_tracks, const MTrack &drum_track, int pitch) {
+MTrack &get_new_track(gtl::btree_map<int, MTrack> &new_tracks, const MTrack &drum_track, int pitch) {
     auto new_track_it = new_tracks.find(pitch);
     if (new_track_it == new_tracks.end()) {
         new_track_it = new_tracks.insert({pitch, drum_track}).first;
@@ -129,8 +132,8 @@ MTrack &get_new_track(std::map<int, MTrack> &new_tracks, const MTrack &drum_trac
     return new_track_it->second;
 }
 
-std::map<int, MTrack> split_drum_track(const MTrack &drum_track) {
-    std::map<int, MTrack> new_tracks; // <percussion note pitch, track>
+gtl::btree_map<int, MTrack> split_drum_track(const MTrack &drum_track) {
+    gtl::btree_map<int, MTrack> new_tracks; // <percussion note pitch, track>
     if (drum_track.chords.empty()) {
         return new_tracks;
     }
@@ -151,22 +154,28 @@ std::map<int, MTrack> split_drum_track(const MTrack &drum_track) {
     return new_tracks;
 }
 
-void split_drum_tracks(std::multimap<int, MTrack> &tracks) {
-    for (auto it = tracks.begin(); it != tracks.end(); ++it) {
-        if (!it->second.mtrack->drum_track() || it->second.chords.empty()) {
+void split_drum_tracks(gtl::btree_multimap<int, MTrack> &tracks) {
+    gtl::btree_multimap<int, MTrack> split;
+    const auto &opers = midi_import_operations.data()->track_opers;
+    for (auto it = tracks.begin(); it != tracks.end();) {
+        const int key = it->first;
+        auto &track = it->second;
+        if (!track.mtrack->drum_track() || track.chords.empty() || !opers.do_staff_split.value(track.index_of_operation)) {
+            split.emplace(key, std::move(track));
+            ++it;
             continue;
         }
-        const auto &opers = midi_import_operations.data()->track_opers;
-        if (!opers.do_staff_split.value(it->second.index_of_operation)) {
-            continue;
+        auto drums = split_drum_track(track);
+        ++it;
+        while (it != tracks.end() && it->first == key) {
+            split.emplace(key, std::move(it->second));
+            ++it;
         }
-        const std::map<int, MTrack> new_tracks = split_drum_track(it->second);
-        const int track_index = it->first;
-        it = tracks.erase(it);
-        for (auto i = new_tracks.rbegin(); i != new_tracks.rend(); ++i) {
-            it = tracks.insert({track_index, i->second});
+        for (auto drum = drums.rbegin(); drum != drums.rend(); ++drum) {
+            split.emplace(key, drum->second);
         }
     }
+    tracks.swap(split);
 }
 
 void set_bracket(engraving::Staff *&staff, int &counter) {

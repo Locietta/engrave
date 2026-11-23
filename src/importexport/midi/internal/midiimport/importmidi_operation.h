@@ -22,8 +22,6 @@
 #ifndef IMPORTMIDI_OPERATION_H
 #define IMPORTMIDI_OPERATION_H
 
-#include <set>
-
 #include "importmidi_fraction.h"
 
 namespace mu::iex::midi {

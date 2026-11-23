@@ -31,6 +31,7 @@
 #include "global/types/string.h"
 #include "importmidi_chord.h"
 #include "importmidi_operations.h"
+#include "importmidi_timeline.h"
 #include "log.h"
 
 namespace mu::iex::midi {
@@ -53,7 +54,7 @@ MTrack &MTrack::operator=(MTrack other) {
     std::swap(had_initial_notes, other.had_initial_notes);
     std::swap(volumes, other.volumes);
     std::swap(chords, other.chords);
-    update_tuplets_from_chords();
+    std::swap(tuplets, other.tuplets);
 
     return *this;
 }
@@ -74,7 +75,7 @@ void MTrack::update_tuplets_from_chords() {
     }
 }
 
-void MTrack::update_tuplet(std::multimap<ReducedFraction, MidiTuplet::TupletData>::iterator &tuplet_it) {
+void MTrack::update_tuplet(MidiTimeline<MidiTuplet::TupletData>::iterator &tuplet_it) {
     auto found_tuplet = tuplets.end();
     const auto found_tuplets_range = tuplets.equal_range(tuplet_it->first);
     for (auto it = found_tuplets_range.first; it != found_tuplets_range.second; ++it) {

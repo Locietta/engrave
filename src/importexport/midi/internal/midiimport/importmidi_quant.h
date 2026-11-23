@@ -22,7 +22,10 @@
 #ifndef IMPORTMIDI_QUANT_H
 #define IMPORTMIDI_QUANT_H
 
+#include <gtl/btree.hpp>
+
 #include "importmidi_operation.h"
+#include "importmidi_timeline.h"
 
 namespace mu::engraving {
 struct TimeSigMap;
@@ -38,8 +41,7 @@ ReducedFraction quant_value_to_fraction(MidiOperations::QuantValue quant_value);
 MidiOperations::QuantValue fraction_to_quant_value(const ReducedFraction &fraction);
 MidiOperations::QuantValue default_quant_value_from_preferences();
 
-ReducedFraction find_quant_for_range(const std::multimap<ReducedFraction, MidiChord>::const_iterator &beg,
-                                     const std::multimap<ReducedFraction, MidiChord>::const_iterator &end,
+ReducedFraction find_quant_for_range(const MidiTimeline<MidiChord>::const_iterator &beg, const MidiTimeline<MidiChord>::const_iterator &end,
                                      const ReducedFraction &basic_quant);
 
 ReducedFraction find_quantized_tuplet_chord_on_time(const std::pair<const ReducedFraction, MidiChord> &chord,
@@ -78,7 +80,7 @@ ReducedFraction find_off_time_tuplet_quant_error(const ReducedFraction &on_time,
 ReducedFraction find_off_time_quant_error(const std::pair<const ReducedFraction, MidiChord> &chord, const ReducedFraction &off_time,
                                           const ReducedFraction &basic_quant);
 
-void set_if_human_performance(const std::multimap<int, MTrack> &tracks, engraving::TimeSigMap *sigmap);
+void set_if_human_performance(const gtl::btree_multimap<int, MTrack> &tracks, engraving::TimeSigMap *sigmap);
 
 ReducedFraction quantize_value(const ReducedFraction &value, const ReducedFraction &quant);
 
@@ -86,8 +88,7 @@ ReducedFraction quant_for_len(const ReducedFraction &note_len, const ReducedFrac
 
 ReducedFraction quantize_to_large(const ReducedFraction &time, const ReducedFraction &quant);
 
-void quantize_chords(std::multimap<ReducedFraction, MidiChord> &chords, const engraving::TimeSigMap *sigmap,
-                     const ReducedFraction &basic_quant);
+void quantize_chords(MidiTimeline<MidiChord> &chords, const engraving::TimeSigMap *sigmap, const ReducedFraction &basic_quant);
 } // namespace Quantize
 } // namespace mu::iex::midi
 

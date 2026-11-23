@@ -25,8 +25,10 @@
 #include <cmath>
 #include <cstdlib>
 #include <deque>
-#include <set>
 #include <vector>
+
+#include <ankerl/unordered_dense.h>
+#include <gtl/btree.hpp>
 
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/sig.h"
@@ -37,6 +39,7 @@
 #include "importmidi_meter.h"
 #include "importmidi_operations.h"
 #include "importmidi_tempo.h"
+#include "importmidi_timeline.h"
 #include "importmidi_tuplet.h"
 #include "importmidi_voice.h"
 #include "log.h"
@@ -107,8 +110,8 @@ MidiOperations::QuantValue default_quant_value_from_preferences() {
     return quant_value;
 }
 
-ReducedFraction shortest_quantized_note_in_range(const std::multimap<ReducedFraction, MidiChord>::const_iterator &beg,
-                                                 const std::multimap<ReducedFraction, MidiChord>::const_iterator &end) {
+ReducedFraction shortest_quantized_note_in_range(const MidiTimeline<MidiChord>::const_iterator &beg,
+                                                 const MidiTimeline<MidiChord>::const_iterator &end) {
     const auto division = ReducedFraction::from_ticks(Constants::division);
     auto min_duration = division;
     for (auto it = beg; it != end; ++it) {
@@ -306,8 +309,7 @@ ReducedFraction find_off_time_quant_error(const std::pair<const ReducedFraction,
     return (off_time - q_off_time).abs_value();
 }
 
-ReducedFraction find_quant_for_range(const std::multimap<ReducedFraction, MidiChord>::const_iterator &beg,
-                                     const std::multimap<ReducedFraction, MidiChord>::const_iterator &end,
+ReducedFraction find_quant_for_range(const MidiTimeline<MidiChord>::const_iterator &beg, const MidiTimeline<MidiChord>::const_iterator &end,
                                      const ReducedFraction &basic_quant) {
     const auto shortest_len = shortest_quantized_note_in_range(beg, end);
     return quant_for_len(shortest_len, basic_quant);
@@ -315,7 +317,7 @@ ReducedFraction find_quant_for_range(const std::multimap<ReducedFraction, MidiCh
 
 //--------------------------------------------------------------------------------------------
 
-bool is_human_performance(const std::multimap<ReducedFraction, MidiChord> &chords, const TimeSigMap *sigmap) {
+bool is_human_performance(const MidiTimeline<MidiChord> &chords, const TimeSigMap *sigmap) {
     if (chords.empty()) {
         return false;
     }
@@ -324,7 +326,7 @@ bool is_human_performance(const std::multimap<ReducedFraction, MidiChord> &chord
     int matches = 0;
     int count = 0;
 
-    std::set<ReducedFraction> used_on_times;
+    gtl::btree_set<ReducedFraction> used_on_times;
 
     for (const auto &chord : chords) {
         const auto quant = std::min(basic_quant, quant_for_len(MChord::max_note_len(chord), basic_quant));
@@ -352,8 +354,8 @@ bool is_human_performance(const std::multimap<ReducedFraction, MidiChord> &chord
     return matched < tol_value;
 }
 
-std::multimap<int, MTrack> get_track_with_all_chords(const std::multimap<int, MTrack> &tracks) {
-    std::multimap<int, MTrack> single_track{{0, MTrack()}};
+gtl::btree_multimap<int, MTrack> get_track_with_all_chords(const gtl::btree_multimap<int, MTrack> &tracks) {
+    gtl::btree_multimap<int, MTrack> single_track{{0, MTrack()}};
     auto &all_chords = single_track.begin()->second.chords;
     for (const auto &track : tracks) {
         const MTrack &t = track.second;
@@ -364,7 +366,7 @@ std::multimap<int, MTrack> get_track_with_all_chords(const std::multimap<int, MT
     return single_track;
 }
 
-void set_if_human_performance(const std::multimap<int, MTrack> &tracks, TimeSigMap *sigmap) {
+void set_if_human_performance(const gtl::btree_multimap<int, MTrack> &tracks, TimeSigMap *sigmap) {
     auto all_chords_track = get_track_with_all_chords(tracks);
     MChord::collect_chords(all_chords_track, {2, 1}, {1, 2});
     const MTrack &track = all_chords_track.begin()->second;
@@ -394,9 +396,8 @@ void set_if_human_performance(const std::multimap<int, MTrack> &tracks, TimeSigM
 
 // remove small intersection with the next chord
 
-void preserve_legato(ReducedFraction &off_time, bool is_off_time_in_tuplet,
-                     const std::multimap<ReducedFraction, MidiChord>::iterator &chord_it,
-                     const std::multimap<ReducedFraction, MidiChord> &chords, const ReducedFraction &basic_quant) {
+void preserve_legato(ReducedFraction &off_time, bool is_off_time_in_tuplet, const MidiTimeline<MidiChord>::iterator &chord_it,
+                     const MidiTimeline<MidiChord> &chords, const ReducedFraction &basic_quant) {
     auto it = std::next(chord_it);
     while (it != chords.end() && it->second.voice != chord_it->second.voice) {
         ++it;
@@ -421,10 +422,11 @@ void preserve_legato(ReducedFraction &off_time, bool is_off_time_in_tuplet,
     }
 }
 
-std::pair<ReducedFraction, ReducedFraction>
-quantize_off_time_for_tuplet(const ReducedFraction &note_off_time, const std::multimap<ReducedFraction, MidiChord>::iterator &chord_it,
-                             const std::multimap<ReducedFraction, MidiChord> &chords, const ReducedFraction &basic_quant,
-                             const MidiTuplet::TupletData &tuplet) {
+std::pair<ReducedFraction, ReducedFraction> quantize_off_time_for_tuplet(const ReducedFraction &note_off_time,
+                                                                         const MidiTimeline<MidiChord>::iterator &chord_it,
+                                                                         const MidiTimeline<MidiChord> &chords,
+                                                                         const ReducedFraction &basic_quant,
+                                                                         const MidiTuplet::TupletData &tuplet) {
     assert(chord_it->first < note_off_time);
 
     const auto tuplet_ratio = MidiTuplet::tuplet_limits(tuplet.tuplet_number).ratio;
@@ -446,9 +448,10 @@ quantize_off_time_for_tuplet(const ReducedFraction &note_off_time, const std::mu
     return {off_time, quant};
 }
 
-std::pair<ReducedFraction, ReducedFraction>
-quantize_off_time_for_non_tuplet(const ReducedFraction &note_off_time, const std::multimap<ReducedFraction, MidiChord>::iterator &chord_it,
-                                 const std::multimap<ReducedFraction, MidiChord> &chords, const ReducedFraction &basic_quant) {
+std::pair<ReducedFraction, ReducedFraction> quantize_off_time_for_non_tuplet(const ReducedFraction &note_off_time,
+                                                                             const MidiTimeline<MidiChord>::iterator &chord_it,
+                                                                             const MidiTimeline<MidiChord> &chords,
+                                                                             const ReducedFraction &basic_quant) {
     assert(chord_it->first < note_off_time);
 
     const MidiChord &chord = chord_it->second;
@@ -500,7 +503,7 @@ struct QuantPos {
 };
 
 struct QuantData {
-    std::multimap<ReducedFraction, MidiChord>::const_iterator chord;
+    MidiTimeline<MidiChord>::const_iterator chord;
     ReducedFraction quant;
     ReducedFraction quant_for_len;
     ReducedFraction chord_range_start;
@@ -515,7 +518,7 @@ struct QuantData {
 
 #ifndef NDEBUG
 
-bool are_all_voices_same(const std::deque<std::multimap<ReducedFraction, MidiChord>::const_iterator> &chords) {
+bool are_all_voices_same(const std::deque<MidiTimeline<MidiChord>::const_iterator> &chords) {
     auto it = chords.begin();
     const int voice = (*it)->second.voice;
     for (++it; it != chords.end(); ++it) {
@@ -526,8 +529,8 @@ bool are_all_voices_same(const std::deque<std::multimap<ReducedFraction, MidiCho
     return true;
 }
 
-bool are_chords_different(const std::deque<std::multimap<ReducedFraction, MidiChord>::const_iterator> &chords) {
-    std::set<const std::pair<const ReducedFraction, MidiChord> *> chord_set;
+bool are_chords_different(const std::deque<MidiTimeline<MidiChord>::const_iterator> &chords) {
+    ankerl::unordered_dense::set<const std::pair<const ReducedFraction, MidiChord> *> chord_set;
 
     for (const auto &chord : chords) {
         const auto it = chord_set.find(&*chord);
@@ -555,8 +558,7 @@ bool is_tuplet_range_correct(const MidiTuplet::TupletData &tuplet, const Reduced
     return range_start == tuplet.on_time && range_end == tuplet.on_time + tuplet.len;
 }
 
-void check_off_time(const MidiNote &note, const std::multimap<ReducedFraction, MidiChord>::iterator &chord_it,
-                    const std::multimap<ReducedFraction, MidiChord> &chords) {
+void check_off_time(const MidiNote &note, const MidiTimeline<MidiChord>::iterator &chord_it, const MidiTimeline<MidiChord> &chords) {
     assert(note.off_time - chord_it->first >= MChord::min_allowed_duration());
 
     if (note.is_in_tuplet) {
@@ -606,8 +608,8 @@ void check_off_time(const MidiNote &note, const std::multimap<ReducedFraction, M
     }
 }
 
-bool are_on_time_values_different(const std::multimap<ReducedFraction, MidiChord> &chords) {
-    std::set<std::tuple<ReducedFraction, int, int>> on_time_voices_bars;
+bool are_on_time_values_different(const MidiTimeline<MidiChord> &chords) {
+    gtl::btree_set<std::tuple<ReducedFraction, int, int>> on_time_voices_bars;
     for (const auto &chord : chords) {
         const auto tuple = std::make_tuple(chord.first, chord.second.voice, chord.second.bar_index);
         if (on_time_voices_bars.find(tuple) == on_time_voices_bars.end()) {
@@ -619,8 +621,8 @@ bool are_on_time_values_different(const std::multimap<ReducedFraction, MidiChord
     return true;
 }
 
-bool are_tuplet_chords_consistent(const std::multimap<ReducedFraction, MidiChord> &chords) {
-    std::multimap<ReducedFraction, MidiTuplet::TupletData>::iterator prev_tuplet;
+bool are_tuplet_chords_consistent(const MidiTimeline<MidiChord> &chords) {
+    MidiTimeline<MidiTuplet::TupletData>::iterator prev_tuplet;
     bool prev_tuplet_set = false;
     bool is_in_tuplet = false;
     const int limit = MidiVoice::voice_limit();
@@ -647,7 +649,7 @@ bool are_tuplet_chords_consistent(const std::multimap<ReducedFraction, MidiChord
     return true;
 }
 
-bool are_tuplet_chords_consistent(const std::deque<std::multimap<ReducedFraction, MidiChord>::const_iterator> &chords) {
+bool are_tuplet_chords_consistent(const std::deque<MidiTimeline<MidiChord>::const_iterator> &chords) {
     auto it = chords.begin();
     const bool is_in_tuplet = (*it)->second.is_in_tuplet;
     for (it = std::next(it); it != chords.end(); ++it) {
@@ -661,7 +663,7 @@ bool are_tuplet_chords_consistent(const std::deque<std::multimap<ReducedFraction
     return true;
 }
 
-bool are_chords_sorted_by_on_time(const std::deque<std::multimap<ReducedFraction, MidiChord>::const_iterator> &chords) {
+bool are_chords_sorted_by_on_time(const std::deque<MidiTimeline<MidiChord>::const_iterator> &chords) {
     for (size_t i = 0; i != chords.size() - 1; ++i) {
         if (chords[i]->first >= chords[i + 1]->first) {
             return false;
@@ -690,7 +692,7 @@ ReducedFraction quantize_to_small(const ReducedFraction &time, const ReducedFrac
     return quantized;
 }
 
-void find_metrical_levels(std::vector<QuantData> &data, const std::deque<std::multimap<ReducedFraction, MidiChord>::const_iterator> &chords,
+void find_metrical_levels(std::vector<QuantData> &data, const std::deque<MidiTimeline<MidiChord>::const_iterator> &chords,
                           const ReducedFraction &tuplet_quant, const ReducedFraction &bar_start, const ReducedFraction &bar_fraction) {
     const auto divs_info = (tuplet_quant != ReducedFraction(-1, 1)) ?
                                Meter::division_info(bar_fraction, {(*chords.begin())->second.tuplet->second}) :
@@ -801,7 +803,7 @@ void find_chord_range_starts(std::vector<QuantData> &data, const ReducedFraction
     }
 }
 
-void find_quants(std::vector<QuantData> &data, const std::deque<std::multimap<ReducedFraction, MidiChord>::const_iterator> &chords,
+void find_quants(std::vector<QuantData> &data, const std::deque<MidiTimeline<MidiChord>::const_iterator> &chords,
                  const ReducedFraction &range_start, const ReducedFraction &range_end, const ReducedFraction &basic_quant,
                  const ReducedFraction &tuplet_quant, const ReducedFraction &bar_fraction) {
     for (auto it = chords.begin(); it != chords.end(); ++it) {
@@ -840,7 +842,7 @@ void find_quants(std::vector<QuantData> &data, const std::deque<std::multimap<Re
     }
 }
 
-ReducedFraction find_tuplet_quant(const std::deque<std::multimap<ReducedFraction, MidiChord>::const_iterator> &chords) {
+ReducedFraction find_tuplet_quant(const std::deque<MidiTimeline<MidiChord>::const_iterator> &chords) {
     ReducedFraction tuplet_quant(-1, 1);
     if ((*chords.begin())->second.is_in_tuplet) {
         const MidiTuplet::TupletData &tuplet = (*chords.begin())->second.tuplet->second;
@@ -851,7 +853,7 @@ ReducedFraction find_tuplet_quant(const std::deque<std::multimap<ReducedFraction
     return tuplet_quant;
 }
 
-std::vector<QuantData> find_quant_data(const std::deque<std::multimap<ReducedFraction, MidiChord>::const_iterator> &chords,
+std::vector<QuantData> find_quant_data(const std::deque<MidiTimeline<MidiChord>::const_iterator> &chords,
                                        const ReducedFraction &range_start, const ReducedFraction &range_end,
                                        const ReducedFraction &basic_quant, const ReducedFraction &bar_start,
                                        const ReducedFraction &bar_fraction) {
@@ -872,7 +874,7 @@ std::vector<QuantData> find_quant_data(const std::deque<std::multimap<ReducedFra
 struct QuantInfo {
     ReducedFraction on_time;
     double penalty = 0.0;
-    std::multimap<ReducedFraction, MidiChord>::const_iterator chord;
+    MidiTimeline<MidiChord>::const_iterator chord;
 };
 
 int find_last_chord_position(const std::vector<QuantData> &quant_data) {
@@ -954,10 +956,11 @@ void apply_dynamic_programming(std::vector<QuantData> &quant_data) {
     }
 }
 
-void quantize_on_times_in_range(const std::deque<std::multimap<ReducedFraction, MidiChord>::const_iterator> &chords,
-                                std::map<const std::pair<const ReducedFraction, MidiChord> *, QuantInfo> &found_on_times,
-                                const ReducedFraction &range_start, const ReducedFraction &range_end, const ReducedFraction &basic_quant,
-                                const ReducedFraction &bar_start, const ReducedFraction &bar_fraction) {
+void quantize_on_times_in_range(
+    const std::deque<MidiTimeline<MidiChord>::const_iterator> &chords,
+    ankerl::unordered_dense::map<const std::pair<const ReducedFraction, MidiChord> *, QuantInfo> &found_on_times,
+    const ReducedFraction &range_start, const ReducedFraction &range_end, const ReducedFraction &basic_quant,
+    const ReducedFraction &bar_start, const ReducedFraction &bar_fraction) {
 #ifndef NDEBUG
     assert(!chords.empty());
     assert(are_all_voices_same(chords));
@@ -1004,7 +1007,7 @@ void quantize_on_times_in_range(const std::deque<std::multimap<ReducedFraction, 
 
 // input chords - sorted by onTime value
 
-void apply_tuplet_staccato(std::multimap<ReducedFraction, MidiChord> &chords) {
+void apply_tuplet_staccato(MidiTimeline<MidiChord> &chords) {
     for (auto chord_it = chords.begin(); chord_it != chords.end(); ++chord_it) {
         for (MidiNote &note : chord_it->second.notes) {
             if (note.is_in_tuplet && note.staccato) {
@@ -1018,7 +1021,7 @@ void apply_tuplet_staccato(std::multimap<ReducedFraction, MidiChord> &chords) {
     }
 }
 
-void quantize_off_times(std::multimap<ReducedFraction, MidiChord> &quantized_chords, const ReducedFraction &basic_quant) {
+void quantize_off_times(MidiTimeline<MidiChord> &quantized_chords, const ReducedFraction &basic_quant) {
     for (auto chord_it = quantized_chords.begin(); chord_it != quantized_chords.end(); ++chord_it) {
         MidiChord &chord = chord_it->second;
         // quantize off times
@@ -1043,10 +1046,9 @@ void quantize_off_times(std::multimap<ReducedFraction, MidiChord> &quantized_cho
     }
 }
 
-void add_chords_from_prev_range(std::deque<std::multimap<ReducedFraction, MidiChord>::const_iterator> &chords_to_quant,
-                                const std::multimap<ReducedFraction, MidiChord> &chords, bool currently_in_tuplet, int current_bar_index,
-                                int voice, const ReducedFraction &bar_start, const ReducedFraction &range_start,
-                                const ReducedFraction &basic_quant) {
+void add_chords_from_prev_range(std::deque<MidiTimeline<MidiChord>::const_iterator> &chords_to_quant, const MidiTimeline<MidiChord> &chords,
+                                bool currently_in_tuplet, int current_bar_index, int voice, const ReducedFraction &bar_start,
+                                const ReducedFraction &range_start, const ReducedFraction &basic_quant) {
     if (currently_in_tuplet) {
         return;
     }
@@ -1083,8 +1085,8 @@ void add_chords_from_prev_range(std::deque<std::multimap<ReducedFraction, MidiCh
     }
 }
 
-void quantize_on_times(const std::multimap<ReducedFraction, MidiChord> &chords,
-                       std::map<const std::pair<const ReducedFraction, MidiChord> *, QuantInfo> &found_on_times,
+void quantize_on_times(const MidiTimeline<MidiChord> &chords,
+                       ankerl::unordered_dense::map<const std::pair<const ReducedFraction, MidiChord> *, QuantInfo> &found_on_times,
                        const ReducedFraction &basic_quant, const TimeSigMap *sigmap) {
     int max_voice = 0;
     for (int voice = 0; voice <= max_voice; ++voice) {
@@ -1094,7 +1096,7 @@ void quantize_on_times(const std::multimap<ReducedFraction, MidiChord> &chords,
         ReducedFraction bar_fraction(-1, 1);
         ReducedFraction bar_start(-1, 1);
         bool currently_in_tuplet = false;
-        std::deque<std::multimap<ReducedFraction, MidiChord>::const_iterator> chords_to_quant;
+        std::deque<MidiTimeline<MidiChord>::const_iterator> chords_to_quant;
 
         for (auto chord_it = chords.begin(); chord_it != chords.end(); ++chord_it) {
             assert(MChord::min_note_len(*chord_it) >= MChord::min_allowed_duration());
@@ -1169,11 +1171,16 @@ void move_off_times(const ReducedFraction &old_on_time, const ReducedFraction &n
     }
 }
 
-std::multimap<ReducedFraction, MidiChord>
-find_quantized_chords(const std::map<const std::pair<const ReducedFraction, MidiChord> *, QuantInfo> &found_on_times) {
-    std::multimap<ReducedFraction, MidiChord> quantized_chords;
-    for (const auto &f : found_on_times) {
-        const QuantInfo &i = f.second;
+MidiTimeline<MidiChord>
+find_quantized_chords(const MidiTimeline<MidiChord> &source,
+                      const ankerl::unordered_dense::map<const std::pair<const ReducedFraction, MidiChord> *, QuantInfo> &found_on_times) {
+    MidiTimeline<MidiChord> quantized_chords;
+    for (const auto &entry : source) {
+        const auto pos = found_on_times.find(&entry);
+        if (pos == found_on_times.end()) {
+            continue;
+        }
+        const QuantInfo &i = pos->second;
         const MidiChord &chord = i.chord->second;
 
         auto found = quantized_chords.end();
@@ -1209,7 +1216,7 @@ find_quantized_chords(const std::map<const std::pair<const ReducedFraction, Midi
     return quantized_chords;
 }
 
-void remove_useless_tuplet_references(std::multimap<ReducedFraction, MidiChord> &chords) {
+void remove_useless_tuplet_references(MidiTimeline<MidiChord> &chords) {
     for (auto &chord : chords) {
         if (chord.second.is_in_tuplet) {
             const auto &tuplet = chord.second.tuplet->second;
@@ -1228,7 +1235,7 @@ void remove_useless_tuplet_references(std::multimap<ReducedFraction, MidiChord> 
     }
 }
 
-void quantize_chords(std::multimap<ReducedFraction, MidiChord> &chords, const TimeSigMap *sigmap, const ReducedFraction &basic_quant) {
+void quantize_chords(MidiTimeline<MidiChord> &chords, const TimeSigMap *sigmap, const ReducedFraction &basic_quant) {
 #ifndef NDEBUG
     assert(MidiTuplet::are_tuplet_references_valid(chords));
     assert(are_on_time_values_different(chords));
@@ -1237,9 +1244,9 @@ void quantize_chords(std::multimap<ReducedFraction, MidiChord> &chords, const Ti
     assert(MChord::are_bar_indexes_successive(chords));
 #endif
     apply_tuplet_staccato(chords); // apply staccato for tuplet off times
-    std::map<const std::pair<const ReducedFraction, MidiChord> *, QuantInfo> found_on_times;
+    ankerl::unordered_dense::map<const std::pair<const ReducedFraction, MidiChord> *, QuantInfo> found_on_times;
     quantize_on_times(chords, found_on_times, basic_quant, sigmap);
-    auto quantized_chords = find_quantized_chords(found_on_times);
+    auto quantized_chords = find_quantized_chords(chords, found_on_times);
 #ifndef NDEBUG
     assert(MidiTuplet::are_tuplet_references_valid(quantized_chords));
 #endif

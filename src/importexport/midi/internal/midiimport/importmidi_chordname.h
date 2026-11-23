@@ -22,14 +22,15 @@
 #ifndef IMPORTMIDI_CHORDNAME_H
 #define IMPORTMIDI_CHORDNAME_H
 
-#include <map>
 #include <vector>
+
+#include <gtl/btree.hpp>
 
 namespace mu::iex::midi {
 struct MTrack;
 
 namespace MidiChordName {
-void find_chord_names(const std::multimap<int, MTrack> &tracks);
+void find_chord_names(const gtl::btree_multimap<int, MTrack> &tracks);
 void set_chord_names(std::vector<MTrack> &tracks);
 } // namespace MidiChordName
 } // namespace mu::iex::midi

@@ -31,6 +31,7 @@
 #include "engraving/types/fraction.h"
 #include "importmidi_fraction.h"
 #include "importmidi_inner.h"
+#include "importmidi_timeline.h"
 #include "importmidi_tuplet.h"
 #include "log.h"
 
@@ -38,7 +39,7 @@ using namespace mu::engraving;
 
 namespace mu::iex::midi { namespace MidiTuplet {
 void add_element_to_tuplet(int voice, const ReducedFraction &on_time, const ReducedFraction &len, DurationElement *el,
-                           std::multimap<ReducedFraction, TupletData> &tuplets) {
+                           MidiTimeline<TupletData> &tuplets) {
     const auto found_tuplets = find_tuplets_for_time_range(voice, on_time, len, tuplets, true);
 
 #ifndef NDEBUG
@@ -55,7 +56,7 @@ void add_element_to_tuplet(int voice, const ReducedFraction &on_time, const Redu
     }
 }
 
-void create_tuplet_notes(Staff *staff, const std::multimap<ReducedFraction, TupletData> &tuplets) {
+void create_tuplet_notes(Staff *staff, const MidiTimeline<TupletData> &tuplets) {
     Score *score = staff->score();
     const track_idx_t track = staff->idx() * ::mu::engraving::voices;
 

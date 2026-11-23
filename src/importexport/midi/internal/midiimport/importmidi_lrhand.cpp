@@ -23,15 +23,19 @@
 
 #include <cstdlib>
 #include <limits>
+#include <optional>
 #include <vector>
+
+#include <gtl/btree.hpp>
 
 #include "importmidi_chord.h"
 #include "importmidi_fraction.h"
 #include "importmidi_inner.h"
 #include "importmidi_operations.h"
+#include "importmidi_timeline.h"
 
 namespace mu::iex::midi { namespace LRHand {
-bool need_to_split(const std::multimap<ReducedFraction, MidiChord> &chords, GM1Program midi_program, bool is_drum_track) {
+bool need_to_split(const MidiTimeline<MidiChord> &chords, GM1Program midi_program, bool is_drum_track) {
     if (is_drum_track || !MChord::is_grand_staff_program(midi_program)) {
         return false;
     }
@@ -79,7 +83,7 @@ struct SplitTry {
 };
 
 struct ChordSplitData {
-    std::multimap<ReducedFraction, MidiChord>::iterator chord;
+    MidiTimeline<MidiChord>::iterator chord;
     std::vector<SplitTry> possible_splits; // each index corresponds to the same note index
 };
 
@@ -102,8 +106,7 @@ int find_last_split_point(const std::vector<ChordSplitData> &splits) {
 
 // backward dynamic programming step - collect optimal voice separations
 
-void split_chords(const std::vector<ChordSplitData> &splits, std::multimap<ReducedFraction, MidiChord> &left_hand_chords,
-                  std::multimap<ReducedFraction, MidiChord> &chords) {
+void split_chords(const std::vector<ChordSplitData> &splits, MidiTimeline<MidiChord> &left_hand_chords, MidiTimeline<MidiChord> &chords) {
     assert(splits.size() == chords.size());
 
     int split_point = find_last_split_point(splits);
@@ -291,7 +294,7 @@ int find_intersection_penalty(const ReducedFraction &current_on_time, int prev_p
     return penalty;
 }
 
-std::vector<ChordSplitData> find_splits(std::multimap<ReducedFraction, MidiChord> &chords) {
+std::vector<ChordSplitData> find_splits(MidiTimeline<MidiChord> &chords) {
     std::vector<ChordSplitData> splits;
     int pos = 0;
     ReducedFraction max_chord_len;
@@ -348,55 +351,50 @@ std::vector<ChordSplitData> find_splits(std::multimap<ReducedFraction, MidiChord
     return splits;
 }
 
-void insert_new_left_hand_track(std::multimap<int, MTrack> &tracks, std::multimap<int, MTrack>::iterator &it,
-                                const std::multimap<ReducedFraction, MidiChord> &left_hand_chords) {
-    auto left_hand_track = it->second;
-    left_hand_track.chords = left_hand_chords;
-    it = tracks.insert({it->first, left_hand_track});
-}
-
 // maybe todo later: if range of right-hand chords > OCTAVE
 // => assign all bottom right-hand chords to another, third track
 
-void split_staff(std::multimap<int, MTrack> &tracks, std::multimap<int, MTrack>::iterator &it) {
-    auto &chords = it->second.chords;
-    if (chords.empty()) {
-        return;
-    }
+std::optional<MTrack> split_staff(MTrack &track) {
+    auto &chords = track.chords;
     MChord::sort_notes_by_pitch(chords);
     std::vector<ChordSplitData> splits = find_splits(chords);
 
     assert(!splits.empty());
 
-    std::multimap<ReducedFraction, MidiChord> left_hand_chords;
+    MidiTimeline<MidiChord> left_hand_chords;
     split_chords(splits, left_hand_chords, chords);
 
-    if (!left_hand_chords.empty()) {
-        insert_new_left_hand_track(tracks, it, left_hand_chords);
+    if (left_hand_chords.empty()) {
+        return std::nullopt;
     }
+    MTrack left_hand_track(track);
+    left_hand_track.chords = std::move(left_hand_chords);
+    left_hand_track.tuplets.clear();
+    left_hand_track.update_tuplets_from_chords();
+    return left_hand_track;
 }
 
-void add_new_left_hand_chord(std::multimap<ReducedFraction, MidiChord> &left_hand_chords, const std::vector<MidiNote> &left_hand_notes,
-                             const std::multimap<ReducedFraction, MidiChord>::iterator &it) {
+void add_new_left_hand_chord(MidiTimeline<MidiChord> &left_hand_chords, const std::vector<MidiNote> &left_hand_notes,
+                             const MidiTimeline<MidiChord>::iterator &it) {
     MidiChord left_hand_chord = it->second;
     left_hand_chord.notes = left_hand_notes;
     left_hand_chords.insert({it->first, left_hand_chord});
 }
 
-void split_into_left_right_hands(std::multimap<int, MTrack> &tracks) {
-    for (auto it = tracks.begin(); it != tracks.end(); ++it) {
-        if (it->second.mtrack->drum_track() || it->second.chords.empty()) {
+void split_into_left_right_hands(gtl::btree_multimap<int, MTrack> &tracks) {
+    std::vector<std::pair<int, MTrack>> additions;
+    const auto &opers = midi_import_operations.data()->track_opers;
+    for (auto &[key, track] : tracks) {
+        if ((!additions.empty() && additions.back().first == key) || track.mtrack->drum_track() || track.chords.empty() ||
+            !opers.do_staff_split.value(track.index_of_operation)) {
             continue;
         }
-        const auto &opers = midi_import_operations.data()->track_opers;
-        // iterator 'it' will change after track split to ++it
-        // C++11 guarantees that newly inserted item with equal key will go after:
-        //    "The relative ordering of elements with equivalent keys is preserved,
-        //     and newly inserted elements follow those with equivalent keys
-        //     already in the container"
-        if (opers.do_staff_split.value(it->second.index_of_operation)) {
-            split_staff(tracks, it);
+        if (auto left = split_staff(track)) {
+            additions.emplace_back(key, std::move(*left));
         }
+    }
+    for (auto &[key, track] : additions) {
+        tracks.emplace(key, std::move(track));
     }
 }
 }} // namespace mu::iex::midi::LRHand

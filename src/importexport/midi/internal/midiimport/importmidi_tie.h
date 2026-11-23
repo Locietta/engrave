@@ -22,7 +22,7 @@
 #ifndef IMPORTMIDI_TIE_H
 #define IMPORTMIDI_TIE_H
 
-#include <set>
+#include <amc/flatset.hpp>
 
 #include "engraving/types/types.h"
 
@@ -44,7 +44,7 @@ struct TieStateMachine {
     State state() const { return state_; }
 
 private:
-    std::set<mu::engraving::voice_idx_t> tied_voices;
+    amc::FlatSet<mu::engraving::voice_idx_t> tied_voices;
     State state_ = State::UNTIED;
 };
 

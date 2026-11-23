@@ -28,12 +28,15 @@
 #include <utility>
 #include <vector>
 
+#include <gtl/btree.hpp>
+
 #include "engraving/dom/sig.h"
 #include "global/containers.h"
 #include "importmidi_chord.h"
 #include "importmidi_inner.h"
 #include "importmidi_operations.h"
 #include "importmidi_quant.h"
+#include "importmidi_timeline.h"
 #include "log.h"
 
 namespace mu::iex::midi { namespace MChord {
@@ -103,9 +106,8 @@ bool is_grand_staff_program(GM1Program program) {
     return muse::contains(grand_staff_programs, program);
 }
 
-std::multimap<ReducedFraction, MidiChord>::iterator find_first_chord_in_range(std::multimap<ReducedFraction, MidiChord> &chords,
-                                                                              const ReducedFraction &start_range_tick,
-                                                                              const ReducedFraction &end_range_tick) {
+MidiTimeline<MidiChord>::iterator find_first_chord_in_range(MidiTimeline<MidiChord> &chords, const ReducedFraction &start_range_tick,
+                                                            const ReducedFraction &end_range_tick) {
     auto iter = chords.lower_bound(start_range_tick);
     if (iter != chords.end() && iter->first >= end_range_tick) {
         iter = chords.end();
@@ -113,9 +115,9 @@ std::multimap<ReducedFraction, MidiChord>::iterator find_first_chord_in_range(st
     return iter;
 }
 
-std::multimap<ReducedFraction, MidiChord>::const_iterator find_first_chord_in_range(const std::multimap<ReducedFraction, MidiChord> &chords,
-                                                                                    const ReducedFraction &start_range_tick,
-                                                                                    const ReducedFraction &end_range_tick) {
+MidiTimeline<MidiChord>::const_iterator find_first_chord_in_range(const MidiTimeline<MidiChord> &chords,
+                                                                  const ReducedFraction &start_range_tick,
+                                                                  const ReducedFraction &end_range_tick) {
     auto iter = chords.lower_bound(start_range_tick);
     if (iter != chords.end() && iter->first >= end_range_tick) {
         iter = chords.end();
@@ -190,7 +192,7 @@ void remove_overlapping_notes(std::vector<MidiNote> &notes) {
 
 // remove overlapping notes with the same pitch
 
-void remove_overlapping_notes(std::multimap<int, MTrack> &tracks) {
+void remove_overlapping_notes(gtl::btree_multimap<int, MTrack> &tracks) {
     for (auto &track : tracks) {
         auto &chords = track.second.chords;
         if (chords.empty()) {
@@ -259,8 +261,8 @@ void remove_overlapping_notes(std::multimap<int, MTrack> &tracks) {
 #ifndef NDEBUG
 
 // check for equal on time values with the same voice that is invalid
-bool are_on_time_values_different(const std::multimap<ReducedFraction, MidiChord> &chords) {
-    std::map<ReducedFraction, int> on_time_voices;
+bool are_on_time_values_different(const MidiTimeline<MidiChord> &chords) {
+    gtl::btree_map<ReducedFraction, int> on_time_voices;
     for (const auto &chord_event : chords) {
         const auto it = on_time_voices.find(chord_event.first);
         if (it == on_time_voices.end()) {
@@ -272,7 +274,7 @@ bool are_on_time_values_different(const std::multimap<ReducedFraction, MidiChord
     return true;
 }
 
-bool are_notes_long_enough(const std::multimap<ReducedFraction, MidiChord> &chords) {
+bool are_notes_long_enough(const MidiTimeline<MidiChord> &chords) {
     for (const auto &chord : chords) {
         if (min_note_len(chord) < min_allowed_duration()) {
             return false;
@@ -281,7 +283,7 @@ bool are_notes_long_enough(const std::multimap<ReducedFraction, MidiChord> &chor
     return true;
 }
 
-bool are_bar_indexes_successive(const std::multimap<ReducedFraction, MidiChord> &chords) {
+bool are_bar_indexes_successive(const MidiTimeline<MidiChord> &chords) {
     int bar_index = 0;
     for (const auto &chord : chords) {
         const MidiChord &c = chord.second;
@@ -296,7 +298,7 @@ bool are_bar_indexes_successive(const std::multimap<ReducedFraction, MidiChord> 
     return true;
 }
 
-bool is_last_tick_valid(const ReducedFraction &last_tick, const std::multimap<ReducedFraction, MidiChord> &chords) {
+bool is_last_tick_valid(const ReducedFraction &last_tick, const MidiTimeline<MidiChord> &chords) {
     for (const auto &chord : chords) {
         if (max_note_off_time(chord.second.notes) > last_tick) {
             return false;
@@ -305,7 +307,7 @@ bool is_last_tick_valid(const ReducedFraction &last_tick, const std::multimap<Re
     return true;
 }
 
-bool is_last_tick_valid(const ReducedFraction &last_tick, const std::multimap<int, MTrack> &tracks) {
+bool is_last_tick_valid(const ReducedFraction &last_tick, const gtl::btree_multimap<int, MTrack> &tracks) {
     for (const auto &track : tracks) {
         if (!(is_last_tick_valid(last_tick, track.second.chords))) {
             return false;
@@ -314,7 +316,7 @@ bool is_last_tick_valid(const ReducedFraction &last_tick, const std::multimap<in
     return true;
 }
 
-bool are_bar_indexes_set(const std::multimap<ReducedFraction, MidiChord> &chords) {
+bool are_bar_indexes_set(const MidiTimeline<MidiChord> &chords) {
     for (const auto &chord : chords) {
         if (chord.second.bar_index == -1) {
             return false;
@@ -332,7 +334,7 @@ void set_to_negative(ReducedFraction &v1, ReducedFraction &v2, ReducedFraction &
 }
 
 bool has_notes_with_equal_pitch(const MidiChord &chord1, const MidiChord &chord2) {
-    std::set<int> notes1;
+    gtl::btree_set<int> notes1;
     for (const auto &note : chord1.notes) {
         notes1.insert(note.pitch);
     }
@@ -344,7 +346,7 @@ bool has_notes_with_equal_pitch(const MidiChord &chord1, const MidiChord &chord2
     return false;
 }
 
-void collect_chords(std::multimap<int, MTrack> &tracks, const ReducedFraction &human_tol_coeff,
+void collect_chords(gtl::btree_multimap<int, MTrack> &tracks, const ReducedFraction &human_tol_coeff,
                     const ReducedFraction &non_human_tol_coeff) {
     for (auto &track : tracks) {
         collect_chords(track.second, human_tol_coeff, non_human_tol_coeff);
@@ -448,7 +450,7 @@ void collect_chords(MTrack &track, const ReducedFraction &human_tol_coeff, const
 #endif
 }
 
-void sort_notes_by_pitch(std::multimap<ReducedFraction, MidiChord> &chords) {
+void sort_notes_by_pitch(MidiTimeline<MidiChord> &chords) {
     struct {
         bool operator()(const MidiNote &note1, const MidiNote &note2) { return note1.pitch < note2.pitch; }
     } pitch_sort;
@@ -460,7 +462,7 @@ void sort_notes_by_pitch(std::multimap<ReducedFraction, MidiChord> &chords) {
     }
 }
 
-void sort_notes_by_length(std::multimap<ReducedFraction, MidiChord> &chords) {
+void sort_notes_by_length(MidiTimeline<MidiChord> &chords) {
     struct {
         bool operator()(const MidiNote &note1, const MidiNote &note2) { return note1.off_time < note2.off_time; }
     } len_sort;
@@ -476,7 +478,7 @@ void sort_notes_by_length(std::multimap<ReducedFraction, MidiChord> &chords) {
 // and separate them into different chords
 // so all notes inside every chord will have equal lengths
 
-void split_unequal_chords(std::multimap<int, MTrack> &tracks) {
+void split_unequal_chords(gtl::btree_multimap<int, MTrack> &tracks) {
     for (auto &track : tracks) {
         std::vector<std::pair<ReducedFraction, MidiChord>> new_chord_events;
         auto &chords = track.second.chords;
@@ -526,14 +528,14 @@ ReducedFraction find_min_duration(const ReducedFraction &on_time, const std::vec
     return len;
 }
 
-void merge_chords_with_equal_on_time_and_voice(std::multimap<int, MTrack> &tracks) {
+void merge_chords_with_equal_on_time_and_voice(gtl::btree_multimap<int, MTrack> &tracks) {
     for (auto &track : tracks) {
         auto &chords = track.second.chords;
         if (chords.empty()) {
             continue;
         }
         // the key is pair<onTime, voice>
-        std::map<std::pair<ReducedFraction, int>, std::multimap<ReducedFraction, MidiChord>::iterator> on_times;
+        gtl::btree_map<std::pair<ReducedFraction, int>, MidiTimeline<MidiChord>::iterator> on_times;
 
         for (auto it = chords.begin(); it != chords.end();) {
             const auto &on_time = it->first;
@@ -574,7 +576,7 @@ int chord_average_pitch(const std::vector<MidiNote> &notes) {
 // with (on time + max chord len) < given time moment
 // because chord cannot be longer than found max length
 
-ReducedFraction find_max_chord_length(const std::multimap<ReducedFraction, MidiChord> &chords) {
+ReducedFraction find_max_chord_length(const MidiTimeline<MidiChord> &chords) {
     ReducedFraction max_chord_length;
 
     for (const auto &chord : chords) {
@@ -586,10 +588,11 @@ ReducedFraction find_max_chord_length(const std::multimap<ReducedFraction, MidiC
     return max_chord_length;
 }
 
-std::vector<std::multimap<ReducedFraction, MidiChord>::const_iterator>
-find_chords_for_time_range(int voice, const ReducedFraction &on_time, const ReducedFraction &off_time,
-                           const std::multimap<ReducedFraction, MidiChord> &chords, const ReducedFraction &max_chord_length) {
-    std::vector<std::multimap<ReducedFraction, MidiChord>::const_iterator> result;
+std::vector<MidiTimeline<MidiChord>::const_iterator> find_chords_for_time_range(int voice, const ReducedFraction &on_time,
+                                                                                const ReducedFraction &off_time,
+                                                                                const MidiTimeline<MidiChord> &chords,
+                                                                                const ReducedFraction &max_chord_length) {
+    std::vector<MidiTimeline<MidiChord>::const_iterator> result;
 
     if (chords.empty()) {
         return result;
@@ -620,8 +623,8 @@ find_chords_for_time_range(int voice, const ReducedFraction &on_time, const Redu
     return result;
 }
 
-void set_bar_indexes(std::multimap<ReducedFraction, MidiChord> &chords, const ReducedFraction &basic_quant,
-                     const ReducedFraction &last_tick, const engraving::TimeSigMap *sigmap) {
+void set_bar_indexes(MidiTimeline<MidiChord> &chords, const ReducedFraction &basic_quant, const ReducedFraction &last_tick,
+                     const engraving::TimeSigMap *sigmap) {
     if (chords.empty()) {
         return;
     }

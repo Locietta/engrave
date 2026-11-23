@@ -26,12 +26,15 @@
 #include <utility>
 #include <vector>
 
+#include <gtl/btree.hpp>
+
 #include "engraving/types/types.h"
 #include "global/types/string.h"
 #include "importexport/midi/internal/midishared/generalmidi.h"
 #include "importmidi_chord.h"
 #include "importmidi_fraction.h"
 #include "importmidi_operation.h"
+#include "importmidi_timeline.h"
 #include "importmidi_tuplet.h"
 
 // ---------------------------------------------------------------------------------------
@@ -91,6 +94,7 @@ struct MTrack {
     // chords store tuplet iterators, so we need to copy class explicitly
     MTrack() = default;
     MTrack(const MTrack &other);
+    MTrack(MTrack &&) = default;
     MTrack &operator=(MTrack other);
 
     GM1Program program = GM1Program::ACOUSTIC_GRAND_PIANO;
@@ -103,9 +107,9 @@ struct MTrack {
     bool is_division_in_tps = false; // ticks per second
     bool had_initial_notes = false;
 
-    std::multimap<ReducedFraction, int> volumes;
-    std::multimap<ReducedFraction, MidiChord> chords;
-    std::multimap<ReducedFraction, MidiTuplet::TupletData> tuplets; // <tupletOnTime, ...>
+    gtl::btree_multimap<ReducedFraction, int> volumes;
+    MidiTimeline<MidiChord> chords;
+    MidiTimeline<MidiTuplet::TupletData> tuplets; // <tupletOnTime, ...>
 
     void create_notes(const ReducedFraction &last_tick);
     void process_pending_notes(std::vector<MidiChord> &midi_chords, int voice, const ReducedFraction &start_chord_tick_frac,
@@ -121,7 +125,7 @@ struct MTrack {
     void update_tuplets_from_chords();
 
 private:
-    void update_tuplet(std::multimap<ReducedFraction, MidiTuplet::TupletData>::iterator &);
+    void update_tuplet(MidiTimeline<MidiTuplet::TupletData>::iterator &);
 };
 
 namespace MidiTuplet {
@@ -131,12 +135,12 @@ struct TupletInfo {
     ReducedFraction len = {-1, 1};
     int tuplet_number = -1;
     // <chord onTime, chord iterator>
-    std::map<ReducedFraction, std::multimap<ReducedFraction, MidiChord>::iterator> chords;
+    gtl::btree_map<ReducedFraction, MidiTimeline<MidiChord>::iterator> chords;
     ReducedFraction tuplet_sum_error;
     ReducedFraction regular_sum_error;
     ReducedFraction sum_length_of_rests;
     int first_chord_index = -1;
-    std::map<ReducedFraction, int> staccato_chords; // <onTime, note index>
+    gtl::btree_map<ReducedFraction, int> staccato_chords; // <onTime, note index>
 };
 
 bool have_intersection(const std::pair<ReducedFraction, ReducedFraction> &interval1,

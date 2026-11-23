@@ -420,7 +420,7 @@ void MusicXmlParserPass1::init_part_state(const String & /* partId */) {
 bool MusicXmlParserPass1::determine_measure_length(std::vector<Fraction> &ml) const {
     ml.clear();
 
-    // Sort by part id so equal-duration fractions keep the same canonical representation as std::map.
+    // Sort by part id so equal-duration fractions keep the representation from the first part.
     std::vector<std::pair<const String *, const MusicXmlPart *>> ordered_parts;
     ordered_parts.reserve(parts_.size());
     size_t n_measures = 0;

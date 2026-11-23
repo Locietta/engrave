@@ -24,7 +24,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <set>
 
 #include "engraving/dom/chord.h"
 #include "engraving/dom/chordrest.h"

@@ -22,10 +22,11 @@
 #ifndef IMPORTMIDI_VOICE_H
 #define IMPORTMIDI_VOICE_H
 
-#include <map>
-#include <set>
+#include <ankerl/unordered_dense.h>
+#include <gtl/btree.hpp>
 
 #include "importmidi_operation.h"
+#include "importmidi_timeline.h"
 
 namespace mu::engraving {
 struct TimeSigMap;
@@ -42,17 +43,16 @@ struct TupletData;
 namespace MidiVoice {
 size_t to_int_voice_count(MidiOperations::VoiceCount value);
 int voice_limit();
-bool separate_voices(std::multimap<int, MTrack> &tracks, const engraving::TimeSigMap *sigmap);
+bool separate_voices(gtl::btree_multimap<int, MTrack> &tracks, const engraving::TimeSigMap *sigmap);
 
-bool split_chord_to_voice(
-    std::multimap<ReducedFraction, MidiChord>::iterator &chord_it, const std::set<int> &notes_to_move, int new_voice,
-    std::multimap<ReducedFraction, MidiChord> &chords, std::multimap<ReducedFraction, MidiTuplet::TupletData> &tuplets,
-    std::multimap<ReducedFraction, std::multimap<ReducedFraction, MidiTuplet::TupletData>::iterator> &inserted_tuplets,
-    const ReducedFraction &max_chord_length, bool allow_parallel_tuplets = false);
+bool split_chord_to_voice(MidiTimeline<MidiChord>::iterator &chord_it, const ankerl::unordered_dense::set<int> &notes_to_move,
+                          int new_voice, MidiTimeline<MidiChord> &chords, MidiTimeline<MidiTuplet::TupletData> &tuplets,
+                          gtl::btree_multimap<ReducedFraction, MidiTimeline<MidiTuplet::TupletData>::iterator> &inserted_tuplets,
+                          const ReducedFraction &max_chord_length, bool allow_parallel_tuplets = false);
 
 #ifndef NDEBUG
 
-bool are_voices_same(const std::multimap<ReducedFraction, MidiChord> &chords);
+bool are_voices_same(const MidiTimeline<MidiChord> &chords);
 
 #endif
 } // namespace MidiVoice

@@ -25,9 +25,10 @@
 #include <algorithm>
 #include <cstdint>
 #include <exception>
-#include <set>
 #include <string>
 #include <vector>
+
+#include <gtl/btree.hpp>
 
 #include "../midishared/midifile.h"
 #include "engraving/dom/articulation.h"
@@ -75,6 +76,7 @@
 #include "importmidi_swing.h"
 #include "importmidi_tempo.h"
 #include "importmidi_tie.h"
+#include "importmidi_timeline.h"
 #include "importmidi_tuplet.h"
 #include "importmidi_tuplet_tonotes.h"
 #include "importmidi_voice.h"
@@ -86,7 +88,7 @@
 using namespace mu::engraving;
 
 namespace mu::iex::midi {
-void lengthen_too_short_notes(std::multimap<int, MTrack> &tracks) {
+void lengthen_too_short_notes(gtl::btree_multimap<int, MTrack> &tracks) {
     for (auto &track : tracks) {
         MTrack &mtrack = track.second;
         for (auto &chord : mtrack.chords) {
@@ -130,7 +132,7 @@ bool do_notes_overlap(const MTrack &track) {
     return false;
 }
 
-bool do_notes_overlap(const std::multimap<int, MTrack> &tracks) {
+bool do_notes_overlap(const gtl::btree_multimap<int, MTrack> &tracks) {
     bool result = false;
     for (const auto &track : tracks) {
         result = do_notes_overlap(track.second);
@@ -138,7 +140,7 @@ bool do_notes_overlap(const std::multimap<int, MTrack> &tracks) {
     return result;
 }
 
-bool no_too_short_notes(const std::multimap<int, MTrack> &tracks) {
+bool no_too_short_notes(const gtl::btree_multimap<int, MTrack> &tracks) {
     for (const auto &track : tracks) {
         const auto &chords = track.second.chords;
         for (const auto &chord : chords) {
@@ -154,9 +156,8 @@ bool no_too_short_notes(const std::multimap<int, MTrack> &tracks) {
 
 #endif
 
-std::vector<std::multimap<ReducedFraction, MidiChord>>
-separate_drum_chords_to2_voices(const std::multimap<ReducedFraction, MidiChord> &chords) {
-    std::vector<std::multimap<ReducedFraction, MidiChord>> separated_chords(2);
+std::vector<MidiTimeline<MidiChord>> separate_drum_chords_to2_voices(const MidiTimeline<MidiChord> &chords) {
+    std::vector<MidiTimeline<MidiChord>> separated_chords(2);
     for (const auto &chord : chords) {
         const MidiChord &c = chord.second;
 
@@ -188,7 +189,7 @@ void find_all_tuplets_for_drums(MTrack &mtrack, TimeSigMap *sigmap, const Reduce
     // it's a small hack due to the fact that tuplet detection
     // is designed to work before voice setting
 
-    std::vector<std::multimap<ReducedFraction, MidiChord>> chords(drum_voice_count);
+    std::vector<MidiTimeline<MidiChord>> chords(drum_voice_count);
     for (const auto &chord : mtrack.chords) {
         const MidiChord &c = chord.second;
 
@@ -197,7 +198,7 @@ void find_all_tuplets_for_drums(MTrack &mtrack, TimeSigMap *sigmap, const Reduce
         chords[c.voice].insert({chord.first, c});
     }
 
-    std::vector<std::multimap<ReducedFraction, MidiTuplet::TupletData>> tuplets(drum_voice_count);
+    std::vector<MidiTimeline<MidiTuplet::TupletData>> tuplets(drum_voice_count);
     for (size_t voice = 0; voice < drum_voice_count; ++voice) {
         if (!chords[voice].empty()) {
             MidiTuplet::find_all_tuplets(tuplets[voice], chords[voice], sigmap, basic_quant);
@@ -215,7 +216,7 @@ void find_all_tuplets_for_drums(MTrack &mtrack, TimeSigMap *sigmap, const Reduce
     // note: temporary local tuplets and chords are deleted here
 }
 
-void quantize_all_tracks(std::multimap<int, MTrack> &tracks, TimeSigMap *sigmap, const ReducedFraction &last_tick) {
+void quantize_all_tracks(gtl::btree_multimap<int, MTrack> &tracks, TimeSigMap *sigmap, const ReducedFraction &last_tick) {
     auto &opers = midi_import_operations;
 
     for (auto &track : tracks) {
@@ -614,7 +615,7 @@ Fraction meta_time_signature(const MidiEvent &e) {
     return Fraction(z, n);
 }
 
-std::vector<MTrack> prepare_track_list(const std::multimap<int, MTrack> &tracks) {
+std::vector<MTrack> prepare_track_list(const gtl::btree_multimap<int, MTrack> &tracks) {
     std::vector<MTrack> track_list;
     for (const auto &track : tracks) {
         // show track even if all initial notes were cleaned up
@@ -625,11 +626,11 @@ std::vector<MTrack> prepare_track_list(const std::multimap<int, MTrack> &tracks)
     return track_list;
 }
 
-std::multimap<int, MTrack> create_m_track_list(TimeSigMap *sigmap, const MidiFile *mf) {
+gtl::btree_multimap<int, MTrack> create_m_track_list(TimeSigMap *sigmap, const MidiFile *mf) {
     sigmap->clear();
     sigmap->add(0, Fraction(4, 4)); // default time signature
 
-    std::multimap<int, MTrack> tracks; // <track index, track>
+    gtl::btree_multimap<int, MTrack> tracks; // <track index, track>
     int track_index = -1;
     for (const auto &t : mf->tracks()) {
         MTrack track;
@@ -963,7 +964,7 @@ void create_clefs(std::vector<MTrack> &tracks) {
     }
 }
 
-void set_left_right_hand_split(const std::multimap<int, MTrack> &tracks) {
+void set_left_right_hand_split(const gtl::btree_multimap<int, MTrack> &tracks) {
     for (auto it = tracks.begin(); it != tracks.end(); ++it) {
         int track_index = it->first;
         const MTrack &mtrack = it->second;
@@ -1003,7 +1004,7 @@ ReducedFraction find_first_chord_tick(const std::vector<MTrack> &tracks) {
     return first_tick;
 }
 
-ReducedFraction find_last_chord_tick(const std::multimap<int, MTrack> &tracks) {
+ReducedFraction find_last_chord_tick(const gtl::btree_multimap<int, MTrack> &tracks) {
     ReducedFraction last_tick(0, 1);
     for (const auto &track : tracks) {
         for (const auto &chord : track.second.chords) {

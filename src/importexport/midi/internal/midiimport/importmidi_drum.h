@@ -22,8 +22,9 @@
 #ifndef IMPORTMIDI_DRUM_H
 #define IMPORTMIDI_DRUM_H
 
-#include <map>
 #include <vector>
+
+#include <gtl/btree.hpp>
 
 namespace mu::engraving {
 struct TimeSigMap;
@@ -33,8 +34,8 @@ namespace mu::iex::midi {
 struct MTrack;
 
 namespace MidiDrum {
-void split_drum_voices(std::multimap<int, MTrack> &tracks);
-void split_drum_tracks(std::multimap<int, MTrack> &tracks);
+void split_drum_voices(gtl::btree_multimap<int, MTrack> &tracks);
+void split_drum_tracks(gtl::btree_multimap<int, MTrack> &tracks);
 void set_staff_bracket_for_drums(std::vector<MTrack> &tracks);
 } // namespace MidiDrum
 } // namespace mu::iex::midi

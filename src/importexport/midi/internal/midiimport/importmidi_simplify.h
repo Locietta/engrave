@@ -22,7 +22,7 @@
 #ifndef IMPORTMIDI_SIMPLIFY_H
 #define IMPORTMIDI_SIMPLIFY_H
 
-#include <map>
+#include <gtl/btree.hpp>
 
 namespace mu::engraving {
 struct TimeSigMap;
@@ -32,8 +32,8 @@ namespace mu::iex::midi {
 struct MTrack;
 
 namespace Simplify {
-void simplify_durations_for_drums(std::multimap<int, MTrack> &tracks, const engraving::TimeSigMap *sigmap);
-void simplify_durations_not_drums(std::multimap<int, MTrack> &tracks, const engraving::TimeSigMap *sigmap);
+void simplify_durations_for_drums(gtl::btree_multimap<int, MTrack> &tracks, const engraving::TimeSigMap *sigmap);
+void simplify_durations_not_drums(gtl::btree_multimap<int, MTrack> &tracks, const engraving::TimeSigMap *sigmap);
 } // namespace Simplify
 } // namespace mu::iex::midi
 

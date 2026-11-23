@@ -22,13 +22,16 @@
 #include "importmidi_tuplet_detect.h"
 
 #include <algorithm>
-#include <set>
+
+#include <ankerl/unordered_dense.h>
+#include <gtl/btree.hpp>
 
 #include "importmidi_chord.h"
 #include "importmidi_inner.h"
 #include "importmidi_meter.h"
 #include "importmidi_operations.h"
 #include "importmidi_quant.h"
+#include "importmidi_timeline.h"
 #include "importmidi_tuplet.h"
 
 namespace mu::iex::midi { namespace MidiTuplet {
@@ -159,9 +162,8 @@ ReducedFraction find_sum_length_of_rests(const TupletInfo &tuplet_info, const Re
 }
 
 TupletInfo find_tuplet_approximation(const ReducedFraction &tuplet_len, int tuplet_number, const ReducedFraction &basic_quant,
-                                     const ReducedFraction &start_tuplet_time,
-                                     const std::multimap<ReducedFraction, MidiChord>::iterator &start_chord_it,
-                                     const std::multimap<ReducedFraction, MidiChord>::iterator &end_chord_it) {
+                                     const ReducedFraction &start_tuplet_time, const MidiTimeline<MidiChord>::iterator &start_chord_it,
+                                     const MidiTimeline<MidiChord>::iterator &end_chord_it) {
     TupletInfo tuplet_info;
     tuplet_info.tuplet_number = tuplet_number;
     tuplet_info.on_time = start_tuplet_time;
@@ -185,11 +187,11 @@ TupletInfo find_tuplet_approximation(const ReducedFraction &tuplet_len, int tupl
 
     struct Candidate {
         int pos_index;
-        std::multimap<ReducedFraction, MidiChord>::iterator chord;
+        MidiTimeline<MidiChord>::iterator chord;
         ReducedFraction regular_error;
     };
 
-    std::multimap<Error, Candidate> chord_candidates;
+    gtl::btree_multimap<Error, Candidate> chord_candidates;
 
     for (int pos_index = 0; pos_index != tuplet_number; ++pos_index) {
         const auto tuplet_note_pos = start_tuplet_time + tuplet_note_len * pos_index;
@@ -208,8 +210,8 @@ TupletInfo find_tuplet_approximation(const ReducedFraction &tuplet_len, int tupl
         }
     }
 
-    std::set<std::pair<const ReducedFraction, MidiChord> *> used_chords;
-    std::set<int> used_pos_indexes;
+    ankerl::unordered_dense::set<std::pair<const ReducedFraction, MidiChord> *> used_chords;
+    ankerl::unordered_dense::set<int> used_pos_indexes;
     ReducedFraction diff_sum;
     int first_chord_index = 0;
 
@@ -270,10 +272,9 @@ void detect_staccato(TupletInfo &tuplet) {
 // and tuplet chords are staccato, i.e. have short length,
 // then tied staccato chords would be not pretty-looked converted to notation
 
-bool have_chords_in_the_middle_between_tuplet_chords(const std::multimap<ReducedFraction, MidiChord>::iterator start_div_chord_it,
-                                                     const std::multimap<ReducedFraction, MidiChord>::iterator end_div_chord_it,
-                                                     const TupletInfo &tuplet) {
-    std::set<std::pair<const ReducedFraction, MidiChord> *> tuplet_chords;
+bool have_chords_in_the_middle_between_tuplet_chords(const MidiTimeline<MidiChord>::iterator start_div_chord_it,
+                                                     const MidiTimeline<MidiChord>::iterator end_div_chord_it, const TupletInfo &tuplet) {
+    ankerl::unordered_dense::set<std::pair<const ReducedFraction, MidiChord> *> tuplet_chords;
     for (const auto &chord : tuplet.chords) {
         tuplet_chords.insert(&*chord.second);
     }
@@ -293,9 +294,8 @@ bool have_chords_in_the_middle_between_tuplet_chords(const std::multimap<Reduced
     return false;
 }
 
-bool is_tuplet_len_allowed(const ReducedFraction &tuplet_len, int tuplet_number,
-                           const std::multimap<ReducedFraction, MidiChord>::const_iterator beg,
-                           const std::multimap<ReducedFraction, MidiChord>::const_iterator end, const ReducedFraction &basic_quant) {
+bool is_tuplet_len_allowed(const ReducedFraction &tuplet_len, int tuplet_number, const MidiTimeline<MidiChord>::const_iterator beg,
+                           const MidiTimeline<MidiChord>::const_iterator end, const ReducedFraction &basic_quant) {
     const auto tuplet_note_len = tuplet_len / tuplet_number;
     const auto regular_quant = Quantize::find_quant_for_range(beg, end, basic_quant);
     return tuplet_note_len >= regular_quant;
@@ -304,9 +304,8 @@ bool is_tuplet_len_allowed(const ReducedFraction &tuplet_len, int tuplet_number,
 // only one chord from the next bar can be used to search tuplets
 // and this chord should be the last in the current bar
 
-bool is_next_bar_ownership_ok(const std::multimap<ReducedFraction, MidiChord>::iterator &start_it,
-                              const std::multimap<ReducedFraction, MidiChord>::iterator &end_it,
-                              const std::multimap<ReducedFraction, MidiChord> &chords, int bar_index) {
+bool is_next_bar_ownership_ok(const MidiTimeline<MidiChord>::iterator &start_it, const MidiTimeline<MidiChord>::iterator &end_it,
+                              const MidiTimeline<MidiChord> &chords, int bar_index) {
     if (end_it == chords.begin() || end_it == start_it) {
         return false;
     }
@@ -326,11 +325,10 @@ bool is_next_bar_ownership_ok(const std::multimap<ReducedFraction, MidiChord>::i
     return next_bar_counter == 1;
 }
 
-std::vector<TupletInfo> detect_tuplets(const std::multimap<ReducedFraction, MidiChord>::iterator &start_bar_chord_it,
-                                       const std::multimap<ReducedFraction, MidiChord>::iterator &end_bar_chord_it,
-                                       const ReducedFraction &start_bar_tick, const ReducedFraction &bar_fraction,
-                                       std::multimap<ReducedFraction, MidiChord> &chords, const ReducedFraction &basic_quant,
-                                       int bar_index) {
+std::vector<TupletInfo> detect_tuplets(const MidiTimeline<MidiChord>::iterator &start_bar_chord_it,
+                                       const MidiTimeline<MidiChord>::iterator &end_bar_chord_it, const ReducedFraction &start_bar_tick,
+                                       const ReducedFraction &bar_fraction, MidiTimeline<MidiChord> &chords,
+                                       const ReducedFraction &basic_quant, int bar_index) {
     const auto div_lengths = Meter::divisions_of_bar_for_tuplets(bar_fraction);
 
     std::vector<TupletInfo> tuplets;

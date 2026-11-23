@@ -24,6 +24,8 @@
 #include <algorithm>
 #include <deque>
 
+#include <gtl/btree.hpp>
+
 #include "engraving/dom/durationtype.h"
 #include "engraving/dom/mscore.h"
 #include "importmidi_chord.h"
@@ -359,7 +361,7 @@ ReducedFraction find_tuplet_ratio(const ReducedFraction &start_pos, const Reduce
     return tuplet_ratio;
 }
 
-std::vector<std::pair<ReducedFraction, engraving::TDuration>> collect_durations(const std::map<ReducedFraction, Node> &nodes,
+std::vector<std::pair<ReducedFraction, engraving::TDuration>> collect_durations(const gtl::btree_map<ReducedFraction, Node> &nodes,
                                                                                 const std::vector<MidiTuplet::TupletData> &tuplets_in_bar,
                                                                                 bool use_dots, bool print_rest_remains) {
     std::vector<std::pair<ReducedFraction, engraving::TDuration>> result_durations;
@@ -391,7 +393,7 @@ bool is_less_note_count(const ReducedFraction &t1, const ReducedFraction &t2, co
     return note_count(t3 - t1, use_dots) < note_count(t2 - t1, use_dots) + note_count(t3 - t2, use_dots);
 }
 
-void exclude_nodes(std::map<ReducedFraction, Node> &nodes, int tol, bool use_dots) {
+void exclude_nodes(gtl::btree_map<ReducedFraction, Node> &nodes, int tol, bool use_dots) {
     if (tol == 0) { // no nodes can be excluded
         return;
     }
@@ -415,7 +417,8 @@ void exclude_nodes(std::map<ReducedFraction, Node> &nodes, int tol, bool use_dot
         if (!bad_level_condition(p2->second.mid_level - p1->second.edge_level, p2->second.mid_level - p3->second.edge_level, tol) &&
             is_less_note_count(p1->first, p2->first, p3->first, use_dots)) {
             p2 = nodes.erase(p2);
-            ++p3;
+            p1 = std::prev(p2);
+            p3 = std::next(p2);
             continue;
         }
         ++p1;
@@ -456,7 +459,7 @@ to_duration_list(const ReducedFraction &start_tick_in_bar, const ReducedFraction
     const auto div_info = division_info(bar_fraction, tuplets_in_bar); // metric structure of bar
     const auto min_duration = MChord::min_allowed_duration() * 2;      // >= minAllowedDuration() after subdivision
 
-    std::map<ReducedFraction, Node> nodes; // <onTime, Node>
+    gtl::btree_map<ReducedFraction, Node> nodes; // <onTime, Node>
     {
         int level = level_of_tick(start_tick_in_bar, div_info);
         nodes.insert({start_tick_in_bar, Node(level, level)});

@@ -22,14 +22,11 @@
 #pragma once
 
 #include <algorithm>
+#include <array>
 #include <functional>
 #include <iterator>
 #include <list>
-#include <map>
 #include <ranges>
-#include <set>
-#include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 #include <amc/flatset.hpp>
@@ -205,19 +202,6 @@ inline std::pair<bool, T> take(std::list<T> &l, const T &v) {
 }
 
 // ===========================
-// Set
-// ===========================
-template <typename T>
-inline bool contains(const std::set<T> &s, const T &v) {
-    return s.find(v) != s.cend();
-}
-
-template <typename T>
-inline bool contains(const std::unordered_set<T> &s, const T &v) {
-    return s.find(v) != s.cend();
-}
-
-// ===========================
 // Array
 // ===========================
 template <typename T, size_t size>
@@ -236,21 +220,6 @@ inline size_t index_of(const Container &c, const T &v) {
         return std::distance(c.cbegin(), it);
     }
     return muse::nidx;
-}
-
-template <typename K, typename V>
-inline bool contains(const std::map<K, V> &m, const K &k) {
-    return m.find(k) != m.cend();
-}
-
-template <typename K, typename V>
-inline bool contains(const std::multimap<K, V> &m, const K &k) {
-    return m.find(k) != m.cend();
-}
-
-template <typename K, typename V>
-inline bool contains(const std::unordered_map<K, V> &m, const K &k) {
-    return m.find(k) != m.cend();
 }
 
 template <typename Container, typename K>
@@ -369,25 +338,6 @@ inline auto take(Map &m, const K &k) -> typename Map::mapped_type {
     return def;
 }
 
-template <typename K, typename V>
-inline std::set<K> unique_keys(const std::multimap<K, V> &mm) {
-    std::set<K> keys;
-    for (auto it = mm.begin(); it != mm.end(); ++it) {
-        keys.insert(it->first);
-    }
-    return keys;
-}
-
-template <typename K, typename V>
-inline auto values(const std::multimap<K, V> &mm, const K &key) -> std::vector<typename std::multimap<K, V>::mapped_type> {
-    std::vector<typename std::multimap<K, V>::mapped_type> result;
-    const auto range = mm.equal_range(key);
-    for (auto it = range.first; it != range.second; ++it) {
-        result.push_back(it->second);
-    }
-    return result;
-}
-
 //! NOTE: an associative container searches with its own upper_bound; any other key-sorted
 //! range of (key, value) entries is binary-searched on the entry key
 template <typename Container, typename Key>
@@ -452,9 +402,3 @@ inline void delete_all(const Container &c) {
     delete_all(c.begin(), c.end());
 }
 } // namespace muse
-
-template <typename T>
-inline std::set<T> &operator<<(std::set<T> &s, const T &v) {
-    s.insert(v);
-    return s;
-}

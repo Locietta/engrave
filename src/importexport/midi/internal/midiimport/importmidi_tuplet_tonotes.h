@@ -22,7 +22,7 @@
 #ifndef IMPORTMIDI_TUPLET_TONOTES_H
 #define IMPORTMIDI_TUPLET_TONOTES_H
 
-#include <map>
+#include "importmidi_timeline.h"
 
 namespace mu::engraving {
 struct DurationElement;
@@ -36,9 +36,9 @@ namespace MidiTuplet {
 struct TupletData;
 
 void add_element_to_tuplet(int voice, const ReducedFraction &on_time, const ReducedFraction &len, engraving::DurationElement *el,
-                           std::multimap<ReducedFraction, TupletData> &tuplets);
+                           MidiTimeline<TupletData> &tuplets);
 
-void create_tuplet_notes(engraving::Staff *staff, const std::multimap<ReducedFraction, TupletData> &tuplets);
+void create_tuplet_notes(engraving::Staff *staff, const MidiTimeline<TupletData> &tuplets);
 
 #ifndef NDEBUG
 bool have_tuplets_enough_elements(const engraving::Staff *staff);

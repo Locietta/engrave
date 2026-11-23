@@ -24,6 +24,8 @@
 #include <algorithm>
 #include <vector>
 
+#include <gtl/btree.hpp>
+
 #include "../midishared/midifile.h"
 #include "engraving/dom/durationtype.h"
 #include "engraving/dom/sig.h"
@@ -32,6 +34,7 @@
 #include "importmidi_meter.h"
 #include "importmidi_operations.h"
 #include "importmidi_quant.h"
+#include "importmidi_timeline.h"
 #include "importmidi_tuplet.h"
 #include "importmidi_tuplet_voice.h"
 #include "importmidi_voice.h"
@@ -52,7 +55,7 @@ bool has_complex_beamed_durations(const std::vector<std::pair<ReducedFraction, T
 
 void lengthen_note(MidiNote &note, int voice, const ReducedFraction &note_on_time, const ReducedFraction &duration_start,
                    const ReducedFraction &end_time, const ReducedFraction &bar_start, const ReducedFraction &bar_fraction,
-                   const std::multimap<ReducedFraction, MidiTuplet::TupletData> &tuplets, bool is_drum_track) {
+                   const MidiTimeline<MidiTuplet::TupletData> &tuplets, bool is_drum_track) {
     if (end_time <= note.off_time) {
         return;
     }
@@ -142,8 +145,7 @@ void lengthen_note(MidiNote &note, int voice, const ReducedFraction &note_on_tim
 // so start with short duration to check different cases,
 // to find the most simple one
 
-void shorten_drum_note(MidiNote &note, const std::multimap<ReducedFraction, MidiChord>::iterator &it,
-                       const std::multimap<ReducedFraction, MidiChord> &chords) {
+void shorten_drum_note(MidiNote &note, const MidiTimeline<MidiChord>::iterator &it, const MidiTimeline<MidiChord> &chords) {
     if (it->second.is_in_tuplet) { // if note on time is in tuplet -
                                    // set note off time to be inside that tuplet
         const auto &tuplet = it->second.tuplet->second;
@@ -179,8 +181,8 @@ void shorten_drum_note(MidiNote &note, const std::multimap<ReducedFraction, Midi
     }
 }
 
-void minimize_number_of_rests(std::multimap<ReducedFraction, MidiChord> &chords, const TimeSigMap *sigmap,
-                              const std::multimap<ReducedFraction, MidiTuplet::TupletData> &tuplets, bool is_drum_track) {
+void minimize_number_of_rests(MidiTimeline<MidiChord> &chords, const TimeSigMap *sigmap,
+                              const MidiTimeline<MidiTuplet::TupletData> &tuplets, bool is_drum_track) {
     for (auto it = chords.begin(); it != chords.end(); ++it) {
         for (MidiNote &note : it->second.notes) {
             if (is_drum_track) {
@@ -237,7 +239,7 @@ void minimize_number_of_rests(std::multimap<ReducedFraction, MidiChord> &chords,
     }
 }
 
-void simplify_durations(std::multimap<int, MTrack> &tracks, const TimeSigMap *sigmap, bool simplify_drum_tracks) {
+void simplify_durations(gtl::btree_multimap<int, MTrack> &tracks, const TimeSigMap *sigmap, bool simplify_drum_tracks) {
     auto &opers = midi_import_operations;
 
     for (auto &track : tracks) {
@@ -266,11 +268,11 @@ void simplify_durations(std::multimap<int, MTrack> &tracks, const TimeSigMap *si
     }
 }
 
-void simplify_durations_for_drums(std::multimap<int, MTrack> &tracks, const TimeSigMap *sigmap) {
+void simplify_durations_for_drums(gtl::btree_multimap<int, MTrack> &tracks, const TimeSigMap *sigmap) {
     simplify_durations(tracks, sigmap, true);
 }
 
-void simplify_durations_not_drums(std::multimap<int, MTrack> &tracks, const TimeSigMap *sigmap) {
+void simplify_durations_not_drums(gtl::btree_multimap<int, MTrack> &tracks, const TimeSigMap *sigmap) {
     simplify_durations(tracks, sigmap, false);
 }
 }} // namespace mu::iex::midi::Simplify

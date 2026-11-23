@@ -22,8 +22,9 @@
 #pragma once
 
 #include <cstdint>
-#include <map>
 #include <vector>
+
+#include <gtl/btree.hpp>
 
 #include "io/iodevice.h"
 
@@ -37,7 +38,7 @@ using MidiIODevice = muse::io::IODevice;
 
 struct MidiTrack {
 private:
-    std::multimap<int, MidiEvent> events_value;
+    gtl::btree_multimap<int, MidiEvent> events_value;
     int out_channel_value;
     int out_port_value;
     bool drum_track_value;
@@ -48,9 +49,9 @@ public:
 
     bool empty() const;
 
-    const std::multimap<int, MidiEvent> &events() const { return events_value; }
+    const gtl::btree_multimap<int, MidiEvent> &events() const { return events_value; }
 
-    std::multimap<int, MidiEvent> &events() { return events_value; }
+    gtl::btree_multimap<int, MidiEvent> &events() { return events_value; }
 
     int out_channel() const { return out_channel_value; }
 

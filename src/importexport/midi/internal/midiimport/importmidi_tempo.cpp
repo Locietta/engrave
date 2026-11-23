@@ -22,7 +22,8 @@
 #include "importmidi_tempo.h"
 
 #include <cmath>
-#include <map>
+
+#include <gtl/btree.hpp>
 
 #include "engraving/dom/dummyparent.h"
 #include "engraving/dom/factory.h"
@@ -43,7 +44,7 @@ ReducedFraction time2_tick(double time, double ticks_per_sec) { return ReducedFr
 
 // tempo in beats per second
 
-double find_basic_tempo(const std::multimap<int, MTrack> &tracks, bool is_human_performance) {
+double find_basic_tempo(const gtl::btree_multimap<int, MTrack> &tracks, bool is_human_performance) {
     for (const auto &track : tracks) {
         // don't read tempo from tempo track for human performed files
         // because very often the tempo in such track is completely erroneous
@@ -116,10 +117,10 @@ static void set_tempo_to_score(Score *score, int tick, double beats_per_second, 
 
 static inline double round_to_bpm(double beats_per_second) { return static_cast<int>(std::lround(beats_per_second * 60.0)) / 60.0; }
 
-static void apply_all_tempo_events(const std::multimap<int, MTrack> &tracks, Score *score, const bool round_tempo) {
+static void apply_all_tempo_events(const gtl::btree_multimap<int, MTrack> &tracks, Score *score, const bool round_tempo) {
     // Tempo-only tracks all share the same key in `tracks`, so iterating it directly would visit
     // their events track-by-track rather than in score-tick order. Collect first, then apply in tick order.
-    std::multimap<int, double> tempo_events; // score tick -> beats per second
+    gtl::btree_multimap<int, double> tempo_events; // score tick -> beats per second
 
     for (const auto &track : tracks) {
         if (track.second.is_division_in_tps) { // ticks per second
@@ -147,12 +148,12 @@ static void apply_all_tempo_events(const std::multimap<int, MTrack> &tracks, Sco
     }
 }
 
-void set_tempo(const std::multimap<int, MTrack> &tracks, Score *score) {
+void set_tempo(const gtl::btree_multimap<int, MTrack> &tracks, Score *score) {
     // The engine has no MIDI import preferences: the upstream default rounds tempi.
     const bool round_tempo = true;
 
     auto *midi_data = midi_import_operations.data();
-    std::set<ReducedFraction> beats = midi_data->human_beat_data.beat_set; // copy
+    gtl::btree_set<ReducedFraction> beats = midi_data->human_beat_data.beat_set; // copy
 
     if (beats.empty()) {
         // it's most likely not a human performance;

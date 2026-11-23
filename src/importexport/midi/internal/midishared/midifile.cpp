@@ -27,6 +27,8 @@
 #include <stdexcept>
 #include <string>
 
+#include <gtl/btree.hpp>
+
 #include "containers.h"
 #include "log.h"
 
@@ -639,7 +641,7 @@ void MidiTrack::set_out_channel(int n) {
 //---------------------------------------------------------
 
 void MidiTrack::merge_note_on_off() {
-    std::multimap<int, MidiEvent> el;
+    gtl::btree_multimap<int, MidiEvent> el;
 
     int hbank = 0xff;
     int lbank = 0xff;
