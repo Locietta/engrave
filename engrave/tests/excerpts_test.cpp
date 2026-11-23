@@ -43,7 +43,7 @@ void save(const std::filesystem::path &path, const std::string &bytes) {
 
 std::string finalized_native_export(const music::EngineContext &context, const music::ScoreProject &project) {
     engrave::assign_missing_ids(*project->master_score());
-    return music::export_native_score(context, project, "mscz", 0, "").value();
+    return music::export_native_score(context, project, "mscz", 0).value();
 }
 
 std::string export_selection(const music::EngineContext &context, mu::engraving::Score *score, bool midi) {

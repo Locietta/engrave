@@ -1,6 +1,7 @@
 #include "score_imports.h"
 
 #include <cstddef>
+#include <new>
 #include <stdexcept>
 
 #include "engraving/dom/masterscore.h"
@@ -31,12 +32,12 @@ void load_guitarpro_style(mu::engraving::MasterScore *score) {
 }
 } // namespace
 
-void import_guitarpro_score(mu::engraving::MasterScore *score, const std::string &bytes) {
+engrave::Result<void> import_guitarpro_score(mu::engraving::MasterScore *score, const std::string &bytes) {
     if (!score) {
-        throw std::invalid_argument("Guitar Pro import requires a score");
+        return std::unexpected(engrave::Error{engrave::ErrorCode::INVALID_ARGUMENT, "Guitar Pro import requires a score"});
     }
     if (bytes.empty() || bytes.size() > ::music::max_import_bytes) {
-        throw std::invalid_argument("Input must contain 1..8388608 bytes");
+        return std::unexpected(engrave::Error{engrave::ErrorCode::INVALID_INPUT, "Input must contain 1..8388608 bytes"});
     }
 
     muse::io::ByteView buffer(std::span<const uint8_t>(reinterpret_cast<const uint8_t *>(bytes.data()), bytes.size()));
@@ -44,19 +45,23 @@ void import_guitarpro_score(mu::engraving::MasterScore *score, const std::string
     mu::engraving::Err err = mu::engraving::Err::FILE_BAD_FORMAT;
     try {
         err = mu::iex::guitarpro::import_gtp(score, &buffer, false);
+    } catch (const std::bad_alloc &) {
+        throw;
     } catch (const std::exception &e) {
-        throw std::runtime_error(std::string("Guitar Pro import failed: ") + e.what());
+        return std::unexpected(engrave::Error{engrave::ErrorCode::INVALID_INPUT, std::string("Guitar Pro import failed: ") + e.what()});
     }
 
     if (err != mu::engraving::Err::NO_ERROR) {
-        throw std::runtime_error("Guitar Pro import failed with error " + std::to_string(static_cast<int>(err)));
+        return std::unexpected(engrave::Error{engrave::ErrorCode::INVALID_INPUT,
+                                              "Guitar Pro import failed with error " + std::to_string(static_cast<int>(err))});
     }
     if (!score->first_measure() || score->parts().empty()) {
-        throw std::runtime_error("Guitar Pro import produced an empty score");
+        return std::unexpected(engrave::Error{engrave::ErrorCode::INVALID_INPUT, "Guitar Pro import produced an empty score"});
     }
 
     // GuitarProReader loads the same style after import. Linked tab staves are
     // deliberately not created; the no-linked-tab default is preserved.
     load_guitarpro_style(score);
+    return {};
 }
 } // namespace music

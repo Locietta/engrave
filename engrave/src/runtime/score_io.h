@@ -20,7 +20,7 @@ engrave::Result<ScoreProject> load_native_score(const EngineContext &context, co
 // it, the layout of the score templates) with load_native_score's post-load steps.
 engrave::Result<ScoreProject> load_native_score_dir(const EngineContext &context, const std::string &mscx_path);
 engrave::Result<std::string> export_native_score(const EngineContext &context, const ScoreProject &project, const std::string &format,
-                                                 int page, const std::string &soundfont);
+                                                 int page);
 engrave::Result<std::string> export_native_score(const EngineContext &context, const ScoreProject &project, const std::string &format,
-                                                 const ExportOptions &options, const std::string &soundfont);
+                                                 const ExportOptions &options);
 } // namespace music

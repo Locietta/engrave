@@ -105,7 +105,7 @@ constexpr std::string_view fixture_name = "chordline_path.mscx";
 
 std::string native_source(engrave::Document &document) {
     return music::export_native_score(engrave::DocumentAccess::context(document), engrave::DocumentAccess::project(document), "mscx",
-                                      music::ExportOptions{.standalone_score = true, .transaction_snapshot = true}, {})
+                                      music::ExportOptions{.standalone_score = true, .transaction_snapshot = true})
         .value();
 }
 

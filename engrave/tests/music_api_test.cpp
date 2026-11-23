@@ -642,6 +642,48 @@ TEST(MusicWrite, LinkedStaffLanesCannotOverlap) {
     EXPECT_EQ(master.find_cr({0, 1}, 0), original);
 }
 
+TEST(MusicWrite, OverlapSweepReportsEarliestConflictingLaneInInputOrder) {
+    constexpr std::string_view source = R"(<museScore version="4.70"><Score><Division>480</Division>
+<Part id="1"><Staff/><trackName>Piano</trackName><Instrument id="piano"/></Part>
+<Staff id="1"><Measure><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig><Rest><durationType>measure</durationType></Rest></voice></Measure>
+</Staff></Score></museScore>)";
+    const auto document = open_fixture(source);
+    ASSERT_TRUE(document) << document.error().message;
+    const auto bar = (*document)->outline()->measures.at(0).id;
+    const auto revision = (*document)->revision();
+
+    // Nested intervals in reverse tick order: lane 1 overlaps lane 0 and lane 2; lane 1 is earliest in input order.
+    const auto nested = (*document)->write_phrase({.lanes = {
+                                                       {{bar, {2, 4}, 0, 0}, PitchDomain::Concert, {PhraseEvent{{1, 4}, {{c4}}}}},
+                                                       {{bar, {0, 1}, 0, 0}, PitchDomain::Concert, {PhraseEvent{{4, 4}, {{e4}}}}},
+                                                       {{bar, {1, 4}, 0, 0}, PitchDomain::Concert, {PhraseEvent{{1, 4}, {{g4}}}}},
+                                                   }});
+    read_test::expect_code(nested, ErrorCode::INVALID_ARGUMENT, "nested reverse-tick overlap");
+    ASSERT_FALSE(nested);
+    EXPECT_NE(nested.error().message.find("lane 1: the lane overlaps"), std::string::npos);
+
+    // Expired earlier lane [0, 1/4] precedes active overlap between lanes 1 and 2.
+    const auto after_expired = (*document)->write_phrase({.lanes = {
+                                                              {{bar, {0, 1}, 0, 0}, PitchDomain::Concert, {PhraseEvent{{1, 4}, {{c4}}}}},
+                                                              {{bar, {2, 4}, 0, 0}, PitchDomain::Concert, {PhraseEvent{{2, 4}, {{e4}}}}},
+                                                              {{bar, {3, 4}, 0, 0}, PitchDomain::Concert, {PhraseEvent{{1, 4}, {{g4}}}}},
+                                                          }});
+    read_test::expect_code(after_expired, ErrorCode::INVALID_ARGUMENT, "overlap after expired lane");
+    ASSERT_FALSE(after_expired);
+    EXPECT_NE(after_expired.error().message.find("lane 2: the lane overlaps"), std::string::npos);
+
+    // Earlier overlap between lanes 0 and 1 must be reported ahead of a later invalid lane 2.
+    const auto before_invalid = (*document)->write_phrase({.lanes = {
+                                                               {{bar, {0, 1}, 0, 0}, PitchDomain::Concert, {PhraseEvent{{1, 4}, {{c4}}}}},
+                                                               {{bar, {0, 1}, 0, 0}, PitchDomain::Concert, {PhraseEvent{{1, 4}, {{e4}}}}},
+                                                               {{bar, {2, 4}, 0, 0}, PitchDomain::Concert, {PhraseEvent{{0, 1}, {{g4}}}}},
+                                                           }});
+    read_test::expect_code(before_invalid, ErrorCode::INVALID_ARGUMENT, "overlap before invalid lane");
+    ASSERT_FALSE(before_invalid);
+    EXPECT_NE(before_invalid.error().message.find("lane 1: the lane overlaps"), std::string::npos);
+    EXPECT_EQ((*document)->revision(), revision);
+}
+
 TEST(MusicWrite, RestSplitWithLyricsRejectsAtomically) {
     constexpr std::string_view source = R"(<museScore version="4.70"><Score><Division>480</Division>
 <Part id="1"><Staff/><trackName>Piano</trackName><Instrument id="piano"/></Part>

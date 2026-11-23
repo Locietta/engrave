@@ -506,7 +506,7 @@ int main(int argc, char **argv) {
 
         // Round-trip the edited master score through MusicXML: the persisted
         // sounding pitches and ties must match the live DOM semantics.
-        const std::string exported = music::export_native_score(context, project, "musicxml", 0, "").value();
+        const std::string exported = music::export_native_score(context, project, "musicxml", 0).value();
         expect(exported.find("<score-partwise") != std::string::npos, "MusicXML export was empty");
         const auto reimported = music::load_native_score(context, exported, "musicxml").value();
         auto *reimported_score = reimported->master_score();
@@ -536,7 +536,7 @@ int main(int argc, char **argv) {
         expect(has_scope(excerpt_change.write_scopes, 1, 1, true), "Linked excerpt edit did not expand its dependency to the whole part");
         music::ExportOptions excerpt_options;
         excerpt_options.excerpt_id = 1;
-        const auto excerpt_xml = music::export_native_score(context, excerpt_project, "musicxml", excerpt_options, "").value();
+        const auto excerpt_xml = music::export_native_score(context, excerpt_project, "musicxml", excerpt_options).value();
         const auto excerpt_reopened = music::load_native_score(context, excerpt_xml, "musicxml").value();
         expect(excerpt_reopened->master_score()->parts().size() == 1, "Excerpt export contained other parts");
         const auto excerpt_export_region = music::query_score_region(excerpt_reopened->master_score(), make_region(0, 1, 1));

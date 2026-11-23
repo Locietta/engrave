@@ -1,6 +1,7 @@
 #include "score_render.h"
 
 #include <cmath>
+#include <exception>
 #include <memory>
 #include <stdexcept>
 
@@ -18,7 +19,9 @@
 
 namespace music {
 namespace {
-struct PaintCancelled {};
+struct PaintCancelled {
+    std::exception_ptr callback_error;
+};
 
 cairo_status_t append_bytes(void *context, const unsigned char *bytes, unsigned length) noexcept {
     try {
@@ -45,7 +48,7 @@ engrave::Result<std::string> render_score(const EngineContext &engine, mu::engra
     const auto poll = [&] { return options.cancelled && (*options.cancelled)(); };
     if (poll()) return std::unexpected(engrave::Error{engrave::ErrorCode::CANCELLED, "render cancelled"});
     using namespace mu::engraving;
-    if (!score || !score->npages()) throw std::runtime_error("Score has no pages");
+    if (!score || !score->npages()) return std::unexpected(engrave::Error{engrave::ErrorCode::INVALID_ARGUMENT, "Score has no pages"});
     const int npages = static_cast<int>(score->npages());
     if (options.page < 0 || (format != "pdf" && options.page >= npages))
         return std::unexpected(engrave::Error{engrave::ErrorCode::INVALID_ARGUMENT, "Page out of range"});
@@ -99,17 +102,29 @@ engrave::Result<std::string> render_score(const EngineContext &engine, mu::engra
         paint_options.device_dpi = dpi;
         paint_options.from_page = format == "pdf" ? first_page_value : options.page;
         paint_options.to_page = format == "pdf" ? last_page_value : options.page;
+        const auto poll_page = [&] {
+            bool cancelled;
+            try {
+                cancelled = poll();
+            } catch (...) {
+                throw PaintCancelled{std::current_exception()};
+            }
+            if (cancelled) throw PaintCancelled{};
+        };
         paint_options.on_new_page = [&] {
-            if (poll()) throw PaintCancelled{}; // previous page drawn, before encoding it
+            poll_page(); // previous page drawn, before encoding it
             cairo_show_page(context.get());
             check(cairo_status(context.get()));
-            if (poll()) throw PaintCancelled{}; // before drawing the next page
+            poll_page(); // before drawing the next page
         };
         paint_options.print_page_background = format == "pdf" ? true : options.draw_page_background;
         try {
             renderer->paint_score(&painter, score, paint_options);
-        } catch (const PaintCancelled &) {
+        } catch (const PaintCancelled &stop) {
+            if (stop.callback_error) std::rethrow_exception(stop.callback_error);
             return std::unexpected(engrave::Error{engrave::ErrorCode::CANCELLED, "render cancelled"});
+        } catch (const std::invalid_argument &error) {
+            return std::unexpected(engrave::Error{engrave::ErrorCode::INVALID_ARGUMENT, error.what()});
         }
         if (!painter.end_draw()) throw std::runtime_error("Painter did not finish");
     }

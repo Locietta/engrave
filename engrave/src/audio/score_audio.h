@@ -5,9 +5,10 @@
 #include <utility>
 #include <vector>
 
+#include <ankerl/unordered_dense.h>
+
 #include "audio_mix.h"
 #include "engraving/types/types.h"
-#include "global/flatmap.h"
 
 namespace mu::engraving {
 struct Score;
@@ -46,7 +47,7 @@ struct TrackSoloMute {
     bool operator==(const TrackSoloMute &) const = default;
 };
 
-using TrackSoloMuteMap = muse::FlatMap<std::pair<std::string, std::string>, TrackSoloMute>;
+using TrackSoloMuteMap = ankerl::unordered_dense::map<std::pair<std::string, std::string>, TrackSoloMute>;
 
 // Per-document default mix read from an MSCZ archive's audiosettings.json.
 // Tracks are keyed by the same (partId, instrumentId) identities that
@@ -58,8 +59,8 @@ using TrackSoloMuteMap = muse::FlatMap<std::pair<std::string, std::string>, Trac
 // yields neutral defaults.
 struct ScoreAudioMixDefaults {
     AudioOutputParams master;
-    muse::FlatMap<std::pair<std::string, std::string>, AudioOutputParams> tracks;
-    muse::FlatMap<std::string, TrackSoloMuteMap> excerpt_tracks_by_name;
+    ankerl::unordered_dense::map<std::pair<std::string, std::string>, AudioOutputParams> tracks;
+    ankerl::unordered_dense::map<std::string, TrackSoloMuteMap> excerpt_tracks_by_name;
     std::vector<TrackSoloMuteMap> excerpt_tracks_by_index;
 
     const TrackSoloMuteMap *get_excerpt_map(int excerpt_id, const std::string &excerpt_name = "") const noexcept {

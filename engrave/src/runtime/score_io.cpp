@@ -184,7 +184,8 @@ engrave::Result<ScoreProject> load_native_score(const EngineContext &context, co
         if (import_midi_score(project->master_score(), input) != engraving::Err::NO_ERROR) return invalid_input("MIDI import failed");
     } else if (format == "gp" || format == "gp3" || format == "gp4" || format == "gp5" || format == "gp6" || format == "gp7" ||
                format == "gpx" || format == "gtp" || format == "ptb") {
-        import_guitarpro_score(project->master_score(), input);
+        if (auto imported = import_guitarpro_score(project->master_score(), input); !imported)
+            return std::unexpected(std::move(imported.error()));
     } else
         return invalid_input("Unsupported score input format");
     finish_load(*project);
@@ -207,14 +208,14 @@ engrave::Result<ScoreProject> load_native_score_dir(const EngineContext &context
 }
 
 engrave::Result<std::string> export_native_score(const EngineContext &context, const ScoreProject &project, const std::string &format,
-                                                 int page, const std::string &soundfont) {
+                                                 int page) {
     ExportOptions options;
     options.page = page;
-    return export_native_score(context, project, format, options, soundfont);
+    return export_native_score(context, project, format, options);
 }
 
 engrave::Result<std::string> export_native_score(const EngineContext &context, const ScoreProject &project, const std::string &format,
-                                                 const ExportOptions &options, [[maybe_unused]] const std::string &soundfont) {
+                                                 const ExportOptions &options) {
     struct RestorePrecision {
         bool previous = TextStream::round_trip_doubles;
 

@@ -36,6 +36,7 @@
 #include "audio/engine/internal/synthesizers/fluidsynth/fluidtrack.h"
 #include "audio/engine/offlinerendersettings.h"
 #include "audio_output.h"
+#include "engrave/src/runtime/resource_filesystem.h"
 #include "engrave/src/score/score_excerpts.h"
 #include "engraving/dom/excerpt.h"
 #include "engraving/dom/instrument.h"
@@ -43,13 +44,10 @@
 #include "engraving/dom/part.h"
 #include "engraving/dom/score.h"
 #include "engraving/playback/flatplaybackscore.h"
-#include "global/flatmap.h"
-#ifdef ENGRAVE_PLAYBACK_HARNESS
-#endif
-#include "engrave/src/runtime/resource_filesystem.h"
 #include "engraving/playback/playbackwalk.h"
 #include "flat_playback_capture.h"
 #include "global/defer.h"
+#include "global/flatmap.h"
 #include "global/io/iodevice.h"
 #include "global/io/ioretcodes.h"
 #include "global/io/path.h"

@@ -4,8 +4,10 @@
 #include <limits>
 #include <numeric>
 #include <optional>
+#include <queue>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 #include <amc/flatset.hpp>
 
@@ -26,7 +28,6 @@
 #include "engraving/dom/tuplet.h"
 #include "engraving/editing/transpose.h"
 #include "engraving/engravingproject.h"
-#include "global/flatmap.h"
 #include <engrave/music.h>
 
 namespace engrave {
@@ -134,11 +135,17 @@ struct ChordRefs {
     PhraseLocation location;
 };
 
+struct Rhythm {
+    mu::engraving::track_idx_t track;
+    Tick start;
+    ChordRefs chord;
+};
+
 struct PhraseBatch {
     Batch batch;
     std::vector<PhraseLocation> locations;
     // AddTie needs both notes on the same physical track.
-    muse::FlatMap<mu::engraving::track_idx_t, muse::FlatMap<Tick, ChordRefs>> rhythms;
+    std::vector<Rhythm> rhythms;
 
     std::size_t append(Op op, const PhraseLocation &location) {
         const auto index = batch.ops.size();
@@ -148,20 +155,20 @@ struct PhraseBatch {
     }
 
     Result<void> add_ties() {
-        for (const auto &[track, events] : rhythms) {
-            for (const auto &[tick, chord] : events) {
-                if (chord.ties.empty()) continue;
-                const auto next = events.find(chord.end);
-                if (next == events.end() || next->second.keys.empty())
-                    return invalid(chord.location.prefix() + "a tie needs a next contiguous chord on the same track");
-                for (const auto &source : chord.ties) {
-                    const auto key = chord.keys[source.item - 1];
-                    const auto &keys = next->second.keys;
-                    const auto match = std::ranges::find(keys, key);
-                    if (match == keys.end()) return invalid(chord.location.prefix() + "the next chord has no note of the same pitch");
-                    append(AddTie{source, OpRef{next->second.entry_op, static_cast<std::size_t>(match - keys.begin()) + 1}},
-                           chord.location);
-                }
+        std::ranges::sort(rhythms,
+                          [](const Rhythm &a, const Rhythm &b) { return a.track != b.track ? a.track < b.track : a.start < b.start; });
+        for (auto it = rhythms.begin(); it != rhythms.end(); ++it) {
+            const auto &chord = it->chord;
+            if (chord.ties.empty()) continue;
+            const auto next = std::next(it);
+            if (next == rhythms.end() || next->track != it->track || next->start != chord.end || next->chord.keys.empty())
+                return invalid(chord.location.prefix() + "a tie needs a next contiguous chord on the same track");
+            for (const auto &source : chord.ties) {
+                const auto key = chord.keys[source.item - 1];
+                const auto &keys = next->chord.keys;
+                const auto match = std::ranges::find(keys, key);
+                if (match == keys.end()) return invalid(chord.location.prefix() + "the next chord has no note of the same pitch");
+                append(AddTie{source, OpRef{next->chord.entry_op, static_cast<std::size_t>(match - keys.begin()) + 1}}, chord.location);
             }
         }
         return {};
@@ -294,7 +301,7 @@ struct LaneBuilder {
             if (continue_ties || event.notes[i].tie_to_next) result.ties.push_back({result.entry_op, i + 1});
         }
         const auto entry = result.entry_op;
-        batch.rhythms[mu::engraving::staff2track(staff_index, voice)].emplace(cursor.tick, std::move(result));
+        batch.rhythms.push_back({mu::engraving::staff2track(staff_index, voice), cursor.tick, std::move(result)});
         return entry;
     }
 
@@ -373,19 +380,32 @@ struct LaneBuilder {
     }
 };
 
-using LaneIntervals = muse::FlatMap<mu::engraving::track_idx_t, muse::FlatMap<Tick, Tick>>;
+struct LaneInterval {
+    mu::engraving::track_idx_t track;
+    Tick start;
+    Tick end;
+    std::size_t lane;
+};
 
-Result<void> check_overlap(LaneIntervals &intervals, mu::engraving::track_idx_t track, Tick start, Tick end) {
-    auto &same_track = intervals[track];
-    const auto next = same_track.lower_bound(start);
-    if ((next != same_track.end() && next->first < end) || (next != same_track.begin() && std::prev(next)->second > start))
-        return invalid("the lane overlaps another lane on the same track");
-    same_track.emplace(start, end);
+Result<void> check_overlaps(std::vector<LaneInterval> &intervals) {
+    std::ranges::sort(
+        intervals, [](const LaneInterval &a, const LaneInterval &b) { return a.track != b.track ? a.track < b.track : a.start < b.start; });
+    // Report the first conflict in input order, including when several intervals nest.
+    const auto later_lane = [](const LaneInterval *a, const LaneInterval *b) { return a->lane > b->lane; };
+    std::priority_queue<const LaneInterval *, std::vector<const LaneInterval *>, decltype(later_lane)> active;
+    std::size_t first_conflict = intervals.size();
+    for (const auto &interval : intervals) {
+        while (!active.empty() && (active.top()->track != interval.track || active.top()->end <= interval.start)) active.pop();
+        if (!active.empty()) first_conflict = std::min(first_conflict, std::max(active.top()->lane, interval.lane));
+        active.push(&interval);
+    }
+    if (first_conflict < intervals.size())
+        return invalid(PhraseLocation{first_conflict}.prefix() + "the lane overlaps another lane on the same track");
     return {};
 }
 
 Result<void> lower_lane(const PhraseLane &lane, const mu::engraving::Score &score, mu::engraving::MasterScore &master, std::size_t index,
-                        PhraseBatch &batch, LaneIntervals &intervals) {
+                        PhraseBatch &batch, std::vector<LaneInterval> &intervals) {
     const auto &start = lane.start;
     const PhraseLocation location{index};
     auto prefix_error = [](Error error, const PhraseLocation &at) {
@@ -433,8 +453,7 @@ Result<void> lower_lane(const PhraseLane &lane, const mu::engraving::Score &scor
             lane.items[item]);
         if (!result) return prefix_error(std::move(result.error()), builder.location);
     }
-    auto overlap = check_overlap(intervals, linked_track, *tick, builder.cursor.tick);
-    if (!overlap) return prefix_error(std::move(overlap.error()), location);
+    intervals.push_back({linked_track, *tick, builder.cursor.tick, index});
     return {};
 }
 
@@ -448,11 +467,14 @@ Result<EditResult> Document::write_phrase(const Phrase &phrase, const EditOption
     if (!score) return std::unexpected(std::move(score.error()));
     if (phrase.lanes.empty()) return invalid("a phrase needs at least one lane");
     PhraseBatch batch;
-    LaneIntervals intervals;
+    std::vector<LaneInterval> intervals;
+    Result<void> lowered;
     for (std::size_t index = 0; index < phrase.lanes.size(); ++index) {
-        if (auto lane = lower_lane(phrase.lanes[index], **score, master, index, batch, intervals); !lane)
-            return std::unexpected(std::move(lane.error()));
+        lowered = lower_lane(phrase.lanes[index], **score, master, index, batch, intervals);
+        if (!lowered) break;
     }
+    if (auto overlap = check_overlaps(intervals); !overlap) return std::unexpected(std::move(overlap.error()));
+    if (!lowered) return std::unexpected(std::move(lowered.error()));
     if (auto ties = batch.add_ties(); !ties) return std::unexpected(std::move(ties.error()));
     auto result = edit(batch.batch, options);
     if (!result)

@@ -345,6 +345,20 @@ TEST(Output, CancellationPollsPageBoundariesAndDiscardsAllPages) {
     }
 }
 
+TEST(Output, PdfPageBoundaryPropagatesCallbackException) {
+    auto opened = music::test::open("slurs.mscz");
+    ASSERT_TRUE(opened.document);
+    engrave::RenderOptions options;
+    options.format = engrave::RenderFormat::PDF;
+    int polls = 0;
+    options.cancelled = [&] {
+        if (++polls == 2) throw std::invalid_argument("callback failed");
+        return false;
+    };
+    EXPECT_THROW(std::ignore = opened.document->render(options), std::invalid_argument);
+    EXPECT_EQ(polls, 2);
+}
+
 TEST(Output, SelectionsNameTheScoreOrOneOfItsExcerpts) {
     music::test::OpenedScore opened = music::test::open("linked_parts.mscx");
     ASSERT_TRUE(opened.document);

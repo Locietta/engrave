@@ -26,12 +26,12 @@ int main(int argc, char **argv) {
             std::cerr << project.error().message << '\n';
             return 1;
         }
-        auto xml = music::export_native_score(context, *project, "musicxml", 0, {});
+        auto xml = music::export_native_score(context, *project, "musicxml", 0);
         if (!xml) {
             std::cerr << xml.error().message << '\n';
             return 1;
         }
-        auto midi = music::export_native_score(context, *project, "midi", 0, {});
+        auto midi = music::export_native_score(context, *project, "midi", 0);
         if (!midi) {
             std::cerr << midi.error().message << '\n';
             return 1;

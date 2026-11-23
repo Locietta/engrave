@@ -1271,7 +1271,7 @@ Result<ExportOutput> export_score(const music::EngineContext &context, const mus
     } restore{budget, budget ? budget->output : std::nullopt};
 
     if (budget) budget->output.reset();
-    auto source = music::export_native_score(context, project, "mscx", options, {});
+    auto source = music::export_native_score(context, project, "mscx", options);
     if (budget) budget->output = restore.limit;
     if (!source) return std::unexpected(std::move(source.error()));
 

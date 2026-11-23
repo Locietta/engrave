@@ -130,7 +130,7 @@ Result<Document::Impl::Snapshot> Document::Impl::capture_snapshot() const try {
     auto &master = *project->master_score();
     Snapshot snapshot;
     auto exported = music::export_native_score(*engine->context, project, "mscz",
-                                               music::ExportOptions{.transaction_snapshot = true, .compress = false}, {});
+                                               music::ExportOptions{.transaction_snapshot = true, .compress = false});
     if (!exported) return std::unexpected(Error{ErrorCode::IO, std::format("cannot capture the snapshot: {}", exported.error().message)});
     snapshot.bytes = *std::move(exported);
     // Restore reads each snapshot entry at most once, so the central directory
@@ -317,7 +317,7 @@ Result<ExportOutput> Document::export_score_with_warnings(const ExportOptions &o
     if (!options.capture.max_bytes && !options.capture.max_working_bytes && !options.capture.cancelled) {
         if (options.native_version == "4.70")
             return write470::export_score(*impl_->engine->context, impl_->project, **selected, name, backend);
-        auto data = music::export_native_score(*impl_->engine->context, impl_->project, name, backend, {});
+        auto data = music::export_native_score(*impl_->engine->context, impl_->project, name, backend);
         if (!data) return std::unexpected(std::move(data.error()));
         const auto *bytes = reinterpret_cast<const std::byte *>(data->data());
         return ExportOutput{std::vector<std::byte>(bytes, bytes + data->size()), {}};
@@ -343,7 +343,7 @@ Result<ExportOutput> Document::export_score_with_warnings(const ExportOptions &o
             if (result && !budget.output_size(result->bytes.size())) return stopped();
             return result;
         }
-        auto data = music::export_native_score(*impl_->engine->context, impl_->project, name, backend, {});
+        auto data = music::export_native_score(*impl_->engine->context, impl_->project, name, backend);
         if (!data) return std::unexpected(std::move(data.error()));
         if (!budget.poll() || !budget.output_size(data->size())) return stopped();
         const auto *bytes = reinterpret_cast<const std::byte *>(data->data());

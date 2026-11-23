@@ -159,14 +159,6 @@ struct AudioRenderRequest {
     // sends nothing to the reverb return and renders the dry mix.
     bool reverb = true;
     double reverb_send = 0.30;
-    // Kept for source compatibility. 4.7.6 waited for saveSoundTrack()'s
-    // promise and could at least catch a promise that never ran; 5.0's
-    // SoundTrackWriter renders synchronously inside export_score_audio()
-    // (soundtrackwriter.cpp:96-121 -> 133-207), so this driver no longer pumps
-    // an event loop and cannot honour a timeout. A caller that needs a deadline
-    // must enforce it out of process: for the synchronous export the parent's
-    // duration-derived deadline is the real limit (engine_audio.cpp).
-    std::int64_t timeout_ms = 0;
     UniqueFn<bool() const> cancelled;
 };
 
