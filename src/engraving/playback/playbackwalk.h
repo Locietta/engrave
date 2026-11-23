@@ -3,6 +3,8 @@
 
 #include <iterator>
 
+#include "global/fn.h"
+
 //! The score walk sends rendered events and playback context to a Store:
 //!
 //!   bool contains(const InstrumentTrackId &) const;           // the track already exists
@@ -11,8 +13,6 @@
 //!   const PlaybackSetupData *find_setup(const InstrumentTrackId &) const;
 //!   void apply_context(const InstrumentTrackId &, PlaybackPartData &, Walk &, bool last_track); // dynamics and context events
 //!   void emit(const InstrumentTrackId &, Render);             // creates the track, render(sink)
-
-#include <functional>
 
 #include <amc/flatset.hpp>
 
@@ -50,7 +50,12 @@ inline bool is_playback_chord_symbols_track(const InstrumentTrackId &track_id) {
 
 //! One part's context, applied to each of the part's tracks
 struct PlaybackPartData {
-    explicit PlaybackPartData(const std::function<void()> &checkpoint = {}) : checkpoint_(checkpoint) {}
+    explicit PlaybackPartData(muse::FnRef<void()> checkpoint = {}) : checkpoint_(checkpoint) {}
+
+    template <class F>
+        requires(!std::is_lvalue_reference_v<F> && !std::same_as<std::remove_cvref_t<F>, muse::FnRef<void()>> &&
+                 !std::same_as<std::remove_cvref_t<F>, std::nullptr_t>)
+    explicit PlaybackPartData(F &&) = delete;
 
     PlaybackPartData(const PlaybackPartData &) = delete;
     PlaybackPartData &operator=(const PlaybackPartData &) = delete;
@@ -71,7 +76,7 @@ struct PlaybackPartData {
         });
     }
 
-    std::function<void()> checkpoint_;
+    muse::FnRef<void()> checkpoint_;
     muse::mpe::DynamicAutomationLayers dynamics;
     muse::FlatMap<muse::mpe::timestamp_t, muse::mpe::SoundPresetChangeEventList> sound_presets;
     muse::FlatMap<muse::mpe::timestamp_t, muse::mpe::TextArticulationEventList> text_articulations;
@@ -87,7 +92,7 @@ struct PlaybackWalk {
     const PlaybackEventsRenderer &renderer;
     const PlaybackSetupDataResolver &setup_resolver;
     const Profiles *profiles_repository = nullptr;
-    const std::function<void()> &checkpoint_callback;
+    muse::FnRef<void()> checkpoint_callback;
     bool expand_repeats = true;
     bool metronome_enabled = true;
     Store &store;

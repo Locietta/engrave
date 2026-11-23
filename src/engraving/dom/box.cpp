@@ -543,7 +543,7 @@ TBox::TBox(const TBox &tbox) : VBox(tbox) {
 
 TBox::~TBox() { delete text_; }
 
-void TBox::scan_elements(std::function<void(EngravingItem *)> func) {
+void TBox::scan_elements(muse::FnRef<void(EngravingItem *)> func) {
     text_->scan_elements(func);
     Box::scan_elements(func);
 }

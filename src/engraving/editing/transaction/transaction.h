@@ -1,10 +1,10 @@
 #pragma once
-#include <functional>
 #include <memory>
 #include <span>
 #include <variant>
 
 #include "dom/score.h"
+#include "global/fn.h"
 #include "global/types/translatablestring.h"
 
 namespace mu::engraving {
@@ -86,7 +86,7 @@ struct TransactionManager {
     explicit TransactionManager(MasterScore *master) : master_score_(master) {}
 
     ~TransactionManager();
-    void transaction(const muse::TranslatableString &description, std::function<void(Transaction &)> func);
+    void transaction(const muse::TranslatableString &description, muse::FnRef<void(Transaction &)> func);
     void begin_transaction(const muse::TranslatableString &description);
     void end_transaction(bool failed = false);
     void prepare_commit();

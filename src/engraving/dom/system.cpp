@@ -510,7 +510,7 @@ MeasureBase *System::next_measure(const MeasureBase *m) const {
     return nm;
 }
 
-void System::scan_elements(std::function<void(EngravingItem *)> func) {
+void System::scan_elements(muse::FnRef<void(EngravingItem *)> func) {
     if (page_lock_indicator_) {
         func(page_lock_indicator_);
     }

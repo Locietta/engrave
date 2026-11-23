@@ -2,8 +2,9 @@
 #pragma once
 
 #include <exception>
-#include <functional>
 #include <iterator>
+
+#include "global/fn.h"
 
 namespace mu::engraving {
 // Remove from the back: no vector shifts, and unordered_dense erases without a bulk bucket clear.
@@ -29,7 +30,7 @@ void drain_playback_back(Container &items, const Step &step) {
 
 // As with PlaybackScore release, finish cleanup before rethrowing a latched cancellation.
 template <class Release>
-void release_playback_polled(const std::function<void()> &checkpoint, Release release) {
+void release_playback_polled(muse::FnRef<void()> checkpoint, Release release) {
     std::exception_ptr error;
     const auto poll = [&] {
         if (checkpoint && !error) {

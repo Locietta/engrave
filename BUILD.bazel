@@ -216,6 +216,12 @@ cc_library(
 )
 
 cc_library(
+    name = "fn_ref",
+    hdrs = ["muse/framework/global/fn.h"],
+    strip_include_prefix = "muse/framework",
+)
+
+cc_library(
     name = "mnx_model",
     srcs = glob(["src/importexport/mnx/model/*.cpp"]),
     hdrs = glob(
@@ -232,6 +238,7 @@ cc_library(
         "src/importexport/mnx/thirdparty",
     ],
     deps = [
+        ":fn_ref",
         "@glaze",
         "@unordered_dense",
     ],
@@ -304,6 +311,7 @@ cc_library(
         "NO_GLIB",
         "NO_THREADS",
     ],
+    deps = [":fn_ref"],
     includes = FLUIDSYNTH_INCLUDES,
     textual_hdrs = glob(
         [

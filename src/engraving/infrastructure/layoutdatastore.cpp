@@ -70,7 +70,7 @@ bool contains_retired(std::span<const EngravingItem *const> targets, const Engra
 }
 
 void add_layout_payload_children(const EngravingItem &owner, const EngravingItem::LayoutData &data,
-                                 const std::function<void(const EngravingItem *)> &visit) {
+                                 muse::FnRef<void(const EngravingItem *)> visit) {
     if (owner.is_chord_rest()) {
         const auto *cr_data = static_cast<const ChordRest::LayoutData *>(&data);
         visit(cr_data->tab_dur);
@@ -360,7 +360,7 @@ void LayoutDataStore::erase(EngravingItem &item) {
     data.reset();
 }
 
-void LayoutDataStore::for_each_output(const std::function<void(EngravingItem &, EngravingItem::LayoutData &)> &complete) {
+void LayoutDataStore::for_each_output(muse::FnRef<void(EngravingItem &, EngravingItem::LayoutData &)> complete) {
     for (auto &record : records_->items.values()) complete(*record.second.item, *record.second.data);
 }
 
@@ -683,7 +683,8 @@ ScoreRenderer::ScoreRenderer() = default;
 ScoreRenderer::~ScoreRenderer() = default;
 
 LayoutDataStore &ScoreRenderer::layout_data_store(Score &score) {
-    if (auto *master = score.master_score(); master && master->layout_store_boundary) return master->layout_store_boundary(score);
+    if (auto *master = score.master_score(); master && master->layout_boundaries && master->layout_boundaries->store)
+        return master->layout_boundaries->store(score);
     if (auto *store = score.layout_data_store()) return *store;
     return create_layout_data_store(score);
 }

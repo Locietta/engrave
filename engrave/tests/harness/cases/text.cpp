@@ -2,7 +2,6 @@
 
 #include <cmath>
 #include <format>
-#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -47,7 +46,7 @@ using mu::engraving::Segment;
 using mu::engraving::SymId;
 using mu::engraving::TextBase;
 
-using Expect = std::function<std::string(Document &, const SegmentAddress &)>;
+using Expect = muse::UniqueFn<std::string(Document &, const SegmentAddress &) const>;
 
 // --- the document as the checks find it ----------------------------------------
 
@@ -187,7 +186,8 @@ OpCase add_text_case(std::string name, std::string fixture, std::size_t measure,
                 shared->at = address_in(master_of(document), measure, staff, voice, offset);
                 return Batch{{AddText{shared->at, style, text}}};
             },
-        .expect = [shared, expect](Document &document, const Fingerprint &, const Fingerprint &) { return expect(document, shared->at); },
+        .expect = [shared, expect = std::move(expect)](Document &document, const Fingerprint &,
+                                                       const Fingerprint &) { return expect(document, shared->at); },
     };
 }
 
@@ -207,13 +207,14 @@ OpCase add_to_segment_case(std::string name, std::string fixture, std::size_t me
                 shared->at = address_in(master_of(document), measure, staff, voice, offset);
                 return Batch{{Add{shared->at, type, props}}};
             },
-        .expect = [shared, expect](Document &document, const Fingerprint &, const Fingerprint &) { return expect(document, shared->at); },
+        .expect = [shared, expect = std::move(expect)](Document &document, const Fingerprint &,
+                                                       const Fingerprint &) { return expect(document, shared->at); },
     };
 }
 
 // Add on the first chord of the fixture.
 OpCase add_to_chord_case(std::string name, std::string fixture, std::string type, std::vector<std::pair<std::string, Value>> props,
-                         std::function<std::string(Document &, const ElementId &)> expect) {
+                         muse::UniqueFn<std::string(Document &, const ElementId &) const> expect) {
     struct Shared {
         ElementId chord;
     };
@@ -227,8 +228,8 @@ OpCase add_to_chord_case(std::string name, std::string fixture, std::string type
                 shared->chord = find_id(document, "Chord");
                 return Batch{{Add{shared->chord, type, props}}};
             },
-        .expect = [shared, expect](Document &document, const Fingerprint &,
-                                   const Fingerprint &) { return expect(document, shared->chord); },
+        .expect = [shared, expect = std::move(expect)](Document &document, const Fingerprint &,
+                                                       const Fingerprint &) { return expect(document, shared->chord); },
     };
 }
 

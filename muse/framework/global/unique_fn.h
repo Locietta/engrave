@@ -94,7 +94,7 @@ struct UniqueFnBase {
 
 // Owning move-only callable (C++23 std::move_only_function semantics), backed by
 // ngcpp-proxy while Linux xclang libc++ does not ship std::move_only_function.
-// Empty function pointers, member pointers, std::function, and UniqueFn targets
+// Empty function pointers, member pointers, standard function wrappers, and UniqueFn targets
 // construct an empty UniqueFn.
 template <class Sig>
 struct UniqueFn;

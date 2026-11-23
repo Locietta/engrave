@@ -26,6 +26,7 @@
 
 #include "../types/types.h"
 #include "durationelement.h"
+#include "global/fn.h"
 #include "property.h"
 
 namespace mu::engraving {
@@ -111,7 +112,7 @@ public:
         return std::find(current_elements_.begin(), current_elements_.end(), el) != current_elements_.end();
     }
 
-    void scan_elements(std::function<void(EngravingItem *)> func) override;
+    void scan_elements(muse::FnRef<void(EngravingItem *)> func) override;
 
     void reset() override;
 

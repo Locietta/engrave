@@ -28,7 +28,6 @@
 */
 
 #include <cstdint>
-#include <functional>
 #include <memory>
 #include <optional>
 
@@ -44,6 +43,7 @@
 #include "../style/style.h"
 #include "../types/constants.h"
 #include "chordlist.h"
+#include "global/fn.h"
 #include "global/types/ret.h"
 #include "input.h"
 #include "mscore.h"
@@ -96,6 +96,7 @@ struct InstrumentTemplate;
 struct InputState;
 struct KeyList;
 struct KeySigEvent;
+struct LayoutBoundaries;
 struct LinkedObjects;
 struct Lyrics;
 struct MasterScore;
@@ -235,7 +236,7 @@ public:
     // through a pointer it does not own checks this before touching it.
     static bool is_alive(const Score *score);
 
-    void scan_elements(std::function<void(EngravingItem *)> func) override;
+    void scan_elements(muse::FnRef<void(EngravingItem *)> func) override;
 
     DummyParent *dummy() const { return dummy_; }
 
@@ -417,7 +418,7 @@ public:
     std::vector<SharedPart *> shared_parts() const;
     bool has_shared_parts() const;
 
-    using StaffAccepted = std::function<bool(const Staff &)>;
+    using StaffAccepted = muse::FnRef<bool(const Staff &)>;
     amc::FlatSet<staff_idx_t> staff_idx_set_from_range(const track_idx_t track_from, const track_idx_t track_to,
                                                        StaffAccepted staff_accepted = StaffAccepted()) const;
 
@@ -649,7 +650,7 @@ public:
     void connect_ties(bool silent = false);
     void undo_remove_stale_tie_jump_points(bool undo = true);
 
-    void scan_elements_in_range(std::function<void(EngravingItem *)> func);
+    void scan_elements_in_range(muse::FnRef<void(EngravingItem *)> func);
 
     int file_division() const { return file_division_; } ///< division of current loading *.msc file
 
@@ -688,8 +689,7 @@ public:
 
     NormalizeState normalize_state;
     // Installed on the master by Document; excerpts resolve through their master.
-    std::function<void(Score &)> layout_boundary;
-    std::function<rendering::score::LayoutDataStore &(Score &)> layout_store_boundary;
+    std::unique_ptr<LayoutBoundaries> layout_boundaries;
     void invalidate_layout(const Fraction &start, const Fraction &end);
     void invalidate_layouts(const Fraction &start, const Fraction &end);
     void ensure_layout();
@@ -837,7 +837,7 @@ public:
     /// For Scores: returns the excerpt name
     virtual String name() const;
 
-    void for_all_lyrics(std::function<void(Lyrics *)> f);
+    void for_all_lyrics(muse::FnRef<void(Lyrics *)> f);
 
     void update_padding_tables();
 

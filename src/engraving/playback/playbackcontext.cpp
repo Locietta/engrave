@@ -65,7 +65,7 @@ static dynamic_level_t to_dynamic_level(double normalized_value) {
 template <typename ByTrackMap, typename ResultMap, typename MergeFn>
 static void collect_by_track_range(const ByTrackMap &by_track_map, const track_idx_t track_from, const track_idx_t track_to,
                                    const Score *score, const amc::FlatSet<track_idx_t> &used_tracks, ResultMap &result,
-                                   const std::function<void()> &checkpoint, MergeFn merge) {
+                                   muse::FnRef<void()> checkpoint, MergeFn merge) {
     // Merge sorted track ranges; ties retain track order, then per-track emission order.
     using Iterator = typename ByTrackMap::mapped_type::const_iterator;
 
@@ -159,7 +159,7 @@ muse::mpe::timestamp_t PlaybackContext::find_playing_technique_timestamp(const t
 }
 
 muse::FlatMap<timestamp_t, SoundPresetChangeEventList>
-PlaybackContext::sound_presets(const track_idx_t track_from, const track_idx_t track_to, const std::function<void()> &checkpoint) const {
+PlaybackContext::sound_presets(const track_idx_t track_from, const track_idx_t track_to, muse::FnRef<void()> checkpoint) const {
     muse::FlatMap<timestamp_t, SoundPresetChangeEventList> result;
 
     collect_by_track_range(sound_presets_by_track_, track_from, track_to, score_, used_tracks_, result, checkpoint,
@@ -188,9 +188,8 @@ SoundPresetChangeEventList PlaybackContext::sound_presets(const track_idx_t trac
     return it->second;
 }
 
-muse::FlatMap<timestamp_t, TextArticulationEventList> PlaybackContext::text_articulations(const track_idx_t track_from,
-                                                                                          const track_idx_t track_to,
-                                                                                          const std::function<void()> &checkpoint) const {
+muse::FlatMap<timestamp_t, TextArticulationEventList>
+PlaybackContext::text_articulations(const track_idx_t track_from, const track_idx_t track_to, muse::FnRef<void()> checkpoint) const {
     muse::FlatMap<timestamp_t, TextArticulationEventList> result;
 
     collect_by_track_range(text_articulations_by_track_, track_from, track_to, score_, used_tracks_, result, checkpoint,
@@ -218,7 +217,7 @@ TextArticulationEvent PlaybackContext::text_articulation(const track_idx_t track
 }
 
 muse::FlatMap<timestamp_t, SyllableEventList> PlaybackContext::syllables(const track_idx_t track_from, const track_idx_t track_to,
-                                                                         const std::function<void()> &checkpoint) const {
+                                                                         muse::FnRef<void()> checkpoint) const {
     muse::FlatMap<timestamp_t, SyllableEventList> result;
 
     collect_by_track_range(syllables_by_track_, track_from, track_to, score_, used_tracks_, result, checkpoint,
@@ -246,7 +245,7 @@ SyllableEvent PlaybackContext::syllable(const track_idx_t track_idx, const int n
 }
 
 DynamicAutomationLayers PlaybackContext::dynamic_level_layers(const track_idx_t track_from, const track_idx_t track_to,
-                                                              const std::function<void()> &checkpoint) const {
+                                                              muse::FnRef<void()> checkpoint) const {
 
     if (!score_ || !score_->automation_data()) {
         return {};
@@ -289,7 +288,7 @@ DynamicAutomationLayers PlaybackContext::dynamic_level_layers(const track_idx_t 
 }
 
 void PlaybackContext::update(const track_idx_t track_from, const track_idx_t track_to, const int tick_from, const int tick_to,
-                             bool expand_repeats, const std::function<void()> &checkpoint) {
+                             bool expand_repeats, muse::FnRef<void()> checkpoint) {
 
     IF_ASSERT_FAILED(score_) { return; }
 
@@ -708,7 +707,7 @@ bool PlaybackContext::has_only_one_lyrics_verse(const RepeatSegment *repeat, con
 }
 
 namespace mu::engraving {
-void PlaybackContext::release(const std::function<void()> &step) {
+void PlaybackContext::release(muse::FnRef<void()> step) {
     drain_playback_back(used_tracks_, step);
     drain_playback_back(dynamics_curve_by_track_, step);
     drain_playback_back(sound_presets_by_track_, step);

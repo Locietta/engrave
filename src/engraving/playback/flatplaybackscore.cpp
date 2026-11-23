@@ -17,6 +17,7 @@ bool track_less(const std::pair<InstrumentTrackId, muse::mpe::TrackEvents> &entr
 //! events go straight to the freeze (the legacy gate in LegacyStore::apply_context is always true there)
 struct FlatStore {
     PlaybackScore &score;
+    muse::mpe::FreezeProgress progress;
 
     bool contains(const InstrumentTrackId &track_id) const { return score.find(track_id) != nullptr; }
 
@@ -35,12 +36,12 @@ struct FlatStore {
     template <class Walk>
     void apply_context(const InstrumentTrackId &track_id, const PlaybackPartData &data, const Walk &walk, bool) {
         muse::mpe::TrackEvents &track = score.track(track_id);
-        muse::mpe::freeze_dynamics(track, data.dynamics, score.progress);
+        muse::mpe::freeze_dynamics(track, data.dynamics, progress);
 
         const auto append_events = [&](const auto &events) {
             for (const auto &pair : events) {
                 walk.checkpoint();
-                muse::mpe::freeze_cold_events(track, pair.first, std::span{pair.second}, score.progress);
+                muse::mpe::freeze_cold_events(track, pair.first, std::span{pair.second}, progress);
             }
         };
 
@@ -51,7 +52,7 @@ struct FlatStore {
 
     template <class Render>
     void emit(const InstrumentTrackId &track_id, Render &&render) {
-        FlatEventsSink sink{score.track(track_id), score.progress};
+        FlatEventsSink sink{score.track(track_id), progress};
         render(sink);
     }
 };
@@ -70,7 +71,7 @@ const muse::mpe::TrackEvents *PlaybackScore::find(const InstrumentTrackId &id) c
     return it == tracks.end() || it->first != id ? nullptr : &it->second;
 }
 
-void PlaybackScore::release(const std::function<void()> &checkpoint) {
+void PlaybackScore::release(muse::FnRef<void()> checkpoint) {
     std::exception_ptr error;
     std::size_t remaining = 4096;
     const auto poll = [&] {
@@ -102,7 +103,7 @@ void PlaybackScore::release(const std::function<void()> &checkpoint) {
     if (error) std::rethrow_exception(error);
 }
 
-PlaybackScore PlaybackScoreBuilder::build(Score *score, const std::function<void()> &checkpoint) const {
+PlaybackScore PlaybackScoreBuilder::build(Score *score, muse::FnRef<void()> checkpoint) const {
     PlaybackScore result;
     if (!score) return result;
     if (score->measures()->empty() || !score->last_measure()) {
@@ -111,10 +112,12 @@ PlaybackScore PlaybackScoreBuilder::build(Score *score, const std::function<void
         return result;
     }
 
-    // The latched checkpoint also bounds the freeze loops; it is not kept in the returned store
-    result.progress.checkpoint = checkpoint;
+    FlatStore store{result, {}};
+    if (checkpoint) store.progress.checkpoint = checkpoint;
 #ifdef ENGRAVE_PLAYBACK_HARNESS
-    result.progress.dump_note = dump_note;
+    if (dump_note) {
+        store.progress.dump_note = [this](const muse::mpe::NoteEvent &event) { return dump_note ? dump_note(event) : std::string{}; };
+    }
 #endif
     if (checkpoint) {
         checkpoint();
@@ -124,7 +127,6 @@ PlaybackScore PlaybackScoreBuilder::build(Score *score, const std::function<void
     const PlaybackContextPtr &playback_ctx = result.context;
     const PlaybackEventsRenderer renderer;
     PlaybackSetupDataResolver setup_resolver;
-    FlatStore store{result};
     PlaybackWalk<FlatStore> walk{score,      playback_ctx, renderer,          setup_resolver, &profiles,
                                  checkpoint, play_repeats, metronome_enabled, store};
     try {
@@ -133,10 +135,6 @@ PlaybackScore PlaybackScoreBuilder::build(Score *score, const std::function<void
         result.release();
         throw;
     }
-    result.progress.checkpoint = {};
-#ifdef ENGRAVE_PLAYBACK_HARNESS
-    result.progress.dump_note = {};
-#endif
     return result;
 }
 } // namespace mu::engraving

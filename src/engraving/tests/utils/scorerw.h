@@ -23,8 +23,6 @@
 #ifndef MU_ENGRAVING_SCORERW_H
 #define MU_ENGRAVING_SCORERW_H
 
-#include <functional>
-
 #include "engraving/dom/masterscore.h"
 #include "engraving/engravingerrors.h"
 #include "types/bytearray.h"
@@ -42,8 +40,8 @@ struct ScoreRW {
     static void set_services(const EngravingServices *services);
     static const EngravingServices &services();
 
-    using ImportFunc = std::function<Err(MasterScore *score, const muse::io::PathT &path)>;
-    using ExportFunc = std::function<Err(Score *score, const muse::io::PathT &path)>;
+    using ImportFunc = Err (*)(MasterScore *score, const muse::io::PathT &path);
+    using ExportFunc = Err (*)(Score *score, const muse::io::PathT &path);
 
     static MasterScore *read_score(const String &path, bool is_absolute_path = false, ImportFunc import_func = nullptr);
     // Save names are file names, not paths: a relative name resolves into a private

@@ -183,7 +183,7 @@ void Ambitus::set_bottom_tpc(int val, bool apply_logic) {
     normalize();
 }
 
-void Ambitus::scan_elements(std::function<void(EngravingItem *)> func) {
+void Ambitus::scan_elements(muse::FnRef<void(EngravingItem *)> func) {
     func(this);
     if (top_accidental_->accidental_type() != AccidentalType::NONE) {
         func(top_accidental_);

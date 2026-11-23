@@ -24,6 +24,7 @@
 
 #include "chordrest.h"
 #include "containers.h"
+#include "global/fn.h"
 #include "notedot.h"
 
 namespace mu::engraving {
@@ -81,7 +82,7 @@ public:
     double mag() const override;
     double intrinsic_mag() const override;
 
-    void scan_elements(std::function<void(EngravingItem *)> func) override;
+    void scan_elements(muse::FnRef<void(EngravingItem *)> func) override;
     void set_track(track_idx_t val) override;
 
     bool is_gap() const { return gap_; }

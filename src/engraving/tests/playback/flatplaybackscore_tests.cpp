@@ -3,7 +3,6 @@
 #include <array>
 #include <bit>
 #include <chrono>
-#include <functional>
 #include <limits>
 #include <memory>
 #include <span>
@@ -119,21 +118,22 @@ DynamicAutomationLayers make_dynamics() {
 }
 
 struct FlatFixture {
+    FreezeProgress progress;
     PlaybackScore flat;
     InstrumentTrackId id{ID(7), String(u"violin")};
 
-    void emit(const timestamp_t key, const PlaybackEventList &list) { freeze_events(flat.track(id), key, list, flat.progress); }
+    void emit(const timestamp_t key, const PlaybackEventList &list) { freeze_events(flat.track(id), key, list, progress); }
 
     template <class Event>
     void emit_context(const timestamp_t key, const std::vector<Event> &events) {
-        freeze_cold_events(flat.track(id), key, std::span{events}, flat.progress);
+        freeze_cold_events(flat.track(id), key, std::span{events}, progress);
     }
 
     void build() {
         auto &track = flat.track(id);
         track.setup = PlaybackSetupData(String(u"violin"), SoundCategory::STRINGS, StringList{String(u"orchestral")});
         track.setup.score_id = "score-1";
-        freeze_dynamics(track, make_dynamics(), flat.progress);
+        freeze_dynamics(track, make_dynamics(), progress);
 
         // Context events first, as apply_context_to_track_data inserts them before the walk
         emit_context(0, std::vector<SoundPresetChangeEvent>{make_preset(u"Engrave.Preset.Δ", 3)});
@@ -233,7 +233,7 @@ TEST(FlatPlaybackStoreTests, FreezeKeepsLegacyOrderAndFields) {
     EXPECT_EQ(track.setup.id, String(u"violin"));
 
     // Dynamics are assigned, not appended
-    freeze_dynamics(fixture.flat.track(fixture.id), make_dynamics(), fixture.flat.progress);
+    freeze_dynamics(fixture.flat.track(fixture.id), make_dynamics(), fixture.progress);
     EXPECT_EQ(track.dynamic_points.size(), 4u);
 }
 
@@ -378,7 +378,7 @@ TEST(FlatPlaybackStoreTests, ProjectionDetectsCorruptedRecords) {
     fixture.build();
     const auto baseline = FlatFixture::flat_projection(fixture.flat);
 
-    const std::vector<std::pair<const char *, std::function<void(TrackEvents &)>>> corruptions{
+    const std::vector<std::pair<const char *, void (*)(TrackEvents &)>> corruptions{
         {"note duration", [](TrackEvents &t) { t.notes[0].actual_duration += 1; }},
         {"note bps", [](TrackEvents &t) { t.notes[2].bps = 2.0; }},
         {"velocity", [](TrackEvents &t) { t.notes[1].velocity_override.reset(); }},
@@ -791,8 +791,11 @@ TEST_F(PlaybackScoreBuilderTests, BuilderPollsAndClearsTheCheckpoint) {
     const PlaybackScoreBuilder builder{profiles_};
 
     std::uint64_t built_polls = 0;
-    const auto flat = builder.build(score.get(), [&] { ++built_polls; });
-    EXPECT_FALSE(flat.progress.checkpoint);
+    const auto count_poll = [&] { ++built_polls; };
+    auto flat = builder.build(score.get(), count_poll);
+    const auto polls_before_release = built_polls;
+    flat.release();
+    EXPECT_EQ(built_polls, polls_before_release);
     EXPECT_GT(built_polls, 50u);
 
     struct Cancelled {};
@@ -849,7 +852,8 @@ TEST_F(PlaybackScoreBuilderTests, RendererEmitsEmptyGroupsAndAppendsToExistingKe
     PlaybackScore flat;
     const InstrumentTrackId id{ID(1), String(u"test")};
     auto &events = flat.track(id);
-    FlatEventsSink sink{events, flat.progress};
+    FreezeProgress progress;
+    FlatEventsSink sink{events, progress};
     renderer.render(empty_chord, 1000, 2000, level, ctx, profile_, sink);
     renderer.render(chord, 1000, 2000, level, ctx, profile_, sink);
     renderer.render(chord, 1000, 3000, level, ctx, profile_, sink);
@@ -955,12 +959,13 @@ TEST(FlatPlaybackStoreTests, PartColdCopiesReleaseInPolledStridesEvenDuringUnwin
             std::size_t previous = 0, polls = 0;
             PlaybackPartData *live = nullptr;
             const auto run = [&] {
-                PlaybackPartData data([&] {
+                const auto checkpoint = [&] {
                     const std::size_t current = live->sound_presets.size() + live->text_articulations.size() + live->syllables.size();
                     EXPECT_LE(previous - current, 4096u);
                     previous = current;
                     if (++polls == cancel_at) throw Cancelled{};
-                });
+                };
+                PlaybackPartData data(checkpoint);
                 live = &data;
                 for (int i = 0; i < 50000; ++i) {
                     data.sound_presets[i].push_back(SoundPresetChangeEvent{});

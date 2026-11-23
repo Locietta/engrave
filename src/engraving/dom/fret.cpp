@@ -704,7 +704,7 @@ void FretDiagram::remove(EngravingItem *e) {
     }
 }
 
-void FretDiagram::scan_elements(std::function<void(EngravingItem *)> func) {
+void FretDiagram::scan_elements(muse::FnRef<void(EngravingItem *)> func) {
     func(this);
 
     // don't display harmony in palette

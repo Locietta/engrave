@@ -298,7 +298,7 @@ PropertyValue TremoloTwoChord::property_default(Pid property_id) const {
 //   scanElements
 //---------------------------------------------------------
 
-void TremoloTwoChord::scan_elements(std::function<void(EngravingItem *)> func) {
+void TremoloTwoChord::scan_elements(muse::FnRef<void(EngravingItem *)> func) {
     if (chord() && chord()->tremolo_chord_type() == TremoloChordType::TREMOLO_SECOND_CHORD) {
         return;
     }

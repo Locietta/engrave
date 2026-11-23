@@ -24,6 +24,7 @@
 
 #include "bracketitem.h"
 #include "engravingitem.h"
+#include "global/fn.h"
 
 namespace mu::engraving {
 struct Factory;
@@ -46,7 +47,7 @@ public:
 
     Bracket *clone() const override { return new Bracket(*this); }
 
-    void scan_elements(std::function<void(EngravingItem *)> func) override;
+    void scan_elements(muse::FnRef<void(EngravingItem *)> func) override;
 
     void set_bracket_item(BracketItem *i) { bi_ = i; }
 

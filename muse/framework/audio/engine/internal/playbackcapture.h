@@ -3,20 +3,20 @@
 
 // This header and every call site are absent from ordinary production builds.
 #ifdef ENGRAVE_PLAYBACK_HARNESS
-#include <functional>
 #include <iomanip>
 #include <ostream>
 #include <type_traits>
 
 #include <ankerl/unordered_dense.h>
 
+#include "global/unique_fn.h"
 #include "mpe/events.h"
 #include "mpe/flatevents.h"
 
 namespace muse::audio::test {
 struct PlaybackCapture {
     // Dump A of each export track, from the flat store (with its per-note dumps), in export order
-    inline static std::function<void(std::uint64_t, const muse::String &, const mpe::TrackEvents &)> track;
+    inline static muse::UniqueFn<void(std::uint64_t, const muse::String &, const mpe::TrackEvents &) const> track;
     inline static std::ostream *synth = nullptr;
     inline static ankerl::unordered_dense::map<const void *, unsigned> ids;
 

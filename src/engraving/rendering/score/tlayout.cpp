@@ -6237,8 +6237,7 @@ SpannerSegment *TLayout::layout_system(Spanner *item, System *system, LayoutCont
     return seg;
 }
 
-SpannerSegment *TLayout::get_next_layout_system_segment(Spanner *spanner, System *system,
-                                                        std::function<SpannerSegment *()> create_segment) {
+SpannerSegment *TLayout::get_next_layout_system_segment(Spanner *spanner, System *system, muse::FnRef<SpannerSegment *()> create_segment) {
     // Prefer a segment which has already been added to the system
     SpannerSegment *seg = nullptr;
     SpannerSegment *detached = nullptr;

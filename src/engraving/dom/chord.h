@@ -27,7 +27,6 @@
  Definition of classes Chord, HelpLine and NoteList.
 */
 
-#include <functional>
 #include <iterator>
 #include <optional>
 #include <vector>
@@ -37,6 +36,7 @@
 #include "articulation.h"
 #include "chordrest.h"
 #include "draw/types/color.h"
+#include "global/fn.h"
 
 namespace mu::engraving {
 struct AccidentalState;
@@ -197,7 +197,7 @@ public:
     ~Chord();
     Chord &operator=(const Chord &) = delete;
 
-    void scan_elements(std::function<void(EngravingItem *)> func) override;
+    void scan_elements(muse::FnRef<void(EngravingItem *)> func) override;
 
     Chord *clone() const override { return new Chord(*this, false); }
 
@@ -508,7 +508,7 @@ private:
     Chord(const Chord &, bool link = false);
 
     // `includeTemporarySiblings`: whether items that are deleted & recreated during every layout should also be processed
-    void process_siblings(std::function<void(EngravingItem *)> func, bool include_temporary_siblings) const;
+    void process_siblings(muse::FnRef<void(EngravingItem *)> func, bool include_temporary_siblings) const;
 
     std::vector<Note *> notes_; // sorted to decreasing line step
     NoteParenthesisInfoList note_parens_;

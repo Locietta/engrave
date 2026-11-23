@@ -23,6 +23,7 @@
 #ifndef MU_ENGRAVING_STAFFTEXT_H
 #define MU_ENGRAVING_STAFFTEXT_H
 
+#include "global/fn.h"
 #include "stafftextbase.h"
 
 namespace mu::engraving {
@@ -38,7 +39,7 @@ public:
 
     EngravingItem *linked_clone() override;
 
-    void scan_elements(std::function<void(EngravingItem *)> func) override;
+    void scan_elements(muse::FnRef<void(EngravingItem *)> func) override;
 
     void add(EngravingItem *) override;
     void remove(EngravingItem *) override;

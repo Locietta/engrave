@@ -245,22 +245,17 @@ OpCase excerpts(std::string name, std::string fixture, std::size_t parts) {
     };
 }
 
-std::vector<OpCase> all_cases() {
-    std::vector<OpCase> cases = {
-        add_part("AddPart flute appended", "ghost_note.mscx", "flute", std::nullopt),
-        add_part("AddPart piano before the first part", "lyrics.mscx", "piano", 0),
-        remove_part("RemovePart of the second of two parts", "chordline_path.mscx", 1),
-        remove_part("RemovePart of the first of two parts", "chordline_path.mscx", 0),
-        add_staff("AddStaff to a part", "lyrics.mscx"),
-        add_staff("AddStaff to a one-staff part", "hairpins_and_repeats.mscx"),
-        remove_staff("RemoveStaff of a two-staff part", "lyrics.mscx", 1),
-        remove_staff("RemoveStaff from a linked part", "linked_parts.mscx", 1),
-        excerpts("GenerateExcerpts for one part", "custom_part_name.mscx", 1),
-        excerpts("GenerateExcerpts of a two-staff part", "ghost_note.mscx", 1),
-    };
-    return cases;
-}
-
-const bool registered = register_cases(all_cases());
+const bool registered = register_cases({
+    add_part("AddPart flute appended", "ghost_note.mscx", "flute", std::nullopt),
+    add_part("AddPart piano before the first part", "lyrics.mscx", "piano", 0),
+    remove_part("RemovePart of the second of two parts", "chordline_path.mscx", 1),
+    remove_part("RemovePart of the first of two parts", "chordline_path.mscx", 0),
+    add_staff("AddStaff to a part", "lyrics.mscx"),
+    add_staff("AddStaff to a one-staff part", "hairpins_and_repeats.mscx"),
+    remove_staff("RemoveStaff of a two-staff part", "lyrics.mscx", 1),
+    remove_staff("RemoveStaff from a linked part", "linked_parts.mscx", 1),
+    excerpts("GenerateExcerpts for one part", "custom_part_name.mscx", 1),
+    excerpts("GenerateExcerpts of a two-staff part", "ghost_note.mscx", 1),
+});
 
 }} // namespace engrave::harness

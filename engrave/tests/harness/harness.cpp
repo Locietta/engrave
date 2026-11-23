@@ -205,7 +205,7 @@ std::string explain(const Fingerprint &before, const Fingerprint &after) {
     return {};
 }
 
-bool register_cases(std::vector<OpCase> group) {
+bool register_cases(std::span<OpCase> group) {
     for (OpCase &op_case : group) cases().push_back(std::move(op_case));
     return true;
 }
@@ -214,7 +214,7 @@ const std::vector<OpCase> &registered_cases() { return cases(); }
 
 MasterScore &master_of(Document &document) { return *DocumentAccess::master_score(document); }
 
-ElementId find_id(Document &document, std::string_view type, const std::function<bool(const EngravingObject &)> &match) {
+ElementId find_id(Document &document, std::string_view type, muse::FnRef<bool(const EngravingObject &)> match) {
     // Document order, not id order: an imported score gets new random ids on every
     // open, and each check opens the fixture again.
     for (const EngravingObject *object : document_objects(master_of(document))) {

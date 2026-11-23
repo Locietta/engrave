@@ -129,7 +129,7 @@ void FluidSequencer::update_main_stream_events(const mpe::TrackEvents &events) {
 
 const ChannelMap &FluidSequencer::channels() const { return channels_; }
 
-void FluidSequencer::set_on_channel_added(std::function<void(midi::channel_t, const midi::Program &)> on_channel_added) {
+void FluidSequencer::set_on_channel_added(muse::UniqueFn<void(midi::channel_t, const midi::Program &) const> on_channel_added) {
     channels_.on_channel_added = std::move(on_channel_added);
 }
 

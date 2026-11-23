@@ -27,6 +27,7 @@
 #include "../types/types.h"
 #include "draw/types/color.h"
 #include "engravingitem.h"
+#include "global/fn.h"
 
 namespace mu::engraving {
 struct Spanner;
@@ -239,7 +240,7 @@ public:
     virtual void remove(EngravingItem *) override;
     virtual void removed() override;
 
-    virtual void scan_elements(std::function<void(EngravingItem *)>) override {}
+    virtual void scan_elements(muse::FnRef<void(EngravingItem *)>) override {}
 
     bool remove_spanner_back();
     virtual void remove_unmanaged();
@@ -297,7 +298,7 @@ public:
 
     using EngravingObject::undo_change_property;
 
-    void fixup_segments(unsigned int target_number, std::function<SpannerSegment *()> create_segment);
+    void fixup_segments(unsigned int target_number, muse::FnRef<SpannerSegment *()> create_segment);
 
     bool is_user_modified() const override;
 

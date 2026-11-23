@@ -24,6 +24,7 @@
 #include "../types/types.h"
 #include "accidental.h"
 #include "engravingitem.h"
+#include "global/fn.h"
 #include "pitchspelling.h"
 
 namespace mu::engraving {
@@ -98,7 +99,7 @@ public:
     double head_width() const;
 
     // re-implemented virtual functions
-    void scan_elements(std::function<void(EngravingItem *)> func) override;
+    void scan_elements(muse::FnRef<void(EngravingItem *)> func) override;
     void set_track(track_idx_t val) override;
 
     void remove(EngravingItem *) override;

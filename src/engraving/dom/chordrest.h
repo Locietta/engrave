@@ -22,11 +22,10 @@
 
 #pragma once
 
-#include <functional>
-
 #include "../types/types.h"
 #include "durationelement.h"
 #include "fermata.h"
+#include "global/fn.h"
 
 namespace mu::engraving {
 enum class CrossMeasure : signed char { UNKNOWN = -1, NONE = 0, FIRST, SECOND };
@@ -56,7 +55,7 @@ public:
     ChordRest &operator=(const ChordRest &) = delete;
     ~ChordRest();
 
-    virtual void scan_elements(std::function<void(EngravingItem *)> func) override;
+    virtual void scan_elements(muse::FnRef<void(EngravingItem *)> func) override;
 
     virtual void undo_unlink() override;
 
@@ -241,7 +240,7 @@ protected:
 
 private:
 
-    void process_siblings(std::function<void(EngravingItem *)> func);
+    void process_siblings(muse::FnRef<void(EngravingItem *)> func);
 
     ElementList el_;
     TDuration duration_type_;

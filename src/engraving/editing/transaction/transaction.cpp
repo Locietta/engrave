@@ -461,7 +461,7 @@ void TransactionManager::cleanup_detached() {
             if (!muse::contains(master_score_->excerpts(), *excerpt)) delete *excerpt;
 }
 
-void TransactionManager::transaction(const muse::TranslatableString &description, std::function<void(Transaction &)> func) {
+void TransactionManager::transaction(const muse::TranslatableString &description, muse::FnRef<void(Transaction &)> func) {
     if (active_) {
         func(transaction_);
         return;

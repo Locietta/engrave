@@ -39,6 +39,7 @@
 #include "parenthesis.h"
 #include "part.h"
 #include "pitchspelling.h"
+#include "rendering/paintoptions.h"
 #include "repeatlist.h"
 #include "score.h"
 #include "segment.h"

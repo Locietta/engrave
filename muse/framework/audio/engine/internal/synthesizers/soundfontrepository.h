@@ -22,9 +22,9 @@
 
 #pragma once
 
-#include <functional>
-
 #include "audio/common/soundfonttypes.h"
+#include "global/fn.h"
+#include "global/unique_fn.h"
 
 namespace muse::audio::synth {
 struct SoundFontRepository {
@@ -39,16 +39,16 @@ struct SoundFontRepository {
 
     // Called synchronously after the SoundFonts changed, where upstream sent
     // soundFontsChanged; the audio services refresh the synth resolvers here.
-    void set_on_sound_fonts_changed(std::function<void()> on_sound_fonts_changed);
+    void set_on_sound_fonts_changed(muse::UniqueFn<void() const> on_sound_fonts_changed);
 
 private:
     void notify_sound_fonts_changed();
 
-    void do_add_sound_font(const SoundFontUri &uri, const SoundFontsMap *cache = nullptr, std::function<void()> on_finished = nullptr);
+    void do_add_sound_font(const SoundFontUri &uri, const SoundFontsMap *cache = nullptr, muse::FnRef<void()> on_finished = nullptr);
 
     SoundFontsMap sound_fonts_;
 
     size_t loading_sound_font_count_ = 0;
-    std::function<void()> on_sound_fonts_changed_;
+    muse::UniqueFn<void() const> on_sound_fonts_changed_;
 };
 } // namespace muse::audio::synth

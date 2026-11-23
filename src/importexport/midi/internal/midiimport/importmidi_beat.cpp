@@ -91,10 +91,9 @@ double find_chord_salience2(const std::pair<const ReducedFraction, MidiChord> &c
     return velocity;
 }
 
-::EventList
-prepare_chord_events(const MidiTimeline<MidiChord> &chords,
-                     const std::function<double(const std::pair<const ReducedFraction, MidiChord> &, double)> &find_chord_salience,
-                     double ticks_per_sec) {
+::EventList prepare_chord_events(const MidiTimeline<MidiChord> &chords,
+                                 double (*find_chord_salience)(const std::pair<const ReducedFraction, MidiChord> &, double),
+                                 double ticks_per_sec) {
     ::EventList events;
     double min_salience = std::numeric_limits<double>::max();
     for (const auto &chord : chords) {
@@ -291,8 +290,8 @@ void set_time_sig(engraving::TimeSigMap *sigmap, const ReducedFraction &time_sig
 void find_beat_locations(const MidiTimeline<MidiChord> &all_chords, engraving::TimeSigMap *sigmap, double ticks_per_sec) {
     const size_t min_beat_count = 8;
     const auto bar_fractions = find_time_signatures(ReducedFraction(sigmap->timesig(0).timesig()));
-    const std::vector<std::function<double(const std::pair<const ReducedFraction, MidiChord> &, double)>> salience_funcs = {
-        find_chord_salience1, find_chord_salience2};
+    const std::vector<double (*)(const std::pair<const ReducedFraction, MidiChord> &, double)> salience_funcs = {find_chord_salience1,
+                                                                                                                 find_chord_salience2};
 
     // <match rank, beat data, comparator>
     gtl::btree_map<double, MidiOperations::HumanBeatData, std::greater<double>> beat_results;

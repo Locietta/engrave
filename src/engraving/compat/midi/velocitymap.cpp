@@ -33,6 +33,7 @@
 #include <gtl/btree.hpp>
 
 #include "containers.h"
+#include "global/unique_fn.h"
 
 using namespace mu;
 
@@ -55,7 +56,7 @@ int VelocityMap::interpolate(Fraction &event_tick, VelocityEvent &event, Fractio
     int expr_ticks = event.length_.ticks();
     int expr_diff = event.cached_end_val_ - event.cached_start_val_;
 
-    std::function<int(int)> value_function;
+    muse::UniqueFn<int(int) const> value_function;
     switch (event.method_) {
         case ChangeMethod::EXPONENTIAL:
             // Due to the nth-root, exponential functions do not flip with negative values, and cause errors,

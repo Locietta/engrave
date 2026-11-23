@@ -25,6 +25,7 @@
 #include <vector>
 
 #include "engravingitem.h"
+#include "global/fn.h"
 
 namespace mu::engraving {
 struct Transaction;
@@ -39,7 +40,7 @@ public:
 
     Segment *segment() const { return (Segment *) ownership_parent(); }
 
-    void scan_elements(std::function<void(EngravingItem *)> func) override;
+    void scan_elements(muse::FnRef<void(EngravingItem *)> func) override;
 
     BSymbol &operator=(const BSymbol &) = delete;
 

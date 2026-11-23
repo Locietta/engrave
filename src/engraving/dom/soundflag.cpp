@@ -27,6 +27,7 @@
 #include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
 #include "linkedobjects.h"
 #include "mscore.h"
+#include "rendering/paintoptions.h"
 #include "score.h"
 
 using namespace muse::draw;

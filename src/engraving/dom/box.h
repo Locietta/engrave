@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "global/fn.h"
 #include "measurebase.h"
 #include "property.h"
 
@@ -234,7 +235,7 @@ public:
 
     Text *text() const { return text_; }
 
-    void scan_elements(std::function<void(EngravingItem *)> func) override;
+    void scan_elements(muse::FnRef<void(EngravingItem *)> func) override;
 
     TBox *clone() const override { return new TBox(*this); }
 

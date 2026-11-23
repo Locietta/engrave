@@ -29,6 +29,7 @@
 #include <gtl/btree.hpp>
 
 #include "draw/types/geometry.h"
+#include "global/fn.h"
 #include "shape.h"
 
 namespace muse::draw {
@@ -56,7 +57,7 @@ struct SkylineLine {
         return shape_.remove_if(p);
     }
 
-    SkylineLine get_filtered_copy(std::function<bool(const ShapeElement &)> filter_out) const;
+    SkylineLine get_filtered_copy(muse::FnRef<bool(const ShapeElement &)> filter_out) const;
 
     void clear();
     // TODO: avoid passing down minHorizontalClearance (in future it must be done

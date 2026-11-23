@@ -345,7 +345,7 @@ void MeasureBase::trigger_layout() const {
 //   scanElements
 //---------------------------------------------------------
 
-void MeasureBase::scan_elements(std::function<void(EngravingItem *)> func) {
+void MeasureBase::scan_elements(muse::FnRef<void(EngravingItem *)> func) {
     if (is_measure()) {
         for (EngravingItem *e : el_) {
             staff_idx_t staff_idx = e->staff_idx();

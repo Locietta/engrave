@@ -74,7 +74,7 @@ void BSymbol::add(EngravingItem *e) {
 //   scanElements
 //---------------------------------------------------------
 
-void BSymbol::scan_elements(std::function<void(EngravingItem *)> func) {
+void BSymbol::scan_elements(muse::FnRef<void(EngravingItem *)> func) {
     func(this);
     for (EngravingItem *e : leafs_) {
         e->scan_elements(func);

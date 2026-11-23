@@ -31,6 +31,7 @@
 #include <gtl/btree.hpp>
 
 #include "engravingitem.h"
+#include "global/fn.h"
 
 namespace mu::engraving {
 struct Box;
@@ -82,7 +83,7 @@ public:
     Page *prev_page() const;
     Page *next_page() const;
 
-    virtual void scan_elements(std::function<void(EngravingItem *)> func) override;
+    virtual void scan_elements(muse::FnRef<void(EngravingItem *)> func) override;
 
     virtual void set_score(Score *s) override;
 

@@ -10,7 +10,7 @@ using namespace mu::engraving;
 
 PitchWheelRenderer::PitchWheelRenderer(PitchWheelSpecs wheel_spec) : wheel_spec_value(wheel_spec) {}
 
-void PitchWheelRenderer::add_pitch_wheel_function(const PitchWheelFunction &function, uint32_t channel, staff_idx_t staff_idx,
+void PitchWheelRenderer::add_pitch_wheel_function(PitchWheelFunction function, uint32_t channel, staff_idx_t staff_idx,
                                                   MidiInstrumentEffect effect) {
     PitchWheelFunctions &functions = functions_value[channel];
     effect_by_channel[channel] = effect;
@@ -23,7 +23,7 @@ void PitchWheelRenderer::add_pitch_wheel_function(const PitchWheelFunction &func
         functions.end_tick = function.m_end_tick;
     }
 
-    functions.functions.push_back(function);
+    functions.functions.push_back(std::move(function));
 }
 
 EventsHolder PitchWheelRenderer::render_pitch_wheel() const noexcept {
@@ -65,11 +65,11 @@ void PitchWheelRenderer::render_channel_pitch_wheel(EventsHolder &pitch_wheel_ev
         int32_t end = rit->second;
         int32_t tick = start;
 
-        std::vector<PitchWheelFunction> functions_to_process;
+        std::vector<const PitchWheelFunction *> functions_to_process;
         functions_to_process.reserve(functions.functions.size());
         for (const auto &func : functions.functions) {
             if (func.m_end_tick <= end) {
-                functions_to_process.push_back(func);
+                functions_to_process.push_back(&func);
             }
         }
         std::vector<int> pitches;
@@ -80,23 +80,19 @@ void PitchWheelRenderer::render_channel_pitch_wheel(EventsHolder &pitch_wheel_ev
         int prev_pitch = wheel_spec_value.m_limit;
         bool force_update = false;
         while (tick < end) {
-            auto func_it = functions_to_process.begin();
             for (size_t i = 0; i < functions_to_process.size(); ++i) {
-                if (tick >= func_it->m_end_tick) {
+                if (tick >= functions_to_process[i]->m_end_tick) {
                     // Function exceeds its max range
                     // don't need its value anymore
                     pitches.at(i) = 0;
-                    ++func_it;
                     force_update = true;
                     continue;
                 }
-                if (tick < func_it->m_start_tick) {
-                    ++func_it;
+                if (tick < functions_to_process[i]->m_start_tick) {
                     continue;
                 }
-                int pitch = func_it->func(tick);
+                int pitch = functions_to_process[i]->func(tick);
                 pitches.at(i) = pitch;
-                ++func_it;
             }
             int final_pitch = wheel_spec_value.m_limit;
             for (const auto &pitch : pitches) {

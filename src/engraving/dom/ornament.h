@@ -22,6 +22,7 @@
 #pragma once
 
 #include "articulation.h"
+#include "global/fn.h"
 
 namespace mu::engraving {
 struct AccidentalState;
@@ -54,7 +55,7 @@ public:
 
     void compute_notes_above_and_below(AccidentalState *acc_state);
 
-    void scan_elements(std::function<void(EngravingItem *)> func) override;
+    void scan_elements(muse::FnRef<void(EngravingItem *)> func) override;
 
     void remove(EngravingItem *e) override;
 

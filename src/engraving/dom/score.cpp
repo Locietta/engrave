@@ -998,7 +998,7 @@ void Score::set_tempo_timeline_override(std::optional<TempoTimeline> timeline) {
     master_score()->set_tempo_timeline_override(std::move(timeline));
 }
 
-void Score::scan_elements_in_range(std::function<void(EngravingItem *)> func) {
+void Score::scan_elements_in_range(muse::FnRef<void(EngravingItem *)> func) {
     const Fraction selection_start_tick = selection_.start_segment() ? selection_.start_segment()->tick() : Fraction(0, 1);
     const Fraction selection_end_tick = selection_.end_segment() ? selection_.end_segment()->tick() : end_tick();
     auto do_scan_element = [&](EngravingItem *e) {
@@ -3297,7 +3297,7 @@ void Score::rebuild_bsp_tree() {
 
 //    scan all elements
 
-void Score::scan_elements(std::function<void(EngravingItem *)> func) {
+void Score::scan_elements(muse::FnRef<void(EngravingItem *)> func) {
     for (MeasureBase *mb = first(); mb; mb = mb->next()) {
         mb->scan_elements(func);
         if (mb->is_measure()) {
@@ -3434,8 +3434,8 @@ void Score::invalidate_layouts(const Fraction &start, const Fraction &end) {
 }
 
 void Score::ensure_layout() {
-    if (master_score()->layout_boundary)
-        master_score()->layout_boundary(*this);
+    if (master_score()->layout_boundaries && master_score()->layout_boundaries->layout)
+        master_score()->layout_boundaries->layout(*this);
     else
         layout_if_dirty();
 }

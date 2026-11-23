@@ -207,7 +207,7 @@ bool Tuplet::calc_has_bracket(const DurationElement *cr1, const DurationElement 
     return true;
 }
 
-void Tuplet::scan_elements(std::function<void(EngravingItem *)> func) {
+void Tuplet::scan_elements(muse::FnRef<void(EngravingItem *)> func) {
     if (number()) {
         number()->scan_elements(func);
     }

@@ -1356,7 +1356,7 @@ bool Measure::is_first_in_section() const {
     return true;
 }
 
-void Measure::scan_elements(std::function<void(EngravingItem *)> func) {
+void Measure::scan_elements(muse::FnRef<void(EngravingItem *)> func) {
     size_t nstaves = score()->nstaves();
     if (nstaves == 0) {
         return;

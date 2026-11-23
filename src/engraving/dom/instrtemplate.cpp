@@ -841,11 +841,7 @@ const InstrumentTemplate *search_template_for_instr_name_list(const std::vector<
             continue;
         }
 
-        auto string_equals_name = case_sensitive ? std::function([&name](const String &s) { return s == name; }) :
-                                                   std::function([&name](const String &s) { return s.is_equal_ignore_case(name); });
-
-        auto staff_name_equals_name = case_sensitive ? std::function([&name](const String &sn) { return sn == name; }) :
-                                                       std::function([&name](const String &sn) { return sn.is_equal_ignore_case(name); });
+        const auto string_equals_name = [&](const String &s) { return case_sensitive ? s == name : s.is_equal_ignore_case(name); };
 
         for (const InstrumentGroup *g : instrument_catalog().groups) {
             for (const InstrumentTemplate *it : g->instrument_templates) {
@@ -855,8 +851,8 @@ const InstrumentTemplate *search_template_for_instr_name_list(const std::vector<
 
                 int match_strength =
                     0 + (4 * (string_equals_name(it->track_name) ? 1 : 0)) // most weight to track name since there are fewer duplicates
-                    + (2 * (staff_name_equals_name(it->instrument_name.long_name()) ? 1 : 0)) +
-                    (1 * (staff_name_equals_name(it->instrument_name.short_name()) ? 1 : 0)); // least weight to short name
+                    + (2 * (string_equals_name(it->instrument_name.long_name()) ? 1 : 0)) +
+                    (1 * (string_equals_name(it->instrument_name.short_name()) ? 1 : 0)); // least weight to short name
                 const int perfect_match_strength = 7;
                 assert(match_strength <= perfect_match_strength);
                 if (match_strength > best_match_strength) {

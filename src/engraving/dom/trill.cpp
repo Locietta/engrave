@@ -111,7 +111,7 @@ void TrillSegment::symbol_line(SymId start, SymId fill, SymId end) {
 //   scanElements
 //---------------------------------------------------------
 
-void TrillSegment::scan_elements(std::function<void(EngravingItem *)> func) {
+void TrillSegment::scan_elements(muse::FnRef<void(EngravingItem *)> func) {
     func(this);
     if (is_single_type() || is_begin_type()) {
         Accidental *a = trill()->accidental();

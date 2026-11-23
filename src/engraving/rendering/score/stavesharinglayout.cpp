@@ -829,7 +829,7 @@ bool StaveSharingLayout::check_segment_annotations_for_same_voice(Segment *segme
 }
 
 bool StaveSharingLayout::check_items_for_same_voice(Segment *segment, track_idx_t prev_track, track_idx_t next_track,
-                                                    const std::function<bool(const EngravingItem *, const EngravingItem *)> &is_equal) {
+                                                    muse::FnRef<bool(const EngravingItem *, const EngravingItem *)> is_equal) {
     EngravingItem *item1 = segment->effective_element(prev_track);
     EngravingItem *item2 = segment->effective_element(next_track);
 
@@ -1188,7 +1188,7 @@ void StaveSharingLayout::make_shared_notation(StaveSharingContext &ctx) {
 
 EngravingItem *StaveSharingLayout::make_shared_item(EngravingItem *origin_item, EngravingItem *possible_shared_item,
                                                     track_idx_t shared_track, EngravingObject *shared_parent,
-                                                    const std::function<bool(const EngravingItem *, const EngravingItem *)> &is_equal) {
+                                                    muse::FnRef<bool(const EngravingItem *, const EngravingItem *)> is_equal) {
 
     EngravingItem *shared_item = nullptr;
     if (possible_shared_item) {

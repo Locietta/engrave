@@ -29,6 +29,7 @@
 
 #include "engravingitem.h"
 #include "global/flatmap.h"
+#include "global/fn.h"
 #include "instrumentname.h"
 
 namespace mu::engraving {
@@ -114,7 +115,7 @@ public:
     void remove(EngravingItem *) override;
     void change(EngravingItem *o, EngravingItem *n) override;
 
-    void scan_elements(std::function<void(EngravingItem *)> func) override;
+    void scan_elements(muse::FnRef<void(EngravingItem *)> func) override;
 
     void append_measure(MeasureBase *);
     void remove_measure(MeasureBase *);

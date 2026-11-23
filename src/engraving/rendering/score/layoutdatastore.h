@@ -2,13 +2,14 @@
 #pragma once
 
 #include <cstddef>
-#include <functional>
 #include <memory>
 #include <span>
 #include <vector>
 
 #include "dom/engravingitem.h"
 #include "dom/sharedpart.h"
+#include "global/fn.h"
+#include "global/unique_fn.h"
 
 namespace mu::engraving {
 struct BeamBase;
@@ -86,7 +87,7 @@ struct LayoutDataStore {
     void clear();
     void detach_score();
     // Explicit producer pass. The callback may mutate payloads, not membership.
-    void for_each_output(const std::function<void(EngravingItem &, EngravingItem::LayoutData &)> &complete);
+    void for_each_output(muse::FnRef<void(EngravingItem &, EngravingItem::LayoutData &)> complete);
 
 private:
     bool is_retired_in_flight(const EngravingItem &item) const;
@@ -104,3 +105,10 @@ private:
     bool suppress_shape_prune_ = false;
 };
 } // namespace mu::engraving::rendering::score
+
+namespace mu::engraving {
+struct LayoutBoundaries {
+    muse::UniqueFn<void(Score &)> layout;
+    muse::UniqueFn<rendering::score::LayoutDataStore &(Score &)> store;
+};
+} // namespace mu::engraving

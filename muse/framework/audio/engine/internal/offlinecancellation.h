@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #pragma once
-#include <functional>
 #include <utility>
+
+#include "global/fn.h"
 
 namespace muse::audio {
 // Owner-thread only. The driver catches callback exceptions before entering C
 // codecs; inner polls return failure, never unwind through a C callback.
 struct OfflineCancellation {
 private:
-    inline static thread_local const std::function<bool()> *s_poll = nullptr;
-    const std::function<bool()> *previous_;
+    inline static thread_local muse::FnRef<bool() const> s_poll = nullptr;
+    muse::FnRef<bool() const> previous_;
 public:
     enum class Phase { OTHER, PLAYBACK_MODEL, SEQUENCER, SYNTHESIS, ENCODING, EVENT_RELEASE };
     inline static thread_local Phase phase = Phase::OTHER;
@@ -49,13 +50,18 @@ public:
         ~SynthesisScope() { phase = previous; }
     };
 
-    explicit OfflineCancellation(const std::function<bool()> &poll) : previous_(std::exchange(s_poll, &poll)) {}
+    explicit OfflineCancellation(muse::FnRef<bool() const> poll) : previous_(std::exchange(s_poll, poll)) {}
+
+    template <class F>
+        requires(!std::is_lvalue_reference_v<F> && !std::same_as<std::remove_cvref_t<F>, muse::FnRef<bool() const>> &&
+                 !std::same_as<std::remove_cvref_t<F>, std::nullptr_t>)
+    explicit OfflineCancellation(F &&) = delete;
 
     ~OfflineCancellation() { s_poll = previous_; }
 
     OfflineCancellation(const OfflineCancellation &) = delete;
     OfflineCancellation &operator=(const OfflineCancellation &) = delete;
 
-    static bool requested() { return s_poll && (*s_poll)(); }
+    static bool requested() { return s_poll && s_poll(); }
 };
 } // namespace muse::audio

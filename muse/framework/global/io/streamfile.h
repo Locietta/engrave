@@ -3,18 +3,18 @@
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
-#include <functional>
 #include <limits>
 #include <optional>
 #include <utility>
 
+#include "global/unique_fn.h"
 #include "iodevice.h"
 #include "ioretcodes.h"
 
 namespace muse::io {
 struct StreamingFileDevice final : IODevice {
     explicit StreamingFileDevice(std::filesystem::path path, std::optional<std::uint64_t> max_bytes = {},
-                                 std::optional<std::uint64_t> max_write_bytes = {}, std::function<bool()> cancelled = {})
+                                 std::optional<std::uint64_t> max_write_bytes = {}, muse::UniqueFn<bool() const> cancelled = {})
         : path_(std::move(path)), max_bytes_(max_bytes), max_write_bytes_(max_write_bytes), cancelled_(std::move(cancelled)) {}
 
     ~StreamingFileDevice() override { close(); }
@@ -120,6 +120,6 @@ private:
     std::optional<std::uint64_t> max_write_bytes_;
     std::uint64_t written_ = 0;
     bool limit_exceeded_ = false;
-    std::function<bool()> cancelled_;
+    muse::UniqueFn<bool() const> cancelled_;
 };
 } // namespace muse::io

@@ -24,7 +24,6 @@
 #define MUSE_AUDIO_SOUNDMAPPING_H
 
 #include <array>
-#include <functional>
 #include <initializer_list>
 #include <span>
 #include <stdexcept>
@@ -33,6 +32,7 @@
 #include <amc/flatset.hpp>
 
 #include "global/flatmap.h"
+#include "global/unique_fn.h"
 #include "log.h"
 #include "midi/miditypes.h"
 #include "mpe/events.h"
@@ -1062,7 +1062,7 @@ struct ChannelMap {
 
     // Called when a new channel is mapped, before its first event; the
     // synthesizer that owns the mapping programs the channel.
-    std::function<void(midi::channel_t, const midi::Program &)> on_channel_added;
+    muse::UniqueFn<void(midi::channel_t, const midi::Program &) const> on_channel_added;
 
 private:
     static bool has_standard_articulation(const mpe::ArticulationMap &articulations) {

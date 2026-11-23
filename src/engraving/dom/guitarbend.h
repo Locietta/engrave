@@ -24,6 +24,7 @@
 #include <amc/flatset.hpp>
 
 #include "engravingitem.h"
+#include "global/fn.h"
 #include "line.h"
 #include "property.h"
 #include "textbase.h"
@@ -219,7 +220,7 @@ public:
 
     double line_width() const;
 
-    void scan_elements(std::function<void(EngravingItem *)> func) override;
+    void scan_elements(muse::FnRef<void(EngravingItem *)> func) override;
 
     GuitarBendText *bend_text() const { return text_; }
 

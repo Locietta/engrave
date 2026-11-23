@@ -27,7 +27,6 @@
 #include "../infrastructure/ld_access.h"
 #include "../infrastructure/shape.h"
 #include "../infrastructure/skyline.h"
-#include "../rendering/paintoptions.h"
 #include "../types/fraction.h"
 #include "../types/symid.h"
 #include "../types/types.h"
@@ -35,6 +34,7 @@
 #include "draw/types/color.h"
 #include "draw/types/geometry.h"
 #include "engravingobject.h"
+#include "global/fn.h"
 
 namespace muse::draw {
 struct Painter;
@@ -43,6 +43,10 @@ struct Painter;
 #define DECLARE_LAYOUTDATA_METHODS(Class)                                                                      \
     const LayoutData *ldata() const { return static_cast<const Class::LayoutData *>(EngravingItem::ldata()); } \
     LayoutData *mutldata() { return static_cast<Class::LayoutData *>(EngravingItem::mutldata()); }
+
+namespace mu::engraving::rendering {
+struct PaintOptions;
+} // namespace mu::engraving::rendering
 
 namespace mu::engraving::rendering::score {
 struct ScoreRenderer;
@@ -318,7 +322,7 @@ public:
 
     void undo_add_element(EngravingItem *element, bool add_to_linked_staves = true);
 
-    void scan_elements(std::function<void(EngravingItem *)> func) override;
+    void scan_elements(muse::FnRef<void(EngravingItem *)> func) override;
     virtual bool collect_for_drawing() const;
 
     virtual void reset() override; // reset all properties & position to default
@@ -587,7 +591,7 @@ public:
 
     bool is_layout_data_current() const;
 
-    void scan_connected_items_in_snapping_chain(const System *system, const std::function<void(EngravingItem *)> &func) const;
+    void scan_connected_items_in_snapping_chain(const System *system, muse::FnRef<void(EngravingItem *)> func) const;
 
     Shape shape(LdAccess mode = LdAccess::CHECK) const { return ldata()->shape(mode); }
 

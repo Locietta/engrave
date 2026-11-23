@@ -31,6 +31,7 @@
 #include "../style/sid.h"
 #include "../types/propertyvalue.h"
 #include "../types/types.h"
+#include "global/fn.h"
 
 namespace mu::engraving {
 struct StyledProperty;
@@ -277,7 +278,7 @@ struct EngravingObject {
     EngravingItemList children_items(bool all = false) const;
     std::vector<EngravingItem *> get_children(bool include_invisible = true) const;
 
-    virtual void scan_elements(std::function<void(EngravingItem *)>) {}
+    virtual void scan_elements(muse::FnRef<void(EngravingItem *)>) {}
 
     // context
     virtual void set_score(Score *s);

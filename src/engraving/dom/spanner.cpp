@@ -1074,7 +1074,7 @@ void Spanner::reset_segment_overrides(PropertyGroup group) {
     if (erased && has_layout_data()) score()->layout_data_store()->erase(*this);
 }
 
-void Spanner::fixup_segments(unsigned int target_number, std::function<SpannerSegment *()> create_segment) {
+void Spanner::fixup_segments(unsigned int target_number, muse::FnRef<SpannerSegment *()> create_segment) {
     auto &segments = mutldata()->segments;
     if (segments.size() > target_number) {
         while (segments.size() > target_number) {

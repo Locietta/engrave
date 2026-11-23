@@ -75,8 +75,9 @@ std::unique_ptr<Document> Document::Impl::make(const std::shared_ptr<EngineState
 void Document::Impl::bind_layout_boundary(mu::engraving::MasterScore &master, LayoutOutputs &outputs) {
     for (auto *score : master.score_list())
         if (score->layout_data_store()) adopt_layout_output(*score, outputs);
-    master.layout_boundary = [this](mu::engraving::Score &score) { ensure_layout(score); };
-    master.layout_store_boundary = [this](mu::engraving::Score &score) -> auto & { return adopt_layout_output(score); };
+    master.layout_boundaries = std::make_unique<mu::engraving::LayoutBoundaries>();
+    master.layout_boundaries->layout = [this](mu::engraving::Score &score) { ensure_layout(score); };
+    master.layout_boundaries->store = [this](mu::engraving::Score &score) -> auto & { return adopt_layout_output(score); };
 }
 
 void Document::Impl::ensure_layout(mu::engraving::Score &score) {
@@ -322,10 +323,13 @@ Result<ExportOutput> Document::export_score_with_warnings(const ExportOptions &o
         const auto *bytes = reinterpret_cast<const std::byte *>(data->data());
         return ExportOutput{std::vector<std::byte>(bytes, bytes + data->size()), {}};
     }
+    const auto cancelled_poll = [&]() -> bool { return options.capture.cancelled && options.capture.cancelled(); };
     muse::io::WriteBudget budget;
     budget.output = options.capture.max_bytes;
     budget.working = options.capture.max_working_bytes;
-    budget.cancelled = &options.capture.cancelled;
+    if (options.capture.cancelled) {
+        budget.cancelled = muse::FnRef<bool() const>(cancelled_poll);
+    }
     if (!budget.working && budget.output) {
         budget.working = default_score_capture_working_bytes(*budget.output);
     }

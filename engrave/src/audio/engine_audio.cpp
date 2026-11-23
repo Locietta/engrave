@@ -11,7 +11,6 @@
 #include <exception>
 #include <filesystem>
 #include <fstream>
-#include <functional>
 #include <memory>
 #include <stdexcept>
 #include <thread>
@@ -510,9 +509,7 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
         }
         return cancelled;
     };
-    // OfflineCancellation retains the address of its converted callback until scope exit.
-    const std::function<bool()> cancellation_poll = poll;
-    OfflineCancellation cancellation_scope(cancellation_poll);
+    OfflineCancellation cancellation_scope(poll);
     const auto abort_setup = [&]() {
         if (callback_error) std::rethrow_exception(callback_error);
         return fail(AudioRenderResult::Failure::CANCELLED, "audio render cancelled during setup");
@@ -576,7 +573,8 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
             builder.play_repeats = request.use_repeats;
             builder.metronome_enabled = false;
 #ifdef ENGRAVE_PLAYBACK_HARNESS
-            if (FlatPlaybackCapture::dump_note) builder.dump_note = std::ref(FlatPlaybackCapture::dump_note);
+            if (FlatPlaybackCapture::dump_note)
+                builder.dump_note = [](const muse::mpe::NoteEvent &event) { return FlatPlaybackCapture::dump_note(event); };
 #endif
             playback = builder.build(master_score, checkpoint);
         } catch (const CancelledModel &) {
@@ -799,12 +797,9 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
     // The writer owns the render loop (soundtrackwriter.cpp:133-207): it sets
     // the source to PlayingOffline, renders in 4096-frame chunks, encodes them
     // and reports the completed frame count after each one.
-    const auto make_writer = [&](auto factory) {
-        return soundtrack::SoundTrackWriter(
-            device, make_soundtrack_format(request.format, request, output_spec(state.sample_rate_value)), render_secs, &context,
-            [&state](uint64_t frames) { state.midi_out_port.rendered_frames = frames; }, factory, poll);
-    };
-    auto writer = request.encoder_factory ? make_writer(std::cref(request.encoder_factory)) : make_writer(nullptr);
+    soundtrack::SoundTrackWriter writer(
+        device, make_soundtrack_format(request.format, request, output_spec(state.sample_rate_value)), render_secs, &context,
+        [&state](uint64_t frames) { state.midi_out_port.rendered_frames = frames; }, request.encoder_factory, poll);
     Ret write_ret;
     try {
         write_ret = writer.write();

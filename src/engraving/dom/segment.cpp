@@ -1462,7 +1462,7 @@ void Segment::clear_annotations() {
     annotations_.clear();
 }
 
-void Segment::scan_elements(std::function<void(EngravingItem *)> func) {
+void Segment::scan_elements(muse::FnRef<void(EngravingItem *)> func) {
     bool scan_all_time_sigs = (is_type(SegmentType::TIME_SIG_TYPES) &&
                                style().style_v(Sid::TIME_SIG_PLACEMENT).value<TimeSigPlacement>() != TimeSigPlacement::NORMAL);
     for (size_t track = 0; track < score()->nstaves() * ::mu::engraving::voices; ++track) {

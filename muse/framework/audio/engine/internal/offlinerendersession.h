@@ -2,6 +2,7 @@
 #pragma once
 #include "audio/engine/offlinerendersettings.h"
 #include "fx/reverb/reverbprocessor.h"
+#include "global/unique_fn.h"
 #include "nodes/fluidtracksource.h"
 #include "nodes/offlinecontrol.h"
 #include "nodes/offlinesignal.h"
@@ -9,7 +10,8 @@
 namespace muse::audio::engine {
 // All state belongs to this export; borrowed resources outlive it; render settings are owned values.
 struct OfflineRenderSession {
-    OfflineRenderSession(const OutputSpec &, AudioResources &, const OfflineRenderSettings &, MidiEventSink);
+    OfflineRenderSession(const OutputSpec &, AudioResources &, const OfflineRenderSettings &,
+                         muse::UniqueFn<void(const midi::Event &) const>);
     ~OfflineRenderSession();
     OfflineRenderSession(const OfflineRenderSession &) = delete;
     OfflineRenderSession &operator=(const OfflineRenderSession &) = delete;
@@ -40,7 +42,7 @@ private:
     static void process_track(Track &, samples_t);
     AudioResources &resources_;
     OfflineRenderSettings config_;
-    MidiEventSink sink_;
+    muse::UniqueFn<void(const midi::Event &) const> sink_;
     OutputSpec spec_;
     std::vector<Track> tracks_;
     Track reverb_;

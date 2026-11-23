@@ -30,7 +30,7 @@ using mu::engraving::Note;
 using mu::engraving::Score;
 using mu::engraving::Segment;
 
-using Matcher = std::function<bool(const EngravingObject &)>;
+using Matcher = muse::UniqueFn<bool(const EngravingObject &) const>;
 
 // What a removal needs to know about the element it took out.
 struct Removal {
@@ -146,7 +146,8 @@ std::string expect_pitch(Document &document, const ElementId &id, int pitch, std
 // --- the cases ------------------------------------------------------------------
 
 OpCase enter_case(std::string name, std::string fixture, std::size_t measure, std::int32_t staff, std::int32_t voice, Fraction offset,
-                  Fraction duration, std::vector<Pitch> pitches, std::function<std::string(Document &, const SegmentAddress &)> expect) {
+                  Fraction duration, std::vector<Pitch> pitches,
+                  muse::UniqueFn<std::string(Document &, const SegmentAddress &) const> expect) {
     struct Shared {
         SegmentAddress at;
     };
@@ -160,7 +161,8 @@ OpCase enter_case(std::string name, std::string fixture, std::size_t measure, st
                 shared->at = address_in(master_of(document), measure, staff, voice, offset);
                 return Batch{{EnterNotes{shared->at, duration, pitches}}};
             },
-        .expect = [shared, expect](Document &document, const Fingerprint &, const Fingerprint &) { return expect(document, shared->at); },
+        .expect = [shared, expect = std::move(expect)](Document &document, const Fingerprint &,
+                                                       const Fingerprint &) { return expect(document, shared->at); },
     };
 }
 
@@ -176,7 +178,7 @@ OpCase pitch_case(std::string name, std::string fixture, int pitch, std::optiona
         .name = std::move(name),
         .fixture = std::move(fixture),
         .make =
-            [shared, match, pitch, tpc](Document &document) {
+            [shared, match = std::move(match), pitch, tpc](Document &document) {
                 shared->note = find_id(document, "Note", match);
                 const Note &note = *mu::engraving::to_note(&element(document, shared->note));
                 shared->others = pitches_of(note);
@@ -200,7 +202,7 @@ OpCase duration_case(std::string name, std::string fixture, std::string type, Fr
         .name = std::move(name),
         .fixture = std::move(fixture),
         .make =
-            [shared, type, duration, match](Document &document) {
+            [shared, type, duration, match = std::move(match)](Document &document) {
                 shared->chord_rest = find_id(document, type, match);
                 shared->at = address_of(*mu::engraving::to_chord_rest(&element(document, shared->chord_rest)));
                 return Batch{{SetDuration{shared->chord_rest, duration}}};
@@ -217,7 +219,7 @@ OpCase duration_case(std::string name, std::string fixture, std::string type, Fr
 
 // A removal of the first element of a type that matches.
 OpCase remove_case(std::string name, std::string fixture, std::string type, Matcher match,
-                   std::function<std::string(Document &, const Removal &)> expect) {
+                   muse::UniqueFn<std::string(Document &, const Removal &) const> expect) {
     struct Shared {
         Removal removal;
     };
@@ -227,7 +229,7 @@ OpCase remove_case(std::string name, std::string fixture, std::string type, Matc
         .name = std::move(name),
         .fixture = std::move(fixture),
         .make =
-            [shared, type, match](Document &document) {
+            [shared, type, match = std::move(match)](Document &document) {
                 Removal &removal = shared->removal;
                 removal.target = find_id(document, type, match);
                 EngravingObject &object = element(document, removal.target);
@@ -247,8 +249,8 @@ OpCase remove_case(std::string name, std::string fixture, std::string type, Matc
                 }
                 return Batch{{Remove{removal.target}}};
             },
-        .expect = [shared, expect](Document &document, const Fingerprint &,
-                                   const Fingerprint &) { return expect(document, shared->removal); },
+        .expect = [shared, expect = std::move(expect)](Document &document, const Fingerprint &,
+                                                       const Fingerprint &) { return expect(document, shared->removal); },
     };
 }
 

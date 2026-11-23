@@ -27,6 +27,7 @@
 #include "draw/types/font.h"
 #include "engravingitem.h"
 #include "global/flatmap.h"
+#include "global/fn.h"
 
 namespace muse::io {
 struct PathT;
@@ -212,7 +213,7 @@ public:
     void add(EngravingItem *) override;
     void remove(EngravingItem *) override;
 
-    void scan_elements(std::function<void(EngravingItem *)> func) override;
+    void scan_elements(muse::FnRef<void(EngravingItem *)> func) override;
 
     void undo_change_property(Pid id, const PropertyValue &v, PropertyFlags ps) override;
     using EngravingObject::undo_change_property;

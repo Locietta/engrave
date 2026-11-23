@@ -109,7 +109,7 @@ TEST(AudioInternal, RenderAudioRestoresCallerDenormalState) {
         const auto callback_rounding = (entry ^ Fp::k_rounding_bit) & Fp::k_rounding_bit;
         Fp::write(entry);
         int polls = 0;
-        request.cancelled = music::make_unique_fn<bool() const>([&] {
+        request.cancelled = [&] {
             const auto current = Fp::read();
             if (polls < 2) {
                 EXPECT_EQ(current & Fp::k_denormal_mask, entry_mode);
@@ -118,15 +118,15 @@ TEST(AudioInternal, RenderAudioRestoresCallerDenormalState) {
             ++polls;
             Fp::write((current & ~(Fp::k_denormal_mask | Fp::k_rounding_bit)) | callback_rounding);
             return false;
-        });
+        };
         int observed_events = 0;
-        music::set_engine_audio_midi_event_hook(audio, music::make_unique_fn<music::MidiEventCallback>([&](const auto &, std::uint64_t) {
-                                                    EXPECT_GT(polls, 0);
-                                                    const auto current = Fp::read();
-                                                    EXPECT_EQ(current & Fp::k_denormal_mask, Fp::k_denormal_mask);
-                                                    EXPECT_EQ(current & Fp::k_rounding_bit, callback_rounding);
-                                                    ++observed_events;
-                                                }));
+        music::set_engine_audio_midi_event_hook(audio, [&](const auto &, std::uint64_t) {
+            EXPECT_GT(polls, 0);
+            const auto current = Fp::read();
+            EXPECT_EQ(current & Fp::k_denormal_mask, Fp::k_denormal_mask);
+            EXPECT_EQ(current & Fp::k_rounding_bit, callback_rounding);
+            ++observed_events;
+        });
         const auto rendered = music::export_score_audio(audio, master, request);
         const auto current = Fp::read();
         Fp::write(restore.state);
@@ -230,18 +230,16 @@ TEST(AudioInternal, CancellationAtSynthesisWriteAndFinalFlushRemovesFileAndRecov
         music::AudioRenderRequest request;
         const auto utf8 = output.generic_u8string();
         request.output_path.assign(utf8.begin(), utf8.end());
-        request.cancelled = music::make_unique_fn<bool() const>([&] {
+        request.cancelled = [&] {
             ++polls;
             if (phase == 3 && cancelled) throw std::runtime_error("cancel callback");
             return cancelled;
-        });
-        request.encoder_factory =
-            music::make_unique_fn<music::EncoderFactory>([&](const muse::audio::SoundTrackFormat &format, muse::io::IODevice &device) {
-                return std::make_unique<CancellingEncoder>(format, device, cancelled, phase == 2, encoded, writes);
-            });
+        };
+        request.encoder_factory = [&](const muse::audio::SoundTrackFormat &format, muse::io::IODevice &device) {
+            return std::make_unique<CancellingEncoder>(format, device, cancelled, phase == 2, encoded, writes);
+        };
         if (phase == 0) {
-            music::set_engine_audio_midi_event_hook(
-                audio, music::make_unique_fn<music::MidiEventCallback>([&](const auto &, uint64_t) { cancelled = true; }));
+            music::set_engine_audio_midi_event_hook(audio, [&](const auto &, uint64_t) { cancelled = true; });
         }
         if (phase == 3) {
             EXPECT_THROW(music::export_score_audio(audio, master, request), std::runtime_error);
@@ -327,10 +325,9 @@ TEST(AudioInternal, FinalizationFailureReportsFirstErrorAndNextRenderRecovers) {
         music::AudioRenderRequest request;
         const auto output_utf8 = output.generic_u8string();
         request.output_path.assign(output_utf8.begin(), output_utf8.end());
-        request.encoder_factory = music::make_unique_fn<music::EncoderFactory>(
-            [fail_encode, &ended](const muse::audio::SoundTrackFormat &format, muse::io::IODevice &device) {
-                return std::make_unique<FailingFinalizer>(format, device, fail_encode, ended);
-            });
+        request.encoder_factory = [fail_encode, &ended](const muse::audio::SoundTrackFormat &format, muse::io::IODevice &device) {
+            return std::make_unique<FailingFinalizer>(format, device, fail_encode, ended);
+        };
         const auto failed = music::export_score_audio(audio, master, request);
         EXPECT_FALSE(failed.ok);
         EXPECT_EQ(failed.failure, music::AudioRenderResult::Failure::ENGINE_FAILURE);
@@ -353,8 +350,9 @@ TEST(AudioInternal, FinalizationFailureReportsFirstErrorAndNextRenderRecovers) {
     music::AudioRenderRequest request;
     const auto output_utf8 = output.generic_u8string();
     request.output_path.assign(output_utf8.begin(), output_utf8.end());
-    request.encoder_factory = music::make_unique_fn<music::EncoderFactory>(
-        [](const muse::audio::SoundTrackFormat &, muse::io::IODevice &) { return std::unique_ptr<FailingFinalizer>{}; });
+    request.encoder_factory = [](const muse::audio::SoundTrackFormat &, muse::io::IODevice &) {
+        return std::unique_ptr<FailingFinalizer>{};
+    };
     EXPECT_FALSE(music::export_score_audio(audio, master, request).ok);
     EXPECT_EQ(render(), expected);
 }
@@ -494,20 +492,18 @@ TEST(AudioInternal, CancellationGranularityAndRecovery) {
         music::AudioRenderRequest request;
         const auto utf8 = path.generic_u8string();
         request.output_path.assign(utf8.begin(), utf8.end());
-        request.cancelled = music::make_unique_fn<bool() const>([&] {
+        request.cancelled = [&] {
             if (armed && ++write_polls == 3) cancelled = true;
             return cancelled || external.load();
-        });
+        };
         if (phase == 0)
-            music::set_engine_audio_midi_event_hook(audio, music::make_unique_fn<music::MidiEventCallback>([&](const auto &, uint64_t) {
-                                                        if (!cancelled && muse::audio::OfflineCancellation::phase ==
-                                                                              muse::audio::OfflineCancellation::Phase::SYNTHESIS) {
-                                                            cancelled = true;
-                                                        }
-                                                    }));
+            music::set_engine_audio_midi_event_hook(audio, [&](const auto &, uint64_t) {
+                if (!cancelled && muse::audio::OfflineCancellation::phase == muse::audio::OfflineCancellation::Phase::SYNTHESIS) {
+                    cancelled = true;
+                }
+            });
         if (phase == 1 || phase == 2)
-            request.encoder_factory = music::make_unique_fn<music::EncoderFactory>(
-                [&](const auto &f, auto &d) { return std::make_unique<LargeWriter>(f, d, phase == 2, armed); });
+            request.encoder_factory = [&](const auto &f, auto &d) { return std::make_unique<LargeWriter>(f, d, phase == 2, armed); };
         std::thread transport;
         if (phase == 3)
             transport = std::thread([&] {
@@ -667,7 +663,7 @@ TEST(AudioInternal, DenseScoreCancellationAndRecovery) {
         music::AudioRenderRequest request;
         const auto utf8 = path.generic_u8string();
         request.output_path.assign(utf8.begin(), utf8.end());
-        request.cancelled = music::make_unique_fn<bool() const>([&] {
+        request.cancelled = [&] {
             EXPECT_EQ(std::this_thread::get_id(), owner_thread);
             const auto current_phase = muse::audio::OfflineCancellation::phase;
             if (!cancelled && ((phase == 3 && current_phase == Phase::ENCODING) || (phase == 0 && current_phase == Phase::SEQUENCER)) &&
@@ -689,11 +685,11 @@ TEST(AudioInternal, DenseScoreCancellationAndRecovery) {
             }
             if (cancelled) observed = true;
             return cancelled;
-        });
+        };
         if (phase == 2)
-            music::set_engine_audio_midi_event_hook(audio, music::make_unique_fn<music::MidiEventCallback>([&](const auto &, uint64_t) {
-                                                        if (muse::audio::OfflineCancellation::phase == Phase::SYNTHESIS) cancelled = true;
-                                                    }));
+            music::set_engine_audio_midi_event_hook(audio, [&](const auto &, uint64_t) {
+                if (muse::audio::OfflineCancellation::phase == Phase::SYNTHESIS) cancelled = true;
+            });
         const auto result = music::export_score_audio(audio, master, request);
         if (transport.joinable()) {
             if (!model_started) model_start.count_down();
@@ -951,7 +947,7 @@ TEST(AudioInternal, BoundedStableSortAndDedupCancellation) {
     {
         auto timeline = make_unsorted_timeline(20000);
         int polls = 0;
-        const std::function<bool()> poll_fn = [&] { return ++polls == 2; };
+        const auto poll_fn = [&] { return ++polls == 2; };
         muse::audio::OfflineCancellation scope(poll_fn);
         EXPECT_FALSE(ExposedSequencer::bounded_stable_sort(timeline));
         EXPECT_EQ(polls, 2);
@@ -964,7 +960,7 @@ TEST(AudioInternal, BoundedStableSortAndDedupCancellation) {
     {
         auto timeline = make_unsorted_timeline(20000);
         int polls = 0;
-        const std::function<bool()> poll_fn = [&] { return ++polls == 6; };
+        const auto poll_fn = [&] { return ++polls == 6; };
         muse::audio::OfflineCancellation scope(poll_fn);
         EXPECT_FALSE(ExposedSequencer::bounded_stable_sort(timeline));
         EXPECT_EQ(polls, 6);
@@ -979,7 +975,7 @@ TEST(AudioInternal, BoundedStableSortAndDedupCancellation) {
         timeline.cursor = 3;
 
         int polls = 0;
-        const std::function<bool()> poll_fn = [&] { return ++polls == 2; };
+        const auto poll_fn = [&] { return ++polls == 2; };
         muse::audio::OfflineCancellation scope(poll_fn);
         EXPECT_FALSE(ExposedSequencer::dedup_timeline(timeline));
         EXPECT_EQ(polls, 2);
@@ -1041,7 +1037,7 @@ TEST(AudioInternal, BoundedStableSortAndDedupCancellation) {
         // Poll 2: layer 0 entry in add_dynamic_events.
         // Poll 3: first 4,096-sample poll inside resample_curve. If resample_curve did not stop, it would poll 24 more times.
         int polls = 0;
-        const std::function<bool()> cancel_in_curve = [&] { return ++polls >= 3; };
+        const auto cancel_in_curve = [&] { return ++polls >= 3; };
         {
             muse::audio::OfflineCancellation scope(cancel_in_curve);
             seq.load(muse::mpe::freeze_playback_data(data));
@@ -1075,7 +1071,7 @@ TEST(AudioInternal, BoundedStableSortAndDedupCancellation) {
         // 5,000 notes emit 10,000 NOTE_ON/NOTE_OFF events (> 8,192 block size).
         // Cancel on poll 5004 (inside bounded_stable_sort after the 5,000 note polls).
         int polls = 0;
-        const std::function<bool()> cancel_in_sort = [&] { return ++polls == 5004; };
+        const auto cancel_in_sort = [&] { return ++polls == 5004; };
         {
             muse::audio::OfflineCancellation scope(cancel_in_sort);
             seq.load(muse::mpe::freeze_playback_data(data));
@@ -1260,7 +1256,7 @@ TEST(AudioInternal, CancelsInsideFlatSequencerPreprocessing) {
         seq.init({}, muse::midi::Program{0, 0}, true, muse::audio::synth::k_fluid_channel_count);
         seq.main_stream_events_.cursor = 5;
         int polls = 0;
-        const std::function<bool()> cancel = [&] {
+        const auto cancel = [&] {
             EXPECT_EQ(muse::audio::OfflineCancellation::phase, muse::audio::OfflineCancellation::Phase::SEQUENCER);
             ++polls;
             // Dynamics are still being copied, and notes have not started MIDI lowering.
@@ -1320,11 +1316,10 @@ TEST(AudioInternal, FirstRenderCancelThenRepeatedRenderAndTeardown) {
                     auto &document = **opened;
                     auto &audio = engrave::DocumentAccess::context(document).audio();
                     bool cancelled = false;
-                    music::set_engine_audio_midi_event_hook(
-                        audio, music::make_unique_fn<music::MidiEventCallback>([&](const muse::midi::Event &event, uint64_t) {
-                            // Startup flushes send all-notes-off/controllers first; wait for a score note.
-                            if (event.opcode() == muse::midi::Event::Opcode::NOTE_ON) cancelled = true;
-                        }));
+                    music::set_engine_audio_midi_event_hook(audio, [&](const muse::midi::Event &event, uint64_t) {
+                        // Startup flushes send all-notes-off/controllers first; wait for a score note.
+                        if (event.opcode() == muse::midi::Event::Opcode::NOTE_ON) cancelled = true;
+                    });
                     engrave::AudioOptions options;
                     options.cancelled = [&] { return cancelled; };
                     int published = 0;

@@ -31,18 +31,19 @@
 
 #include "../../types/types.h"
 #include "event.h"
+#include "global/unique_fn.h"
 
 namespace mu::engraving {
 struct PitchWheelRenderer {
     struct PitchWheelFunction {
         int32_t m_start_tick = 0;
         int32_t m_end_tick = 0;
-        std::function<int(uint32_t)> func;
+        muse::UniqueFn<int(uint32_t) const> func;
     };
 
     PitchWheelRenderer(PitchWheelSpecs input_wheel_spec);
 
-    void add_pitch_wheel_function(const PitchWheelFunction &function, uint32_t channel, staff_idx_t staff_idx, MidiInstrumentEffect effect);
+    void add_pitch_wheel_function(PitchWheelFunction function, uint32_t channel, staff_idx_t staff_idx, MidiInstrumentEffect effect);
 
     EventsHolder render_pitch_wheel() const noexcept;
 

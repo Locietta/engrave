@@ -111,7 +111,7 @@ void Ornament::set_track(track_idx_t val) {
     track_ = val;
 }
 
-void Ornament::scan_elements(std::function<void(EngravingItem *)> func) {
+void Ornament::scan_elements(muse::FnRef<void(EngravingItem *)> func) {
     func(this);
     for (Accidental *accidental : accidentals_above_and_below_) {
         if (accidental) {

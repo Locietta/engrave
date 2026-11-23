@@ -57,7 +57,7 @@ Bracket::~Bracket() {
     }
 }
 
-void Bracket::scan_elements(std::function<void(EngravingItem *)> func) {
+void Bracket::scan_elements(muse::FnRef<void(EngravingItem *)> func) {
     if (text_) {
         text_->scan_elements(func);
     }

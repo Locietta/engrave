@@ -26,6 +26,7 @@
 #include "engraving/style/styletypes.h"
 #include "mscore.h"
 #include "note.h"
+#include "rendering/paintoptions.h"
 #include "score.h"
 #include "stafftype.h"
 #include "style/textstyle.h"
@@ -48,7 +49,7 @@ Color HammerOnPullOffSegment::cur_color(const rendering::PaintOptions &opt) cons
     return SlurSegment::cur_color(opt);
 }
 
-void HammerOnPullOffSegment::scan_elements(std::function<void(EngravingItem *)> func) {
+void HammerOnPullOffSegment::scan_elements(muse::FnRef<void(EngravingItem *)> func) {
     for (HammerOnPullOffText *hopo : hopo_text_) {
         hopo->scan_elements(func);
     }

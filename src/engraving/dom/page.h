@@ -27,6 +27,7 @@
 
 #include "bsp.h"
 #include "engravingitem.h"
+#include "global/fn.h"
 #include "mscore.h"
 #include "text.h"
 
@@ -84,7 +85,7 @@ public:
     double lm() const;
     double rm() const;
 
-    void scan_elements(std::function<void(EngravingItem *)> func) override;
+    void scan_elements(muse::FnRef<void(EngravingItem *)> func) override;
 
     std::vector<EngravingItem *> items(const RectF &r);
     std::vector<EngravingItem *> items(const PointF &p);

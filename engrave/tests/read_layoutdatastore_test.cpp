@@ -1,5 +1,6 @@
 #include "engraving/dom/dummyparent.h"
 #include "engraving/dom/guitarbend.h"
+#include "engraving/rendering/score/layoutdatastore.h"
 #include "read_test_fixture.h"
 
 using namespace read_test;
@@ -234,13 +235,13 @@ TEST(LayoutDataStore, HarmonyOutputOwnsRenderedChildrenAndColdDestructionDoesNot
     // An allocate-then-erase destructor leaves size unchanged, so observe the
     // explicit allocation boundary while the cold item is being destroyed.
     size_t allocation_requests = 0;
-    auto boundary = std::move(master.layout_store_boundary);
-    master.layout_store_boundary = [&](Score &score) -> rendering::score::LayoutDataStore & {
+    auto boundary = std::move(master.layout_boundaries->store);
+    master.layout_boundaries->store = [&](Score &score) -> rendering::score::LayoutDataStore & {
         ++allocation_requests;
         return boundary(score);
     };
     harmony.reset();
-    master.layout_store_boundary = std::move(boundary);
+    master.layout_boundaries->store = std::move(boundary);
     EXPECT_EQ(allocation_requests, 0u);
     EXPECT_EQ(store.size(), before);
     harmony.reset(Factory::create_harmony(master.dummy()));

@@ -170,7 +170,7 @@ RectF Shape::bbox() const {
     return result;
 }
 
-std::optional<ShapeElement> Shape::find_if(const std::function<bool(const ShapeElement &)> &func) const {
+std::optional<ShapeElement> Shape::find_if(muse::FnRef<bool(const ShapeElement &)> func) const {
     auto it = std::find_if(elements_.begin(), elements_.end(), func);
     if (it == elements_.end()) {
         return std::nullopt;

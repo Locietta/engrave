@@ -23,7 +23,6 @@
 #ifndef MU_ENGRAVING_SHAPE_H
 #define MU_ENGRAVING_SHAPE_H
 
-#include <functional>
 #include <optional>
 
 #include <amc/flatset.hpp>
@@ -31,6 +30,7 @@
 #include "draw/types/geometry.h"
 #include "draw/types/transform.h"
 #include "engraving/types/types.h"
+#include "global/fn.h"
 
 namespace muse::draw {
 struct Painter;
@@ -139,7 +139,7 @@ struct Shape {
 
     std::vector<RectF> to_rects() const;
 
-    std::optional<ShapeElement> find_if(const std::function<bool(const ShapeElement &)> &func) const;
+    std::optional<ShapeElement> find_if(muse::FnRef<bool(const ShapeElement &)> func) const;
     std::optional<ShapeElement> find_first(ElementType type) const;
     std::optional<ShapeElement> get_first() const;
 

@@ -45,7 +45,7 @@ std::string expect_default(Document &document, const ElementId &id, std::string_
 
 // A case that sets or resets one property of the first element that matches.
 OpCase property_case(std::string name, std::string fixture, std::string type, std::string property, std::optional<Value> value,
-                     std::function<bool(const EngravingObject &)> match = {}) {
+                     muse::UniqueFn<bool(const EngravingObject &) const> match = {}) {
     struct Shared {
         ElementId target;
     };
@@ -55,7 +55,7 @@ OpCase property_case(std::string name, std::string fixture, std::string type, st
         .name = std::move(name),
         .fixture = std::move(fixture),
         .make =
-            [shared, type, property, value, match](Document &document) {
+            [shared, type, property, value, match = std::move(match)](Document &document) {
                 shared->target = find_id(document, type, match);
                 if (value) return Batch{{SetProperty{shared->target, property, *value}}};
                 return Batch{{ResetProperty{shared->target, property}}};

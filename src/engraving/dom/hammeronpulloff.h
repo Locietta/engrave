@@ -21,6 +21,7 @@
  */
 #pragma once
 
+#include "global/fn.h"
 #include "slur.h"
 #include "textbase.h"
 
@@ -82,7 +83,7 @@ public:
 
     Color cur_color(const rendering::PaintOptions &opt) const override;
 
-    void scan_elements(std::function<void(EngravingItem *)> func) override;
+    void scan_elements(muse::FnRef<void(EngravingItem *)> func) override;
 
     void set_track(track_idx_t idx) override;
     void set_selected(bool f) override;

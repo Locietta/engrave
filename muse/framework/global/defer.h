@@ -22,20 +22,27 @@
 #ifndef MUSE_GLOBAL_DEFER_H
 #define MUSE_GLOBAL_DEFER_H
 
-#include <functional>
+#include <type_traits>
+#include <utility>
 
 namespace muse {
+template <class F>
 struct Defer {
-    template <class F>
-    Defer(F f) : f_(f) {}
+    Defer(F f) : f_(std::move(f)) {}
+
+    Defer(const Defer &) = delete;
+    Defer &operator=(const Defer &) = delete;
 
     ~Defer() {
-        if (f_) {
-            f_();
+        if constexpr (std::is_pointer_v<F>) {
+            if (!f_) {
+                return;
+            }
         }
+        f_();
     }
-
-    std::function<void()> f_;
+private:
+    F f_;
 };
 } // namespace muse
 

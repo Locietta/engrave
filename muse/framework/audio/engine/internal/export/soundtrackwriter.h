@@ -22,13 +22,14 @@
 
 #pragma once
 #include <atomic>
-#include <functional>
 #include <vector>
 
 #include "../offlinerendersession.h"
 #include "audio/common/audiotypes.h"
 #include "audioencoder.h"
+#include "global/fn.h"
 #include "global/types/ret.h"
+#include "global/unique_fn.h"
 
 namespace muse::io {
 struct IODevice;
@@ -38,9 +39,9 @@ namespace muse::audio::soundtrack {
 struct SoundTrackWriter {
 
     SoundTrackWriter(io::IODevice &dst_device, const SoundTrackFormat &format, const secs_t total_duration,
-                     engine::OfflineRenderSession *source, std::function<void(uint64_t)> block_completed = {},
-                     std::function<encode::UniqueEncoder(const SoundTrackFormat &, io::IODevice &)> encoder_factory = {},
-                     std::function<bool()> cancelled = {});
+                     engine::OfflineRenderSession *source, muse::UniqueFn<void(uint64_t) const> block_completed = {},
+                     muse::FnRef<encode::UniqueEncoder(const SoundTrackFormat &, io::IODevice &)> encoder_factory = {},
+                     muse::UniqueFn<bool() const> cancelled = {});
 
     Ret write();
     void abort();
@@ -49,10 +50,10 @@ struct SoundTrackWriter {
 private:
     Ret write_streaming();
     bool poll_cancellation();
-    std::function<bool()> cancelled_;
+    muse::UniqueFn<bool() const> cancelled_;
 
     engine::OfflineRenderSession *source_;
-    std::function<void(uint64_t)> block_completed_;
+    muse::UniqueFn<void(uint64_t) const> block_completed_;
 
     std::vector<float> interm_buffer_;
     samples_t render_step_ = 0;

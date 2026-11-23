@@ -185,7 +185,7 @@ double Rest::up_pos() const { return sym_bbox(ldata()->sym()).y(); }
 
 double Rest::down_pos() const { return sym_bbox(ldata()->sym()).y() + sym_height(ldata()->sym()); }
 
-void Rest::scan_elements(std::function<void(EngravingItem *)> func) {
+void Rest::scan_elements(muse::FnRef<void(EngravingItem *)> func) {
     ChordRest::scan_elements(func);
     for (EngravingItem *e : el()) {
         e->scan_elements(func);

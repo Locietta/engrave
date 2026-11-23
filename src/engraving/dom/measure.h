@@ -29,6 +29,7 @@
 
 #include <cstdint>
 
+#include "global/fn.h"
 #include "measurebase.h"
 #include "segmentlist.h"
 
@@ -340,7 +341,7 @@ public:
 
     void set_end_bar_line_type(BarLineType val, track_idx_t track, bool visible = true, Color color = Color());
 
-    void scan_elements(std::function<void(EngravingItem *)> func) override;
+    void scan_elements(muse::FnRef<void(EngravingItem *)> func) override;
     void create_voice(int track);
 
     AccidentalVal find_accidental(const Note *) const;

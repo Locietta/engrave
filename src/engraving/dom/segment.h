@@ -23,6 +23,7 @@
 #pragma once
 
 #include "engravingitem.h"
+#include "global/fn.h"
 
 namespace mu::engraving {
 struct Factory;
@@ -230,7 +231,7 @@ public:
 
     void remove_element(track_idx_t track);
     void set_element(track_idx_t track, EngravingItem *el);
-    void scan_elements(std::function<void(EngravingItem *)> func) override;
+    void scan_elements(muse::FnRef<void(EngravingItem *)> func) override;
 
     Measure *measure() const { return to_measure(ownership_parent()); }
 

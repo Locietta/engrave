@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
-#include <functional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -11,6 +11,8 @@
 #include "engrave/src/api/batch.h"
 #include "engrave/src/score/json.h"
 #include "global/flatmap.h"
+#include "global/fn.h"
+#include "global/unique_fn.h"
 #include <engrave/engrave.h>
 
 namespace mu::engraving {
@@ -52,13 +54,19 @@ struct OpCase {
     std::string name;    // unique across all groups
     std::string fixture; // a corpus file name
     // The batch, built against the freshly opened fixture.
-    std::function<Batch(Document &)> make;
+    muse::UniqueFn<Batch(Document &) const> make;
     // After the commit: what is wrong with the result, or "" when it is right.
-    std::function<std::string(Document &after, const Fingerprint &before, const Fingerprint &committed)> expect;
+    muse::UniqueFn<std::string(Document &after, const Fingerprint &before, const Fingerprint &committed) const> expect;
 };
 
 // Registers a group's cases; call it from a namespace-scope initializer.
-bool register_cases(std::vector<OpCase> cases);
+bool register_cases(std::span<OpCase> cases);
+
+template <size_t N>
+bool register_cases(OpCase (&&cases)[N]) {
+    return register_cases(std::span<OpCase>(cases));
+}
+
 const std::vector<OpCase> &registered_cases();
 
 std::string run_case(Engine &engine, const OpCase &op_case, const std::filesystem::path &fixture);
@@ -68,7 +76,7 @@ std::string run_case(Engine &engine, const OpCase &op_case, const std::filesyste
 mu::engraving::MasterScore &master_of(Document &document);
 // The id of the first element of an MSCX type (in document order) that has one
 // and matches; throws when there is none, so a case fails on a fixture that lacks it.
-ElementId find_id(Document &document, std::string_view type, const std::function<bool(const mu::engraving::EngravingObject &)> &match = {});
+ElementId find_id(Document &document, std::string_view type, muse::FnRef<bool(const mu::engraving::EngravingObject &)> match = {});
 // The element an id names; throws when it names nothing live.
 mu::engraving::EngravingObject &element(Document &document, const ElementId &id);
 // A property of an element, by its catalogue name.

@@ -21,13 +21,13 @@
  */
 #pragma once
 
-#include <functional>
 #include <memory>
 #include <type_traits>
 #include <variant>
 
 #include "engraving/rendering/paintoptions.h"
 #include "engraving/types/types.h"
+#include "global/unique_fn.h"
 
 namespace muse::draw {
 struct Painter;
@@ -118,8 +118,8 @@ struct ScoreRenderer {
         int trim_margin_pixel_size = -1;
         int device_dpi = -1;
 
-        std::function<void(muse::draw::Painter *painter, const Page *page, const RectF &page_rect)> on_paint_page_sheet;
-        std::function<void()> on_new_page;
+        muse::UniqueFn<void(muse::draw::Painter *painter, const Page *page, const RectF &page_rect) const> on_paint_page_sheet;
+        muse::UniqueFn<void() const> on_new_page;
     };
 
     // Temporary compatibility interface

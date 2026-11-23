@@ -54,6 +54,7 @@
 #include "page.h"
 #include "parenthesis.h"
 #include "part.h"
+#include "rendering/paintoptions.h"
 #include "rendering/score/autoplace.h"
 #include "rootitem.h"
 #include "rw/xmlreader.h"
@@ -414,7 +415,7 @@ void EngravingItem::delete_later() {
 /// Note: This function is overridden in some classes to skip certain children,
 /// or to apply `func` even to non-leaf nodes.
 
-void EngravingItem::scan_elements(std::function<void(EngravingItem *)> func) {
+void EngravingItem::scan_elements(muse::FnRef<void(EngravingItem *)> func) {
     if (left_parenthesis_) {
         left_parenthesis_->scan_elements(func);
     }
@@ -2037,7 +2038,7 @@ void EngravingItem::LayoutData::disconnect_item_snapped_after() {
     item_snapped_after_ = nullptr;
 }
 
-void EngravingItem::scan_connected_items_in_snapping_chain(const System *system, const std::function<void(EngravingItem *)> &func) const {
+void EngravingItem::scan_connected_items_in_snapping_chain(const System *system, muse::FnRef<void(EngravingItem *)> func) const {
     EngravingItem *item = const_cast<EngravingItem *>(this);
     func(item);
 

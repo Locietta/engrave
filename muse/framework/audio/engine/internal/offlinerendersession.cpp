@@ -13,7 +13,7 @@ thread_local int OfflineRenderSession::fail_after_tracks = -1;
 #endif
 
 OfflineRenderSession::OfflineRenderSession(const OutputSpec &spec, AudioResources &resources, const OfflineRenderSettings &config,
-                                           MidiEventSink sink)
+                                           muse::UniqueFn<void(const midi::Event &) const> sink)
     : resources_(resources), config_(config), sink_(std::move(sink)), spec_(spec) {
     session_master_.set_playhead_position(nullptr);
     session_master_.set_output_spec(spec);

@@ -23,6 +23,7 @@
 #ifndef MU_ENGRAVING_TRILL_H
 #define MU_ENGRAVING_TRILL_H
 
+#include "global/fn.h"
 #include "line.h"
 
 namespace mu::engraving {
@@ -44,7 +45,7 @@ public:
 
     TrillSegment *clone() const override { return new TrillSegment(*this); }
 
-    void scan_elements(std::function<void(EngravingItem *)> func) override;
+    void scan_elements(muse::FnRef<void(EngravingItem *)> func) override;
 
     EngravingObject *property_delegate(Pid) const override;
 

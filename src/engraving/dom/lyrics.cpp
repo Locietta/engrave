@@ -342,7 +342,7 @@ void Lyrics::set_y_relative_to_staff(double y) {
 //   forAllLyrics
 //---------------------------------------------------------
 
-void Score::for_all_lyrics(std::function<void(Lyrics *)> f) {
+void Score::for_all_lyrics(muse::FnRef<void(Lyrics *)> f) {
     for (Segment *s = first_segment(SegmentType::CHORD_REST); s; s = s->next1(SegmentType::CHORD_REST)) {
         for (EngravingItem *e : s->elist()) {
             if (e) {

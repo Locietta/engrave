@@ -94,6 +94,7 @@
 #include "../../dom/trill.h"
 #include "../../dom/tripletfeel.h"
 #include "../../dom/tuplet.h"
+#include "global/fn.h"
 #include "layoutcontext.h"
 
 namespace mu::engraving {
@@ -374,8 +375,7 @@ private:
 
     static SpannerSegment *layout_system_s_line(SLine *line, System *system, LayoutContext &ctx);
     static double volta_mid_end_segment_start_x(Volta *volta, System *system, LayoutContext &ctx);
-    static SpannerSegment *get_next_layout_system_segment(Spanner *spanner, System *system,
-                                                          std::function<SpannerSegment *()> create_segment);
+    static SpannerSegment *get_next_layout_system_segment(Spanner *spanner, System *system, muse::FnRef<SpannerSegment *()> create_segment);
 
     static void manage_hairpin_snapping(HairpinSegment *item, LayoutContext &ctx);
 

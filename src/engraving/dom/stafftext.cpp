@@ -65,7 +65,7 @@ PropertyValue StaffText::property_default(Pid id) const {
     }
 }
 
-void StaffText::scan_elements(std::function<void(EngravingItem *)> func) {
+void StaffText::scan_elements(muse::FnRef<void(EngravingItem *)> func) {
     if (sound_flag_) {
         sound_flag_->scan_elements(func);
     }

@@ -179,7 +179,7 @@ static void collect_glissando(int channel, MidiInstrumentEffect effect, int on_t
     };
     func.func = linear_func;
 
-    pitch_wheel_renderer.add_pitch_wheel_function(func, channel, staff_idx, effect);
+    pitch_wheel_renderer.add_pitch_wheel_function(std::move(func), channel, staff_idx, effect);
 }
 
 static Fraction get_play_ticks_for_bend(const Note *note) {
@@ -243,7 +243,7 @@ static void play_note(EventsHolder &events, const Note *note, PlayNoteParams par
             func.m_end_tick = params.off_time - params.offset;
             auto microtonal_pw = [pw_value]([[maybe_unused]] uint32_t tick) { return static_cast<int>(std::round(pw_value)); };
             func.func = microtonal_pw;
-            pitch_wheel_renderer.add_pitch_wheel_function(func, params.channel, params.staff_idx, MidiInstrumentEffect::NONE);
+            pitch_wheel_renderer.add_pitch_wheel_function(std::move(func), params.channel, params.staff_idx, MidiInstrumentEffect::NONE);
         }
     }
     // adds portamento for continuous glissando
@@ -291,7 +291,7 @@ static void collect_vibrato(int channel, int on_time, int off_time, const Vibrat
     };
     func.func = vibrato_func;
 
-    pitch_wheel_renderer.add_pitch_wheel_function(func, channel, staff_idx, effect);
+    pitch_wheel_renderer.add_pitch_wheel_function(std::move(func), channel, staff_idx, effect);
 }
 
 static void add_const_pitch_wheel(int start_tick, int end_tick, float value, PitchWheelRenderer &pitch_wheel_renderer, int channel,
@@ -304,7 +304,7 @@ static void add_const_pitch_wheel(int start_tick, int end_tick, float value, Pit
     pitch_wheel_const_func.func = const_func;
     pitch_wheel_const_func.m_start_tick = start_tick;
     pitch_wheel_const_func.m_end_tick = end_tick;
-    pitch_wheel_renderer.add_pitch_wheel_function(pitch_wheel_const_func, channel, staff_idx, effect);
+    pitch_wheel_renderer.add_pitch_wheel_function(std::move(pitch_wheel_const_func), channel, staff_idx, effect);
 }
 
 static bool should_proceed_bend(const Note *note) {
@@ -504,7 +504,7 @@ static void collect_guitar_bend(const Note *note, int channel, int on_time, int 
                 pitch_wheel_square_func.m_start_tick = bend_playback_info.start_tick;
                 pitch_wheel_square_func.m_end_tick = bend_playback_info.end_tick;
 
-                pitch_wheel_renderer.add_pitch_wheel_function(pitch_wheel_square_func, channel, note->staff_idx(), effect);
+                pitch_wheel_renderer.add_pitch_wheel_function(std::move(pitch_wheel_square_func), channel, note->staff_idx(), effect);
                 quarter_offset_from_start_note += current_quarter_tones;
 
                 const int cur_pitch_bend_segment_end = cur_pitch_bend_segment_start + duration;
@@ -599,7 +599,7 @@ static void collect_bend(const PitchValues &play_data, staff_idx_t staff_idx, in
             return y * scale;
         };
         func.func = bend_func;
-        pitch_wheel_renderer.add_pitch_wheel_function(func, channel, staff_idx, effect);
+        pitch_wheel_renderer.add_pitch_wheel_function(std::move(func), channel, staff_idx, effect);
     }
     PitchWheelRenderer::PitchWheelFunction func;
     func.m_start_tick = on_time + play_data.at(pitch_size - 1).time * duration / PitchValue::max_time;
@@ -613,7 +613,7 @@ static void collect_bend(const PitchValues &play_data, staff_idx_t staff_idx, in
     uint32_t release_value = play_data.at(pitch_size - 1).pitch * scale;
     auto bend_func = [release_value]([[maybe_unused]] uint32_t tick) { return release_value; };
     func.func = bend_func;
-    pitch_wheel_renderer.add_pitch_wheel_function(func, channel, staff_idx, effect);
+    pitch_wheel_renderer.add_pitch_wheel_function(std::move(func), channel, staff_idx, effect);
 }
 
 static bool let_ring_should_apply(const NoteEvent &event, const Note *note) {

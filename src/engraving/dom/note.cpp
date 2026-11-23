@@ -1585,7 +1585,7 @@ String Note::note_type_user_name() const {
     }
 }
 
-void Note::scan_elements(std::function<void(EngravingItem *)> func) {
+void Note::scan_elements(muse::FnRef<void(EngravingItem *)> func) {
     func(this);
 
     for (EngravingItem *e : el_) {

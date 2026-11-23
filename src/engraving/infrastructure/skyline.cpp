@@ -93,7 +93,7 @@ void SkylineLine::add(const Shape &s) {
     }
 }
 
-SkylineLine SkylineLine::get_filtered_copy(std::function<bool(const ShapeElement &)> filter_out) const {
+SkylineLine SkylineLine::get_filtered_copy(muse::FnRef<bool(const ShapeElement &)> filter_out) const {
     SkylineLine new_skyline_line(*this);
 
     new_skyline_line.shape_.clear();

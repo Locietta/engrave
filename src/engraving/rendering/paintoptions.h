@@ -22,8 +22,7 @@
 
 #pragma once
 
-#include <functional>
-
+#include "global/unique_fn.h"
 #include "types/color.h"
 
 namespace mu::engraving {
@@ -38,6 +37,6 @@ struct PaintOptions {
     // Paint items with their literal color, without substituting the user's displayed default color
     bool ignore_displayed_default_color = false;
 
-    std::function<muse::Color(const EngravingItem *item, muse::Color default_color)> override_item_color;
+    muse::UniqueFn<muse::Color(const EngravingItem *item, muse::Color default_color) const> override_item_color;
 };
 } // namespace mu::engraving::rendering

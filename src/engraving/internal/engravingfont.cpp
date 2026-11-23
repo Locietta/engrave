@@ -431,9 +431,7 @@ void EngravingFont::load_engraving_defaults(const Metadata &metadata) {
         {"tupletBracketThickness", {{Sid::TUPLET_BRACKET_WIDTH}}},
         {"hBarThickness", {{Sid::MM_REST_H_BAR_THICKNESS}}}};
 
-    std::function<void(const std::string &key, const PropertyValue &value)> apply_engraving_default;
-
-    apply_engraving_default = [&](const std::string &key, const PropertyValue &value) {
+    const auto apply_engraving_default = [&](this const auto &self, const std::string &key, const PropertyValue &value) -> void {
         auto search = engraving_defaults_mapping.find(key);
         if (search != engraving_defaults_mapping.cend()) {
             for (Sid sid : search->second.sids) {
@@ -442,7 +440,7 @@ void EngravingFont::load_engraving_defaults(const Metadata &metadata) {
 
             for (const std::string &child_key : search->second.child_keys) {
                 if (!defaults.contains(child_key)) {
-                    apply_engraving_default(child_key, value);
+                    self(child_key, value);
                 }
             }
         }

@@ -25,12 +25,12 @@
 
 #include <array>
 #include <cstdint>
-#include <functional>
 #include <optional>
 #include <span>
 #include <vector>
 
 #include "../../miditimeline.h"
+#include "global/unique_fn.h"
 #include "midi/midievent.h"
 #include "mpe/events.h"
 #include "soundmapping.h"
@@ -97,9 +97,9 @@ struct FluidSequencer {
 
     msecs_t playback_position() const { return playback_position_; }
 
-    using OnFlushedCallback = std::function<void()>;
+    using OnFlushedCallback = muse::UniqueFn<void() const>;
 
-    void set_on_main_stream_flushed(OnFlushedCallback flushed) { on_main_stream_flushed_ = flushed; }
+    void set_on_main_stream_flushed(OnFlushedCallback flushed) { on_main_stream_flushed_ = std::move(flushed); }
 
     // Builds the slice plan for the next chunk from the stream active at the start of advance().
     // Each ChunkSlice records its originating stream. Any sequencer mutation (set_playback_position,
@@ -360,7 +360,7 @@ public:
     int natural_expression_level() const;
 
     const ChannelMap &channels() const;
-    void set_on_channel_added(std::function<void(midi::channel_t, const midi::Program &)> on_channel_added);
+    void set_on_channel_added(muse::UniqueFn<void(midi::channel_t, const midi::Program &) const> on_channel_added);
     int last_staff() const;
 
 private:

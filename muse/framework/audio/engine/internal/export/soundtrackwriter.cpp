@@ -53,9 +53,9 @@ static encode::UniqueEncoder create_encoder(const SoundTrackFormat &format, io::
 }
 
 SoundTrackWriter::SoundTrackWriter(io::IODevice &dst_device, const SoundTrackFormat &format, const secs_t total_duration,
-                                   engine::OfflineRenderSession *source, std::function<void(uint64_t)> block_completed,
-                                   std::function<encode::UniqueEncoder(const SoundTrackFormat &, io::IODevice &)> encoder_factory,
-                                   std::function<bool()> cancelled)
+                                   engine::OfflineRenderSession *source, muse::UniqueFn<void(uint64_t) const> block_completed,
+                                   muse::FnRef<encode::UniqueEncoder(const SoundTrackFormat &, io::IODevice &)> encoder_factory,
+                                   muse::UniqueFn<bool() const> cancelled)
     : cancelled_(std::move(cancelled)), source_(std::move(source)), block_completed_(std::move(block_completed)) {
     if (!source_) {
         return;

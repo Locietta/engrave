@@ -25,6 +25,7 @@
 #include <optional>
 
 #include "engravingitem.h"
+#include "global/fn.h"
 
 namespace mu::engraving {
 struct Factory;
@@ -67,7 +68,7 @@ public:
     PointF canvas_pos() const override; ///< position in canvas coordinates
     PointF page_pos() const override;   ///< position in page coordinates
 
-    void scan_elements(std::function<void(EngravingItem *)> func) override;
+    void scan_elements(muse::FnRef<void(EngravingItem *)> func) override;
     void set_track(track_idx_t t) override;
     void add(EngravingItem *) override;
     void remove(EngravingItem *) override;

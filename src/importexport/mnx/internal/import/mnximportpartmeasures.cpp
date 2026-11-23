@@ -766,9 +766,8 @@ bool MnxImporter::import_non_grace_events(const model::Sequence &sequence, const
     ChordRest *last_cr = nullptr;
     std::vector<const model::Grace *> pending_next;
 
-    model::WalkHooks hooks;
-    hooks.on_full_measure = [&](const model::FullMeasureRest &mnx_full_measure_rest, const model::Rational &start_tick,
-                                const model::Rational &, model::WalkContext &) {
+    const auto on_full_measure = [&](const model::FullMeasureRest &mnx_full_measure_rest, const model::Rational &start_tick,
+                                     const model::Rational &, model::WalkContext &) {
         Segment *segment = measure->get_segment_r(SegmentType::CHORD_REST, to_muse_score_fraction(start_tick));
         Rest *rest = Factory::create_rest(segment, TDuration(DurationType::V_MEASURE));
         rest->set_duration_type(TDuration(DurationType::V_MEASURE));
@@ -788,7 +787,7 @@ bool MnxImporter::import_non_grace_events(const model::Sequence &sequence, const
         inserted_cr = true;
         return true;
     };
-    hooks.on_item = [&](const model::SequenceItem &item, model::WalkContext &ctx) {
+    const auto on_item = [&](const model::SequenceItem &item, model::WalkContext &ctx) {
         if (const auto *grace = std::get_if<model::Grace>(&item)) {
             /// @todo refactor this if MuseScore allows grace notes to be normal.
             grace_neighbors[grace] = {last_cr, nullptr}; // store prev neighbor
@@ -825,8 +824,8 @@ bool MnxImporter::import_non_grace_events(const model::Sequence &sequence, const
         }
         return model::WalkControl::CONTINUE;
     };
-    hooks.on_event = [&](const model::Event &event, const model::Rational &start_tick, const model::Rational &actual_duration,
-                         model::WalkContext &ctx) {
+    const auto on_event = [&](const model::Event &event, const model::Rational &start_tick, const model::Rational &actual_duration,
+                              model::WalkContext &ctx) {
         IF_ASSERT_FAILED(!ctx.in_grace) {
             LOGE() << "Encountered grace when processing non-grace.";
             return true;
@@ -848,7 +847,7 @@ bool MnxImporter::import_non_grace_events(const model::Sequence &sequence, const
         }
         return true;
     };
-    hooks.on_after_item = [&](const model::SequenceItem &item, model::WalkContext &ctx) {
+    const auto on_after_item = [&](const model::SequenceItem &item, model::WalkContext &ctx) {
         if (std::holds_alternative<model::Tuplet>(item)) {
             Tuplet *tuplet = active_tuplets.top();
             active_tuplets.pop();
@@ -865,7 +864,8 @@ bool MnxImporter::import_non_grace_events(const model::Sequence &sequence, const
         }
     };
 
-    model::walk_sequence(sequence, bar_length, hooks);
+    model::walk_sequence(sequence, bar_length,
+                         {.on_item = on_item, .on_event = on_event, .on_full_measure = on_full_measure, .on_after_item = on_after_item});
 
     return inserted_cr;
 }
@@ -878,15 +878,14 @@ bool MnxImporter::import_non_grace_events(const model::Sequence &sequence, const
 void MnxImporter::import_grace_events(const model::Sequence &sequence, const model::Rational &bar_length, Measure *measure,
                                       track_idx_t cur_track_idx, const GraceNeighborsMap &grace_neighbors) {
     const model::Grace *current_grace = nullptr;
-    model::WalkHooks hooks;
-    hooks.on_item = [&](const model::SequenceItem &item, model::WalkContext &) {
+    const auto on_item = [&](const model::SequenceItem &item, model::WalkContext &) {
         if (const auto *grace = std::get_if<model::Grace>(&item)) {
             current_grace = grace; // its events follow
         }
         return model::WalkControl::CONTINUE;
     };
-    hooks.on_event = [&](const model::Event &event, const model::Rational &start_tick, const model::Rational &actual_duration,
-                         model::WalkContext &ctx) {
+    const auto on_event = [&](const model::Event &event, const model::Rational &start_tick, const model::Rational &actual_duration,
+                              model::WalkContext &ctx) {
         if (!ctx.in_grace || !current_grace) {
             return true;
         }
@@ -929,7 +928,7 @@ void MnxImporter::import_grace_events(const model::Sequence &sequence, const mod
         return true;
     };
 
-    model::walk_sequence(sequence, bar_length, hooks);
+    model::walk_sequence(sequence, bar_length, {.on_item = on_item, .on_event = on_event});
 }
 
 //---------------------------------------------------------
@@ -1463,8 +1462,7 @@ void MnxImporter::create_arpeggios(size_t part_index, const model::PartMeasure &
 //---------------------------------------------------------
 
 void MnxImporter::process_sequence_pass2(const model::Sequence &sequence, const model::Rational &bar_length, Measure *measure) {
-    model::WalkHooks hooks;
-    hooks.on_event = [&](const model::Event &event, const model::Rational &, const model::Rational &, model::WalkContext &ctx) {
+    const auto on_event = [&](const model::Event &event, const model::Rational &, const model::Rational &, model::WalkContext &ctx) {
         ChordRest *cr = muse::value(mnx_event_to_cr_, &event);
         if (!cr) {
             LOGW() << "event " << index().entry(event).pointer << " is not mapped, possibly due to too many sequences in measure.";
@@ -1509,7 +1507,7 @@ void MnxImporter::process_sequence_pass2(const model::Sequence &sequence, const 
         return true;
     };
 
-    model::walk_sequence(sequence, bar_length, hooks);
+    model::walk_sequence(sequence, bar_length, {.on_event = on_event});
 }
 
 // The measures of a part that measure repeats MuseScore can show (1, 2 or 4 measures) cover.

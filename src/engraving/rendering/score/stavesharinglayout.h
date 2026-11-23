@@ -27,6 +27,7 @@
 
 #include "dom/sharedpart.h"
 #include "dom/stavesharinglabel.h"
+#include "global/fn.h"
 #include "layoutcontext.h"
 
 namespace mu::engraving::rendering::score {
@@ -88,7 +89,7 @@ private:
     static bool seg_has_local_key_sig(const Segment *segment, const SharedPart *shared_part);
     static bool check_segment_annotations_for_same_voice(Segment *segment, track_idx_t prev_track, track_idx_t next_track);
     static bool check_items_for_same_voice(Segment *segment, track_idx_t prev_track, track_idx_t next_track,
-                                           const std::function<bool(const EngravingItem *, const EngravingItem *)> &is_equal);
+                                           muse::FnRef<bool(const EngravingItem *, const EngravingItem *)> is_equal);
     static bool check_note_spanners_for_unison(const Note *note1, const Note *note2, const StaveSharingContext &ctx);
     static bool check_spanners_for_same_voice(track_idx_t prev_track, track_idx_t next_track, StaveSharingContext &ctx);
     static bool check_articulations_for_same_voice(Chord *chord1, Chord *chord2);
@@ -101,7 +102,7 @@ private:
 
     static EngravingItem *make_shared_item(EngravingItem *origin_item, EngravingItem *possible_shared_item, track_idx_t shared_track,
                                            EngravingObject *shared_parent,
-                                           const std::function<bool(const EngravingItem *, const EngravingItem *)> &is_equal);
+                                           muse::FnRef<bool(const EngravingItem *, const EngravingItem *)> is_equal);
 
     static void make_shared_notation(StaveSharingContext &ctx);
     static void make_shared_clef_key_time_sigs(StaveSharingContext &ctx);

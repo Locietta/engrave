@@ -738,7 +738,7 @@ bool Chord::all_elements_invisible() const {
     return true;
 }
 
-void Chord::process_siblings(std::function<void(EngravingItem *)> func, bool include_temporary_siblings) const {
+void Chord::process_siblings(muse::FnRef<void(EngravingItem *)> func, bool include_temporary_siblings) const {
     if (include_temporary_siblings) {
         if (stem()) func(stem());
         if (hook()) func(hook());
@@ -998,7 +998,7 @@ PointF Chord::page_pos() const {
     return p;
 }
 
-void Chord::scan_elements(std::function<void(EngravingItem *)> func) {
+void Chord::scan_elements(muse::FnRef<void(EngravingItem *)> func) {
     for (Articulation *a : articulations_) {
         a->scan_elements(func);
     }

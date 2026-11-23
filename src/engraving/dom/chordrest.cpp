@@ -373,7 +373,7 @@ void ChordRest::set_score(Score *s) {
     process_siblings([s](EngravingItem *e) { e->set_score(s); });
 }
 
-void ChordRest::process_siblings(std::function<void(EngravingItem *)> func) {
+void ChordRest::process_siblings(muse::FnRef<void(EngravingItem *)> func) {
     if (beam_) {
         func(beam_);
     }
@@ -514,7 +514,7 @@ EngravingItem *ChordRest::last_element_before_segment() {
 
 EngravingItem *ChordRest::next_segment_element() { return segment()->first_in_next_segments(staff_idx()); }
 
-void ChordRest::scan_elements(std::function<void(EngravingItem *)> func) {
+void ChordRest::scan_elements(muse::FnRef<void(EngravingItem *)> func) {
     auto *b = beam();
     const Beam *view = b;
     if (view && !view->rendered_elements().empty() && view->rendered_elements().front() == this) {

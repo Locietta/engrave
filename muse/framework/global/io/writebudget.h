@@ -3,8 +3,9 @@
 
 #include <cstdint>
 #include <exception>
-#include <functional>
 #include <optional>
+
+#include "global/fn.h"
 
 namespace muse::io {
 
@@ -14,16 +15,16 @@ struct WriteBudget {
     enum class Failure { NONE, LIMIT, CANCELLED };
     std::optional<std::uint64_t> output;
     std::optional<std::uint64_t> working;
-    const std::function<bool()> *cancelled = nullptr;
+    muse::FnRef<bool() const> cancelled = nullptr;
     std::uint64_t charged = 0;
     Failure failure = Failure::NONE;
     std::exception_ptr callback_error;
 
     bool poll() {
         if (failure != Failure::NONE) return false;
-        if (cancelled && *cancelled) {
+        if (cancelled) {
             try {
-                if ((*cancelled)()) failure = Failure::CANCELLED;
+                if (cancelled()) failure = Failure::CANCELLED;
             } catch (...) {
                 callback_error = std::current_exception();
                 failure = Failure::CANCELLED;

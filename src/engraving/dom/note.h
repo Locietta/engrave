@@ -24,6 +24,7 @@
 
 #include "containers.h"
 #include "engravingitem.h"
+#include "global/fn.h"
 #include "interval.h"
 #include "noteevent.h"
 #include "noteval.h"
@@ -146,7 +147,7 @@ public:
     double mag() const override;
     EngravingItem *element_base() const override;
 
-    void scan_elements(std::function<void(EngravingItem *)> func) override;
+    void scan_elements(muse::FnRef<void(EngravingItem *)> func) override;
     void set_track(track_idx_t val) override;
 
     staff_idx_t v_staff_idx() const override;

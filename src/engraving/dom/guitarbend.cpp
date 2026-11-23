@@ -34,6 +34,7 @@
 #include "log.h"
 #include "note.h"
 #include "part.h"
+#include "rendering/paintoptions.h"
 #include "rest.h"
 #include "score.h"
 #include "staff.h"
@@ -817,7 +818,7 @@ void GuitarBendSegment::reset() {
 
 double GuitarBendSegment::line_width() const { return guitar_bend()->line_width(); }
 
-void GuitarBendSegment::scan_elements(std::function<void(EngravingItem *)> func) {
+void GuitarBendSegment::scan_elements(muse::FnRef<void(EngravingItem *)> func) {
     func(text_);
     LineSegment::scan_elements(func);
 }

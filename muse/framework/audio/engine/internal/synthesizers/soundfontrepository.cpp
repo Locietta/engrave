@@ -41,7 +41,7 @@ bool SoundFontRepository::is_loading_sound_fonts() const { return loading_sound_
 
 const SoundFontsMap &SoundFontRepository::sound_fonts() const { return sound_fonts_; }
 
-void SoundFontRepository::set_on_sound_fonts_changed(std::function<void()> on_sound_fonts_changed) {
+void SoundFontRepository::set_on_sound_fonts_changed(muse::UniqueFn<void() const> on_sound_fonts_changed) {
     on_sound_fonts_changed_ = std::move(on_sound_fonts_changed);
 }
 
@@ -91,7 +91,7 @@ void SoundFontRepository::add_sound_font_data(const SoundFontUri &uri, const Byt
     notify_sound_fonts_changed();
 }
 
-void SoundFontRepository::do_add_sound_font(const SoundFontUri &uri, const SoundFontsMap *cache, std::function<void()> on_finished) {
+void SoundFontRepository::do_add_sound_font(const SoundFontUri &uri, const SoundFontsMap *cache, muse::FnRef<void()> on_finished) {
     if (cache) {
         auto it = cache->find(uri);
         if (it != cache->cend()) {

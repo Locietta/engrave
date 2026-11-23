@@ -22,14 +22,13 @@
 
 #pragma once
 
-#include <functional>
-
 #include <amc/flatset.hpp>
 #include <ankerl/unordered_dense.h>
 
 #include "../types/types.h"
 #include "engraving/automation/automationtypes.h"
 #include "global/flatmap.h"
+#include "global/fn.h"
 #include "mpe/events.h"
 #include "mpe/mpetypes.h"
 
@@ -46,7 +45,7 @@ struct RepeatSegment;
 
 struct PlaybackContext {
     explicit PlaybackContext(const Score *score);
-    void release(const std::function<void()> &step);
+    void release(muse::FnRef<void()> step);
 
     muse::mpe::dynamic_level_t appliable_dynamic_level(const track_idx_t track_idx, const int nominal_position_tick) const;
 
@@ -56,24 +55,24 @@ struct PlaybackContext {
                                                             const int start_from_tick) const;
 
     muse::FlatMap<muse::mpe::timestamp_t, muse::mpe::SoundPresetChangeEventList>
-    sound_presets(const track_idx_t track_from, const track_idx_t track_to, const std::function<void()> &checkpoint = {}) const;
+    sound_presets(const track_idx_t track_from, const track_idx_t track_to, muse::FnRef<void()> checkpoint = {}) const;
     muse::mpe::SoundPresetChangeEventList sound_presets(const track_idx_t track_idx, const int nominal_position_tick) const;
 
     muse::FlatMap<muse::mpe::timestamp_t, muse::mpe::TextArticulationEventList>
-    text_articulations(const track_idx_t track_from, const track_idx_t track_to, const std::function<void()> &checkpoint = {}) const;
+    text_articulations(const track_idx_t track_from, const track_idx_t track_to, muse::FnRef<void()> checkpoint = {}) const;
     muse::mpe::TextArticulationEvent text_articulation(const track_idx_t track_idx, const int nominal_position_tick) const;
 
     muse::FlatMap<muse::mpe::timestamp_t, muse::mpe::SyllableEventList> syllables(const track_idx_t track_from, const track_idx_t track_to,
-                                                                                  const std::function<void()> &checkpoint = {}) const;
+                                                                                  muse::FnRef<void()> checkpoint = {}) const;
     muse::mpe::SyllableEvent syllable(const track_idx_t track_idx, const int nominal_position_tick) const;
 
     muse::mpe::DynamicAutomationLayers dynamic_level_layers(const track_idx_t track_from, const track_idx_t track_to,
-                                                            const std::function<void()> &checkpoint = {}) const;
+                                                            muse::FnRef<void()> checkpoint = {}) const;
 
     bool has_sound_flags(const track_idx_t track_from, const track_idx_t track_to) const;
 
     void update(const track_idx_t track_from, const track_idx_t track_to, const int tick_from, const int tick_to,
-                bool expand_repeats = true, const std::function<void()> &checkpoint = {});
+                bool expand_repeats = true, muse::FnRef<void()> checkpoint = {});
     void clear(const track_idx_t track_from, const track_idx_t track_to, const int tick_from, const int tick_to);
 
 private:

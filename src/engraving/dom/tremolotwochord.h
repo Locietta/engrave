@@ -29,6 +29,7 @@
 #include "draw/types/painterpath.h"
 #include "durationtype.h"
 #include "engravingitem.h"
+#include "global/fn.h"
 
 namespace mu::engraving {
 struct Chord;
@@ -52,7 +53,7 @@ public:
 
     TranslatableString subtype_user_name() const override;
 
-    void scan_elements(std::function<void(EngravingItem *)> func) override;
+    void scan_elements(muse::FnRef<void(EngravingItem *)> func) override;
 
     void set_tremolo_type(TremoloType t);
 

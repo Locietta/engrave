@@ -346,7 +346,7 @@ void BarLine::style_changed() {
     EngravingItem::style_changed();
 }
 
-void BarLine::scan_elements(std::function<void(EngravingItem *)> func) {
+void BarLine::scan_elements(muse::FnRef<void(EngravingItem *)> func) {
     func(this);
     for (EngravingItem *e : el_) {
         e->scan_elements(func);

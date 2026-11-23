@@ -98,7 +98,7 @@ void Page::append_system(System *s) {
 //   scanElements
 //---------------------------------------------------------
 
-void Page::scan_elements(std::function<void(EngravingItem *)> func) {
+void Page::scan_elements(muse::FnRef<void(EngravingItem *)> func) {
     for (System *s : systems_) {
         for (MeasureBase *m : s->measures()) {
             m->scan_elements(func);
