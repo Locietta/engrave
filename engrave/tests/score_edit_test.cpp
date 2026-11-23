@@ -8,8 +8,6 @@
 #include <string>
 #include <vector>
 
-#include <ankerl/unordered_dense.h>
-
 #include "engrave/src/runtime/engine_context.h"
 #include "engrave/src/runtime/score_io.h"
 #include "engrave/src/score/score_excerpts.h"
@@ -20,6 +18,7 @@
 #include "engraving/dom/part.h"
 #include "engraving/editing/transaction/transaction.h"
 #include "engraving/engravingproject.h"
+#include "global/hashmap.h"
 
 namespace {
 using music::NoteView;
@@ -46,8 +45,8 @@ const NoteView *find_note(const ScoreRegionView &view, size_t measure, int pitch
     return nullptr;
 }
 
-ankerl::unordered_dense::map<std::string, int> pitch_map(const ScoreRegionView &view) {
-    ankerl::unordered_dense::map<std::string, int> result;
+muse::HashMap<std::string, int> pitch_map(const ScoreRegionView &view) {
+    muse::HashMap<std::string, int> result;
     for (const NoteView &note : view.notes) result.emplace(note.id, note.pitch);
     return result;
 }
@@ -396,8 +395,8 @@ int main(int argc, char **argv) {
         expect_same_ids(piano_before, piano_after);
         expect_same_ids(clarinet_before, clarinet_after);
 
-        const ankerl::unordered_dense::map<std::string, int> piano_original = pitch_map(piano_before);
-        const ankerl::unordered_dense::map<std::string, int> clarinet_original = pitch_map(clarinet_before);
+        const muse::HashMap<std::string, int> piano_original = pitch_map(piano_before);
+        const muse::HashMap<std::string, int> clarinet_original = pitch_map(clarinet_before);
         for (const auto &[id, pitch] : pitch_map(piano_after)) {
             if (id == piano_target_id) continue;
             const auto original = piano_original.find(id);

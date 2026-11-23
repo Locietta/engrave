@@ -16,8 +16,6 @@
 #include <utility>
 #include <vector>
 
-#include <amc/flatset.hpp>
-#include <ankerl/unordered_dense.h>
 #include <pugixml.hpp>
 
 #include "engrave/src/api/handles.h"
@@ -44,6 +42,8 @@
 #include "engraving/rendering/score/systemheaderlayout.h"
 #include "engraving/style/defaultstyle.h"
 #include "engraving/style/style.h"
+#include "global/flatset.h"
+#include "global/hashmap.h"
 #include "global/io/buffer.h"
 #include "global/io/writebudget.h"
 #include "write470_spanners.h"
@@ -365,10 +365,10 @@ bool project_inline_chord_list(pugi::xml_node root, const Score &score, bool emb
     pugi::xml_document xml;
     const auto baseline = serialize_chord_list(preset, xml);
 
-    ankerl::unordered_dense::map<std::string_view, pugi::xml_node> symbols;
-    ankerl::unordered_dense::map<std::string_view, std::vector<pugi::xml_node>> tokens;
+    muse::HashMap<std::string_view, pugi::xml_node> symbols;
+    muse::HashMap<std::string_view, std::vector<pugi::xml_node>> tokens;
     std::vector<pugi::xml_node> unmatched_fonts;
-    amc::FlatSet<pugi::xml_node> unmatched_tokens;
+    muse::FlatSet<pugi::xml_node> unmatched_tokens;
     for (auto font : baseline.children("font")) {
         poll();
         unmatched_fonts.push_back(font);
@@ -558,7 +558,7 @@ void convert_bracket(pugi::xml_node bracket, const Score &score, std::optional<E
     staff.remove_child(bracket);
 }
 
-using ParenthesisAliases = ankerl::unordered_dense::map<std::string, pugi::xml_node>;
+using ParenthesisAliases = muse::HashMap<std::string, pugi::xml_node>;
 
 void merge_parentheses(pugi::xml_node kept, pugi::xml_node duplicate, ParenthesisAliases &aliases, std::optional<ElementId> score_id,
                        std::vector<ExportWarning> &warnings) {
@@ -980,7 +980,7 @@ bool valid_tie_locator(std::string_view id) {
 }
 
 void normalize_warnings(std::vector<ExportWarning> &warnings) {
-    ankerl::unordered_dense::set<std::tuple<std::string, std::string, std::string, std::string>> seen;
+    muse::HashSet<std::tuple<std::string, std::string, std::string, std::string>> seen;
     std::vector<ExportWarning> unique;
     for (auto &w : warnings) {
         poll();

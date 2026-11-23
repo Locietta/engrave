@@ -29,9 +29,8 @@
 #include <variant>
 #include <vector>
 
-#include <gtl/btree.hpp>
-
 #include "automationpoint.h"
+#include "global/btree.h"
 #include "global/flatmap.h"
 #include "global/types/number.h"
 #include "mpetypes.h"
@@ -279,7 +278,7 @@ using PlaybackEvent =
     std::variant<std::monostate, NoteEvent, TextArticulationEvent, SoundPresetChangeEvent, SyllableEvent, ControllerChangeEvent>;
 
 using PlaybackEventList = std::vector<PlaybackEvent>;
-using PlaybackEventsMap = gtl::btree_map<timestamp_t, PlaybackEventList>;
+using PlaybackEventsMap = muse::BTreeMap<timestamp_t, PlaybackEventList>;
 
 using DynamicAutomationMap = AutomationCurve<timestamp_t>;
 

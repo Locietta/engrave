@@ -1,9 +1,8 @@
 #include "gp67dombuilder.h"
 
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
-
 #include "engraving/types/constants.h"
+#include "global/btree.h"
+#include "global/hashmap.h"
 #include "global/log.h"
 
 using namespace muse;
@@ -18,19 +17,19 @@ void GP67DomBuilder::build_gp_dom_model(XmlDomElement *dom_elem) {
 
     XmlDomNode gpversion, encoding;
 
-    ankerl::unordered_dense::map<String, XmlDomNode *> node_map = {{u"GPRevision", &revision},
-                                                                   {u"Score", &score_node},
-                                                                   {u"MasterTrack", &master_track},
-                                                                   {u"AudioTracks", &audio_tracks},
-                                                                   {u"Tracks", &each_track},
-                                                                   {u"MasterBars", &master_bars},
-                                                                   {u"Bars", &bars},
-                                                                   {u"Voices", &voices},
-                                                                   {u"Beats", &beats},
-                                                                   {u"Notes", &notes},
-                                                                   {u"Rhythms", &rhythms},
-                                                                   {u"GPVersion", &gpversion},
-                                                                   {u"Encoding", &encoding}};
+    muse::HashMap<String, XmlDomNode *> node_map = {{u"GPRevision", &revision},
+                                                    {u"Score", &score_node},
+                                                    {u"MasterTrack", &master_track},
+                                                    {u"AudioTracks", &audio_tracks},
+                                                    {u"Tracks", &each_track},
+                                                    {u"MasterBars", &master_bars},
+                                                    {u"Bars", &bars},
+                                                    {u"Voices", &voices},
+                                                    {u"Beats", &beats},
+                                                    {u"Notes", &notes},
+                                                    {u"Rhythms", &rhythms},
+                                                    {u"GPVersion", &gpversion},
+                                                    {u"Encoding", &encoding}};
 
     auto assign_map = [&node_map](XmlDomNode node) {
         auto iter = node_map.find(node.node_name());
@@ -60,9 +59,8 @@ std::unique_ptr<GPDomModel> GP67DomBuilder::get_gp_dom_model() { return std::mov
 
 void GP67DomBuilder::build_gp_score(XmlDomNode *score_node) {
     // Contains list of unused info
-    static const ankerl::unordered_dense::set<String> s_unused_nodes = {
-        u"FirstPageFooter",           u"FirstPageHeader",    u"PageFooter", u"PageHeader",
-        u"ScoreSystemsDefaultLayout", u"ScoreSystemsLayout", u"PageSetup"};
+    static const muse::HashSet<String> s_unused_nodes = {u"FirstPageFooter",           u"FirstPageHeader",    u"PageFooter", u"PageHeader",
+                                                         u"ScoreSystemsDefaultLayout", u"ScoreSystemsLayout", u"PageSetup"};
 
     std::unique_ptr<GPScore> score = std::make_unique<GPScore>();
     XmlDomNode current_node = score_node->first_child();
@@ -131,7 +129,7 @@ void GP67DomBuilder::build_gp_audio_tracks(XmlDomNode *audio_track) {
 }
 
 void GP67DomBuilder::build_gp_tracks(XmlDomNode *tracks_node, XmlDomNode *version_node) {
-    gtl::btree_map<int, std::unique_ptr<GPTrack>> tracks;
+    muse::BTreeMap<int, std::unique_ptr<GPTrack>> tracks;
     XmlDomNode current_node = tracks_node->first_child();
     while (!current_node.is_null()) {
         tracks.insert(create_gp_track(&current_node, version_node));
@@ -162,7 +160,7 @@ void GP67DomBuilder::build_gp_master_bars(XmlDomNode *master_bars_node) {
 }
 
 void GP67DomBuilder::build_gp_bars(XmlDomNode *bars_node) {
-    ankerl::unordered_dense::map<int, std::unique_ptr<GPBar>> bars;
+    muse::HashMap<int, std::unique_ptr<GPBar>> bars;
 
     XmlDomNode inner_node = bars_node->first_child();
     while (!inner_node.is_null()) {
@@ -178,7 +176,7 @@ void GP67DomBuilder::build_gp_bars(XmlDomNode *bars_node) {
 }
 
 void GP67DomBuilder::build_gp_voices(XmlDomNode *voices_node) {
-    ankerl::unordered_dense::map<int, std::unique_ptr<GPVoice>> voices;
+    muse::HashMap<int, std::unique_ptr<GPVoice>> voices;
 
     XmlDomNode inner_node = voices_node->first_child();
     while (!inner_node.is_null()) {
@@ -194,7 +192,7 @@ void GP67DomBuilder::build_gp_voices(XmlDomNode *voices_node) {
 }
 
 void GP67DomBuilder::build_gp_beats(XmlDomNode *beats_node) {
-    ankerl::unordered_dense::map<int, std::shared_ptr<GPBeat>> beats;
+    muse::HashMap<int, std::shared_ptr<GPBeat>> beats;
 
     XmlDomNode inner_node = beats_node->first_child();
     while (!inner_node.is_null()) {
@@ -210,7 +208,7 @@ void GP67DomBuilder::build_gp_beats(XmlDomNode *beats_node) {
 }
 
 void GP67DomBuilder::build_gp_notes(XmlDomNode *notes_node) {
-    ankerl::unordered_dense::map<int, std::shared_ptr<GPNote>> notes;
+    muse::HashMap<int, std::shared_ptr<GPNote>> notes;
 
     XmlDomNode inner_node = notes_node->first_child();
 
@@ -227,7 +225,7 @@ void GP67DomBuilder::build_gp_notes(XmlDomNode *notes_node) {
 }
 
 void GP67DomBuilder::build_gp_rhythms(XmlDomNode *rhythms_node) {
-    ankerl::unordered_dense::map<int, std::shared_ptr<GPRhythm>> rhythms;
+    muse::HashMap<int, std::shared_ptr<GPRhythm>> rhythms;
 
     XmlDomNode inner_node = rhythms_node->first_child();
     while (!inner_node.is_null()) {
@@ -281,7 +279,7 @@ std::unique_ptr<GPMasterTracks> GP67DomBuilder::create_gp_master_track([[maybe_u
 }
 
 std::unique_ptr<GPMasterBar> GP67DomBuilder::create_gp_master_bar(XmlDomNode *master_bar_node) {
-    static const ankerl::unordered_dense::set<String> s_unused = {u"XProperties"};
+    static const muse::HashSet<String> s_unused = {u"XProperties"};
 
     auto triplet_feel_type = [](String &&str) {
         if (str == u"Triplet8th") {
@@ -459,7 +457,7 @@ std::pair<int, std::unique_ptr<GPVoice>> GP67DomBuilder::create_gp_voice(XmlDomN
 }
 
 std::pair<int, std::shared_ptr<GPBeat>> GP67DomBuilder::create_gp_beat(XmlDomNode *beat_node) {
-    static const ankerl::unordered_dense::set<String> s_unused = {u"Bank", u"StemOrientation", u"ConcertPitchStemOrientation", u"Ottavia"};
+    static const muse::HashSet<String> s_unused = {u"Bank", u"StemOrientation", u"ConcertPitchStemOrientation", u"Ottavia"};
 
     auto dynamic_type = [](String &&str) -> GPBeat::DynamicType {
         if (str == u"FFF") {
@@ -688,7 +686,7 @@ std::pair<int, std::shared_ptr<GPNote>> GP67DomBuilder::create_gp_note(XmlDomNod
         String node_name = inner_node.node_name();
 
         if (node_name == u"Accidental") {
-            ankerl::unordered_dense::map<String, int> accidentals = {
+            muse::HashMap<String, int> accidentals = {
                 {u"DoubleFlat", -2}, {u"Flat", -1}, {u"Natural", 0}, {u"Sharp", +1}, {u"DoubleSharp", +2}};
 
             String accidental_name = inner_node.to_element().text();
@@ -886,7 +884,7 @@ void GP67DomBuilder::read_note_properties(XmlDomNode *properties_node, GPNote *n
             while (!inner_node.is_null()) {
                 String node_name = inner_node.node_name();
                 if (node_name == u"Accidental") {
-                    ankerl::unordered_dense::map<String, int> accidentals = {
+                    muse::HashMap<String, int> accidentals = {
                         {u"bb", -2},
                         {u"b", -1},
                         {u"#", +1},

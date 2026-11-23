@@ -39,9 +39,6 @@
 #include <math.h>
 #include <optional>
 
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
-
 #include "../shared/musicxmlfonthandler.h"
 #include "../shared/musicxmlsupport.h"
 #include "../shared/musicxmltypes.h"
@@ -128,6 +125,8 @@
 #include "engraving/types/symnames.h"
 #include "engraving/types/typesconv.h"
 #include "global/appinfo.h"
+#include "global/btree.h"
+#include "global/hashmap.h"
 #include "global/realfn.h"
 #include "global/serialization/xmlstreamreader.h"
 #include "global/serialization/zipwriter.h"
@@ -168,7 +167,7 @@ constexpr int max_part_groups = 8;
 //   typedefs
 //---------------------------------------------------------
 
-typedef gtl::btree_map<track_idx_t, const FiguredBass *> FigBassMap;
+typedef muse::BTreeMap<track_idx_t, const FiguredBass *> FigBassMap;
 
 //---------------------------------------------------------
 //   attributes -- prints <attributes> tag when necessary
@@ -312,8 +311,8 @@ struct MeasurePrintContext final {
 //   ExportMusicXml
 //---------------------------------------------------------
 
-typedef ankerl::unordered_dense::map<const ChordRest *, const Trill *> TrillHash;
-typedef ankerl::unordered_dense::map<const Instrument *, int> MusicXmlInstrumentMap;
+typedef muse::HashMap<const ChordRest *, const Trill *> TrillHash;
+typedef muse::HashMap<const Instrument *, int> MusicXmlInstrumentMap;
 
 // The configuration of the export in progress. ExportMusicXml binds it for its
 // lifetime because the static position helpers reach it without an exporter;
@@ -406,11 +405,11 @@ private:
     void write_element(EngravingItem *el, const Measure *m, staff_idx_t sstaff, bool use_drumset);
     void write_measure_tracks(const Measure *const m, const int part_index, const staff_idx_t strack, const staff_idx_t part_rel_staff_no,
                               const bool use_drumset, const bool is_last_staff_of_part, FigBassMap &fb_map,
-                              ankerl::unordered_dense::set<const Spanner *> &spanners_stopped);
+                              muse::HashSet<const Spanner *> &spanners_stopped);
     void write_measure_staves(const Measure *m, const int part_index, const staff_idx_t start_staff, const size_t nstaves,
-                              const bool use_drumset, FigBassMap &fb_map, ankerl::unordered_dense::set<const Spanner *> &spanners_stopped);
+                              const bool use_drumset, FigBassMap &fb_map, muse::HashSet<const Spanner *> &spanners_stopped);
     void write_measure(const Measure *const m, const int idx, const int staff_count, MeasureNumberStateHandler &mnsh, FigBassMap &fb_map,
-                       const MeasurePrintContext &mpc, ankerl::unordered_dense::set<const Spanner *> &spanners_stopped);
+                       const MeasurePrintContext &mpc, muse::HashSet<const Spanner *> &spanners_stopped);
     void repeat_at_measure_start(Attributes &attr, const Measure *const m, track_idx_t strack, track_idx_t etrack, track_idx_t track);
     void repeat_at_measure_stop(const Measure *const m, track_idx_t strack, track_idx_t etrack, track_idx_t track);
     void write_parts();
@@ -1143,7 +1142,7 @@ static void find_trills(const Measure *const measure, track_idx_t strack, track_
 // helpers for ::calcDivisions
 //---------------------------------------------------------
 
-typedef gtl::btree_set<Fraction> FractionSet;
+typedef muse::BTreeSet<Fraction> FractionSet;
 static FractionSet fractions;
 
 static void add_fraction(const Fraction &len) { fractions.insert(len.reduced()); }
@@ -2281,7 +2280,7 @@ void ExportMusicXml::keysig(const KeySig *ks, ClefType ct, staff_idx_t staff) {
         // are in insertion order -> sorting required
 
         // first put the KeySyms in a map
-        gtl::btree_map<double, KeySym> map;
+        muse::BTreeMap<double, KeySym> map;
         for (const KeySym &ksym : keysyms) {
             map.insert({ksym.x_pos.val(), ksym});
         }
@@ -5461,7 +5460,7 @@ static void write_words_and_symbols_xml(mu::engraving::XmlWriter &xml, const mu:
 // as MusicXML dynamics is written as other-dynamics.
 
 template <typename T>
-inline gtl::btree_set<String> &operator<<(gtl::btree_set<String> &s, const T &v) {
+inline muse::BTreeSet<String> &operator<<(muse::BTreeSet<String> &s, const T &v) {
     s.emplace(v);
     return s;
 }
@@ -5503,7 +5502,7 @@ static void write_dynamic_other_text(XmlWriter &xml, const String &value) {
 // them. Formatted or non-standard symbols still use the existing fallback.
 static bool write_grouped_dynamic_smufl(XmlWriter &xml, const Dynamic *source) {
     const String text = source->xml_text();
-    static const ankerl::unordered_dense::map<String, String> letter_symbols{
+    static const muse::HashMap<String, String> letter_symbols{
         {u"dynamicPiano", u"p"},     {u"dynamicMezzo", u"m"}, {u"dynamicForte", u"f"}, {u"dynamicRinforzando", u"r"},
         {u"dynamicSforzando", u"s"}, {u"dynamicZ", u"z"},     {u"dynamicNiente", u"n"}};
     std::vector<std::pair<String, bool>> parts;
@@ -5660,7 +5659,7 @@ static bool write_grouped_dynamic_smufl(XmlWriter &xml, const Dynamic *source) {
 }
 
 void ExportMusicXml::dynamic(Dynamic const *const dyn, staff_idx_t staff) {
-    static const ankerl::unordered_dense::set<String> valid_music_xml_dynamics{
+    static const muse::HashSet<String> valid_music_xml_dynamics{
         u"p",  u"pp", u"ppp", u"pppp", u"ppppp", u"pppppp", u"f",   u"ff",  u"fff",  u"ffff", u"fffff", u"ffffff", u"mp",
         u"mf", u"sf", u"sfp", u"sfpp", u"fp",    u"rf",     u"rfz", u"sfz", u"sffz", u"fz",   u"n",     u"pf",     u"sfzp"};
 
@@ -5685,8 +5684,8 @@ void ExportMusicXml::dynamic(Dynamic const *const dyn, staff_idx_t staff) {
     } else if (write_grouped_dynamic_smufl(xml_, dyn)) {
         // Already written as a single MusicXML dynamics container.
     } else if (!dyn_type_name.empty()) {
-        static const ankerl::unordered_dense::map<unsigned short, Char> map = {
-            {0xE520, u'p'}, {0xE521, u'm'}, {0xE522, u'f'}, {0xE523, u'r'}, {0xE524, u's'}, {0xE525, u'z'}, {0xE526, u'n'}};
+        static const muse::HashMap<unsigned short, Char> map = {{0xE520, u'p'}, {0xE521, u'm'}, {0xE522, u'f'}, {0xE523, u'r'},
+                                                                {0xE524, u's'}, {0xE525, u'z'}, {0xE526, u'n'}};
 
         String dyn_text = dyn_type_name;
         if (dyn->dynamic_type() == DynamicType::OTHER || has_custom_text) {
@@ -6617,7 +6616,7 @@ static void spanner_start(ExportMusicXml *exp, track_idx_t strack, track_idx_t e
 // remember which spanners have already been stopped (the "stopped" set)
 
 static void spanner_stop(ExportMusicXml *exp, track_idx_t strack, track_idx_t etrack, const Fraction &tick2, staff_idx_t sstaff,
-                         ankerl::unordered_dense::set<const Spanner *> &stopped) {
+                         muse::HashSet<const Spanner *> &stopped) {
     for (auto it : exp->score()->spanner()) {
         const Spanner *e = it.second;
 
@@ -6667,8 +6666,8 @@ void ExportMusicXml::keysig_timesig(const Measure *m, const Part *p) {
     const TrackRange track_range = p->track_range();
 
     // search all staves for non-generated time and key signatures
-    gtl::btree_map<staff_idx_t, KeySig *> keysigs;   // map staff to key signature
-    gtl::btree_map<staff_idx_t, TimeSig *> timesigs; // map staff to time signature
+    muse::BTreeMap<staff_idx_t, KeySig *> keysigs;   // map staff to key signature
+    muse::BTreeMap<staff_idx_t, TimeSig *> timesigs; // map staff to time signature
     for (Segment *seg = m->is_mm_rest() ? m->rendered_first() : m->first(); seg;
          seg = m->is_mm_rest() ? seg->rendered_next() : seg->next()) {
         if (seg->tick() > m->tick()) {
@@ -6810,7 +6809,7 @@ void ExportMusicXml::identification(XmlWriter &xml, Score const *const score) {
     xml.start_element("identification");
 
     // the creator types commonly found in MusicXML
-    gtl::btree_set<String> meta_tag_names = {u"arranger", u"composer", u"lyricist", u"poet", u"translator"};
+    muse::BTreeSet<String> meta_tag_names = {u"arranger", u"composer", u"lyricist", u"poet", u"translator"};
     for (const String &type : meta_tag_names) {
         String creator = score->meta_tag(type);
         if (!creator.is_empty()) {
@@ -6954,7 +6953,7 @@ static void init_instr_map(MusicXmlInstrumentMap &im, const InstrumentList &il, 
 //  initReverseInstrMap
 //---------------------------------------------------------
 
-typedef gtl::btree_map<int, const Instrument *> MusicXmlReverseInstrumentMap;
+typedef muse::BTreeMap<int, const Instrument *> MusicXmlReverseInstrumentMap;
 
 /**
  Initialize the number t Instrument* map for a Part
@@ -7303,7 +7302,7 @@ void ExportMusicXml::find_and_export_clef(const Measure *const m, const int stav
  Find the set of pitches actually used in a part.
  */
 
-using PitchSet = ankerl::unordered_dense::set<int>;
+using PitchSet = muse::HashSet<int>;
 
 static void add_chord_pitches_to_set(const Chord *c, PitchSet &set) {
     for (const Note *note : c->notes()) {
@@ -7958,7 +7957,7 @@ static std::vector<TBox *> find_text_frames_to_write_as_words_below(const Measur
 
 void ExportMusicXml::write_measure_tracks(const Measure *const m, const int part_index, const staff_idx_t strack,
                                           const staff_idx_t part_rel_staff_no, const bool use_drumset, const bool is_last_staff_of_part,
-                                          FigBassMap &fb_map, ankerl::unordered_dense::set<const Spanner *> &spanners_stopped) {
+                                          FigBassMap &fb_map, muse::HashSet<const Spanner *> &spanners_stopped) {
     const auto tboxes_above = find_text_frames_to_write_as_words_above(m);
     const auto tboxes_below = find_text_frames_to_write_as_words_below(m);
 
@@ -8073,8 +8072,7 @@ void ExportMusicXml::write_measure_tracks(const Measure *const m, const int part
  */
 
 void ExportMusicXml::write_measure_staves(const Measure *m, const int part_index, const staff_idx_t start_staff, const size_t nstaves,
-                                          const bool use_drumset, FigBassMap &fb_map,
-                                          ankerl::unordered_dense::set<const Spanner *> &spanners_stopped) {
+                                          const bool use_drumset, FigBassMap &fb_map, muse::HashSet<const Spanner *> &spanners_stopped) {
     const staff_idx_t end_staff = start_staff + nstaves;
     const Measure *const orig_m = m;
     tboxes_above_written_ = false;
@@ -8134,8 +8132,7 @@ void ExportMusicXml::write_measure_staves(const Measure *m, const int part_index
  */
 
 void ExportMusicXml::write_measure(const Measure *const m, const int part_index, const int staff_count, MeasureNumberStateHandler &mnsh,
-                                   FigBassMap &fb_map, const MeasurePrintContext &mpc,
-                                   ankerl::unordered_dense::set<const Spanner *> &spanners_stopped) {
+                                   FigBassMap &fb_map, const MeasurePrintContext &mpc, muse::HashSet<const Spanner *> &spanners_stopped) {
     const Part *part = score_->parts().at(part_index);
     const size_t staves = part->nstaves();
     const TrackRange track_range = part->track_range();
@@ -8342,7 +8339,7 @@ void ExportMusicXml::write_parts() {
 
         // set of spanners already stopped in this part
         // required to prevent multiple spanner stops for the same spanner
-        ankerl::unordered_dense::set<const Spanner *> spanners_stopped;
+        muse::HashSet<const Spanner *> spanners_stopped;
 
         const auto &pages = score_->pages();
         MeasurePrintContext mpc;

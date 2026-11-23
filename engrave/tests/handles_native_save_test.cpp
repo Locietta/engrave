@@ -1,7 +1,6 @@
-#include <amc/flatset.hpp>
-#include <gtl/btree.hpp>
-
 #include "engraving/dom/guitarbend.h"
+#include "global/btree.h"
+#include "global/flatset.h"
 #include "handles_test_fixture.h"
 
 using namespace handles_test;
@@ -70,7 +69,7 @@ TEST(NativeSave, ColdEqualsWarm) {
         auto &master = master_of(document);
         expect_no_layout(master);
         const auto membership = [&] {
-            gtl::btree_map<ElementId, EngravingObject *> handles;
+            muse::BTreeMap<ElementId, EngravingObject *> handles;
             for (const auto &entry : engrave::live_ids(master)) handles.emplace(entry.id, entry.object);
             return handles;
         };
@@ -684,7 +683,7 @@ TEST(NativeSave, EditsAndMmrTogglesSaveBeforeRendering) {
                     EXPECT_EQ(to_note(edited->object)->color(), muse::draw::Color(200, 10, 20, 255));
                 } else {
                     EXPECT_FALSE(engrave::resolve(reloaded, *engrave::element_id_from_string("I_I")));
-                    amc::FlatSet<ElementId> links;
+                    muse::FlatSet<ElementId> links;
                     for (const auto *linked : edited->object->link_list()) {
                         EXPECT_EQ(linked->score(), &reloaded);
                         const auto resolved = engrave::resolve(reloaded, engine_id(*linked));
@@ -692,8 +691,8 @@ TEST(NativeSave, EditsAndMmrTogglesSaveBeforeRendering) {
                         EXPECT_EQ(resolved->object, linked);
                         links.insert(engine_id(*linked));
                     }
-                    EXPECT_EQ(links, (amc::FlatSet<ElementId>{*engrave::element_id_from_string("4_4"),
-                                                              *engrave::element_id_from_string("NB_NB")}));
+                    EXPECT_EQ(links, (muse::FlatSet<ElementId>{*engrave::element_id_from_string("4_4"),
+                                                               *engrave::element_id_from_string("NB_NB")}));
                 }
             }
         }

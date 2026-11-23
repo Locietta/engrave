@@ -32,9 +32,9 @@
 #include <utility>
 
 #include <amc/vector.hpp>
-#include <ankerl/unordered_dense.h>
 
 #include "audio/common/audiotypes.h"
+#include "global/hashmap.h"
 #include "midi/midievent.h"
 #include "midi/miditypes.h"
 #include "mpe/events.h"

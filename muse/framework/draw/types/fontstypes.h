@@ -26,10 +26,9 @@
 #include <string>
 #include <tuple>
 
-#include <ankerl/unordered_dense.h>
-
 #include "font.h"
 #include "geometry.h"
+#include "global/hashmap.h"
 #include "global/stringutils.h"
 #include "global/types/bytearray.h"
 

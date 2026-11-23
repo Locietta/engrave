@@ -21,8 +21,7 @@
  */
 #pragma once
 
-#include <gtl/btree.hpp>
-
+#include "global/btree.h"
 #include "importmidi_timeline.h"
 #include "internal/midishared/generalmidi.h"
 
@@ -34,6 +33,6 @@ struct ReducedFraction;
 namespace LRHand {
 bool need_to_split(const MidiTimeline<MidiChord> &chords, GM1Program, bool is_drum_track);
 
-void split_into_left_right_hands(gtl::btree_multimap<int, MTrack> &tracks);
+void split_into_left_right_hands(muse::BTreeMultiMap<int, MTrack> &tracks);
 } // namespace LRHand
 } // namespace mu::iex::midi

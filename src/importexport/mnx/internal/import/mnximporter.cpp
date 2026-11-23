@@ -28,8 +28,6 @@
 #include <string_view>
 #include <vector>
 
-#include <ankerl/unordered_dense.h>
-
 #include "engraving/dom/barline.h"
 #include "engraving/dom/bracketitem.h"
 #include "engraving/dom/clef.h"
@@ -53,6 +51,7 @@
 #include "engraving/editing/editstaffbrackets.h"
 #include "engraving/editing/transaction/transaction.h"
 #include "engraving/types/symnames.h"
+#include "global/hashmap.h"
 #include "internal/shared/mnxtypesconv.h"
 #include "log.h"
 #include "model/layout.h"
@@ -95,7 +94,7 @@ static const model::Sound *find_sound(const model::Root &root, std::string_view 
 }
 
 static std::unique_ptr<Drumset> create_drumset(const model::Root &root, size_t part_idx,
-                                               ankerl::unordered_dense::map<std::pair<size_t, std::string>, int> &kit_component_to_midi) {
+                                               muse::HashMap<std::pair<size_t, std::string>, int> &kit_component_to_midi) {
     const model::Part &mnx_part = root.parts[part_idx];
     if (!mnx_part.kit) {
         return nullptr;
@@ -207,9 +206,8 @@ static std::unique_ptr<Drumset> create_drumset(const model::Root &root, size_t p
 //   transposition with the keyFifthsFlipAt value MuseScore can represent.
 //---------------------------------------------------------
 
-static std::optional<model::PartTransposition>
-load_instrument(const model::Root &root, size_t part_idx, Part *part, Instrument *instrument,
-                ankerl::unordered_dense::map<std::pair<size_t, std::string>, int> &kit_component_to_midi) {
+static std::optional<model::PartTransposition> load_instrument(const model::Root &root, size_t part_idx, Part *part, Instrument *instrument,
+                                                               muse::HashMap<std::pair<size_t, std::string>, int> &kit_component_to_midi) {
     const model::Part &mnx_part = root.parts[part_idx];
     // Initialize drumset
     if (mnx_part.kit) {

@@ -29,9 +29,8 @@
 #include <stdexcept>
 #include <utility>
 
-#include <amc/flatset.hpp>
-
 #include "global/flatmap.h"
+#include "global/flatset.h"
 #include "global/unique_fn.h"
 #include "log.h"
 #include "midi/miditypes.h"
@@ -954,8 +953,8 @@ inline const ArticulationMapping &articulation_sounds(const mpe::PlaybackSetupDa
     }
 
     if (setup_data.category == mpe::SoundCategory::STRINGS) {
-        static const amc::FlatSet<mpe::SoundId> viol_section{mpe::SoundId::VIOL, mpe::SoundId::PARDESSUS_VIOL, mpe::SoundId::VIOLA_DA_GAMBA,
-                                                             mpe::SoundId::VIOLONE};
+        static const muse::FlatSet<mpe::SoundId> viol_section{mpe::SoundId::VIOL, mpe::SoundId::PARDESSUS_VIOL,
+                                                              mpe::SoundId::VIOLA_DA_GAMBA, mpe::SoundId::VIOLONE};
 
         if (viol_section.contains(sound_id)) {
             return basic_viol_section;
@@ -965,8 +964,8 @@ inline const ArticulationMapping &articulation_sounds(const mpe::PlaybackSetupDa
     }
 
     if (setup_data.category == mpe::SoundCategory::WINDS) {
-        static const amc::FlatSet<mpe::SoundId> brass_section{mpe::SoundId::BUGLE,   mpe::SoundId::EUPHONIUM, mpe::SoundId::HORN,
-                                                              mpe::SoundId::TRUMPET, mpe::SoundId::TROMBONE,  mpe::SoundId::TUBA};
+        static const muse::FlatSet<mpe::SoundId> brass_section{mpe::SoundId::BUGLE,   mpe::SoundId::EUPHONIUM, mpe::SoundId::HORN,
+                                                               mpe::SoundId::TRUMPET, mpe::SoundId::TROMBONE,  mpe::SoundId::TUBA};
 
         if (brass_section.contains(sound_id)) {
             return brass;

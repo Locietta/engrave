@@ -1,5 +1,3 @@
-#include <amc/flatset.hpp>
-
 #include "engrave/src/score/score_metadata.h"
 #include "engrave/src/score/score_semantic.h"
 #include "engraving/dom/dummyparent.h"
@@ -13,6 +11,7 @@
 #include "engraving/rendering/score/pagelayout.h"
 #include "engraving/rendering/score/scorepageviewlayout.h"
 #include "engraving/rendering/score/stavesharinglayout.h"
+#include "global/flatset.h"
 #include "handles_test_fixture.h"
 
 using namespace handles_test;
@@ -795,9 +794,9 @@ TEST(StaveSharingOutput, EditedUnisonRangeMatchesFullLayout) {
     EXPECT_GT(master.layout_state.range_count, 0u);
     auto *display = measure->first(SegmentType::CHORD_REST)->effective_element(0);
     ASSERT_TRUE(display && display->is_chord());
-    amc::FlatSet<int> pitches;
+    muse::FlatSet<int> pitches;
     for (auto *n : to_chord(display)->notes()) pitches.insert(n->pitch());
-    EXPECT_EQ(pitches, (amc::FlatSet<int>{71, 72}));
+    EXPECT_EQ(pitches, (muse::FlatSet<int>{71, 72}));
     const auto saved = source_native(master);
     master.layout_data_store()->clear();
     auto full = document->render({.format = engrave::RenderFormat::SVG});

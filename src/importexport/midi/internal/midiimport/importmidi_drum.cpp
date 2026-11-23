@@ -23,14 +23,13 @@
 
 #include <vector>
 
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
-
 #include "../midishared/midifile.h"
 #include "engraving/dom/drumset.h"
 #include "engraving/dom/score.h"
 #include "engraving/dom/staff.h"
 #include "engraving/editing/editstaffbrackets.h"
+#include "global/btree.h"
+#include "global/hashmap.h"
 #include "importmidi_chord.h"
 #include "importmidi_inner.h"
 #include "importmidi_operations.h"
@@ -50,8 +49,7 @@ bool have_non_zero_voices(const MidiTimeline<MidiChord> &chords) {
 
 #endif
 
-void split_chord(MidiTimeline<MidiChord>::iterator &chord_it, const ankerl::unordered_dense::set<int> &notes_to_move,
-                 MidiTimeline<MidiChord> &chords) {
+void split_chord(MidiTimeline<MidiChord>::iterator &chord_it, const muse::HashSet<int> &notes_to_move, MidiTimeline<MidiChord> &chords) {
     MidiChord &chord = chord_it->second;
     auto &notes = chord.notes;
 
@@ -79,7 +77,7 @@ void split_chord(MidiTimeline<MidiChord>::iterator &chord_it, const ankerl::unor
     }
 }
 
-void split_drum_voices(gtl::btree_multimap<int, MTrack> &tracks) {
+void split_drum_voices(muse::BTreeMultiMap<int, MTrack> &tracks) {
     for (auto &track : tracks) {
         MTrack &mtrack = track.second;
         auto &chords = mtrack.chords;
@@ -100,7 +98,7 @@ void split_drum_voices(gtl::btree_multimap<int, MTrack> &tracks) {
         for (auto chord_it = chords.begin(); chord_it != chords.end(); ++chord_it) {
             auto &notes = chord_it->second.notes;
             // search for the drumset pitches with voice = 1
-            ankerl::unordered_dense::set<int> notes_to_move;
+            muse::HashSet<int> notes_to_move;
             for (int i = 0; i != static_cast<int>(notes.size()); ++i) {
                 const int pitch = notes[i].pitch;
                 if (drumset->is_valid(pitch) && drumset->voice(pitch) == 1) {
@@ -116,7 +114,7 @@ void split_drum_voices(gtl::btree_multimap<int, MTrack> &tracks) {
     }
 }
 
-MTrack &get_new_track(gtl::btree_map<int, MTrack> &new_tracks, const MTrack &drum_track, int pitch) {
+MTrack &get_new_track(muse::BTreeMap<int, MTrack> &new_tracks, const MTrack &drum_track, int pitch) {
     auto new_track_it = new_tracks.find(pitch);
     if (new_track_it == new_tracks.end()) {
         new_track_it = new_tracks.insert({pitch, drum_track}).first;
@@ -132,8 +130,8 @@ MTrack &get_new_track(gtl::btree_map<int, MTrack> &new_tracks, const MTrack &dru
     return new_track_it->second;
 }
 
-gtl::btree_map<int, MTrack> split_drum_track(const MTrack &drum_track) {
-    gtl::btree_map<int, MTrack> new_tracks; // <percussion note pitch, track>
+muse::BTreeMap<int, MTrack> split_drum_track(const MTrack &drum_track) {
+    muse::BTreeMap<int, MTrack> new_tracks; // <percussion note pitch, track>
     if (drum_track.chords.empty()) {
         return new_tracks;
     }
@@ -154,8 +152,8 @@ gtl::btree_map<int, MTrack> split_drum_track(const MTrack &drum_track) {
     return new_tracks;
 }
 
-void split_drum_tracks(gtl::btree_multimap<int, MTrack> &tracks) {
-    gtl::btree_multimap<int, MTrack> split;
+void split_drum_tracks(muse::BTreeMultiMap<int, MTrack> &tracks) {
+    muse::BTreeMultiMap<int, MTrack> split;
     const auto &opers = midi_import_operations.data()->track_opers;
     for (auto it = tracks.begin(); it != tracks.end();) {
         const int key = it->first;

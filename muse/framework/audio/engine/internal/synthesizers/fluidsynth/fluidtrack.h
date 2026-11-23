@@ -28,12 +28,11 @@
 #include <span>
 #include <vector>
 
-#include <amc/flatset.hpp>
-
 #include "../../../offlinerendersettings.h"
 #include "../../midieventsink.h"
 #include "audio/common/timeposition.h"
 #include "fluidsequencer.h"
+#include "global/flatset.h"
 #include "global/io/path.h"
 
 namespace muse::audio::engine {
@@ -131,7 +130,7 @@ private:
     engine::MidiEventSink midi_event_sink_ = nullptr;
 
     FluidSequencer sequencer_;
-    amc::FlatSet<io::PathT> sfont_paths_;
+    muse::FlatSet<io::PathT> sfont_paths_;
     std::optional<midi::Program> preset_;
 
     KeyTuning tuning_;

@@ -23,10 +23,9 @@
 
 #include <algorithm>
 
-#include <gtl/btree.hpp>
-
 #include "../bendinfoconverter.h"
 #include "bendchorddurationsplitter.h"
+#include "global/btree.h"
 #include "log.h"
 #include <engraving/dom/chord.h>
 #include <engraving/dom/note.h>
@@ -151,7 +150,7 @@ static const ImportedBendInfo &top_bend(const std::vector<ImportedBendInfo> &ben
 }
 
 void BendDataCollectorSplitChord::fill_bends_durations(BendDataContextSplitChord &bend_data_ctx) {
-    gtl::btree_map<mu::engraving::track_idx_t, gtl::btree_map<Fraction, std::vector<const Chord *>>> tied_notes_after_bend;
+    muse::BTreeMap<mu::engraving::track_idx_t, muse::BTreeMap<Fraction, std::vector<const Chord *>>> tied_notes_after_bend;
     for (const auto &[track, track_info] : bend_info_for_note_) {
         for (const auto &[main_tick, tick_info] : track_info) {
             const Note *current_note = top_bend(tick_info.bends).note;

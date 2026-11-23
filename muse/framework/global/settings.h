@@ -24,8 +24,7 @@
 
 #include <string>
 
-#include <ankerl/unordered_dense.h>
-
+#include "global/hashmap.h"
 #include "io/path.h"
 #include "types/val.h"
 
@@ -62,7 +61,7 @@ struct Settings {
         size_t operator()(const Key &key) const { return std::hash<std::string>{}(key.key); }
     };
 
-    using Items = ankerl::unordered_dense::segmented_map<Key, Item, KeyHash>;
+    using Items = muse::SegmentedHashMap<Key, Item, KeyHash>;
 
     const Items &items() const;
 

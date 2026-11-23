@@ -40,7 +40,6 @@
 #include <vector>
 
 #include <gtest/gtest.h>
-#include <gtl/btree.hpp>
 
 #include "draw/svgrenderer.h"
 #include "engrave/src/api/handles.h"
@@ -150,6 +149,7 @@
 #include "engraving/rw/write/writecontext.h"
 #include "engraving/rw/xmlwriter.h"
 #include "engraving/types/constants.h"
+#include "global/btree.h"
 #include "global/io/buffer.h"
 #include "importexport/musicxml/internal/musicxmlconfiguration.h"
 #include "serialization/xmlstreamreader.h"
@@ -243,14 +243,14 @@ Row event_row(std::string_view type, int tick, std::size_t staff, std::size_t vo
 Row note_row(int tick, std::size_t staff, std::size_t voice, int pitch);
 std::string value_text(const music::Json &value);
 // The rows the semantic dump reports for one score body.
-void oracle_rows(const music::Json &body, gtl::btree_multiset<Row> &rows);
+void oracle_rows(const music::Json &body, muse::BTreeMultiSet<Row> &rows);
 const PropertyRead *property(const engrave::ElementInfo &element, std::string_view name);
 std::int64_t int_property(const engrave::ElementInfo &element, std::string_view name);
 // The rows a query reports, in the same form as oracle_rows.
-void query_rows(const std::vector<engrave::ElementInfo> &elements, gtl::btree_multiset<Row> &rows);
+void query_rows(const std::vector<engrave::ElementInfo> &elements, muse::BTreeMultiSet<Row> &rows);
 /// Compares two row sets, reporting the rows whose counts differ rather than the whole
 /// set.
-void expect_same_rows(const gtl::btree_multiset<Row> &expected, const gtl::btree_multiset<Row> &actual, std::string_view what);
+void expect_same_rows(const muse::BTreeMultiSet<Row> &expected, const muse::BTreeMultiSet<Row> &actual, std::string_view what);
 
 constexpr std::string_view compared_types[] = {"Chord", "Rest", "MeasureRepeat", "Note", "Clef", "KeySig", "TimeSig"};
 

@@ -22,16 +22,15 @@
 
 #pragma once
 
-#include <gtl/btree.hpp>
-
 #include "../guitarbendimporttypes.h"
+#include "global/btree.h"
 #include <engraving/types/types.h>
 
 namespace mu::iex::guitarpro {
 struct BendDataContextSplitChord {
-    gtl::btree_map<mu::engraving::track_idx_t, gtl::btree_map<int, BendChordData>> bend_data_by_end_tick;
-    gtl::btree_map<mu::engraving::track_idx_t, gtl::btree_map<int, std::vector<mu::engraving::Fraction>>> bend_chord_durations;
-    gtl::btree_map<mu::engraving::track_idx_t, gtl::btree_set<mu::engraving::Fraction>> reduntant_chord_ticks;
-    gtl::btree_map<mu::engraving::track_idx_t, gtl::btree_set<mu::engraving::Fraction>> chord_ticks_for_tie_back;
+    muse::BTreeMap<mu::engraving::track_idx_t, muse::BTreeMap<int, BendChordData>> bend_data_by_end_tick;
+    muse::BTreeMap<mu::engraving::track_idx_t, muse::BTreeMap<int, std::vector<mu::engraving::Fraction>>> bend_chord_durations;
+    muse::BTreeMap<mu::engraving::track_idx_t, muse::BTreeSet<mu::engraving::Fraction>> reduntant_chord_ticks;
+    muse::BTreeMap<mu::engraving::track_idx_t, muse::BTreeSet<mu::engraving::Fraction>> chord_ticks_for_tie_back;
 };
 } // namespace mu::iex::guitarpro

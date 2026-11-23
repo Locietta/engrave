@@ -24,10 +24,9 @@
 #include <algorithm>
 #include <deque>
 
-#include <gtl/btree.hpp>
-
 #include "engraving/dom/durationtype.h"
 #include "engraving/dom/mscore.h"
+#include "global/btree.h"
 #include "importmidi_chord.h"
 #include "importmidi_fraction.h"
 #include "importmidi_inner.h"
@@ -361,7 +360,7 @@ ReducedFraction find_tuplet_ratio(const ReducedFraction &start_pos, const Reduce
     return tuplet_ratio;
 }
 
-std::vector<std::pair<ReducedFraction, engraving::TDuration>> collect_durations(const gtl::btree_map<ReducedFraction, Node> &nodes,
+std::vector<std::pair<ReducedFraction, engraving::TDuration>> collect_durations(const muse::BTreeMap<ReducedFraction, Node> &nodes,
                                                                                 const std::vector<MidiTuplet::TupletData> &tuplets_in_bar,
                                                                                 bool use_dots, bool print_rest_remains) {
     std::vector<std::pair<ReducedFraction, engraving::TDuration>> result_durations;
@@ -393,7 +392,7 @@ bool is_less_note_count(const ReducedFraction &t1, const ReducedFraction &t2, co
     return note_count(t3 - t1, use_dots) < note_count(t2 - t1, use_dots) + note_count(t3 - t2, use_dots);
 }
 
-void exclude_nodes(gtl::btree_map<ReducedFraction, Node> &nodes, int tol, bool use_dots) {
+void exclude_nodes(muse::BTreeMap<ReducedFraction, Node> &nodes, int tol, bool use_dots) {
     if (tol == 0) { // no nodes can be excluded
         return;
     }
@@ -459,7 +458,7 @@ to_duration_list(const ReducedFraction &start_tick_in_bar, const ReducedFraction
     const auto div_info = division_info(bar_fraction, tuplets_in_bar); // metric structure of bar
     const auto min_duration = MChord::min_allowed_duration() * 2;      // >= minAllowedDuration() after subdivision
 
-    gtl::btree_map<ReducedFraction, Node> nodes; // <onTime, Node>
+    muse::BTreeMap<ReducedFraction, Node> nodes; // <onTime, Node>
     {
         int level = level_of_tick(start_tick_in_bar, div_info);
         nodes.insert({start_tick_in_bar, Node(level, level)});

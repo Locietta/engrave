@@ -26,10 +26,10 @@
 #include <vector>
 
 #include "thirdparty/beatroot/BeatTracker.h"
-#include <gtl/btree.hpp>
 
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/sig.h"
+#include "global/btree.h"
 #include "importmidi_chord.h"
 #include "importmidi_fraction.h"
 #include "importmidi_inner.h"
@@ -130,7 +130,7 @@ ReducedFraction find_last_chord_tick(const MidiTimeline<MidiChord> &chords) {
 // first beat time can be larger than first chord onTime
 // so insert additional beats at the beginning to cover all chords
 
-void add_first_beats(gtl::btree_set<ReducedFraction> &beat_set, const ReducedFraction &first_tick, int beats_in_bar,
+void add_first_beats(muse::BTreeSet<ReducedFraction> &beat_set, const ReducedFraction &first_tick, int beats_in_bar,
                      int &added_beat_count) {
     if (beat_set.empty()) {
         return;
@@ -153,7 +153,7 @@ void add_first_beats(gtl::btree_set<ReducedFraction> &beat_set, const ReducedFra
 // last beat time can be smaller than the last chord onTime
 // so insert additional beats at the end to cover all chords
 
-void add_last_beats(gtl::btree_set<ReducedFraction> &beat_set, const ReducedFraction &last_tick, int beats_in_bar, int &added_beat_count) {
+void add_last_beats(muse::BTreeSet<ReducedFraction> &beat_set, const ReducedFraction &last_tick, int beats_in_bar, int &added_beat_count) {
     if (beat_set.empty()) {
         return;
     }
@@ -194,9 +194,9 @@ MidiOperations::HumanBeatData prepare_human_beat_data(const std::vector<double> 
     return beat_data;
 }
 
-double find_match_rank(const gtl::btree_set<ReducedFraction> &beat_set, const ::EventList &events, const std::vector<int> &levels,
+double find_match_rank(const muse::BTreeSet<ReducedFraction> &beat_set, const ::EventList &events, const std::vector<int> &levels,
                        int beats_in_bar, double ticks_per_sec) {
-    gtl::btree_map<ReducedFraction, double> saliences;
+    muse::BTreeMap<ReducedFraction, double> saliences;
     for (const auto &e : events) {
         saliences.insert({MidiTempo::time2_tick(e.time, ticks_per_sec), e.salience});
     }
@@ -242,11 +242,11 @@ double find_match_rank(const gtl::btree_set<ReducedFraction> &beat_set, const ::
     return match_frac;
 }
 
-void remove_every2nd_beat(gtl::btree_set<ReducedFraction> &beat_set) {
+void remove_every2nd_beat(muse::BTreeSet<ReducedFraction> &beat_set) {
     if (beat_set.size() < 2) {
         return;
     }
-    gtl::btree_set<ReducedFraction> retained;
+    muse::BTreeSet<ReducedFraction> retained;
     for (auto it = beat_set.begin(); it != beat_set.end();) {
         retained.insert(*it++);
         if (it == beat_set.end()) {
@@ -294,7 +294,7 @@ void find_beat_locations(const MidiTimeline<MidiChord> &all_chords, engraving::T
                                                                                                                  find_chord_salience2};
 
     // <match rank, beat data, comparator>
-    gtl::btree_map<double, MidiOperations::HumanBeatData, std::greater<double>> beat_results;
+    muse::BTreeMap<double, MidiOperations::HumanBeatData, std::greater<double>> beat_results;
 
     for (const auto &func : salience_funcs) {
         const auto events = prepare_chord_events(all_chords, func, ticks_per_sec);
@@ -337,8 +337,8 @@ void find_beat_locations(const MidiTimeline<MidiChord> &all_chords, engraving::T
     }
 }
 
-void scale_off_times(std::vector<MidiNote> &notes, const gtl::btree_set<ReducedFraction> &beats,
-                     const gtl::btree_set<ReducedFraction>::const_iterator &on_time_beat_end_it,
+void scale_off_times(std::vector<MidiNote> &notes, const muse::BTreeSet<ReducedFraction> &beats,
+                     const muse::BTreeSet<ReducedFraction>::const_iterator &on_time_beat_end_it,
                      const ReducedFraction &new_on_time_beat_start, const ReducedFraction &new_beat_len) {
     for (auto &note : notes) {
         int beat_count = 0; // beat count between note on time and off time
@@ -366,9 +366,9 @@ void scale_off_times(std::vector<MidiNote> &notes, const gtl::btree_set<ReducedF
     }
 }
 
-void adjust_chords_to_beats(gtl::btree_multimap<int, MTrack> &tracks) {
+void adjust_chords_to_beats(muse::BTreeMultiMap<int, MTrack> &tracks) {
     const auto &opers = midi_import_operations;
-    gtl::btree_set<ReducedFraction> beats = opers.data()->human_beat_data.beat_set; // copy
+    muse::BTreeSet<ReducedFraction> beats = opers.data()->human_beat_data.beat_set; // copy
     if (beats.empty()) {
         return;
     }
@@ -451,7 +451,7 @@ void update_first_last_beats(MidiOperations::HumanBeatData &beat_data, const Red
 
 void set_time_signature(engraving::TimeSigMap *sigmap) {
     auto *data = midi_import_operations.data();
-    const gtl::btree_set<ReducedFraction> &beats = data->human_beat_data.beat_set;
+    const muse::BTreeSet<ReducedFraction> &beats = data->human_beat_data.beat_set;
     if (beats.empty()) {
         return; // don't set time sig for non-human performed MIDI files
     }

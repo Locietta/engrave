@@ -20,7 +20,6 @@
 #include <xmmintrin.h>
 #endif
 
-#include <amc/flatset.hpp>
 #include <fluidsynth.h>
 
 #include "audio/common/audioutils.h"
@@ -47,6 +46,7 @@
 #include "flat_playback_capture.h"
 #include "global/defer.h"
 #include "global/flatmap.h"
+#include "global/flatset.h"
 #include "global/io/iodevice.h"
 #include "global/io/ioretcodes.h"
 #include "global/io/path.h"
@@ -520,7 +520,7 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
     MasterScore *master_score = master;
     // Excerpt selection mutes every master part that is absent from, or
     // invisible in, the excerpt (masternotation.cpp:748-770).
-    amc::FlatSet<ID> muted_parts;
+    muse::FlatSet<ID> muted_parts;
     bool excerpt_selected = false;
     if (request.excerpt_id >= 0) {
         const std::vector<Excerpt *> &excerpts = master_score->excerpts();

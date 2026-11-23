@@ -23,10 +23,9 @@
 #ifndef MU_IMPORTEXPORT_CONTINIOUSELEMENTSBUILDER_H
 #define MU_IMPORTEXPORT_CONTINIOUSELEMENTSBUILDER_H
 
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
-
 #include "engraving/dom/line.h"
+#include "global/btree.h"
+#include "global/hashmap.h"
 
 namespace mu::iex::guitarpro {
 struct ContiniousElementsBuilder {
@@ -117,13 +116,11 @@ private:
         bool ended_on_rest = false;
     };
 
-    ankerl::unordered_dense::map<ImportType, std::vector<mu::engraving::Spanner *>> elements_by_type_;
+    muse::HashMap<ImportType, std::vector<mu::engraving::Spanner *>> elements_by_type_;
 
-    ankerl::unordered_dense::map<mu::engraving::ElementType,
-                                 ankerl::unordered_dense::map<track_idx_t, ankerl::unordered_dense::map<sub_type_t, ImportType>>>
-        last_import_types_;
-    gtl::btree_map<track_idx_t, gtl::btree_map<ImportType, gtl::btree_set<mu::engraving::Spanner *>>> spanners_without_end_element_;
-    gtl::btree_map<track_idx_t, gtl::btree_map<ImportType, ContiniousElement>> elements_to_add_to_score_;
+    muse::HashMap<mu::engraving::ElementType, muse::HashMap<track_idx_t, muse::HashMap<sub_type_t, ImportType>>> last_import_types_;
+    muse::BTreeMap<track_idx_t, muse::BTreeMap<ImportType, muse::BTreeSet<mu::engraving::Spanner *>>> spanners_without_end_element_;
+    muse::BTreeMap<track_idx_t, muse::BTreeMap<ImportType, ContiniousElement>> elements_to_add_to_score_;
     std::vector<mu::engraving::Spanner *> ordered_added_elements_;
 
     mu::engraving::Score *score_ = nullptr;

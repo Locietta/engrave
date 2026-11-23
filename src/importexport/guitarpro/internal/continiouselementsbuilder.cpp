@@ -21,8 +21,6 @@
  */
 #include "continiouselementsbuilder.h"
 
-#include <ankerl/unordered_dense.h>
-
 #include "engraving/dom/chordrest.h"
 #include "engraving/dom/dummyparent.h"
 #include "engraving/dom/factory.h"
@@ -32,6 +30,7 @@
 #include "engraving/dom/textline.h"
 #include "engraving/dom/trill.h"
 #include "engraving/dom/vibrato.h"
+#include "global/hashmap.h"
 #include "log.h"
 
 using namespace mu::engraving;
@@ -77,7 +76,7 @@ static mu::engraving::ElementType mu_type_from_import_type(ContiniousElementsBui
 }
 
 static String harmonic_text(ContiniousElementsBuilder::ImportType type) {
-    static const ankerl::unordered_dense::map<ContiniousElementsBuilder::ImportType, String> names{
+    static const muse::HashMap<ContiniousElementsBuilder::ImportType, String> names{
         {ContiniousElementsBuilder::ImportType::HARMONIC_ARTIFICIAL, u"AH"}, {ContiniousElementsBuilder::ImportType::HARMONIC_PINCH, u"PH"},
         {ContiniousElementsBuilder::ImportType::HARMONIC_TAP, u"TH"},        {ContiniousElementsBuilder::ImportType::HARMONIC_SEMI, u"SH"},
         {ContiniousElementsBuilder::ImportType::HARMONIC_FEEDBACK, u"Fdbk"},
@@ -93,7 +92,7 @@ static String harmonic_text(ContiniousElementsBuilder::ImportType type) {
 }
 
 static mu::engraving::VibratoType vibrato_type_from_import_type(ContiniousElementsBuilder::ImportType type) {
-    static const ankerl::unordered_dense::map<ContiniousElementsBuilder::ImportType, VibratoType> names{
+    static const muse::HashMap<ContiniousElementsBuilder::ImportType, VibratoType> names{
         {ContiniousElementsBuilder::ImportType::VIBRATO_LEFT_HAND_SLIGHT, VibratoType::GUITAR_VIBRATO},
         {ContiniousElementsBuilder::ImportType::VIBRATO_LEFT_HAND_WIDE, VibratoType::GUITAR_VIBRATO_WIDE},
         {ContiniousElementsBuilder::ImportType::VIBRATO_W_TREM_BAR_SLIGHT, VibratoType::VIBRATO_SAWTOOTH},
@@ -109,7 +108,7 @@ static mu::engraving::VibratoType vibrato_type_from_import_type(ContiniousElemen
 }
 
 static std::pair<bool, mu::engraving::OttavaType> ottava_type(ContiniousElementsBuilder::ImportType type) {
-    static const ankerl::unordered_dense::map<ContiniousElementsBuilder::ImportType, mu::engraving::OttavaType> types{
+    static const muse::HashMap<ContiniousElementsBuilder::ImportType, mu::engraving::OttavaType> types{
         {ContiniousElementsBuilder::ImportType::OTTAVA_VA8, mu::engraving::OttavaType::OTTAVA_8VA},
         {ContiniousElementsBuilder::ImportType::OTTAVA_VB8, mu::engraving::OttavaType::OTTAVA_8VB},
         {ContiniousElementsBuilder::ImportType::OTTAVA_MA15, mu::engraving::OttavaType::OTTAVA_15MA},

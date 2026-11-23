@@ -5,8 +5,6 @@
 #include <tuple>
 #include <utility>
 
-#include <ankerl/unordered_dense.h>
-
 #include "engrave/src/api/handles.h"
 #include "engrave/src/api/state.h"
 #include "engraving/dom/chord.h"
@@ -30,6 +28,7 @@
 #include "engraving/dom/tuplet.h"
 #include "engraving/dom/volta.h"
 #include "engraving/engravingproject.h"
+#include "global/hashmap.h"
 #include <engrave/music.h>
 
 namespace engrave {
@@ -45,7 +44,7 @@ struct ElementIdHash {
     }
 };
 
-using ElementIdSet = ankerl::unordered_dense::set<ElementId, ElementIdHash>;
+using ElementIdSet = muse::HashSet<ElementId, ElementIdHash>;
 
 using Tick = mu::engraving::Fraction;
 using mu::engraving::Chord;

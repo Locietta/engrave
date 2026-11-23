@@ -5,8 +5,7 @@
 #include <string>
 #include <utility>
 
-#include <ankerl/unordered_dense.h>
-
+#include "global/hashmap.h"
 #include "gpnote.h"
 #include "gprhythm.h"
 
@@ -287,8 +286,8 @@ struct GPBeat {
 private:
     int id_value = -1;
     std::vector<std::shared_ptr<GPNote>> notes_value;
-    ankerl::unordered_dense::map<Key, std::string> lyrics_value;
-    ankerl::unordered_dense::map<Key, int> diagram_idx_value;
+    muse::HashMap<Key, std::string> lyrics_value;
+    muse::HashMap<Key, int> diagram_idx_value;
     std::shared_ptr<GPRhythm> rhythm;
     DynamicType dynamic_value = DynamicType::MF;
     LegatoType legato = LegatoType::NONE;

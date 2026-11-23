@@ -22,8 +22,6 @@
 
 #include <limits>
 
-#include <ankerl/unordered_dense.h>
-
 #include "containers.h"
 #include "engraving/dom/arpeggio.h"
 #include "engraving/dom/articulation.h"
@@ -67,6 +65,7 @@
 #include "engraving/dom/volta.h"
 #include "engraving/editing/editchord.h"
 #include "engraving/types/symid.h"
+#include "global/hashmap.h"
 #include "guitarprodrumset.h"
 #include "importgtp.h"
 #include "log.h"
@@ -77,7 +76,7 @@ using namespace mu::engraving;
 
 namespace mu::iex::guitarpro {
 static TremoloType tremolo_type(int division) {
-    static const ankerl::unordered_dense::map<int, TremoloType> types{{1, TremoloType::R8}, {2, TremoloType::R16}, {3, TremoloType::R32}};
+    static const muse::HashMap<int, TremoloType> types{{1, TremoloType::R8}, {2, TremoloType::R16}, {3, TremoloType::R32}};
 
     auto it = types.find(division);
     if (it != types.end()) {
@@ -88,7 +87,7 @@ static TremoloType tremolo_type(int division) {
     return TremoloType::INVALID_TREMOLO;
 }
 
-static ankerl::unordered_dense::map<uint64_t, mu::engraving::StringData> string_datas;
+static muse::HashMap<uint64_t, mu::engraving::StringData> string_datas;
 //---------------------------------------------------------
 //   readInfo
 //---------------------------------------------------------
@@ -1024,7 +1023,7 @@ bool GuitarPro5::read(IODevice *io) {
         }
     }
 
-    ankerl::unordered_dense::map<int, int> counter;
+    muse::HashMap<int, int> counter;
     for (int i = 0; i < 19; ++i) {
         if (articulations[i] != 0xFFFF) {
             Measure *measure = to_measure(score->measure(articulations[i] - 1));

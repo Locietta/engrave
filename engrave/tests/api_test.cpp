@@ -18,7 +18,6 @@
 #include <tuple>
 #include <vector>
 
-#include <ankerl/unordered_dense.h>
 #include <cairo/cairo.h>
 #include <gtest/gtest.h>
 
@@ -40,6 +39,7 @@
 #include "engraving/dom/spanner.h"
 #include "engraving/dom/tie.h"
 #include "engraving/dom/volta.h"
+#include "global/hashmap.h"
 #include "global/settings.h"
 #include <engrave/engrave.h>
 
@@ -204,7 +204,7 @@ std::vector<ExportedMidiNote> exported_midi_notes(const std::string &chords, Mid
         track_position = end;
         int tick = 0;
         int running_status = 0;
-        ankerl::unordered_dense::map<int, size_t> active;
+        muse::HashMap<int, size_t> active;
         while (position < end) {
             tick += static_cast<int>(midi_varint(midi, position));
             const int lead = byte_at(position);
@@ -327,7 +327,7 @@ TEST(Templates, ListsCategoriesJsonInOrder) {
     EXPECT_EQ(templates.front().id, "Treble_Clef");
     EXPECT_EQ(templates.front().title, "Treble Clef");
     EXPECT_EQ(templates.front().category, "General");
-    ankerl::unordered_dense::set<std::string> ids;
+    muse::HashSet<std::string> ids;
     for (const auto &info : templates) {
         EXPECT_TRUE(ids.insert(info.id).second) << "duplicate template id " << info.id;
         EXPECT_TRUE(std::filesystem::is_regular_file(info.path)) << info.path;

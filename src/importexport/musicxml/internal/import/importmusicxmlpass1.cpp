@@ -24,9 +24,6 @@
 
 #include <utility>
 
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
-
 #include "../shared/musicxmlsupport.h"
 #include "../shared/musicxmltypes.h"
 #include "engraving/dom/box.h"
@@ -50,6 +47,8 @@
 #include "engraving/style/style.h"
 #include "engraving/style/textstyle.h"
 #include "engraving/types/symnames.h"
+#include "global/btree.h"
+#include "global/hashmap.h"
 #include "global/types/textscan.h"
 #include "importexport/musicxml/internal/musicxmlconfiguration.h"
 #include "importmusicxmllogger.h"
@@ -103,7 +102,7 @@ struct VoiceOverlapDetector {
     void new_measure();
     bool staves_overlap(const int &voice) const;
 private:
-    gtl::btree_map<int, NoteList> note_lists; // The notelists for all the voices
+    muse::BTreeMap<int, NoteList> note_lists; // The notelists for all the voices
 };
 
 NoteList::NoteList() {
@@ -1171,9 +1170,9 @@ void MusicXmlParserPass1::create_default_header(Score *score) {
  */
 
 void MusicXmlParserPass1::create_measures_and_vboxes(Score *score, const std::vector<Fraction> &ml, const std::vector<Fraction> &ms,
-                                                     const ankerl::unordered_dense::set<int> &system_start_measure_nrs,
-                                                     const ankerl::unordered_dense::set<int> &page_start_measure_nrs,
-                                                     const CreditWordsList &cr_words, const Size &page_size) {
+                                                     const muse::HashSet<int> &system_start_measure_nrs,
+                                                     const muse::HashSet<int> &page_start_measure_nrs, const CreditWordsList &cr_words,
+                                                     const Size &page_size) {
     if (cr_words.empty()) {
         create_default_header(score);
     }
@@ -1419,7 +1418,7 @@ void MusicXmlParserPass1::score_partwise() {
     // set of (typically multi-staff) parts containing one or more explicit brackets
     // spanning only that part: these won't get an implicit brace later
     // e.g. a two-staff piano part with an explicit brace
-    ankerl::unordered_dense::set<const Part *> part_set;
+    muse::HashSet<const Part *> part_set;
 
     // handle the explicit brackets
     const std::vector<Part *> &il = score_->parts();
@@ -1555,7 +1554,7 @@ void MusicXmlParserPass1::identification() {
 
 static String text2syms(const String &t, const EngravingFontsProvider &fonts) {
     EngravingFontPtr sf = fonts.fallback_font();
-    ankerl::unordered_dense::map<String, SymId> map;
+    muse::HashMap<String, SymId> map;
     size_t max_string_size = 0; // maximum string size found
 
     for (int i = int(SymId::NO_SYM); i < int(SymId::LAST_SYM); ++i) {
@@ -2855,7 +2854,7 @@ void MusicXmlParserPass1::attributes(const String &part_id, const Fraction c_tim
     logger_->log_debug_trace(u"MusicXmlParserPass1::attributes", &e_);
 
     int staves = 0;
-    gtl::btree_set<int> hidden_staves = {};
+    muse::BTreeSet<int> hidden_staves = {};
 
     while (e_.read_next_start_element()) {
         if (e_.name() == "clef") {

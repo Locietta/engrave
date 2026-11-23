@@ -9,8 +9,6 @@
 #include <utility>
 #include <vector>
 
-#include <amc/flatset.hpp>
-
 #include "engrave/src/api/batch.h"
 #include "engrave/src/api/handles.h"
 #include "engrave/src/api/state.h"
@@ -28,6 +26,7 @@
 #include "engraving/dom/tuplet.h"
 #include "engraving/editing/transpose.h"
 #include "engraving/engravingproject.h"
+#include "global/flatset.h"
 #include <engrave/music.h>
 
 namespace engrave {
@@ -272,7 +271,7 @@ struct LaneBuilder {
 
     Result<std::size_t> enter(const PhraseEvent &event, Tick duration, Tick end, bool drums, bool continue_ties) {
         ChordRefs result{.end = end, .location = location};
-        amc::FlatSet<int> seen;
+        muse::FlatSet<int> seen;
         std::vector<Pitch> pitches;
         std::vector<DrumKey> keys;
         const auto *kit = drums ? staff.origin_part(cursor.tick)->instrument(cursor.tick)->drumset() : nullptr;

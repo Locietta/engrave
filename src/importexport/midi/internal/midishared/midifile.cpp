@@ -27,9 +27,8 @@
 #include <stdexcept>
 #include <string>
 
-#include <gtl/btree.hpp>
-
 #include "containers.h"
+#include "global/btree.h"
 #include "log.h"
 
 using namespace mu::engraving;
@@ -641,7 +640,7 @@ void MidiTrack::set_out_channel(int n) {
 //---------------------------------------------------------
 
 void MidiTrack::merge_note_on_off() {
-    gtl::btree_multimap<int, MidiEvent> el;
+    muse::BTreeMultiMap<int, MidiEvent> el;
 
     int hbank = 0xff;
     int lbank = 0xff;

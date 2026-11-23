@@ -22,9 +22,8 @@
 
 #pragma once
 
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
-
+#include "global/btree.h"
+#include "global/hashmap.h"
 #include "guitarbendimporttypes.h"
 #include "splitchord/benddatacollectorsplitchord.h"
 #include <engraving/types/pitchvalue.h>
@@ -45,11 +44,11 @@ struct BendDataCollector {
 
 private:
     mu::engraving::Score *score_ = nullptr;
-    gtl::btree_map<mu::engraving::track_idx_t,
-                   gtl::btree_map<mu::engraving::Fraction, ankerl::unordered_dense::map<const mu::engraving::Note *, ImportedBendInfo>>>
+    muse::BTreeMap<mu::engraving::track_idx_t,
+                   muse::BTreeMap<mu::engraving::Fraction, muse::HashMap<const mu::engraving::Note *, ImportedBendInfo>>>
         bend_info_for_note_;
 
-    gtl::btree_map<mu::engraving::track_idx_t, gtl::btree_map<mu::engraving::Fraction, tied_chords_bend_data_chunk_t>>
+    muse::BTreeMap<mu::engraving::track_idx_t, muse::BTreeMap<mu::engraving::Fraction, tied_chords_bend_data_chunk_t>>
         regrouped_data_by_tied_chords_;
 
     std::unique_ptr<BendDataCollectorSplitChord> bend_data_collector_split_chord_;

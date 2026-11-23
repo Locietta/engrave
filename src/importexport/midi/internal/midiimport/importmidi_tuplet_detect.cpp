@@ -23,9 +23,8 @@
 
 #include <algorithm>
 
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
-
+#include "global/btree.h"
+#include "global/hashmap.h"
 #include "importmidi_chord.h"
 #include "importmidi_inner.h"
 #include "importmidi_meter.h"
@@ -191,7 +190,7 @@ TupletInfo find_tuplet_approximation(const ReducedFraction &tuplet_len, int tupl
         ReducedFraction regular_error;
     };
 
-    gtl::btree_multimap<Error, Candidate> chord_candidates;
+    muse::BTreeMultiMap<Error, Candidate> chord_candidates;
 
     for (int pos_index = 0; pos_index != tuplet_number; ++pos_index) {
         const auto tuplet_note_pos = start_tuplet_time + tuplet_note_len * pos_index;
@@ -210,8 +209,8 @@ TupletInfo find_tuplet_approximation(const ReducedFraction &tuplet_len, int tupl
         }
     }
 
-    ankerl::unordered_dense::set<std::pair<const ReducedFraction, MidiChord> *> used_chords;
-    ankerl::unordered_dense::set<int> used_pos_indexes;
+    muse::HashSet<std::pair<const ReducedFraction, MidiChord> *> used_chords;
+    muse::HashSet<int> used_pos_indexes;
     ReducedFraction diff_sum;
     int first_chord_index = 0;
 
@@ -274,7 +273,7 @@ void detect_staccato(TupletInfo &tuplet) {
 
 bool have_chords_in_the_middle_between_tuplet_chords(const MidiTimeline<MidiChord>::iterator start_div_chord_it,
                                                      const MidiTimeline<MidiChord>::iterator end_div_chord_it, const TupletInfo &tuplet) {
-    ankerl::unordered_dense::set<std::pair<const ReducedFraction, MidiChord> *> tuplet_chords;
+    muse::HashSet<std::pair<const ReducedFraction, MidiChord> *> tuplet_chords;
     for (const auto &chord : tuplet.chords) {
         tuplet_chords.insert(&*chord.second);
     }

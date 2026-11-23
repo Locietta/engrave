@@ -22,9 +22,8 @@
 #ifndef IMPORTMIDI_TIE_H
 #define IMPORTMIDI_TIE_H
 
-#include <amc/flatset.hpp>
-
 #include "engraving/types/types.h"
+#include "global/flatset.h"
 
 namespace mu::engraving {
 struct Segment;
@@ -44,7 +43,7 @@ struct TieStateMachine {
     State state() const { return state_; }
 
 private:
-    amc::FlatSet<mu::engraving::voice_idx_t> tied_voices;
+    muse::FlatSet<mu::engraving::voice_idx_t> tied_voices;
     State state_ = State::UNTIED;
 };
 

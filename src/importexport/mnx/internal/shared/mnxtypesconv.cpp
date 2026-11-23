@@ -25,8 +25,6 @@
 #include <array>
 #include <string_view>
 
-#include <ankerl/unordered_dense.h>
-
 #include "engraving/dom/clef.h"
 #include "engraving/dom/instrument.h"
 #include "engraving/dom/mscore.h"
@@ -39,13 +37,14 @@
 #include "engraving/editing/transpose.h"
 #include "engraving/types/typesconv.h"
 #include "framework/global/containers.h"
+#include "global/hashmap.h"
 #include "log.h"
 
 using namespace mu::engraving;
 
 namespace mu::iex::mnxio {
 namespace {
-const ankerl::unordered_dense::map<model::Orientation, ArticulationAnchor> articulation_anchor_table = {
+const muse::HashMap<model::Orientation, ArticulationAnchor> articulation_anchor_table = {
     {model::Orientation::AUTO, ArticulationAnchor::AUTO},
     {model::Orientation::BELOW, ArticulationAnchor::BOTTOM},
     {model::Orientation::ABOVE, ArticulationAnchor::TOP},
@@ -70,7 +69,7 @@ model::Orientation to_mnx_orientation(PlacementV placement) {
 }
 
 namespace {
-const ankerl::unordered_dense::map<model::BarlineType, BarLineType> bar_line_type_table = {
+const muse::HashMap<model::BarlineType, BarLineType> bar_line_type_table = {
     {model::BarlineType::REGULAR, BarLineType::NORMAL},
     {model::BarlineType::DASHED, BarLineType::DASHED},
     {model::BarlineType::DOTTED, BarLineType::DOTTED},
@@ -118,7 +117,7 @@ TimeSigType to_muse_score_time_sig_type(std::optional<model::TimeSignatureDispla
 }
 
 std::optional<model::TimeSignatureUnit> to_mnx_time_signature_unit(int denominator) {
-    static const ankerl::unordered_dense::map<int, std::optional<model::TimeSignatureUnit>> units = {
+    static const muse::HashMap<int, std::optional<model::TimeSignatureUnit>> units = {
         {1, model::TimeSignatureUnit::WHOLE},  {2, model::TimeSignatureUnit::HALF},     {4, model::TimeSignatureUnit::QUARTER},
         {8, model::TimeSignatureUnit::EIGHTH}, {16, model::TimeSignatureUnit::N16TH},   {32, model::TimeSignatureUnit::N32ND},
         {64, model::TimeSignatureUnit::N64TH}, {128, model::TimeSignatureUnit::N128TH},
@@ -254,7 +253,7 @@ std::optional<model::Pitch> to_mnx_pitch(const Note *note) {
 }
 
 BeamMode to_muse_score_beam_mode(int lowest_beam_start) {
-    static const ankerl::unordered_dense::map<int, BeamMode> beam_mode_table = {
+    static const muse::HashMap<int, BeamMode> beam_mode_table = {
         {0, BeamMode::MID},
         {1, BeamMode::BEGIN},
         {2, BeamMode::BEGIN16},
@@ -265,7 +264,7 @@ BeamMode to_muse_score_beam_mode(int lowest_beam_start) {
 }
 
 namespace {
-const ankerl::unordered_dense::map<model::StaffSymbol, BracketType> layout_symbol_table = {
+const muse::HashMap<model::StaffSymbol, BracketType> layout_symbol_table = {
     {model::StaffSymbol::NO_SYMBOL, BracketType::NO_BRACKET},
     {model::StaffSymbol::BRACE, BracketType::BRACE},
     {model::StaffSymbol::BRACKET, BracketType::NORMAL},
@@ -282,7 +281,7 @@ model::StaffSymbol to_mnx_layout_symbol(BracketType bracket_type) {
 
 namespace {
 // MNX names breath marks with free strings; these are the ones MuseScore has glyphs for.
-const ankerl::unordered_dense::map<std::string, SymId> breath_mark_table = {
+const muse::HashMap<std::string, SymId> breath_mark_table = {
     {"comma", SymId::BREATH_MARK_COMMA},
     {"tick", SymId::BREATH_MARK_TICK},
     {"upbow", SymId::BREATH_MARK_UPBOW},
@@ -365,9 +364,9 @@ namespace {
 /// to both S ("s") and SF ("sf") -- and the glyph on its own renders the shortest of them,
 /// so the shortest spelling wins. This is also why TConv::dynamicType(SymId) cannot be used
 /// here: it returns whichever type the table lists first.
-const ankerl::unordered_dense::map<SymId, std::string> &dynamic_glyph_letters() {
-    static const ankerl::unordered_dense::map<SymId, std::string> letters = []() {
-        ankerl::unordered_dense::map<SymId, std::string> result;
+const muse::HashMap<SymId, std::string> &dynamic_glyph_letters() {
+    static const muse::HashMap<SymId, std::string> letters = []() {
+        muse::HashMap<SymId, std::string> result;
         for (int index = 0; index < int(DynamicType::LAST); index++) {
             const DynamicType type = DynamicType(index);
             const SymId sym_id = TConv::sym_id(type);
@@ -485,7 +484,7 @@ std::optional<DynamicType> to_muse_score_dynamic_type(const MnxDynamicMapping &m
 std::vector<std::string> to_muse_score_dynamic_glyph_names(model::DynamicValue value) {
     // Every MNX dynamic value is a run of p/m/f/n, so the SMuFL glyphs follow from the
     // characters of its JSON representation.
-    static const ankerl::unordered_dense::map<char, std::string> glyph_names = {
+    static const muse::HashMap<char, std::string> glyph_names = {
         {'p', "dynamicPiano"},
         {'m', "dynamicMezzo"},
         {'f', "dynamicForte"},
@@ -519,7 +518,7 @@ std::string to_muse_score_dynamic_glyph_name(model::DynamicSuffix suffix) {
 }
 
 namespace {
-const ankerl::unordered_dense::map<model::NoteValueBase, DurationType> dura_type_table = {
+const muse::HashMap<model::NoteValueBase, DurationType> dura_type_table = {
     {model::NoteValueBase::N1024TH, DurationType::V_1024TH},  {model::NoteValueBase::N512TH, DurationType::V_512TH},
     {model::NoteValueBase::N256TH, DurationType::V_256TH},    {model::NoteValueBase::N128TH, DurationType::V_128TH},
     {model::NoteValueBase::N64TH, DurationType::V_64TH},      {model::NoteValueBase::N32ND, DurationType::V_32ND},
@@ -554,7 +553,7 @@ std::optional<model::NoteValue> to_mnx_note_value(const TDuration &duration) {
 }
 
 namespace {
-const ankerl::unordered_dense::map<model::FermataSymbol, SymId> sym_id_to_fermata_sym{
+const muse::HashMap<model::FermataSymbol, SymId> sym_id_to_fermata_sym{
     {model::FermataSymbol::NORMAL, SymId::FERMATA_ABOVE},
     {model::FermataSymbol::ANGLED, SymId::FERMATA_SHORT_ABOVE},
     {model::FermataSymbol::SQUARE, SymId::FERMATA_LONG_ABOVE},
@@ -571,7 +570,7 @@ SymId to_muse_score_fermata_sym_id(const model::FermataSymbol fermata_symbol) {
 }
 
 namespace {
-const ankerl::unordered_dense::map<FermataType, model::FermataDuration> fermata_dura_table{
+const muse::HashMap<FermataType, model::FermataDuration> fermata_dura_table{
     {FermataType::NORMAL, model::FermataDuration::NORMAL},         {FermataType::LONG, model::FermataDuration::LONG},
     {FermataType::LONG_HENZE, model::FermataDuration::LONG},       {FermataType::SHORT, model::FermataDuration::SHORT},
     {FermataType::SHORT_HENZE, model::FermataDuration::SHORT},     {FermataType::VERY_LONG, model::FermataDuration::VERY_LONG},
@@ -584,7 +583,7 @@ model::FermataDuration to_mnx_fermata_duration(FermataType fermata_type) {
 }
 
 namespace {
-const ankerl::unordered_dense::map<SymId, model::FermataSymbol> fermata_sym_to_sym_id{
+const muse::HashMap<SymId, model::FermataSymbol> fermata_sym_to_sym_id{
     {SymId::FERMATA_ABOVE, model::FermataSymbol::NORMAL},
     {SymId::FERMATA_BELOW, model::FermataSymbol::NORMAL},
     {SymId::FERMATA_SHORT_ABOVE, model::FermataSymbol::ANGLED},
@@ -615,7 +614,7 @@ model::FermataSymbol to_mnx_fermata_symbol(SymId sym) {
 
 namespace {
 /// @todo Grow this table as MNX grows it.
-const ankerl::unordered_dense::map<model::JumpType, JumpType> jump_table = {
+const muse::HashMap<model::JumpType, JumpType> jump_table = {
     {model::JumpType::DSALFINE, JumpType::DS_AL_FINE},
     {model::JumpType::SEGNO, JumpType::DSS},
 };
@@ -628,7 +627,7 @@ std::optional<model::JumpType> to_mnx_jump_type(JumpType jt) {
 }
 
 namespace {
-const ankerl::unordered_dense::map<model::EventLyricLineType, LyricsSyllabic> line_type_table = {
+const muse::HashMap<model::EventLyricLineType, LyricsSyllabic> line_type_table = {
     {model::EventLyricLineType::WHOLE, LyricsSyllabic::SINGLE},
     {model::EventLyricLineType::START, LyricsSyllabic::BEGIN},
     {model::EventLyricLineType::MIDDLE, LyricsSyllabic::MIDDLE},
@@ -645,7 +644,7 @@ model::EventLyricLineType to_mnx_lyric_line_type(LyricsSyllabic ls) {
 }
 
 namespace {
-const ankerl::unordered_dense::map<model::OttavaAmount, OttavaType> ottava_type_table = {
+const muse::HashMap<model::OttavaAmount, OttavaType> ottava_type_table = {
     {model::OttavaAmount::OCTAVE_DOWN, OttavaType::OTTAVA_8VB},         {model::OttavaAmount::OCTAVE_UP, OttavaType::OTTAVA_8VA},
     {model::OttavaAmount::TWO_OCTAVES_DOWN, OttavaType::OTTAVA_15MB},   {model::OttavaAmount::TWO_OCTAVES_UP, OttavaType::OTTAVA_15MA},
     {model::OttavaAmount::THREE_OCTAVES_DOWN, OttavaType::OTTAVA_22MB}, {model::OttavaAmount::THREE_OCTAVES_UP, OttavaType::OTTAVA_22MA},
@@ -666,7 +665,7 @@ Fraction to_muse_score_r_tick(const model::RhythmicPosition &position) {
 }
 
 namespace {
-const ankerl::unordered_dense::map<int, TremoloType> tremolo_type_table = {
+const muse::HashMap<int, TremoloType> tremolo_type_table = {
     {1, TremoloType::C8},
     {2, TremoloType::C16},
     {3, TremoloType::C32},
@@ -683,7 +682,7 @@ std::optional<int> to_mnx_tremolo_marks(TremoloType tt) {
 }
 
 namespace {
-const ankerl::unordered_dense::map<model::LineType, SlurStyleType> slur_style_table = {
+const muse::HashMap<model::LineType, SlurStyleType> slur_style_table = {
     {model::LineType::DASHED, SlurStyleType::DASHED},
     {model::LineType::DOTTED, SlurStyleType::DOTTED},
     {model::LineType::SOLID, SlurStyleType::SOLID},
@@ -699,7 +698,7 @@ model::LineType to_mnx_slur_line_type(SlurStyleType sst) {
 }
 
 namespace {
-const ankerl::unordered_dense::map<model::YesNoAuto, TupletBracketType> tuplet_bracket_type_table = {
+const muse::HashMap<model::YesNoAuto, TupletBracketType> tuplet_bracket_type_table = {
     {model::YesNoAuto::AUTO, TupletBracketType::AUTO_BRACKET},
     {model::YesNoAuto::YES, TupletBracketType::SHOW_BRACKET},
     {model::YesNoAuto::NO, TupletBracketType::SHOW_NO_BRACKET},
@@ -715,7 +714,7 @@ model::YesNoAuto to_mnx_tuplet_bracket_type(TupletBracketType bracket_option) {
 }
 
 namespace {
-const ankerl::unordered_dense::map<model::TupletDisplaySetting, TupletNumberType> tuplet_number_type_table = {
+const muse::HashMap<model::TupletDisplaySetting, TupletNumberType> tuplet_number_type_table = {
     {model::TupletDisplaySetting::INNER, TupletNumberType::SHOW_NUMBER},
     {model::TupletDisplaySetting::NO_NUMBER, TupletNumberType::NO_TEXT},
     {model::TupletDisplaySetting::BOTH, TupletNumberType::SHOW_RELATION},

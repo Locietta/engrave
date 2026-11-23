@@ -3,8 +3,7 @@
 
 #include <list>
 
-#include <ankerl/unordered_dense.h>
-
+#include "global/hashmap.h"
 #include "types/string.h"
 
 namespace mu::iex::guitarpro {
@@ -33,7 +32,7 @@ private:
 
     void add_drum(const GPDrum &drum);
 
-    ankerl::unordered_dense::map<muse::String, std::list<GPDrum>> drum_value;
+    muse::HashMap<muse::String, std::list<GPDrum>> drum_value;
 };
 } // namespace mu::iex::guitarpro
 #endif // MU_IMPORTEXPORT_GPDRUMSETRESOLVER_H

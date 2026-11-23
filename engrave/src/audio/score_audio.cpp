@@ -16,12 +16,11 @@
 #include <utility>
 #include <vector>
 
-#include <amc/flatset.hpp>
-
 #include "engraving/dom/instrument.h"
 #include "engraving/dom/part.h"
 #include "engraving/dom/score.h"
 #include "engraving/playback/playbackwalk.h"
+#include "global/flatset.h"
 #include "global/io/byteview.h"
 #include "global/serialization/json_fields.h"
 #include "global/serialization/zipreader.h"
@@ -84,7 +83,7 @@ std::vector<ScoreAudioTrackInfo> score_audio_track_info(Score *score) {
         // Part::instrumentTrackIdList() dereferences every instrument, so
         // dedupe here after skipping malformed entries. The order matches the
         // engine's iteration by first instrument tick.
-        amc::FlatSet<muse::String> seen_instruments;
+        muse::FlatSet<muse::String> seen_instruments;
         for ([[maybe_unused]] const auto &[tick, instrument] : part->instruments()) {
             if (!instrument) {
                 continue;

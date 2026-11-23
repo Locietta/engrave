@@ -25,8 +25,6 @@
 #include <type_traits>
 #include <variant>
 
-#include <ankerl/unordered_dense.h>
-
 #include "engraving/dom/arpeggio.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/clef.h"
@@ -51,6 +49,7 @@
 #include "engraving/dom/volta.h"
 #include "engraving/editing/transpose.h"
 #include "engraving/types/symnames.h"
+#include "global/hashmap.h"
 #include "internal/shared/mnxtypesconv.h"
 #include "log.h"
 #include "mnxexporter.h"
@@ -546,7 +545,7 @@ void MnxExporter::create_arpeggios(const Part *part, const Measure *measure, mod
     IF_ASSERT_FAILED(part && measure) { return; }
 
     const TrackRange track_range = part->track_range();
-    ankerl::unordered_dense::set<const Arpeggio *> exported_arpeggios;
+    muse::HashSet<const Arpeggio *> exported_arpeggios;
 
     auto is_exported_chord = [this](const Chord *chord) { return chord && cr_to_mnx_event_.find(chord) != cr_to_mnx_event_.end(); };
 

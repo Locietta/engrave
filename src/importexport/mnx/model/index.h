@@ -10,8 +10,7 @@
 #include <string_view>
 #include <vector>
 
-#include <ankerl/unordered_dense.h>
-
+#include "global/hashmap.h"
 #include "mnx_model.h"
 #include "rational.h"
 
@@ -71,7 +70,7 @@ struct BeamEntry {
 };
 
 template <class Value>
-using IdMap = ankerl::unordered_dense::map<std::string, Value>;
+using IdMap = muse::HashMap<std::string, Value>;
 
 // Lookups into a document. It points into the document's vectors, which must stay unchanged
 // (moving the Root is fine; copying or mutating it is not) while the index is in use.
@@ -79,7 +78,7 @@ struct Index {
     std::vector<EventEntry> events; // document order
     std::vector<NoteEntry<Note>> notes;
     std::vector<NoteEntry<KitNote>> kit_notes;
-    ankerl::unordered_dense::map<const Event *, std::uint32_t> event_of;
+    muse::HashMap<const Event *, std::uint32_t> event_of;
     IdMap<std::uint32_t> event_ids;
     IdMap<std::uint32_t> note_ids;
     IdMap<std::uint32_t> kit_note_ids;

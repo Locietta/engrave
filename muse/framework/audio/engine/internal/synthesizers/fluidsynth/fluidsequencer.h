@@ -30,6 +30,7 @@
 #include <vector>
 
 #include "../../miditimeline.h"
+#include "global/hashmap.h"
 #include "global/unique_fn.h"
 #include "midi/midievent.h"
 #include "mpe/events.h"
@@ -261,7 +262,7 @@ protected:
             return true;
         }
 
-        ankerl::unordered_dense::set<CcKey, CcKeyHash> seen;
+        muse::HashSet<CcKey, CcKeyHash> seen;
         std::uint32_t write = 0;
         std::uint32_t work = 0;
 

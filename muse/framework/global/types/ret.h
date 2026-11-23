@@ -26,9 +26,8 @@
 #include <any>
 #include <string>
 
-#include <ankerl/unordered_dense.h>
-
 #include "global/asserts.h"
+#include "global/hashmap.h"
 
 #undef NOT_SUPPORTED
 #undef NOT_IMPLEMENTED
@@ -171,7 +170,7 @@ struct Ret {
 private:
     int code_ = int(Code::UNDEFINED);
     std::string text_;
-    ankerl::unordered_dense::map<std::string, std::any> data_;
+    muse::HashMap<std::string, std::any> data_;
 };
 
 inline muse::Ret make_ok() { return Ret(static_cast<int>(Ret::Code::OK)); }

@@ -23,8 +23,7 @@
 
 #include <iomanip>
 
-#include <ankerl/unordered_dense.h>
-
+#include "global/hashmap.h"
 #include "global/stringutils.h"
 #include "log.h"
 
@@ -169,7 +168,7 @@ void UriQuery::parse_params(const std::string &uri, Params &out) const {
 
     strings::trim(params_str);
 
-    ankerl::unordered_dense::map<std::string, std::string> placeholders;
+    muse::HashMap<std::string, std::string> placeholders;
     std::vector<std::string> quotes_strings;
     extract_quoted_strings(params_str, quotes_strings);
     for (size_t i = 0; i < quotes_strings.size(); ++i) {

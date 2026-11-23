@@ -24,10 +24,9 @@
 
 #include <vector>
 
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
-
 #include "benddatacontextsplitchord.h"
+#include "global/btree.h"
+#include "global/hashmap.h"
 #include <engraving/types/pitchvalue.h>
 #include <engraving/types/types.h>
 
@@ -45,10 +44,10 @@ struct BendDataCollectorSplitChord {
 private:
     struct ChordBends {
         std::vector<ImportedBendInfo> bends;
-        ankerl::unordered_dense::map<const mu::engraving::Note *, size_t> index_by_note;
+        muse::HashMap<const mu::engraving::Note *, size_t> index_by_note;
     };
 
-    gtl::btree_map<mu::engraving::track_idx_t, gtl::btree_map<mu::engraving::Fraction, ChordBends>> bend_info_for_note_;
+    muse::BTreeMap<mu::engraving::track_idx_t, muse::BTreeMap<mu::engraving::Fraction, ChordBends>> bend_info_for_note_;
 
     void fill_bends_durations(BendDataContextSplitChord &bend_data_ctx);
     void fill_bend_data(BendDataContextSplitChord &bend_data_ctx);

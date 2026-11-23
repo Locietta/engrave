@@ -8,42 +8,43 @@
 #include <format>
 #include <utility>
 
+#include "global/hashmap.h"
 #include "music.h"
 
 namespace mu::iex::mnxio::model {
 
 const EventEntry *Index::find_event(std::string_view id) const {
-    const auto it = event_ids.find(std::string(id));
+    const auto it = event_ids.find(id);
     return it == event_ids.end() ? nullptr : &events[it->second];
 }
 
 const NoteEntry<Note> *Index::find_note(std::string_view id) const {
-    const auto it = note_ids.find(std::string(id));
+    const auto it = note_ids.find(id);
     return it == note_ids.end() ? nullptr : &notes[it->second];
 }
 
 const NoteEntry<KitNote> *Index::find_kit_note(std::string_view id) const {
-    const auto it = kit_note_ids.find(std::string(id));
+    const auto it = kit_note_ids.find(id);
     return it == kit_note_ids.end() ? nullptr : &kit_notes[it->second];
 }
 
 std::optional<std::uint32_t> Index::find_measure(std::string_view id) const {
-    const auto it = measure_ids.find(std::string(id));
+    const auto it = measure_ids.find(id);
     return it == measure_ids.end() ? std::nullopt : std::optional(it->second);
 }
 
 std::optional<std::uint32_t> Index::find_part(std::string_view id) const {
-    const auto it = part_ids.find(std::string(id));
+    const auto it = part_ids.find(id);
     return it == part_ids.end() ? std::nullopt : std::optional(it->second);
 }
 
 std::optional<std::uint32_t> Index::find_layout(std::string_view id) const {
-    const auto it = layout_ids.find(std::string(id));
+    const auto it = layout_ids.find(id);
     return it == layout_ids.end() ? std::nullopt : std::optional(it->second);
 }
 
 const BeamEntry *Index::find_beam(std::string_view event_id) const {
-    const auto it = beams.find(std::string(event_id));
+    const auto it = beams.find(event_id);
     return it == beams.end() ? nullptr : &it->second;
 }
 
@@ -200,7 +201,7 @@ private:
     template <class T>
     void check_unique_keys(const std::optional<std::vector<std::pair<std::string, T>>> &map, const std::string &pointer) {
         if (!map) return;
-        ankerl::unordered_dense::set<std::string_view> keys;
+        muse::HashSet<std::string_view> keys;
         for (const auto &[key, _] : *map)
             if (!keys.insert(key).second) error(at(pointer, key_token(key)), std::format("Key \"{}\" appears more than once.", key));
     }
@@ -555,7 +556,7 @@ private:
 
     void validate_global() {
         if (const auto &lyrics = root_.global.lyrics) {
-            ankerl::unordered_dense::map<std::string, std::string> lines;
+            muse::HashMap<std::string, std::string> lines;
             const auto &order = items(lyrics->line_order);
             for (std::size_t i = 0; i < order.size(); ++i) {
                 const std::string pointer = at("/global/lyrics", "lineOrder", i);
@@ -659,7 +660,7 @@ private:
                 check_staff(p, clefs[c].staff_or_default(), clef_pointer);
                 if (clefs[c].position) check_position(*clefs[c].position, at(clef_pointer, "position"));
             }
-            ankerl::unordered_dense::map<std::string, std::string> voices;
+            muse::HashMap<std::string, std::string> voices;
             for (std::size_t s = 0; s < measure.sequences.size(); ++s) {
                 const auto &sequence = measure.sequences[s];
                 const std::string sequence_pointer = at(measure_pointer, "sequences", s);
@@ -726,7 +727,7 @@ private:
     }
 
     void validate_events() {
-        ankerl::unordered_dense::set<std::string> lyric_lines;
+        muse::HashSet<std::string> lyric_lines;
         if (root_.global.lyrics) {
             for (const auto &line : items(root_.global.lyrics->line_order)) lyric_lines.insert(line);
             if (!root_.global.lyrics->line_order)
@@ -807,7 +808,7 @@ private:
     // `parent` is the beam a level of sub-beams belongs to; its events must contain theirs.
     void validate_beams(const std::vector<Beam> &beams, const std::string &pointer, std::uint32_t part, std::uint32_t measure, int depth,
                         const Beam *parent) {
-        ankerl::unordered_dense::set<std::string> seen;
+        muse::HashSet<std::string> seen;
         for (std::size_t b = 0; b < beams.size(); ++b) {
             const auto &beam = beams[b];
             const std::string beam_pointer = std::format("{}/{}", pointer, b);

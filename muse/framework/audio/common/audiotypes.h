@@ -29,12 +29,11 @@
 #include <variant>
 #include <vector>
 
-#include <amc/flatset.hpp>
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
-
 #include "automatablevalue.h"
+#include "global/btree.h"
 #include "global/flatmap.h"
+#include "global/flatset.h"
+#include "global/hashmap.h"
 #include "global/io/iodevice.h"
 #include "global/types/number.h"
 #include "global/types/ratio.h"
@@ -199,7 +198,7 @@ struct AudioResourceMeta {
 };
 
 using AudioResourceMetaList = std::vector<AudioResourceMeta>;
-using AudioResourceMetaSet = gtl::btree_set<AudioResourceMeta>;
+using AudioResourceMetaSet = muse::BTreeSet<AudioResourceMeta>;
 
 inline bool bool_attribute(const AudioResourceMeta &meta, const String &key, bool fallback = false) {
     const String &v = meta.attribute_val(key);
@@ -232,7 +231,7 @@ enum class AudioResourceType {
     MUSE_SAMPLER_SOUND_PACK,
 };
 
-inline const ankerl::unordered_dense::map<AudioResourceType, std::string> resource_type_names = {
+inline const muse::HashMap<AudioResourceType, std::string> resource_type_names = {
     {AudioResourceType::FLUID_SOUNDFONT, std::string(::muse::audio::fluid_soundfont_type_name)},
     {AudioResourceType::VST_PLUGIN, "VstPlugin"},
     {AudioResourceType::NATIVE_EFFECT, std::string(::muse::audio::native_effect_type_name)},
@@ -266,7 +265,7 @@ inline bool has_native_editor_support(const AudioResourceMeta &meta) {
     return bool_attribute(meta, ::muse::audio::has_native_editor_support_attribute);
 }
 
-inline const ankerl::unordered_dense::map<AudioResourceType, String> resource_type_map = {
+inline const muse::HashMap<AudioResourceType, String> resource_type_map = {
     {AudioResourceType::UNDEFINED, u"undefined"},
     {AudioResourceType::MUSE_SAMPLER_SOUND_PACK, u"muse_sampler_sound_pack"},
     {AudioResourceType::FLUID_SOUNDFONT, u"fluid_soundfont"},
@@ -301,7 +300,7 @@ enum class AudioFxCategory {
     FX_OTHER,
 };
 
-inline const ankerl::unordered_dense::map<AudioFxCategory, String> audio_fx_category_to_string_map{
+inline const muse::HashMap<AudioFxCategory, String> audio_fx_category_to_string_map{
     {AudioFxCategory::FX_EQUALIZER, u"EQ"},
     {AudioFxCategory::FX_ANALYZER, u"Analyzer"},
     {AudioFxCategory::FX_DELAY, u"Delay"},
@@ -319,7 +318,7 @@ inline const ankerl::unordered_dense::map<AudioFxCategory, String> audio_fx_cate
     {AudioFxCategory::FX_OTHER, u"Fx"},
 };
 
-using AudioFxCategories = amc::FlatSet<AudioFxCategory>;
+using AudioFxCategories = muse::FlatSet<AudioFxCategory>;
 using AudioFxChainOrder = int8_t;
 
 struct AudioFxParams {

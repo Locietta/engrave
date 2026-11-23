@@ -1,7 +1,3 @@
-#include <amc/flatset.hpp>
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
-
 #include "engraving/dom/dummyparent.h"
 #include "engraving/dom/fret.h"
 #include "engraving/dom/glissando.h"
@@ -12,6 +8,9 @@
 #include "engraving/dom/range.h"
 #include "engraving/dom/tie.h"
 #include "engraving/editing/edittimesig.h"
+#include "global/btree.h"
+#include "global/flatset.h"
+#include "global/hashmap.h"
 #include "read_test_fixture.h"
 
 using namespace read_test;
@@ -1524,7 +1523,7 @@ TEST(Read, TimeSigRewritesKeepOneNoteLinePerLinkedStaff) {
         EXPECT_EQ(parked_note_lines(master), 0u);
         const auto lines = live_note_lines(master);
         ASSERT_EQ(lines.size(), 2u);
-        amc::FlatSet<staff_idx_t> staves;
+        muse::FlatSet<staff_idx_t> staves;
         for (const Spanner *line : lines) {
             expect_line_on(line, 65, Fraction(4, 4), 67, Fraction(5, 4));
             staves.insert(to_note(line->start_element())->staff_idx());
@@ -1532,7 +1531,7 @@ TEST(Read, TimeSigRewritesKeepOneNoteLinePerLinkedStaff) {
             ASSERT_NE(line->links(), nullptr);
             EXPECT_EQ(line->links()->size(), 2u);
         }
-        EXPECT_EQ(staves, (amc::FlatSet<staff_idx_t>{0, 1}));
+        EXPECT_EQ(staves, (muse::FlatSet<staff_idx_t>{0, 1}));
     }
 }
 
@@ -1719,7 +1718,7 @@ TEST(Read, TimeSigRewritePreservesNonPrimaryLinkedStaffNoteLines) {
         ASSERT_EQ(lines.size(), 3u);
 
         size_t note_line_count = 0;
-        ankerl::unordered_dense::set<staff_idx_t> gliss_staves;
+        muse::HashSet<staff_idx_t> gliss_staves;
         for (const Spanner *line : lines) {
             const staff_idx_t st_idx = to_note(line->start_element())->staff_idx();
             EXPECT_EQ(to_note(line->end_element())->staff_idx(), st_idx);
@@ -4141,7 +4140,7 @@ TEST(Read, StandaloneExcerptKeepsLinksBetweenItsOwnStaves) {
     const auto exported = document->export_score({.format = engrave::Format::MSCX, .score = selection});
     ASSERT_TRUE(exported);
     const std::string xml(reinterpret_cast<const char *>(exported->data()), exported->size());
-    ankerl::unordered_dense::set<std::string> seen;
+    muse::HashSet<std::string> seen;
     std::size_t cursor = 0, links = 0;
     while (cursor < xml.size()) {
         const auto eid = xml.find("<eid>", cursor);
@@ -4186,9 +4185,9 @@ TEST(Read, MatchesTheSemanticOracle) {
         ASSERT_TRUE(outline) << outline.error().message;
         const std::size_t measures = outline->measures.size();
 
-        gtl::btree_multiset<Row> expected;
+        muse::BTreeMultiSet<Row> expected;
         oracle_rows(dump, expected);
-        gtl::btree_multiset<Row> actual;
+        muse::BTreeMultiSet<Row> actual;
         query_rows(read_all(*document, {}, measures), actual);
         expect_same_rows(expected, actual, "the master score");
         rows += expected.size();
@@ -4209,9 +4208,9 @@ TEST(Read, MatchesTheSemanticOracle) {
             const engrave::ExcerptInfo &excerpt = outline->excerpts[next++];
             const auto excerpt_outline = document->outline(engrave::ScoreSel{excerpt.id});
             ASSERT_TRUE(excerpt_outline) << excerpt_outline.error().message;
-            gtl::btree_multiset<Row> excerpt_expected;
+            muse::BTreeMultiSet<Row> excerpt_expected;
             oracle_rows(listed.at("score"), excerpt_expected);
-            gtl::btree_multiset<Row> excerpt_actual;
+            muse::BTreeMultiSet<Row> excerpt_actual;
             query_rows(read_all(*document, engrave::ScoreSel{excerpt.id}, excerpt_outline->measures.size()), excerpt_actual);
             expect_same_rows(excerpt_expected, excerpt_actual, "the excerpt '" + excerpt.name + "'");
             rows += excerpt_expected.size();
@@ -4278,14 +4277,14 @@ TEST(Read, OutlineDescribesTheScore) {
         // The signatures are the dump's, which walks them independently: same type,
         // tick and staff.  The dump's clefs are left out: a clef change is an element
         // of its own that a query reports, and the outline covers time, key and tempo.
-        gtl::btree_multiset<std::string> expected;
+        muse::BTreeMultiSet<std::string> expected;
         for (const music::Json &signature : music::semantic_dump(&master).at("signatures").get_array()) {
             const std::string type = signature.at("type").get<std::string>();
             if (type == "Clef") continue;
             expected.insert(
                 std::format("{} tick={} staff={}", type, signature.at("tick").as<int>(), signature.at("staff").as<std::size_t>()));
         }
-        gtl::btree_multiset<std::string> actual;
+        muse::BTreeMultiSet<std::string> actual;
         for (const engrave::SignatureInfo &signature : outline->signatures) {
             if (signature.type == "Tempo") continue;
             actual.insert(std::format("{} tick={} staff={}", signature.type, static_cast<int>(ticks_of(signature.tick)), signature.staff));
@@ -4293,13 +4292,13 @@ TEST(Read, OutlineDescribesTheScore) {
         EXPECT_EQ(expected, actual) << "the outline's signatures are not the dump's";
 
         // The tempo markings are the dump's annotations of that type.
-        gtl::btree_multiset<std::string> expected_tempi;
+        muse::BTreeMultiSet<std::string> expected_tempi;
         for (const music::Json &annotation : music::semantic_dump(&master).at("annotations").get_array()) {
             if (annotation.at("type").get<std::string>() != "Tempo") continue;
             expected_tempi.insert(std::format("tick={} bpm={} text={}", annotation.at("tick").as<int>(), annotation.at("bpm").as<double>(),
                                               annotation.at("text").get<std::string>()));
         }
-        gtl::btree_multiset<std::string> actual_tempi;
+        muse::BTreeMultiSet<std::string> actual_tempi;
         for (const engrave::SignatureInfo &signature : outline->signatures) {
             if (signature.type != "Tempo") continue;
             actual_tempi.insert(
@@ -4635,7 +4634,7 @@ TEST(Read, GetReadsProperties) {
 
     const auto all = document->get(note_id);
     ASSERT_TRUE(all) << all.error().message;
-    ankerl::unordered_dense::set<std::string> names;
+    muse::HashSet<std::string> names;
     for (const PropertyRead &read : *all) names.insert(read.name);
     EXPECT_EQ(names.size(), all->size()) << "a property is reported twice";
     EXPECT_TRUE(names.contains("pitch"));
@@ -4865,9 +4864,9 @@ TEST(Read, HiddenLeadingTupletRestPreservesFollowingNotes) {
         query.props = {"pitch"};
         const auto notes = (*document)->query(query);
         ASSERT_TRUE(notes);
-        gtl::btree_multiset<Row> actual;
+        muse::BTreeMultiSet<Row> actual;
         query_rows(notes->elements, actual);
-        const gtl::btree_multiset<Row> expected = {note_row(320, 0, 0, 74), note_row(640, 0, 0, 72), note_row(960, 0, 0, 72),
+        const muse::BTreeMultiSet<Row> expected = {note_row(320, 0, 0, 74), note_row(640, 0, 0, 72), note_row(960, 0, 0, 72),
                                                    note_row(1280, 0, 0, 69), note_row(1600, 0, 0, 67)};
         EXPECT_EQ(actual, expected);
         query.types = {"Chord"};
@@ -5093,7 +5092,7 @@ TEST(Read, MusicXmlDynamicsSeparateContainersKeepStyleAndTiming) {
             ASSERT_TRUE(document.page_count());
             const auto dynamics = imported_dynamics(document);
             ASSERT_EQ(dynamics.size(), 2u);
-            amc::FlatSet<DynamicType> types;
+            muse::FlatSet<DynamicType> types;
             for (const auto *dynamic : dynamics) {
                 types.insert(dynamic->dynamic_type());
                 const bool piano = dynamic->dynamic_type() == DynamicType::P;
@@ -5103,7 +5102,7 @@ TEST(Read, MusicXmlDynamicsSeparateContainersKeepStyleAndTiming) {
                 EXPECT_EQ(dynamic->frame_type(), piano ? FrameType::CIRCLE : FrameType::RECTANGLE);
                 EXPECT_EQ(dynamic->tick().ticks(), notation ? 0 : Constants::division);
             }
-            EXPECT_EQ(types, (amc::FlatSet<DynamicType>{DynamicType::P, DynamicType::F}));
+            EXPECT_EQ(types, (muse::FlatSet<DynamicType>{DynamicType::P, DynamicType::F}));
         };
         check(**opened);
         for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {

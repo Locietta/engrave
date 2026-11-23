@@ -4,8 +4,7 @@
 #include <list>
 #include <utility>
 
-#include <gtl/btree.hpp>
-
+#include "global/btree.h"
 #include "importmidi_fraction.h"
 
 namespace mu::iex::midi {
@@ -110,6 +109,6 @@ struct MidiTimeline {
 
 private:
     Entries entries_;
-    gtl::btree_multimap<ReducedFraction, iterator> index_;
+    muse::BTreeMultiMap<ReducedFraction, iterator> index_;
 };
 } // namespace mu::iex::midi

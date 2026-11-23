@@ -22,8 +22,7 @@
 #ifndef IMPORTMIDI_BEAT_H
 #define IMPORTMIDI_BEAT_H
 
-#include <gtl/btree.hpp>
-
+#include "global/btree.h"
 #include "importmidi_timeline.h"
 
 namespace mu::engraving {
@@ -36,10 +35,10 @@ struct MidiChord;
 struct MTrack;
 
 namespace MidiBeat {
-void remove_every2nd_beat(gtl::btree_set<ReducedFraction> &beat_set);
+void remove_every2nd_beat(muse::BTreeSet<ReducedFraction> &beat_set);
 void find_beat_locations(const MidiTimeline<MidiChord> &all_chords, engraving::TimeSigMap *sigmap, double ticks_per_sec);
 
-void adjust_chords_to_beats(gtl::btree_multimap<int, MTrack> &tracks);
+void adjust_chords_to_beats(muse::BTreeMultiMap<int, MTrack> &tracks);
 void set_time_signature(engraving::TimeSigMap *sigmap);
 } // namespace MidiBeat
 } // namespace mu::iex::midi

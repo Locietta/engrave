@@ -26,9 +26,8 @@
 #include <type_traits>
 #include <variant>
 
-#include <gtl/btree.hpp>
-
 #include "containers.h"
+#include "global/btree.h"
 #include "realfn.h"
 #include "sortedrange.h"
 #include "types/number.h"
@@ -69,7 +68,7 @@ struct AutomationPoint {
 };
 
 template <typename KeyT>
-using AutomationCurve = gtl::btree_map<KeyT, AutomationPoint>;
+using AutomationCurve = muse::BTreeMap<KeyT, AutomationPoint>;
 
 //! NOTE: this point's ease, if it can have one; nullopt for ArrivalFromPrevious
 inline std::optional<AutomationPoint::Ease> ease(const AutomationPoint &point) noexcept {

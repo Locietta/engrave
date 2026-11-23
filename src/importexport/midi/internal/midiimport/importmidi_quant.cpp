@@ -27,11 +27,10 @@
 #include <deque>
 #include <vector>
 
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
-
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/sig.h"
+#include "global/btree.h"
+#include "global/hashmap.h"
 #include "importmidi_beat.h"
 #include "importmidi_chord.h"
 #include "importmidi_fraction.h"
@@ -326,7 +325,7 @@ bool is_human_performance(const MidiTimeline<MidiChord> &chords, const TimeSigMa
     int matches = 0;
     int count = 0;
 
-    gtl::btree_set<ReducedFraction> used_on_times;
+    muse::BTreeSet<ReducedFraction> used_on_times;
 
     for (const auto &chord : chords) {
         const auto quant = std::min(basic_quant, quant_for_len(MChord::max_note_len(chord), basic_quant));
@@ -354,8 +353,8 @@ bool is_human_performance(const MidiTimeline<MidiChord> &chords, const TimeSigMa
     return matched < tol_value;
 }
 
-gtl::btree_multimap<int, MTrack> get_track_with_all_chords(const gtl::btree_multimap<int, MTrack> &tracks) {
-    gtl::btree_multimap<int, MTrack> single_track{{0, MTrack()}};
+muse::BTreeMultiMap<int, MTrack> get_track_with_all_chords(const muse::BTreeMultiMap<int, MTrack> &tracks) {
+    muse::BTreeMultiMap<int, MTrack> single_track{{0, MTrack()}};
     auto &all_chords = single_track.begin()->second.chords;
     for (const auto &track : tracks) {
         const MTrack &t = track.second;
@@ -366,7 +365,7 @@ gtl::btree_multimap<int, MTrack> get_track_with_all_chords(const gtl::btree_mult
     return single_track;
 }
 
-void set_if_human_performance(const gtl::btree_multimap<int, MTrack> &tracks, TimeSigMap *sigmap) {
+void set_if_human_performance(const muse::BTreeMultiMap<int, MTrack> &tracks, TimeSigMap *sigmap) {
     auto all_chords_track = get_track_with_all_chords(tracks);
     MChord::collect_chords(all_chords_track, {2, 1}, {1, 2});
     const MTrack &track = all_chords_track.begin()->second;
@@ -530,7 +529,7 @@ bool are_all_voices_same(const std::deque<MidiTimeline<MidiChord>::const_iterato
 }
 
 bool are_chords_different(const std::deque<MidiTimeline<MidiChord>::const_iterator> &chords) {
-    ankerl::unordered_dense::set<const std::pair<const ReducedFraction, MidiChord> *> chord_set;
+    muse::HashSet<const std::pair<const ReducedFraction, MidiChord> *> chord_set;
 
     for (const auto &chord : chords) {
         const auto it = chord_set.find(&*chord);
@@ -609,7 +608,7 @@ void check_off_time(const MidiNote &note, const MidiTimeline<MidiChord>::iterato
 }
 
 bool are_on_time_values_different(const MidiTimeline<MidiChord> &chords) {
-    gtl::btree_set<std::tuple<ReducedFraction, int, int>> on_time_voices_bars;
+    muse::BTreeSet<std::tuple<ReducedFraction, int, int>> on_time_voices_bars;
     for (const auto &chord : chords) {
         const auto tuple = std::make_tuple(chord.first, chord.second.voice, chord.second.bar_index);
         if (on_time_voices_bars.find(tuple) == on_time_voices_bars.end()) {
@@ -956,11 +955,10 @@ void apply_dynamic_programming(std::vector<QuantData> &quant_data) {
     }
 }
 
-void quantize_on_times_in_range(
-    const std::deque<MidiTimeline<MidiChord>::const_iterator> &chords,
-    ankerl::unordered_dense::map<const std::pair<const ReducedFraction, MidiChord> *, QuantInfo> &found_on_times,
-    const ReducedFraction &range_start, const ReducedFraction &range_end, const ReducedFraction &basic_quant,
-    const ReducedFraction &bar_start, const ReducedFraction &bar_fraction) {
+void quantize_on_times_in_range(const std::deque<MidiTimeline<MidiChord>::const_iterator> &chords,
+                                muse::HashMap<const std::pair<const ReducedFraction, MidiChord> *, QuantInfo> &found_on_times,
+                                const ReducedFraction &range_start, const ReducedFraction &range_end, const ReducedFraction &basic_quant,
+                                const ReducedFraction &bar_start, const ReducedFraction &bar_fraction) {
 #ifndef NDEBUG
     assert(!chords.empty());
     assert(are_all_voices_same(chords));
@@ -1086,7 +1084,7 @@ void add_chords_from_prev_range(std::deque<MidiTimeline<MidiChord>::const_iterat
 }
 
 void quantize_on_times(const MidiTimeline<MidiChord> &chords,
-                       ankerl::unordered_dense::map<const std::pair<const ReducedFraction, MidiChord> *, QuantInfo> &found_on_times,
+                       muse::HashMap<const std::pair<const ReducedFraction, MidiChord> *, QuantInfo> &found_on_times,
                        const ReducedFraction &basic_quant, const TimeSigMap *sigmap) {
     int max_voice = 0;
     for (int voice = 0; voice <= max_voice; ++voice) {
@@ -1173,7 +1171,7 @@ void move_off_times(const ReducedFraction &old_on_time, const ReducedFraction &n
 
 MidiTimeline<MidiChord>
 find_quantized_chords(const MidiTimeline<MidiChord> &source,
-                      const ankerl::unordered_dense::map<const std::pair<const ReducedFraction, MidiChord> *, QuantInfo> &found_on_times) {
+                      const muse::HashMap<const std::pair<const ReducedFraction, MidiChord> *, QuantInfo> &found_on_times) {
     MidiTimeline<MidiChord> quantized_chords;
     for (const auto &entry : source) {
         const auto pos = found_on_times.find(&entry);
@@ -1244,7 +1242,7 @@ void quantize_chords(MidiTimeline<MidiChord> &chords, const TimeSigMap *sigmap, 
     assert(MChord::are_bar_indexes_successive(chords));
 #endif
     apply_tuplet_staccato(chords); // apply staccato for tuplet off times
-    ankerl::unordered_dense::map<const std::pair<const ReducedFraction, MidiChord> *, QuantInfo> found_on_times;
+    muse::HashMap<const std::pair<const ReducedFraction, MidiChord> *, QuantInfo> found_on_times;
     quantize_on_times(chords, found_on_times, basic_quant, sigmap);
     auto quantized_chords = find_quantized_chords(chords, found_on_times);
 #ifndef NDEBUG

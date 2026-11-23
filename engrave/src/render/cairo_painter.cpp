@@ -24,10 +24,11 @@
 #include <utility>
 #include <vector>
 
-#include <ankerl/unordered_dense.h>
 #include <cairo/cairo-ft.h>
 #include <cairo/cairo.h>
 #include <ft2build.h>
+
+#include "global/hashmap.h"
 
 #include FT_FREETYPE_H
 
@@ -549,7 +550,7 @@ struct CairoPainter::Impl {
     // PDF/SVG surfaces may report CLIP_NOT_REPRESENTABLE even for an unclipped
     // context.  In that case we conservatively assume the surface bounds.
     bool base_clip_known = true;
-    ankerl::unordered_dense::map<unsigned int, CachedSurface> surfaces;
+    muse::HashMap<unsigned int, CachedSurface> surfaces;
 
     Impl(cairo_t *context, CairoFontCache &font_cache, double device_dpi);
     ~Impl();

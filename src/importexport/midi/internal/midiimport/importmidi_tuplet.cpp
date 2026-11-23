@@ -26,11 +26,10 @@
 #include <list>
 #include <vector>
 
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
-
 #include "engraving/dom/sig.h"
+#include "global/btree.h"
 #include "global/flatmap.h"
+#include "global/hashmap.h"
 #include "importmidi_chord.h"
 #include "importmidi_inner.h"
 #include "importmidi_operations.h"
@@ -172,7 +171,7 @@ void remove_empty_tuplets(MTrack &track) {
     }
 }
 
-int average_pitch(const gtl::btree_map<ReducedFraction, MidiTimeline<MidiChord>::iterator> &chords) {
+int average_pitch(const muse::BTreeMap<ReducedFraction, MidiTimeline<MidiChord>::iterator> &chords) {
     if (chords.empty()) {
         return -1;
     }
@@ -311,8 +310,8 @@ MidiTimeline<TupletData>::iterator find_tuplet_containing_time(int voice, const 
     return tuplets.front();
 }
 
-ankerl::unordered_dense::set<std::pair<const ReducedFraction, MidiChord> *> find_tuplet_chords(const std::vector<TupletInfo> &tuplets) {
-    ankerl::unordered_dense::set<std::pair<const ReducedFraction, MidiChord> *> tuplet_chords;
+muse::HashSet<std::pair<const ReducedFraction, MidiChord> *> find_tuplet_chords(const std::vector<TupletInfo> &tuplets) {
+    muse::HashSet<std::pair<const ReducedFraction, MidiChord> *> tuplet_chords;
     for (const auto &tuplet_info : tuplets) {
         for (const auto &tuplet_chord : tuplet_info.chords) {
             auto tuplet_it = tuplet_chord.second;
@@ -487,7 +486,7 @@ bool do_tuplets_have_common_chords(const std::vector<TupletInfo> &tuplets) {
     if (tuplets.empty()) {
         return false;
     }
-    ankerl::unordered_dense::set<std::pair<const ReducedFraction, MidiChord> *> chords_i;
+    muse::HashSet<std::pair<const ReducedFraction, MidiChord> *> chords_i;
     for (const auto &tuplet : tuplets) {
         for (const auto &chord : tuplet.chords) {
             if (chords_i.find(&*chord.second) != chords_i.end()) {
@@ -503,7 +502,7 @@ bool do_tuplets_have_common_chords(const std::vector<TupletInfo> &tuplets) {
 
 bool check_tuplets_for_existence(const MidiTimeline<MidiChord> &chords, const MidiTimeline<TupletData> &tuplet_events) {
     // check - do all tuplets have references from some chords
-    ankerl::unordered_dense::map<const std::pair<const ReducedFraction, TupletData> *, bool> tuplet_map;
+    muse::HashMap<const std::pair<const ReducedFraction, TupletData> *, bool> tuplet_map;
     for (const auto &tuplet : tuplet_events) {
         tuplet_map.insert({&tuplet, false});
     }
@@ -573,7 +572,7 @@ bool check_for_dangling_tuplets(const MidiTimeline<MidiChord> &chords, const Mid
 // check tuplet events for uniqueness
 
 bool check_are_tuplets_unique(const MidiTimeline<TupletData> &tuplet_events) {
-    gtl::btree_set<std::pair<ReducedFraction, int>> referenced_tuplets; // <onTime, voice>
+    muse::BTreeSet<std::pair<ReducedFraction, int>> referenced_tuplets; // <onTime, voice>
     for (const auto &tuplet : tuplet_events) {
         const auto &t = tuplet.second;
         const auto result = referenced_tuplets.insert({t.on_time, t.voice});
@@ -589,7 +588,7 @@ bool check_are_tuplets_unique(const MidiTimeline<TupletData> &tuplet_events) {
 // check is referenced tuplet count equal to tuplet event count
 
 bool check_for_equal_tuplet_count(const MidiTimeline<MidiChord> &chords, const MidiTimeline<TupletData> &tuplet_events) {
-    gtl::btree_set<std::pair<ReducedFraction, int>> referenced_tuplets; // <onTime, voice>
+    muse::BTreeSet<std::pair<ReducedFraction, int>> referenced_tuplets; // <onTime, voice>
     for (const auto &chord : chords) {
         if (chord.second.is_in_tuplet) {
             const auto &tuplet = chord.second.tuplet->second;
@@ -655,7 +654,7 @@ bool are_tuplet_references_valid(const MidiTimeline<MidiChord> &chords) {
 
 bool are_tuplet_non_tuplet_chords_distinct(const std::vector<TupletInfo> &tuplets,
                                            const std::list<MidiTimeline<MidiChord>::iterator> &non_tuplets) {
-    ankerl::unordered_dense::set<std::pair<const ReducedFraction, MidiChord> *> chords;
+    muse::HashSet<std::pair<const ReducedFraction, MidiChord> *> chords;
     for (const TupletInfo &tuplet : tuplets) {
         for (const auto &chord : tuplet.chords) {
             chords.insert(&*chord.second);
@@ -726,7 +725,7 @@ bool are_tuplet_ranges_ok(const MidiTimeline<MidiChord> &chords, const MidiTimel
 }
 
 bool are_all_tuplets_different(const MidiTimeline<TupletData> &tuplets) {
-    gtl::btree_set<std::pair<ReducedFraction, int>> tuplets_set; // <on time, voice>
+    muse::BTreeSet<std::pair<ReducedFraction, int>> tuplets_set; // <on time, voice>
     for (const auto &tuplet : tuplets) {
         const auto result = tuplets_set.insert({tuplet.first, tuplet.second.voice});
         const bool is_already_in_set = !result.second;

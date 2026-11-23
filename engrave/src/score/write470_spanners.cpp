@@ -9,8 +9,6 @@
 #include <stdexcept>
 #include <utility>
 
-#include <ankerl/unordered_dense.h>
-
 #include "engraving/dom/authoredoverride.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/drumset.h"
@@ -26,6 +24,7 @@
 #include "engraving/dom/staff.h"
 #include "engraving/dom/tie.h"
 #include "engraving/dom/volta.h"
+#include "global/hashmap.h"
 #include "global/io/writebudget.h"
 
 namespace engrave::write470 {
@@ -121,7 +120,7 @@ struct ScoreIndex {
     Poll poll;
     std::vector<const Measure *> measures;
     std::vector<std::vector<Row>> staves;
-    ankerl::unordered_dense::map<const EngravingItem *, Owner> owners;
+    muse::HashMap<const EngravingItem *, Owner> owners;
     std::vector<const Note *> notes;
     std::vector<pugi::xml_node> lyrics_lines;
 };
@@ -657,7 +656,7 @@ void emit_pairs(ScoreIndex &index, std::vector<Pair> &pairs, std::vector<Emitted
 
 void rebase_links(pugi::xml_node root, const std::vector<EmittedBody> &bodies, Poll poll) {
     const auto hash_node = [](pugi::xml_node node) { return node.hash_value(); };
-    ankerl::unordered_dense::map<pugi::xml_node, const Spanner *, decltype(hash_node)> by_node;
+    muse::HashMap<pugi::xml_node, const Spanner *, decltype(hash_node)> by_node;
     for (const auto &[body, spanner] : bodies) {
         poll();
         if (!spanner->links() && !body.child("linkedTo")) continue;
@@ -669,7 +668,7 @@ void rebase_links(pugi::xml_node root, const std::vector<EmittedBody> &bodies, P
     const auto hash = [](const auto &key) {
         return ankerl::unordered_dense::hash<const LinkedObjects *>{}(key.first) ^ static_cast<std::size_t>(key.second);
     };
-    ankerl::unordered_dense::map<std::pair<const LinkedObjects *, ElementType>, const Spanner *, decltype(hash)> earliest;
+    muse::HashMap<std::pair<const LinkedObjects *, ElementType>, const Spanner *, decltype(hash)> earliest;
     const auto visit = [&](const auto &self, pugi::xml_node node) -> void {
         poll();
         if (auto found = by_node.find(node); found != by_node.end()) {

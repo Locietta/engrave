@@ -10,9 +10,6 @@
 #include <utility>
 #include <vector>
 
-#include <amc/flatset.hpp>
-#include <ankerl/unordered_dense.h>
-
 #include "engraving/dom/chord.h"
 #include "engraving/dom/engravingobject.h"
 #include "engraving/dom/excerpt.h"
@@ -36,6 +33,8 @@
 #include "engraving/infrastructure/eid.h"
 #include "engraving/types/fraction.h"
 #include "global/flatmap.h"
+#include "global/flatset.h"
+#include "global/hashmap.h"
 
 namespace music {
 using namespace mu::engraving;
@@ -201,11 +200,11 @@ PreparedPitchEdit prepare_score_pitch_edit(mu::engraving::MasterScore *score, co
     if (score->transaction_manager()->current_transaction()) throw std::runtime_error("Score already has an active batch");
 
     const std::vector<Measure *> measures = standard_measures(score);
-    ankerl::unordered_dense::map<const Measure *, size_t> measure_indices;
+    muse::HashMap<const Measure *, size_t> measure_indices;
     measure_indices.reserve(measures.size());
     for (size_t i = 0; i < measures.size(); ++i) measure_indices.emplace(measures[i], i);
 
-    ankerl::unordered_dense::set<std::string> seen_ids;
+    muse::HashSet<std::string> seen_ids;
     std::vector<EID> requested_eids;
     requested_eids.reserve(edit.changes.size());
     for (const PitchChange &request : edit.changes) {
@@ -218,8 +217,8 @@ PreparedPitchEdit prepare_score_pitch_edit(mu::engraving::MasterScore *score, co
     // Resolve IDs by walking the live master-score DOM rather than dereferencing
     // the EID registry directly: the registry does not remove deleted items
     // automatically, so a stale entry must never become an edit target.
-    const ankerl::unordered_dense::set<EID, std::hash<EID>> wanted(requested_eids.begin(), requested_eids.end());
-    ankerl::unordered_dense::map<EID, Note *, std::hash<EID>> live_notes;
+    const muse::HashSet<EID, std::hash<EID>> wanted(requested_eids.begin(), requested_eids.end());
+    muse::HashMap<EID, Note *, std::hash<EID>> live_notes;
     for (Measure *measure = score->first_measure(); measure; measure = measure->next_measure()) {
         for (Segment *segment = measure->first(SegmentType::CHORD_REST); segment; segment = segment->next(SegmentType::CHORD_REST)) {
             for (track_idx_t track = 0; track < score->ntracks(); ++track) {
@@ -236,7 +235,7 @@ PreparedPitchEdit prepare_score_pitch_edit(mu::engraving::MasterScore *score, co
 
     std::vector<ValidatedChange> changes;
     changes.reserve(edit.changes.size());
-    ankerl::unordered_dense::map<Note *, int> linked_targets;
+    muse::HashMap<Note *, int> linked_targets;
 
     for (size_t i = 0; i < edit.changes.size(); ++i) {
         const PitchChange &request = edit.changes[i];
@@ -286,7 +285,7 @@ PreparedPitchEdit prepare_score_pitch_edit(mu::engraving::MasterScore *score, co
     // excerpt) cannot be expressed in master measure coordinates and therefore
     // expand the footprint to the whole requested part.
     muse::FlatMap<size_t, std::vector<std::pair<size_t, size_t>>> intervals;
-    amc::FlatSet<size_t> whole_parts;
+    muse::FlatSet<size_t> whole_parts;
     for (const ValidatedChange &change : changes) {
         intervals[change.part_index_value].push_back({change.measure_index, change.measure_index});
         Note *note = change.note;

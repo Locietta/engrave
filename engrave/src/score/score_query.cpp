@@ -10,8 +10,6 @@
 #include <utility>
 #include <vector>
 
-#include <ankerl/unordered_dense.h>
-
 #include "engraving/dom/chord.h"
 #include "engraving/dom/engravingobject.h"
 #include "engraving/dom/masterscore.h"
@@ -26,6 +24,7 @@
 #include "engraving/dom/tie.h"
 #include "engraving/infrastructure/eid.h"
 #include "engraving/infrastructure/eidregister.h"
+#include "global/hashmap.h"
 
 namespace music {
 using namespace mu::engraving;
@@ -85,9 +84,9 @@ Part *item_part(EngravingItem *item) {
 // does not repeat that work for every 128-measure block.
 struct QueryCapture {
     std::vector<Measure *> measures;
-    ankerl::unordered_dense::map<const Measure *, size_t> measure_indices;
-    ankerl::unordered_dense::map<const Measure *, std::string> measure_ids;
-    ankerl::unordered_dense::map<const Part *, ankerl::unordered_dense::set<const Chord *>> spanned_chords;
+    muse::HashMap<const Measure *, size_t> measure_indices;
+    muse::HashMap<const Measure *, std::string> measure_ids;
+    muse::HashMap<const Part *, muse::HashSet<const Chord *>> spanned_chords;
     std::vector<Spanner *> spanners;
 };
 
@@ -99,7 +98,7 @@ QueryCapture make_query_capture(Score *score) {
 
     // Chord-anchored slurs and other spanners are not exposed through Note's
     // spanner lists, so collect their chords per part in the same pass.
-    ankerl::unordered_dense::set<const Spanner *> seen;
+    muse::HashSet<const Spanner *> seen;
     for (const auto &entry : score->spanner_map().map()) {
         Spanner *spanner = entry.second;
         if (!spanner || !seen.insert(spanner).second) continue;
@@ -358,7 +357,7 @@ ScoreReadProjection snapshot_score_projection(mu::engraving::MasterScore *score)
         if (it != capture.measure_indices.end()) result.measure_index = it->second;
         return result;
     };
-    ankerl::unordered_dense::set<const Spanner *> captured;
+    muse::HashSet<const Spanner *> captured;
     const auto capture_span = [&](Spanner *span) {
         if (!span || !captured.insert(span).second) return true;
         if (projection.spans.size() == ::music::max_projection_spans) return false;

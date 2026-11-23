@@ -27,10 +27,9 @@
 #include <limits>
 #include <vector>
 
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
-
 #include "engraving/dom/mscore.h"
+#include "global/btree.h"
+#include "global/hashmap.h"
 #include "importmidi_chord.h"
 #include "importmidi_inner.h"
 #include "importmidi_operations.h"
@@ -93,15 +92,15 @@ std::pair<ReducedFraction, ReducedFraction> back_tied_interval(const TiedTuplet 
     return std::make_pair(beg, end);
 }
 
-void set_tuplet_voice(gtl::btree_map<ReducedFraction, MidiTimeline<MidiChord>::iterator> &tuplet_chords, int voice) {
+void set_tuplet_voice(muse::BTreeMap<ReducedFraction, MidiTimeline<MidiChord>::iterator> &tuplet_chords, int voice) {
     for (auto &tuplet_chord : tuplet_chords) {
         MidiChord &midi_chord = tuplet_chord.second->second;
         midi_chord.voice = voice;
     }
 }
 
-void set_tuplet_voices(std::vector<TupletInfo> &tuplets, gtl::btree_set<int> &pending_tuplets,
-                       gtl::btree_map<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> &tuplet_intervals,
+void set_tuplet_voices(std::vector<TupletInfo> &tuplets, muse::BTreeSet<int> &pending_tuplets,
+                       muse::BTreeMap<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> &tuplet_intervals,
                        const ReducedFraction &basic_quant) {
     const int limit = tuplet_voice_limit();
     int voice = 0;
@@ -153,8 +152,8 @@ int find_pitch_dist(const std::vector<MidiNote> &notes, const std::vector<Tuplet
 }
 
 void set_non_tuplet_voices(const std::list<MidiTimeline<MidiChord>::iterator> &non_tuplets,
-                           ankerl::unordered_dense::set<std::pair<const ReducedFraction, MidiChord> *> &pending_non_tuplets,
-                           const gtl::btree_map<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> &tuplet_intervals,
+                           muse::HashSet<std::pair<const ReducedFraction, MidiChord> *> &pending_non_tuplets,
+                           const muse::BTreeMap<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> &tuplet_intervals,
                            const std::vector<TupletInfo> &tuplets, const MidiTimeline<MidiChord> &chords,
                            const ReducedFraction &basic_quant, const ReducedFraction &bar_start) {
     std::vector<std::pair<const ReducedFraction, MidiChord> *> ordered_pending;
@@ -198,7 +197,7 @@ void set_non_tuplet_voices(const std::list<MidiTimeline<MidiChord>::iterator> &n
 #ifndef NDEBUG
 
 bool are_all_elements_unique(const std::list<MidiTimeline<MidiChord>::iterator> &non_tuplets) {
-    ankerl::unordered_dense::set<std::pair<const ReducedFraction, MidiChord> *> chords;
+    muse::HashSet<std::pair<const ReducedFraction, MidiChord> *> chords;
     for (const auto &chord : non_tuplets) {
         if (chords.find(&*chord) == chords.end()) {
             chords.insert(&*chord);
@@ -238,7 +237,7 @@ bool have_overlapping_voices(const std::list<MidiTimeline<MidiChord>::iterator> 
                              const std::list<TiedTuplet> &back_tied_tuplets, const MidiTimeline<MidiChord> &chords,
                              const ReducedFraction &basic_quant, const ReducedFraction &bar_start) {
     // <voice, intervals>
-    gtl::btree_map<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> intervals;
+    muse::BTreeMap<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> intervals;
 
     for (const auto &tuplet : tuplets) {
         const int voice = tuplet.chords.begin()->second->second.voice;
@@ -373,9 +372,8 @@ bool exclude_extra_voice_tuplets(std::vector<TupletInfo> &tuplets, std::list<Mid
 }
 
 void remove_unused_tuplets(std::vector<TupletInfo> &tuplets, std::list<MidiTimeline<MidiChord>::iterator> &non_tuplets,
-                           gtl::btree_set<int> &pending_tuplets, std::list<TiedTuplet> &back_tied_tuplets,
-                           ankerl::unordered_dense::set<std::pair<const ReducedFraction, MidiChord> *> &pending_non_tuplets,
-                           int bar_index) {
+                           muse::BTreeSet<int> &pending_tuplets, std::list<TiedTuplet> &back_tied_tuplets,
+                           muse::HashSet<std::pair<const ReducedFraction, MidiChord> *> &pending_non_tuplets, int bar_index) {
     if (pending_tuplets.empty()) {
         return;
     }
@@ -398,17 +396,17 @@ void remove_unused_tuplets(std::vector<TupletInfo> &tuplets, std::list<MidiTimel
     std::swap(tuplets, new_tuplets);
 }
 
-gtl::btree_set<int> find_pending_tuplets(const std::vector<TupletInfo> &tuplets) {
-    gtl::btree_set<int> pending_tuplets; // tuplet indexes
+muse::BTreeSet<int> find_pending_tuplets(const std::vector<TupletInfo> &tuplets) {
+    muse::BTreeSet<int> pending_tuplets; // tuplet indexes
     for (size_t i = 0; i != tuplets.size(); ++i) {
         pending_tuplets.insert(tuplets[i].id);
     }
     return pending_tuplets;
 }
 
-ankerl::unordered_dense::set<std::pair<const ReducedFraction, MidiChord> *>
+muse::HashSet<std::pair<const ReducedFraction, MidiChord> *>
 find_pending_non_tuplets(const std::list<MidiTimeline<MidiChord>::iterator> &non_tuplets) {
-    ankerl::unordered_dense::set<std::pair<const ReducedFraction, MidiChord> *> pending_non_tuplets;
+    muse::HashSet<std::pair<const ReducedFraction, MidiChord> *> pending_non_tuplets;
     for (const auto &c : non_tuplets) {
         pending_non_tuplets.insert(&*c);
     }
@@ -429,12 +427,13 @@ std::list<TiedTuplet>::iterator erase_back_tied_tuplet(const std::list<TiedTuple
     return back_tied_tuplets.erase(it);
 }
 
-void set_voices_from_prev_bars(
-    std::list<TiedTuplet> &back_tied_tuplets, std::vector<TupletInfo> &tuplets, gtl::btree_set<int> &pending_tuplets,
-    [[maybe_unused]] const ankerl::unordered_dense::set<std::pair<const ReducedFraction, MidiChord> *> &pending_non_tuplets,
-    gtl::btree_map<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> &tuplet_intervals,
-    gtl::btree_map<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> &back_tuplet_intervals,
-    const MidiTimeline<MidiChord> &chords, const ReducedFraction &basic_quant, const ReducedFraction &bar_start) {
+void set_voices_from_prev_bars(std::list<TiedTuplet> &back_tied_tuplets, std::vector<TupletInfo> &tuplets,
+                               muse::BTreeSet<int> &pending_tuplets,
+                               [[maybe_unused]] const muse::HashSet<std::pair<const ReducedFraction, MidiChord> *> &pending_non_tuplets,
+                               muse::BTreeMap<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> &tuplet_intervals,
+                               muse::BTreeMap<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> &back_tuplet_intervals,
+                               const MidiTimeline<MidiChord> &chords, const ReducedFraction &basic_quant,
+                               const ReducedFraction &bar_start) {
     bool loop_again = false;
     do {
         for (auto it = back_tied_tuplets.begin(); it != back_tied_tuplets.end();) {
@@ -478,10 +477,10 @@ void set_voices_from_prev_bars(
     } while (loop_again);
 }
 
-void set_tied_chord_voice(std::list<TiedTuplet> &back_tied_tuplets, std::vector<TupletInfo> &tuplets, gtl::btree_set<int> &pending_tuplets,
-                          ankerl::unordered_dense::set<std::pair<const ReducedFraction, MidiChord> *> &pending_non_tuplets,
-                          gtl::btree_map<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> &tuplet_intervals,
-                          gtl::btree_map<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> &back_tuplet_intervals,
+void set_tied_chord_voice(std::list<TiedTuplet> &back_tied_tuplets, std::vector<TupletInfo> &tuplets, muse::BTreeSet<int> &pending_tuplets,
+                          muse::HashSet<std::pair<const ReducedFraction, MidiChord> *> &pending_non_tuplets,
+                          muse::BTreeMap<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> &tuplet_intervals,
+                          muse::BTreeMap<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> &back_tuplet_intervals,
                           const MidiTimeline<MidiChord> &chords, const std::list<TiedTuplet>::iterator &back_tied_it,
                           bool is_non_tuplet_back_chord, const ReducedFraction &basic_quant, const ReducedFraction &bar_start) {
     const TiedTuplet &tied_tuplet = *back_tied_it;
@@ -523,7 +522,7 @@ void set_tied_chord_voice(std::list<TiedTuplet> &back_tied_tuplets, std::vector<
 }
 
 void set_voice_of_connected_back_tied(std::list<TiedTuplet> &back_tied_tuplets, int tied_tuplet_voice,
-                                      const gtl::btree_set<int> &pending_tuplets, const TupletInfo &tuplet,
+                                      const muse::BTreeSet<int> &pending_tuplets, const TupletInfo &tuplet,
                                       const std::list<TiedTuplet>::iterator &back_tied_it) {
     for (const auto &chord : tuplet.chords) {
         for (auto it2 = std::next(back_tied_it); it2 != back_tied_tuplets.end(); ++it2) {
@@ -540,7 +539,7 @@ void set_voice_of_connected_back_tied(std::list<TiedTuplet> &back_tied_tuplets, 
 
 int find_voice_for_back_tied(const std::pair<const ReducedFraction, MidiChord> &tied_tuplet_chord, int voice_limit,
                              const std::pair<ReducedFraction, ReducedFraction> &back_interval,
-                             gtl::btree_map<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> &back_tuplet_intervals,
+                             muse::BTreeMap<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> &back_tuplet_intervals,
                              const MidiTimeline<MidiChord> &chords, bool is_non_tuplet_back_chord, const ReducedFraction &basic_quant,
                              const ReducedFraction &bar_start) {
     int voice = 0;
@@ -556,9 +555,9 @@ int find_voice_for_back_tied(const std::pair<const ReducedFraction, MidiChord> &
     return voice;
 }
 
-gtl::btree_map<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>>
+muse::BTreeMap<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>>
 find_back_tuplet_intervals(const std::list<TiedTuplet> &back_tied_tuplets, const std::vector<TupletInfo> &tuplets) {
-    gtl::btree_map<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> back_tuplet_intervals;
+    muse::BTreeMap<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> back_tuplet_intervals;
     for (const auto &t : back_tied_tuplets) {
         const auto &tuplet = tuplet_from_id(t.tuplet_id, tuplets);
         const auto interval = std::make_pair(tuplet.on_time, tuplet.on_time + tuplet.len);
@@ -567,9 +566,9 @@ find_back_tuplet_intervals(const std::list<TiedTuplet> &back_tied_tuplets, const
     return back_tuplet_intervals;
 }
 
-void set_back_tied_voices(std::list<TiedTuplet> &back_tied_tuplets, std::vector<TupletInfo> &tuplets, gtl::btree_set<int> &pending_tuplets,
-                          ankerl::unordered_dense::set<std::pair<const ReducedFraction, MidiChord> *> &pending_non_tuplets,
-                          gtl::btree_map<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> &tuplet_intervals,
+void set_back_tied_voices(std::list<TiedTuplet> &back_tied_tuplets, std::vector<TupletInfo> &tuplets, muse::BTreeSet<int> &pending_tuplets,
+                          muse::HashSet<std::pair<const ReducedFraction, MidiChord> *> &pending_non_tuplets,
+                          muse::BTreeMap<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> &tuplet_intervals,
                           const MidiTimeline<MidiChord> &chords, const ReducedFraction &basic_quant, const ReducedFraction &bar_start) {
     auto back_tuplet_intervals = find_back_tuplet_intervals(back_tied_tuplets, tuplets);
 
@@ -623,10 +622,9 @@ void set_back_tied_voices(std::list<TiedTuplet> &back_tied_tuplets, std::vector<
     }
 }
 
-ankerl::unordered_dense::map<std::pair<const ReducedFraction, MidiChord> *, size_t>
-find_mapped_tuplet_chords(const std::vector<TupletInfo> &tuplets) {
+muse::HashMap<std::pair<const ReducedFraction, MidiChord> *, size_t> find_mapped_tuplet_chords(const std::vector<TupletInfo> &tuplets) {
     // <chord address, tupletIndex>
-    ankerl::unordered_dense::map<std::pair<const ReducedFraction, MidiChord> *, size_t> tuplet_chords;
+    muse::HashMap<std::pair<const ReducedFraction, MidiChord> *, size_t> tuplet_chords;
     for (size_t i = 0; i != tuplets.size(); ++i) {
         for (const auto &tuplet_chord : tuplets[i].chords) {
             auto tuplet_it = tuplet_chord.second;
@@ -699,9 +697,9 @@ std::list<TiedTuplet> find_back_tied_tuplets(const MidiTimeline<MidiChord> &chor
                                              const ReducedFraction &basic_quant, int current_bar_index) {
     std::list<TiedTuplet> tied_tuplets;
     // <voice, intervals>
-    gtl::btree_map<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> back_tuplet_intervals;
-    ankerl::unordered_dense::set<int> used_tuplets;
-    ankerl::unordered_dense::set<std::pair<const ReducedFraction, MidiChord> *> used_chords;
+    muse::BTreeMap<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> back_tuplet_intervals;
+    muse::HashSet<int> used_tuplets;
+    muse::HashSet<std::pair<const ReducedFraction, MidiChord> *> used_chords;
     const auto tuplet_chords = find_mapped_tuplet_chords(tuplets);
 
     for (size_t i = 0; i != tuplets.size(); ++i) {
@@ -764,7 +762,7 @@ void assign_voices(std::vector<TupletInfo> &tuplets, std::list<MidiTimeline<Midi
     auto pending_non_tuplets = find_pending_non_tuplets(non_tuplets);
 
     // <voice, intervals>
-    gtl::btree_map<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> tuplet_intervals;
+    muse::BTreeMap<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> tuplet_intervals;
 
     set_back_tied_voices(back_tied_tuplets, tuplets, pending_tuplets, pending_non_tuplets, tuplet_intervals, chords, basic_quant,
                          bar_start);

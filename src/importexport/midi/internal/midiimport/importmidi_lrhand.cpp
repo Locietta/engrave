@@ -26,8 +26,7 @@
 #include <optional>
 #include <vector>
 
-#include <gtl/btree.hpp>
-
+#include "global/btree.h"
 #include "importmidi_chord.h"
 #include "importmidi_fraction.h"
 #include "importmidi_inner.h"
@@ -381,7 +380,7 @@ void add_new_left_hand_chord(MidiTimeline<MidiChord> &left_hand_chords, const st
     left_hand_chords.insert({it->first, left_hand_chord});
 }
 
-void split_into_left_right_hands(gtl::btree_multimap<int, MTrack> &tracks) {
+void split_into_left_right_hands(muse::BTreeMultiMap<int, MTrack> &tracks) {
     std::vector<std::pair<int, MTrack>> additions;
     const auto &opers = midi_import_operations.data()->track_opers;
     for (auto &[key, track] : tracks) {

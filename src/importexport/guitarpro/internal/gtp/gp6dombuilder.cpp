@@ -1,6 +1,4 @@
-
-#include <ankerl/unordered_dense.h>
-
+#include "global/hashmap.h"
 #include "global/log.h"
 #include "gp67dombuilder.h"
 
@@ -9,7 +7,7 @@ using namespace muse;
 namespace mu::iex::guitarpro {
 std::pair<int, std::unique_ptr<GPTrack>> GP67DomBuilder::create_gp6_track(XmlDomNode *track_node,
                                                                           [[maybe_unused]] XmlDomNode *version_node) {
-    static const ankerl::unordered_dense::set<String> s_unused_nodes = {
+    static const muse::HashSet<String> s_unused_nodes = {
         u"Color", // we don't use icon color for the tracks
         u"SystemsDefaultLayout",
         u"SystemsLayout",          // we have our own layout algorithms

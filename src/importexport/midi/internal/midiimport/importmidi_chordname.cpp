@@ -24,8 +24,6 @@
 #include <string>
 #include <vector>
 
-#include <gtl/btree.hpp>
-
 #include "../midishared/midifile.h"
 #include "engraving/dom/dummyparent.h"
 #include "engraving/dom/factory.h"
@@ -33,6 +31,7 @@
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
 #include "engraving/dom/staff.h"
+#include "global/btree.h"
 #include "global/types/string.h"
 #include "importmidi_chord.h"
 #include "importmidi_fraction.h"
@@ -150,7 +149,7 @@ muse::String read_chord_name(const MidiEvent &e) {
     return chord_name;
 }
 
-muse::String find_chord_name(const std::vector<MidiNote> &notes, const gtl::btree_multimap<ReducedFraction, muse::String> &chord_names) {
+muse::String find_chord_name(const std::vector<MidiNote> &notes, const muse::BTreeMultiMap<ReducedFraction, muse::String> &chord_names) {
     for (const MidiNote &note : notes) {
         const auto range = chord_names.equal_range(note.orig_on_time);
         if (range.second == range.first) {
@@ -170,7 +169,7 @@ muse::String find_chord_name(const std::vector<MidiNote> &notes, const gtl::btre
     return muse::String();
 }
 
-void find_chord_names(const gtl::btree_multimap<int, MTrack> &tracks) {
+void find_chord_names(const muse::BTreeMultiMap<int, MTrack> &tracks) {
     auto &data = *midi_import_operations.data();
 
     for (const auto &track : tracks) {
@@ -196,7 +195,7 @@ void set_chord_names(std::vector<MTrack> &tracks) {
     // chords here can have on time very different from the original one
     // before quantization, so we look for original on times
     // that are stored in notes
-    gtl::btree_set<ReducedFraction> used_times; // don't use one tick for chord name twice
+    muse::BTreeSet<ReducedFraction> used_times; // don't use one tick for chord name twice
 
     for (MTrack &track : tracks) {
         for (const auto &chord : track.chords) {

@@ -52,15 +52,15 @@ TEST(MpeFlatMapTest, AssociativeHelpersAcrossStorageTypes) {
         ASSERT_EQ(set.size(), 1u);
         EXPECT_TRUE(muse::contains(set, 2));
     };
-    check_removal(amc::FlatSet<int>{1, 7, 2, 5});
-    check_removal(gtl::btree_multiset<int>{1, 1, 2, 5});
-    check_removal(ankerl::unordered_dense::segmented_set<int>{1, 7, 2, 5});
+    check_removal(muse::FlatSet<int>{1, 7, 2, 5});
+    check_removal(muse::BTreeMultiSet<int>{1, 1, 2, 5});
+    check_removal(muse::SegmentedHashSet<int>{1, 7, 2, 5});
 
-    gtl::btree_multimap<int, int> entries{{2, 20}, {2, 21}, {4, 40}};
+    muse::BTreeMultiMap<int, int> entries{{2, 20}, {2, 21}, {4, 40}};
     EXPECT_EQ(muse::values(entries, 2), (std::vector<int>{20, 21}));
-    EXPECT_EQ(muse::unique_keys(entries), (amc::FlatSet<int>{2, 4}));
+    EXPECT_EQ(muse::unique_keys(entries), (muse::FlatSet<int>{2, 4}));
 
-    const gtl::btree_map<int, int> ordered{{9, 90}, {3, 30}, {7, 70}};
+    const muse::BTreeMap<int, int> ordered{{9, 90}, {3, 30}, {7, 70}};
     ASSERT_NE(muse::find_less(ordered, 7), ordered.end());
     EXPECT_EQ(muse::find_less(ordered, 7)->second, 30);
     ASSERT_NE(muse::find_less_or_equal(ordered, 7), ordered.end());
@@ -276,7 +276,7 @@ TEST(MpeFlatMapTest, SoundMappingProgramTablesAndLookups) {
         {{SoundId::LUTE, {SoundSubCategory::PLUCKED}}, {midi::Program(99, 99)}},
     };
     const ProgramMapping flat_dup(dup_init);
-    gtl::btree_map<SoundMappingKey, midi::Programs> tree_dup;
+    muse::BTreeMap<SoundMappingKey, midi::Programs> tree_dup;
     for (const auto &entry : dup_init) {
         tree_dup.insert({entry.first, entry.second});
     }

@@ -24,14 +24,13 @@
 
 #include <string>
 
-#include <ankerl/unordered_dense.h>
-
 #include "containers.h"
+#include "global/hashmap.h"
 #include "mpe/mpetypes.h"
 #include "types/string.h"
 
 namespace muse::mpe {
-static const ankerl::unordered_dense::map<ArticulationFamily, std::string> articulation_family_names{
+static const muse::HashMap<ArticulationFamily, std::string> articulation_family_names{
     {ArticulationFamily::UNDEFINED, "Undefined"},
     {ArticulationFamily::KEYBOARDS, "KeyboardsArticulation"},
     {ArticulationFamily::STRINGS, "StringsArticulation"},
@@ -40,7 +39,7 @@ static const ankerl::unordered_dense::map<ArticulationFamily, std::string> artic
     {ArticulationFamily::VOICES, "VoicesArticulation"},
 };
 
-static const ankerl::unordered_dense::map<ArticulationType, std::string> articulation_type_names{
+static const muse::HashMap<ArticulationType, std::string> articulation_type_names{
     {ArticulationType::UNDEFINED, "Undefined"},
     {ArticulationType::STANDARD, "Standard"},
     {ArticulationType::STACCATO, "Staccato"},

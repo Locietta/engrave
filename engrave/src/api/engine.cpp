@@ -9,8 +9,6 @@
 #include <new>
 #include <stdexcept>
 
-#include <ankerl/unordered_dense.h>
-
 #include "engrave/src/api/handles.h"
 #include "engrave/src/api/mnx.h"
 #include "engrave/src/api/sniff.h"
@@ -25,6 +23,7 @@
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/text.h"
 #include "engraving/engravingproject.h"
+#include "global/hashmap.h"
 
 namespace engrave {
 namespace {
@@ -209,7 +208,7 @@ std::vector<TemplateInfo> Engine::templates() const {
 std::vector<InstrumentInfo> Engine::instruments() const {
     impl_->state->check_thread();
     std::vector<InstrumentInfo> result;
-    ankerl::unordered_dense::set<std::string> seen;
+    muse::HashSet<std::string> seen;
     for (const auto *group : mu::engraving::instrument_catalog().groups) {
         for (const auto *entry : group->instrument_templates) {
             auto id = entry->id.to_std_string();

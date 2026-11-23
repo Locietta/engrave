@@ -25,9 +25,8 @@
 #include <memory>
 #include <vector>
 
-#include <ankerl/unordered_dense.h>
-
 #include "draw/types/fontstypes.h"
+#include "global/hashmap.h"
 #include "global/io/iodevice.h"
 #include "global/io/path.h"
 
@@ -65,9 +64,9 @@ private:
     const FontInfo &font_info(const FontDataKey &key) const;
     void release(const FontInfo &fi);
 
-    ankerl::unordered_dense::segmented_map<Font::Type, FontDataKey> defaults_;
-    ankerl::unordered_dense::map<FontDataKey, std::vector<FontDataKey>, FontDataKeyHash> family_substitutions_;
-    ankerl::unordered_dense::map<FontDataKey, FontInfo, FontDataKeyHash> fonts_;
+    muse::SegmentedHashMap<Font::Type, FontDataKey> defaults_;
+    muse::HashMap<FontDataKey, std::vector<FontDataKey>, FontDataKeyHash> family_substitutions_;
+    muse::HashMap<FontDataKey, FontInfo, FontDataKeyHash> fonts_;
     // Stable resource storage, including retired versions borrowed by old faces.
     // Every FontsEngine/FontFace using this database must be destroyed first.
     std::vector<std::shared_ptr<const ByteArray>> font_bytes_;

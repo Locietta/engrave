@@ -24,8 +24,7 @@
 #include <cstdint>
 #include <vector>
 
-#include <gtl/btree.hpp>
-
+#include "global/btree.h"
 #include "io/iodevice.h"
 
 //! Keep the MIDI event header's byte type available before including it.
@@ -38,7 +37,7 @@ using MidiIODevice = muse::io::IODevice;
 
 struct MidiTrack {
 private:
-    gtl::btree_multimap<int, MidiEvent> events_value;
+    muse::BTreeMultiMap<int, MidiEvent> events_value;
     int out_channel_value;
     int out_port_value;
     bool drum_track_value;
@@ -49,9 +48,9 @@ public:
 
     bool empty() const;
 
-    const gtl::btree_multimap<int, MidiEvent> &events() const { return events_value; }
+    const muse::BTreeMultiMap<int, MidiEvent> &events() const { return events_value; }
 
-    gtl::btree_multimap<int, MidiEvent> &events() { return events_value; }
+    muse::BTreeMultiMap<int, MidiEvent> &events() { return events_value; }
 
     int out_channel() const { return out_channel_value; }
 

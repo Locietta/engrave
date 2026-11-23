@@ -26,9 +26,6 @@
 #include <string>
 #include <vector>
 
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
-
 #include "../midishared/midifile.h"
 #include "engraving/dom/box.h"
 #include "engraving/dom/dummyparent.h"
@@ -38,6 +35,8 @@
 #include "engraving/dom/measurebase.h"
 #include "engraving/dom/staff.h"
 #include "engraving/dom/text.h"
+#include "global/btree.h"
+#include "global/hashmap.h"
 #include "global/types/string.h"
 #include "importmidi_chord.h"
 #include "importmidi_fraction.h"
@@ -62,8 +61,8 @@ bool is_lyric_text(const std::string &text) {
 
 bool is_lyric_event(const MidiEvent &e) { return e.type() == ME_META && (e.meta_type() == META_TEXT || e.meta_type() == META_LYRIC); }
 
-gtl::btree_multimap<ReducedFraction, std::string> extract_lyrics_from_track(const MidiTrack &track, int division, bool is_division_in_tps) {
-    gtl::btree_multimap<ReducedFraction, std::string> lyrics;
+muse::BTreeMultiMap<ReducedFraction, std::string> extract_lyrics_from_track(const MidiTrack &track, int division, bool is_division_in_tps) {
+    muse::BTreeMultiMap<ReducedFraction, std::string> lyrics;
 
     for (const auto &i : track.events()) {
         const auto &e = i.second;
@@ -84,7 +83,7 @@ gtl::btree_multimap<ReducedFraction, std::string> extract_lyrics_from_track(cons
 #ifndef NDEBUG
 
 bool are_equal_indexes_successive(const std::vector<MTrack> &tracks) {
-    ankerl::unordered_dense::set<int> used_indexes;
+    muse::HashSet<int> used_indexes;
 
     int prev_index = -1;
     for (const MTrack &track : tracks) {
@@ -115,8 +114,8 @@ struct BestTrack {
 // find track to insert lyrics
 // it will be the track with max onTime match cases, except drum tracks
 
-BestTrack find_best_track(const std::vector<MTrack> &tracks, const gtl::btree_multimap<ReducedFraction, std::string> &lyric_track,
-                          const ankerl::unordered_dense::set<int> &used_tracks) {
+BestTrack find_best_track(const std::vector<MTrack> &tracks, const muse::BTreeMultiMap<ReducedFraction, std::string> &lyric_track,
+                          const muse::HashSet<int> &used_tracks) {
     BestTrack best_track;
     int max_matches = 0;
 #ifndef NDEBUG
@@ -193,7 +192,7 @@ std::string remove_slashes(const std::string &text) {
     return str;
 }
 
-void add_title_if_any(const gtl::btree_multimap<ReducedFraction, std::string> &lyric_track, Score *score) {
+void add_title_if_any(const muse::BTreeMultiMap<ReducedFraction, std::string> &lyric_track, Score *score) {
     int text_counter = 0;
     for (const auto &lyric : lyric_track) {
         if (lyric.first == ReducedFraction(0, 1)) {
@@ -208,7 +207,7 @@ void add_title_if_any(const gtl::btree_multimap<ReducedFraction, std::string> &l
     }
 }
 
-void add_lyrics_to_score(const gtl::btree_multimap<ReducedFraction, std::string> &lyric_track,
+void add_lyrics_to_score(const muse::BTreeMultiMap<ReducedFraction, std::string> &lyric_track,
                          const std::vector<std::pair<ReducedFraction, ReducedFraction>> &matched_lyric_times, const Staff *staff_add_to) {
     Score *score = staff_add_to->score();
 
@@ -238,7 +237,7 @@ void extract_lyrics_to_midi_data(const MidiFile *mf) {
 }
 
 void set_initial_lyrics_from_midi_data(const std::vector<MTrack> &tracks) {
-    ankerl::unordered_dense::set<int> used_tracks;
+    muse::HashSet<int> used_tracks;
     auto &data = *midi_import_operations.data();
     const auto &lyric_tracks = data.lyric_tracks;
     if (lyric_tracks.empty()) {
@@ -256,7 +255,7 @@ void set_initial_lyrics_from_midi_data(const std::vector<MTrack> &tracks) {
 }
 
 std::vector<std::pair<ReducedFraction, ReducedFraction>>
-find_matched_lyric_times(const MidiTimeline<MidiChord> &chords, const gtl::btree_multimap<ReducedFraction, std::string> &lyric_track) {
+find_matched_lyric_times(const MidiTimeline<MidiChord> &chords, const muse::BTreeMultiMap<ReducedFraction, std::string> &lyric_track) {
     // <chord quantized on time, chord original on time>
     std::vector<std::pair<ReducedFraction, ReducedFraction>> matched_lyric_times;
 

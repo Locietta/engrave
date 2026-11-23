@@ -28,6 +28,7 @@
 #include "engraving/dom/tie.h"
 #include "engraving/editing/transaction/transaction.h"
 #include "engraving/infrastructure/eidregister.h"
+#include "global/hashmap.h"
 
 namespace engrave {
 namespace {
@@ -74,7 +75,7 @@ std::optional<Fraction> address_tick(const mu::engraving::Fraction &value) {
 
 template <typename Function>
 void for_each_object(MasterScore &master, const Function &func) {
-    ankerl::unordered_dense::set<const EngravingObject *> seen;
+    muse::HashSet<const EngravingObject *> seen;
     const auto visit = [&func, &seen](EngravingObject *object) {
         if (object && mu::engraving::source_object(*object) && seen.insert(object).second) func(*object);
     };
@@ -296,7 +297,7 @@ static void initialize_membership(MasterScore &master) {
 }
 
 void assign_missing_ids(MasterScore &master) {
-    ankerl::unordered_dense::set<const EngravingObject *> document;
+    muse::HashSet<const EngravingObject *> document;
     const bool initial = !master.eid_register()->membership_ready();
     for_each_object(master, [&document, &master](EngravingObject &object) {
         document.insert(&object);

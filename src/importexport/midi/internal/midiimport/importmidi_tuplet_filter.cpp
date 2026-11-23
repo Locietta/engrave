@@ -23,10 +23,9 @@
 
 #include <algorithm>
 
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
-
 #include "engraving/dom/mscore.h"
+#include "global/btree.h"
+#include "global/hashmap.h"
 #include "importmidi_chord.h"
 #include "importmidi_inner.h"
 #include "importmidi_quant.h"
@@ -74,7 +73,7 @@ bool have_common_chords(int i, int j, const std::vector<TupletInfo> &tuplets) {
     if (tuplets.empty()) {
         return false;
     }
-    ankerl::unordered_dense::set<std::pair<const ReducedFraction, MidiChord> *> used_chords;
+    muse::HashSet<std::pair<const ReducedFraction, MidiChord> *> used_chords;
     for (const auto &chord : tuplets[i].chords) {
         used_chords.insert(&*chord.second);
     }
@@ -126,7 +125,7 @@ void remove_useless_tuplets(std::vector<TupletInfo> &tuplets) {
     }
 }
 
-gtl::btree_set<int> find_longest_uncommon_group(const std::vector<TupletInfo> &tuplets, const ReducedFraction &basic_quant) {
+muse::BTreeSet<int> find_longest_uncommon_group(const std::vector<TupletInfo> &tuplets, const ReducedFraction &basic_quant) {
     struct TInfo {
         bool operator<(const TInfo &other) const {
             if (off_time < other.off_time) {
@@ -159,7 +158,7 @@ gtl::btree_set<int> find_longest_uncommon_group(const std::vector<TupletInfo> &t
     // and check for rare case: because of tol when detecting tuplets
     // non-overlapping tuplets can have common chords
 
-    gtl::btree_set<int> indexes;
+    muse::BTreeSet<int> indexes;
     size_t last_selected = 0;
     for (size_t i = 0; i != info.size(); ++i) {
         if (i > 0 && info[i].on_time < info[last_selected].off_time) {
@@ -177,7 +176,7 @@ gtl::btree_set<int> find_longest_uncommon_group(const std::vector<TupletInfo> &t
 
 struct TupletCommon {
     // indexes of tuplets that have common chords with the tuplet with tupletIndex
-    gtl::btree_set<int> common_indexes;
+    muse::BTreeSet<int> common_indexes;
 };
 
 bool are_in_commons(const TupletInfo &t1, const TupletInfo &t2) {
@@ -235,7 +234,7 @@ TupletErrorResult find_tuplet_error(const std::vector<int> &tuplet_indexes, cons
     ReducedFraction sum_length_of_rests{0, 1};
     size_t sum_chord_count = 0;
     int sum_chord_places = 0;
-    ankerl::unordered_dense::set<std::pair<const ReducedFraction, MidiChord> *> used_chords;
+    muse::HashSet<std::pair<const ReducedFraction, MidiChord> *> used_chords;
     std::vector<char> used_indexes(tuplets.size(), 0);
 
     for (int i : tuplet_indexes) {
@@ -272,7 +271,7 @@ TupletErrorResult find_tuplet_error(const std::vector<int> &tuplet_indexes, cons
 #ifndef NDEBUG
 
 bool are_commons_different(const std::vector<int> &selected_commons) {
-    ankerl::unordered_dense::set<int> commons;
+    muse::HashSet<int> commons;
     for (int i : selected_commons) {
         if (commons.find(i) != commons.end()) {
             return false;
@@ -283,7 +282,7 @@ bool are_commons_different(const std::vector<int> &selected_commons) {
 }
 
 bool are_commons_uncommon(const std::vector<int> &selected_commons, const std::vector<TupletCommon> &tuplet_commons) {
-    ankerl::unordered_dense::set<int> commons;
+    muse::HashSet<int> commons;
     for (int i : selected_commons) {
         for (int j : tuplet_commons[i].common_indexes) {
             commons.insert(j);
@@ -300,7 +299,7 @@ bool are_commons_uncommon(const std::vector<int> &selected_commons, const std::v
 #endif
 
 int find_available_voice(size_t tuplet_index, const std::vector<std::pair<ReducedFraction, ReducedFraction>> &tuplet_intervals,
-                         const gtl::btree_map<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> &voice_intervals) {
+                         const muse::BTreeMap<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> &voice_intervals) {
     int voice = 0;
     while (true) {
         const auto it = voice_intervals.find(voice);
@@ -314,9 +313,9 @@ int find_available_voice(size_t tuplet_index, const std::vector<std::pair<Reduce
     return voice;
 }
 
-ankerl::unordered_dense::map<std::pair<const ReducedFraction, MidiChord> *, int>
-prepare_used_first_chords(const std::vector<int> &selected_tuplets, const std::vector<TupletInfo> &tuplets) {
-    ankerl::unordered_dense::map<std::pair<const ReducedFraction, MidiChord> *, int> used_first_chords;
+muse::HashMap<std::pair<const ReducedFraction, MidiChord> *, int> prepare_used_first_chords(const std::vector<int> &selected_tuplets,
+                                                                                            const std::vector<TupletInfo> &tuplets) {
+    muse::HashMap<std::pair<const ReducedFraction, MidiChord> *, int> used_first_chords;
     for (int i : selected_tuplets) {
         if (tuplets[i].first_chord_index != 0) {
             continue;
@@ -348,8 +347,8 @@ std::vector<int> find_unused_indexes(const std::vector<int> &selected_tuplets) {
 
 bool can_use_index(int index_to_check, const std::vector<TupletInfo> &tuplets,
                    const std::vector<std::pair<ReducedFraction, ReducedFraction>> &tuplet_intervals,
-                   const gtl::btree_map<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> &voice_intervals,
-                   const ankerl::unordered_dense::map<std::pair<const ReducedFraction, MidiChord> *, int> &used_first_chords) {
+                   const muse::BTreeMap<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> &voice_intervals,
+                   const muse::HashMap<std::pair<const ReducedFraction, MidiChord> *, int> &used_first_chords) {
     const auto &tuplet = tuplets[index_to_check];
     // check tuplets for common 1st chord
     if (tuplet.first_chord_index == 0) {
@@ -382,7 +381,7 @@ bool are_tuplet_chords_empty(const std::vector<TupletInfo> &tuplets) {
 template <typename Iter>
 bool validate_selected_tuplets(Iter begin_it, Iter end_it, const std::vector<TupletInfo> &tuplets) {
     // <chord address, used voices>
-    ankerl::unordered_dense::map<std::pair<const ReducedFraction, MidiChord> *, size_t> used_chords;
+    muse::HashMap<std::pair<const ReducedFraction, MidiChord> *, size_t> used_chords;
     for (auto index_it = begin_it; index_it != end_it; ++index_it) {
         const auto &tuplet = tuplets[*index_it];
         const auto &chords = tuplet.chords;
@@ -409,7 +408,7 @@ bool validate_selected_tuplets(Iter begin_it, Iter end_it, const std::vector<Tup
 
 void try_update_best_indexes(std::vector<int> &best_tuplet_indexes, TupletErrorResult &min_current_error,
                              const std::vector<int> &selected_tuplets, const std::vector<TupletInfo> &tuplets,
-                             const gtl::btree_map<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> &voice_intervals,
+                             const muse::BTreeMap<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> &voice_intervals,
                              const ReducedFraction &basic_quant) {
     const size_t voice_count = voice_intervals.size();
     const auto error = find_tuplet_error(selected_tuplets, tuplets, voice_count, basic_quant);
@@ -419,11 +418,11 @@ void try_update_best_indexes(std::vector<int> &best_tuplet_indexes, TupletErrorR
     }
 }
 
-gtl::btree_map<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>>
+muse::BTreeMap<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>>
 prepare_voice_intervals(const std::vector<int> &selected_tuplets,
                         const std::vector<std::pair<ReducedFraction, ReducedFraction>> &tuplet_intervals) {
     // <voice, intervals>
-    gtl::btree_map<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> voice_intervals;
+    muse::BTreeMap<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> voice_intervals;
     for (int i : selected_tuplets) {
         int voice = find_available_voice(i, tuplet_intervals, voice_intervals);
         voice_intervals[voice].push_back(tuplet_intervals[i]);
@@ -569,7 +568,7 @@ void find_next_tuplet(std::vector<int> &selected_tuplets, ValidTuplets &valid_tu
     }
 }
 
-void move_uncommon_tuplets_to_end(std::vector<TupletInfo> &tuplets, gtl::btree_set<int> &uncommons) {
+void move_uncommon_tuplets_to_end(std::vector<TupletInfo> &tuplets, muse::BTreeSet<int> &uncommons) {
     int swap_with = int(tuplets.size()) - 1;
     for (int i = swap_with; i >= 0; --i) {
         auto it = uncommons.find(i);
@@ -607,7 +606,7 @@ void remove_extra_tuplets(std::vector<TupletInfo> &tuplets) {
         return;
     }
 
-    gtl::btree_map<TupletErrorResult, size_t> errors;
+    muse::BTreeMap<TupletErrorResult, size_t> errors;
     for (size_t i = 0; i != tuplets.size(); ++i) {
         auto tuplet_error = TupletErrorResult{
             tuplets[i].tuplet_sum_error.numerator() * 1.0 / (tuplets[i].tuplet_sum_error.denominator() * tuplets[i].chords.size()),
@@ -641,7 +640,7 @@ void filter_tuplets(std::vector<TupletInfo> &tuplets, const ReducedFraction &bas
     remove_useless_tuplets(tuplets);
     remove_extra_tuplets(tuplets);
 
-    gtl::btree_set<int> uncommons = find_longest_uncommon_group(tuplets, basic_quant);
+    muse::BTreeSet<int> uncommons = find_longest_uncommon_group(tuplets, basic_quant);
 #ifndef NDEBUG
     assert(validate_selected_tuplets(uncommons.begin(), uncommons.end(), tuplets));
 #endif

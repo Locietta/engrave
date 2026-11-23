@@ -22,7 +22,7 @@
 #ifndef IMPORTMIDI_TEMPO_H
 #define IMPORTMIDI_TEMPO_H
 
-#include <gtl/btree.hpp>
+#include "global/btree.h"
 
 namespace mu::engraving {
 struct Score;
@@ -34,8 +34,8 @@ struct ReducedFraction;
 
 namespace MidiTempo {
 ReducedFraction time2_tick(double time, double ticks_per_sec);
-double find_basic_tempo(const gtl::btree_multimap<int, MTrack> &tracks, bool is_human_performance);
-void set_tempo(const gtl::btree_multimap<int, MTrack> &tracks, engraving::Score *score);
+double find_basic_tempo(const muse::BTreeMultiMap<int, MTrack> &tracks, bool is_human_performance);
+void set_tempo(const muse::BTreeMultiMap<int, MTrack> &tracks, engraving::Score *score);
 } // namespace MidiTempo
 } // namespace mu::iex::midi
 

@@ -28,11 +28,10 @@
 #include <utility>
 #include <vector>
 
-#include <amc/flatset.hpp>
-#include <gtl/btree.hpp>
-
 #include "engraving/dom/sig.h"
+#include "global/btree.h"
 #include "global/containers.h"
+#include "global/flatset.h"
 #include "importmidi_chord.h"
 #include "importmidi_inner.h"
 #include "importmidi_operations.h"
@@ -193,7 +192,7 @@ void remove_overlapping_notes(std::vector<MidiNote> &notes) {
 
 // remove overlapping notes with the same pitch
 
-void remove_overlapping_notes(gtl::btree_multimap<int, MTrack> &tracks) {
+void remove_overlapping_notes(muse::BTreeMultiMap<int, MTrack> &tracks) {
     for (auto &track : tracks) {
         auto &chords = track.second.chords;
         if (chords.empty()) {
@@ -263,7 +262,7 @@ void remove_overlapping_notes(gtl::btree_multimap<int, MTrack> &tracks) {
 
 // check for equal on time values with the same voice that is invalid
 bool are_on_time_values_different(const MidiTimeline<MidiChord> &chords) {
-    gtl::btree_map<ReducedFraction, int> on_time_voices;
+    muse::BTreeMap<ReducedFraction, int> on_time_voices;
     for (const auto &chord_event : chords) {
         const auto it = on_time_voices.find(chord_event.first);
         if (it == on_time_voices.end()) {
@@ -308,7 +307,7 @@ bool is_last_tick_valid(const ReducedFraction &last_tick, const MidiTimeline<Mid
     return true;
 }
 
-bool is_last_tick_valid(const ReducedFraction &last_tick, const gtl::btree_multimap<int, MTrack> &tracks) {
+bool is_last_tick_valid(const ReducedFraction &last_tick, const muse::BTreeMultiMap<int, MTrack> &tracks) {
     for (const auto &track : tracks) {
         if (!(is_last_tick_valid(last_tick, track.second.chords))) {
             return false;
@@ -335,7 +334,7 @@ void set_to_negative(ReducedFraction &v1, ReducedFraction &v2, ReducedFraction &
 }
 
 bool has_notes_with_equal_pitch(const MidiChord &chord1, const MidiChord &chord2) {
-    amc::FlatSet<int> notes1;
+    muse::FlatSet<int> notes1;
     for (const auto &note : chord1.notes) {
         notes1.insert(note.pitch);
     }
@@ -347,7 +346,7 @@ bool has_notes_with_equal_pitch(const MidiChord &chord1, const MidiChord &chord2
     return false;
 }
 
-void collect_chords(gtl::btree_multimap<int, MTrack> &tracks, const ReducedFraction &human_tol_coeff,
+void collect_chords(muse::BTreeMultiMap<int, MTrack> &tracks, const ReducedFraction &human_tol_coeff,
                     const ReducedFraction &non_human_tol_coeff) {
     for (auto &track : tracks) {
         collect_chords(track.second, human_tol_coeff, non_human_tol_coeff);
@@ -479,7 +478,7 @@ void sort_notes_by_length(MidiTimeline<MidiChord> &chords) {
 // and separate them into different chords
 // so all notes inside every chord will have equal lengths
 
-void split_unequal_chords(gtl::btree_multimap<int, MTrack> &tracks) {
+void split_unequal_chords(muse::BTreeMultiMap<int, MTrack> &tracks) {
     for (auto &track : tracks) {
         std::vector<std::pair<ReducedFraction, MidiChord>> new_chord_events;
         auto &chords = track.second.chords;
@@ -529,14 +528,14 @@ ReducedFraction find_min_duration(const ReducedFraction &on_time, const std::vec
     return len;
 }
 
-void merge_chords_with_equal_on_time_and_voice(gtl::btree_multimap<int, MTrack> &tracks) {
+void merge_chords_with_equal_on_time_and_voice(muse::BTreeMultiMap<int, MTrack> &tracks) {
     for (auto &track : tracks) {
         auto &chords = track.second.chords;
         if (chords.empty()) {
             continue;
         }
         // the key is pair<onTime, voice>
-        gtl::btree_map<std::pair<ReducedFraction, int>, MidiTimeline<MidiChord>::iterator> on_times;
+        muse::BTreeMap<std::pair<ReducedFraction, int>, MidiTimeline<MidiChord>::iterator> on_times;
 
         for (auto it = chords.begin(); it != chords.end();) {
             const auto &on_time = it->first;

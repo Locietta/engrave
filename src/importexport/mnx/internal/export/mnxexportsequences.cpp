@@ -28,8 +28,6 @@
 #include <utility>
 #include <vector>
 
-#include <amc/flatset.hpp>
-
 #include "engraving/dom/accidental.h"
 #include "engraving/dom/articulation.h"
 #include "engraving/dom/beam.h"
@@ -56,6 +54,7 @@
 #include "engraving/dom/tuplet.h"
 #include "engraving/dom/utils.h"
 #include "engraving/editing/transpose.h"
+#include "global/hashmap.h"
 #include "internal/shared/mnxtypesconv.h"
 #include "log.h"
 #include "mnxexporter.h"
@@ -132,7 +131,7 @@ static int calc_written_diatonic_delta(const Note *note) {
 //   export lyrics on a chord/rest into mnxEvent
 //---------------------------------------------------------
 
-static void create_lyrics(model::Event &mnx_event, const ChordRest *cr, ankerl::unordered_dense::set<int> &lyric_verses) {
+static void create_lyrics(model::Event &mnx_event, const ChordRest *cr, muse::HashSet<int> &lyric_verses) {
     IF_ASSERT_FAILED(cr) { return; }
 
     const auto lyrics = cr->lyrics();

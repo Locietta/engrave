@@ -219,6 +219,15 @@ cc_library(
     name = "fn_ref",
     hdrs = ["muse/framework/global/fn.h"],
     strip_include_prefix = "muse/framework",
+    visibility = ["//visibility:private"],
+)
+
+cc_library(
+    name = "hashmap",
+    hdrs = ["muse/framework/global/hashmap.h"],
+    strip_include_prefix = "muse/framework",
+    visibility = ["//visibility:private"],
+    deps = ["@unordered_dense"],
 )
 
 cc_library(
@@ -239,8 +248,8 @@ cc_library(
     ],
     deps = [
         ":fn_ref",
+        ":hashmap",
         "@glaze",
-        "@unordered_dense",
     ],
 )
 

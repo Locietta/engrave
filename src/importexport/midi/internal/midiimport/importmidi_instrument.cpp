@@ -30,14 +30,13 @@
 #include <utility>
 #include <vector>
 
-#include <gtl/btree.hpp>
-
 #include "engraving/dom/drumset.h"
 #include "engraving/dom/instrtemplate.h"
 #include "engraving/dom/part.h"
 #include "engraving/dom/score.h"
 #include "engraving/dom/staff.h"
 #include "engraving/editing/editstaffbrackets.h"
+#include "global/btree.h"
 #include "importmidi_chord.h"
 #include "importmidi_inner.h"
 #include "importmidi_operations.h"
@@ -273,8 +272,8 @@ void set_grand_staff_program(std::vector<MTrack> &tracks) {
     }
 }
 
-gtl::btree_set<int> find_all_pitches(const MTrack &track) {
-    gtl::btree_set<int> pitches;
+muse::BTreeSet<int> find_all_pitches(const MTrack &track) {
+    muse::BTreeSet<int> pitches;
     for (const auto &chord : track.chords) {
         for (const auto &note : chord.second.notes) {
             pitches.insert(note.pitch);
@@ -283,8 +282,8 @@ gtl::btree_set<int> find_all_pitches(const MTrack &track) {
     return pitches;
 }
 
-gtl::btree_set<int> find_not_empty_drum_pitches(const Drumset *drumset) {
-    gtl::btree_set<int> drum_pitches = {};
+muse::BTreeSet<int> find_not_empty_drum_pitches(const Drumset *drumset) {
+    muse::BTreeSet<int> drum_pitches = {};
     for (int i = 0; i != ::mu::engraving::drum_instruments; ++i) {
         if (!drumset->name(i).empty()) {
             drum_pitches.insert(i);
@@ -294,7 +293,7 @@ gtl::btree_set<int> find_not_empty_drum_pitches(const Drumset *drumset) {
     return drum_pitches;
 }
 
-static bool has_not_defined_drum_pitch(const gtl::btree_set<int> &track_pitches, const gtl::btree_set<int> &drum_pitches) {
+static bool has_not_defined_drum_pitch(const muse::BTreeSet<int> &track_pitches, const muse::BTreeSet<int> &drum_pitches) {
     for (const int pitch : track_pitches) {
         if (drum_pitches.find(pitch) == drum_pitches.end()) {
             return true;
@@ -322,7 +321,7 @@ static const InstrumentTemplate *find_instrument(const String &group_id, const S
 }
 
 // returns number of pitches which are present in p1, but missing in p2
-static int count_missing_pitches(const gtl::btree_set<int> &p1, const gtl::btree_set<int> &p2) {
+static int count_missing_pitches(const muse::BTreeSet<int> &p1, const muse::BTreeSet<int> &p2) {
     std::vector<int> missing_pitches = {};
     missing_pitches.reserve(p1.size());
 
@@ -333,7 +332,7 @@ static int count_missing_pitches(const gtl::btree_set<int> &p1, const gtl::btree
 
 // find instrument with maximum MIDI program
 // that is less than the track MIDI program, i.e. suitable instrument
-static const InstrumentTemplate *find_closest_instrument(const GM1Program program, const gtl::btree_set<int> &pitches,
+static const InstrumentTemplate *find_closest_instrument(const GM1Program program, const muse::BTreeSet<int> &pitches,
                                                          const bool is_drum_track) {
     int max_less_program = -1;
     int min_missing_pitches = std::numeric_limits<int>::max();
@@ -351,7 +350,7 @@ static const InstrumentTemplate *find_closest_instrument(const GM1Program progra
             if (is_drum_track) {
                 int missing_pitches = std::numeric_limits<int>::max();
                 if (templ->drumset) {
-                    const gtl::btree_set<int> drum_pitches = find_not_empty_drum_pitches(templ->drumset);
+                    const muse::BTreeSet<int> drum_pitches = find_not_empty_drum_pitches(templ->drumset);
                     missing_pitches = count_missing_pitches(pitches, drum_pitches);
                 }
 
@@ -390,7 +389,7 @@ static std::vector<const InstrumentTemplate *> find_instruments_for_program(cons
         suitable_templates.push_back(pref_instr);
     }
 
-    gtl::btree_set<int> track_pitches;
+    muse::BTreeSet<int> track_pitches;
     if (is_drum_track) {
         track_pitches = find_all_pitches(track);
     }
@@ -408,7 +407,7 @@ static std::vector<const InstrumentTemplate *> find_instruments_for_program(cons
             }
 
             if (is_drum_track) {
-                gtl::btree_set<int> drum_pitches;
+                muse::BTreeSet<int> drum_pitches;
                 if (templ->drumset) {
                     drum_pitches = find_not_empty_drum_pitches(templ->drumset);
                 }

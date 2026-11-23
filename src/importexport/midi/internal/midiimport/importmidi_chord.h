@@ -23,8 +23,7 @@
 
 #include <vector>
 
-#include <gtl/btree.hpp>
-
+#include "global/btree.h"
 #include "importexport/midi/internal/midishared/generalmidi.h"
 #include "importmidi_fraction.h"
 #include "importmidi_timeline.h"
@@ -117,14 +116,14 @@ ReducedFraction find_min_duration(const ReducedFraction &on_time, const std::vec
 void sort_notes_by_pitch(MidiTimeline<MidiChord> &chords);
 void sort_notes_by_length(MidiTimeline<MidiChord> &chords);
 
-void collect_chords(gtl::btree_multimap<int, MTrack> &tracks, const ReducedFraction &human_tol_coeff,
+void collect_chords(muse::BTreeMultiMap<int, MTrack> &tracks, const ReducedFraction &human_tol_coeff,
                     const ReducedFraction &non_human_tol_coeff);
 
 void collect_chords(MTrack &track, const ReducedFraction &human_tol_coeff, const ReducedFraction &non_human_tol_coeff);
 
-void remove_overlapping_notes(gtl::btree_multimap<int, MTrack> &tracks);
-void merge_chords_with_equal_on_time_and_voice(gtl::btree_multimap<int, MTrack> &tracks);
-void split_unequal_chords(gtl::btree_multimap<int, MTrack> &tracks);
+void remove_overlapping_notes(muse::BTreeMultiMap<int, MTrack> &tracks);
+void merge_chords_with_equal_on_time_and_voice(muse::BTreeMultiMap<int, MTrack> &tracks);
+void split_unequal_chords(muse::BTreeMultiMap<int, MTrack> &tracks);
 int chord_average_pitch(const std::vector<MidiNote> &notes, int beg, int end);
 int chord_average_pitch(const std::vector<MidiNote> &notes);
 
@@ -144,7 +143,7 @@ bool are_on_time_values_different(const MidiTimeline<MidiChord> &chords);
 bool are_bar_indexes_successive(const MidiTimeline<MidiChord> &chords);
 bool are_notes_long_enough(const MidiTimeline<MidiChord> &chords);
 bool is_last_tick_valid(const ReducedFraction &last_tick, const MidiTimeline<MidiChord> &chords);
-bool is_last_tick_valid(const ReducedFraction &last_tick, const gtl::btree_multimap<int, MTrack> &tracks);
+bool is_last_tick_valid(const ReducedFraction &last_tick, const muse::BTreeMultiMap<int, MTrack> &tracks);
 bool are_bar_indexes_set(const MidiTimeline<MidiChord> &chords);
 
 #endif

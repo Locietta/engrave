@@ -24,11 +24,10 @@
 #include <algorithm>
 #include <vector>
 
-#include <gtl/btree.hpp>
-
 #include "../midishared/midifile.h"
 #include "engraving/dom/durationtype.h"
 #include "engraving/dom/sig.h"
+#include "global/btree.h"
 #include "importmidi_chord.h"
 #include "importmidi_inner.h"
 #include "importmidi_meter.h"
@@ -239,7 +238,7 @@ void minimize_number_of_rests(MidiTimeline<MidiChord> &chords, const TimeSigMap 
     }
 }
 
-void simplify_durations(gtl::btree_multimap<int, MTrack> &tracks, const TimeSigMap *sigmap, bool simplify_drum_tracks) {
+void simplify_durations(muse::BTreeMultiMap<int, MTrack> &tracks, const TimeSigMap *sigmap, bool simplify_drum_tracks) {
     auto &opers = midi_import_operations;
 
     for (auto &track : tracks) {
@@ -268,11 +267,11 @@ void simplify_durations(gtl::btree_multimap<int, MTrack> &tracks, const TimeSigM
     }
 }
 
-void simplify_durations_for_drums(gtl::btree_multimap<int, MTrack> &tracks, const TimeSigMap *sigmap) {
+void simplify_durations_for_drums(muse::BTreeMultiMap<int, MTrack> &tracks, const TimeSigMap *sigmap) {
     simplify_durations(tracks, sigmap, true);
 }
 
-void simplify_durations_not_drums(gtl::btree_multimap<int, MTrack> &tracks, const TimeSigMap *sigmap) {
+void simplify_durations_not_drums(muse::BTreeMultiMap<int, MTrack> &tracks, const TimeSigMap *sigmap) {
     simplify_durations(tracks, sigmap, false);
 }
 }} // namespace mu::iex::midi::Simplify

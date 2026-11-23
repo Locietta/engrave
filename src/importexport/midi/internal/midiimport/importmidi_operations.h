@@ -26,10 +26,9 @@
 #include <string>
 #include <vector>
 
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
-
 #include "../midishared/midifile.h"
+#include "global/btree.h"
+#include "global/hashmap.h"
 #include "global/types/bytearray.h"
 #include "global/types/string.h"
 #include "importmidi_inner.h"
@@ -102,7 +101,7 @@ struct TrackOp {
 private:
     // <track index, operation value>
     // if track index == -1 then it's default value (for all tracks)
-    ankerl::unordered_dense::map<int, T> operation;
+    muse::HashMap<int, T> operation;
     bool can_redefine_default_later_value;
 };
 
@@ -192,7 +191,7 @@ struct Opers {
 };
 
 struct HumanBeatData {
-    gtl::btree_set<ReducedFraction> beat_set;
+    muse::BTreeSet<ReducedFraction> beat_set;
     // to adapt human beats to a different time sig, if necessary
     int added_first_beats = 0;
     int added_last_beats = 0;
@@ -218,8 +217,8 @@ struct FileData {
     // tracks of <tick, lyric fragment> from karaoke files: there can be
     // multiple lyric tracks, and lyric track count != MIDI track count in
     // general.
-    std::vector<gtl::btree_multimap<ReducedFraction, std::string>> lyric_tracks;
-    gtl::btree_multimap<ReducedFraction, muse::String> chord_names;
+    std::vector<muse::BTreeMultiMap<ReducedFraction, std::string>> lyric_tracks;
+    muse::BTreeMultiMap<ReducedFraction, muse::String> chord_names;
     HumanBeatData human_beat_data;
 };
 
@@ -245,7 +244,7 @@ private:
     std::string midi_operations_file;
     int current_track_value = -1;
 
-    gtl::btree_map<std::string, FileData> data_value; // <file name, tracks data>
+    muse::BTreeMap<std::string, FileData> data_value; // <file name, tracks data>
 };
 
 // scoped setter of current track

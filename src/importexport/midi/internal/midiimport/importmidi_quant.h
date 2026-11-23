@@ -22,8 +22,7 @@
 #ifndef IMPORTMIDI_QUANT_H
 #define IMPORTMIDI_QUANT_H
 
-#include <gtl/btree.hpp>
-
+#include "global/btree.h"
 #include "importmidi_operation.h"
 #include "importmidi_timeline.h"
 
@@ -80,7 +79,7 @@ ReducedFraction find_off_time_tuplet_quant_error(const ReducedFraction &on_time,
 ReducedFraction find_off_time_quant_error(const std::pair<const ReducedFraction, MidiChord> &chord, const ReducedFraction &off_time,
                                           const ReducedFraction &basic_quant);
 
-void set_if_human_performance(const gtl::btree_multimap<int, MTrack> &tracks, engraving::TimeSigMap *sigmap);
+void set_if_human_performance(const muse::BTreeMultiMap<int, MTrack> &tracks, engraving::TimeSigMap *sigmap);
 
 ReducedFraction quantize_value(const ReducedFraction &value, const ReducedFraction &quant);
 

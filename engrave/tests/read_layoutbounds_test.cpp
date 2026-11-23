@@ -1,5 +1,6 @@
 #include "engraving/dom/dummyparent.h"
 #include "engraving/dom/guitarbend.h"
+#include "global/hashmap.h"
 #include "read_test_fixture.h"
 
 using namespace read_test;
@@ -545,7 +546,7 @@ TEST(LayoutBounds, MultiPageRetirementPreservesUnrelatedPageBspAndBinarySearches
 
     // Collect >= 17 items strictly on page 1 so BspTree::contains_any exercises binary_search.
     std::vector<const EngravingItem *> page1_only;
-    ankerl::unordered_dense::set<const EngravingItem *> page0_set(page0_items.begin(), page0_items.end());
+    muse::HashSet<const EngravingItem *> page0_set(page0_items.begin(), page0_items.end());
     for (const auto *item : page1_items) {
         if (!page0_set.contains(item)) page1_only.push_back(item);
         if (page1_only.size() >= 18) break;

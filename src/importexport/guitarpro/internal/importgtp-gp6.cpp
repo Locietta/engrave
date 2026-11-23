@@ -23,8 +23,6 @@
 #include <algorithm>
 #include <stdexcept>
 
-#include <ankerl/unordered_dense.h>
-
 #include "engraving/dom/arpeggio.h"
 #include "engraving/dom/articulation.h"
 #include "engraving/dom/barline.h"
@@ -71,6 +69,7 @@
 #include "engraving/dom/tuplet.h"
 #include "engraving/dom/volta.h"
 #include "engraving/types/symid.h"
+#include "global/hashmap.h"
 #include "gtp/gp67dombuilder.h"
 #include "gtp/gpconverter.h"
 #include "importgtp.h"
@@ -97,7 +96,7 @@ struct GpxEndOfData : std::runtime_error {
 };
 } // namespace
 
-const ankerl::unordered_dense::map<std::string, std::string> GuitarPro6::instrument_mapping = {
+const muse::HashMap<std::string, std::string> GuitarPro6::instrument_mapping = {
     {"2Mrcs", "maracas"},
     {"a-bass4", "acoustic-bass"},
     {"a-bass5", "acoustic-bass"},

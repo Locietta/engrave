@@ -10,8 +10,6 @@
 #include <tuple>
 #include <utility>
 
-#include <ankerl/unordered_dense.h>
-
 #include "engrave/src/api/handles.h"
 #include "engrave/src/api/pid_support.h"
 #include "engrave/src/api/state.h"
@@ -29,6 +27,7 @@
 #include "engraving/editing/transaction/transaction.h"
 #include "engraving/infrastructure/eidregister.h"
 #include "global/flatmap.h"
+#include "global/hashmap.h"
 #include "global/io/buffer.h"
 #include "global/serialization/zipreader.h"
 
@@ -109,7 +108,7 @@ bool same_layout(const std::vector<std::string> &before, const std::vector<std::
 
 std::string inv(Document &document) {
     MasterScore &master = master_of(document);
-    ankerl::unordered_dense::set<const EngravingObject *> objects;
+    muse::HashSet<const EngravingObject *> objects;
     for (EngravingObject *object : document_objects(master)) objects.insert(object);
     for (const auto &[eid, object] : master.eid_register()->entries()) {
         if (object->eid() != eid) return eid.to_std_string() + ": the reverse entry disagrees";

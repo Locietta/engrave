@@ -11,7 +11,6 @@
 #include <tuple>
 #include <vector>
 
-#include <ankerl/unordered_dense.h>
 #include <gtest/gtest.h>
 
 #include "engrave/src/api/handles.h"
@@ -59,6 +58,7 @@
 #include "engraving/editing/transaction/transaction.h"
 #include "engraving/infrastructure/mscreader.h"
 #include "engraving/style/style.h"
+#include "global/hashmap.h"
 #include "global/io/buffer.h"
 #include "global/serialization/zipreader.h"
 #include "global/serialization/zipwriter.h"
@@ -872,7 +872,7 @@ TEST(Edit, ReducesNoteEntryTickAndDurationBeforeSplittingRests) {
 
 TEST(Edit, InstrumentCatalogMatchesAddedParts) {
     const auto catalog = g_engine->instruments();
-    ankerl::unordered_dense::set<std::string> ids;
+    muse::HashSet<std::string> ids;
     for (const auto &entry : catalog) EXPECT_TRUE(ids.insert(entry.id).second) << entry.id;
 
     auto made = g_engine->create_document({.template_id = "Treble_Clef"});

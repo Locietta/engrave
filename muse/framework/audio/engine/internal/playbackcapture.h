@@ -7,8 +7,7 @@
 #include <ostream>
 #include <type_traits>
 
-#include <ankerl/unordered_dense.h>
-
+#include "global/hashmap.h"
 #include "global/unique_fn.h"
 #include "mpe/events.h"
 #include "mpe/flatevents.h"
@@ -18,7 +17,7 @@ struct PlaybackCapture {
     // Dump A of each export track, from the flat store (with its per-note dumps), in export order
     inline static muse::UniqueFn<void(std::uint64_t, const muse::String &, const mpe::TrackEvents &) const> track;
     inline static std::ostream *synth = nullptr;
-    inline static ankerl::unordered_dense::map<const void *, unsigned> ids;
+    inline static muse::HashMap<const void *, unsigned> ids;
 
     static unsigned id(const void *source) {
         auto [it, inserted] = ids.emplace(source, static_cast<unsigned>(ids.size()));

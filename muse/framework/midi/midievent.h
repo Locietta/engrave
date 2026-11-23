@@ -28,10 +28,9 @@
 #include <cstring>
 #include <string>
 
-#include <amc/flatset.hpp>
-#include <ankerl/unordered_dense.h>
-
 #include "containers.h"
+#include "global/flatset.h"
+#include "global/hashmap.h"
 
 namespace muse::midi {
 using channel_t = uint8_t;
@@ -240,15 +239,15 @@ struct Event {
 
     bool is_channel_voice20() const { return message_type() == MessageType::CHANNEL_VOICE20; }
 
-    bool is_message_type_in(const amc::FlatSet<MessageType> &types) const { return types.find(message_type()) != types.end(); }
+    bool is_message_type_in(const muse::FlatSet<MessageType> &types) const { return types.find(message_type()) != types.end(); }
 
-    bool is_opcode_in(const amc::FlatSet<Opcode> &opcodes) const { return opcodes.find(opcode()) != opcodes.end(); }
+    bool is_opcode_in(const muse::FlatSet<Opcode> &opcodes) const { return opcodes.find(opcode()) != opcodes.end(); }
 
     //! check UMP for correct structure
     bool is_valid() const {
         switch (message_type()) {
             case MessageType::UTILITY: {
-                amc::FlatSet<UtilityStatus> statuses = {UtilityStatus::NO_OPERATION, UtilityStatus::JR_CLOCK, UtilityStatus::JR_TIMESTAMP};
+                muse::FlatSet<UtilityStatus> statuses = {UtilityStatus::NO_OPERATION, UtilityStatus::JR_CLOCK, UtilityStatus::JR_TIMESTAMP};
                 return statuses.find(static_cast<UtilityStatus>(status())) != statuses.end();
             }
 
@@ -872,7 +871,7 @@ struct Event {
     }
 
     std::string opcode_string() const {
-        static const ankerl::unordered_dense::map<Opcode, std::string> m = {
+        static const muse::HashMap<Opcode, std::string> m = {
             {Opcode::REGISTERED_PER_NOTE_CONTROLLER, std::string("Opcode::RegisteredPerNoteController")},
             {Opcode::ASSIGNABLE_PER_NOTE_CONTROLLER, std::string("Opcode::AssignablePerNoteController")},
             {Opcode::REGISTERED_CONTROLLER, std::string("Opcode::RegisteredController")},
@@ -1044,13 +1043,13 @@ struct Event {
     }
 
 private:
-    void assert_message_type([[maybe_unused]] const amc::FlatSet<MessageType> &supported_types) const {
+    void assert_message_type([[maybe_unused]] const muse::FlatSet<MessageType> &supported_types) const {
         assert(is_message_type_in(supported_types));
     }
 
     void assert_channel_voice() const { assert(is_channel_voice()); }
 
-    void assert_opcode([[maybe_unused]] const amc::FlatSet<Opcode> &supported_opcodes) const { assert(is_opcode_in(supported_opcodes)); }
+    void assert_opcode([[maybe_unused]] const muse::FlatSet<Opcode> &supported_opcodes) const { assert(is_opcode_in(supported_opcodes)); }
 
     static uint32_t scale_up(uint32_t src_val, size_t src_bits, size_t dst_bits) {
         // simple bit shift

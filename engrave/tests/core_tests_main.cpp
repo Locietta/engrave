@@ -5,10 +5,10 @@
 #include <span>
 #include <string_view>
 
-#include <ankerl/unordered_dense.h>
 #include <gtest/gtest.h>
 
 #include "core_test_env.h"
+#include "global/hashmap.h"
 #include "handles_test_fixture.h"
 #include "read_test_fixture.h"
 
@@ -17,8 +17,8 @@ namespace engrave::test {
 namespace {
 
 bool looks_like_score(const std::filesystem::path &path) {
-    static const ankerl::unordered_dense::set<std::string> extensions = {".mscx", ".mscz", ".musicxml", ".mxl", ".mid", ".midi",
-                                                                         ".gp",   ".gp3",  ".gp4",      ".gp5", ".gpx", ".ptb"};
+    static const muse::HashSet<std::string> extensions = {".mscx", ".mscz", ".musicxml", ".mxl", ".mid", ".midi",
+                                                          ".gp",   ".gp3",  ".gp4",      ".gp5", ".gpx", ".ptb"};
     return extensions.contains(path.extension().string());
 }
 

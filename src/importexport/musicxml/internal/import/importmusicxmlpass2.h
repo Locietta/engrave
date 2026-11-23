@@ -24,11 +24,10 @@
 
 #include <array>
 
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
-
 #include "../shared/musicxmlsupport.h"
 #include "../shared/musicxmltypes.h"
+#include "global/btree.h"
+#include "global/hashmap.h"
 #include "importmusicxmlpass1.h"
 #include "musicxmltupletstate.h"
 
@@ -89,8 +88,8 @@ struct MusicXmlDynamic {
 
 using GraceChordList = std::vector<engraving::Chord *>;
 using FiguredBassList = std::vector<engraving::FiguredBass *>;
-using Tuplets = gtl::btree_map<muse::String, engraving::Tuplet *>;
-using Beams = gtl::btree_map<muse::String, engraving::Beam *>;
+using Tuplets = muse::BTreeMap<muse::String, engraving::Tuplet *>;
+using Beams = muse::BTreeMap<muse::String, engraving::Beam *>;
 
 //---------------------------------------------------------
 //   MusicXmlSlash
@@ -148,7 +147,7 @@ private:
     State state_;
 };
 
-typedef gtl::btree_map<engraving::SLine *, std::pair<int, int>> MusicXmlSpannerMap;
+typedef muse::BTreeMap<engraving::SLine *, std::pair<int, int>> MusicXmlSpannerMap;
 
 //---------------------------------------------------------
 //   MusicXmlSpannerDesc
@@ -202,7 +201,7 @@ struct HarmonyDesc {
     HarmonyDesc() : track_(muse::nidx), harmony_(nullptr), fret_diagram_(nullptr) {}
 };
 
-using HarmonyMap = gtl::btree_multimap<int, HarmonyDesc>;
+using HarmonyMap = muse::BTreeMultiMap<int, HarmonyDesc>;
 
 //---------------------------------------------------------
 //   MusicXmlLyricsExtend
@@ -217,7 +216,7 @@ struct MusicXmlLyricsExtend {
                     const engraving::Lyrics *prev_added_lyrics);
 
 private:
-    gtl::btree_set<engraving::Lyrics *> lyrics_;
+    muse::BTreeSet<engraving::Lyrics *> lyrics_;
 };
 
 struct GraceNoteLyrics {
@@ -250,9 +249,9 @@ struct MusicXmlParserLyric {
     MusicXmlParserLyric(const LyricNumberHandler lyric_number_handler, muse::XmlStreamReader &e, engraving::Score *score,
                         const MusicXmlConfiguration &configuration, MusicXmlLogger *logger, bool is_voice_staff);
 
-    gtl::btree_set<engraving::Lyrics *> extended_lyrics() const { return extended_lyrics_; }
+    muse::BTreeSet<engraving::Lyrics *> extended_lyrics() const { return extended_lyrics_; }
 
-    gtl::btree_map<int, engraving::Lyrics *> numbered_lyrics() const { return numbered_lyrics_; }
+    muse::BTreeMap<int, engraving::Lyrics *> numbered_lyrics() const { return numbered_lyrics_; }
 
     std::vector<engraving::Sticking *> inferred_stickings() const { return inferred_stickings_; }
 
@@ -265,8 +264,8 @@ private:
     const engraving::Score *score_ = nullptr; // the score
     const MusicXmlConfiguration &configuration_;
     MusicXmlLogger *logger_ = nullptr;                         // Error logger
-    gtl::btree_map<int, engraving::Lyrics *> numbered_lyrics_; // lyrics with valid number
-    gtl::btree_set<engraving::Lyrics *> extended_lyrics_;      // lyrics with the extend flag set
+    muse::BTreeMap<int, engraving::Lyrics *> numbered_lyrics_; // lyrics with valid number
+    muse::BTreeSet<engraving::Lyrics *> extended_lyrics_;      // lyrics with the extend flag set
     std::vector<engraving::Sticking *> inferred_stickings_;    // stickings with valid number
     double default_y_ = 0.0;
     double relative_y_ = 0.0;
@@ -296,7 +295,7 @@ struct Notation {
     void add_attribute(const muse::String &name, const muse::String &value);
     muse::String attribute(const muse::String &name) const;
 
-    const gtl::btree_map<muse::String, muse::String> &attributes() const { return attributes_; }
+    const muse::BTreeMap<muse::String, muse::String> &attributes() const { return attributes_; }
 
     muse::String name() const { return name_; }
 
@@ -328,7 +327,7 @@ private:
     engraving::SymId sym_id_ = engraving::SymId::NO_SYM;
     muse::String sub_type_;
     muse::String text_;
-    gtl::btree_map<muse::String, muse::String> attributes_;
+    muse::BTreeMap<muse::String, muse::String> attributes_;
     bool visible_ = true;
 };
 
@@ -365,14 +364,14 @@ using HairpinsStack = std::array<MusicXmlExtendedSpannerDesc, ::mu::iex::musicxm
 using InferredHairpinsStack = std::vector<engraving::Hairpin *>;
 using InferredTempoLineStack = std::vector<engraving::GradualTempoChange *>;
 using SpannerStack = std::array<MusicXmlExtendedSpannerDesc, ::mu::iex::musicxml::max_number_level>;
-using SpannerSet = gtl::btree_set<engraving::Spanner *>;
-using DelayedArpMap = gtl::btree_map<int, DelayedArpeggio>;
-using SegnoStack = gtl::btree_map<int, engraving::Marker *>;
-using SystemElements = gtl::btree_multimap<int, engraving::EngravingItem *>;
+using SpannerSet = muse::BTreeSet<engraving::Spanner *>;
+using DelayedArpMap = muse::BTreeMap<int, DelayedArpeggio>;
+using SegnoStack = muse::BTreeMap<int, engraving::Marker *>;
+using SystemElements = muse::BTreeMultiMap<int, engraving::EngravingItem *>;
 
 // Ties are identified by the pitch and track of their first note
 typedef std::pair<int, engraving::track_idx_t> TieLocation;
-using MusicXmlTieMap = gtl::btree_map<TieLocation, engraving::Tie *>;
+using MusicXmlTieMap = muse::BTreeMap<TieLocation, engraving::Tie *>;
 
 //---------------------------------------------------------
 //   MusicXmlParserNotations
@@ -520,7 +519,7 @@ private:
     engraving::FretDiagram *frame();
     void harmony(const muse::String &part_id, engraving::Measure *measure, const engraving::Fraction &s_time, HarmonyMap &harmony_map);
     engraving::Accidental *accidental();
-    void beam(ankerl::unordered_dense::map<int, muse::String> &beam_types);
+    void beam(muse::HashMap<int, muse::String> &beam_types);
     void duration(engraving::Fraction &dura);
     void forward(engraving::Fraction &dura);
     void backup(engraving::Fraction &dura);

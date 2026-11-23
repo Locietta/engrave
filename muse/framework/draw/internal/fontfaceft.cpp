@@ -24,8 +24,9 @@
 #include <cmath>
 #include <utility>
 
-#include <ankerl/unordered_dense.h>
 #include <ft2build.h>
+
+#include "global/hashmap.h"
 
 #include FT_FREETYPE_H
 #include FT_GLYPH_H
@@ -90,8 +91,8 @@ struct muse::draw::FData {
     std::span<const uint8_t> font_data;
     FT_Face face = nullptr;
     hb_font_t *hb_font = nullptr;
-    ankerl::unordered_dense::segmented_map<glyph_idx_t, GlyphMetrics> glyphs_metrics;
-    ankerl::unordered_dense::segmented_map<glyph_idx_t, SymbolMetrics> symbol_metrics;
+    muse::SegmentedHashMap<glyph_idx_t, GlyphMetrics> glyphs_metrics;
+    muse::SegmentedHashMap<glyph_idx_t, SymbolMetrics> symbol_metrics;
     FT_Size_Metrics metrics;
     HeightMetrics height_metrics;
 };

@@ -26,9 +26,8 @@
 #include <utility>
 #include <vector>
 
-#include <gtl/btree.hpp>
-
 #include "engraving/types/types.h"
+#include "global/btree.h"
 #include "global/types/string.h"
 #include "importexport/midi/internal/midishared/generalmidi.h"
 #include "importmidi_chord.h"
@@ -107,7 +106,7 @@ struct MTrack {
     bool is_division_in_tps = false; // ticks per second
     bool had_initial_notes = false;
 
-    gtl::btree_multimap<ReducedFraction, int> volumes;
+    muse::BTreeMultiMap<ReducedFraction, int> volumes;
     MidiTimeline<MidiChord> chords;
     MidiTimeline<MidiTuplet::TupletData> tuplets; // <tupletOnTime, ...>
 
@@ -135,12 +134,12 @@ struct TupletInfo {
     ReducedFraction len = {-1, 1};
     int tuplet_number = -1;
     // <chord onTime, chord iterator>
-    gtl::btree_map<ReducedFraction, MidiTimeline<MidiChord>::iterator> chords;
+    muse::BTreeMap<ReducedFraction, MidiTimeline<MidiChord>::iterator> chords;
     ReducedFraction tuplet_sum_error;
     ReducedFraction regular_sum_error;
     ReducedFraction sum_length_of_rests;
     int first_chord_index = -1;
-    gtl::btree_map<ReducedFraction, int> staccato_chords; // <onTime, note index>
+    muse::BTreeMap<ReducedFraction, int> staccato_chords; // <onTime, note index>
 };
 
 bool have_intersection(const std::pair<ReducedFraction, ReducedFraction> &interval1,

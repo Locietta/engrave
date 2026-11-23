@@ -26,8 +26,6 @@
 
 #include "musicxmlsupport.h"
 
-#include <ankerl/unordered_dense.h>
-
 #include "engraving/dom/accidental.h"
 #include "engraving/dom/chordlist.h"
 #include "engraving/dom/harmony.h"
@@ -36,6 +34,7 @@
 #include "engraving/types/symnames.h"
 #include "engraving/types/types.h"
 #include "global/flatmap.h"
+#include "global/hashmap.h"
 #include "global/serialization/xmlstreamreader.h"
 #include "log.h"
 #include "translation.h"
@@ -257,7 +256,7 @@ String acc_sym_id2_smufl_music_xml_string(const SymId id) { return String::from_
 
 SymId music_xml_string2acc_sym_id(const String mxml_name, const String smufl) {
     // map MusicXML accidental name to MuseScore enum SymId
-    static const ankerl::unordered_dense::map<String, SymId> map{
+    static const muse::HashMap<String, SymId> map{
         {u"sharp", SymId::ACCIDENTAL_SHARP},
         {u"natural", SymId::ACCIDENTAL_NATURAL},
         {u"flat", SymId::ACCIDENTAL_FLAT},
@@ -446,7 +445,7 @@ String accidental_type2_smufl_music_xml_string(const AccidentalType type) {
 
 AccidentalType music_xml_string2accidental_type(const String mxml_name, const String smufl) {
     // map MusicXML accidental name to MuseScore enum AccidentalType
-    static const ankerl::unordered_dense::map<String, AccidentalType> map{
+    static const muse::HashMap<String, AccidentalType> map{
         {u"sharp", AccidentalType::SHARP},
         {u"natural", AccidentalType::NATURAL},
         {u"flat", AccidentalType::FLAT},
@@ -518,7 +517,7 @@ AccidentalType music_xml_string2accidental_type(const String mxml_name, const St
 
 String music_xml_accidental_text_to_char(const String mxml_name) {
     // map MusicXML accidental name to MuseScore enum AccidentalType
-    static const ankerl::unordered_dense::map<String, String> map{
+    static const muse::HashMap<String, String> map{
         {u"sharp", u"♯"},
         {u"natural", u"♮"},
         {u"flat", u"♭"},

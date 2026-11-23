@@ -22,10 +22,9 @@
 
 #pragma once
 
-#include <ankerl/unordered_dense.h>
-#include <gtl/btree.hpp>
-
 #include "engraving/engravingerrors.h"
+#include "global/btree.h"
+#include "global/hashmap.h"
 #include "global/serialization/xmlstreamreader.h"
 #include "musicxmlpart.h"
 #include "musicxmltupletstate.h"
@@ -89,8 +88,8 @@ struct MusicXmlPartGroup {
 };
 
 using MusicXmlPartGroupList = std::vector<MusicXmlPartGroup>;
-typedef ankerl::unordered_dense::map<muse::String, engraving::Part *> PartMap;
-using MusicXmlPartGroupMap = gtl::btree_map<int, MusicXmlPartGroup>;
+typedef muse::HashMap<muse::String, engraving::Part *> PartMap;
+using MusicXmlPartGroupMap = muse::BTreeMap<int, MusicXmlPartGroup>;
 
 //---------------------------------------------------------
 //   CreditWords
@@ -228,9 +227,8 @@ struct MusicXmlParserPass1 {
     static engraving::VBox *create_and_add_v_box_for_credit_words(engraving::Score *score, engraving::Fraction tick);
     void create_default_header(engraving::Score *const score);
     void create_measures_and_vboxes(engraving::Score *const score, const std::vector<engraving::Fraction> &ml,
-                                    const std::vector<engraving::Fraction> &ms,
-                                    const ankerl::unordered_dense::set<int> &system_start_measure_nrs,
-                                    const ankerl::unordered_dense::set<int> &page_start_measure_nrs, const CreditWordsList &cr_words,
+                                    const std::vector<engraving::Fraction> &ms, const muse::HashSet<int> &system_start_measure_nrs,
+                                    const muse::HashSet<int> &page_start_measure_nrs, const CreditWordsList &cr_words,
                                     const muse::Size &page_size);
 
     void set_has_inferred_header_text(bool b) { has_inferred_header_text_ = b; }
@@ -241,7 +239,7 @@ struct MusicXmlParserPass1 {
 
     void insert_adjusted_duration(engraving::Fraction key, engraving::Fraction value) { adjusted_durations_.insert({key, value}); }
 
-    gtl::btree_map<engraving::Fraction, engraving::Fraction> &adjusted_durations() { return adjusted_durations_; }
+    muse::BTreeMap<engraving::Fraction, engraving::Fraction> &adjusted_durations() { return adjusted_durations_; }
 
     void insert_seen_denominator(int val) { seen_denominators_.emplace(val); }
 
@@ -258,17 +256,17 @@ private:
 
     // generic pass 1 data
     muse::XmlStreamReader e_;
-    MusicXmlExporterSoftware exporter_software_ = MusicXmlExporterSoftware::OTHER;          // Software which exported the file
-    int divs_ = 0;                                                                          // Current MusicXML divisions value
-    ankerl::unordered_dense::segmented_map<muse::String, MusicXmlPart> parts_;              // Parts data, mapped on part id
-    ankerl::unordered_dense::set<int> system_start_measure_nrs_;                            // Measure numbers of measures starting a page
-    ankerl::unordered_dense::set<int> page_start_measure_nrs_;                              // Measure numbers of measures starting a page
-    std::vector<engraving::Fraction> measure_length_;                                       // Length of each measure
-    std::vector<engraving::Fraction> measure_start_;                                        // Start time of each measure
-    CreditWordsList credits_;                                                               // All credits collected
-    PartMap part_map_;                                                                      // TODO merge into MusicXmlPart ??
-    ankerl::unordered_dense::segmented_map<muse::String, MusicXmlInstruments> instruments_; // instruments for each part, mapped on part id
-    engraving::Score *score_ = nullptr;                                                     // MuseScore score
+    MusicXmlExporterSoftware exporter_software_ = MusicXmlExporterSoftware::OTHER; // Software which exported the file
+    int divs_ = 0;                                                                 // Current MusicXML divisions value
+    muse::SegmentedHashMap<muse::String, MusicXmlPart> parts_;                     // Parts data, mapped on part id
+    muse::HashSet<int> system_start_measure_nrs_;                                  // Measure numbers of measures starting a page
+    muse::HashSet<int> page_start_measure_nrs_;                                    // Measure numbers of measures starting a page
+    std::vector<engraving::Fraction> measure_length_;                              // Length of each measure
+    std::vector<engraving::Fraction> measure_start_;                               // Start time of each measure
+    CreditWordsList credits_;                                                      // All credits collected
+    PartMap part_map_;                                                             // TODO merge into MusicXmlPart ??
+    muse::SegmentedHashMap<muse::String, MusicXmlInstruments> instruments_;        // instruments for each part, mapped on part id
+    engraving::Score *score_ = nullptr;                                            // MuseScore score
     const MusicXmlConfiguration &configuration_;
     MusicXmlLogger *logger_ = nullptr; // Error logger
     muse::String errors_;              // Errors to present to the user
@@ -276,12 +274,12 @@ private:
     bool has_inferred_header_text_ = false;
 
     // part specific data (TODO: move to part-specific class)
-    engraving::Fraction time_sig_dura_;                                        // Measure duration according to last timesig read
-    ankerl::unordered_dense::map<int, MusicXmlOctaveShiftDesc> octave_shifts_; // Pending octave-shifts
-    muse::Size page_size_;                                                     // Page width read from defaults
+    engraving::Fraction time_sig_dura_;                         // Measure duration according to last timesig read
+    muse::HashMap<int, MusicXmlOctaveShiftDesc> octave_shifts_; // Pending octave-shifts
+    muse::Size page_size_;                                      // Page width read from defaults
 
     const int max_diff_ = 5;                                                      // Duration rounding tick threshold;
-    gtl::btree_map<engraving::Fraction, engraving::Fraction> adjusted_durations_; // Rounded durations
-    gtl::btree_set<int> seen_denominators_;                                       // Denominators seen. Used for rounding errors.
+    muse::BTreeMap<engraving::Fraction, engraving::Fraction> adjusted_durations_; // Rounded durations
+    muse::BTreeSet<int> seen_denominators_;                                       // Denominators seen. Used for rounding errors.
 };
 } // namespace mu::iex::musicxml

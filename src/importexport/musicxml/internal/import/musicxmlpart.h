@@ -21,14 +21,13 @@
  */
 #pragma once
 
-#include <gtl/btree.hpp>
-
 #include "../shared/musicxmltypes.h"
+#include "global/btree.h"
 #include "global/flatmap.h"
 #include "musicxmlvoicedesc.h"
 
 namespace mu::iex::musicxml {
-struct MusicXmlOctaveShiftList : gtl::btree_map<engraving::Fraction, int> {
+struct MusicXmlOctaveShiftList : muse::BTreeMap<engraving::Fraction, int> {
     MusicXmlOctaveShiftList() {}
 
     int octave_shift(const engraving::Fraction f) const;
