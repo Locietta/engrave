@@ -23,8 +23,8 @@
 #include "editparentheses.h"
 
 #include <algorithm>
-#include <map>
-#include <set>
+
+#include <gtl/btree.hpp>
 
 #include "../dom/accidental.h"
 #include "../dom/chord.h"
@@ -52,16 +52,16 @@ struct NoteComparator {
     }
 };
 
-static std::map<Chord *, std::set<Note *, NoteComparator>> get_notes_by_chord(const std::vector<Note *> &notes) {
+static gtl::btree_map<Chord *, gtl::btree_set<Note *, NoteComparator>> get_notes_by_chord(const std::vector<Note *> &notes) {
     // Return map of notes by chord
     // Include all notes between highest and lowest in each chord
-    std::map<Chord *, std::set<Note *, NoteComparator>> notes_by_chord;
+    gtl::btree_map<Chord *, gtl::btree_set<Note *, NoteComparator>> notes_by_chord;
     for (Note *note_to_add : notes) {
         Chord *chord = note_to_add->chord();
         auto notes_by_chord_it = notes_by_chord.find(chord);
 
         if (notes_by_chord_it == notes_by_chord.end()) {
-            notes_by_chord.emplace(chord, std::set<Note *, NoteComparator>{note_to_add});
+            notes_by_chord.emplace(chord, gtl::btree_set<Note *, NoteComparator>{note_to_add});
             continue;
         }
 
@@ -90,7 +90,7 @@ static std::map<Chord *, std::set<Note *, NoteComparator>> get_notes_by_chord(co
 } // namespace
 
 void EditParentheses::add_parentheses_to_notes(Transaction &, const std::vector<Note *> &notes) {
-    std::map<Chord *, std::set<Note *, NoteComparator>> notes_by_chord = get_notes_by_chord(notes);
+    gtl::btree_map<Chord *, gtl::btree_set<Note *, NoteComparator>> notes_by_chord = get_notes_by_chord(notes);
 
     for (auto &[chord, note_set] : notes_by_chord) {
         std::vector<Note *> note_vec(note_set.begin(), note_set.end());

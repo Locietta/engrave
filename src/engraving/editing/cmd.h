@@ -20,8 +20,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <unordered_set>
 #include <vector>
+
+#include <ankerl/unordered_dense.h>
 
 #include "../dom/engravingobject.h"
 #include "../types/types.h"
@@ -36,7 +37,7 @@ struct ScoreChanges {
 
     bool is_text_editing = false;
 
-    std::unordered_set<EngravingObject *> changed_objects;
+    ankerl::unordered_dense::set<EngravingObject *> changed_objects;
     ElementTypeSet changed_types;
     PropertyIdSet changed_property_id_set;
 

@@ -28,6 +28,9 @@
 #include <cstdlib>
 #include <optional>
 
+#include <ankerl/unordered_dense.h>
+#include <gtl/btree.hpp>
+
 #include "accidentalslayout.h"
 #include "arpeggiolayout.h"
 #include "autoplace.h"
@@ -2991,7 +2994,7 @@ void ChordLayout::place_dots(const std::vector<Chord *> &chords, const std::vect
     for (Note *note : notes) {
         bool on_line = !(note->line() & 1) && !staff->is_jianpu_staff(chord->tick());
         if (on_line) {
-            std::unordered_map<int, Note *> already_added;
+            ankerl::unordered_dense::map<int, Note *> already_added;
             bool finished = false;
             for (Note *other_note : bottom_up_notes) {
                 // Make sure invisible dots have no effect on visible dots, but are still layed out sensibly
@@ -3127,8 +3130,8 @@ void ChordLayout::set_dot_x(const std::vector<Chord *> &chords, const std::array
     // Look for conflicts in up-stem and down-stemmed chords. If conflicts, all dots are aligned
     // to the same vertical line. If no conflicts, each chords aligns the dots individually.
     // Also check for conflicts between similarly stemmed voices where at least one voice is laid out independently
-    std::set<track_idx_t> combine_chord_conflicts;
-    std::set<track_idx_t> separate_chord_conflicts;
+    ankerl::unordered_dense::set<track_idx_t> combine_chord_conflicts;
+    ankerl::unordered_dense::set<track_idx_t> separate_chord_conflicts;
     for (Chord *chord1 : chords) {
         for (Chord *chord2 : chords) {
             if ((chord1 != chord2) &&
@@ -3597,7 +3600,7 @@ void ChordLayout::update_line_attach_points(Chord *chord, bool is_first_in_measu
 }
 
 void ChordLayout::layout_chord_base_fingering(Chord *chord, System *system, LayoutContext &) {
-    std::set<staff_idx_t> shapes_to_recreate;
+    gtl::btree_set<staff_idx_t> shapes_to_recreate;
     std::vector<Note *> notes;
     Segment *segment = chord->segment();
     for (auto gc : chord->grace_notes()) {

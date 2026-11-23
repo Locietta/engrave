@@ -23,6 +23,8 @@
 #include "compatutils.h"
 
 #include <amc/flatset.hpp>
+#include <ankerl/unordered_dense.h>
+#include <gtl/btree.hpp>
 
 #include "dom/articulation.h"
 #include "dom/capo.h"
@@ -60,6 +62,7 @@
 #include "editing/transpose.h"
 #include "engraving/dom/dummyparent.h"
 #include "engraving/style/styletypes.h"
+#include "global/flatmap.h"
 #include "log.h"
 #include "style/defaultstyle.h"
 #include "style/styledef.h"
@@ -69,29 +72,29 @@
 using namespace mu::engraving;
 using namespace mu::engraving::compat;
 
-const std::set<SymId> CompatUtils::ornament_ids{SymId::ORNAMENT_TURN,
-                                                SymId::ORNAMENT_TURN_INVERTED,
-                                                SymId::ORNAMENT_TURN_SLASH,
-                                                SymId::ORNAMENT_TRILL,
-                                                SymId::BRASS_MUTE_CLOSED,
-                                                SymId::ORNAMENT_MORDENT,
-                                                SymId::ORNAMENT_SHORT_TRILL,
-                                                SymId::ORNAMENT_TREMBLEMENT,
-                                                SymId::ORNAMENT_PRALL_MORDENT,
-                                                SymId::ORNAMENT_LINE_PRALL,
-                                                SymId::ORNAMENT_UP_PRALL,
-                                                SymId::ORNAMENT_UP_MORDENT,
-                                                SymId::ORNAMENT_PRECOMP_MORDENT_UPPER_PREFIX,
-                                                SymId::ORNAMENT_DOWN_MORDENT,
-                                                SymId::ORNAMENT_PRALL_UP,
-                                                SymId::ORNAMENT_PRALL_DOWN,
-                                                SymId::ORNAMENT_PRECOMP_SLIDE,
-                                                SymId::ORNAMENT_SHAKE3,
-                                                SymId::ORNAMENT_SHAKE_MUFFAT1,
-                                                SymId::ORNAMENT_TREMBLEMENT_COUPERIN,
-                                                SymId::ORNAMENT_PINCE_COUPERIN};
+const amc::FlatSet<SymId> CompatUtils::ornament_ids{SymId::ORNAMENT_TURN,
+                                                    SymId::ORNAMENT_TURN_INVERTED,
+                                                    SymId::ORNAMENT_TURN_SLASH,
+                                                    SymId::ORNAMENT_TRILL,
+                                                    SymId::BRASS_MUTE_CLOSED,
+                                                    SymId::ORNAMENT_MORDENT,
+                                                    SymId::ORNAMENT_SHORT_TRILL,
+                                                    SymId::ORNAMENT_TREMBLEMENT,
+                                                    SymId::ORNAMENT_PRALL_MORDENT,
+                                                    SymId::ORNAMENT_LINE_PRALL,
+                                                    SymId::ORNAMENT_UP_PRALL,
+                                                    SymId::ORNAMENT_UP_MORDENT,
+                                                    SymId::ORNAMENT_PRECOMP_MORDENT_UPPER_PREFIX,
+                                                    SymId::ORNAMENT_DOWN_MORDENT,
+                                                    SymId::ORNAMENT_PRALL_UP,
+                                                    SymId::ORNAMENT_PRALL_DOWN,
+                                                    SymId::ORNAMENT_PRECOMP_SLIDE,
+                                                    SymId::ORNAMENT_SHAKE3,
+                                                    SymId::ORNAMENT_SHAKE_MUFFAT1,
+                                                    SymId::ORNAMENT_TREMBLEMENT_COUPERIN,
+                                                    SymId::ORNAMENT_PINCE_COUPERIN};
 
-const std::map<Sid, Sid> CompatUtils::align_vals_to_convert{
+const muse::FlatMap<Sid, Sid> CompatUtils::align_vals_to_convert{
     {Sid::DEFAULT_ALIGN, Sid::DEFAULT_POSITION},
     {Sid::TITLE_ALIGN, Sid::TITLE_POSITION},
     {Sid::SUB_TITLE_ALIGN, Sid::SUB_TITLE_POSITION},
@@ -197,7 +200,7 @@ void CompatUtils::do_compatibility_conversions(MasterScore *master_score) {
 void CompatUtils::replace_staff_text_with_play_technique_annotation(MasterScore *score) {
 
     //! NOTE: Before MU4, they were available in the Staff Text Properties dialog (Change Channel page)
-    static const std::unordered_map<muse::String, PlayingTechniqueType> text_to_play_technique_type{
+    static const ankerl::unordered_dense::map<muse::String, PlayingTechniqueType> text_to_play_technique_type{
         {u"natural", PlayingTechniqueType::NATURAL},
         {u"normal", PlayingTechniqueType::NATURAL},
 
@@ -214,7 +217,7 @@ void CompatUtils::replace_staff_text_with_play_technique_annotation(MasterScore 
         {u"tremolo", PlayingTechniqueType::TREMOLO},
     };
 
-    std::map<StaffTextBase *, PlayingTechniqueType> old_play_techniques_and_new_types;
+    gtl::btree_map<StaffTextBase *, PlayingTechniqueType> old_play_techniques_and_new_types;
 
     for (Measure *measure = score->first_measure(); measure; measure = measure->next_measure()) {
         for (Segment *segment = measure->first(); segment; segment = segment->next()) {
@@ -278,11 +281,11 @@ void CompatUtils::replace_staff_text_with_play_technique_annotation(MasterScore 
 
 void CompatUtils::assign_initial_part_to_excerpts(const std::vector<Excerpt *> &excerpts) {
 
-    std::set<ID> assigned_part_id_set;
+    ankerl::unordered_dense::set<uint64_t> assigned_part_id_set;
 
     auto assign_initial_part_id = [&assigned_part_id_set](Excerpt *excerpt, const ID &initial_part_id) {
         excerpt->set_initial_part_id(initial_part_id);
-        assigned_part_id_set.insert(initial_part_id);
+        assigned_part_id_set.insert(initial_part_id.to_uint64());
     };
 
     for (Excerpt *excerpt : excerpts) {
@@ -300,7 +303,7 @@ void CompatUtils::assign_initial_part_to_excerpts(const std::vector<Excerpt *> &
         }
 
         for (Part *part : excerpt->excerpt_score()->parts()) {
-            if (muse::contains(assigned_part_id_set, part->id())) {
+            if (assigned_part_id_set.contains(part->id().to_uint64())) {
                 continue;
             }
 
@@ -313,7 +316,7 @@ void CompatUtils::assign_initial_part_to_excerpts(const std::vector<Excerpt *> &
 }
 
 void CompatUtils::replace_old_with_new_ornaments(MasterScore *score) {
-    std::set<Articulation *> old_ornaments; // ornaments used to be articulations
+    gtl::btree_set<Articulation *> old_ornaments; // ornaments used to be articulations
 
     for (Measure *meas = score->first_measure(); meas; meas = meas->next_measure()) {
         for (Segment &seg : meas->segments()) {
@@ -370,7 +373,7 @@ void CompatUtils::replace_old_with_new_ornaments(MasterScore *score) {
 }
 
 void CompatUtils::replace_old_with_new_expressions(MasterScore *score) {
-    std::set<StaffText *> old_expressions; // Expressions used to be staff text
+    gtl::btree_set<StaffText *> old_expressions; // Expressions used to be staff text
 
     for (Measure *measure = score->first_measure(); measure; measure = measure->next_measure()) {
         for (Segment &seg : measure->segments()) {
@@ -414,7 +417,7 @@ void CompatUtils::replace_old_with_new_expressions(MasterScore *score) {
 void CompatUtils::reconstruct_type_of_custom_dynamics(MasterScore *score) {
     // Before version 4.1, Dynamics containing custom text were saved as type "other"
     // We check the string to see if we can reconstruct their true type.
-    std::set<Dynamic *> other_type_dynamic;
+    gtl::btree_set<Dynamic *> other_type_dynamic;
 
     for (Measure *measure = score->first_measure(); measure; measure = measure->next_measure()) {
         for (Segment &seg : measure->segments()) {
@@ -442,7 +445,7 @@ void CompatUtils::reconstruct_type_of_custom_dynamics(MasterScore *score) {
 }
 
 void CompatUtils::split_articulations(MasterScore *master_score) {
-    std::set<Articulation *> to_remove;
+    gtl::btree_set<Articulation *> to_remove;
     for (Measure *meas = master_score->first_measure(); meas; meas = meas->next_measure()) {
         for (Segment &seg : meas->segments()) {
             if (!seg.is_chord_rest_type()) {
@@ -515,7 +518,7 @@ void CompatUtils::split_articulations(MasterScore *master_score) {
             delete combined_artic;
             continue;
         }
-        std::set<Articulation *> remove_links;
+        gtl::btree_set<Articulation *> remove_links;
         for (auto linked : *links) {
             IF_ASSERT_FAILED(linked && linked->is_articulation()) { continue; }
             remove_links.insert(to_articulation(linked));
@@ -653,7 +656,7 @@ void CompatUtils::reset_stem_lengths_for_two_note_trems(MasterScore *master_scor
 
 void CompatUtils::replace_staff_text_with_capo(MasterScore *score) {
 
-    std::set<StaffTextBase *> old_capo_set;
+    gtl::btree_set<StaffTextBase *> old_capo_set;
 
     for (Measure *measure = score->first_measure(); measure; measure = measure->next_measure()) {
         for (Segment *segment = measure->first(); segment; segment = segment->next()) {
@@ -823,7 +826,7 @@ NoteLine *CompatUtils::create_note_line_from_text_line(TextLine *text_line) {
 }
 
 void CompatUtils::convert_text_line_to_note_anchored_line(MasterScore *master_score) {
-    std::set<TextLine *> old_lines; // NoteLines used to be TextLines
+    gtl::btree_set<TextLine *> old_lines; // NoteLines used to be TextLines
 
     for (Measure *measure = master_score->first_measure(); measure; measure = measure->next_measure()) {
         for (Segment &segment : measure->segments()) {
@@ -877,7 +880,7 @@ void CompatUtils::convert_text_line_to_note_anchored_line(MasterScore *master_sc
 }
 
 void CompatUtils::convert_laissez_vib_artic_to_tie(MasterScore *master_score) {
-    std::set<Articulation *> old_artics; // NoteLines used to be TextLines
+    gtl::btree_set<Articulation *> old_artics; // NoteLines used to be TextLines
 
     for (Measure *meas = master_score->first_measure(); meas; meas = meas->next_measure()) {
         for (Segment &seg : meas->segments()) {

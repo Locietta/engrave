@@ -23,10 +23,9 @@
 #pragma once
 
 #include <memory>
-#include <set>
-#include <unordered_set>
 #include <vector>
 
+#include <ankerl/unordered_dense.h>
 #include <gtl/btree.hpp>
 
 #include "../../dom/mscore.h"
@@ -252,7 +251,7 @@ struct LayoutState {
 
     bool range_done() const { return range_done_; }
 
-    const std::unordered_set<System *> &systems_needing_centering() const { return systems_needing_centering_; }
+    const ankerl::unordered_dense::set<System *> &systems_needing_centering() const { return systems_needing_centering_; }
 
     bool must_recompute_headers_footers() const { return must_recompute_headers_footers_; }
 
@@ -348,7 +347,7 @@ private:
 
     bool range_done_ = false;
 
-    std::unordered_set<System *>
+    ankerl::unordered_dense::set<System *>
         systems_needing_centering_; // systems which have been laid out and still need SystemLayout::centerElementsBetweenStaves
 
     bool must_recompute_headers_footers_ =

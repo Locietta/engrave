@@ -23,6 +23,8 @@
 
 #include <cfloat>
 
+#include <gtl/btree.hpp>
+
 #include "arpeggiolayout.h"
 #include "beamlayout.h"
 #include "chordbracketlayout.h"
@@ -2060,7 +2062,7 @@ void MeasureLayout::stretch_measure_in_practice_mode(Measure *m, double target_w
     //    compute stretch
     //---------------------------------------------------
 
-    std::multimap<double, Segment *> springs;
+    gtl::btree_multimap<double, Segment *> springs;
 
     Segment *seg = m->rendered_first();
     while (seg && !seg->enabled()) {

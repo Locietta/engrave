@@ -26,6 +26,7 @@
 
 #include "draw/types/drawtypes.h"
 #include "engraving/dom/guitarbend.h"
+#include "global/flatmap.h"
 #include "global/types/translatablestring.h"
 #include "log.h"
 #include "symnames.h"
@@ -1206,7 +1207,7 @@ DynamicType TConv::dynamic_type(SymId v) {
 }
 
 DynamicType TConv::dynamic_type(const AsciiStringView &tag) {
-    static const std::map<AsciiStringView, DynamicType> dynamic_str_map = {
+    static const muse::FlatMap<AsciiStringView, DynamicType> dynamic_str_map = {
         {"<sym>dynamicPiano</sym><sym>dynamicPiano</sym><sym>dynamicPiano</sym><sym>dynamicPiano</sym><sym>dynamicPiano</"
          "sym><sym>dynamicPiano</sym>",
          DynamicType::PPPPPP},
@@ -1501,77 +1502,78 @@ TextStyleType TConv::from_xml(const AsciiStringView &tag, TextStyleType def) {
 
     // compatibility
 
-    static const std::map<AsciiStringView, TextStyleType> old_tst_tags = {{"Default", TextStyleType::DEFAULT},
-                                                                          {"Title", TextStyleType::TITLE},
-                                                                          {"Subtitle", TextStyleType::SUBTITLE},
-                                                                          {"Composer", TextStyleType::COMPOSER},
-                                                                          {"Lyricist", TextStyleType::LYRICIST},
-                                                                          {"Translator", TextStyleType::TRANSLATOR},
-                                                                          {"Frame", TextStyleType::FRAME},
-                                                                          {"Instrument Name (Part)", TextStyleType::INSTRUMENT_EXCERPT},
-                                                                          {"Instrument Name (Long)", TextStyleType::INSTRUMENT_LONG},
-                                                                          {"Instrument Name (Short)", TextStyleType::INSTRUMENT_SHORT},
-                                                                          {"Instrument Change", TextStyleType::INSTRUMENT_CHANGE},
-                                                                          {"Header", TextStyleType::HEADER},
-                                                                          {"Footer", TextStyleType::FOOTER},
-                                                                          {"Copyright", TextStyleType::COPYRIGHT},
-                                                                          {"Page Number", TextStyleType::PAGE_NUMBER},
+    static const muse::FlatMap<AsciiStringView, TextStyleType> old_tst_tags = {
+        {"Default", TextStyleType::DEFAULT},
+        {"Title", TextStyleType::TITLE},
+        {"Subtitle", TextStyleType::SUBTITLE},
+        {"Composer", TextStyleType::COMPOSER},
+        {"Lyricist", TextStyleType::LYRICIST},
+        {"Translator", TextStyleType::TRANSLATOR},
+        {"Frame", TextStyleType::FRAME},
+        {"Instrument Name (Part)", TextStyleType::INSTRUMENT_EXCERPT},
+        {"Instrument Name (Long)", TextStyleType::INSTRUMENT_LONG},
+        {"Instrument Name (Short)", TextStyleType::INSTRUMENT_SHORT},
+        {"Instrument Change", TextStyleType::INSTRUMENT_CHANGE},
+        {"Header", TextStyleType::HEADER},
+        {"Footer", TextStyleType::FOOTER},
+        {"Copyright", TextStyleType::COPYRIGHT},
+        {"Page Number", TextStyleType::PAGE_NUMBER},
 
-                                                                          {"Measure Number", TextStyleType::MEASURE_NUMBER},
-                                                                          {"Multimeasure Rest Range", TextStyleType::MMREST_RANGE},
+        {"Measure Number", TextStyleType::MEASURE_NUMBER},
+        {"Multimeasure Rest Range", TextStyleType::MMREST_RANGE},
 
-                                                                          {"Tempo", TextStyleType::TEMPO},
-                                                                          {"Metronome", TextStyleType::METRONOME},
-                                                                          {"Repeat Text Left", TextStyleType::REPEAT_LEFT},
-                                                                          {"Repeat Text Right", TextStyleType::REPEAT_RIGHT},
-                                                                          {"Rehearsal Mark", TextStyleType::REHEARSAL_MARK},
-                                                                          {"System", TextStyleType::SYSTEM},
+        {"Tempo", TextStyleType::TEMPO},
+        {"Metronome", TextStyleType::METRONOME},
+        {"Repeat Text Left", TextStyleType::REPEAT_LEFT},
+        {"Repeat Text Right", TextStyleType::REPEAT_RIGHT},
+        {"Rehearsal Mark", TextStyleType::REHEARSAL_MARK},
+        {"System", TextStyleType::SYSTEM},
 
-                                                                          {"Staff", TextStyleType::STAFF},
-                                                                          {"Expression", TextStyleType::EXPRESSION},
-                                                                          {"Dynamics", TextStyleType::DYNAMICS},
-                                                                          {"Hairpin", TextStyleType::HAIRPIN},
-                                                                          {"Lyrics Odd Lines", TextStyleType::LYRICS_ODD},
-                                                                          {"Lyrics Even Lines", TextStyleType::LYRICS_EVEN},
-                                                                          {"Chord Symbol", TextStyleType::HARMONY_A},
-                                                                          {"Chord Symbol (Alternate)", TextStyleType::HARMONY_B},
-                                                                          {"Roman Numeral Analysis", TextStyleType::HARMONY_ROMAN},
-                                                                          {"Nashville Number", TextStyleType::HARMONY_NASHVILLE},
+        {"Staff", TextStyleType::STAFF},
+        {"Expression", TextStyleType::EXPRESSION},
+        {"Dynamics", TextStyleType::DYNAMICS},
+        {"Hairpin", TextStyleType::HAIRPIN},
+        {"Lyrics Odd Lines", TextStyleType::LYRICS_ODD},
+        {"Lyrics Even Lines", TextStyleType::LYRICS_EVEN},
+        {"Chord Symbol", TextStyleType::HARMONY_A},
+        {"Chord Symbol (Alternate)", TextStyleType::HARMONY_B},
+        {"Roman Numeral Analysis", TextStyleType::HARMONY_ROMAN},
+        {"Nashville Number", TextStyleType::HARMONY_NASHVILLE},
 
-                                                                          {"Tuplet", TextStyleType::TUPLET},
-                                                                          {"Sticking", TextStyleType::STICKING},
-                                                                          {"Fingering", TextStyleType::FINGERING},
-                                                                          {"LH Guitar Fingering", TextStyleType::LH_GUITAR_FINGERING},
-                                                                          {"RH Guitar Fingering", TextStyleType::RH_GUITAR_FINGERING},
-                                                                          {"String Number", TextStyleType::STRING_NUMBER},
+        {"Tuplet", TextStyleType::TUPLET},
+        {"Sticking", TextStyleType::STICKING},
+        {"Fingering", TextStyleType::FINGERING},
+        {"LH Guitar Fingering", TextStyleType::LH_GUITAR_FINGERING},
+        {"RH Guitar Fingering", TextStyleType::RH_GUITAR_FINGERING},
+        {"String Number", TextStyleType::STRING_NUMBER},
 
-                                                                          {"Text Line", TextStyleType::TEXTLINE},
-                                                                          {"Note-anchored Line", TextStyleType::NOTELINE},
-                                                                          {"Volta", TextStyleType::VOLTA},
-                                                                          {"Ottava", TextStyleType::OTTAVA},
-                                                                          {"Glissando", TextStyleType::GLISSANDO},
-                                                                          {"Pedal", TextStyleType::PEDAL},
-                                                                          {"Bend", TextStyleType::BEND},
-                                                                          {"Let Ring", TextStyleType::LET_RING},
-                                                                          {"Palm Mute", TextStyleType::PALM_MUTE},
+        {"Text Line", TextStyleType::TEXTLINE},
+        {"Note-anchored Line", TextStyleType::NOTELINE},
+        {"Volta", TextStyleType::VOLTA},
+        {"Ottava", TextStyleType::OTTAVA},
+        {"Glissando", TextStyleType::GLISSANDO},
+        {"Pedal", TextStyleType::PEDAL},
+        {"Bend", TextStyleType::BEND},
+        {"Let Ring", TextStyleType::LET_RING},
+        {"Palm Mute", TextStyleType::PALM_MUTE},
 
-                                                                          {"User-1", TextStyleType::USER1},
-                                                                          {"User-2", TextStyleType::USER2},
-                                                                          {"User-3", TextStyleType::USER3},
-                                                                          {"User-4", TextStyleType::USER4},
-                                                                          {"User-5", TextStyleType::USER5},
-                                                                          {"User-6", TextStyleType::USER6},
-                                                                          {"User-7", TextStyleType::USER7},
-                                                                          {"User-8", TextStyleType::USER8},
-                                                                          {"User-9", TextStyleType::USER9},
-                                                                          {"User-10", TextStyleType::USER10},
-                                                                          {"User-11", TextStyleType::USER11},
-                                                                          {"User-12", TextStyleType::USER12},
+        {"User-1", TextStyleType::USER1},
+        {"User-2", TextStyleType::USER2},
+        {"User-3", TextStyleType::USER3},
+        {"User-4", TextStyleType::USER4},
+        {"User-5", TextStyleType::USER5},
+        {"User-6", TextStyleType::USER6},
+        {"User-7", TextStyleType::USER7},
+        {"User-8", TextStyleType::USER8},
+        {"User-9", TextStyleType::USER9},
+        {"User-10", TextStyleType::USER10},
+        {"User-11", TextStyleType::USER11},
+        {"User-12", TextStyleType::USER12},
 
-                                                                          {"Technique", TextStyleType::EXPRESSION},
+        {"Technique", TextStyleType::EXPRESSION},
 
-                                                                          {"12", TextStyleType::DYNAMICS},
-                                                                          {"26", TextStyleType::STAFF}};
+        {"12", TextStyleType::DYNAMICS},
+        {"26", TextStyleType::STAFF}};
 
     auto old = old_tst_tags.find(tag);
     if (old != old_tst_tags.cend()) {
@@ -1611,13 +1613,13 @@ static double easing_factor(const double x, const ChangeMethod method) {
 }
 
 template <typename T>
-static std::map<int /*tickPosition*/, T> build_eased_value_curve(const int ticks_duration, const int steps_count, const T amplitude,
-                                                                 const ChangeMethod method) {
+static muse::FlatMap<int /*tickPosition*/, T> build_eased_value_curve(const int ticks_duration, const int steps_count, const T amplitude,
+                                                                      const ChangeMethod method) {
     if (steps_count <= 0) {
         return {};
     }
 
-    std::map<int, T> result;
+    muse::FlatMap<int, T> result;
 
     double duration_step = static_cast<double>(ticks_duration) / static_cast<double>(steps_count);
 
@@ -1628,13 +1630,13 @@ static std::map<int /*tickPosition*/, T> build_eased_value_curve(const int ticks
     return result;
 }
 
-std::map<int, int> TConv::easing_value_curve(const int ticks_duration, const int steps_count, const int amplitude,
-                                             const ChangeMethod method) {
+muse::FlatMap<int, int> TConv::easing_value_curve(const int ticks_duration, const int steps_count, const int amplitude,
+                                                  const ChangeMethod method) {
     return build_eased_value_curve(ticks_duration, steps_count, amplitude, method);
 }
 
-std::map<int, double> TConv::easing_value_curve(const int ticks_duration, const int steps_count, const double amplitude,
-                                                const ChangeMethod method) {
+muse::FlatMap<int, double> TConv::easing_value_curve(const int ticks_duration, const int steps_count, const double amplitude,
+                                                     const ChangeMethod method) {
     return build_eased_value_curve(ticks_duration, steps_count, amplitude, method);
 }
 

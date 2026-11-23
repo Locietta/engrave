@@ -24,8 +24,9 @@
 #define MU_ENGRAVING_SKYLINE_H
 
 #include <cfloat>
-#include <map>
 #include <vector>
+
+#include <gtl/btree.hpp>
 
 #include "draw/types/geometry.h"
 #include "shape.h"
@@ -94,7 +95,7 @@ private:
         StaffLineEdge(double t, double b) : top(t), bottom(b) {}
     };
 
-    std::map<double, StaffLineEdge> staff_line_edges_;
+    gtl::btree_map<double, StaffLineEdge> staff_line_edges_;
 
     bool has_valid_staff_line_edges() const { return !staff_line_edges_.empty(); }
 };

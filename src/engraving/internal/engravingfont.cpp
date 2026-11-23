@@ -21,6 +21,8 @@
  */
 #include "engravingfont.h"
 
+#include <ankerl/unordered_dense.h>
+
 #include "../style/styledef.h"
 #include "dom/mscore.h"
 #include "draw/internal/fontprovider.h"
@@ -28,6 +30,7 @@
 #include "engraving/dom/mscore.h"
 #include "engraving/style/styletypes.h"
 #include "engravingfontsprovider.h"
+#include "global/flatmap.h"
 #include "io/file.h"
 #include "log.h"
 #include "serialization/json_fields.h"
@@ -85,7 +88,7 @@ const std::string &EngravingFont::name() const { return name_; }
 
 const std::string &EngravingFont::family() const { return family_; }
 
-std::unordered_map<Sid, PropertyValue> EngravingFont::engraving_defaults() const { return engraving_defaults_; }
+ankerl::unordered_dense::map<Sid, PropertyValue> EngravingFont::engraving_defaults() const { return engraving_defaults_; }
 
 double EngravingFont::text_enclosure_thickness() { return text_enclosure_thickness_; }
 
@@ -353,7 +356,7 @@ void EngravingFont::load_glyphs_with_anchors(const Metadata &metadata) {
         }
 
         Sym &sym = this->sym(sym_id);
-        static const std::unordered_map<std::string, SmuflAnchorId> smufl_anchor_id_names{
+        static const ankerl::unordered_dense::map<std::string, SmuflAnchorId> smufl_anchor_id_names{
             {"stemDownNW", SmuflAnchorId::STEM_DOWN_NW},      {"stemUpSE", SmuflAnchorId::STEM_UP_SE},
             {"stemDownSW", SmuflAnchorId::STEM_DOWN_SW},      {"stemUpNW", SmuflAnchorId::STEM_UP_NW},
             {"cutOutNE", SmuflAnchorId::CUT_OUT_NE},          {"cutOutNW", SmuflAnchorId::CUT_OUT_NW},
@@ -396,7 +399,7 @@ void EngravingFont::load_engraving_defaults(const Metadata &metadata) {
     };
 
     // https://w3c.github.io/smufl/latest/specification/engravingdefaults.html
-    static const std::unordered_map<std::string, EngravingDefault> engraving_defaults_mapping = {
+    static const ankerl::unordered_dense::map<std::string, EngravingDefault> engraving_defaults_mapping = {
         // "textFontFamily" not supported
         {"staffLineThickness", {{Sid::STAFF_LINE_WIDTH}}},
         {"stemThickness", {{Sid::STEM_WIDTH}}},
@@ -654,7 +657,7 @@ PointF EngravingFont::smufl_anchor(SymId sym_id, SmuflAnchorId anchor_id, double
         return engraving_fonts()->fallback_font()->smufl_anchor(sym_id, anchor_id, mag);
     }
 
-    const std::map<SmuflAnchorId, PointF> &smufl_anchors = sym(sym_id).smufl_anchors;
+    const muse::FlatMap<SmuflAnchorId, PointF> &smufl_anchors = sym(sym_id).smufl_anchors;
 
     auto it = smufl_anchors.find(anchor_id);
     if (it == smufl_anchors.cend()) {

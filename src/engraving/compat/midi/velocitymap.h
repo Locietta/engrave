@@ -23,7 +23,7 @@
 #ifndef MU_ENGRAVING_VELOCITYMAP_H
 #define MU_ENGRAVING_VELOCITYMAP_H
 
-#include <map>
+#include <gtl/btree.hpp>
 
 #include "../../types/types.h"
 
@@ -71,7 +71,7 @@ private:
 
 typedef std::vector<std::pair<Fraction, Fraction>> EndPointsVector;
 
-struct VelocityMap : std::multimap<Fraction, VelocityEvent> {
+struct VelocityMap : gtl::btree_multimap<Fraction, VelocityEvent> {
 public:
     VelocityMap() {}
 

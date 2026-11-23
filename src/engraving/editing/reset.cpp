@@ -22,8 +22,9 @@
 
 #include "reset.h"
 
-#include <set>
 #include <vector>
+
+#include <gtl/btree.hpp>
 
 #include "../dom/engravingitem.h"
 #include "../dom/layoutbreak.h"
@@ -67,7 +68,7 @@ static void reset_element_position(EngravingItem *e) {
 }
 
 static void reset_child_positions(Score &score) {
-    std::set<EngravingItem *> owners;
+    gtl::btree_set<EngravingItem *> owners;
     for (auto *spanner : score.spanner_list()) owners.insert(spanner);
     const auto collect = [&](auto &&self, EngravingObject &object) -> void {
         if (!source_object(object)) return;

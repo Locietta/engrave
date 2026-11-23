@@ -25,6 +25,7 @@
 #include "engraving/dom/guitarbend.h"
 #include "engraving/dom/pitchspelling.h"
 #include "engraving/dom/tremolobar.h"
+#include "global/flatmap.h"
 #include "types.h"
 
 namespace mu::engraving {
@@ -122,10 +123,10 @@ struct TConv {
 
     static AsciiStringView to_xml(ChangeMethod v);
     static ChangeMethod from_xml(const AsciiStringView &tag, ChangeMethod def);
-    static std::map<int /*positionTick*/, int> easing_value_curve(const int ticks_duration, const int steps_count, const int amplitude,
-                                                                  const ChangeMethod method);
-    static std::map<int /*positionTick*/, double> easing_value_curve(const int ticks_duration, const int steps_count,
-                                                                     const double amplitude, const ChangeMethod method);
+    static muse::FlatMap<int /*positionTick*/, int> easing_value_curve(const int ticks_duration, const int steps_count, const int amplitude,
+                                                                       const ChangeMethod method);
+    static muse::FlatMap<int /*positionTick*/, double> easing_value_curve(const int ticks_duration, const int steps_count,
+                                                                          const double amplitude, const ChangeMethod method);
 
     static String to_xml(const PitchValue &v);
 

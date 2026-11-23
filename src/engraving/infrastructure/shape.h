@@ -26,6 +26,8 @@
 #include <functional>
 #include <optional>
 
+#include <amc/flatset.hpp>
+
 #include "draw/types/geometry.h"
 #include "draw/types/transform.h"
 #include "engraving/types/types.h"
@@ -142,7 +144,7 @@ struct Shape {
     std::optional<ShapeElement> get_first() const;
 
     void remove_invisibles();
-    void remove_types(const std::set<ElementType> &types);
+    void remove_types(const amc::FlatSet<ElementType> &types);
 
     void add_horizontal_spacing(EngravingItem *item, double left, double right);
 

@@ -21,10 +21,12 @@
  */
 #pragma once
 
-#include <set>
 #include <vector>
 
+#include <amc/flatset.hpp>
+
 #include "../../dom/articulation.h"
+#include "global/flatmap.h"
 
 namespace mu::engraving {
 struct Dynamic;
@@ -43,8 +45,8 @@ struct CompatUtils {
     static ArticulationAnchor translate_to_new_articulation_anchor(int anchor);
     static double convert_chord_ext_mod_units(double val);
     static void set_harmony_root_tpc_from_function(HarmonyInfo *info, const Harmony *h, const muse::String &s);
-    static const std::set<SymId> ornament_ids;
-    static const std::map<Sid, Sid> align_vals_to_convert;
+    static const amc::FlatSet<SymId> ornament_ids;
+    static const muse::FlatMap<Sid, Sid> align_vals_to_convert;
     static void set_position_styles_from_align(MStyle *style, std::vector<Sid> ignore_sids = {});
     static void set_text_line_text_position_from_align(TextLineBase *tl);
     static void reset_hook_height_sign(TextLineBase *tl);

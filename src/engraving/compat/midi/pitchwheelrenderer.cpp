@@ -2,6 +2,8 @@
 
 #include <algorithm>
 
+#include <gtl/btree.hpp>
+
 #include "log.h"
 
 using namespace mu::engraving;
@@ -55,7 +57,7 @@ void PitchWheelRenderer::render_channel_pitch_wheel(EventsHolder &pitch_wheel_ev
         staff_idx = staff_idx_by_channel.at(channel);
     }
 
-    std::map<int, int, std::greater<>> ranges;
+    gtl::btree_map<int, int, std::greater<>> ranges;
     generate_ranges(functions.functions, ranges);
 
     for (auto rit = ranges.crbegin(); rit != ranges.crend(); ++rit) {
@@ -145,15 +147,17 @@ int32_t PitchWheelRenderer::calculate_pitch_bend(const std::vector<PitchWheelFun
 // result           |--------------|
 // 3           |--------|            handleEndTick();
 // result      |-------------------|
-void PitchWheelRenderer::generate_ranges(const std::vector<PitchWheelFunction> &functions, std::map<int, int, std::greater<>> &ranges) {
+void PitchWheelRenderer::generate_ranges(const std::vector<PitchWheelFunction> &functions,
+                                         gtl::btree_map<int, int, std::greater<>> &ranges) {
     // !NOTE ranges map is reversed. Use reverse iterators
     auto handle_end_tick = [&](const PitchWheelFunction &func) {
         auto lower_range = ranges.upper_bound(func.m_end_tick);
         if (lower_range == ranges.end()) {
             return false;
         }
-        ranges.insert({func.m_start_tick, lower_range->second});
+        const int end_tick = lower_range->second;
         ranges.erase(lower_range);
+        ranges.emplace(func.m_start_tick, end_tick);
         return true;
     };
 

@@ -21,6 +21,9 @@
  */
 #include "slurtielayout.h"
 
+#include <amc/flatset.hpp>
+#include <gtl/btree.hpp>
+
 #include "chordlayout.h"
 #include "dom/chord.h"
 #include "dom/clef.h"
@@ -2082,7 +2085,7 @@ void SlurTieLayout::layout_laissez_vib_chord(Chord *chord, LayoutContext &ctx) {
     // Ties drawn by MuseScore can start at differing points
     // SMuFL symbols will also start at the same point because they are of fixed length
     double chord_lv_end_point = -DBL_MAX;
-    std::map<LaissezVibSegment *, SlurTiePos> lv_segments_with_positions;
+    gtl::btree_map<LaissezVibSegment *, SlurTiePos> lv_segments_with_positions;
     const bool smufl_layout = ctx.conf().style_b(Sid::LAISSEZ_VIB_USE_SMUFL_SYM);
 
     for (const Note *note : chord->notes()) {
@@ -2263,8 +2266,8 @@ void SlurTieLayout::adjust_x(TieSegment *tie_segment, SlurTiePos &s_pos, Grip st
         return !start && is_outer_tie_of_chord && acc_is_inward_of_tie;
     };
 
-    static const std::set<ElementType> ignored_types = {ElementType::HOOK,   ElementType::STEM_SLASH, ElementType::LEDGER_LINE,
-                                                        ElementType::LYRICS, ElementType::HARMONY,    ElementType::FRET_DIAGRAM};
+    static const amc::FlatSet<ElementType> ignored_types = {ElementType::HOOK,   ElementType::STEM_SLASH, ElementType::LEDGER_LINE,
+                                                            ElementType::LYRICS, ElementType::HARMONY,    ElementType::FRET_DIAGRAM};
     shape.remove_if([&](ShapeElement &s) {
         bool remove = !s.item() || s.item() == note || muse::contains(ignored_types, s.item()->type()) ||
                       (s.item()->is_note_dot() && ignore_dot) ||

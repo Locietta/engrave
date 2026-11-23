@@ -23,9 +23,10 @@
 #ifndef MU_ENGRAVING_INOUTDATA_H
 #define MU_ENGRAVING_INOUTDATA_H
 
-#include <map>
 #include <optional>
 #include <vector>
+
+#include <gtl/btree.hpp>
 
 #include "linksindexer.h"
 #include "write/writecontext.h"
@@ -36,7 +37,7 @@ struct LinkedObjects;
 
 namespace mu::engraving::rw {
 struct ReadLinks {
-    std::map<int /*staffIndex*/, std::vector<std::pair<LinkedObjects *, Location>>> staff_linked_elements; // one list per staff
+    gtl::btree_map<int /*staffIndex*/, std::vector<std::pair<LinkedObjects *, Location>>> staff_linked_elements; // one list per staff
     LinksIndexer links_indexer;
 };
 

@@ -21,11 +21,13 @@
  */
 #pragma once
 #include <memory>
-#include <unordered_map>
+
+#include <ankerl/unordered_dense.h>
 
 #include "draw/types/font.h"
 #include "draw/types/geometry.h"
 #include "engraving/types/propertyvalue.h"
+#include "global/flatmap.h"
 #include "global/types/string.h"
 #include "infrastructure/shape.h"
 #include "infrastructure/smufl.h"
@@ -56,7 +58,7 @@ struct EngravingFont {
     const std::string &name() const;
     const std::string &family() const;
 
-    std::unordered_map<Sid, PropertyValue> engraving_defaults() const;
+    ankerl::unordered_dense::map<Sid, PropertyValue> engraving_defaults() const;
     double text_enclosure_thickness();
 
     char32_t sym_code(SymId id) const;
@@ -100,7 +102,7 @@ private:
         Shape shape_with_cutouts;
         double advance = 0.0;
 
-        std::map<SmuflAnchorId, PointF> smufl_anchors;
+        muse::FlatMap<SmuflAnchorId, PointF> smufl_anchors;
         SymIdList sub_symbol_ids;
 
         bool is_valid() const { return code != 0 && bbox.is_valid(); }
@@ -137,7 +139,7 @@ private:
     std::shared_ptr<muse::io::IODevice> font_device_;
     std::shared_ptr<muse::io::IODevice> metadata_device_;
 
-    std::unordered_map<Sid, PropertyValue> engraving_defaults_;
+    ankerl::unordered_dense::map<Sid, PropertyValue> engraving_defaults_;
     double text_enclosure_thickness_ = 0;
 };
 } // namespace mu::engraving

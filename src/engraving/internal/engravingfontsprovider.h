@@ -26,6 +26,8 @@
 #include <string>
 #include <vector>
 
+#include <ankerl/unordered_dense.h>
+
 #include "engravingfont.h"
 #include "global/io/iodevice.h"
 #include "global/io/path.h"
@@ -67,6 +69,6 @@ private:
     muse::draw::FontProvider &font_provider_;
     mutable Fallback fallback_;
     std::vector<std::shared_ptr<EngravingFont>> symbol_fonts_;
-    std::unordered_map<std::string, std::shared_ptr<EngravingFont>> external_symbol_fonts_;
+    ankerl::unordered_dense::map<std::string, std::shared_ptr<EngravingFont>> external_symbol_fonts_;
 };
 } // namespace mu::engraving

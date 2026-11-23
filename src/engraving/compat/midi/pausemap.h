@@ -23,7 +23,7 @@
 #ifndef MU_ENGRAVING_PAUSEMAP_H
 #define MU_ENGRAVING_PAUSEMAP_H
 
-#include <map>
+#include <gtl/btree.hpp>
 
 /**
  \file
@@ -38,17 +38,17 @@ struct Score;
 //    MIDI files cannot contain pauses so need to insert
 //    extra ticks extra ticks and tempo changes instead.
 //---------------------------------------------------
-struct PauseMap : private std::map<int, int> {
+struct PauseMap : private gtl::btree_map<int, int> {
     void calculate(const engraving::Score *s);
 
     inline int tick_with_pauses(int utick) const { return utick + offset_at_u_tick(utick); }
 
-    const std::map<int, double> &tempo_events() const { return tempo_events_; }
+    const gtl::btree_map<int, double> &tempo_events() const { return tempo_events_; }
 
 private:
     int offset_at_u_tick(int utick) const;
 
-    std::map<int, double> tempo_events_;
+    gtl::btree_map<int, double> tempo_events_;
 };
 } // namespace mu::engraving
 #endif

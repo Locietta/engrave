@@ -21,6 +21,8 @@
  */
 #include "smufl.h"
 
+#include <gtl/btree.hpp>
+
 #include "dom/mscore.h"
 #include "io/file.h"
 #include "log.h"
@@ -35,7 +37,7 @@ using namespace mu::engraving;
 namespace json = muse::json;
 
 std::array<Smufl::Code, size_t(SymId::LAST_SYM) + 1> Smufl::s_sym_id_codes{{}};
-std::map<String, std::vector<SymId>> Smufl::s_ranges;
+gtl::btree_map<String, std::vector<SymId>> Smufl::s_ranges;
 
 const Smufl::Code Smufl::code(SymId id) { return s_sym_id_codes.at(static_cast<size_t>(id)); }
 
@@ -101,10 +103,10 @@ bool Smufl::load_glyph_names_json() {
     return true;
 }
 
-const std::map<String, std::vector<SymId>> &Smufl::smufl_ranges() { return s_ranges; }
+const gtl::btree_map<String, std::vector<SymId>> &Smufl::smufl_ranges() { return s_ranges; }
 
-std::map<String, std::vector<SymId>> Smufl::read_smufl_ranges_json() {
-    std::map<String, std::vector<SymId>> ranges;
+gtl::btree_map<String, std::vector<SymId>> Smufl::read_smufl_ranges_json() {
+    gtl::btree_map<String, std::vector<SymId>> ranges;
     std::vector<SymId> all_symbols;
 
     File fi(":/fonts/smufl/ranges.json");

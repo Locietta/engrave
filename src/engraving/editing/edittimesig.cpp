@@ -23,10 +23,12 @@
 #include "edittimesig.h"
 
 #include <algorithm>
-#include <map>
 #include <stdexcept>
 #include <tuple>
 #include <vector>
+
+#include <ankerl/unordered_dense.h>
+#include <gtl/btree.hpp>
 
 #include "../dom/excerpt.h"
 #include "../dom/factory.h"
@@ -625,7 +627,7 @@ void EditTimeSig::add_time_sig(Transaction &tx, Score *score, Measure *fm, staff
             }
         }
         // add the time signatures
-        std::map<track_idx_t, TimeSig *> master_time_sigs;
+        ankerl::unordered_dense::map<track_idx_t, TimeSig *> master_time_sigs;
         for (Score *lscore : score->score_list()) {
             Measure *nfm = lscore->tick2measure(tick);
             seg = nfm->undo_get_segment(SegmentType::TIME_SIG, nfm->tick());

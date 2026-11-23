@@ -21,7 +21,7 @@
  */
 #pragma once
 
-#include <unordered_set>
+#include <ankerl/unordered_dense.h>
 
 namespace mu::engraving {
 enum class Sid : short {
@@ -2285,6 +2285,6 @@ enum class Sid : short {
 };
 
 using StyleId = Sid;
-using StyleIdSet = std::unordered_set<Sid>;
+using StyleIdSet = ankerl::unordered_dense::set<Sid>;
 
 } // namespace mu::engraving

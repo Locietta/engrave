@@ -22,6 +22,8 @@
 
 #include "transpose.h"
 
+#include <gtl/btree.hpp>
+
 #include "../dom/factory.h"
 #include "../dom/fret.h"
 #include "../dom/harmony.h"
@@ -88,7 +90,7 @@ void Transpose::transposition_changed(Transaction &tx, Score *score, Part *part,
     }
 
     // transpose keys first
-    std::set<Score *> scores;
+    gtl::btree_set<Score *> scores;
     for (Staff *ls : part->staff(0)->staff_list()) {
         // TODO: special handling for linked staves within a score
         // could be useful for capo

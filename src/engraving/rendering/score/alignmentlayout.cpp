@@ -22,7 +22,8 @@
 
 #include "alignmentlayout.h"
 
-#include <set>
+#include <ankerl/unordered_dense.h>
+#include <gtl/btree.hpp>
 
 #include "dom/dynamic.h"
 #include "dom/expression.h"
@@ -90,7 +91,7 @@ void AlignmentLayout::align_hopo_letters(const HammerOnPullOff *hopo, const Syst
 }
 
 void AlignmentLayout::align_items_with_their_snapping_chain(const std::vector<EngravingItem *> &elements, const System *system) {
-    std::set<EngravingItem *> aligned_items;
+    ankerl::unordered_dense::set<EngravingItem *> aligned_items;
 
     double outermost_y = 0.0;
     bool first_item = true;
@@ -125,7 +126,7 @@ void AlignmentLayout::align_items_for_system(const std::vector<EngravingItem *> 
         std::vector<EngravingItem *> items_below;
     };
 
-    std::map<staff_idx_t, StaffItemGroups> staff_items;
+    gtl::btree_map<staff_idx_t, StaffItemGroups> staff_items;
 
     for (EngravingItem *item : elements) {
         if (item->add_to_skyline() && !item->exclude_vertical_align()) {

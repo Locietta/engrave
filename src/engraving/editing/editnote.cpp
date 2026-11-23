@@ -23,7 +23,6 @@
 #include "editnote.h"
 
 #include <algorithm>
-#include <set>
 
 #include "dom/accidental.h"
 #include "dom/articulation.h"

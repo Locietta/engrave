@@ -25,10 +25,9 @@
 #include <cfloat>
 #include <cmath>
 #include <limits>
-#include <set>
-#include <unordered_map>
 
 #include <ankerl/unordered_dense.h>
+#include <gtl/btree.hpp>
 
 #include "beamtremololayout.h"
 #include "chordlayout.h"
@@ -295,7 +294,7 @@ void BeamLayout::layout1(Beam *item, LayoutContext &ctx) {
             if (const Chord *chord = item->find_chord_with_custom_stem_direction()) {
                 item->set_up(chord->stem_direction() == DirectionV::UP);
             } else {
-                std::set<BeamBase::NotePosition> note_pos_set(item->note_positions().begin(), item->note_positions().end());
+                gtl::btree_set<BeamBase::NotePosition> note_pos_set(item->note_positions().begin(), item->note_positions().end());
                 std::vector<int> note_lines;
                 note_lines.reserve(note_pos_set.size());
                 for (BeamBase::NotePosition pos : note_pos_set) {

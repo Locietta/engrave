@@ -22,8 +22,6 @@
 
 #include "keyboardssetupdataresolver.h"
 
-#include <unordered_set>
-
 #include "playback/utils/sortedtable.h"
 
 using namespace mu::engraving;

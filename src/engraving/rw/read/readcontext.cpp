@@ -24,6 +24,9 @@
 
 #include <climits>
 
+#include <ankerl/unordered_dense.h>
+#include <gtl/btree.hpp>
+
 #include "connectorinforeader.h"
 #include "dom/linkedobjects.h"
 #include "dom/masterscore.h"
@@ -205,7 +208,7 @@ void ReadContext::reconnect_broken_connectors() {
         }
     }
     std::sort(broken_pairs.begin(), broken_pairs.end(), distance_sort);
-    std::set<ConnectorInfoReader *> processed;
+    ankerl::unordered_dense::set<ConnectorInfoReader *> processed;
     for (auto &dist_pair : broken_pairs) {
         if (dist_pair.first == INT_MAX) {
             continue;
@@ -218,7 +221,7 @@ void ReadContext::reconnect_broken_connectors() {
         processed.insert(pair.first);
         processed.insert(pair.second);
     }
-    std::set<ConnectorInfoReader *> reconnected;
+    gtl::btree_set<ConnectorInfoReader *> reconnected;
     for (auto &conn : connectors) {
         ConnectorInfoReader *c = conn.get();
         if (c->finished()) {
@@ -239,7 +242,7 @@ void ReadContext::clear_orphaned_connectors() {
 
     LOGD("Score contains unpaired spanner connectors");
 
-    std::set<LinkedObjects *> deleted_links;
+    ankerl::unordered_dense::set<LinkedObjects *> deleted_links;
 
     auto delete_connectors = [&deleted_links](std::shared_ptr<ConnectorInfoReader> c) {
         EngravingItem *conn = c ? c->release_connector() : nullptr;

@@ -5,6 +5,9 @@
 #include <optional>
 #include <tuple>
 
+#include <amc/flatset.hpp>
+#include <ankerl/unordered_dense.h>
+
 #include "compatmidigrace.h"
 #include "dom/arpeggio.h"
 #include "dom/articulation.h"
@@ -36,6 +39,7 @@
 #include "dom/volta.h"
 #include "easeinout.h"
 #include "editing/navigation.h"
+#include "global/flatmap.h"
 #include "global/realfn.h"
 #include "log.h"
 #include "types/bps.h"
@@ -1170,10 +1174,10 @@ bool CompatMidiRender::render_note_articulation(NoteEventList *events, Note *not
 
 bool CompatMidiRender::render_note_articulation(NoteEventList *events, Note *note, bool chromatic, TrillType trill_type,
                                                 OrnamentStyle ornament_style) {
-    std::map<TrillType, SymId> articulation_map = {{TrillType::TRILL_LINE, SymId::ORNAMENT_TRILL},
-                                                   {TrillType::UPPRALL_LINE, SymId::ORNAMENT_UP_PRALL},
-                                                   {TrillType::DOWNPRALL_LINE, SymId::ORNAMENT_PRECOMP_MORDENT_UPPER_PREFIX},
-                                                   {TrillType::PRALLPRALL_LINE, SymId::ORNAMENT_TRILL}};
+    muse::FlatMap<TrillType, SymId> articulation_map = {{TrillType::TRILL_LINE, SymId::ORNAMENT_TRILL},
+                                                        {TrillType::UPPRALL_LINE, SymId::ORNAMENT_UP_PRALL},
+                                                        {TrillType::DOWNPRALL_LINE, SymId::ORNAMENT_PRECOMP_MORDENT_UPPER_PREFIX},
+                                                        {TrillType::PRALLPRALL_LINE, SymId::ORNAMENT_TRILL}};
     auto it = articulation_map.find(trill_type);
     if (it == articulation_map.cend()) {
         return false;
@@ -1349,12 +1353,12 @@ int CompatMidiRender::slide_length_chord_dependent(Chord *chord) {
     return (double) NoteEvent::note_length * ::mu::engraving::slide_duration / current_ticks;
 }
 
-std::set<size_t> CompatMidiRender::get_notes_indexes_to_render(Chord *chord) {
-    std::set<size_t> notes_indexes_to_render;
+amc::FlatSet<size_t> CompatMidiRender::get_notes_indexes_to_render(Chord *chord) {
+    amc::FlatSet<size_t> notes_indexes_to_render;
 
     auto &notes = chord->notes();
     /// not adding sounds for the same pitches in chord (for example, on different strings)
-    std::map<int, int> longest_play_ticks_for_pitch;
+    ankerl::unordered_dense::map<int, int> longest_play_ticks_for_pitch;
 
     for (Note *note : notes) {
         int pitch = note->pitch();

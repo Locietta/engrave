@@ -29,6 +29,7 @@
 #include "dom/staff.h"
 #include "draw/fontmetrics.h"
 #include "engraving/dom/dummyparent.h"
+#include "global/flatmap.h"
 #include "log.h"
 #include "parenthesislayout.h"
 #include "textlayout.h"
@@ -555,7 +556,7 @@ void HarmonyLayout::kern_characters(const Harmony *item, const String &text, Har
     // Character pair and distance to move the second
     // Blank strings will apply the kerning no matter the following character
     // TODO - move this information to the XML file
-    static const std::map<std::pair<String, String>, double> kerned_characters{
+    static const muse::FlatMap<std::pair<String, String>, double> kerned_characters{
         {{u"A", u"\uE870"}, -0.4},      // dim
         {{u"A", u"\uE871"}, -0.3},      // half-dim
         {{u"\uE873", u"\uE870"}, -0.4}, // triangle - dim

@@ -22,13 +22,13 @@
 #pragma once
 
 #include <algorithm>
-#include <map>
 #include <optional>
-#include <set>
 #include <tuple>
 #include <type_traits>
 #include <variant>
 #include <vector>
+
+#include <gtl/btree.hpp>
 
 #include "engraving/infrastructure/eid.h"
 #include "engraving/types/types.h"
@@ -51,7 +51,7 @@ struct AutomationPoint {
 };
 
 using utick_t = int;
-using AutomationCurve = std::map<utick_t, AutomationPoint>;
+using AutomationCurve = gtl::btree_map<utick_t, AutomationPoint>;
 
 inline std::optional<AutomationPoint::Ease> ease(const AutomationPoint &point) noexcept { return muse::mpe::ease(point.value); }
 
@@ -167,7 +167,7 @@ struct AutomationCurveKey {
     bool operator<(const AutomationCurveKey &k) const { return std::tie(type, scope) < std::tie(k.type, k.scope); }
 };
 
-using AutomationCurveMap = std::map<AutomationCurveKey, AutomationCurve>;
+using AutomationCurveMap = gtl::btree_map<AutomationCurveKey, AutomationCurve>;
 
 inline const AutomationCurveKey tempo_key = AutomationCurveKey::global(AutomationType::TEMPO);
 
@@ -194,7 +194,7 @@ using AutomationPointEdits = std::vector<AutomationPointEdit>;
 
 struct AutomationChanges {
     bool is_full_reset = false;
-    std::set<AutomationCurveKey> affected_keys;
+    gtl::btree_set<AutomationCurveKey> affected_keys;
     utick_t tick_from = -1;
     utick_t tick_to = -1;
 

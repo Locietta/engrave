@@ -30,6 +30,8 @@
 #include <cassert>
 #include <cmath>
 
+#include <gtl/btree.hpp>
+
 #include "containers.h"
 
 using namespace mu;
@@ -237,7 +239,7 @@ void VelocityMap::resolve_hairpin_collisions() {
 
 void VelocityMap::adjust_colliding_hairpins_length(std::vector<bool> &starts_in_hairpin, EndPointsVector &end_points) {
     // moveTo stores the events that need to be moved to a Fraction position
-    std::map<Fraction, VelocityEvent> move_to;
+    gtl::btree_map<Fraction, VelocityEvent> move_to;
     auto i = begin();
     int j = -1;
     while (i != end()) {
@@ -336,11 +338,18 @@ void VelocityMap::add_missing_dynamics_after_hairpins() {
         return std::clamp(new_val, VelocityMap::min_value, VelocityMap::max_value);
     };
 
-    for (auto it = begin(); it != end(); it++) {
-        auto &event = it->second;
+    const auto original_events = *this;
+    Fraction previous_tick(-1, 1);
+    size_t index_at_tick = 0;
+    for (const auto &[tick, event] : original_events) {
+        if (tick != previous_tick) {
+            index_at_tick = 0;
+            previous_tick = tick;
+        }
+        const auto event_index = index_at_tick++;
         if (event.type_ == VelocityEventType::HAIRPIN && event.value_ == 0) {
-            Fraction start_hairpin_tick = it->first;
-            Fraction end_hairpin_tick = it->first + it->second.length_;
+            Fraction start_hairpin_tick = tick;
+            Fraction end_hairpin_tick = tick + event.length_;
             VelocityEvent dynamic_on_current_tick = dynamic_event_for_tick(start_hairpin_tick);
 
             if (!dynamic_exists_on_tick(end_hairpin_tick)) {
@@ -355,7 +364,7 @@ void VelocityMap::add_missing_dynamics_after_hairpins() {
                 if ((event.direction_ == ChangeDirection::INCREASING && velocity_jump < 0) ||
                     (event.direction_ == ChangeDirection::DECREASING && velocity_jump > 0)) {
                     int new_val = next_dynamic_val(dynamic_on_current_tick.value_, event.direction_);
-                    event.value_ = new_val - dynamic_on_current_tick.value_;
+                    std::next(lower_bound(tick), event_index)->second.value_ = new_val - dynamic_on_current_tick.value_;
                 }
             }
         }

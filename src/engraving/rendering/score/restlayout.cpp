@@ -27,6 +27,8 @@
 #include <cmath>
 #include <limits>
 
+#include <gtl/btree.hpp>
+
 #include "beamlayout.h"
 #include "chordlayout.h"
 #include "dom/beam.h"
@@ -604,7 +606,7 @@ RestGroups RestLayout::compute_rest_groups(const System *system, LayoutContext &
 
 InterruptionPoints RestLayout::compute_interruption_points(const Measure *measure, staff_idx_t staff_idx) {
     // Start with sets to get automatic uniqueness and ordering
-    std::array<std::set<Fraction>, ::mu::engraving::voices> interruption_point_sets;
+    std::array<gtl::btree_set<Fraction>, ::mu::engraving::voices> interruption_point_sets;
 
     track_idx_t s_track = staff_idx * ::mu::engraving::voices;
     track_idx_t e_track = s_track + ::mu::engraving::voices;
@@ -680,7 +682,7 @@ InterruptionPoints RestLayout::compute_interruption_points(const Measure *measur
     // Convert sets to lists
     InterruptionPoints interruption_points;
     for (voice_idx_t voice = 0; voice < ::mu::engraving::voices; ++voice) {
-        const std::set<Fraction> &set = interruption_point_sets[voice];
+        const gtl::btree_set<Fraction> &set = interruption_point_sets[voice];
         interruption_points[voice] = std::list(set.begin(), set.end());
     }
 

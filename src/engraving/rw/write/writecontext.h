@@ -21,8 +21,8 @@
  */
 #pragma once
 
-#include <map>
-#include <unordered_set>
+#include <ankerl/unordered_dense.h>
+#include <gtl/btree.hpp>
 
 #include "containers.h"
 #include "engraving/dom/score.h"
@@ -44,7 +44,7 @@ struct WriteContext {
 
     WriteContext(const Score *s, bool clipboard_mode = false) : score_(s), clipboardmode_value(clipboard_mode) {}
 
-    std::unordered_set<const Segment *> written_segments;
+    ankerl::unordered_dense::set<const Segment *> written_segments;
     const gtl::btree_map<muse::String, muse::String> *metadata_override = nullptr;
 
     EngravingConfiguration *configuration() const;
@@ -114,7 +114,7 @@ private:
     bool standalone_value{false};
     bool inline_style_value{false};
     bool inline_excerpts_value{false};
-    std::map<const void *, EID> standalone_links;
+    ankerl::unordered_dense::map<const void *, EID> standalone_links;
 
     std::optional<WriteRange> range_value;
 };

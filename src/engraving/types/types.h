@@ -22,9 +22,10 @@
 #pragma once
 
 #include <functional>
-#include <map>
 #include <tuple>
-#include <unordered_set>
+
+#include <ankerl/unordered_dense.h>
+#include <gtl/btree.hpp>
 
 #include "draw/types/color.h"
 #include "draw/types/geometry.h"
@@ -64,7 +65,7 @@ enum class Grip : signed char {
 using staff_idx_t = size_t;
 
 using track_idx_t = size_t;
-using TracksMap = std::multimap<track_idx_t, track_idx_t>;
+using TracksMap = gtl::btree_multimap<track_idx_t, track_idx_t>;
 
 using voice_idx_t = size_t;
 
@@ -340,7 +341,7 @@ constexpr bool autoplace_applies_to_type(ElementType type) {
     }
 }
 
-const static std::unordered_set<ElementType> textbase_types{
+const static ankerl::unordered_dense::set<ElementType> textbase_types{
     ElementType::TEXT,
     ElementType::LYRICS,
     ElementType::DYNAMIC,
@@ -370,7 +371,7 @@ const static std::unordered_set<ElementType> textbase_types{
     ElementType::HAMMER_ON_PULL_OFF_TEXT,
 };
 
-using ElementTypeSet = std::unordered_set<ElementType>;
+using ElementTypeSet = ankerl::unordered_dense::set<ElementType>;
 
 // ========================================
 // ========================================
@@ -806,8 +807,8 @@ struct OrnamentInterval {
     inline bool operator!=(const OrnamentInterval &interval) const { return !operator==(interval); }
 
     static bool is_perfect_step(IntervalStep step) {
-        static const std::unordered_set<IntervalStep> perfect_steps{IntervalStep::UNISON, IntervalStep::FOURTH, IntervalStep::FIFTH,
-                                                                    IntervalStep::OCTAVE};
+        static const ankerl::unordered_dense::set<IntervalStep> perfect_steps{IntervalStep::UNISON, IntervalStep::FOURTH,
+                                                                              IntervalStep::FIFTH, IntervalStep::OCTAVE};
         return muse::contains(perfect_steps, step);
     }
 
@@ -1126,7 +1127,7 @@ enum class TremoloChordType : unsigned char { TREMOLO_NONE, TREMOLO_SINGLE, TREM
 enum class BracketType : signed char { NORMAL, BRACE, SQUARE, LINE, GROUP, NO_BRACKET = -1 };
 
 using InstrumentTrackIdList = std::vector<InstrumentTrackId>;
-using InstrumentTrackIdSet = std::unordered_set<InstrumentTrackId>;
+using InstrumentTrackIdSet = ankerl::unordered_dense::set<InstrumentTrackId>;
 
 enum EmbellishmentType : unsigned char {};
 
@@ -1315,7 +1316,7 @@ struct CapoParams {
         STANDARD_ONLY = 1,
         TAB_ONLY = 2,
     };
-    std::unordered_set<string_idx_t> ignored_strings;
+    gtl::btree_set<string_idx_t> ignored_strings;
     int fret_position = 0;
     TransposeMode transpose_mode = TransposeMode::PLAYBACK_ONLY;
     bool active = false;
@@ -1329,7 +1330,7 @@ struct PartAudioSettingsCompat {
 };
 
 struct SettingsCompat {
-    std::map<muse::ID /*partid*/, PartAudioSettingsCompat> audio_settings;
+    gtl::btree_map<muse::ID /*partid*/, PartAudioSettingsCompat> audio_settings;
 };
 
 struct MeasureBeat {

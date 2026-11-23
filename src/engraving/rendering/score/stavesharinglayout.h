@@ -23,6 +23,8 @@
 
 #include <span>
 
+#include <ankerl/unordered_dense.h>
+
 #include "dom/sharedpart.h"
 #include "dom/stavesharinglabel.h"
 #include "layoutcontext.h"
@@ -50,7 +52,7 @@ private:
         std::vector<Spanner *> overlapping_spanners;
 
         SharedPart *cur_shared_part = nullptr;
-        std::unordered_set<Note *> shared_unison_notes;
+        ankerl::unordered_dense::set<Note *> shared_unison_notes;
         std::vector<StaveSharingLabel *> old_stave_sharing_labels;
         std::vector<StaveSharingLabel *> updated_stave_sharing_labels;
         std::vector<StaveSharingChange *> obsolete_changes;
@@ -78,7 +80,7 @@ private:
 
     static bool is_unison(track_idx_t prev_track, track_idx_t next_track, StaveSharingContext &ctx);
     static bool can_go_to_same_voice(track_idx_t prev_track, track_idx_t next_track, StaveSharingContext &ctx,
-                                     const TrackGroup &cur_track_group, std::unordered_set<Note *> &local_unison_notes,
+                                     const TrackGroup &cur_track_group, ankerl::unordered_dense::set<Note *> &local_unison_notes,
                                      const Staff *destination = nullptr);
 
     static bool check_segment_for_same_voice(Segment *segment, track_idx_t prev_track, track_idx_t next_track);

@@ -21,6 +21,8 @@
  */
 #include "pagelayout.h"
 
+#include <gtl/btree.hpp>
+
 #include "arpeggiolayout.h"
 #include "beamlayout.h"
 #include "chordbracketlayout.h"
@@ -903,7 +905,7 @@ void PageLayout::distribute_staves(LayoutContext &ctx, Page *page, double footer
         space_remaining -= added_space;
     }
 
-    std::set<System *> systems;
+    gtl::btree_set<System *> systems;
     double system_shift{0.0};
     double staff_shift{0.0};
     System *prv_system{nullptr};

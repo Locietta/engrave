@@ -22,7 +22,8 @@
 
 #include "engravingcompat.h"
 
-#include <set>
+#include <ankerl/unordered_dense.h>
+#include <gtl/btree.hpp>
 
 #include "dom/beam.h"
 #include "dom/box.h"
@@ -628,10 +629,10 @@ void AlignmentMigration500::migrate_snapped_and_same_item_type_alignment(MasterS
     for (Score *score : master_score->score_list()) {
         std::vector<EngravingItem *> snapped_candidates;
 
-        std::map<RowKey, std::vector<EngravingItem *>> harmony_groups;
-        std::map<RowKey, std::vector<EngravingItem *>> harmony_on_fret_diagram_groups;
-        std::map<RowKey, std::vector<EngravingItem *>> fret_groups;
-        std::map<RowKey, std::vector<EngravingItem *>> sticking_groups;
+        gtl::btree_map<RowKey, std::vector<EngravingItem *>> harmony_groups;
+        gtl::btree_map<RowKey, std::vector<EngravingItem *>> harmony_on_fret_diagram_groups;
+        gtl::btree_map<RowKey, std::vector<EngravingItem *>> fret_groups;
+        gtl::btree_map<RowKey, std::vector<EngravingItem *>> sticking_groups;
 
         bool align_chord_symbols = score->style().style_b(Sid::VERTICALLY_ALIGN_CHORD_SYMBOLS);
 
@@ -671,7 +672,7 @@ void AlignmentMigration500::migrate_snapped_and_same_item_type_alignment(MasterS
             }
         });
 
-        std::set<EngravingItem *> visited;
+        ankerl::unordered_dense::set<EngravingItem *> visited;
         for (EngravingItem *item : snapped_candidates) {
             if (muse::contains(visited, item)) {
                 continue;

@@ -26,7 +26,6 @@
 */
 
 #include <assert.h>
-#include <set>
 
 #include <amc/flatset.hpp>
 

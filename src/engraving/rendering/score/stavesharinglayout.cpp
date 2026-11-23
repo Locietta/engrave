@@ -26,6 +26,9 @@
 #include <climits>
 #include <vector>
 
+#include <ankerl/unordered_dense.h>
+#include <gtl/btree.hpp>
+
 #include "dom/breath.h"
 #include "dom/chord.h"
 #include "dom/factory.h"
@@ -247,7 +250,7 @@ bool StaveSharingLayout::is_valid(const SharedTrackMap &map, const TrackGroup &o
     std::ranges::sort(by_shared_track);
 
     TrackGroup group;
-    std::unordered_set<Note *> unison_notes;
+    ankerl::unordered_dense::set<Note *> unison_notes;
     track_idx_t prev_shared = muse::nidx;
     for (const auto &[shared, origin] : by_shared_track) {
         if (shared != prev_shared) {
@@ -324,9 +327,9 @@ void StaveSharingLayout::update_track_maps(StaveSharingContext &ctx) {
 }
 
 std::optional<SharedTrackMap> StaveSharingLayout::compute_track_map(const TrackGroup &origin_tracks, StaveSharingContext &ctx) {
-    std::unordered_set<track_idx_t> processed_tracks;
+    ankerl::unordered_dense::set<track_idx_t> processed_tracks;
 
-    std::map<track_idx_t, TrackGroup> unisons_map;
+    ankerl::unordered_dense::map<track_idx_t, TrackGroup> unisons_map;
     for (size_t i = 0; i < origin_tracks.size(); ++i) {
         track_idx_t track1 = origin_tracks[i];
         if (muse::contains(processed_tracks, track1)) {
@@ -351,7 +354,7 @@ std::optional<SharedTrackMap> StaveSharingLayout::compute_track_map(const TrackG
         }
     }
 
-    std::map<track_idx_t, TrackGroup> same_voice_map;
+    ankerl::unordered_dense::map<track_idx_t, TrackGroup> same_voice_map;
     for (size_t i = 0; i < origin_tracks.size(); ++i) {
         track_idx_t track1 = origin_tracks[i];
         if (muse::contains(processed_tracks, track1)) {
@@ -360,7 +363,7 @@ std::optional<SharedTrackMap> StaveSharingLayout::compute_track_map(const TrackG
         processed_tracks.insert(track1);
 
         TrackGroup cur_track_group = {track1};
-        std::unordered_set<Note *> local_unison_notes;
+        ankerl::unordered_dense::set<Note *> local_unison_notes;
 
         track_idx_t last_in_this_voice = track1;
         for (size_t j = i + 1; j < origin_tracks.size(); ++j) {
@@ -382,7 +385,7 @@ std::optional<SharedTrackMap> StaveSharingLayout::compute_track_map(const TrackG
 
     SharedTrackMap track_map;
 
-    std::unordered_set<track_idx_t> assigned_tracks;
+    ankerl::unordered_dense::set<track_idx_t> assigned_tracks;
     const auto range = ctx.cur_shared_part->track_range();
     track_idx_t cur_shared_track = range.start_track;
     std::vector<bool> used_slots(range.end_track - range.start_track);
@@ -568,7 +571,7 @@ bool StaveSharingLayout::is_unison(track_idx_t prev_track, track_idx_t next_trac
 }
 
 bool StaveSharingLayout::can_go_to_same_voice(track_idx_t prev_track, track_idx_t next_track, StaveSharingContext &ctx,
-                                              const TrackGroup &cur_track_group, std::unordered_set<Note *> &local_unison_notes,
+                                              const TrackGroup &cur_track_group, ankerl::unordered_dense::set<Note *> &local_unison_notes,
                                               const Staff *destination) {
     std::vector<Note *> potential_unison_notes;
 
@@ -777,8 +780,8 @@ bool StaveSharingLayout::seg_has_local_key_sig(const Segment *segment, const Sha
 }
 
 bool StaveSharingLayout::check_segment_annotations_for_same_voice(Segment *segment, track_idx_t prev_track, track_idx_t next_track) {
-    std::multimap<ElementType, EngravingItem *> annotations_on_prev_track;
-    std::multimap<ElementType, EngravingItem *> annotations_on_next_track;
+    gtl::btree_multimap<ElementType, EngravingItem *> annotations_on_prev_track;
+    gtl::btree_multimap<ElementType, EngravingItem *> annotations_on_next_track;
 
     for (EngravingItem *annotation : segment->rendered_annotations()) {
         if (annotation->is_instrument_change()) {
@@ -912,8 +915,8 @@ bool StaveSharingLayout::check_note_spanners_for_unison(const Note *note1, const
 }
 
 bool StaveSharingLayout::check_spanners_for_same_voice(track_idx_t prev_track, track_idx_t next_track, StaveSharingContext &ctx) {
-    std::multimap<ElementType, Spanner *> spanners_on_prev_track;
-    std::multimap<ElementType, Spanner *> spanners_on_next_track;
+    gtl::btree_multimap<ElementType, Spanner *> spanners_on_prev_track;
+    gtl::btree_multimap<ElementType, Spanner *> spanners_on_next_track;
 
     for (Spanner *spanner : ctx.overlapping_spanners) {
         if (!ctx.cur_shared_part->authored_states().empty() && (spanner->tick() >= ctx.e_tick || spanner->tick2() < ctx.s_tick)) continue;

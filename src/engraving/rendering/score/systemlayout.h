@@ -23,6 +23,8 @@
 
 #include <vector>
 
+#include <gtl/btree.hpp>
+
 #include "../../dom/measure.h"
 #include "../../dom/segment.h"
 #include "../../dom/sharedpart.h"
@@ -95,8 +97,8 @@ private:
         Measure *measure = nullptr;
         double measure_width = 0.0;
         double measure_pos = 0.0;
-        std::map<EngravingItem *, PointF> element_positions;
-        std::map<EngravingItem *, double> element_widths;
+        gtl::btree_map<EngravingItem *, PointF> element_positions;
+        gtl::btree_map<EngravingItem *, double> element_widths;
         std::vector<std::pair<SharedPart *, RenderedStaveSharingStates>> stave_sharing_states;
         bool cur_header = false;
         bool cur_trailer = false;

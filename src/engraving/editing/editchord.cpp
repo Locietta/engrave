@@ -23,6 +23,7 @@
 #include "editchord.h"
 
 #include <amc/flatset.hpp>
+#include <gtl/btree.hpp>
 
 #include "../dom/arpeggio.h"
 #include "../dom/articulation.h"
@@ -93,7 +94,7 @@ void EditChord::remove_chord_parentheses(Chord *chord, std::vector<Note *> notes
     if (notes.empty()) {
         return;
     }
-    std::map<const NoteParenthesisInfo *, std::vector<Note *>> notes_by_group;
+    gtl::btree_map<const NoteParenthesisInfo *, std::vector<Note *>> notes_by_group;
 
     for (Note *n : notes) {
         const NoteParenthesisInfo *note_paren_info = chord->find_note_parenthesis_info(n);

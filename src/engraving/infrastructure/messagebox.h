@@ -22,14 +22,15 @@
 #ifndef MU_ENGRAVING_MESSAGEBOX_H
 #define MU_ENGRAVING_MESSAGEBOX_H
 
-#include <set>
 #include <string>
+
+#include <amc/flatset.hpp>
 
 namespace mu::engraving {
 struct MessageBox {
     enum Button { OK, CANCEL };
 
-    Button warning(const std::string &title, const std::string &text, const std::set<Button> &buttons = {OK, CANCEL});
+    Button warning(const std::string &title, const std::string &text, const amc::FlatSet<Button> &buttons = {OK, CANCEL});
 };
 } // namespace mu::engraving
 

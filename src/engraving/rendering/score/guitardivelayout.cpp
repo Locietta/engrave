@@ -23,6 +23,9 @@
 
 #include <deque>
 
+#include <amc/flatset.hpp>
+#include <ankerl/unordered_dense.h>
+
 #include "dom/guitarbend.h"
 #include "dom/note.h"
 #include "dom/staff.h"
@@ -61,7 +64,7 @@ void GuitarDiveLayout::update_dive_sequences(const std::vector<GuitarBend *> &be
         DirectionV tab_pos = dive->dive_tab_pos();
 
         amc::FlatSet<int> dive_levels;
-        std::unordered_set<GuitarBend *> dive_sequence;
+        ankerl::unordered_dense::set<GuitarBend *> dive_sequence;
 
         dive_levels.insert(dive->tot_bend_amount_including_preceding_bends());
         dive_sequence.insert(dive);

@@ -79,7 +79,7 @@ Event::Event(const Event &e) : PlayEvent(e) {
     voice_value = e.voice_value;
     notes_value = e.notes_value;
     if (e.edata_value) {
-        edata_value = new unsigned char[e.len_value + 1]; // don’t forget trailing zero
+        edata_value = new unsigned char[e.len_value + 1]; // don鈥檛 forget trailing zero
         memcpy(edata_value, e.edata_value, e.len_value + 1);
     } else {
         edata_value = 0;
@@ -190,19 +190,13 @@ EventsHolder::events_multimap_t &EventsHolder::operator[](std::size_t idx) {
 }
 
 const EventsHolder::events_multimap_t &EventsHolder::operator[](std::size_t idx) const {
-    // Since EventsHolder acts more like a vector
-    // Using const subscript operator for a nonexistent element is UB
-    /*
-     * cppreference.com
-     * Unlike std::map::operator[], this operator never inserts a new element into the container.
-     * Accessing a nonexistent element through this operator is undefined behavior.
-     */
     assert(idx < size());
     return channels[idx];
 }
 
 void EventsHolder::merge_pitch_wheel_events(EventsHolder &pitch_wheel_events) {
     for (size_t i = 0; i < size(); ++i) {
+        std::vector<std::pair<int, NPlayEvent>> resets;
         for (const auto &event_pair : channels[i]) {
             const auto &event = event_pair.second;
             const auto &tick = event_pair.first;
@@ -220,11 +214,13 @@ void EventsHolder::merge_pitch_wheel_events(EventsHolder &pitch_wheel_events) {
                         tick_for_pw_reset = (tick + pw_event->first) / 2;
                     }
 
-                    channels[i].insert(std::pair<int, NPlayEvent>(tick_for_pw_reset, pw_reset));
+                    resets.emplace_back(tick_for_pw_reset, pw_reset);
                 }
             }
         }
-        channels[i].merge(pitch_wheel_events[i]);
+        channels[i].insert(resets.begin(), resets.end());
+        channels[i].insert(pitch_wheel_events[i].begin(), pitch_wheel_events[i].end());
+        pitch_wheel_events[i].clear();
     }
 }
 

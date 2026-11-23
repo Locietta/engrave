@@ -23,6 +23,9 @@
 
 #include <algorithm>
 
+#include <amc/flatset.hpp>
+#include <ankerl/unordered_dense.h>
+
 #include "dom/barline.h"
 #include "dom/factory.h"
 #include "dom/layoutbreak.h"
@@ -45,7 +48,7 @@
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
-static const std::unordered_set<ElementType> break_types{
+static const ankerl::unordered_dense::set<ElementType> break_types{
     ElementType::TEMPO_TEXT,
     ElementType::REHEARSAL_MARK,
     ElementType::HARMONY,
@@ -65,9 +68,9 @@ static const std::unordered_set<ElementType> break_types{
     ElementType::FERMATA,
 };
 
-static const std::unordered_set<ElementType> always_break_types{ElementType::TEMPO_TEXT, ElementType::REHEARSAL_MARK};
+static const ankerl::unordered_dense::set<ElementType> always_break_types{ElementType::TEMPO_TEXT, ElementType::REHEARSAL_MARK};
 
-static const std::unordered_set<ElementType> conditional_break_types{
+static const ankerl::unordered_dense::set<ElementType> conditional_break_types{
     ElementType::HARMONY,
     ElementType::STAFF_TEXT,
     ElementType::EXPRESSION,
@@ -547,7 +550,7 @@ bool MMRestLayout::break_multi_measure_rest(const LayoutContext &ctx, Measure *m
         return true;
     }
 
-    static const std::set<ElementType> break_spanner_types{
+    static const amc::FlatSet<ElementType> break_spanner_types{
         ElementType::VOLTA,
         ElementType::GRADUAL_TEMPO_CHANGE,
         ElementType::TEXTLINE,

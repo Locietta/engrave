@@ -21,11 +21,11 @@
  */
 #pragma once
 
-#include <map>
 #include <optional>
-#include <set>
 #include <variant>
 #include <vector>
+
+#include <gtl/btree.hpp>
 
 #include "engraving/automation/automationdata.h"
 #include "engraving/automation/automationtypes.h"
@@ -90,7 +90,7 @@ private:
         staff_idx_t from = 0;
         staff_idx_t to = 0;
         bool is_full = true;
-        std::set<muse::ID> staff_ids; // only populated when !isFull
+        gtl::btree_set<muse::ID> staff_ids; // only populated when !isFull
 
         bool contains(staff_idx_t staff_idx) const;
         bool contains(const muse::ID &staff_id) const;
@@ -108,7 +108,7 @@ private:
         std::optional<utick_t> next_measure_u_tick; // next measure in the same repeat pass, if any
     };
 
-    using DynamicPriorities = std::map<AutomationCurveKey, std::map<utick_t, int>>;
+    using DynamicPriorities = gtl::btree_map<AutomationCurveKey, gtl::btree_map<utick_t, int>>;
     using MeasureRepeats = std::vector<std::pair<const MeasureRepeat *, int>>;
 
     struct UpdateContext {
@@ -121,8 +121,13 @@ private:
         PausesMap pauses;
         PausesMap no_repeat_pauses; // repeat-agnostic twin of pauses
         std::vector<AnacrusisMeasureInfo> anacrusis_measures;
-        AutomationCurve *tempo_curve = nullptr;
-        const AutomationCurve *tempo_for_dynamics = nullptr;
+
+        AutomationCurve &tempo_curve() { return curves[tempo_key]; }
+
+        const AutomationCurve *existing_tempo = nullptr;
+
+        const AutomationCurve &tempo_for_dynamics() const { return existing_tempo ? *existing_tempo : curves.at(tempo_key); }
+
         AutomationCurve no_repeat_tempo_curve; // repeat-agnostic Tempo curve
         std::vector<std::pair<utick_t, int>> pending_tempo_resets;
         BeatsPerSecond tempo_multiplier = 1.0;
@@ -197,10 +202,10 @@ private:
     static void resolve_pending_tempo_resets(UpdateContext &ctx);
     static void fix_anacrusis_tempo(UpdateContext &ctx);
 
-    static bool try_add_dynamic_point(AutomationCurve &curve, std::map<utick_t, int> &tick_prio_map, utick_t tick,
+    static bool try_add_dynamic_point(AutomationCurve &curve, gtl::btree_map<utick_t, int> &tick_prio_map, utick_t tick,
                                       const AutomationPoint &point, int priority);
-    static void add_dynamic_point(AutomationCurve &curve, std::map<utick_t, int> &tick_prio_map, utick_t tick, const AutomationPoint &point,
-                                  int priority);
+    static void add_dynamic_point(AutomationCurve &curve, gtl::btree_map<utick_t, int> &tick_prio_map, utick_t tick,
+                                  const AutomationPoint &point, int priority);
     static void set_tempo_point(utick_t tick, int tick_offset, real_t normalized_bps, UpdateContext &ctx,
                                 std::optional<EID> item_id = std::nullopt);
     //! NOTE: for callers that already know no point exists at tick (e.g. via lower_bound) - skips the redundant lookup

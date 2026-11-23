@@ -22,7 +22,9 @@
 #include "systemlayout.h"
 
 #include <cfloat>
-#include <unordered_set>
+
+#include <ankerl/unordered_dense.h>
+#include <gtl/btree.hpp>
 
 #include "alignmentlayout.h"
 #include "autoplace.h"
@@ -831,7 +833,7 @@ void SystemLayout::update_time_sig_above_staves_x_pos(System *system, LayoutCont
                 continue;
             }
 
-            std::set<TimeSig *> time_sig_to_keep;
+            ankerl::unordered_dense::set<TimeSig *> time_sig_to_keep;
             for (staff_idx_t staff_idx = 0; staff_idx < nstaves; ++staff_idx) {
                 TimeSig *time_sig = to_time_sig(seg.effective_element(staff2track(staff_idx)));
                 if (!time_sig || !time_sig->show_on_this_staff()) {
@@ -998,7 +1000,7 @@ void SystemLayout::layout_voltas(const ElementsToLayout &elements_to_layout, Lay
 
     process_lines(system, ctx, elements_to_layout.voltas);
 
-    std::set<Volta *> aligned_voltas;
+    ankerl::unordered_dense::set<Volta *> aligned_voltas;
     for (size_t i = 0; i < elements_to_layout.voltas.size(); ++i) {
         Volta *volta1 = to_volta(elements_to_layout.voltas[i]);
         if (aligned_voltas.count(volta1)) {
@@ -1103,12 +1105,12 @@ void SystemLayout::layout_harmonies(const std::vector<Harmony *> harmonies, Syst
     }
 
     // Only vertically align one chord symbol per tick & staff
-    std::set<std::pair<Fraction, staff_idx_t>> harmony_positions;
+    gtl::btree_set<std::pair<Fraction, staff_idx_t>> harmony_positions;
     std::vector<EngravingItem *> harmony_items_align;
     std::vector<EngravingItem *> harmony_items_no_align;
 
     for (Harmony *h : harmonies) {
-        if (muse::contains(harmony_positions, {h->tick(), h->staff_idx()})) {
+        if (harmony_positions.contains(std::pair{h->tick(), h->staff_idx()})) {
             harmony_items_no_align.push_back(h);
             continue;
         }
@@ -1149,13 +1151,13 @@ void SystemLayout::layout_fret_diagrams(const ElementsToLayout &elements, System
     }
 
     // Only vertically align one fd per tick & staff
-    std::set<std::pair<Fraction, staff_idx_t>> fret_harmony_positions;
+    gtl::btree_set<std::pair<Fraction, staff_idx_t>> fret_harmony_positions;
     std::vector<EngravingItem *> fret_items_align;
     std::vector<EngravingItem *> fret_or_harmony_items_no_align;
     std::vector<Harmony *> harmony_items_align(elements.harmonies.begin(), elements.harmonies.end());
 
     for (FretDiagram *fd : elements.fret_diagrams) {
-        if (muse::contains(fret_harmony_positions, {fd->tick(), fd->staff_idx()})) {
+        if (fret_harmony_positions.contains(std::pair{fd->tick(), fd->staff_idx()})) {
             fret_or_harmony_items_no_align.push_back(fd);
             if (fd->harmony()) {
                 harmony_items_align.erase(std::remove(harmony_items_align.begin(), harmony_items_align.end(), fd->harmony()));
@@ -1175,7 +1177,7 @@ void SystemLayout::layout_fret_diagrams(const ElementsToLayout &elements, System
         if (h->get_parent_fret_diagram()) {
             continue;
         }
-        if (muse::contains(fret_harmony_positions, {h->tick(), h->staff_idx()})) {
+        if (fret_harmony_positions.contains(std::pair{h->tick(), h->staff_idx()})) {
             harmony_items_align.erase(std::remove(harmony_items_align.begin(), harmony_items_align.end(), h));
             fret_or_harmony_items_no_align.push_back(h);
             continue;
@@ -1766,7 +1768,7 @@ void SystemLayout::do_layout_ties(System *system, const std::vector<Segment *> &
 }
 
 void SystemLayout::layout_tuplets(const std::vector<ChordRest *> &chord_rests, LayoutContext &ctx) {
-    std::set<Tuplet *> laidout_tuplets;
+    ankerl::unordered_dense::set<Tuplet *> laidout_tuplets;
     for (auto rev_iter = chord_rests.rbegin(); rev_iter != chord_rests.rend(); ++rev_iter) {
         ChordRest *cr = *rev_iter;
         Tuplet *tuplet = cr->top_tuplet();
@@ -2831,7 +2833,7 @@ bool SystemLayout::element_has_another_stacked_outside(const EngravingItem *elem
 }
 
 static SkylineLine skyline_facing_gap(const System *system, staff_idx_t staff_idx, bool is_upper_staff_of_gap, double y_shift,
-                                      const std::unordered_set<const EngravingItem *> &items_to_ignore) {
+                                      const ankerl::unordered_dense::set<const EngravingItem *> &items_to_ignore) {
     const SkylineLine &skyline =
         is_upper_staff_of_gap ? system->staff(staff_idx)->skyline().south() : system->staff(staff_idx)->skyline().north();
 
@@ -2850,7 +2852,7 @@ static SkylineLine skyline_facing_gap(const System *system, staff_idx_t staff_id
 
 void SystemLayout::center_items_in_gap(const Gap &gap, const System *system, double min_horizontal_clearance) {
     /* Nothing which is itself centered in this gap may take part in measuring it */
-    std::unordered_set<const EngravingItem *> movable_items;
+    ankerl::unordered_dense::set<const EngravingItem *> movable_items;
     for (const CenterableItem &gap_item : gap.items) {
         movable_items.insert(gap_item.item);
     }

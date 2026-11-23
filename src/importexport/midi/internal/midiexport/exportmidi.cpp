@@ -170,7 +170,7 @@ void ExportMidi::write_header(const CompatMidiRendererInternal::Context &context
         return;
     }
 
-    const std::map<int, double> &tempo_events = context.pause_map->tempo_events();
+    const auto &tempo_events = context.pause_map->tempo_events();
     BeatsPerSecond tempo_multiplier = score_->tempo_timeline().tempo_multiplier();
     for (const auto &[tick, bps] : tempo_events) {
         MidiEvent ev;

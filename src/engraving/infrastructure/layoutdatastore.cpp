@@ -275,7 +275,7 @@ void LayoutDataStore::register_layout_copy(const EngravingItem &source, Engravin
     // Reconnected ties can move relative to other types; order within a type is stable.
     const auto &source_children = source.children();
     const auto &display_children = display.children();
-    std::map<ElementType, size_t> ordinals;
+    ankerl::unordered_dense::map<ElementType, size_t> ordinals;
     for (const auto *child : source_children) {
         if (!child->is_engraving_item()) continue;
         size_t ordinal = ordinals[child->type()]++;

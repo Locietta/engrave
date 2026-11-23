@@ -23,8 +23,9 @@
 
 #include <charconv>
 #include <limits>
-#include <set>
 #include <stdexcept>
+
+#include <ankerl/unordered_dense.h>
 
 #include "../../infrastructure/rtti.h"
 #include "../../style/textstyle.h"
@@ -643,7 +644,7 @@ void TWrite::write_score_spanners(const Score *score, XmlWriter &xml, WriteConte
     if (score->spanner_map().empty()) {
         return;
     }
-    std::set<Spanner *> pending;
+    ankerl::unordered_dense::set<Spanner *> pending;
     for (const auto &i : score->spanner_map().map()) {
         Spanner *s = i.second;
         if (!s->generated()) {
@@ -1350,12 +1351,7 @@ void TWrite::write(const Capo *item, XmlWriter &xml, WriteContext &ctx) {
     write_property(item, xml, Pid::CAPO_GENERATE_TEXT);
     write_property(item, xml, Pid::CAPO_TRANSPOSE_MODE);
 
-    std::set<string_idx_t> ordered_strings;
     for (string_idx_t idx : item->params().ignored_strings) {
-        ordered_strings.insert(idx);
-    }
-
-    for (string_idx_t idx : ordered_strings) {
         xml.start_element("string", {{"no", idx}});
         xml.tag("apply", false);
         xml.end_element();

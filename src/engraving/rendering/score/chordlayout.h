@@ -25,6 +25,8 @@
 #include <span>
 #include <vector>
 
+#include <gtl/btree.hpp>
+
 #include "dom/chord.h"
 #include "dom/measurerepeat.h"
 #include "dom/mmrest.h"
@@ -78,7 +80,7 @@ struct OffsetInfo {
     double center_adjust_up = 0.0;   // adjustment to upstem chord needed after centering donwstem chord
     double center_adjust_down = 0.0; // adjustment to downstem chord needed after centering upstem chord
 
-    std::set<track_idx_t> tracks_to_adjust;
+    gtl::btree_set<track_idx_t> tracks_to_adjust;
 };
 
 struct ChordLayout {

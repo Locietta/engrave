@@ -23,6 +23,8 @@
 
 #include <cfloat>
 
+#include <ankerl/unordered_dense.h>
+
 #include "chordbracketlayout.h"
 #include "dom/barline.h"
 #include "dom/beam.h"
@@ -1367,7 +1369,7 @@ double HorizontalSpacing::min_horizontal_distance(const Segment *f, const Segmen
 }
 
 bool HorizontalSpacing::needs_header_spacing_exceptions(const Segment *seg, const Segment *next_seg) {
-    static const std::unordered_set<SegmentType> header_segment_types = {
+    static const ankerl::unordered_dense::set<SegmentType> header_segment_types = {
         SegmentType::HEADER_CLEF, SegmentType::KEY_SIG,  SegmentType::KEY_SIG_START_REPEAT_ANNOUNCE,
         SegmentType::AMBITUS,     SegmentType::TIME_SIG, SegmentType::TIME_SIG_START_REPEAT_ANNOUNCE};
 

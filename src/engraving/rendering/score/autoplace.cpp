@@ -21,6 +21,8 @@
  */
 #include "autoplace.h"
 
+#include <amc/flatset.hpp>
+
 #include "dom/chordrest.h"
 #include "dom/harmony.h"
 #include "dom/lyrics.h"
@@ -184,8 +186,8 @@ bool Autoplace::items_should_ignore_each_other(const EngravingItem *item_to_auto
 
     if (type1 == type2) {
         // Items of same type should ignore each other in most cases
-        static const std::set<ElementType> text_based_types_which_ignore_each_other{ElementType::DYNAMIC, ElementType::EXPRESSION,
-                                                                                    ElementType::STICKING};
+        static const amc::FlatSet<ElementType> text_based_types_which_ignore_each_other{ElementType::DYNAMIC, ElementType::EXPRESSION,
+                                                                                        ElementType::STICKING};
         return !item_to_autoplace->is_text_base() || muse::contains(text_based_types_which_ignore_each_other, type1);
     }
 

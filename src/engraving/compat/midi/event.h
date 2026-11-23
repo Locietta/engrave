@@ -23,8 +23,9 @@
 #ifndef MU_ENGRAVING_COMPAT_EVENT_H
 #define MU_ENGRAVING_COMPAT_EVENT_H
 
-#include <map>
 #include <vector>
+
+#include <gtl/btree.hpp>
 
 #include "midicoreevent.h"
 #include "midiinstrumenteffects.h"
@@ -200,7 +201,7 @@ public:
 struct EventsHolder {
 private:
 
-    using events_multimap_t = std::multimap<int, NPlayEvent>;
+    using events_multimap_t = gtl::btree_multimap<int, NPlayEvent>;
     std::vector<events_multimap_t> channels;
 public:
     [[nodiscard]] size_t size() const { return channels.size(); }
