@@ -31,6 +31,7 @@
 #include "engraving/dom/score.h"
 #include "engraving/dom/segment.h"
 #include "engraving/style/styledef.h"
+#include "global/flatmap.h"
 #include "log.h"
 #include "realfn.h"
 
@@ -68,7 +69,7 @@ int harmonic_overtone(Note *note, float harmonic_value, int harmonic_type) {
 }
 
 std::vector<int> standard_tuning_for(int midi_program, int strings_count) {
-    static const std::map<std::pair<int, /* program */ int /* strings count */>, std::vector<int>> tunings{
+    static const muse::FlatMap<std::pair<int, /* program */ int /* strings count */>, std::vector<int>> tunings{
         // Guitars 6 strings
         {{25, 6}, {40, 45, 50, 55, 59, 64}},
         {{26, 6}, {40, 45, 50, 55, 59, 64}},

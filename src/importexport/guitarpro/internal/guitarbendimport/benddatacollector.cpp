@@ -170,8 +170,8 @@ void BendDataCollector::regroup_bend_data_by_tied_chords() {
                 auto &info_for_first_chord = chunk[main_tick];
                 info_for_first_chord.chord = main_chord;
 
-                for (const auto &[note, info] : tick_info) {
-                    info_for_first_chord.data_by_note[note] = std::move(tick_info[note]);
+                for (auto &[note, info] : tick_info) {
+                    info_for_first_chord.data_by_note[note] = std::move(info);
                 }
             }
 
@@ -207,7 +207,9 @@ void BendDataCollector::regroup_bend_data_by_tied_chords() {
                     auto &info_for_current_chord = chunk[current_chord->tick()];
 
                     info_for_current_chord.chord = current_chord;
-                    info_for_current_chord.data_by_note[current_note] = std::move(tick_info[current_note]);
+                    auto source = tick_info.find(current_note);
+                    info_for_current_chord.data_by_note[current_note] =
+                        source == tick_info.end() ? ImportedBendInfo{} : std::move(source->second);
 
                     tie_for = current_note->tie_for();
                 }

@@ -1,5 +1,7 @@
 #include <vector>
 
+#include <ankerl/unordered_dense.h>
+
 #include "global/log.h"
 #include "gp67dombuilder.h"
 
@@ -7,20 +9,20 @@ using namespace muse;
 
 namespace mu::iex::guitarpro {
 std::pair<int, std::unique_ptr<GPTrack>> GP67DomBuilder::create_gp7_track(XmlDomNode *track_node, XmlDomNode *version_node) {
-    static const std::set<String> s_unused = {u"Color",
-                                              u"SystemsDefautLayout",
-                                              u"SystemsLayout",
-                                              u"AutoBrush",
-                                              u"PalmMute",
-                                              u"AutoAccentuation",
-                                              u"PlayingStyle",
-                                              u"UseOneChannelPerString",
-                                              u"IconId",
-                                              u"InstrumentSet",
-                                              u"ForcedSound",
-                                              u"PlaybackState",
-                                              u"AudioEngineState",
-                                              u"Automations"};
+    static const ankerl::unordered_dense::set<String> s_unused = {u"Color",
+                                                                  u"SystemsDefautLayout",
+                                                                  u"SystemsLayout",
+                                                                  u"AutoBrush",
+                                                                  u"PalmMute",
+                                                                  u"AutoAccentuation",
+                                                                  u"PlayingStyle",
+                                                                  u"UseOneChannelPerString",
+                                                                  u"IconId",
+                                                                  u"InstrumentSet",
+                                                                  u"ForcedSound",
+                                                                  u"PlaybackState",
+                                                                  u"AudioEngineState",
+                                                                  u"Automations"};
 
     int track_idx = track_node->to_element().attribute("id").value().to_int();
     auto track = std::make_unique<GPTrack>(track_idx);

@@ -2,7 +2,9 @@
 #define MU_IMPORTEXPORT_GPTRACK_H
 
 #include <string>
-#include <unordered_map>
+
+#include <ankerl/unordered_dense.h>
+#include <gtl/btree.hpp>
 
 #include "types/string.h"
 
@@ -36,7 +38,7 @@ struct GPTrack {
         int string_count{0};
         int fret_count{0};
         int base_fret{0};
-        std::unordered_map<int, int> frets;
+        gtl::btree_map<int, int> frets;
         // there are some other tags
         // which cant be used in MU
     };
@@ -104,9 +106,9 @@ struct GPTrack {
 
     void add_sound_automation(SoundAutomation val) { automations.insert({{val.bar, val.position}, val}); }
 
-    const std::unordered_map<muse::String, Sound> &sounds() { return sounds_value; }
+    const ankerl::unordered_dense::map<muse::String, Sound> &sounds() { return sounds_value; }
 
-    const std::map<SoundAutomationPos, SoundAutomation> &sound_automations() { return automations; }
+    const gtl::btree_map<SoundAutomationPos, SoundAutomation> &sound_automations() { return automations; }
 
     std::vector<InstrumentString> strings() const {
         std::vector<InstrumentString> ss;
@@ -127,7 +129,7 @@ struct GPTrack {
 
     void add_diagram(std::pair<int, Diagram> &&d) { diagrams.insert(d); }
 
-    const std::unordered_map<int, Diagram> &diagram() const { return diagrams; }
+    const ankerl::unordered_dense::map<int, Diagram> &diagram() const { return diagrams; }
 
     void set_lyrics(const std::string &l) { lyrics_value = l; }
 
@@ -155,10 +157,10 @@ protected:
     int idx_value{-1};
     size_t staff_count_value{1};
     StaffProperties staff_properties_value;
-    std::unordered_map<muse::String, Sound> sounds_value;
-    std::map<SoundAutomationPos, SoundAutomation> automations;
+    ankerl::unordered_dense::map<muse::String, Sound> sounds_value;
+    gtl::btree_map<SoundAutomationPos, SoundAutomation> automations;
     int transpose_value{0};
-    std::unordered_map<int, Diagram> diagrams;
+    ankerl::unordered_dense::map<int, Diagram> diagrams;
     std::string lyrics_value;
     int lyrics_offset_value = {0};
     int line_count_value{5}; // for percussion lines

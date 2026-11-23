@@ -1,9 +1,11 @@
 #ifndef MU_IMPORTEXPORT_GPBEAT_H
 #define MU_IMPORTEXPORT_GPBEAT_H
 
-#include <map>
 #include <memory>
 #include <string>
+#include <utility>
+
+#include <ankerl/unordered_dense.h>
 
 #include "gpnote.h"
 #include "gprhythm.h"
@@ -247,37 +249,22 @@ struct GPBeat {
     //! (i.e. the lyrics did not participate in determining the uniqueness of the beat).
     //! Therefore, in order to write lyrics into such bits, a key was added - the bar number (master bar)
 
-    struct Key {
-        int32_t track_id{-1};
-        int32_t mbar_id{-1};
-
-        Key() {}
-
-        Key(int32_t ti, int32_t mi) : track_id(ti), mbar_id(mi) {}
-
-        bool operator<(const Key &other) const {
-            if (track_id != other.track_id) {
-                return track_id < other.track_id;
-            }
-            return mbar_id < other.mbar_id;
-        }
-    };
+    using Key = std::pair<int32_t, int32_t>;
 
     void set_lyrics(const std::string &ly) { set_lyrics(-1, -1, ly); }
 
-    void set_lyrics(int32_t ti, int32_t mi, const std::string &ly) { lyrics_value[Key(ti, mi)] = ly; }
+    void set_lyrics(int32_t ti, int32_t mi, const std::string &ly) { lyrics_value.insert_or_assign(Key(ti, mi), ly); }
 
-    const std::string &lyrics(int32_t ti = -1, int32_t mi = -1) const {
+    std::string lyrics(int32_t ti = -1, int32_t mi = -1) const {
         Key key(ti, mi);
-        if (lyrics_value.find(key) == lyrics_value.end()) {
+        auto it = lyrics_value.find(key);
+        if (it == lyrics_value.end()) {
             if (ti != -1 && mi != -1) {
                 return lyrics(-1, -1);
             }
-
-            static std::string dummy;
-            return dummy;
+            return {};
         }
-        return lyrics_value.at(key);
+        return it->second;
     }
 
     //! NOTE Same problem as with lyrics
@@ -300,8 +287,8 @@ struct GPBeat {
 private:
     int id_value = -1;
     std::vector<std::shared_ptr<GPNote>> notes_value;
-    std::map<Key, std::string> lyrics_value;
-    std::map<Key, int> diagram_idx_value;
+    ankerl::unordered_dense::map<Key, std::string> lyrics_value;
+    ankerl::unordered_dense::map<Key, int> diagram_idx_value;
     std::shared_ptr<GPRhythm> rhythm;
     DynamicType dynamic_value = DynamicType::MF;
     LegatoType legato = LegatoType::NONE;

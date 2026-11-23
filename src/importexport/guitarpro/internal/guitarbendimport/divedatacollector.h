@@ -21,6 +21,8 @@
  */
 #pragma once
 
+#include <ankerl/unordered_dense.h>
+
 #include "guitarbendimporttypes.h"
 #include <engraving/types/pitchvalue.h>
 
@@ -43,6 +45,6 @@ private:
     };
 
     DiveDataContext ctx_;
-    std::unordered_map<mu::engraving::track_idx_t, PrevWhammy> last_whammy_by_track_;
+    ankerl::unordered_dense::map<mu::engraving::track_idx_t, PrevWhammy> last_whammy_by_track_;
 };
 } // namespace mu::iex::guitarpro

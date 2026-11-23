@@ -28,12 +28,14 @@
 #include <cmath>
 #include <cstdint>
 #include <memory>
-#include <set>
 #include <span>
 #include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
+
+#include <ankerl/unordered_dense.h>
+#include <gtl/btree.hpp>
 
 #include "../shared/musicxmlfonthandler.h"
 #include "../shared/musicxmlsupport.h"
@@ -785,7 +787,7 @@ static void set_part_instruments(MusicXmlLogger *logger, const XmlStreamReader *
 namespace xmlpass2 {
 static String text2syms(const String &t, const EngravingFontsProvider &fonts, bool is_dolet = false) {
     EngravingFontPtr sf = fonts.fallback_font();
-    std::map<String, SymId> map;
+    ankerl::unordered_dense::map<String, SymId> map;
     size_t max_string_size = 0; // maximum string size found
 
     for (int i = int(SymId::NO_SYM); i < int(SymId::LAST_SYM); ++i) {
@@ -1135,7 +1137,7 @@ static MusicXmlDynamic parse_dynamics_container(XmlStreamReader &e, MusicXmlLogg
 static String dynamic_literal_marker_prefix(const String &text) {
     const std::string input = text.to_std_string();
     const std::string prefix = "~LITERAL_";
-    std::set<size_t> used;
+    ankerl::unordered_dense::set<size_t> used;
     size_t offset = 0;
     while ((offset = input.find(prefix, offset)) != std::string::npos) {
         const size_t begin = offset + prefix.size();
@@ -1240,7 +1242,7 @@ static void add_lyric(MusicXmlLogger *logger, const XmlStreamReader *const xmlre
  */
 
 static void add_lyrics(MusicXmlLogger *logger, const XmlStreamReader *const xmlreader, ChordRest *cr,
-                       const std::map<int, Lyrics *> &numbrd_lyrics, const std::set<Lyrics *> &ext_lyrics,
+                       const gtl::btree_map<int, Lyrics *> &numbrd_lyrics, const gtl::btree_set<Lyrics *> &ext_lyrics,
                        MusicXmlLyricsExtend &extended_lyrics) {
     for (const auto &[lyric_no, lyric] : numbrd_lyrics) {
         add_lyric(logger, xmlreader, cr, lyric, lyric_no, extended_lyrics);
@@ -1250,7 +1252,7 @@ static void add_lyrics(MusicXmlLogger *logger, const XmlStreamReader *const xmlr
     }
 }
 
-static void add_grace_note_lyrics(const std::map<int, Lyrics *> &numbered_lyrics, std::set<Lyrics *> extended_lyrics,
+static void add_grace_note_lyrics(const gtl::btree_map<int, Lyrics *> &numbered_lyrics, gtl::btree_set<Lyrics *> extended_lyrics,
                                   std::vector<GraceNoteLyrics> &gn_lyrics) {
     for (const auto &[lyric_no, lyric] : numbered_lyrics) {
         if (lyric) {
@@ -1709,57 +1711,58 @@ static void add_other_ornament_to_chord(const Notation &notation, ChordRest *cr)
 
 static bool convert_articulation_to_sym_id(const String &mxml_name, SymId &id) {
     // map MusicXML notations name to MuseScore symbol
-    static const std::map<String, SymId> map{// ornaments
-                                             {u"delayed-turn", SymId::ORNAMENT_TURN},
-                                             {u"inverted-turn", SymId::ORNAMENT_TURN_INVERTED},
-                                             {u"vertical-turn", SymId::ORNAMENT_TURN_UP},
-                                             {u"inverted-vertical-turn", SymId::ORNAMENT_TURN_UP_S},
-                                             {u"turn", SymId::ORNAMENT_TURN},
-                                             {u"shake", SymId::ORNAMENT_TREMBLEMENT_COUPERIN},
-                                             {u"schleifer", SymId::ORNAMENT_PRECOMP_SLIDE},
-                                             {u"haydn", SymId::ORNAMENT_HAYDN},
-                                             // articulations
-                                             {u"accent", SymId::ARTIC_ACCENT_ABOVE},
-                                             {u"strong-accent", SymId::ARTIC_MARCATO_ABOVE},
-                                             {u"staccato", SymId::ARTIC_STACCATO_ABOVE},
-                                             {u"tenuto", SymId::ARTIC_TENUTO_ABOVE},
-                                             {u"detached-legato", SymId::ARTIC_TENUTO_STACCATO_ABOVE},
-                                             {u"staccatissimo", SymId::ARTIC_STACCATISSIMO_ABOVE},
-                                             {u"spiccato", SymId::ARTIC_STACCATISSIMO_STROKE_ABOVE},
-                                             {u"stress", SymId::ARTIC_STRESS_ABOVE},
-                                             {u"unstress", SymId::ARTIC_UNSTRESS_ABOVE},
-                                             {u"soft-accent", SymId::ARTIC_SOFT_ACCENT_ABOVE},
-                                             // technical
-                                             {u"up-bow", SymId::STRINGS_UP_BOW},
-                                             {u"down-bow", SymId::STRINGS_DOWN_BOW},
-                                             {u"open-string", SymId::BRASS_MUTE_OPEN},
-                                             {u"thumb-position", SymId::STRINGS_THUMB_POSITION},
-                                             {u"double-tongue", SymId::DOUBLE_TONGUE_ABOVE},
-                                             {u"triple-tongue", SymId::TRIPLE_TONGUE_ABOVE},
-                                             {u"stopped", SymId::BRASS_MUTE_CLOSED},
-                                             {u"snap-pizzicato", SymId::PLUCKED_SNAP_PIZZICATO_ABOVE},
-                                             {u"heel", SymId::KEYBOARD_PEDAL_HEEL1},
-                                             {u"toe", SymId::KEYBOARD_PEDAL_TOE2},
-                                             {u"fingernails", SymId::PLUCKED_WITH_FINGERNAILS},
-                                             {u"brass-bend", SymId::BRASS_BEND},
-                                             {u"flip", SymId::BRASS_FLIP},
-                                             {u"smear", SymId::BRASS_SMEAR},
-                                             {u"open", SymId::BRASS_MUTE_OPEN},
-                                             {u"half-muted", SymId::BRASS_MUTE_HALF_CLOSED}, // ignoring the smufl attribute
-                                             {u"golpe", SymId::GUITAR_GOLPE},
+    static const ankerl::unordered_dense::map<String, SymId> map{
+        // ornaments
+        {u"delayed-turn", SymId::ORNAMENT_TURN},
+        {u"inverted-turn", SymId::ORNAMENT_TURN_INVERTED},
+        {u"vertical-turn", SymId::ORNAMENT_TURN_UP},
+        {u"inverted-vertical-turn", SymId::ORNAMENT_TURN_UP_S},
+        {u"turn", SymId::ORNAMENT_TURN},
+        {u"shake", SymId::ORNAMENT_TREMBLEMENT_COUPERIN},
+        {u"schleifer", SymId::ORNAMENT_PRECOMP_SLIDE},
+        {u"haydn", SymId::ORNAMENT_HAYDN},
+        // articulations
+        {u"accent", SymId::ARTIC_ACCENT_ABOVE},
+        {u"strong-accent", SymId::ARTIC_MARCATO_ABOVE},
+        {u"staccato", SymId::ARTIC_STACCATO_ABOVE},
+        {u"tenuto", SymId::ARTIC_TENUTO_ABOVE},
+        {u"detached-legato", SymId::ARTIC_TENUTO_STACCATO_ABOVE},
+        {u"staccatissimo", SymId::ARTIC_STACCATISSIMO_ABOVE},
+        {u"spiccato", SymId::ARTIC_STACCATISSIMO_STROKE_ABOVE},
+        {u"stress", SymId::ARTIC_STRESS_ABOVE},
+        {u"unstress", SymId::ARTIC_UNSTRESS_ABOVE},
+        {u"soft-accent", SymId::ARTIC_SOFT_ACCENT_ABOVE},
+        // technical
+        {u"up-bow", SymId::STRINGS_UP_BOW},
+        {u"down-bow", SymId::STRINGS_DOWN_BOW},
+        {u"open-string", SymId::BRASS_MUTE_OPEN},
+        {u"thumb-position", SymId::STRINGS_THUMB_POSITION},
+        {u"double-tongue", SymId::DOUBLE_TONGUE_ABOVE},
+        {u"triple-tongue", SymId::TRIPLE_TONGUE_ABOVE},
+        {u"stopped", SymId::BRASS_MUTE_CLOSED},
+        {u"snap-pizzicato", SymId::PLUCKED_SNAP_PIZZICATO_ABOVE},
+        {u"heel", SymId::KEYBOARD_PEDAL_HEEL1},
+        {u"toe", SymId::KEYBOARD_PEDAL_TOE2},
+        {u"fingernails", SymId::PLUCKED_WITH_FINGERNAILS},
+        {u"brass-bend", SymId::BRASS_BEND},
+        {u"flip", SymId::BRASS_FLIP},
+        {u"smear", SymId::BRASS_SMEAR},
+        {u"open", SymId::BRASS_MUTE_OPEN},
+        {u"half-muted", SymId::BRASS_MUTE_HALF_CLOSED}, // ignoring the smufl attribute
+        {u"golpe", SymId::GUITAR_GOLPE},
 
-                                             {u"belltree", SymId::HANDBELLS_BELLTREE},
-                                             {u"damp", SymId::HANDBELLS_DAMP3},
-                                             {u"echo", SymId::HANDBELLS_ECHO1},
-                                             {u"gyro", SymId::HANDBELLS_GYRO},
-                                             {u"hand martellato", SymId::HANDBELLS_HAND_MARTELLATO},
-                                             {u"mallet lift", SymId::HANDBELLS_MALLET_LFT},
-                                             {u"mallet table", SymId::HANDBELLS_MALLET_BELL_ON_TABLE},
-                                             {u"martellato", SymId::HANDBELLS_MARTELLATO},
-                                             {u"martellato lift", SymId::HANDBELLS_MARTELLATO_LIFT},
-                                             {u"muted martellato", SymId::HANDBELLS_MUTED_MARTELLATO},
-                                             {u"pluck lift", SymId::HANDBELLS_PLUCK_LIFT},
-                                             {u"swing", SymId::HANDBELLS_SWING}};
+        {u"belltree", SymId::HANDBELLS_BELLTREE},
+        {u"damp", SymId::HANDBELLS_DAMP3},
+        {u"echo", SymId::HANDBELLS_ECHO1},
+        {u"gyro", SymId::HANDBELLS_GYRO},
+        {u"hand martellato", SymId::HANDBELLS_HAND_MARTELLATO},
+        {u"mallet lift", SymId::HANDBELLS_MALLET_LFT},
+        {u"mallet table", SymId::HANDBELLS_MALLET_BELL_ON_TABLE},
+        {u"martellato", SymId::HANDBELLS_MARTELLATO},
+        {u"martellato lift", SymId::HANDBELLS_MARTELLATO_LIFT},
+        {u"muted martellato", SymId::HANDBELLS_MUTED_MARTELLATO},
+        {u"pluck lift", SymId::HANDBELLS_PLUCK_LIFT},
+        {u"swing", SymId::HANDBELLS_SWING}};
 
     auto it = map.find(mxml_name);
     if (it != map.end()) {
@@ -1781,7 +1784,7 @@ static bool convert_articulation_to_sym_id(const String &mxml_name, SymId &id) {
 
 static SymId convert_fermata_to_sym_id(const String &mxml_name) {
     // map MusicXML fermata name to MuseScore symbol
-    static const std::map<String, SymId> map{
+    static const ankerl::unordered_dense::map<String, SymId> map{
         {u"normal", SymId::FERMATA_ABOVE},
         {u"angled", SymId::FERMATA_SHORT_ABOVE},
         {u"square", SymId::FERMATA_LONG_ABOVE},
@@ -1810,24 +1813,24 @@ static SymId convert_fermata_to_sym_id(const String &mxml_name) {
 
 static NoteHeadGroup convert_notehead(String mxml_name) {
     // map MusicXML notehead name to a MuseScore headgroup
-    static const std::map<String, NoteHeadGroup> map{{u"slash", NoteHeadGroup::HEAD_SLASH},
-                                                     {u"triangle", NoteHeadGroup::HEAD_TRIANGLE_UP},
-                                                     {u"diamond", NoteHeadGroup::HEAD_DIAMOND},
-                                                     {u"cross", NoteHeadGroup::HEAD_PLUS},
-                                                     {u"x", NoteHeadGroup::HEAD_CROSS},
-                                                     {u"circle-x", NoteHeadGroup::HEAD_XCIRCLE},
-                                                     {u"inverted triangle", NoteHeadGroup::HEAD_TRIANGLE_DOWN},
-                                                     {u"slashed", NoteHeadGroup::HEAD_SLASHED1},
-                                                     {u"back slashed", NoteHeadGroup::HEAD_SLASHED2},
-                                                     {u"normal", NoteHeadGroup::HEAD_NORMAL},
-                                                     {u"do", NoteHeadGroup::HEAD_DO},
-                                                     {u"re", NoteHeadGroup::HEAD_RE},
-                                                     {u"mi", NoteHeadGroup::HEAD_MI},
-                                                     {u"fa", NoteHeadGroup::HEAD_FA},
-                                                     {u"fa up", NoteHeadGroup::HEAD_FA},
-                                                     {u"so", NoteHeadGroup::HEAD_SOL},
-                                                     {u"la", NoteHeadGroup::HEAD_LA},
-                                                     {u"ti", NoteHeadGroup::HEAD_TI}};
+    static const ankerl::unordered_dense::map<String, NoteHeadGroup> map{{u"slash", NoteHeadGroup::HEAD_SLASH},
+                                                                         {u"triangle", NoteHeadGroup::HEAD_TRIANGLE_UP},
+                                                                         {u"diamond", NoteHeadGroup::HEAD_DIAMOND},
+                                                                         {u"cross", NoteHeadGroup::HEAD_PLUS},
+                                                                         {u"x", NoteHeadGroup::HEAD_CROSS},
+                                                                         {u"circle-x", NoteHeadGroup::HEAD_XCIRCLE},
+                                                                         {u"inverted triangle", NoteHeadGroup::HEAD_TRIANGLE_DOWN},
+                                                                         {u"slashed", NoteHeadGroup::HEAD_SLASHED1},
+                                                                         {u"back slashed", NoteHeadGroup::HEAD_SLASHED2},
+                                                                         {u"normal", NoteHeadGroup::HEAD_NORMAL},
+                                                                         {u"do", NoteHeadGroup::HEAD_DO},
+                                                                         {u"re", NoteHeadGroup::HEAD_RE},
+                                                                         {u"mi", NoteHeadGroup::HEAD_MI},
+                                                                         {u"fa", NoteHeadGroup::HEAD_FA},
+                                                                         {u"fa up", NoteHeadGroup::HEAD_FA},
+                                                                         {u"so", NoteHeadGroup::HEAD_SOL},
+                                                                         {u"la", NoteHeadGroup::HEAD_LA},
+                                                                         {u"ti", NoteHeadGroup::HEAD_TI}};
 
     auto it = map.find(mxml_name);
     if (it != map.end()) {
@@ -1913,7 +1916,7 @@ static void set_s_line_placement(SLine *sli, const String &placement) {
 //---------------------------------------------------------
 
 // note that in case of overlapping spanners, handleSpannerStart is called for every spanner
-// as spanners std::map allows only one value per key, this does not hurt at all
+// as the spanner map allows only one value per key, this does not hurt at all
 
 static void handle_spanner_start(SLine *new_sp, track_idx_t track, String &placement, const Fraction &tick, MusicXmlSpannerMap &spanners) {
     new_sp->set_track(track);
@@ -2498,7 +2501,7 @@ void MusicXmlParserPass2::part() {
     VoiceList voicelist = _pass1.get_voice_list(id);
     // debug: print voice mapper contents
     LOGD("voiceMapperStats: part '%s'", muPrintable(id));
-    for (std::map<String, mu::engraving::VoiceDesc>::const_iterator i = voicelist.cbegin(); i != voicelist.cend(); ++i) {
+    for (auto i = voicelist.cbegin(); i != voicelist.cend(); ++i) {
         LOGD("voiceMapperStats: voice %s staff data %s", muPrintable(i.key()), muPrintable(i.value().to_string()));
     }
 #endif
@@ -2775,8 +2778,8 @@ static void handle_beam_and_stem_dir(ChordRest *cr, const BeamMode bm, const Dir
  */
 
 static void mark_user_accidentals(const staff_idx_t first_staff, const size_t staves, const Key key, const Measure *measure,
-                                  const std::map<Note *, int> &alter_map) {
-    std::map<int, bool> acc_tmp;
+                                  const ankerl::unordered_dense::map<Note *, int> &alter_map) {
+    ankerl::unordered_dense::map<int, bool> acc_tmp;
 
     AccidentalState curr_acc;
     curr_acc.init(key);
@@ -3003,7 +3006,7 @@ void MusicXmlParserPass2::measure(const String &part_id, const Fraction time) {
     String tempo_string; // helper for Dorico imports
 
     // collect candidates for courtesy accidentals to work out at measure end
-    std::map<Note *, int> alter_map;
+    ankerl::unordered_dense::map<Note *, int> alter_map;
 
     while (e_.read_next_start_element()) {
         if (e_.name() == "attributes") {
@@ -4430,7 +4433,7 @@ void MusicXmlParserDirection::other_direction() {
     } else {
         // TODO: Multiple sets of maps for exporters other than Dolet 6/Sibelius
         // TODO: Add more symbols from Sibelius
-        std::map<String, String> other_direction_strings;
+        ankerl::unordered_dense::map<String, String> other_direction_strings;
         if (pass1_.dolet()) {
             other_direction_strings = {
                 {String(u"To Coda"), String(u"To Coda")},
@@ -4438,14 +4441,15 @@ void MusicXmlParserDirection::other_direction() {
                 {String(u"CODA"), String(u"CODA")},
             };
         }
-        static const std::map<String, SymId> other_direction_syms = {{String(u"Rhythm dot"), SymId::AUGMENTATION_DOT},
-                                                                     {String(u"Whole rest"), SymId::REST_WHOLE},
-                                                                     {String(u"l.v. down"), SymId::ARTIC_LAISSEZ_VIBRER_BELOW},
-                                                                     {String(u"8vb"), SymId::OTTAVA_BASSA_VB},
-                                                                     {String(u"Treble clef"), SymId::G_CLEF},
-                                                                     {String(u"Bass clef"), SymId::F_CLEF},
-                                                                     {String(u"Caesura"), SymId::CAESURA},
-                                                                     {String(u"Thick caesura"), SymId::CAESURA_THICK}};
+        static const ankerl::unordered_dense::map<String, SymId> other_direction_syms = {
+            {String(u"Rhythm dot"), SymId::AUGMENTATION_DOT},
+            {String(u"Whole rest"), SymId::REST_WHOLE},
+            {String(u"l.v. down"), SymId::ARTIC_LAISSEZ_VIBRER_BELOW},
+            {String(u"8vb"), SymId::OTTAVA_BASSA_VB},
+            {String(u"Treble clef"), SymId::G_CLEF},
+            {String(u"Bass clef"), SymId::F_CLEF},
+            {String(u"Caesura"), SymId::CAESURA},
+            {String(u"Thick caesura"), SymId::CAESURA_THICK}};
         String t = e_.read_text();
         String val = muse::value(other_direction_strings, t);
         if (!val.empty()) {
@@ -4758,13 +4762,11 @@ void MusicXmlParserDirection::text_to_dynamic(String &text) {
     String simplified_text = MScoreTextToMusicXml::to_plain_text(text).simplified();
     // Correct finale's incorrect dynamic export
     if (pass1_.exporter_software() == MusicXmlExporterSoftware::FINALE) {
-        static const std::map<String, String> finale_dynamic_subs = {{u"π", u"pp"},  {u"P", u"mp"},  {u"F", u"mf"},
-                                                                     {u"ƒ", u"ff"},  {u"Ï", u"fff"}, {u"S", u"sf"},
-                                                                     {u"ß", u"sfz"}, {u"Z", u"fz"},  {u"Í", u"fp"}};
-        for (const auto &sub : finale_dynamic_subs) {
-            if (simplified_text == sub.first) {
-                simplified_text = sub.second;
-            }
+        static const ankerl::unordered_dense::map<String, String> finale_dynamic_subs = {{u"π", u"pp"},  {u"P", u"mp"},  {u"F", u"mf"},
+                                                                                         {u"ƒ", u"ff"},  {u"Ï", u"fff"}, {u"S", u"sf"},
+                                                                                         {u"ß", u"sfz"}, {u"Z", u"fz"},  {u"Í", u"fp"}};
+        if (const auto it = finale_dynamic_subs.find(simplified_text); it != finale_dynamic_subs.end()) {
+            simplified_text = it->second;
         }
     }
     // We don't want to count a single 'm', 'r', 's' or 'z' as a whole dynamic
@@ -6914,7 +6916,7 @@ static void set_note_head(Note *note, const String &notehead_filled) {
  Calculate the beam mode based on the collected beamTypes.
  */
 
-static BeamMode compute_beam_mode(const std::map<int, String> &beam_types) {
+static BeamMode compute_beam_mode(const ankerl::unordered_dense::map<int, String> &beam_types) {
     // Start with uniquely-handled beam modes
     if (muse::value(beam_types, 1) == u"continue" && muse::value(beam_types, 2) == u"begin") {
         return BeamMode::BEGIN16;
@@ -7236,7 +7238,7 @@ Note *MusicXmlParserPass2::note(const String &part_id, Measure *measure, const F
     bool print_lyric = (print_object && e_.ascii_attribute("print-lyric") != "no") || e_.ascii_attribute("print-lyric") == "yes";
     bool is_single_drumset = false;
     BeamMode bm;
-    std::map<int, String> beam_types;
+    ankerl::unordered_dense::map<int, String> beam_types;
     String beam_fan;
     String instrument_id;
     String tie_type;
@@ -7940,8 +7942,8 @@ FretDiagram *MusicXmlParserPass2::frame() {
     color_item(fd, Color::from_string(e_.ascii_attribute("color").ascii()));
 
     // Format: fret: string
-    std::map<int, int> b_starts;
-    std::map<int, int> b_ends;
+    gtl::btree_map<int, int> b_starts;
+    gtl::btree_map<int, int> b_ends;
 
     while (e_.read_next_start_element()) {
         if (e_.name() == "first-fret") {
@@ -8283,7 +8285,7 @@ void MusicXmlParserPass2::harmony(const String &part_id, [[maybe_unused]] Measur
  Collects beamTypes, used in computeBeamMode.
  */
 
-void MusicXmlParserPass2::beam(std::map<int, String> &beam_types) {
+void MusicXmlParserPass2::beam(ankerl::unordered_dense::map<int, String> &beam_types) {
     bool has_beam_no;
     int beam_no = e_.ascii_attribute("number").to_int(&has_beam_no);
     String s = e_.read_text();

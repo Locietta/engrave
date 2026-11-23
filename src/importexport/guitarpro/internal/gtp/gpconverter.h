@@ -1,6 +1,7 @@
 #pragma once
 
-#include <unordered_map>
+#include <ankerl/unordered_dense.h>
+#include <gtl/btree.hpp>
 
 #include "../continiouselementsbuilder.h"
 #include "../guitarbendimport/guitarbendimporter.h"
@@ -35,7 +36,7 @@ private:
     using Note = mu::engraving::Note;
 
     using ChordRestContainer = std::vector<std::pair<mu::engraving::ChordRest *, const GPBeat *>>;
-    using TieMap = std::unordered_map<track_idx_t, std::vector<mu::engraving::Tie *>>;
+    using TieMap = gtl::btree_map<track_idx_t, std::vector<mu::engraving::Tie *>>;
 
     struct Context {
         int32_t master_bar_index = 0;
@@ -59,7 +60,7 @@ private:
     void convert_note(const GPNote *note, mu::engraving::ChordRest *cr);
 
     void set_up_gp_score(const GPScore *gpscore);
-    void set_up_tracks(const std::map<int, std::unique_ptr<GPTrack>> &tracks);
+    void set_up_tracks(const gtl::btree_map<int, std::unique_ptr<GPTrack>> &tracks);
     void set_up_track(const std::unique_ptr<GPTrack> &tracks);
     void collect_tempo_map(const GPMasterTracks *m_tr);
     void collect_fermatas(const GPMasterBar *m_b, mu::engraving::Measure *measure);
@@ -159,22 +160,22 @@ private:
 
     GPMasterBar::TimeSig last_time_sig;
     GPMasterBar::TripletFeelType last_triplet_feel = GPMasterBar::TripletFeelType::NONE;
-    std::unordered_map<size_t, GPMasterBar::KeySig> last_key_sigs;
+    ankerl::unordered_dense::map<size_t, GPMasterBar::KeySig> last_key_sigs;
     std::list<std::pair<Measure *, GPMasterBar::Fermata>> fermatas;
-    std::unordered_multimap<int, GPMasterTracks::Automation> tempo_map;
-    std::unordered_map<track_idx_t, GPBar::Clef> clefs;
-    std::unordered_map<track_idx_t, GPBeat::DynamicType> dynamics;
-    std::unordered_map<track_idx_t, bool> has_capo_;
-    std::unordered_map<track_idx_t, std::vector<mu::engraving::Tie *>> ties_value;    // map(track, tie)
-    std::unordered_map<track_idx_t, std::vector<mu::engraving::Tie *>> harmonic_ties; // map(track, tie between harmonic note)
-    std::unordered_map<Note *, int> original_pitches_;                                // info of changed pitches for keeping track of ties
-    std::unordered_map<mu::engraving::Chord *, mu::engraving::TremoloType> tremolos_in_chords_;
-    std::unordered_map<track_idx_t, mu::engraving::Slur *> slurs; // map(track, slur)
-    std::map<uint64_t /* part ID */, int /* fret position */> capo_params_;
+    gtl::btree_multimap<int, GPMasterTracks::Automation> tempo_map;
+    ankerl::unordered_dense::map<track_idx_t, GPBar::Clef> clefs;
+    ankerl::unordered_dense::map<track_idx_t, GPBeat::DynamicType> dynamics;
+    ankerl::unordered_dense::map<track_idx_t, bool> has_capo_;
+    TieMap ties_value;
+    TieMap harmonic_ties;
+    ankerl::unordered_dense::map<Note *, int> original_pitches_; // info of changed pitches for keeping track of ties
+    ankerl::unordered_dense::map<mu::engraving::Chord *, mu::engraving::TremoloType> tremolos_in_chords_;
+    ankerl::unordered_dense::map<track_idx_t, mu::engraving::Slur *> slurs; // map(track, slur)
+    ankerl::unordered_dense::map<uint64_t /* part ID */, int /* fret position */> capo_params_;
 
     mutable GPBeat *current_gp_beat_ = nullptr; // used for passing info from notes
 
-    std::map<uint16_t, uint16_t> drum_extension;
+    ankerl::unordered_dense::map<uint16_t, uint16_t> drum_extension;
     mu::engraving::Volta *last_volta = nullptr;
     int last_diagram_idx = -1;
 
@@ -207,6 +208,6 @@ private:
     std::unique_ptr<ContiniousElementsBuilder> continious_elements_builder_;
     std::unique_ptr<GuitarBendImporter> guitar_bend_importer_;
 
-    std::unordered_map<mu::engraving::track_idx_t, const GPBeat *> last_whammy_beat_;
+    ankerl::unordered_dense::map<mu::engraving::track_idx_t, const GPBeat *> last_whammy_beat_;
 };
 } // namespace mu::iex::guitarpro

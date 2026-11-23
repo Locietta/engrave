@@ -23,6 +23,9 @@
 #ifndef MU_IMPORTEXPORT_CONTINIOUSELEMENTSBUILDER_H
 #define MU_IMPORTEXPORT_CONTINIOUSELEMENTSBUILDER_H
 
+#include <ankerl/unordered_dense.h>
+#include <gtl/btree.hpp>
+
 #include "engraving/dom/line.h"
 
 namespace mu::iex::guitarpro {
@@ -114,12 +117,13 @@ private:
         bool ended_on_rest = false;
     };
 
-    std::unordered_map<ImportType, std::vector<mu::engraving::Spanner *>> elements_by_type_;
+    ankerl::unordered_dense::map<ImportType, std::vector<mu::engraving::Spanner *>> elements_by_type_;
 
-    std::unordered_map<mu::engraving::ElementType, std::unordered_map<track_idx_t, std::unordered_map<sub_type_t, ImportType>>>
+    ankerl::unordered_dense::map<mu::engraving::ElementType,
+                                 ankerl::unordered_dense::map<track_idx_t, ankerl::unordered_dense::map<sub_type_t, ImportType>>>
         last_import_types_;
-    std::unordered_map<track_idx_t, std::unordered_map<ImportType, std::set<mu::engraving::Spanner *>>> spanners_without_end_element_;
-    std::unordered_map<track_idx_t, std::unordered_map<ImportType, ContiniousElement>> elements_to_add_to_score_;
+    gtl::btree_map<track_idx_t, gtl::btree_map<ImportType, gtl::btree_set<mu::engraving::Spanner *>>> spanners_without_end_element_;
+    gtl::btree_map<track_idx_t, gtl::btree_map<ImportType, ContiniousElement>> elements_to_add_to_score_;
     std::vector<mu::engraving::Spanner *> ordered_added_elements_;
 
     mu::engraving::Score *score_ = nullptr;

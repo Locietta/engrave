@@ -28,6 +28,8 @@
 #include <memory>
 #include <stdexcept>
 
+#include <ankerl/unordered_dense.h>
+
 #include "engraving/dom/arpeggio.h"
 #include "engraving/dom/articulation.h"
 #include "engraving/dom/barline.h"
@@ -134,7 +136,7 @@ void GuitarPro::skip(int64_t len) {
 //---------------------------------------------------------
 //   createTuningString
 //---------------------------------------------------------
-static const std::unordered_map<uint64_t, std::string> flat_presets = {
+static const ankerl::unordered_dense::map<uint64_t, std::string> flat_presets = {
     // 63 58 54 49 44 39
     {0x3f3a36312c27, {"Eb Ab Db Gb Bb Eb"}},
     // 60 55 51 46 41 36

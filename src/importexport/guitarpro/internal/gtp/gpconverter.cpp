@@ -1,5 +1,8 @@
 #include "gpconverter.h"
 
+#include <ankerl/unordered_dense.h>
+#include <gtl/btree.hpp>
+
 #include "../guitarprodrumset.h"
 #include "../utils.h"
 #include "engraving/dom/arpeggio.h"
@@ -62,7 +65,7 @@ using namespace mu::engraving;
 
 namespace mu::iex::guitarpro {
 static mu::engraving::JumpType jump_type(const String &type_string) {
-    static const std::map<String, JumpType> types{
+    static const ankerl::unordered_dense::map<String, JumpType> types{
         {u"DaCapo", JumpType::DC},
         {u"DaSegno", JumpType::DS},
         {u"DaCapoAlFine", JumpType::DC_AL_FINE},
@@ -87,7 +90,7 @@ static mu::engraving::JumpType jump_type(const String &type_string) {
 }
 
 static mu::engraving::MarkerType marker_type(const String &type_string) {
-    static const std::map<String, MarkerType> types{
+    static const ankerl::unordered_dense::map<String, MarkerType> types{
         {u"Segno", MarkerType::SEGNO},
         {u"SegnoSegno", MarkerType::VARSEGNO},
         {u"Coda", MarkerType::CODA},
@@ -107,7 +110,7 @@ static mu::engraving::MarkerType marker_type(const String &type_string) {
 }
 
 static mu::engraving::TripletFeelType triplet_feel_type(GPMasterBar::TripletFeelType tf) {
-    static const std::map<GPMasterBar::TripletFeelType, TripletFeelType> types{
+    static const ankerl::unordered_dense::map<GPMasterBar::TripletFeelType, TripletFeelType> types{
         {GPMasterBar::TripletFeelType::TRIPLET8TH, TripletFeelType::TRIPLET_8TH},
         {GPMasterBar::TripletFeelType::TRIPLET16TH, TripletFeelType::TRIPLET_16TH},
         {GPMasterBar::TripletFeelType::DOTTED8TH, TripletFeelType::DOTTED_8TH},
@@ -125,10 +128,11 @@ static mu::engraving::TripletFeelType triplet_feel_type(GPMasterBar::TripletFeel
 }
 
 static std::pair<bool, mu::engraving::OttavaType> ottava_type(GPBeat::OttavaType t) {
-    static const std::map<GPBeat::OttavaType, mu::engraving::OttavaType> types{{GPBeat::OttavaType::VA8, OttavaType::OTTAVA_8VA},
-                                                                               {GPBeat::OttavaType::VB8, OttavaType::OTTAVA_8VB},
-                                                                               {GPBeat::OttavaType::MA15, OttavaType::OTTAVA_15MA},
-                                                                               {GPBeat::OttavaType::MB15, OttavaType::OTTAVA_15MB}};
+    static const ankerl::unordered_dense::map<GPBeat::OttavaType, mu::engraving::OttavaType> types{
+        {GPBeat::OttavaType::VA8, OttavaType::OTTAVA_8VA},
+        {GPBeat::OttavaType::VB8, OttavaType::OTTAVA_8VB},
+        {GPBeat::OttavaType::MA15, OttavaType::OTTAVA_15MA},
+        {GPBeat::OttavaType::MB15, OttavaType::OTTAVA_15MB}};
 
     auto it = types.find(t);
     if (it != types.end()) {
@@ -139,7 +143,7 @@ static std::pair<bool, mu::engraving::OttavaType> ottava_type(GPBeat::OttavaType
 }
 
 static GPBeat::HarmonicMarkType harmonic_type_note_to_beat(GPNote::Harmonic::Type t) {
-    static const std::map<GPNote::Harmonic::Type, GPBeat::HarmonicMarkType> types{
+    static const ankerl::unordered_dense::map<GPNote::Harmonic::Type, GPBeat::HarmonicMarkType> types{
         {GPNote::Harmonic::Type::ARTIFICIAL, GPBeat::HarmonicMarkType::ARTIFICIAL},
         {GPNote::Harmonic::Type::PINCH, GPBeat::HarmonicMarkType::PINCH},
         {GPNote::Harmonic::Type::TAP, GPBeat::HarmonicMarkType::TAP},
@@ -155,7 +159,7 @@ static GPBeat::HarmonicMarkType harmonic_type_note_to_beat(GPNote::Harmonic::Typ
 }
 
 static ContiniousElementsBuilder::ImportType ottava_to_import_type(GPBeat::OttavaType t) {
-    static const std::map<GPBeat::OttavaType, ContiniousElementsBuilder::ImportType> types{
+    static const ankerl::unordered_dense::map<GPBeat::OttavaType, ContiniousElementsBuilder::ImportType> types{
         {GPBeat::OttavaType::MA15, ContiniousElementsBuilder::ImportType::OTTAVA_MA15},
         {GPBeat::OttavaType::VA8, ContiniousElementsBuilder::ImportType::OTTAVA_VA8},
         {GPBeat::OttavaType::VB8, ContiniousElementsBuilder::ImportType::OTTAVA_VB8},
@@ -170,7 +174,7 @@ static ContiniousElementsBuilder::ImportType ottava_to_import_type(GPBeat::Ottav
 }
 
 static ContiniousElementsBuilder::ImportType hairpin_to_import_type(GPBeat::Hairpin t) {
-    static const std::map<GPBeat::Hairpin, ContiniousElementsBuilder::ImportType> types{
+    static const ankerl::unordered_dense::map<GPBeat::Hairpin, ContiniousElementsBuilder::ImportType> types{
         {GPBeat::Hairpin::CRESCENDO, ContiniousElementsBuilder::ImportType::HAIRPIN_CRESCENDO},
         {GPBeat::Hairpin::DECRESCENDO, ContiniousElementsBuilder::ImportType::HAIRPIN_DIMINUENDO}};
 
@@ -186,7 +190,7 @@ static void set_pitch_by_ottava_type(mu::engraving::Note *note, mu::engraving::O
     note->set_pitch(clamp_pitch_octaved(note->pitch() - ::mu::engraving::ottava_default[int(type)].shift));
 }
 
-static std::unordered_map<uint64_t, mu::engraving::StringData> string_datas;
+static ankerl::unordered_dense::map<uint64_t, mu::engraving::StringData> string_datas;
 
 EngravingConfiguration *GPConverter::engraving_configuration() const { return score_value->configuration(); }
 
@@ -345,7 +349,7 @@ void GPConverter::convert_master_bar(const GPMasterBar *m_b, Context ctx) {
 void GPConverter::fix_empty_measures() {
     // Get all ChordRest elems and sort them by staves
     // Also store root Segment ptr will need it later to delete some rest elems
-    std::map<track_idx_t, std::vector<std::pair<Segment *, EngravingItem *>>> elems;
+    gtl::btree_map<track_idx_t, std::vector<std::pair<Segment *, EngravingItem *>>> elems;
 
     size_t ntracks = score_value->ntracks();
     SegmentType type = SegmentType::CHORD_REST;
@@ -1016,7 +1020,7 @@ void GPConverter::set_up_gp_score(const GPScore *gpscore) {
     }
 }
 
-void GPConverter::set_up_tracks(const std::map<int, std::unique_ptr<GPTrack>> &tracks) {
+void GPConverter::set_up_tracks(const gtl::btree_map<int, std::unique_ptr<GPTrack>> &tracks) {
     string_datas.clear();
     for (const auto &track : tracks) {
         set_up_track(track.second);
@@ -1235,9 +1239,9 @@ void GPConverter::add_continuous_slide_hammer_on() {
         return next_chord->up_note();
     };
 
-    std::unordered_map<Note *, Slur *> legato_slides;
-    std::unordered_map<Note *, HammerOnPullOff *> hammer_on_pull_offs;
-    std::unordered_set<Chord *> hammer_on_in_chord;
+    ankerl::unordered_dense::map<Note *, Slur *> legato_slides;
+    ankerl::unordered_dense::map<Note *, HammerOnPullOff *> hammer_on_pull_offs;
+    ankerl::unordered_dense::set<Chord *> hammer_on_in_chord;
     for (const auto &slide : slide_hammer_on_map) {
         Note *start_note = slide.first;
         Note *end_note = search_end_note(start_note);
@@ -2154,7 +2158,7 @@ void GPConverter::add_legato(const GPBeat *beat, ChordRest *cr) {
         return;
     }
 
-    using slurMap = std::unordered_map<track_idx_t, Slur *>;
+    using slurMap = ankerl::unordered_dense::map<track_idx_t, Slur *>;
 
     auto start_slur = [](ChordRest *cr, Score *sc, slurMap &slurs, track_idx_t cur_track, Fraction cur_tick) {
         if (auto it = slurs.find(cur_track); it != std::end(slurs)) {
@@ -2729,8 +2733,7 @@ void GPConverter::clear_defected_grace_chord(ChordRestContainer &grace_ghords) {
         if (p_cr->is_chord()) {
             Chord *p_chord = to_chord(p_cr);
             for (Note *p_note : p_chord->notes()) {
-                auto it = slide_hammer_on_map.begin(), e = slide_hammer_on_map.end();
-                for (; it != e; ++it) {
+                for (auto it = slide_hammer_on_map.begin(); it != slide_hammer_on_map.end(); ++it) {
                     if (it->first == p_note) {
                         slide_hammer_on_map.erase(it);
                         break;
@@ -2740,8 +2743,7 @@ void GPConverter::clear_defected_grace_chord(ChordRestContainer &grace_ghords) {
 
             for (Chord *p_grace_chord : p_chord->grace_notes()) {
                 for (Note *p_note : p_grace_chord->notes()) {
-                    auto it = slide_hammer_on_map.begin(), e = slide_hammer_on_map.end();
-                    for (; it != e; ++it) {
+                    for (auto it = slide_hammer_on_map.begin(); it != slide_hammer_on_map.end(); ++it) {
                         if (it->first == p_note) {
                             slide_hammer_on_map.erase(it);
                             break;

@@ -21,6 +21,8 @@
  */
 #pragma once
 
+#include <ankerl/unordered_dense.h>
+
 #include "engraving/types/fraction.h"
 #include "global/types/flags.h"
 
@@ -56,5 +58,5 @@ private:
     int smallest_note_count = 0; // number of smallest notes in the tuplet
 };
 
-using MusicXmlTupletStates = std::map<muse::String, MusicXmlTupletState>;
+using MusicXmlTupletStates = ankerl::unordered_dense::segmented_map<muse::String, MusicXmlTupletState>;
 } // namespace mu::iex::musicxml

@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <gtl/btree.hpp>
+
 #include "engraving/dom/interval.h"
 #include "engraving/types/types.h"
 #include "global/types/string.h"
@@ -48,7 +50,7 @@ struct MusicXmlArpeggioDesc {
     MusicXmlArpeggioDesc(engraving::Arpeggio *arp, int no) : arp(arp), no(no) {}
 };
 
-typedef std::multimap<int, MusicXmlArpeggioDesc> ArpeggioMap;
+typedef gtl::btree_multimap<int, MusicXmlArpeggioDesc> ArpeggioMap;
 
 //---------------------------------------------------------
 //   MusicXmlInstrument
@@ -76,7 +78,7 @@ struct MusicXmlInstrument {
 
     muse::String to_string() const;
 
-    MusicXmlInstrument() // required by std::map
+    MusicXmlInstrument()
         : unpitched(-1), name(), midi_channel(-1), midi_port(-1), midi_program(-1), midi_volume(100), midi_pan(63),
           notehead(engraving::NoteHeadGroup::HEAD_INVALID), line(0), stem_direction(engraving::DirectionV::AUTO) {}
 
@@ -91,15 +93,15 @@ struct MusicXmlInstrument {
      */
 };
 
-typedef std::map<muse::String, MusicXmlInstrument> MusicXmlInstruments;
+typedef gtl::btree_map<muse::String, MusicXmlInstrument> MusicXmlInstruments;
 
-struct MusicXmlIntervalList : std::map<engraving::Fraction, engraving::Interval> {
+struct MusicXmlIntervalList : gtl::btree_map<engraving::Fraction, engraving::Interval> {
     MusicXmlIntervalList() {}
 
     engraving::Interval interval(const engraving::Fraction f) const;
 };
 
-struct MusicXmlInstrList : std::map<engraving::Fraction, muse::String> {
+struct MusicXmlInstrList : gtl::btree_map<engraving::Fraction, muse::String> {
     MusicXmlInstrList() {}
 
     const muse::String instrument(const engraving::Fraction f) const;
@@ -114,6 +116,6 @@ struct LyricNumberHandler {
     int get_lyric_no(const muse::String &number) const;
     void determine_lyric_nos();
 private:
-    std::map<muse::String, int> number_to_no_;
+    gtl::btree_map<muse::String, int> number_to_no_;
 };
 } // namespace mu::iex::musicxml

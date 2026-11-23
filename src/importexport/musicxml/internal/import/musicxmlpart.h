@@ -21,11 +21,14 @@
  */
 #pragma once
 
+#include <gtl/btree.hpp>
+
 #include "../shared/musicxmltypes.h"
+#include "global/flatmap.h"
 #include "musicxmlvoicedesc.h"
 
 namespace mu::iex::musicxml {
-struct MusicXmlOctaveShiftList : std::map<engraving::Fraction, int> {
+struct MusicXmlOctaveShiftList : gtl::btree_map<engraving::Fraction, int> {
     MusicXmlOctaveShiftList() {}
 
     int octave_shift(const engraving::Fraction f) const;
@@ -68,7 +71,7 @@ struct MusicXmlPart {
 
     bool get_print_abbr() const { return print_abbr_; }
 
-    std::map<int, int> staff_number_to_index() const { return staff_number_to_index_; }
+    muse::FlatMap<int, int> staff_number_to_index() const { return staff_number_to_index_; }
 
     int staff_number_to_index(const int staff_number) const;
 
@@ -100,7 +103,7 @@ private:
     LyricNumberHandler lyric_number_handler_;
     int max_staff_ = -1; // maximum staff value found (0 based), -1 = none
     bool has_lyrics_ = false;
-    std::map<int, int> staff_number_to_index_; // Mapping from staff number to index in staff list.
+    muse::FlatMap<int, int> staff_number_to_index_; // Mapping from staff number to index in staff list.
     // Only for when staves are discarded in MusicXmlParserPass1::attributes.
 };
 } // namespace mu::iex::musicxml

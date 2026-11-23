@@ -21,9 +21,10 @@
  */
 #pragma once
 
-#include <map>
-#include <unordered_map>
 #include <vector>
+
+#include <ankerl/unordered_dense.h>
+#include <gtl/btree.hpp>
 
 #include <engraving/types/fraction.h>
 #include <engraving/types/types.h>
@@ -55,12 +56,13 @@ struct GraceNotesImportInfo {
     LastGraceNoteData last_note_data;
 };
 
-using segment_data_map_t = std::map<size_t, SegmentData>;
-using grace_segment_map_t = std::map<size_t /* idx in chord */, GraceNotesImportInfo>; // each note can have multiple grace notes connected
+using segment_data_map_t = gtl::btree_map<size_t, SegmentData>;
+using grace_segment_map_t =
+    gtl::btree_map<size_t /* idx in chord */, GraceNotesImportInfo>; // each note can have multiple grace notes connected
 
-using GraceAfterTrackMap = std::unordered_map<mu::engraving::track_idx_t, std::map<mu::engraving::Fraction, grace_segment_map_t>>;
+using GraceAfterTrackMap = gtl::btree_map<mu::engraving::track_idx_t, gtl::btree_map<mu::engraving::Fraction, grace_segment_map_t>>;
 
-using TiedNotesTrackMap = std::unordered_map<mu::engraving::track_idx_t, std::map<mu::engraving::Fraction, segment_data_map_t>>;
+using TiedNotesTrackMap = gtl::btree_map<mu::engraving::track_idx_t, gtl::btree_map<mu::engraving::Fraction, segment_data_map_t>>;
 
 // ---- bend types ----
 
@@ -99,10 +101,10 @@ struct ImportedBendInfo {
 
 struct ChordImportedBendData {
     const mu::engraving::Chord *chord = nullptr;
-    std::unordered_map<const mu::engraving::Note *, ImportedBendInfo> data_by_note;
+    ankerl::unordered_dense::map<const mu::engraving::Note *, ImportedBendInfo> data_by_note;
 };
 
-using tied_chords_bend_data_chunk_t = std::map<mu::engraving::Fraction, ChordImportedBendData>;
+using tied_chords_bend_data_chunk_t = gtl::btree_map<mu::engraving::Fraction, ChordImportedBendData>;
 
 // ---- dive types ----
 
@@ -128,14 +130,14 @@ struct BendDataContextSplitChord;
 struct BendDataContext {
     GraceAfterTrackMap grace_after_bend_data;
     TiedNotesTrackMap tied_notes_bends_data;
-    std::unordered_map<mu::engraving::track_idx_t, std::map<mu::engraving::Fraction, segment_data_map_t>> prebend_data;
-    std::unordered_map<mu::engraving::track_idx_t, std::map<mu::engraving::Fraction, segment_data_map_t>> slight_bend_data;
+    gtl::btree_map<mu::engraving::track_idx_t, gtl::btree_map<mu::engraving::Fraction, segment_data_map_t>> prebend_data;
+    gtl::btree_map<mu::engraving::track_idx_t, gtl::btree_map<mu::engraving::Fraction, segment_data_map_t>> slight_bend_data;
     std::unique_ptr<BendDataContextSplitChord> split_chord_ctx;
 };
 
 struct DiveDataContext {
     GraceAfterTrackMap grace_after_dive_data;
     TiedNotesTrackMap tied_notes_dives_data;
-    std::unordered_map<mu::engraving::track_idx_t, std::map<mu::engraving::Fraction, segment_data_map_t>> pre_dive_data;
+    gtl::btree_map<mu::engraving::track_idx_t, gtl::btree_map<mu::engraving::Fraction, segment_data_map_t>> pre_dive_data;
 };
 } // namespace mu::iex::guitarpro

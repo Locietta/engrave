@@ -21,6 +21,10 @@
  */
 #include "benddatacollectorsplitchord.h"
 
+#include <algorithm>
+
+#include <gtl/btree.hpp>
+
 #include "../bendinfoconverter.h"
 #include "bendchorddurationsplitter.h"
 #include "log.h"
@@ -41,7 +45,14 @@ static void fill_bend_data_for_note(BendDataContextSplitChord &bend_data_ctx, co
 
 void BendDataCollectorSplitChord::store_bend_data(const mu::engraving::Note *note, const mu::engraving::PitchValues &pitch_values) {
     if (!pitch_values.empty()) {
-        bend_info_for_note_[note->track()][note->tick()][note] = BendInfoConverter::fill_bend_info(note, pitch_values);
+        auto &[bends, index_by_note] = bend_info_for_note_[note->track()][note->tick()];
+        auto [it, added] = index_by_note.try_emplace(note, bends.size());
+        auto info = BendInfoConverter::fill_bend_info(note, pitch_values);
+        if (added) {
+            bends.push_back(std::move(info));
+        } else {
+            bends[it->second] = std::move(info);
+        }
     }
 }
 
@@ -118,7 +129,8 @@ static void fill_bend_data_for_note(BendDataContextSplitChord &bend_data_ctx, co
 void BendDataCollectorSplitChord::fill_bend_data(BendDataContextSplitChord &bend_data_ctx) {
     for (auto &[track, track_info] : bend_info_for_note_) {
         for (auto &[tick, tick_info] : track_info) {
-            for (auto &[note, data_by_note] : tick_info) {
+            for (const auto &data_by_note : tick_info.bends) {
+                const Note *note = data_by_note.note;
                 Chord *chord = note->chord();
                 int idx = static_cast<int>(muse::index_of(chord->notes(), note));
                 fill_bend_data_for_note(bend_data_ctx, data_by_note, idx);
@@ -127,12 +139,22 @@ void BendDataCollectorSplitChord::fill_bend_data(BendDataContextSplitChord &bend
     }
 }
 
+static const ImportedBendInfo &top_bend(const std::vector<ImportedBendInfo> &bends) {
+    return *std::ranges::max_element(bends, [](const auto &lhs, const auto &rhs) {
+        const bool lhs_has_segments = !lhs.segments.empty();
+        const bool rhs_has_segments = !rhs.segments.empty();
+        if (lhs_has_segments != rhs_has_segments) {
+            return !lhs_has_segments;
+        }
+        return lhs.note->pitch() < rhs.note->pitch();
+    });
+}
+
 void BendDataCollectorSplitChord::fill_bends_durations(BendDataContextSplitChord &bend_data_ctx) {
-    std::unordered_map<mu::engraving::track_idx_t, std::map<Fraction, std::vector<const Chord *>>> tied_notes_after_bend;
+    gtl::btree_map<mu::engraving::track_idx_t, gtl::btree_map<Fraction, std::vector<const Chord *>>> tied_notes_after_bend;
     for (const auto &[track, track_info] : bend_info_for_note_) {
         for (const auto &[main_tick, tick_info] : track_info) {
-            // now using the top note of chord to fill durations
-            const Note *current_note = tick_info.begin()->first;
+            const Note *current_note = top_bend(tick_info.bends).note;
             auto &current_tick_tied_chords = tied_notes_after_bend[track][main_tick];
             current_tick_tied_chords.push_back(current_note->chord());
             const Tie *tie_for = current_note->tie_for();
@@ -169,7 +191,7 @@ void BendDataCollectorSplitChord::fill_bends_durations(BendDataContextSplitChord
     for (const auto &[track, track_info] : tied_notes_after_bend) {
         const auto &imported_info_for_track = bend_info_for_note_.at(track);
         for (const auto &[main_tick, chords] : track_info) {
-            const auto &imported_info_for_tick = imported_info_for_track.at(main_tick);
+            const auto &imported_info_for_tick = imported_info_for_track.at(main_tick).bends;
             const Chord *last_chord = chords.back();
             Fraction total_duration = last_chord->end_tick() - main_tick;
             if (Tuplet *tuplet = last_chord->tuplet()) {
@@ -184,7 +206,7 @@ void BendDataCollectorSplitChord::fill_bends_durations(BendDataContextSplitChord
             }
 
             if (!imported_info_for_tick.empty()) {
-                fill_chord_durations_from_bend_diagram(bend_data_ctx, total_duration, imported_info_for_tick.begin()->second);
+                fill_chord_durations_from_bend_diagram(bend_data_ctx, total_duration, top_bend(imported_info_for_tick));
             }
         }
     }

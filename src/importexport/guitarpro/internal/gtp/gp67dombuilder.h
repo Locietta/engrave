@@ -3,6 +3,8 @@
 
 #include <memory>
 
+#include <ankerl/unordered_dense.h>
+
 #include "gpdommodel.h"
 #include "gptrack.h"
 #include "serialization/xmldom.h"
@@ -64,11 +66,11 @@ protected:
     GPMasterBar::Repeat read_repeat(muse::XmlDomNode *repeat_node) const;
     std::vector<int> read_ending(muse::XmlDomNode *end_node) const;
 
-    std::unordered_map<int, std::shared_ptr<GPNote>> notes;
-    std::unordered_map<int, std::shared_ptr<GPRhythm>> rhythms_value;
-    std::unordered_map<int, std::shared_ptr<GPBeat>> beats_value;
-    std::unordered_map<int, std::unique_ptr<GPVoice>> voices;
-    std::unordered_map<int, std::unique_ptr<GPBar>> bars_value;
+    ankerl::unordered_dense::map<int, std::shared_ptr<GPNote>> notes;
+    ankerl::unordered_dense::map<int, std::shared_ptr<GPRhythm>> rhythms_value;
+    ankerl::unordered_dense::map<int, std::shared_ptr<GPBeat>> beats_value;
+    ankerl::unordered_dense::map<int, std::unique_ptr<GPVoice>> voices;
+    ankerl::unordered_dense::map<int, std::unique_ptr<GPBar>> bars_value;
 
     Version version_;
 

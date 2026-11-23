@@ -25,7 +25,8 @@
 
 #include <cstdint>
 #include <string_view>
-#include <unordered_map>
+
+#include <ankerl/unordered_dense.h>
 
 namespace mu::engraving {
 struct Drumset;
@@ -64,7 +65,7 @@ struct GpDrumSet {
     uint8_t num_lines;
 };
 
-static const std::unordered_map<std::string_view, GpDrumSet> perc_staff_lines_from_instrument = {
+static const ankerl::unordered_dense::map<std::string_view, GpDrumSet> perc_staff_lines_from_instrument = {
     {"Agogo", {"Agogo", DrumSetType::AGOGO, 2}},
     {"Hand Clap", {"Hand Clap", DrumSetType::HAND_CLAP, 1}},
     {"Tambourine", {"Tambourine", DrumSetType::TAMBOURINE, 1}},

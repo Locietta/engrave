@@ -21,6 +21,8 @@
  */
 #pragma once
 
+#include <gtl/btree.hpp>
+
 #include "engraving/dom/mscore.h"
 
 namespace mu::iex::musicxml {
@@ -88,5 +90,5 @@ private:
     int voices_[engraving::max_staves]; // For every voice allocated on the staff, the voice number
 };
 
-typedef std::map<int, VoiceDesc> VoiceList;
+typedef gtl::btree_map<int, VoiceDesc> VoiceList;
 } // namespace mu::iex::musicxml

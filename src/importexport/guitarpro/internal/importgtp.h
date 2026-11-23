@@ -22,8 +22,9 @@
 
 #pragma once
 
-#include <map>
 #include <vector>
+
+#include <ankerl/unordered_dense.h>
 
 #include "continiouselementsbuilder.h"
 #include "engraving/dom/measurebase.h"
@@ -254,7 +255,7 @@ protected:
     constexpr static int invalid_dynamic = -1;
     constexpr static int default_dynamic = 0;
     int tempo = -1;
-    std::map<int, int> slides;
+    ankerl::unordered_dense::map<int, int> slides;
 
     GPLyrics gp_lyrics;
     int slide = 0;
@@ -404,12 +405,13 @@ public:
 
 struct GuitarPro5 : GuitarPro {
 private:
-    std::map<std::pair<int, int>, bool> dead_end;
+    ankerl::unordered_dense::map<std::pair<int, int>, bool> dead_end;
     int beat_counter_value{0};
-    std::unordered_map<mu::engraving::Chord *, mu::engraving::TremoloType> tremolos_in_chords_; // for adding tremolo for tied notes
-    std::unordered_map<Note *, Note *> harmonic_notes_;                                         // for adding ties for harmonic notes
+    ankerl::unordered_dense::map<mu::engraving::Chord *, mu::engraving::TremoloType>
+        tremolos_in_chords_;                                      // for adding tremolo for tied notes
+    ankerl::unordered_dense::map<Note *, Note *> harmonic_notes_; // for adding ties for harmonic notes
     bool current_beat_has_rasgueado_ = false;
-    std::unordered_set<ChordRest *> let_ring_for_chords_; // fixing gp5 bug with no storing let ring for tied notes
+    ankerl::unordered_dense::set<ChordRest *> let_ring_for_chords_; // fixing gp5 bug with no storing let ring for tied notes
     std::vector<std::pair<Note *, Note *>> glissando_note_pairs_;
 
     void read_info();
@@ -474,11 +476,11 @@ private:
 
     int read_beat_effects(int /*track*/, mu::engraving::Segment *) override { return 0; }
 
-    std::map<std::pair<int, int>, Note *> slide_map;
+    ankerl::unordered_dense::map<std::pair<int, int>, Note *> slide_map;
 
 protected:
     bool gpif_read_ = false;
-    const static std::map<std::string, std::string> instrument_mapping;
+    const static ankerl::unordered_dense::map<std::string, std::string> instrument_mapping;
     void read_gpif(muse::ByteArray *data);
 
     virtual std::unique_ptr<GP67DomBuilder> create_gp_dom_builder() const override;

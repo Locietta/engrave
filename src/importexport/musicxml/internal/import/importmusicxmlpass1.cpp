@@ -24,6 +24,9 @@
 
 #include <utility>
 
+#include <ankerl/unordered_dense.h>
+#include <gtl/btree.hpp>
+
 #include "../shared/musicxmlsupport.h"
 #include "../shared/musicxmltypes.h"
 #include "engraving/dom/box.h"
@@ -100,7 +103,7 @@ struct VoiceOverlapDetector {
     void new_measure();
     bool staves_overlap(const int &voice) const;
 private:
-    std::map<int, NoteList> note_lists; // The notelists for all the voices
+    gtl::btree_map<int, NoteList> note_lists; // The notelists for all the voices
 };
 
 NoteList::NoteList() {
@@ -417,20 +420,24 @@ void MusicXmlParserPass1::init_part_state(const String & /* partId */) {
 bool MusicXmlParserPass1::determine_measure_length(std::vector<Fraction> &ml) const {
     ml.clear();
 
-    // determine number of measures: max number of measures in any part
+    // Sort by part id so equal-duration fractions keep the same canonical representation as std::map.
+    std::vector<std::pair<const String *, const MusicXmlPart *>> ordered_parts;
+    ordered_parts.reserve(parts_.size());
     size_t n_measures = 0;
-    for (const auto &[_, part] : parts_) {
+    for (const auto &[id, part] : parts_) {
+        ordered_parts.emplace_back(&id, &part);
         if (part.n_measures() > n_measures) {
             n_measures = part.n_measures();
         }
     }
+    std::ranges::sort(ordered_parts, [](const auto &lhs, const auto &rhs) { return *lhs.first < *rhs.first; });
 
     // determine max length of a specific measure in all parts
     for (size_t i = 0; i < n_measures; ++i) {
         Fraction max_meas_dur;
-        for (const auto &[_, part] : parts_) {
-            if (i < part.n_measures()) {
-                Fraction meas_dur_part_j = part.measure_duration(i);
+        for (const auto &[_, part] : ordered_parts) {
+            if (i < part->n_measures()) {
+                Fraction meas_dur_part_j = part->measure_duration(i);
                 if (meas_dur_part_j > max_meas_dur) {
                     max_meas_dur = meas_dur_part_j;
                 }
@@ -1164,9 +1171,9 @@ void MusicXmlParserPass1::create_default_header(Score *score) {
  */
 
 void MusicXmlParserPass1::create_measures_and_vboxes(Score *score, const std::vector<Fraction> &ml, const std::vector<Fraction> &ms,
-                                                     const std::set<int> &system_start_measure_nrs,
-                                                     const std::set<int> &page_start_measure_nrs, const CreditWordsList &cr_words,
-                                                     const Size &page_size) {
+                                                     const ankerl::unordered_dense::set<int> &system_start_measure_nrs,
+                                                     const ankerl::unordered_dense::set<int> &page_start_measure_nrs,
+                                                     const CreditWordsList &cr_words, const Size &page_size) {
     if (cr_words.empty()) {
         create_default_header(score);
     }
@@ -1412,7 +1419,7 @@ void MusicXmlParserPass1::score_partwise() {
     // set of (typically multi-staff) parts containing one or more explicit brackets
     // spanning only that part: these won't get an implicit brace later
     // e.g. a two-staff piano part with an explicit brace
-    std::set<const Part *> part_set;
+    ankerl::unordered_dense::set<const Part *> part_set;
 
     // handle the explicit brackets
     const std::vector<Part *> &il = score_->parts();
@@ -1548,7 +1555,7 @@ void MusicXmlParserPass1::identification() {
 
 static String text2syms(const String &t, const EngravingFontsProvider &fonts) {
     EngravingFontPtr sf = fonts.fallback_font();
-    std::map<String, SymId> map;
+    ankerl::unordered_dense::map<String, SymId> map;
     size_t max_string_size = 0; // maximum string size found
 
     for (int i = int(SymId::NO_SYM); i < int(SymId::LAST_SYM); ++i) {
@@ -2848,7 +2855,7 @@ void MusicXmlParserPass1::attributes(const String &part_id, const Fraction c_tim
     logger_->log_debug_trace(u"MusicXmlParserPass1::attributes", &e_);
 
     int staves = 0;
-    std::set<int> hidden_staves = {};
+    gtl::btree_set<int> hidden_staves = {};
 
     while (e_.read_next_start_element()) {
         if (e_.name() == "clef") {
@@ -2883,7 +2890,7 @@ void MusicXmlParserPass1::attributes(const String &part_id, const Fraction c_tim
         logger_->log_error(u"staves exceed MAX_STAVES, but hidden staves can be discarded", &e_);
         // Some scores have parts with many staves (~10), but most are hidden
         // When this occurs, we can discard hidden staves
-        // and store a std::map between staffNumber and staffIndex.
+        // and store a mapping between staffNumber and staffIndex.
         int staff_number = 1;
         size_t staff_index = 0;
         for (; staff_number <= staves; ++staff_number) {

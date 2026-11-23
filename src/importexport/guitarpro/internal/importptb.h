@@ -22,6 +22,8 @@
 #ifndef MU_IMPORTEXPORT_IMPORTPTB_H
 #define MU_IMPORTEXPORT_IMPORTPTB_H
 
+#include <gtl/btree.hpp>
+
 #include "engraving/dom/chordrest.h"
 #include "engraving/dom/clef.h"
 #include "engraving/dom/drumset.h"
@@ -260,7 +262,7 @@ private:
 
         std::list<StRhytmSlash> rhythm;
 
-        std::map<int, PtChordText> chord_text_map;
+        gtl::btree_map<int, PtChordText> chord_text_map;
         std::vector<tBeatList> beats;
         std::list<std::shared_ptr<PtBar>> bars;
         bool readed{false};
@@ -302,7 +304,7 @@ private:
         std::vector<TrackInfo> infos;
         std::vector<PtSection> sections;
         PtSection &get_section(int ind);
-        std::map<ChordData, PtChord> diagram_map;
+        gtl::btree_map<ChordData, PtChord> diagram_map;
 
         std::list<PtGuitarIn> guitar_ins;
     };

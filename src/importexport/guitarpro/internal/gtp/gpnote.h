@@ -3,7 +3,6 @@
 
 #include <bitset>
 #include <memory>
-#include <unordered_set>
 
 #include <global/types/string.h>
 
