@@ -785,6 +785,9 @@ void TDraw::draw(const Bend *item, Painter *painter, const PaintOptions &opt) {
     arrow_down << PointF(0, 0) << PointF(aw * .5, -aw) << PointF(-aw * .5, -aw);
 
     size_t n = item->points().size();
+    if (n < 2) {
+        return;
+    }
     for (size_t pt = 0; pt < n - 1; ++pt) {
         int pitch = item->points()[pt].pitch;
         if (pt == 0 && pitch) {
@@ -795,11 +798,9 @@ void TDraw::draw(const Bend *item, Painter *painter, const PaintOptions &opt) {
             painter->set_brush(item->cur_color(opt));
             painter->draw_polygon(arrow_up.translated(x2, y2));
 
-            int idx = (pitch + 12) / 25;
-            const char *l = item->label[idx];
             painter->set_font(f);
             painter->draw_text(RectF(x2, y2, .0, .0), muse::draw::ALIGN_H_CENTER | muse::draw::ALIGN_BOTTOM, muse::draw::TEXT_DONT_CLIP,
-                               String::from_ascii(l));
+                               Bend::pitch_label(pitch));
 
             y = y2;
         }
@@ -826,12 +827,10 @@ void TDraw::draw(const Bend *item, Painter *painter, const PaintOptions &opt) {
             painter->set_brush(item->cur_color(opt));
             painter->draw_polygon(arrow_up.translated(x2, y2));
 
-            int idx = (item->points()[pt + 1].pitch + 12) / 25;
-            const char *l = item->label[idx];
             double ty = y2; // - _spatium;
             painter->set_font(f);
             painter->draw_text(RectF(x2, ty, .0, .0), muse::draw::ALIGN_H_CENTER | muse::draw::ALIGN_BOTTOM, muse::draw::TEXT_DONT_CLIP,
-                               String::from_ascii(l));
+                               Bend::pitch_label(item->points()[pt + 1].pitch));
         } else {
             // down
             x2 = x + spatium * .5;

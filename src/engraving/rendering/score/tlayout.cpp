@@ -1161,9 +1161,7 @@ void TLayout::layout_bend(const Bend *item, Bend::LayoutData *ldata) {
 
             bb.unite(arrow_up.translated(x2, y2 + spatium * .2).bounding_rect());
 
-            int idx = (pitch + 12) / 25;
-            const char *l = Bend::label[idx];
-            bb.unite(fm.bounding_rect(String::from_ascii(l)));
+            bb.unite(fm.bounding_rect(Bend::pitch_label(pitch)));
             y = y2;
         }
         if (pitch == item->points().at(pt + 1).pitch) {
@@ -1186,9 +1184,7 @@ void TLayout::layout_bend(const Bend *item, Bend::LayoutData *ldata) {
             bb.unite(path.bounding_rect());
             bb.unite(arrow_up.translated(x2, y2 + spatium * .2).bounding_rect());
 
-            int idx = (item->points().at(pt + 1).pitch + 12) / 25;
-            const char *l = Bend::label[idx];
-            bb.unite(fm.bounding_rect(String::from_ascii(l)));
+            bb.unite(fm.bounding_rect(Bend::pitch_label(item->points().at(pt + 1).pitch)));
         } else {
             // down
             x2 = x + spatium * .5;

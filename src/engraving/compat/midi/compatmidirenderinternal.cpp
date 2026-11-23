@@ -619,6 +619,9 @@ static void collect_guitar_bend(const Note *note, int channel, int on_time, int 
 static void collect_bend(const PitchValues &play_data, staff_idx_t staff_idx, int channel, int on_time, int off_time,
                          PitchWheelRenderer &pitch_wheel_renderer, MidiInstrumentEffect effect) {
     size_t pitch_size = play_data.size();
+    if (pitch_size == 0) {
+        return;
+    }
 
     const float scale = 2 * (float) g_wheel_spec.m_limit / g_wheel_spec.m_amplitude / PitchValue::pitch_for_semitone;
     uint32_t duration = off_time - on_time;
@@ -631,7 +634,8 @@ static void collect_bend(const PitchValues &play_data, staff_idx_t staff_idx, in
         float cur_tick = (float) cur_value.time * duration / PitchValue::max_time;
         float next_tick = (float) next_value.time * duration / PitchValue::max_time;
 
-        float a = (float) (next_value.pitch - cur_value.pitch) / ((cur_tick - next_tick) * (cur_tick - next_tick));
+        float a = (static_cast<float>(next_value.pitch) - static_cast<float>(cur_value.pitch)) /
+                  ((cur_tick - next_tick) * (cur_tick - next_tick));
         float b = cur_value.pitch;
 
         uint32_t x0 = cur_value.time * duration / PitchValue::max_time;
@@ -660,7 +664,9 @@ static void collect_bend(const PitchValues &play_data, staff_idx_t staff_idx, in
     }
 
     //! y = releaseValue linear curve
-    uint32_t release_value = play_data.at(pitch_size - 1).pitch * scale;
+    const double scaled_release = static_cast<double>(play_data.at(pitch_size - 1).pitch) * scale;
+    const int release_value = static_cast<int>(std::clamp(scaled_release, static_cast<double>(std::numeric_limits<int>::min()),
+                                                          static_cast<double>(std::numeric_limits<int>::max())));
     auto bend_func = [release_value]([[maybe_unused]] uint32_t tick) { return release_value; };
     func.func = bend_func;
     pitch_wheel_renderer.add_pitch_wheel_function(std::move(func), channel, staff_idx, effect);

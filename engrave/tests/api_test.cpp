@@ -28,6 +28,7 @@
 #include "engrave/src/runtime/runtime_assets.h"
 #include "engrave/src/score/json.h"
 #include "engrave/tests/harness/harness.h"
+#include "engraving/dom/bend.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/drumset.h"
 #include "engraving/dom/masterscore.h"
@@ -1934,4 +1935,105 @@ TEST(Open, UnicodeFilenameLyricsAndNonBmpRoundTrip) {
     EXPECT_NE(exported(**reopened, Format::MUSIC_XML).find(text), std::string::npos);
     const auto render = (*reopened)->render({.format = engrave::RenderFormat::SVG});
     ASSERT_TRUE(render) << render.error().message;
+}
+
+TEST(Export, LegacyBendPitchLabelsAndExtremeCurvesRenderAndExport) {
+    using mu::engraving::Bend;
+    EXPECT_EQ(Bend::pitch_label(0).to_std_string(), "");
+    EXPECT_EQ(Bend::pitch_label(12).to_std_string(), "");
+    EXPECT_EQ(Bend::pitch_label(13).to_std_string(), "1/4");
+    EXPECT_EQ(Bend::pitch_label(25).to_std_string(), "1/4");
+    EXPECT_EQ(Bend::pitch_label(50).to_std_string(), "1/2");
+    EXPECT_EQ(Bend::pitch_label(75).to_std_string(), "3/4");
+    EXPECT_EQ(Bend::pitch_label(100).to_std_string(), "full");
+    EXPECT_EQ(Bend::pitch_label(300).to_std_string(), "3");
+    EXPECT_EQ(Bend::pitch_label(312).to_std_string(), "3");
+    EXPECT_EQ(Bend::pitch_label(313).to_std_string(), "3 1/4");
+    EXPECT_EQ(Bend::pitch_label(386).to_std_string(), "3 3/4");
+    EXPECT_EQ(Bend::pitch_label(-12).to_std_string(), "");
+    EXPECT_EQ(Bend::pitch_label(-13).to_std_string(), "-1/4");
+    EXPECT_EQ(Bend::pitch_label(-25).to_std_string(), "-1/4");
+    EXPECT_EQ(Bend::pitch_label(-100).to_std_string(), "-full");
+    EXPECT_EQ(Bend::pitch_label(-1090).to_std_string(), "-11");
+    EXPECT_EQ(Bend::pitch_label(std::numeric_limits<int>::min()).to_std_string(), "-21474836 1/2");
+    EXPECT_EQ(Bend::pitch_label(std::numeric_limits<int>::max()).to_std_string(), "21474836 1/2");
+
+    constexpr std::string_view mscx = R"xml(<?xml version="1.0" encoding="UTF-8"?>
+<museScore version="4.60">
+  <Score>
+    <Division>480</Division>
+    <Part id="1">
+      <Staff id="1"><StaffType group="pitched"><name>stdNormal</name></StaffType></Staff>
+      <trackName>Voice</trackName>
+      <Instrument id="voice"><trackName>Voice</trackName><Channel/></Instrument>
+    </Part>
+    <Staff id="1">
+      <Measure>
+        <voice>
+          <TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>64</pitch><tpc>18</tpc>
+              <Bend>
+                <point time="0" pitch="-1090" vibrato="0"/>
+                <point time="30" pitch="-100" vibrato="0"/>
+                <point time="60" pitch="0" vibrato="0"/>
+              </Bend>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>67</pitch><tpc>15</tpc>
+              <Bend>
+                <point time="0" pitch="0" vibrato="0"/>
+                <point time="30" pitch="386" vibrato="0"/>
+                <point time="60" pitch="386" vibrato="0"/>
+              </Bend>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>69</pitch><tpc>17</tpc>
+              <Bend/>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Note>
+              <pitch>71</pitch><tpc>19</tpc>
+              <Bend>
+                <point time="0" pitch="-200" vibrato="0"/>
+              </Bend>
+            </Note>
+          </Chord>
+        </voice>
+      </Measure>
+    </Staff>
+  </Score>
+</museScore>
+)xml";
+
+    const std::vector<std::byte> bytes(reinterpret_cast<const std::byte *>(mscx.data()),
+                                       reinterpret_cast<const std::byte *>(mscx.data() + mscx.size()));
+    auto document = g_engine->open(bytes, {.format = Format::MSCX});
+    ASSERT_TRUE(document) << document.error().message;
+
+    const auto svg = (*document)->render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(svg) << svg.error().message;
+    ASSERT_FALSE(svg->pages.empty());
+
+    const auto pdf = (*document)->render({.format = engrave::RenderFormat::PDF});
+    ASSERT_TRUE(pdf) << pdf.error().message;
+    EXPECT_FALSE(pdf->document.empty());
+
+    const auto mxl = (*document)->export_score({.format = Format::MUSIC_XML});
+    ASSERT_TRUE(mxl) << mxl.error().message;
+    EXPECT_FALSE(mxl->empty());
+
+    const auto midi = (*document)->export_score({.format = Format::MIDI});
+    ASSERT_TRUE(midi) << midi.error().message;
+    EXPECT_FALSE(midi->empty());
 }

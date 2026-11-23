@@ -52,6 +52,7 @@ public:
     Note *note() const { return to_note(ownership_parent()); }
 
     static const char *label[13];
+    static String pitch_label(int pitch);
 
     PitchValues &points() { return points_; }
 

@@ -22,6 +22,10 @@
 
 #include "bend.h"
 
+#include <cstdint>
+#include <iterator>
+#include <string>
+
 #include "engraving/style/styletypes.h"
 #include "log.h"
 #include "note.h"
@@ -35,6 +39,41 @@ using namespace mu::engraving;
 //---------------------------------------------------------
 
 const char *Bend::label[13] = {"", "1/4", "1/2", "3/4", "full", "1 1/4", "1 1/2", "1 3/4", "2", "2 1/4", "2 1/2", "2 3/4", "3"};
+
+String Bend::pitch_label(int pitch) {
+    const std::int64_t p = pitch;
+    if (p >= 0) {
+        const std::int64_t idx = (p + 12) / 25;
+        if (idx < static_cast<std::int64_t>(std::size(label))) {
+            return String::from_ascii(label[idx]);
+        }
+    }
+    const bool negative = p < 0;
+    const std::int64_t mag = negative ? -p : p;
+    const std::int64_t quarter_tones = (mag + 12) / 25;
+    if (quarter_tones == 0) {
+        return String();
+    }
+    const std::int64_t whole = quarter_tones / 4;
+    const std::int64_t rem = quarter_tones % 4;
+    static constexpr const char *k_fracs[4] = {"", "1/4", "1/2", "3/4"};
+    std::string text;
+    if (negative) {
+        text.push_back('-');
+    }
+    if (whole == 1 && rem == 0) {
+        text += "full";
+    } else if (whole == 0) {
+        text += k_fracs[rem];
+    } else if (rem == 0) {
+        text += std::to_string(whole);
+    } else {
+        text += std::to_string(whole);
+        text.push_back(' ');
+        text += k_fracs[rem];
+    }
+    return String::from_ascii(text.c_str(), text.size());
+}
 
 static const ElementStyle bend_style{
     {Sid::BEND_FONT_FACE, Pid::FONT_FACE},
