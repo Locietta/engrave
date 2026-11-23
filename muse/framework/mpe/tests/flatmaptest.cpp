@@ -3,18 +3,24 @@
 #include <algorithm>
 #include <functional>
 #include <limits>
+#include <memory>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>
-#include <gtl/btree.hpp>
 
 #include "audio/engine/internal/synthesizers/fluidsynth/soundmapping.h"
+#include "global/btree.h"
 #include "global/containers.h"
 #include "global/flatmap.h"
+#include "global/flatset.h"
+#include "global/fn.h"
+#include "global/hashmap.h"
+#include "global/unique_fn.h"
 #include "soundmapping_oracle_fixture.h"
 #include "types/enumset.h"
 
@@ -417,4 +423,194 @@ TEST(MpeFlatMapTest, ProfileReplacementKeepsExistingAppliedPattern) {
     EXPECT_NE(profile, equal_profile);
     EXPECT_EQ(applied.applied_pattern_segment().arrangement_pattern.duration_factor_value, 7500);
     EXPECT_EQ(profile.pattern(ArticulationType::STANDARD).begin()->second.arrangement_pattern.duration_factor_value, 5000);
+}
+
+namespace {
+int free_add_one(int x) noexcept { return x + 1; }
+
+struct NonMovableArg {
+    int value = 0;
+
+    explicit NonMovableArg(int v) noexcept : value(v) {}
+
+    NonMovableArg(const NonMovableArg &) = delete;
+    NonMovableArg(NonMovableArg &&) = delete;
+};
+
+struct MemberHolder {
+    int field = 7;
+};
+} // namespace
+
+TEST(MpeFlatMapTest, FnRefAndUniqueFnSemantics) {
+    static_assert(std::is_trivially_copyable_v<FnRef<int(int)>>);
+    static_assert(sizeof(FnRef<int(int)>) == 2 * sizeof(void *));
+
+    // Qualification widening is allowed; narrowing const/noexcept is rejected.
+    static_assert(std::is_constructible_v<FnRef<int(int)>, FnRef<int(int) const>>);
+    static_assert(std::is_constructible_v<FnRef<int(int)>, FnRef<int(int) noexcept>>);
+    static_assert(std::is_constructible_v<FnRef<int(int)>, FnRef<int(int) const noexcept>>);
+    static_assert(std::is_constructible_v<FnRef<int(int) const>, FnRef<int(int) const noexcept>>);
+    static_assert(std::is_constructible_v<FnRef<int(int) noexcept>, FnRef<int(int) const noexcept>>);
+    static_assert(!std::is_constructible_v<FnRef<int(int) const>, FnRef<int(int)>>);
+    static_assert(!std::is_constructible_v<FnRef<int(int) noexcept>, FnRef<int(int)>>);
+
+    // Dangling reference-to-temporary returns and runtime member pointers are rejected.
+    auto returns_value = []() -> int { return 5; };
+    static_assert(!std::is_constructible_v<FnRef<const int &()>, decltype(returns_value)>);
+    static_assert(!std::is_constructible_v<UniqueFn<const int &()>, decltype(returns_value)>);
+    static_assert(!std::is_constructible_v<FnRef<int(MemberHolder &)>, int MemberHolder::*>);
+    static_assert(!std::is_assignable_v<FnRef<int(int)>, decltype(free_add_one)>);
+
+    FnRef<int(int)> empty_ref;
+    EXPECT_FALSE(static_cast<bool>(empty_ref));
+    FnRef<int(int)> null_ref = nullptr;
+    EXPECT_FALSE(static_cast<bool>(null_ref));
+
+    // Cross-specialization conversion copies the erased binding directly (preserves emptiness and avoids dangling).
+    FnRef<int(int) const> empty_const_ref;
+    FnRef<int(int)> widened_empty = empty_const_ref;
+    EXPECT_FALSE(static_cast<bool>(widened_empty));
+
+    FnRef<int(int)> widened_from_temp = FnRef<int(int) const noexcept>(free_add_one);
+    ASSERT_TRUE(static_cast<bool>(widened_from_temp));
+    EXPECT_EQ(widened_from_temp(41), 42);
+
+    int (*null_fp)(int) = nullptr;
+    FnRef<int(int)> from_null_fp = null_fp;
+    EXPECT_FALSE(static_cast<bool>(from_null_fp));
+
+    std::function<int(int)> empty_std_fn;
+    FnRef<int(int)> from_empty_std = empty_std_fn;
+    EXPECT_FALSE(static_cast<bool>(from_empty_std));
+    UniqueFn<int(int)> owned_from_empty_std = empty_std_fn;
+    EXPECT_FALSE(static_cast<bool>(owned_from_empty_std));
+
+    // Prvalue non-movable arguments pass through the erased thunk with zero extra moves.
+    int seen_non_movable = 0;
+    auto take_non_movable = [&](NonMovableArg &&arg) noexcept { seen_non_movable = arg.value; };
+    FnRef<void(NonMovableArg) noexcept> nm_ref = take_non_movable;
+    nm_ref(NonMovableArg(19));
+    EXPECT_EQ(seen_non_movable, 19);
+    UniqueFn<void(NonMovableArg) noexcept> nm_owned = take_non_movable;
+    nm_owned(NonMovableArg(23));
+    EXPECT_EQ(seen_non_movable, 23);
+
+    int counter = 0;
+    auto mutable_lambda = [n = 0, &counter](int step) mutable {
+        n += step;
+        counter = n;
+        return n;
+    };
+    FnRef<int(int)> mut_ref = mutable_lambda;
+    EXPECT_EQ(mut_ref(3), 3);
+    EXPECT_EQ(mut_ref(4), 7);
+    EXPECT_EQ(counter, 7);
+
+    // Non-void return adapted into FnRef<void(...)> and UniqueFn<void(...)>.
+    int void_side_effect = 0;
+    auto bump_and_return = [&](int step) {
+        void_side_effect += step;
+        return void_side_effect;
+    };
+    FnRef<void(int)> discard_ref = bump_and_return;
+    ASSERT_TRUE(static_cast<bool>(discard_ref));
+    discard_ref(5);
+    EXPECT_EQ(void_side_effect, 5);
+
+    UniqueFn<void(int)> void_owned = bump_and_return;
+    ASSERT_TRUE(static_cast<bool>(void_owned));
+    void_owned(7);
+    EXPECT_EQ(void_side_effect, 12);
+
+    // Null member pointer yields empty UniqueFn; engaged member pointer invokes cleanly.
+    int MemberHolder::*null_mp = nullptr;
+    UniqueFn<int(MemberHolder &)> mp_empty = null_mp;
+    EXPECT_FALSE(static_cast<bool>(mp_empty));
+    UniqueFn<int(MemberHolder &)> mp_engaged = &MemberHolder::field;
+    ASSERT_TRUE(static_cast<bool>(mp_engaged));
+    MemberHolder holder{11};
+    EXPECT_EQ(mp_engaged(holder), 11);
+
+    // UniqueFn supports implicit lambda conversion, move-only captures, null reset, and const callables.
+    UniqueFn<int(int)> empty_owned;
+    EXPECT_FALSE(static_cast<bool>(empty_owned));
+    FnRef<int(int)> ref_to_empty_owned = empty_owned;
+    EXPECT_FALSE(static_cast<bool>(ref_to_empty_owned));
+
+    auto ptr = std::make_unique<int>(10);
+    UniqueFn<int(int)> owned = [p = std::move(ptr)](int x) mutable {
+        *p += x;
+        return *p;
+    };
+    ASSERT_TRUE(static_cast<bool>(owned));
+    EXPECT_EQ(owned(5), 15);
+    FnRef<int(int)> ref_to_owned = owned;
+    ASSERT_TRUE(static_cast<bool>(ref_to_owned));
+    EXPECT_EQ(ref_to_owned(7), 22);
+
+    owned = nullptr;
+    EXPECT_FALSE(static_cast<bool>(owned));
+
+    const UniqueFn<int(int) const> const_owned = [base = 100](int x) { return base + x; };
+    ASSERT_TRUE(static_cast<bool>(const_owned));
+    EXPECT_EQ(const_owned(23), 123);
+    FnRef<int(int) const> const_ref = const_owned;
+    ASSERT_TRUE(static_cast<bool>(const_ref));
+    EXPECT_EQ(const_ref(7), 107);
+
+    UniqueFn<int(int)> null_fp_owned = null_fp;
+    EXPECT_FALSE(static_cast<bool>(null_fp_owned));
+}
+
+TEST(MpeFlatMapTest, VocabularyContainerShimsAndTransparency) {
+    // HashMap / HashSet transparent std::string_view lookup.
+    HashMap<std::string, int> hmap{{"alpha", 1}, {"beta", 2}};
+    const std::string_view sv = "beta";
+    ASSERT_TRUE(hmap.contains(sv));
+    ASSERT_NE(hmap.find(sv), hmap.end());
+    EXPECT_EQ(hmap.find(sv)->second, 2);
+    ASSERT_NE(hmap.find("alpha"), hmap.end());
+    EXPECT_EQ(hmap.find("alpha")->second, 1);
+
+    HashSet<std::string> hset{"one", "two"};
+    EXPECT_TRUE(hset.contains(std::string_view("one")));
+    EXPECT_FALSE(hset.contains("three"));
+
+    // BTreeMap insert_or_assign: new key, overwrite, move-only value, ADL swap, and self-aliasing across splits.
+    BTreeMap<int, std::string> bmap;
+    auto [it1, ins1] = bmap.insert_or_assign(10, std::string("ten"));
+    EXPECT_TRUE(ins1);
+    EXPECT_EQ(it1->second, "ten");
+    auto [it2, ins2] = bmap.insert_or_assign(10, std::string("TEN"));
+    EXPECT_FALSE(ins2);
+    EXPECT_EQ(it2->second, "TEN");
+
+    for (int i = 0; i < 128; ++i) {
+        const auto [it, inserted] = bmap.insert_or_assign(1000 + i, bmap.at(10));
+        EXPECT_TRUE(inserted);
+        EXPECT_EQ(it->second, "TEN");
+    }
+
+    BTreeMap<int, std::string> bmap_copy = bmap;
+    EXPECT_EQ(bmap, bmap_copy);
+    bmap_copy.insert_or_assign(10, std::string("changed"));
+    EXPECT_NE(bmap, bmap_copy);
+    using std::swap;
+    swap(bmap, bmap_copy);
+    EXPECT_EQ(bmap.at(10), "changed");
+    EXPECT_EQ(bmap_copy.at(10), "TEN");
+
+    BTreeMap<int, std::unique_ptr<int>> move_only_map;
+    auto [mit1, mins1] = move_only_map.insert_or_assign(1, std::make_unique<int>(7));
+    EXPECT_TRUE(mins1);
+    EXPECT_EQ(*mit1->second, 7);
+    auto [mit2, mins2] = move_only_map.insert_or_assign(1, std::make_unique<int>(9));
+    EXPECT_FALSE(mins2);
+    EXPECT_EQ(*mit2->second, 9);
+
+    FlatSet<int> fset{5, 1, 3, 1};
+    EXPECT_EQ(fset.size(), 3u);
+    EXPECT_TRUE(fset.contains(3));
+    EXPECT_FALSE(fset.contains(2));
 }

@@ -142,7 +142,7 @@ constexpr const char *k_chords_track_name_prefix = "Chords.";
 // chunk currently being rendered.
 struct MidiCapture {
     void send_event(const midi::Event &event) {
-        if (hook) (*hook)(event, rendered_frames);
+        if (hook) hook(event, rendered_frames);
     }
 
     EngineAudioMidiEventHook hook;
@@ -502,7 +502,7 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
         if (!cancelled && request.cancelled) {
             const ScopedDenormalGuard::Suspend suspend(denormal_guard);
             try {
-                cancelled = (*request.cancelled)();
+                cancelled = request.cancelled();
             } catch (...) {
                 callback_error = std::current_exception();
                 cancelled = true;
@@ -576,7 +576,7 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
             builder.play_repeats = request.use_repeats;
             builder.metronome_enabled = false;
 #ifdef ENGRAVE_PLAYBACK_HARNESS
-            if (FlatPlaybackCapture::dump_note) builder.dump_note = std::ref(*FlatPlaybackCapture::dump_note);
+            if (FlatPlaybackCapture::dump_note) builder.dump_note = std::ref(FlatPlaybackCapture::dump_note);
 #endif
             playback = builder.build(master_score, checkpoint);
         } catch (const CancelledModel &) {
@@ -673,7 +673,7 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
         if (test::PlaybackCapture::track) test::PlaybackCapture::track(id.part_id.to_uint64(), id.instrument_id, events);
     }
     if (test::PlaybackCapture::synth) *test::PlaybackCapture::synth << "total_frames " << total_frames << '\n';
-    if (FlatPlaybackCapture::projection) (*FlatPlaybackCapture::projection)(playback);
+    if (FlatPlaybackCapture::projection) FlatPlaybackCapture::projection(playback);
 #endif
     auto tracks_timer = std::make_unique<OfflineTimer>(OfflineTiming::current().tracks);
     for (const auto &[track_id, events] : playback.tracks) {
@@ -804,7 +804,7 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
             device, make_soundtrack_format(request.format, request, output_spec(state.sample_rate_value)), render_secs, &context,
             [&state](uint64_t frames) { state.midi_out_port.rendered_frames = frames; }, factory, poll);
     };
-    auto writer = request.encoder_factory ? make_writer(std::cref(*request.encoder_factory)) : make_writer(nullptr);
+    auto writer = request.encoder_factory ? make_writer(std::cref(request.encoder_factory)) : make_writer(nullptr);
     Ret write_ret;
     try {
         write_ret = writer.write();

@@ -73,7 +73,7 @@ struct Step {
         requires(!std::same_as<std::remove_cvref_t<F>, Step> && std::invocable<F &, EditContext &>)
     Step(F &&fn) : apply_(music::make_unique_fn<Result<void>(EditContext &)>(std::forward<F>(fn))) {}
 
-    Result<void> operator()(EditContext &context) { return (*apply_)(context); }
+    Result<void> operator()(EditContext &context) { return apply_(context); }
 
 private:
     music::UniqueFn<Result<void>(EditContext &)> apply_;

@@ -45,7 +45,7 @@ engrave::Result<std::string> render_score(const EngineContext &engine, mu::engra
 
 engrave::Result<std::string> render_score(const EngineContext &engine, mu::engraving::Score *score, const std::string &format,
                                           const ExportOptions &options) {
-    const auto poll = [&] { return options.cancelled && (*options.cancelled)(); };
+    const auto poll = [&] { return options.cancelled && options.cancelled(); };
     if (poll()) return std::unexpected(engrave::Error{engrave::ErrorCode::CANCELLED, "render cancelled"});
     using namespace mu::engraving;
     if (!score || !score->npages()) return std::unexpected(engrave::Error{engrave::ErrorCode::INVALID_ARGUMENT, "Score has no pages"});

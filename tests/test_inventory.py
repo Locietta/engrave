@@ -308,7 +308,7 @@ class InventoryMutations(unittest.TestCase):
                         if binary_name == "engraving_playback_tests":
                             stdout = "[==========] Running 220 tests from 10 test suites.\n[  PASSED  ] 220 tests.\n"
                         else:
-                            stdout = "[==========] Running 22 tests from 3 test suites.\n[  PASSED  ] 22 tests.\n"
+                            stdout = "[==========] Running 24 tests from 3 test suites.\n[  PASSED  ] 24 tests.\n"
                         return subprocess.CompletedProcess(cmd, 0, stdout=stdout, stderr="")
                     finally:
                         with lock:

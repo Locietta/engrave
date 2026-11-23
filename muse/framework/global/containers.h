@@ -29,8 +29,7 @@
 #include <ranges>
 #include <vector>
 
-#include <amc/flatset.hpp>
-
+#include "flatset.h"
 #include "sortedrange.h"
 
 namespace muse {
@@ -223,7 +222,7 @@ inline bool contains(const Container &c, const K &key) {
 
 template <typename Map>
 inline auto unique_keys(const Map &m) {
-    amc::FlatSet<typename Map::key_type> result;
+    FlatSet<typename Map::key_type> result;
     for (const auto &entry : m) {
         result.insert(entry.first);
     }
