@@ -92,6 +92,8 @@ Result<Step> prepare(EditContext &context, const InsertMeasures &op) {
         if (!target) return std::unexpected(target.error());
         if (target->object && !target->object->is_measure_base())
             return invalid(std::format("a {} is not a measure or a frame", target->object->type_name()));
+        if (target->object && target->object->score() != &context.master())
+            return invalid("before: the measure or frame must belong to the master score");
         before = *target;
     }
     if (op.count < 1) return invalid("inserting needs at least one measure");
@@ -109,6 +111,7 @@ Result<Step> prepare(EditContext &context, const InsertMeasures &op) {
             if (!(*object)->is_measure_base()) {
                 return invalid(std::format("a {} is not a measure or a frame", (*object)->type_name()));
             }
+            if ((*object)->score() != &context.master()) return invalid("before: the measure or frame must belong to the master score");
             at = mu::engraving::to_measure_base(*object);
         }
         // The master inserts a measure into every score of the document; a frame goes
@@ -139,10 +142,11 @@ Result<Step> prepare(EditContext &context, const RemoveMeasures &op) {
     if (!last) return std::unexpected(last.error());
     if (first->object && !first->object->is_measure()) return invalid(std::format("a {} is not a measure", first->object->type_name()));
     if (last->object && !last->object->is_measure()) return invalid(std::format("a {} is not a measure", last->object->type_name()));
+    if (first->object && first->object->score() != &context.master()) return invalid("first: the measure must belong to the master score");
+    if (last->object && last->object->score() != &context.master()) return invalid("last: the measure must belong to the master score");
     if (first->object && last->object) {
         auto *start = mu::engraving::to_measure(first->object);
         auto *end = mu::engraving::to_measure(last->object);
-        if (start->score() != end->score()) return invalid("the range starts and ends in different scores");
         if (end->tick() < start->tick()) return invalid("the range ends before it starts");
     }
     return [first = *first, last = *last](EditContext &context) -> Result<void> {
@@ -150,11 +154,12 @@ Result<Step> prepare(EditContext &context, const RemoveMeasures &op) {
         if (!start) return std::unexpected(start.error());
         auto end = measure_of(context, last);
         if (!end) return std::unexpected(end.error());
-        if ((*start)->score() != (*end)->score()) return invalid("the range starts and ends in different scores");
+        if ((*start)->score() != &context.master()) return invalid("first: the measure must belong to the master score");
+        if ((*end)->score() != &context.master()) return invalid("last: the measure must belong to the master score");
         if ((*end)->tick() < (*start)->tick()) return invalid("the range ends before it starts");
         // The engine's own deletion: it removes the range from every score, keeps what
         // slurs and ties need, and restores the time signature that follows.
-        (*start)->score()->delete_measures(*start, *end);
+        context.master().delete_measures(*start, *end);
         return {};
     };
 }

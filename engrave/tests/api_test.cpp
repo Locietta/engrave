@@ -1485,6 +1485,85 @@ TEST(LiveEdit, ExcerptScopeUsesLocalStaffAndRejectsForeignOperands) {
     EXPECT_EQ(invalid_scope.error().code, ErrorCode::INVALID_ARGUMENT);
 }
 
+TEST(LiveEdit, ForeignInsertBeforeLeavesBothScoresIntact) {
+    using namespace engrave;
+    auto document = notation_score(3);
+    ASSERT_TRUE(document);
+    const auto setup = document->edit({{AddPart{"violin"}, GenerateExcerpts{{OpRef{0, 0}}}}});
+    ASSERT_TRUE(setup) << setup.error().message;
+    ASSERT_FALSE(setup->rejection) << setup->rejection->error.message;
+
+    const auto score_shape = [](const mu::engraving::Score &score) {
+        std::vector<ElementId> bars;
+        std::size_t frames = 0;
+        for (const auto *base = score.first(); base; base = base->next()) {
+            if (base->is_measure())
+                bars.push_back(from_engine(base->eid()));
+            else
+                ++frames;
+        }
+        return std::pair{std::move(bars), frames};
+    };
+    auto &master = harness::master_of(*document);
+    const auto *excerpt = master.score_list().back();
+    ASSERT_NE(excerpt, &master);
+    const auto master_before = score_shape(master);
+    const auto excerpt_before = score_shape(*excerpt);
+    ASSERT_EQ(master_before.first.size(), 3u);
+    ASSERT_EQ(excerpt_before.first.size(), 3u);
+    const auto revision = document->revision();
+
+    for (const auto mode : {EditMode::Atomic, EditMode::Prefix}) {
+        for (const auto *kind : {"VBox", "Measure"}) {
+            SCOPED_TRACE(kind);
+            const auto edited = document->edit({{InsertMeasures{excerpt_before.first[1], 1, kind}}}, {.mode = mode});
+            ASSERT_FALSE(edited);
+            EXPECT_EQ(edited.error().code, ErrorCode::INVALID_ARGUMENT);
+            EXPECT_EQ(edited.error().op_index, 0u);
+            EXPECT_TRUE(edited.error().applied_ops.empty());
+            EXPECT_EQ(document->revision(), revision);
+            auto &current = harness::master_of(*document);
+            EXPECT_EQ(score_shape(current), master_before);
+            EXPECT_EQ(score_shape(*current.score_list().back()), excerpt_before);
+        }
+    }
+}
+
+TEST(LiveEdit, ExcerptMeterAndRepeatChangesRejectBeforeAnEarlierEdit) {
+    using namespace engrave;
+    using mu::engraving::Sid;
+    auto document = notation_score(3);
+    ASSERT_TRUE(document);
+    const auto setup = document->edit({{AddPart{"violin"}, GenerateExcerpts{{OpRef{0, 0}}}}});
+    ASSERT_TRUE(setup) << setup.error().message;
+    ASSERT_FALSE(setup->rejection) << setup->rejection->error.message;
+    const ScoreSel scope{setup->ops[1].created[0]};
+    ASSERT_TRUE(scope.excerpt);
+    auto &master = harness::master_of(*document);
+    const auto *excerpt = master.score_list().back();
+    ASSERT_NE(excerpt, &master);
+    const auto width = excerpt->style().style_d(Sid::PAGE_WIDTH);
+    const auto revision = document->revision();
+
+    for (const auto mode : {EditMode::Atomic, EditMode::Prefix}) {
+        for (const auto &op : std::vector<Op>{SetTimeSig{MeasureIndex{1}, {3, 4}}, SetRepeatBarlines{MeasureIndex{1}, true}}) {
+            const auto edited =
+                document->edit({.ops = {SetStyle{std::nullopt, "pageWidth", width + 1}, op}, .scope = scope}, {.mode = mode});
+            ASSERT_FALSE(edited);
+            EXPECT_EQ(edited.error().code, ErrorCode::INVALID_ARGUMENT);
+            EXPECT_EQ(edited.error().op_index, 1u);
+            EXPECT_TRUE(edited.error().applied_ops.empty());
+            EXPECT_EQ(document->revision(), revision);
+            EXPECT_EQ(excerpt->style().style_d(Sid::PAGE_WIDTH), width);
+            for (const auto *score : {static_cast<const mu::engraving::Score *>(&master), excerpt}) {
+                const auto *bar = score->first_measure()->next_measure();
+                EXPECT_EQ(bar->timesig(), mu::engraving::Fraction(4, 4));
+                EXPECT_FALSE(bar->repeat_start());
+            }
+        }
+    }
+}
+
 TEST(LiveEdit, ExcerptStaffEditsStayLocalAndKeepTheMasterSaveGuard) {
     using namespace engrave;
     auto document = notation_score(2);
@@ -1620,6 +1699,90 @@ TEST(LiveEdit, MarkingsAndLinesUseTheRequestedOnsetAndTrack) {
     }
 }
 
+TEST(LiveEdit, ExplicitSegmentAnchorsWorkWithOtherReferenceTypes) {
+    using namespace engrave;
+    using Tick = mu::engraving::Fraction;
+    auto document = notation_score(2);
+    ASSERT_TRUE(document);
+    const RelativePosition first{{0}, 0, 1, {0, 1}};
+    const RelativePosition second{{0}, 0, 1, {1, 4}};
+    const auto setup = document->edit({{EnterNotes{first, {1, 4}, {{60}}}, EnterNotes{second, {1, 4}, {{62}}}}});
+    ASSERT_TRUE(setup) << setup.error().message;
+    ASSERT_FALSE(setup->rejection) << setup->rejection->error.message;
+    ASSERT_TRUE(setup->ops[1].created[0]);
+
+    auto &score = harness::master_of(*document);
+    const auto bar_id = from_engine(score.first_measure()->eid());
+    const Address first_segment = SegmentAddress{bar_id, 0, 1, {0, 1}, "ChordRest"};
+    const Address second_segment = SegmentAddress{bar_id, 0, 1, {1, 4}, "ChordRest"};
+    const ElementId second_chord = *setup->ops[1].created[0];
+    const auto edited = document->edit({{
+        Add{first_segment, "Articulation", {{"symbol", Enum{"articStaccatoAbove"}}}},
+        Add{first_segment, "Dynamic", {{"DYNAMIC_TYPE", Enum{"ff"}}}},
+        AddSpanner{"Slur", first_segment, second_chord, {}},
+        AddSpanner{"Slur", first, second_segment, {}},
+        AddSpanner{"HairPin", first_segment, second, {}},
+        AddSpanner{"HairPin", first, second_segment, {}},
+        AddSpanner{"HairPin", first_segment, second_chord, {}},
+        AddSpannerToBarEnd{"TextLine", first_segment, {MeasureIndex{1}}, {}},
+    }});
+    ASSERT_TRUE(edited) << edited.error().message;
+    ASSERT_FALSE(edited->rejection) << edited->rejection->op_index << " " << edited->rejection->error.message;
+    const auto *first_chord = score.find_cr({0, 1}, 1);
+    ASSERT_TRUE(first_chord && first_chord->is_chord());
+    EXPECT_EQ(mu::engraving::to_chord(first_chord)->articulations().size(), 1u);
+    const auto &annotations = first_chord->segment()->annotations();
+    const auto dynamic = std::ranges::find_if(annotations, [](const auto *item) { return item->is_dynamic(); });
+    ASSERT_NE(dynamic, annotations.end());
+    EXPECT_EQ((*dynamic)->track(), 1u);
+
+    const auto lines = score.spanner_list();
+    ASSERT_EQ(lines.size(), 6u);
+    for (const auto *line : lines) {
+        EXPECT_EQ(line->tick(), Tick(0, 1));
+        EXPECT_EQ(line->tick2(), line->is_text_line() ? Tick(2, 1) : Tick(1, 4));
+        EXPECT_EQ(line->track(), 1u);
+        if (line->is_slur()) {
+            EXPECT_EQ(line->start_element(), first_chord);
+            ASSERT_TRUE(line->end_element());
+            EXPECT_EQ(from_engine(line->end_element()->eid()), second_chord);
+        } else {
+            EXPECT_EQ(line->effective_track2(), 1u);
+        }
+    }
+}
+
+TEST(NotationEdits, ReversedSlursRejectWithoutMutation) {
+    using namespace engrave;
+    auto document = notation_score(1);
+    ASSERT_TRUE(document);
+    const RelativePosition first{{0}};
+    const RelativePosition second{{0}, 0, 0, {1, 4}};
+    const auto setup = document->edit({{EnterNotes{first, {1, 4}, {{60}}}, EnterNotes{second, {1, 4}, {{62}}}}});
+    ASSERT_TRUE(setup) << setup.error().message;
+    ASSERT_FALSE(setup->rejection) << setup->rejection->error.message;
+    ASSERT_TRUE(setup->ops[0].created[0] && setup->ops[1].created[0]);
+    const auto bar_id = from_engine(harness::master_of(*document).first_measure()->eid());
+    const Address explicit_second = SegmentAddress{bar_id, 0, 0, {1, 4}, "ChordRest"};
+    const auto revision = document->revision();
+
+    for (const auto mode : {EditMode::Atomic, EditMode::Prefix}) {
+        for (const auto &op : {AddSpanner{"Slur", second, first, {}}, AddSpanner{"Slur", explicit_second, first, {}},
+                               AddSpanner{"Slur", *setup->ops[1].created[0], *setup->ops[0].created[0], {}}}) {
+            const auto edited = document->edit({{op}}, {.mode = mode});
+            ASSERT_TRUE(edited) << edited.error().message;
+            ASSERT_TRUE(edited->rejection);
+            EXPECT_EQ(edited->rejection->error.code, ErrorCode::EDIT_REJECTED);
+            EXPECT_EQ(edited->rejection->op_index, 0u);
+            EXPECT_EQ(edited->applied, 0u);
+            EXPECT_FALSE(edited->rejection->error.poisoned);
+            EXPECT_TRUE(edited->created.empty() && edited->removed.empty() && edited->replaced.empty());
+            EXPECT_EQ(document->revision(), revision);
+            EXPECT_TRUE(harness::master_of(*document).spanner_list().empty());
+        }
+    }
+}
+
 TEST(LiveEdit, FailedAnchorLookupsLeaveTheSegmentListIntact) {
     using namespace engrave;
     using mu::engraving::SegmentType;
@@ -1736,7 +1899,7 @@ TEST(LiveEdit, OutOfRangeOrdinalsAndUnrepresentableTicksRejectTheStep) {
              {EnterNotes{RelativePosition{{7}}, {1, 4}, {{65}}}, "at:", PositionError{Kind::MEASURE, "at", 7, 3}},
              {EnterNotes{RelativePosition{{0}, 1}, {1, 4}, {{65}}}, "at:", PositionError{Kind::STAFF, "at", 1, 1}},
              {AddSpannerToBarEnd{"HairPin", RelativePosition{}, {MeasureIndex{4}}, {}}, "end:", PositionError{Kind::MEASURE, "end", 4, 3}},
-             {EnterNotes{RelativePosition{{0}, 0, 4}, {1, 4}, {{65}}}, "at:", std::nullopt},
+             {EnterNotes{RelativePosition{{0}, 0, 4}, {1, 4}, {{65}}}, "at:", PositionError{Kind::VOICE, "at", 4, 4}},
              {EnterNotes{RelativePosition{{2}, 0, 0, {1, max_term}}, {1, 4}, {{65}}}, "at:", std::nullopt},
          }) {
         const auto edited = document->edit({{op}});
@@ -1799,6 +1962,41 @@ TEST(LiveEdit, StaticSelectorErrorsDoNotStartABatch) {
         EXPECT_EQ(edited.error().code, ErrorCode::INVALID_ARGUMENT);
         EXPECT_EQ(document->revision(), revision);
     }
+}
+
+TEST(LiveEdit, MasterOnlyDeletionAndChordRestAnchorsRejectInvalidTargets) {
+    using namespace engrave;
+    auto document = notation_score(2);
+    ASSERT_TRUE(document);
+    ASSERT_TRUE(document->edit({{AddPart{"violin"}, GenerateExcerpts{{OpRef{0, 0}}}}}));
+    const auto outline = document->outline();
+    ASSERT_TRUE(outline);
+    ASSERT_EQ(outline->excerpts.size(), 1u);
+    const auto excerpt_outline = document->outline(ScoreSel{outline->excerpts.front().id});
+    ASSERT_TRUE(excerpt_outline);
+    ASSERT_GE(excerpt_outline->measures.size(), 2u);
+    const auto excerpt_m0 = excerpt_outline->measures[0].id;
+    const auto excerpt_m1 = excerpt_outline->measures[1].id;
+    const auto master_m0 = outline->measures[0].id;
+    const auto revision = document->revision();
+
+    for (const auto mode : {EditMode::Atomic, EditMode::Prefix}) {
+        const auto removed = document->edit({{RemoveMeasures{excerpt_m0, excerpt_m1}}}, {.mode = mode});
+        ASSERT_FALSE(removed);
+        EXPECT_EQ(removed.error().code, ErrorCode::INVALID_ARGUMENT);
+        EXPECT_FALSE(removed.error().poisoned);
+        EXPECT_EQ(document->revision(), revision);
+    }
+
+    const auto non_cr = document->edit({{Add{SegmentAddress{master_m0, 0, 0, {0, 1}, "TimeSig"}, "Dynamic", {{"DYNAMIC_TYPE", "p"}}}}});
+    ASSERT_FALSE(non_cr);
+    EXPECT_EQ(non_cr.error().code, ErrorCode::INVALID_ARGUMENT);
+    EXPECT_EQ(document->revision(), revision);
+
+    const auto neg_voice = document->edit({{EnterNotes{SegmentAddress{master_m0, 0, -1, {0, 1}, "ChordRest"}, {1, 4}, {{60}}}}});
+    ASSERT_FALSE(neg_voice);
+    EXPECT_EQ(neg_voice.error().code, ErrorCode::INVALID_ARGUMENT);
+    EXPECT_FALSE(neg_voice.error().position.has_value());
 }
 
 TEST(NotationEdits, SegmentLinesReachPickupAndFinalBarlines) {

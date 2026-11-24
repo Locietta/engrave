@@ -7,6 +7,7 @@
 #include "engrave/tests/read_test_fixture.h"
 #include "engraving/dom/fret.h"
 #include "engraving/dom/stafftext.h"
+#include "engraving/dom/tempotext.h"
 
 namespace {
 using namespace engrave;
@@ -196,6 +197,7 @@ TEST(MusicRead, ExpressiveMarksCarryTheirAuthoredValuesAndAnchors) {
     EXPECT_EQ(tremolo.end_event, element_id_from_string("B_f"));
     ASSERT_TRUE(tremolo.end);
     EXPECT_EQ(tremolo.end->measure, second.measure.id);
+    EXPECT_EQ(tremolo.end->measure_index, 1);
     expect_fraction(tremolo.end->offset, 1, 2);
 
     EXPECT_EQ(find_mark(bar, "B_A"), nullptr);
@@ -814,6 +816,8 @@ TEST(MusicRead, OverlappingSpansRetainEndpointsInLinkedPart) {
         EXPECT_FALSE(volta.closed);
         EXPECT_EQ(volta.span.start.measure, score_bars[1].id);
         EXPECT_EQ(volta.span.end.measure, score_bars[1].id);
+        EXPECT_EQ(volta.span.start.measure_index, 1);
+        EXPECT_EQ(volta.span.end.measure_index, 1);
         expect_fraction(volta.span.end.offset, 3, 4);
         const auto is_ottava = [](const SpanMusic &span) { return span.type == "Ottava"; };
         EXPECT_EQ(std::ranges::count_if(window->spanners, is_ottava), 1);
@@ -837,6 +841,62 @@ TEST(MusicRead, OverlappingSpansRetainEndpointsInLinkedPart) {
         EXPECT_EQ(laid_out->spanners[i].start_element, master_window->spanners[i].start_element);
         EXPECT_EQ(laid_out->spanners[i].end_element, master_window->spanners[i].end_element);
     }
+}
+
+TEST(MusicRead, NarrowWindowKeepsDistantEndpointsWithoutReadingTheirTempoText) {
+    constexpr int bar_count = 64;
+    constexpr int tempos_per_bar = 33;
+    constexpr int tempo_bytes = 4096;
+    static_assert((bar_count - 1) * tempos_per_bar * tempo_bytes > 8 * 1024 * 1024);
+    std::string xml = R"(<museScore version="5.00"><Score><Division>480</Division>
+<Part id="1"><Staff/><trackName>Piano</trackName><Instrument id="piano"/></Part><Staff id="1">)";
+    for (int bar = 0; bar < bar_count; ++bar)
+        xml += "<Measure><voice><Chord><durationType>whole</durationType><Note><pitch>60</pitch><tpc>14</tpc></Note>"
+               "</Chord></voice></Measure>";
+    xml += "</Staff></Score></museScore>";
+    const auto document = open_fixture(xml);
+    ASSERT_TRUE(document) << document.error().message;
+    const auto edited = (*document)->edit({{AddSpanner{"Slur", RelativePosition{{0}}, RelativePosition{{bar_count - 1}}, {}}}});
+    ASSERT_TRUE(edited) << edited.error().message;
+    ASSERT_FALSE(edited->rejection) << edited->rejection->error.message;
+
+    auto &score = read_test::master_of(**document);
+    const auto content = muse::String::from_std_string(std::string(tempo_bytes, 'a'));
+    auto *measure = score.first_measure();
+    for (int bar = 0; measure; ++bar, measure = measure->next_measure()) {
+        if (bar == 1) continue;
+        auto *segment = measure->first(mu::engraving::SegmentType::CHORD_REST);
+        ASSERT_NE(segment, nullptr);
+        for (int row = 0; row < tempos_per_bar; ++row) {
+            auto *tempo = mu::engraving::Factory::create_tempo_text(segment);
+            tempo->set_track(0);
+            tempo->set_xml_text(content);
+            segment->add(tempo);
+        }
+    }
+    const auto window = (*document)->read_music({.first_measure = 1});
+    ASSERT_TRUE(window) << window.error().message;
+    ASSERT_EQ(window->measures.size(), 1u);
+    EXPECT_TRUE(window->measures.front().signature_changes.empty());
+    ASSERT_EQ(window->spanners.size(), 1u);
+    const auto &slur = window->spanners.front();
+    EXPECT_EQ(slur.type, "Slur");
+    EXPECT_EQ(slur.start.measure_index, 0);
+    EXPECT_EQ(slur.end.measure_index, bar_count - 1);
+}
+
+TEST(MusicRead, OnlyOptInWindowsClampAtTheEndOfTheSelectedScore) {
+    const auto document = open_fixture(clarinet_fixture);
+    ASSERT_TRUE(document) << document.error().message;
+    const auto window = (*document)->read_music({.first_measure = 2, .measure_count = 4, .clamp_to_score_end = true});
+    ASSERT_TRUE(window) << window.error().message;
+    ASSERT_EQ(window->measures.size(), 1u);
+    EXPECT_EQ(window->measures[0].measure.index, 2);
+
+    const auto strict = (*document)->read_music({.first_measure = 2, .measure_count = 4});
+    read_test::expect_code(strict, ErrorCode::INVALID_ARGUMENT, "count past the end");
+    const auto past_end = (*document)->read_music({.first_measure = 3, .measure_count = 4, .clamp_to_score_end = true});
+    read_test::expect_code(past_end, ErrorCode::INVALID_ARGUMENT, "starting bar past the end");
 }
 
 TEST(MusicRead, HairpinSubtypes) {
@@ -890,6 +950,8 @@ TEST(MusicRead, NoteOwnedLineCrossesAWindowWithoutEitherAnchor) {
     EXPECT_EQ(line.subtype, "straight");
     EXPECT_EQ(line.start_element, element_id_from_string("A_B"));
     EXPECT_EQ(line.end_element, element_id_from_string("A_C"));
+    EXPECT_EQ(line.start.measure_index, 0);
+    EXPECT_EQ(line.end.measure_index, 2);
     const auto &bar = window->measures.at(0);
     const auto &body = std::get<RestMusic>(bar.voices.at(0).events.at(0).body);
     EXPECT_EQ(body.measure_repeat_count, 1);

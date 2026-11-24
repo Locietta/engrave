@@ -170,12 +170,9 @@ Result<Step> prepare_entry(Target target, Fraction length, std::vector<NoteVal> 
         auto *measure = location->measure;
         Score *score = measure->score();
         const bool relative = std::holds_alternative<RelativePosition>(target.ref);
-        bool ambiguous = false;
-        Segment *start = find_segment(*measure, at, relative ? &ambiguous : nullptr);
-        if (ambiguous)
-            return std::unexpected(
-                Error{ErrorCode::EDIT_REJECTED, std::format("{}: more than one ChordRest segment matches this onset", target.field)});
-        if (start && id_class(*start) == IdClass::LAYOUT) return invalid("layout builds this segment; it cannot be edited");
+        const auto found = context.segment(*location, target, true);
+        if (!found) return std::unexpected(found.error());
+        Segment *start = *found;
         const auto track = mu::engraving::staff2track(at.staff, at.voice);
         const Staff *staff = score->staff(at.staff);
 

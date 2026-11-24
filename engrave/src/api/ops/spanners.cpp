@@ -29,8 +29,6 @@
 #include "engraving/dom/tuplet.h"
 #include "engraving/dom/utils.h"
 #include "engraving/dom/volta.h"
-#include "engraving/editing/editspanner.h"
-#include "engraving/editing/transaction/transaction.h"
 #include "engraving/style/style.h"
 #include "engraving/style/styledef.h"
 #include "engraving/types/fraction.h"
@@ -60,22 +58,6 @@ std::unexpected<Error> invalid(std::string message) { return std::unexpected(Err
 
 std::unexpected<Error> rejected(std::string message) { return std::unexpected(Error{ErrorCode::EDIT_REJECTED, std::move(message)}); }
 
-// The chord or rest a reference names: a chord rest, or the chord of a note.
-Result<ChordRest *> chord_rest(const EditContext &context, const Target &target) {
-    auto object = context.object(target);
-    if (!object) return std::unexpected(object.error());
-    EngravingObject *found = *object;
-    if (const auto *relative = std::get_if<RelativePosition>(&target.ref)) {
-        auto *item = mu::engraving::to_segment(found)->element(mu::engraving::staff2track(relative->staff, relative->voice));
-        if (!item || !item->is_chord_rest())
-            return rejected(std::format("{}: a chord or rest is required at the specified staff and voice", target.field));
-        return mu::engraving::to_chord_rest(item);
-    }
-    if (found->is_note()) found = mu::engraving::to_note(found)->chord();
-    if (!found->is_chord_rest()) return invalid(std::format("{} is not a chord or a rest", found->type_name()));
-    return mu::engraving::to_chord_rest(found);
-}
-
 Result<mu::engraving::Measure *> measure_endpoint(const EditContext &context, const Target &target) {
     auto object = context.object(target);
     if (!object) return std::unexpected(object.error());
@@ -83,22 +65,13 @@ Result<mu::engraving::Measure *> measure_endpoint(const EditContext &context, co
     return mu::engraving::to_measure(*object);
 }
 
-struct LineEndpoint {
-    Segment *segment;
-    mu::engraving::track_idx_t track;
-};
-
-Result<LineEndpoint> line_endpoint(const EditContext &context, const Target &target) {
-    if (const auto *relative = std::get_if<RelativePosition>(&target.ref)) {
-        auto object = context.object(target);
-        if (!object) return std::unexpected(object.error());
-        return LineEndpoint{mu::engraving::to_segment(*object), mu::engraving::staff2track(relative->staff, relative->voice)};
-    }
-    const auto rest = chord_rest(context, target);
+Result<SegmentTrack> line_endpoint(const EditContext &context, const Target &target) {
+    if (target.is_position()) return context.segment_track(target);
+    const auto rest = context.chord_rest_at(target);
     if (!rest) return std::unexpected(rest.error());
     auto *segment = (*rest)->segment();
     if (!segment) return invalid(std::format("{}: the chord or rest must occupy a segment", target.field));
-    return LineEndpoint{segment, (*rest)->track()};
+    return SegmentTrack{segment, (*rest)->track()};
 }
 
 bool segment_line(ElementType type) {
@@ -179,12 +152,13 @@ Result<Step> prepare(EditContext &context, const AddSpanner &op) {
     return [start = *start, end = *end, type, props = std::move(*props)](EditContext &context) -> Result<void> {
         Spanner *spanner = nullptr;
         if (type == ElementType::SLUR) {
-            auto first = chord_rest(context, start);
+            auto first = context.chord_rest_at(start);
             if (!first) return std::unexpected(first.error());
-            auto last = chord_rest(context, end);
+            auto last = context.chord_rest_at(end);
             if (!last) return std::unexpected(last.error());
             Score *score = (*first)->score();
             if ((*last)->score() != score) return invalid("a spanner starts and ends in one score");
+            if ((*last)->is_before(*first)) return rejected("end: the slur end precedes the start");
             spanner = score->add_slur(*first, *last, nullptr);
             if (!spanner) return rejected("the engine did not make the slur");
         } else {
@@ -194,22 +168,15 @@ Result<Step> prepare(EditContext &context, const AddSpanner &op) {
             if (!last) return std::unexpected(last.error());
             Score *score = first->segment->score();
             if (last->segment->score() != score) return invalid("a spanner starts and ends in one score");
-            const bool positional =
-                std::holds_alternative<RelativePosition>(start.ref) || std::holds_alternative<RelativePosition>(end.ref);
             const auto from = first->segment->tick();
             const auto to = last->segment->tick();
-            if (positional && to <= from) return rejected("end: the end onset must follow the start");
+            if (to <= from) return rejected("end: the end onset must follow the start");
             std::unique_ptr<EngravingItem> created(mu::engraving::Factory::create_item(type, score->dummy()));
             if (!created || !created->is_spanner() || mu::engraving::to_spanner(created.get())->anchor() != Spanner::Anchor::SEGMENT)
                 return invalid("the spanner must be anchored to segments");
             spanner = mu::engraving::to_spanner(created.release());
-            if (positional) {
-                // The end operand supplies only a tick. Linked copies use the track delta in their own score.
-                add_at_ticks(spanner, first->track, from, to);
-            } else {
-                mu::engraving::EditSpanner::add_spanner(score->transaction_manager()->current_or_dummy_transaction(), score, spanner,
-                                                        mu::engraving::track2staff(first->track), first->segment, last->segment);
-            }
+            // The end operand supplies only a tick. Linked copies use the track delta in their own score.
+            add_at_ticks(spanner, first->track, from, to);
         }
         set_properties(*spanner, props);
         context.created(spanner);
@@ -357,9 +324,9 @@ Result<Step> prepare(EditContext &context, const AddTuplet &op) {
     auto last = context.target(op.last, "last");
     if (!last) return std::unexpected(last.error());
     return [first = *first, last = *last, actual = op.actual, normal = op.normal](EditContext &context) -> Result<void> {
-        auto first_rest = chord_rest(context, first);
+        auto first_rest = context.chord_rest_at(first);
         if (!first_rest) return std::unexpected(first_rest.error());
-        auto last_rest = chord_rest(context, last);
+        auto last_rest = context.chord_rest_at(last);
         if (!last_rest) return std::unexpected(last_rest.error());
         Score *score = (*first_rest)->score();
         const mu::engraving::track_idx_t track = (*first_rest)->track();

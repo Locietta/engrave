@@ -92,8 +92,9 @@ struct StaffContext {
 struct Position {
     ElementId measure;
     Fraction offset;
-    int staff = 0;
-    int voice = 0;
+    int staff = 0;                   // Zero-based; -1 when the endpoint has no track.
+    int voice = 0;                   // Zero-based; -1 when the endpoint has no track.
+    std::int32_t measure_index = -1; // Zero-based in the selected score; -1 when unknown.
 };
 
 enum class MarkScope { SYSTEM, INSTRUMENT, STAFF, VOICE };
@@ -231,8 +232,9 @@ struct MusicRange {
     ScoreSel score;
     int first_measure = 0;
     int measure_count = 1;
-    std::vector<int> staves; // Empty selects all staves.
-    std::vector<int> voices; // Empty selects all voices.
+    std::vector<int> staves;         // Empty selects all staves.
+    std::vector<int> voices;         // Empty selects all voices.
+    bool clamp_to_score_end = false; // Shorten the count if the starting bar exists but fewer bars remain.
 };
 
 // NOLINTNEXTLINE(readability-identifier-naming) -- Preserve the public PitchDomain spelling.

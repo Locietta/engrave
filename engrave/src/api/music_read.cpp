@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <optional>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 
 #include "engrave/src/api/handles.h"
@@ -65,6 +66,7 @@ struct ElementIdHash {
 };
 
 using ElementIdSet = muse::HashSet<ElementId, ElementIdHash>;
+using MeasureIndices = muse::HashMap<const mu::engraving::Measure *, std::int32_t>;
 
 using Tick = mu::engraving::Fraction;
 using mu::engraving::Chord;
@@ -126,27 +128,32 @@ std::optional<ElementId> persisted_id(const EngravingObject &object) {
 
 std::string token(muse::AsciiStringView value) { return std::string(std::string_view(value)); }
 
-Position span_position(const Measure &measure, Tick tick, mu::engraving::track_idx_t track) {
+Position span_position(const Measure &measure, Tick tick, mu::engraving::track_idx_t track, const MeasureIndices &indices) {
+    const auto found = indices.find(&measure);
     const int staff = track == muse::nidx ? -1 : static_cast<int>(mu::engraving::track2staff(track));
     const int voice = track == muse::nidx ? -1 : static_cast<int>(mu::engraving::track2voice(track));
-    return {music_id(measure), reduced(tick - measure.tick()), staff, voice};
+    return {music_id(measure), reduced(tick - measure.tick()), staff, voice, found == indices.end() ? -1 : found->second};
 }
 
 std::array<std::string_view, 2> mark_text(const MarkPayload &payload) {
     return std::visit(
         [](const auto &mark) -> std::array<std::string_view, 2> {
-            if constexpr (requires { mark.value; }) {
+            using Mark = std::remove_cvref_t<decltype(mark)>;
+            if constexpr (std::is_same_v<Mark, DynamicMark>) {
                 return {mark.value, mark.custom_text ? std::string_view(*mark.custom_text) : std::string_view{}};
-            } else if constexpr (requires { mark.syllabic; }) {
+            } else if constexpr (std::is_same_v<Mark, LyricMark>) {
                 return {mark.text, mark.syllabic};
-            } else if constexpr (requires { mark.text; }) {
+            } else if constexpr (std::is_same_v<Mark, HarmonyMark> || std::is_same_v<Mark, TextMark>) {
                 return {mark.text};
-            } else if constexpr (requires { mark.symbol; }) {
+            } else if constexpr (std::is_same_v<Mark, FermataMark> || std::is_same_v<Mark, ArticulationMark>) {
                 return {mark.symbol};
-            } else if constexpr (requires { mark.subtype; }) {
+            } else if constexpr (std::is_same_v<Mark, ArpeggioMark> || std::is_same_v<Mark, TremoloMark> ||
+                                 std::is_same_v<Mark, BarlineMark>) {
                 return {mark.subtype};
-            } else {
+            } else if constexpr (std::is_same_v<Mark, ClefMark>) {
                 return {mark.clef};
+            } else {
+                static_assert(false, "handle text for every MarkPayload alternative");
             }
         },
         payload);
@@ -171,6 +178,7 @@ struct MarkRead {
     MeasureMusic &bar;
     const std::vector<int> &staves;
     const std::vector<int> &voices;
+    const MeasureIndices &measure_indices;
     LinkedMarkSet &seen_links;
     ReadBudget &budget;
     std::size_t &work;
@@ -352,7 +360,8 @@ Result<void> read_event_marks(const ChordRest &source, MarkMusic mark, MarkRead 
             TremoloMark value{token(TConv::to_xml(tremolo->tremolo_type())), true};
             if (const auto *end = tremolo->chord2()) {
                 value.end_event = persisted_id(*end);
-                if (const auto *measure = end->measure()) value.end = span_position(*measure, end->tick(), end->track());
+                if (const auto *measure = end->measure())
+                    value.end = span_position(*measure, end->tick(), end->track(), read.measure_indices);
             }
             mark.payload = std::move(value);
             if (auto result = append_mark(*tremolo, mark, read); !result) return result;
@@ -666,7 +675,7 @@ std::optional<SpanDetail> read_span_detail(const Spanner &source, std::optional<
 }
 
 Result<void> read_spans(const Score &score, Tick begin, Tick end, const std::vector<int> &staves, const std::vector<int> &voices,
-                        MusicWindow &window, ReadBudget &budget, std::size_t &work) {
+                        const MeasureIndices &indices, MusicWindow &window, ReadBudget &budget, std::size_t &work) {
     ElementIdSet seen;
     auto append = [&](const Spanner &source) -> Result<void> {
         if (!charge(work, 1)) return music_limit();
@@ -701,8 +710,8 @@ Result<void> read_spans(const Score &score, Tick begin, Tick end, const std::vec
         SpanMusic span{*id,
                        std::move(type_name),
                        std::move(subtype),
-                       span_position(*start, start_tick, source.track()),
-                       span_position(*finish, end_tick, source.effective_track2()),
+                       span_position(*start, start_tick, source.track(), indices),
+                       span_position(*finish, end_tick, source.effective_track2(), indices),
                        source_anchor(source, *start, start_tick, false),
                        source_anchor(source, *finish, end_tick, true),
                        std::move(detail)};
@@ -737,15 +746,20 @@ Result<void> read_spans(const Score &score, Tick begin, Tick end, const std::vec
         }
         return {};
     };
+    const auto staff_selected = [&](int staff) { return std::ranges::binary_search(staves, staff); };
     for (auto *measure = score.first_measure(); measure && measure->tick() < end; measure = measure->next_measure()) {
         if (!charge(work, 1)) return music_limit();
         for (auto *segment = measure->first(mu::engraving::SegmentType::CHORD_REST); segment && segment->tick() < end;
              segment = segment->next(mu::engraving::SegmentType::CHORD_REST)) {
-            if (!charge(work, 1 + segment->elist().size())) return music_limit();
-            for (const auto *item : segment->elist()) {
+            if (!charge(work, 1)) return music_limit();
+            // Scan every track so cross-staff note lines starting on an excluded staff
+            // and ending on a selected staff are still discovered via spanner_for().
+            const std::size_t ntracks = score.ntracks();
+            for (std::size_t track = 0; track < ntracks; ++track) {
+                const auto *item = segment->element(track);
                 if (!item || !item->is_chord()) continue;
                 const auto &chord = *mu::engraving::to_chord(item);
-                const bool in_window = chord.tick() >= begin;
+                const bool in_window = chord.tick() >= begin && staff_selected(static_cast<int>(mu::engraving::track2staff(track)));
                 if (auto result = note_spans(chord, in_window); !result) return result;
                 for (const auto *grace : chord.grace_notes()) {
                     if (auto result = note_spans(*grace, in_window); !result) return result;
@@ -772,15 +786,26 @@ Result<MusicWindow> Document::read_music(const MusicRange &range) const {
     auto voices = selection(range.voices, mu::engraving::voices, "voice");
     if (!voices) return std::unexpected(std::move(voices.error()));
 
-    const auto *measure = score.first_measure();
-    for (int index = 0; measure && index < range.first_measure; ++index) measure = measure->next_measure();
-    if (!measure) return std::unexpected(Error{ErrorCode::INVALID_ARGUMENT, "the music window starts past the end of the score"});
+    auto work = max_scan_work;
+    MeasureIndices indices;
+    const Measure *measure = nullptr;
+    std::int32_t measure_count = 0;
+    for (const auto *bar = score.first_measure(); bar; bar = bar->next_measure()) {
+        if (!charge(work, 1)) return music_limit();
+        if (measure_count == range.first_measure) measure = bar;
+        indices.emplace(bar, measure_count++);
+    }
+    if (!measure) return std::unexpected(Error{ErrorCode::INVALID_ARGUMENT, "measure: outside score; expected an existing bar"});
+    const auto remaining = measure_count - range.first_measure;
+    if (range.measure_count > remaining && !range.clamp_to_score_end)
+        return std::unexpected(
+            Error{ErrorCode::INVALID_ARGUMENT, "count: window extends past score; expected a count within the remaining bars"});
+    const auto count = std::min(range.measure_count, remaining);
 
     MusicWindow window{.score = range.score, .revision = impl_->revision};
     const auto begin = measure->tick();
     auto end = begin;
     ReadBudget budget;
-    auto work = max_scan_work;
     if (!charge(budget.rows, staves->size())) return music_limit();
     for (int staff_index : *staves) {
         const auto &staff = *score.staff(staff_index);
@@ -803,13 +828,12 @@ Result<MusicWindow> Document::read_music(const MusicRange &range) const {
 
     ElementIdSet seen_tuplets;
     LinkedMarkSet seen_links;
-    for (int index = 0; index < range.measure_count; ++index, measure = measure->next_measure()) {
-        if (!measure) return std::unexpected(Error{ErrorCode::INVALID_ARGUMENT, "the music window ends past the end of the score"});
+    for (int index = 0; index < count; ++index, measure = measure->next_measure()) {
         MeasureMusic bar{{music_id(*measure), range.first_measure + index, reduced(measure->tick()), reduced(measure->ticks())},
                          measure->repeat_start(),
                          measure->repeat_end(),
                          measure->repeat_end() ? measure->repeat_count() : 2};
-        MarkRead marks{bar, *staves, *voices, seen_links, budget, work};
+        MarkRead marks{bar, *staves, *voices, indices, seen_links, budget, work};
         for (const auto *segment = measure->first(); segment; segment = segment->next()) {
             if (!charge(work, 1)) return music_limit();
             if (auto result = read_segment_marks(*segment, marks); !result) return std::unexpected(std::move(result.error()));
@@ -838,7 +862,7 @@ Result<MusicWindow> Document::read_music(const MusicRange &range) const {
         window.measures.push_back(std::move(bar));
         end = measure->end_tick();
     }
-    if (auto result = read_spans(score, begin, end, *staves, *voices, window, budget, work); !result)
+    if (auto result = read_spans(score, begin, end, *staves, *voices, indices, window, budget, work); !result)
         return std::unexpected(std::move(result.error()));
     return window;
 }

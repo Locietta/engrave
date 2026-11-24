@@ -33,14 +33,13 @@ enum struct ErrorCode {
 
 std::string_view to_string(ErrorCode code) noexcept;
 
-// An edit operand named a measure or staff past the end of the score. Lets a
-// caller with another numbering report the failure without parsing message.
+// Lets a caller report an invalid measure, staff or voice index in its own numbering.
 struct PositionError {
-    enum struct Kind { MEASURE, STAFF };
+    enum struct Kind { MEASURE, STAFF, VOICE };
     Kind kind = Kind::MEASURE;
-    std::string field; // the operation's operand, e.g. "measure", "at" or "end"
+    std::string field; // the request field, e.g. "measure", "at" or "end"
     std::int32_t index = 0;
-    std::size_t count = 0; // measures or staves the score has
+    std::size_t count = 0; // number of available measures, staves or voices
 };
 
 struct Error {

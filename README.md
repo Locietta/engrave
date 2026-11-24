@@ -133,7 +133,7 @@ Public headers live under `engrave/include/engrave/`:
 - `engrave/ops/*.h`: Typed batch edit operation groups (`measures.h`, `notes.h`, `parts.h`, `property.h`, `spanners.h`, `text.h`).
 - `engrave/query.h`: Score inspection, element handles, and property queries.
 - `engrave/music.h`: Structured musical window and phrase-entry types (`MusicRange`, `MusicWindow`, `MeasureMusic`, `Phrase`, `PhraseLane`).
-- `engrave/handle.h`: Document-scoped `ElementId` values, score/layout addresses (`ScoreSel`, `SegmentAddress`, `PageAddress`, `SystemAddress`, `SpannerSegmentAddress`), and edit references (`OpRef`, `Ref`, `EditAddress`).
+- `engrave/handle.h`: Document-scoped `ElementId` values, score/layout addresses (`ScoreSel`, `SegmentAddress`, `PageAddress`, `SystemAddress`, `SpannerSegmentAddress`), and edit references (`OpRef`, `MeasureIndex`, `StaffIndex`, `RelativePosition`, `Ref`, `EditAddress`, `EntryAddress`).
 - `engrave/value.h`: Typed property and style values (`Value`, `ValueKind`, `Unit`, `Fraction`, `Point`, `Size`, `Color`, `Enum`, `Transposition`).
 - `engrave/describe.h`: Element type, property, and style catalogue descriptors (`PropInfo`, `TypeInfo`, `StyleInfo`).
 - `engrave/export_warning.h`: Structured warnings emitted by compatibility exporters.

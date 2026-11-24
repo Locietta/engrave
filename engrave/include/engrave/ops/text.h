@@ -10,15 +10,10 @@
 
 namespace engrave {
 
-// Text and lyrics.  The slice defines its operations here and lists them
-// below; nothing else in the public headers changes.
-
-// Adds a text of one text style at one staff and voice of a position (a
-// SegmentAddress of kind "ChordRest").  style is the style's name as a saved score
-// writes it; AddText writes "staff", "system", "tempo" and "lyrics_odd" (a lyrics
-// line goes under the chord at the address, below the lyrics already there).  text
-// is its initial text in the engine's markup (<sym>...</sym>, <b>, ...); an empty
-// one is refused, because the engine stores no id for an empty text.
+// Adds text at the chord or rest named by a RelativePosition or ChordRest SegmentAddress.
+// The saved-score style names are "staff", "system", "tempo" and "lyrics_odd".
+// Lyrics follow the existing verses at the anchor. The text uses the engine's
+// markup (<sym>...</sym>, <b>, ...) and must be nonempty to receive a persistent ID.
 struct AddText {
     EditAddress at;
     std::string style;
@@ -29,7 +24,7 @@ struct AddText {
 // props use the descriptions' names (Engine::describe), so a tempo text is "Tempo"
 // and a dynamic's kind is "DYNAMIC_TYPE".  The (anchor type, child type) pairs this
 // may create are the table in src/api/ops/text.cpp: an articulation on a chord, and a
-// fermata, dynamic, staff text, tempo text or harmony on a ChordRest segment.  Every other
+// fermata, dynamic, expression, staff text, tempo text or harmony on a ChordRest segment.  Every other
 // pair, and every other type, is an InvalidArgument.  props are set as SetProperty
 // sets them; an articulation needs its "symbol" and a text its "text".
 // A Harmony requires nonempty initial text in props.

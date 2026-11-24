@@ -8,12 +8,14 @@
 #include <vector>
 
 #include "engraving/infrastructure/sourcehandle.h"
+#include "engraving/types/types.h"
 #include "global/unique_fn.h"
 #include <engrave/document.h>
 #include <engrave/edit.h>
 #include <engrave/error.h>
 
 namespace mu::engraving {
+struct ChordRest;
 struct EngravingObject;
 struct MasterScore;
 struct Measure;
@@ -33,11 +35,18 @@ struct Target {
     mu::engraving::EngravingObject *object = nullptr;
     std::size_t epoch = 0;
     mu::engraving::SourceHandle handle;
+
+    bool is_position() const { return std::holds_alternative<SegmentAddress>(ref) || std::holds_alternative<RelativePosition>(ref); }
 };
 
 struct Position {
     SegmentAddress address;
     mu::engraving::Measure *measure;
+};
+
+struct SegmentTrack {
+    mu::engraving::Segment *segment;
+    mu::engraving::track_idx_t track;
 };
 
 struct BatchGuard;
@@ -54,7 +63,9 @@ struct EditContext {
     Result<Target> position_target(const EditAddress &at, bool chord_rest_only) const;
     Result<Target> position_target(const EntryAddress &at) const;
     Result<Position> position(const Target &target) const;
-    Result<mu::engraving::Segment *> segment(const Position &position, const Target &target) const;
+    Result<mu::engraving::Segment *> segment(const Position &position, const Target &target, bool allow_missing = false) const;
+    Result<SegmentTrack> segment_track(const Target &target) const;
+    Result<mu::engraving::ChordRest *> chord_rest_at(const Target &target) const;
     // While running: the live element. A target is resolved again when an earlier
     // operation changed more than properties, since it may have removed it.
     Result<mu::engraving::EngravingObject *> object(const Target &target) const;

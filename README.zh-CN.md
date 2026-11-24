@@ -132,7 +132,7 @@ python tools/install_assets.py <destination_dir> --verify
 - `engrave/ops/*.h`：强类型批量编辑操作分组（`measures.h`、`notes.h`、`parts.h`、`property.h`、`spanners.h`、`text.h`）。
 - `engrave/query.h`：乐谱结构查询、元素句柄与属性查询。
 - `engrave/music.h`：结构化音乐窗口与乐句录入类型（`MusicRange`、`MusicWindow`、`MeasureMusic`、`Phrase`、`PhraseLane`）。
-- `engrave/handle.h`：文档作用域 `ElementId`、乐谱/排版地址（`ScoreSel`、`SegmentAddress`、`PageAddress`、`SystemAddress`、`SpannerSegmentAddress`）与编辑引用（`OpRef`、`Ref`、`EditAddress`）。
+- `engrave/handle.h`：文档作用域 `ElementId`、乐谱/排版地址（`ScoreSel`、`SegmentAddress`、`PageAddress`、`SystemAddress`、`SpannerSegmentAddress`）与编辑引用（`OpRef`、`MeasureIndex`、`StaffIndex`、`RelativePosition`、`Ref`、`EditAddress`、`EntryAddress`）。
 - `engrave/value.h`：强类型属性与样式值（`Value`、`ValueKind`、`Unit`、`Fraction`、`Point`、`Size`、`Color`、`Enum`、`Transposition`）。
 - `engrave/describe.h`：元素类型、属性与样式目录描述符（`PropInfo`、`TypeInfo`、`StyleInfo`）。
 - `engrave/export_warning.h`：兼容导出器发出的结构化警告。

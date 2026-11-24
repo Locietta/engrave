@@ -27,7 +27,6 @@
 #include "engraving/dom/property.h"
 #include "engraving/dom/score.h"
 #include "engraving/dom/segment.h"
-#include "engraving/dom/staff.h"
 #include "engraving/dom/tempotext.h"
 #include "engraving/dom/textbase.h"
 #include "engraving/types/constants.h"
@@ -55,13 +54,6 @@ using mu::engraving::TextStyleType;
 std::unexpected<Error> invalid(std::string message) { return std::unexpected(Error{ErrorCode::INVALID_ARGUMENT, std::move(message)}); }
 
 std::unexpected<Error> rejected(std::string message) { return std::unexpected(Error{ErrorCode::EDIT_REJECTED, std::move(message)}); }
-
-Result<mu::engraving::track_idx_t> address_track(const SegmentAddress &at, const Score &score) {
-    if (static_cast<std::size_t>(at.staff) >= score.nstaves()) {
-        return invalid(std::format("the score has no staff {}", at.staff));
-    }
-    return mu::engraving::staff2track(at.staff, at.voice);
-}
 
 // --- AddText ------------------------------------------------------------------
 
@@ -146,18 +138,6 @@ Result<void> check_pair(const EngravingObject &anchor, std::string_view child) {
     return invalid(std::format("Add creates {}; not a {} on a {}", add_pairs_text(), child, anchor.type_name()));
 }
 
-// The track the new item belongs to. A segment address names it, since a segment
-// has no staff of its own; a chord or a rest has one.
-Result<mu::engraving::track_idx_t> anchor_track(const EngravingObject &anchor, const Target &target) {
-    if (anchor.type() == ElementType::SEGMENT) {
-        const auto *at = std::get_if<SegmentAddress>(&target.ref);
-        if (!at) return invalid("an item added to a segment is named by a segment address");
-        return address_track(*at, *mu::engraving::to_segment(&anchor)->score());
-    }
-    if (!anchor.is_engraving_item()) return invalid(std::format("{} is not an element to add to", anchor.type_name()));
-    return static_cast<const EngravingItem &>(anchor).track();
-}
-
 // --- the properties of an Add ------------------------------------------------
 
 struct Setting {
@@ -217,19 +197,11 @@ Result<Step> prepare(EditContext &context, const AddText &op) {
     // address afterwards.
     if (op.text.empty()) return invalid("a text has at least one character");
     return [target = *target, style = *style, text = op.text, name = op.style](EditContext &context) -> Result<void> {
-        const auto location = context.position(target);
-        if (!location) return std::unexpected(location.error());
-        const auto found = context.segment(*location, target);
+        const auto found = context.chord_rest_at(target);
         if (!found) return std::unexpected(found.error());
-        const auto &at = location->address;
-        Segment *segment = *found;
+        auto *anchor = *found;
+        Segment *segment = anchor->segment();
         Score *score = segment->score();
-        EngravingItem *anchor = segment->element(mu::engraving::staff2track(at.staff, at.voice));
-        if (!anchor || !anchor->is_chord_rest()) {
-            auto message = std::format("at: there is no chord or rest at staff {} voice {} to write on", at.staff, at.voice);
-            if (std::holds_alternative<RelativePosition>(target.ref)) return rejected(std::move(message));
-            return invalid(std::move(message));
-        }
         TextBase *added = nullptr;
         if (style == TextStyleType::TEMPO) {
             added = add_tempo_text(*score, *segment, text);
@@ -276,32 +248,30 @@ Result<Step> prepare(EditContext &context, const Add &op) {
     // Deferred anchors are checked when the step runs against the live score.
     if (anchor->object) {
         if (auto pair = check_pair(*anchor->object, name); !pair) return std::unexpected(pair.error());
-        if (auto track = anchor_track(*anchor->object, *anchor); !track) return std::unexpected(track.error());
     }
     return [anchor = *anchor, type, name, props = std::move(*props)](EditContext &context) -> Result<void> {
         EngravingObject *object = nullptr;
         mu::engraving::track_idx_t track;
-        if (const auto *relative = std::get_if<RelativePosition>(&anchor.ref)) {
-            const auto found = context.object(anchor);
-            if (!found) return std::unexpected(found.error());
-            auto *segment = mu::engraving::to_segment(*found);
-            track = mu::engraving::staff2track(relative->staff, relative->voice);
-            if (type == ElementType::ARTICULATION) {
-                auto *item = segment->element(track);
-                if (!item || !item->is_chord())
-                    return rejected("anchor: an articulation requires a chord at the specified staff and voice");
-                object = item;
-            } else {
-                object = segment;
-            }
+        if (anchor.is_position() && type != ElementType::ARTICULATION) {
+            const auto at = context.segment_track(anchor);
+            if (!at) return std::unexpected(at.error());
+            if (at->segment->segment_type() != mu::engraving::SegmentType::CHORD_REST)
+                return invalid("anchor: a ChordRest segment is required");
+            object = at->segment;
+            track = at->track;
+        } else if (anchor.is_position()) {
+            const auto chord = context.chord_rest_at(anchor);
+            if (!chord) return std::unexpected(chord.error());
+            if (!(*chord)->is_chord()) return rejected("anchor: an articulation requires a chord");
+            object = *chord;
+            track = (*chord)->track();
         } else {
             const auto found = context.object(anchor);
             if (!found) return std::unexpected(found.error());
             object = *found;
             if (auto pair = check_pair(*object, name); !pair) return std::unexpected(pair.error());
-            const auto selected_track = anchor_track(*object, anchor);
-            if (!selected_track) return std::unexpected(selected_track.error());
-            track = *selected_track;
+            if (object->is_segment()) return invalid("anchor: a segment address is required to specify the track");
+            track = mu::engraving::to_engraving_item(object)->track();
         }
         std::unique_ptr<EngravingItem> created(mu::engraving::Factory::create_item(type, mu::engraving::to_engraving_item(object)));
         if (!created) return invalid(std::format("the engine does not create a {}", name));

@@ -12,6 +12,7 @@
 #include "engrave/src/api/handles.h"
 #include "engrave/src/api/state.h"
 #include "engrave/src/runtime/score_io.h"
+#include "engraving/dom/chordrest.h"
 #include "engraving/dom/engravingobject.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
@@ -116,9 +117,11 @@ void warn_mismatched_ties(MasterScore &master, const std::vector<mu::engraving::
         }
     }
 }
-} // namespace
+template <class Op>
+constexpr bool requires_master_score =
+    std::same_as<Op, InsertMeasures> || std::same_as<Op, RemoveMeasures> || std::same_as<Op, AddPart> || std::same_as<Op, RemovePart> ||
+    std::same_as<Op, GenerateExcerpts> || std::same_as<Op, SetTimeSig> || std::same_as<Op, SetRepeatBarlines>;
 
-namespace {
 template <class T>
 Result<T> in_field(Result<T> result, std::string_view field) {
     if (result) return result;
@@ -129,7 +132,12 @@ Result<T> in_field(Result<T> result, std::string_view field) {
 }
 
 std::unexpected<Error> past_end(PositionError::Kind kind, std::int32_t index, std::size_t count, ErrorCode code) {
-    const auto noun = kind == PositionError::Kind::MEASURE ? "measure" : "staff";
+    std::string_view noun;
+    switch (kind) {
+        case PositionError::Kind::MEASURE: noun = "measure"; break;
+        case PositionError::Kind::STAFF: noun = "staff"; break;
+        case PositionError::Kind::VOICE: noun = "voice"; break;
+    }
     Error error{code, std::format("the score has no {} at index {}", noun, index)};
     error.position = PositionError{kind, {}, index, count};
     return std::unexpected(std::move(error));
@@ -174,9 +182,10 @@ Result<Target> EditContext::target(const Ref &ref, std::string_view field, Selec
                 return fail(ErrorCode::INVALID_ARGUMENT, "layout builds this element; it cannot be edited");
             }
             if (auto valid = validate_segment_address(*segment); !valid) return std::unexpected(valid.error());
-            if (segment->staff < 0) return fail(ErrorCode::INVALID_ARGUMENT, std::format("a score has no staff {}", segment->staff));
-            if (segment->voice < 0 || static_cast<std::size_t>(segment->voice) >= mu::engraving::voices)
-                return fail(ErrorCode::INVALID_ARGUMENT, std::format("a staff has no voice {}", segment->voice));
+            if (segment->staff < 0) return fail(ErrorCode::INVALID_ARGUMENT, "the staff index must be nonnegative");
+            if (segment->voice < 0) return fail(ErrorCode::INVALID_ARGUMENT, "the voice index must be nonnegative");
+            if (static_cast<std::size_t>(segment->voice) >= mu::engraving::voices)
+                return past_end(PositionError::Kind::VOICE, segment->voice, mu::engraving::voices, ErrorCode::INVALID_ARGUMENT);
             const auto measure = segment_measure(master_, *segment);
             if (!measure) return std::unexpected(measure.error());
             if (auto allowed = check_scope(**measure); !allowed) return std::unexpected(allowed.error());
@@ -238,7 +247,7 @@ Result<Position> EditContext::position(const Target &target) const {
         if (const auto staves = (*measure)->score()->nstaves(); static_cast<std::size_t>(relative.staff) >= staves)
             return past_end(PositionError::Kind::STAFF, relative.staff, staves, ErrorCode::EDIT_REJECTED);
         if (static_cast<std::size_t>(relative.voice) >= mu::engraving::voices)
-            return fail(ErrorCode::EDIT_REJECTED, std::format("a staff has no voice at index {}", relative.voice));
+            return past_end(PositionError::Kind::VOICE, relative.voice, mu::engraving::voices, ErrorCode::EDIT_REJECTED);
         const auto length = (*measure)->ticks();
         if (relative.offset >= Fraction{length.numerator64(), length.denominator64()})
             return fail(ErrorCode::EDIT_REJECTED, "offset must fall within the measure's duration");
@@ -256,14 +265,19 @@ Result<Position> EditContext::position(const Target &target) const {
     return in_field(locate(), target.field);
 }
 
-Result<mu::engraving::Segment *> EditContext::segment(const Position &position, const Target &target) const {
+Result<mu::engraving::Segment *> EditContext::segment(const Position &position, const Target &target, bool allow_missing) const {
     const auto locate = [&]() -> Result<mu::engraving::Segment *> {
         const bool relative = std::holds_alternative<RelativePosition>(target.ref);
         bool ambiguous = false;
-        auto *segment = find_segment(*position.measure, position.address, relative ? &ambiguous : nullptr);
-        if (ambiguous) return fail(ErrorCode::EDIT_REJECTED, "more than one ChordRest segment matches this onset");
-        if (!segment && relative) return fail(ErrorCode::EDIT_REJECTED, missing_segment(position.address).message);
-        if (!segment) return std::unexpected(missing_segment(position.address));
+        auto *segment = find_segment(*position.measure, position.address, &ambiguous);
+        if (ambiguous)
+            return fail(ErrorCode::EDIT_REJECTED, std::format("more than one {} segment matches this onset", position.address.kind));
+        if (!segment) {
+            if (allow_missing) return nullptr;
+            auto error = missing_segment(position.address);
+            if (relative) error.code = ErrorCode::EDIT_REJECTED;
+            return std::unexpected(std::move(error));
+        }
         if (id_class(*segment) == IdClass::LAYOUT)
             return fail(ErrorCode::INVALID_ARGUMENT, "layout builds this element; it cannot be edited");
         return segment;
@@ -271,13 +285,36 @@ Result<mu::engraving::Segment *> EditContext::segment(const Position &position, 
     return in_field(locate(), target.field);
 }
 
-Result<EngravingObject *> EditContext::object(const Target &target) const {
-    if (std::holds_alternative<SegmentAddress>(target.ref) || std::holds_alternative<RelativePosition>(target.ref)) {
-        const auto at = position(target);
+Result<SegmentTrack> EditContext::segment_track(const Target &target) const {
+    const auto at = position(target);
+    if (!at) return std::unexpected(at.error());
+    const auto found = segment(*at, target);
+    if (!found) return std::unexpected(found.error());
+    return SegmentTrack{*found, mu::engraving::staff2track(at->address.staff, at->address.voice)};
+}
+
+Result<mu::engraving::ChordRest *> EditContext::chord_rest_at(const Target &target) const {
+    EngravingObject *item = nullptr;
+    if (target.is_position()) {
+        const auto at = segment_track(target);
         if (!at) return std::unexpected(at.error());
-        const auto found = segment(*at, target);
+        item = at->segment->element(at->track);
+    } else {
+        const auto found = object(target);
         if (!found) return std::unexpected(found.error());
-        return *found;
+        item = *found;
+        if (item->is_note()) item = mu::engraving::to_note(item)->chord();
+    }
+    if (item && item->is_chord_rest()) return mu::engraving::to_chord_rest(item);
+    const auto code = target.is_position() ? ErrorCode::EDIT_REJECTED : ErrorCode::INVALID_ARGUMENT;
+    return fail(code, std::format("{}: a chord or rest is required at the requested position", target.field));
+}
+
+Result<EngravingObject *> EditContext::object(const Target &target) const {
+    if (target.is_position()) {
+        const auto found = segment_track(target);
+        if (!found) return std::unexpected(found.error());
+        return found->segment;
     }
     const auto locate = [&]() -> Result<EngravingObject *> {
         if (const auto *measure = std::get_if<MeasureIndex>(&target.ref)) {
@@ -383,9 +420,7 @@ Result<std::vector<Step>> BatchGuard::prepare_batch(const Batch &batch) {
         auto step = std::visit(
             [this](const auto &op) -> Result<Step> {
                 using Operation = std::remove_cvref_t<decltype(op)>;
-                if constexpr (std::same_as<Operation, InsertMeasures> || std::same_as<Operation, RemoveMeasures> ||
-                              std::same_as<Operation, AddPart> || std::same_as<Operation, RemovePart> ||
-                              std::same_as<Operation, GenerateExcerpts>) {
+                if constexpr (requires_master_score<Operation>) {
                     if (context_.scope_ && context_.scope_->excerpt)
                         return fail(ErrorCode::INVALID_ARGUMENT, "scope: this operation requires the master score");
                 }

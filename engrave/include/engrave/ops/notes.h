@@ -17,8 +17,8 @@ struct Pitch {
     std::optional<int> tpc;
 };
 
-// Enters a chord, or a rest when there are no pitches, at one staff and voice of a
-// position (a SegmentAddress of kind "ChordRest" on a pitched staff). It is the
+// Enters a chord, or a rest when there are no pitches, on the pitched staff and
+// voice named by a RelativePosition or ChordRest SegmentAddress. It is the
 // engine's note entry: what already holds the position is shortened or filled up with
 // rests, a duration that reaches past a barline is split there and tied, and a rest is
 // entered the same way. The operation reports the chord or rest first among what it
