@@ -1,4 +1,36 @@
-# engrave
+<div align="center">
+  <picture>
+    <source
+      media="(prefers-color-scheme: dark)"
+      srcset="https://raw.githubusercontent.com/engrave-music/.github/main/assets/logo/engrave-music-dark-framed.svg"
+    />
+    <source
+      media="(prefers-color-scheme: light)"
+      srcset="https://raw.githubusercontent.com/engrave-music/.github/main/assets/logo/engrave-music-light-framed.svg"
+    />
+    <img
+      alt="engrave"
+      src="https://raw.githubusercontent.com/engrave-music/.github/main/assets/logo/engrave-music-light-framed.svg"
+      width="128"
+    />
+  </picture>
+
+  <h1>engrave</h1>
+
+  <p>Native, headless C++23 music engraving, rendering, and audio synthesis engine.</p>
+
+  <p>
+    <a href="https://github.com/engrave-music/engrave/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/engrave-music/engrave/actions/workflows/ci.yml/badge.svg" /></a>
+    <a href="LICENSE.txt"><img alt="License: GPL-3.0-only" src="https://img.shields.io/badge/License-GPL--3.0--only-blue.svg" /></a>
+    <img alt="C++23" src="https://img.shields.io/badge/C%2B%2B-23-00599C.svg" />
+    <img alt="Bazel" src="https://img.shields.io/badge/Build-Bazel-43A047.svg" />
+    <img alt="Platform: Windows | Linux" src="https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-555555.svg" />
+  </p>
+
+  <p>
+    <strong>English</strong> · <a href="README.zh-CN.md">简体中文</a>
+  </p>
+</div>
 
 `engrave` is a native, headless C++ score engine library providing core music notation, layout, engraving, rendering, import/export, and audio synthesis capabilities. It is built with [Bazel](https://bazel.build/) and a hermetic Clang/libc++ (`xclang`) toolchain.
 
