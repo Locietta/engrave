@@ -90,6 +90,7 @@ struct SignatureInfo {
     std::int32_t key = 0;            // a KeySig's concert key, in fifths
     double bpm = 0;                  // a Tempo's beats per minute
     std::string text;                // a Tempo's own text
+    std::optional<ElementId> id;
 };
 
 struct ExcerptInfo {

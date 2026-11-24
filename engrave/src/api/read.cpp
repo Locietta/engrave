@@ -322,22 +322,28 @@ void fill_measures(Outline &outline, Score &score) {
 void fill_signatures(Outline &outline, Score &score) {
     for (Measure *measure = score.first_measure(); measure; measure = measure->next_measure()) {
         for (Segment *segment = measure->first(); segment; segment = segment->next()) {
-            for (EngravingItem *item : segment->elist()) {
-                // A generated signature is layout's (the clef of a header, a courtesy
-                // signature), not one the score holds.
-                if (!item || item->generated()) continue;
-                if (!item->is_time_sig() && !item->is_key_sig()) continue;
-                SignatureInfo info;
-                info.tick = whole_notes(item->tick().ticks());
-                info.staff = staff_and_voice(*item).first;
-                if (item->is_time_sig()) {
-                    info.type = "TimeSig";
-                    info.timesig = fraction_of(mu::engraving::to_time_sig(item)->sig());
-                } else {
-                    info.type = "KeySig";
-                    info.key = static_cast<std::int32_t>(mu::engraving::to_key_sig(item)->concert_key());
+            if (segment->is_time_sig_type() || segment->is_key_sig_type()) {
+                for (EngravingItem *item : segment->elist()) {
+                    if (!item || item->generated()) continue;
+                    SignatureInfo info;
+                    if (item->is_time_sig()) {
+                        const auto *time = mu::engraving::to_time_sig(item);
+                        if (time->is_courtesy()) continue;
+                        info.type = "TimeSig";
+                        info.timesig = fraction_of(time->sig());
+                    } else if (item->is_key_sig()) {
+                        const auto *key = mu::engraving::to_key_sig(item);
+                        if (key->is_courtesy()) continue;
+                        info.type = "KeySig";
+                        info.key = static_cast<std::int32_t>(key->concert_key());
+                    } else {
+                        continue;
+                    }
+                    info.tick = whole_notes(item->tick().ticks());
+                    info.staff = staff_and_voice(*item).first;
+                    if (takes_id(*item) && item->eid().is_valid()) info.id = from_engine(item->eid());
+                    outline.signatures.push_back(std::move(info));
                 }
-                outline.signatures.push_back(std::move(info));
             }
             for (EngravingItem *item : segment->annotations()) {
                 if (!item || item->generated() || !item->is_tempo_text()) continue;
@@ -347,6 +353,7 @@ void fill_signatures(Outline &outline, Score &score) {
                 info.tick = whole_notes(item->tick().ticks());
                 info.bpm = std::round(tempo->tempo().val * 60.0 * 1e4) / 1e4;
                 info.text = plain_text(tempo->plain_text());
+                if (takes_id(*tempo) && tempo->eid().is_valid()) info.id = from_engine(tempo->eid());
                 outline.signatures.push_back(std::move(info));
             }
         }
