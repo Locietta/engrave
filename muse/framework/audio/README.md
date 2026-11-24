@@ -1,3 +1,3 @@
 ### Audio
 
-A module implementing an audio engine - drivers, worker, sources, mixer, chains, synthesizers, etc.
+Headless offline audio synthesis, mixing, DSP/reverb, and encoding subset (`OfflineRenderSession`, `FluidTrack`, `AudioResources`, codecs). Live audio device drivers and background worker threads are omitted.

@@ -45,7 +45,11 @@ fail.
    durations and written pitches, `layout.h` flattens layouts into staff and
    group spans.
 5. **Import and export** (`internal/`). The importer reads a `Document` through
-   its index; the exporter fills a `Root` and writes it.
+   its index; the exporter (`MnxExporter`) fills a `Root` and writes it.
+   `MnxExporter` is currently internal/test-only: `Engine::open` supports
+   `Format::MNX` import in the public API, whereas `Document::export_score`
+   (and `Document::export_score_with_warnings`) returns `ErrorCode::UNSUPPORTED`
+   for `Format::MNX`.
 
 The index, walk, layout and pitch code are adapted from mnxdom (MIT), which
 also supplies `thirdparty/music_theory/music_theory.hpp` unchanged.

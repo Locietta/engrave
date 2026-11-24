@@ -48,7 +48,8 @@ Pixi Python):
 ```powershell
 pixi run python vendor/engrave/tests/integration/test_playback_dod.py executables --exe OLD/playback_probe.exe --other-exe NEW/playback_probe.exe --assets .runtime/assets --font .runtime/soundfonts/FluidR3Mono_GM.sf3 --output notes/runs/playback-comparison
 pixi run python vendor/engrave/tests/integration/test_playback_dod.py compare --left DUMPS1 --right DUMPS2
-pixi run python vendor/engrave/tests/integration/test_playback_dod.py measure --exe build/playback/playback_counting_probe.exe --assets .runtime/assets --font .runtime/soundfonts/FluidR3Mono_GM.sf3 --output notes/runs/playback-counts --trials 7 --cancel-trials 20
+pixi run python vendor/engrave/tests/integration/test_playback_dod.py measure --exe build/playback/playback_probe.exe --assets .runtime/assets --font .runtime/soundfonts/FluidR3Mono_GM.sf3 --output notes/runs/playback-measurements --trials 7 --cancel-trials 20
+pixi run python vendor/engrave/tests/integration/test_playback_dod.py measure --exe build/playback/playback_counting_probe.exe --assets .runtime/assets --font .runtime/soundfonts/FluidR3Mono_GM.sf3 --output notes/runs/playback-counts --phases 0 --trials 7
 ```
 
 - `capture` takes the same asset arguments and a single `--exe`. `--match SUBSTRING`

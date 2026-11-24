@@ -236,14 +236,14 @@ python tests/integration/test_playback_dod.py compare \
 
 # Capture dumps from a single probe binary
 python tests/integration/test_playback_dod.py capture \
-    --exe build/gate/playback_probe.exe \
+    --exe build/playback/playback_probe.exe \
     --assets .runtime/assets \
     --font /path/to/FluidR3Mono_GM.sf3 \
     --output notes/runs/capture-run
 
 # Run cancellation timing and export performance measurements (uncounted probe)
 python tests/integration/test_playback_dod.py measure \
-    --exe build/gate/playback_probe.exe \
+    --exe build/playback/playback_probe.exe \
     --assets .runtime/assets \
     --font /path/to/FluidR3Mono_GM.sf3 \
     --output notes/runs/playback-measurements \

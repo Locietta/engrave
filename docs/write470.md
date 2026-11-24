@@ -13,9 +13,11 @@ Set `ExportOptions::native_version = "4.70"` for `MSCX` or `MSCZ` exports:
 ```cpp
 struct ExportOptions {
     Format format = Format::MSCZ;        // MSCX or MSCZ
-    std::string native_version = "4.70"; // default is "5.00"
+    bool midi_expand_repeats = true;
+    bool midi_rpns = true;
     ScoreSel score;                      // master by default, or specific excerpt
     CaptureOptions capture;
+    std::string native_version = "4.70"; // default is "5.00"
 };
 ```
 

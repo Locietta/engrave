@@ -21,9 +21,9 @@
 This fixture verifies that:
 
 - `score_open` reads the desktop mixer settings (`audiosettings.json`) from the MSCZ container.
-- `score_audio_tracks` and score metadata (`score_get`, `metadata.json`) report default mixer properties per track (`volumeDb`, `balance`, `solo`, `muted`, `forceMute`), showing Cello as `muted: true`.
-- Plain audio export (`score_export` format `wav`) renders the score with Cello silent by default.
-- Supplying an explicit export option `mix` overriding `muted: false` for Cello brings the Cello track back in the rendered audio.
+- `score_query` (`mode: "audio_tracks"`) reports default mixer properties per track (`mix: { volume_db, balance, solo, mute }`, alongside `track`, `part_id`, `instrument_id`, `part_name`, `instrument_name`, and `chord_symbols`) and master defaults (`master: { volume_db, balance, mute, solo }`), showing Cello with `mix.mute: true`.
+- Plain audio export (`score_export` with `format: "wav"`) renders the score with Cello silent by default.
+- Supplying explicit `options.tracks` overrides (for example `{"track": <cello_track>, "mute": false}`) brings the Cello track back in the rendered audio.
 
 ## `mix_parts.mscz`
 
@@ -32,7 +32,7 @@ This fixture verifies that:
 ### Generation Method
 
 1. **Base Score**: Created from `tests/data/inputs/golden/created.json` ("Native Evening / 原生晚曲") with 3 parts (Violin, Piano, Cello).
-2. **Excerpts Generation**: Generated via native MCP `score_generate_excerpts` and exported to MSCZ via `score_export`.
+2. **Excerpts Generation**: Generated via native MCP `score_edit` (`op: "generate_excerpts"`) and exported to MSCZ via `score_export`.
 3. **Settings Injection**:
    - **Root `audiosettings.json`**: Configures master volume/balance (0.0 dB) and track output volume/balance (0.0 dB). Violin (`partId: "1"`, `instrumentId: "violin"`) is configured with `soloMuteState: { "mute": true, "solo": false }` (muted in full score). Piano and Cello are unmuted.
    - **`Excerpts/0_Violin/audiosettings.json`**: Configures Violin with `soloMuteState: { "mute": false, "solo": false }` (unmuted for the excerpt).
@@ -44,5 +44,5 @@ This fixture verifies that:
 
 - Volume and balance are project-wide and inherited from root `audiosettings.json`.
 - Part (excerpt) exports do not inherit the full score's solo/mute:
-  - Exporting excerpt 0 (Violin, `excerptId: 0`) ignores the full score's mute on Violin and renders audible audio because its own excerpt `audiosettings.json` specifies `mute: false`.
-  - Exporting excerpt 2 (Cello, `excerptId: 2`) applies the excerpt's own mute, rendering silent audio despite Cello being unmuted in the root score.
+  - Selecting the Violin excerpt by its excerpt EID (via `excerpt` in `score_query` or `score_export`) ignores the full score's mute on Violin and renders audible audio because `Excerpts/0_Violin/audiosettings.json` specifies `mute: false`.
+  - Selecting the Cello excerpt by its excerpt EID applies `Excerpts/2_Cello/audiosettings.json`, rendering silent audio despite Cello being unmuted in the root score.

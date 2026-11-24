@@ -125,14 +125,20 @@ python tools/install_assets.py <destination_dir> --verify
 
 - `engrave/engrave.h`：汇总头文件。
 - `engrave/engine.h`：`Engine` 运行时生命周期、字体注册、SoundFont 配置，以及文档创建/打开。
-- `engrave/document.h`：`Document` 操作：排版、编辑、渲染、音频合成、导出、位置数据与查询。
+- `engrave/document.h`：`Document` 操作：排版、编辑（`edit`、`write_phrase`）、原子回滚与命名内存快照（`EditMode::Atomic`、`checkpoint`、`restore_checkpoint`、`drop_checkpoint`）、渲染、音频合成、导出、位置数据与查询。
 - `engrave/output.h`：导出与渲染选项（`ExportOptions`、`RenderOptions`、格式定义）。
 - `engrave/audio.h`：音频渲染选项、混音器参数、音轨选择与格式设置（`AudioOptions`、`AudioFormat`）。
-- `engrave/edit.h`：批量乐谱编辑操作、音符与小节修改，以及撤销/重做语义。
+- `engrave/edit.h`：批量乐谱编辑操作变体与结果类型（`Op`、`Batch`、`OpResult`、`BatchRejection`、`EditResult`），用于原子或前缀批量执行。
+- `engrave/ops/*.h`：强类型批量编辑操作分组（`measures.h`、`notes.h`、`parts.h`、`property.h`、`spanners.h`、`text.h`）。
 - `engrave/query.h`：乐谱结构查询、元素句柄与属性查询。
+- `engrave/music.h`：结构化音乐窗口与乐句录入类型（`MusicRange`、`MusicWindow`、`MeasureMusic`、`Phrase`、`PhraseLane`）。
+- `engrave/handle.h`：文档作用域 `ElementId`、乐谱/排版地址（`ScoreSel`、`SegmentAddress`、`PageAddress`、`SystemAddress`、`SpannerSegmentAddress`）与编辑引用（`OpRef`、`Ref`、`EditAddress`）。
+- `engrave/value.h`：强类型属性与样式值（`Value`、`ValueKind`、`Unit`、`Fraction`、`Point`、`Size`、`Color`、`Enum`、`Transposition`）。
+- `engrave/describe.h`：元素类型、属性与样式目录描述符（`PropInfo`、`TypeInfo`、`StyleInfo`）。
 - `engrave/export_warning.h`：兼容导出器发出的结构化警告。
 - `engrave/error.h`：错误码（`ErrorCode`）与 `Result<T>` 单子封装。
 - `engrave/version.h`：引擎版本信息。
+- `engrave/testing/write470.h`：用于 MuseScore 4.70 兼容导出测试的诊断进度探针（`Write470Progress`、`write470_progress()`）。
 
 ### 执行模型与生命周期规则
 
@@ -199,7 +205,7 @@ python tests/integration/test_assets.py --binary build/gate/assets_test.exe --as
 
 `.github/workflows/ci.yml` 在推送到 `main`、发起 Pull Request 或手动触发时运行：
 
-- **`python-checks`**：安装 `tests/requirements.txt` 与 `pip install -e .`，随后运行 `tools/test_install_assets.py`、`tests/test_inventory.py`、`tools/mnx_codegen.py --check` 以及 `tests/test_playback_witness.py`（同时以 `python -O` 运行）。
+- **`python-checks`**：安装 `tests/requirements.txt` 与 `pip install -e .`，随后运行 `tools/test_install_assets.py`、`tools/test_gen_pid_support.py`、`tools/gen_pid_support.py --check`、`tools/test_bazel_server_mcp.py`、`tools/test_prune_bazel_cache.py`、`tests/test_inventory.py`、`tools/mnx_codegen.py --check` 以及 `tests/test_playback_witness.py`（同时以 `python -O` 运行）。
 - **`build-test`**：在 Windows 与 Linux 上使用 Bazel、`xclang` 与 Pixi 提供的 cairo/zlib 构建 release 单元测试与 `example_embedder`，校验运行时资源后运行 `engrave_core_tests`、MNX schema 检查、两套上游 GTest 套件以及无 SoundFont 黄金比对。
 - **`sanitize`**：在 Linux 上启用 ASan、LSan 与 UBSan，运行 4 个分片的 `engrave_core_tests`、两套上游 GTest 套件及无 SoundFont 黄金探针。消毒器构建使用独立的磁盘缓存键。
 - 包含音频黄金与音频语料的完整门禁作为里程碑手动检查项运行。

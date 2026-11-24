@@ -1,3 +1,3 @@
-### Global 
+### Global
 
-The module provides the basic infrastructure (e.g. dependency injection, asynchronous communication, file system, etc.) and basic data types. This module is used everywhere and is linked to all other modules. Therefore, it should contain only what is sufficient and necessary.
+Headless utility subset providing basic data types, containers, logging, file/buffer I/O, and XML/ZIP serialization for `engrave`. Upstream dependency injection (`modularity`) and asynchronous runtime (`async/`) modules are omitted.

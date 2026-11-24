@@ -19,7 +19,7 @@ Known focused coverage gaps needing constructed MPE or native-score fixtures:
 
 - Multi-mapped harmonic plus distortion and mute plus pizzicato are not proven
   by imported words. Existing native technique fixtures provide ordinary cases.
-- Mixed before/after grace types *inside multibends*; the native guitar-bend
+- Mixed before/after grace types _inside multibends_; the native guitar-bend
   fixture does not establish this specific interaction.
 - Empty/nonempty NATURAL multi-articulation fallback in both single-note dynamics
   modes; custom-profile unit tests remain separate from default-profile exports.
@@ -27,7 +27,7 @@ Known focused coverage gaps needing constructed MPE or native-score fixtures:
 - Channel exhaustion: the 20-staff candidate imports with single-note dynamics
   disabled and uses channel 0, so it does not exhaust the budget.
 - Same-program insertion before an existing flat-map element and at a capacity
-  boundary (no flat-map implementation exists yet); program override.
+  boundary; program override.
 - Multi-part sound flags specifically combined with this focused set.
 - The MusicXML swing candidate currently produces straight 250 ms nominal note
   spacing in dump A; native swing behavior is not established by this candidate.

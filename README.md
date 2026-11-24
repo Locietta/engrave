@@ -126,14 +126,20 @@ Public headers live under `engrave/include/engrave/`:
 
 - `engrave/engrave.h`: Umbrella include header.
 - `engrave/engine.h`: `Engine` runtime lifecycle, font registration, SoundFont configuration, and document creation/opening.
-- `engrave/document.h`: `Document` operations: layout, editing, rendering, audio synthesis, export, positions, and queries.
+- `engrave/document.h`: `Document` operations: layout, editing (`edit`, `write_phrase`), atomic rollback and named in-memory snapshots (`EditMode::Atomic`, `checkpoint`, `restore_checkpoint`, `drop_checkpoint`), rendering, audio synthesis, export, positions, and queries.
 - `engrave/output.h`: Export and render options (`ExportOptions`, `RenderOptions`, formats).
 - `engrave/audio.h`: Audio rendering options, mixer parameters, track selection, and format settings (`AudioOptions`, `AudioFormat`).
-- `engrave/edit.h`: Batch score edit operations, note and measure manipulation, and undo/redo semantics.
+- `engrave/edit.h`: Batch score edit operation variant and result types (`Op`, `Batch`, `OpResult`, `BatchRejection`, `EditResult`) for atomic or prefix execution.
+- `engrave/ops/*.h`: Typed batch edit operation groups (`measures.h`, `notes.h`, `parts.h`, `property.h`, `spanners.h`, `text.h`).
 - `engrave/query.h`: Score inspection, element handles, and property queries.
+- `engrave/music.h`: Structured musical window and phrase-entry types (`MusicRange`, `MusicWindow`, `MeasureMusic`, `Phrase`, `PhraseLane`).
+- `engrave/handle.h`: Document-scoped `ElementId` values, score/layout addresses (`ScoreSel`, `SegmentAddress`, `PageAddress`, `SystemAddress`, `SpannerSegmentAddress`), and edit references (`OpRef`, `Ref`, `EditAddress`).
+- `engrave/value.h`: Typed property and style values (`Value`, `ValueKind`, `Unit`, `Fraction`, `Point`, `Size`, `Color`, `Enum`, `Transposition`).
+- `engrave/describe.h`: Element type, property, and style catalogue descriptors (`PropInfo`, `TypeInfo`, `StyleInfo`).
 - `engrave/export_warning.h`: Structured warnings emitted by compatibility exporters.
 - `engrave/error.h`: Error codes (`ErrorCode`) and `Result<T>` monadic wrapper.
 - `engrave/version.h`: Engine version information.
+- `engrave/testing/write470.h`: Diagnostic progress seam (`Write470Progress`, `write470_progress()`) for MuseScore 4.70 compatibility export tests.
 
 ### Execution Model and Lifecycle Rules
 
@@ -200,7 +206,7 @@ python tests/integration/test_assets.py --binary build/gate/assets_test.exe --as
 
 `.github/workflows/ci.yml` runs on pushes to `main`, pull requests, and manual dispatch:
 
-- **`python-checks`**: Installs `tests/requirements.txt` and `pip install -e .`, then runs `tools/test_install_assets.py`, `tests/test_inventory.py`, `tools/mnx_codegen.py --check`, and `tests/test_playback_witness.py` (also with `python -O`).
+- **`python-checks`**: Installs `tests/requirements.txt` and `pip install -e .`, then runs `tools/test_install_assets.py`, `tools/test_gen_pid_support.py`, `tools/gen_pid_support.py --check`, `tools/test_bazel_server_mcp.py`, `tools/test_prune_bazel_cache.py`, `tests/test_inventory.py`, `tools/mnx_codegen.py --check`, and `tests/test_playback_witness.py` (also with `python -O`).
 - **`build-test`** builds release unit tests and `example_embedder` on Windows and Linux with Bazel, `xclang`, and Pixi cairo/zlib. It verifies runtime assets, then runs `engrave_core_tests`, the MNX schema check, both upstream GTest suites, and the SoundFont-free golden comparison.
 - **`sanitize`** runs four shards of `engrave_core_tests`, both upstream GTest suites, and the SoundFont-free golden probes on Linux with ASan, LSan, and UBSan. Sanitized actions have a separate disk cache key.
 - The full gate with audio goldens and the audio corpus are manual milestone checks.
