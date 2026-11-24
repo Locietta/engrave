@@ -2059,8 +2059,13 @@ fluid_zone_inside_range(fluid_zone_range_t *range, int key, int vel)
     /* ignoreInstrumentZone is set in mono legato playing */
     int ignore_zone = range->ignore;
 
-    /* Reset the 'ignore' request */
-    range->ignore = FALSE;
+    /* Reset the 'ignore' request. engrave: zones belong to the SoundFont that
+     * synths on several threads share; only mono legato sets the flag, so skip
+     * the store when it is clear and the zones stay read-only. */
+    if(ignore_zone)
+    {
+        range->ignore = FALSE;
+    }
 
     return !ignore_zone && ((range->keylo <= key) &&
                             (range->keyhi >= key) &&

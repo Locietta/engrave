@@ -38,6 +38,7 @@ struct EngineState {
     std::filesystem::path cache_dir;
     std::vector<std::filesystem::path> soundfonts;
     std::int32_t audio_sample_rate = 44100;
+    std::int32_t audio_threads = 0;
     std::uint64_t font_generation = 0;
     unsigned audio_render_index = 0;
     std::unique_ptr<music::EngineContext> context;

@@ -252,6 +252,7 @@ Result<AudioRenderResult> Document::render_audio(const AudioOptions &options, co
     // Engine::create: a caller that only reads or draws pages pays nothing.
     music::EngineAudioSetup setup;
     setup.sample_rate = engine.audio_sample_rate;
+    setup.audio_threads = engine.audio_threads;
     for (const auto &soundfont : engine.soundfonts) setup.soundfonts.push_back(utf8(soundfont));
     std::string error;
     // This is also a cheap no-op for an unchanged selection; a replacement is

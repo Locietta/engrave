@@ -1,6 +1,10 @@
 #include "score_render.h"
 
+#include <algorithm>
+#include <chrono>
 #include <cmath>
+#include <cstdio>
+#include <cstdlib>
 #include <exception>
 #include <memory>
 #include <stdexcept>
@@ -35,6 +39,40 @@ cairo_status_t append_bytes(void *context, const unsigned char *bytes, unsigned 
 void check(cairo_status_t status) {
     if (status != CAIRO_STATUS_SUCCESS) throw std::runtime_error(cairo_status_to_string(status));
 }
+
+// ENGRAVE_RENDER_TIMING splits a successful export into drawing (surface setup
+// and painting) and encoding (PNG deflate, or Cairo page emission and surface
+// finish across the exported page or PDF range), one stderr line per export.
+struct RenderTiming {
+    using Clock = std::chrono::steady_clock;
+
+    static bool enabled() {
+        static const bool value = std::getenv("ENGRAVE_RENDER_TIMING") != nullptr;
+        return value;
+    }
+
+    Clock::time_point start = enabled() ? Clock::now() : Clock::time_point();
+    double encode_seconds = 0;
+
+    Clock::time_point begin_encode() const { return enabled() ? Clock::now() : Clock::time_point(); }
+
+    void end_encode(Clock::time_point since) {
+        if (enabled()) encode_seconds += std::chrono::duration<double>(Clock::now() - since).count();
+    }
+
+    void report(const std::string &format, int first_page, int last_page, int dpi, std::size_t bytes) const {
+        if (!enabled()) return;
+        const double total = std::chrono::duration<double>(Clock::now() - start).count();
+        const double raster = std::max(0.0, total - encode_seconds);
+        if (format == "pdf") {
+            std::fprintf(stderr, "render_seconds format=%s pages=%d-%d dpi=%d raster=%.9f encode=%.9f bytes=%llu\n", format.c_str(),
+                         first_page, last_page, dpi, raster, encode_seconds, static_cast<unsigned long long>(bytes));
+        } else {
+            std::fprintf(stderr, "render_seconds format=%s page=%d dpi=%d raster=%.9f encode=%.9f bytes=%llu\n", format.c_str(), first_page,
+                         dpi, raster, encode_seconds, static_cast<unsigned long long>(bytes));
+        }
+    }
+};
 } // namespace
 
 engrave::Result<std::string> render_score(const EngineContext &engine, mu::engraving::Score *score, const std::string &format, int page) {
@@ -71,6 +109,7 @@ engrave::Result<std::string> render_score(const EngineContext &engine, mu::engra
         width * height > 64e6)
         return std::unexpected(engrave::Error{engrave::ErrorCode::RESOURCE_LIMIT, "Page dimensions exceed rendering limit"});
     std::string output;
+    RenderTiming timing;
     cairo_surface_t *raw = nullptr;
     if (format == "pdf")
         raw = cairo_pdf_surface_create_for_stream(append_bytes, &output, width, height);
@@ -113,7 +152,9 @@ engrave::Result<std::string> render_score(const EngineContext &engine, mu::engra
         };
         paint_options.on_new_page = [&] {
             poll_page(); // previous page drawn, before encoding it
+            const auto encode_start = timing.begin_encode();
             cairo_show_page(context.get());
+            timing.end_encode(encode_start);
             check(cairo_status(context.get()));
             poll_page(); // before drawing the next page
         };
@@ -131,12 +172,17 @@ engrave::Result<std::string> render_score(const EngineContext &engine, mu::engra
     if (poll())
         return std::unexpected(engrave::Error{engrave::ErrorCode::CANCELLED, "render cancelled"}); // final page drawn, before encoding
     check(cairo_status(context.get()));
+    const auto final_encode_start = timing.begin_encode();
     if (format == "png")
         check(cairo_surface_write_to_png_stream(surface.get(), append_bytes, &output));
     else
         cairo_show_page(context.get());
     cairo_surface_finish(surface.get());
+    timing.end_encode(final_encode_start);
     check(cairo_surface_status(surface.get()));
+    const int report_first = format == "pdf" ? first_page_value : options.page;
+    const int report_last = format == "pdf" ? last_page_value : options.page;
+    timing.report(format, report_first, report_last, dpi, output.size());
     if (poll()) return std::unexpected(engrave::Error{engrave::ErrorCode::CANCELLED, "render cancelled"});
     return output;
 }

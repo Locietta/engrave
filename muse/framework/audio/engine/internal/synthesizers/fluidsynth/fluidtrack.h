@@ -43,6 +43,12 @@ namespace muse::audio::synth {
 
 struct Fluid;
 
+// Installs the log sink and runs FluidSynth's lazy process-global setup (tables,
+// dither) exactly once. Owner thread only, before any synth renders on another
+// thread: FluidSynth is built with NO_THREADS, so its own one-time guard and log
+// table are plain variables.
+void initialize_fluid_globals();
+
 struct FluidTrack {
 #ifdef ENGRAVE_PLAYBACK_HARNESS
     static int live_instances();

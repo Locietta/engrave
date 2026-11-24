@@ -734,7 +734,7 @@ static String symbol_fragment_xml(const TextFragment &fragment, const TextBase *
             const Char character = fragment.text.at(i);
             const char32_t code = character.is_high_surrogate() && i + 1 < fragment.text.size() ?
                                       Char::surrogate_to_ucs4(character, fragment.text.at(++i)) :
-                                      character.unicode();
+                                      static_cast<char32_t>(character.unicode());
             if (code >= source_symbol_base && code <= source_symbol_base + static_cast<char32_t>(SymId::LAST_SYM)) {
                 result += u"<sym>" + String::from_ascii(SymNames::name_for_sym_id(static_cast<SymId>(code - source_symbol_base)).ascii()) +
                           u"</sym>";

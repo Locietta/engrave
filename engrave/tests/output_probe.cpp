@@ -11,7 +11,7 @@
 //
 // --render writes page-<n>.svg for every page, page-<n>.png for every page and
 // score.pdf, all with the export defaults (144 dpi, transparent PNG, no page
-// background). It prints one JSON object on stdout. The exit status is 0 on
+// background); --png-dpi=N changes the PNG resolution. It prints one JSON object on stdout. The exit status is 0 on
 // success, 2 for a returned error (printed as "error: Code: message") and 3 for
 // an exception.
 
@@ -119,7 +119,8 @@ int run_export(engrave::Engine &engine, const std::filesystem::path &score, cons
     return 0;
 }
 
-int run_render(engrave::Engine &engine, const std::filesystem::path &score, const std::filesystem::path &out, std::size_t *out_pages) {
+int run_render(engrave::Engine &engine, const std::filesystem::path &score, const std::filesystem::path &out, std::size_t *out_pages,
+               int png_dpi = 144) {
     auto document = engine.open(score);
     if (!document) return report_error(document.error());
     engrave::RenderOptions render;
@@ -130,11 +131,13 @@ int run_render(engrave::Engine &engine, const std::filesystem::path &score, cons
     for (std::size_t page = 0; page < svg->pages.size(); ++page) write(out / ("page-" + std::to_string(page) + ".svg"), svg->pages[page]);
 
     render.format = engrave::RenderFormat::PNG;
+    render.dpi = png_dpi;
     const auto png = (*document)->render(render);
     if (!png) return report_error(png.error());
     for (std::size_t page = 0; page < png->pages.size(); ++page) write(out / ("page-" + std::to_string(page) + ".png"), png->pages[page]);
 
     render.format = engrave::RenderFormat::PDF;
+    render.dpi = 144;
     const auto pdf = (*document)->render(render);
     if (!pdf) return report_error(pdf.error());
     write(out / "score.pdf", pdf->document);
@@ -192,6 +195,7 @@ int main(int argc, char **argv) {
     bool no_audio = false;
     bool test_output_open_failure = false;
     int sample_rate = 44100;
+    int png_dpi = 144;
     for (int i = 1; i < argc; ++i) {
         const std::string_view argument = argv[i];
         const auto value = [&argument](std::size_t prefix) { return std::string(argument.substr(prefix)); };
@@ -220,6 +224,8 @@ int main(int argc, char **argv) {
             format = value(9);
         else if (argument.starts_with("--sample-rate="))
             sample_rate = std::atoi(value(14).c_str());
+        else if (argument.starts_with("--png-dpi="))
+            png_dpi = std::atoi(value(10).c_str());
         else if (argument == "--no-repeats")
             repeats = false;
         else if (argument == "--no-audio")
@@ -318,7 +324,7 @@ int main(int argc, char **argv) {
 
         if (mode == "render") {
             std::size_t pages = 0;
-            const int rc = run_render(**engine, score, out, &pages);
+            const int rc = run_render(**engine, score, out, &pages, png_dpi);
             if (rc != 0) return rc;
             std::printf("{\"pages\": %zu}\n", pages);
             return 0;

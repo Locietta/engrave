@@ -39,6 +39,14 @@ struct EngineOptions {
     // renumbers them.  It also changes what the writer stores, so leave it off
     // otherwise.
     bool deterministic_ids = false;
+    // Threads that synthesize a render's active tracks concurrently; the mix is
+    // bit-identical for every value. 0 picks hardware_concurrency - 1, clamped
+    // to 1..8; 1 synthesizes on the calling thread; larger values are used as
+    // given, capped at 64. Negative values are INVALID_ARGUMENT. A positive
+    // integer in the ENGRAVE_AUDIO_THREADS environment variable overrides it.
+    // Callbacks still run on the Engine's thread, and a render with one active
+    // track never fans out.
+    std::int32_t audio_threads = 0;
 };
 
 struct Capabilities {

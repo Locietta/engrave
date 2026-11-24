@@ -88,13 +88,28 @@ Non-trivially copyable events stored separately in `std::vector<ColdEvent>`:
 
 ## Fixed-Order Flat Mix Plan
 
-`OfflineRenderSession` executes offline mixing in a deterministic, sequential order (`mix` in `offlinerendersession.cpp`):
+`OfflineRenderSession` executes offline mixing in a deterministic order (`synthesize` and `mix` in `offlinerendersession.cpp`):
 
-1. **Per-Track Synthesis**: Iterates active tracks in `tracks_`. Each non-muted track synthesizes audio into its own dedicated buffer (`track.buffer`) via `process_track` (which drives the track's source, insert effects, and level controls).
-2. **Combined Dry Accumulation and Aux Send Pass**: In a single pass over active tracks in ascending index order, non-silent track buffers are summed into the master output buffer while simultaneously scaling by active aux send amounts and accumulating into the reverb send buffer (`reverb_.buffer`).
+1. **Per-Track Synthesis**: Each non-muted track synthesizes audio into its own dedicated buffer (`track.buffer`) via `process_track` (which drives the track's source, insert effects, and level controls). Tracks run serially on the owner thread or in parallel on the worker pool (see below).
+2. **Combined Dry Accumulation and Aux Send Pass**: On the owner thread, in a single pass over active tracks in ascending index order, non-silent track buffers are summed into the master output buffer while simultaneously scaling by active aux send amounts and accumulating into the reverb send buffer (`reverb_.buffer`).
 3. **Aux Reverb Processing and Mixdown**: If reverb is present and active (or non-silent), `reverb_.buffer` is processed through `fx::ReverbProcessor` (Muse Reverb DSP) and its wet return is summed into the master output buffer.
 
-Disjoint track buffers isolate synthesis state from mixing, ensuring identical floating-point summation order across runs. Cooperative cancellation is polled before synthesis, before reverb buffer zeroing, before each track's accumulation pass, and before reverb processing.
+Disjoint track buffers isolate synthesis state from mixing, ensuring identical floating-point summation order across runs and thread counts. Cooperative cancellation is polled before synthesis, before reverb buffer zeroing, before each track's accumulation pass, and before reverb processing.
+
+### Parallel Per-Track Synthesis
+
+`EngineOptions::audio_threads` (`EngineAudioSetup::audio_threads` internally) selects how many threads synthesize a block's tracks: `0` is `hardware_concurrency - 1` clamped to 1..8, `1` is the serial path, larger values are capped at 64, and negative values are rejected. A positive integer in `ENGRAVE_AUDIO_THREADS` overrides the configured value; other values are ignored. Synthesis stays serial while a MIDI event hook is installed, while playback-harness capture, allocation counting or fault injection is active, if the OS refuses thread creation, and for renders with at most one active (unmuted) track (so a single-instrument score with a muted metronome track never starts workers).
+
+The pool (`muse/framework/audio/engine/internal/workerpool.h`) is owned by `EngineAudio::State`, starts its threads on the first render that fans out, reuses them across renders and joins them when the engine audio is destroyed. Per block, the owner thread handles muted tracks inline, hands active tracks to workers longest-previous-block first, waits, then mixes in track order. Invariants:
+
+- **Per-thread FP state**: synthesis and encoding pin the active FP mode (FTZ/DAZ plus rounding mode) via `ScopedDenormalGuard::RenderModePin`, and every worker task applies and restores that pinned mode via `ScopedDenormalGuard::WorkerScope` (`denormalguard.h`). Mid-render cancellation callbacks still see and keep their own rounding-mode changes on return without altering serial vs. parallel audio output.
+- **Shared SoundFont, read-mostly**: synths share the cached defsfont. FluidSynth stays built with `NO_THREADS`; two patches make worker-side writes safe: sample voice refcounts use atomic builtins (`fluid_sample_incr_ref`/`fluid_sample_decr_ref` in `fluid_sfont.h`), and `fluid_zone_inside_range` stores the zone `ignore` flag only when it is set (only mono legato sets it; tracks pin legato mode 0).
+- **Owner-only loading**: SoundFont loads, sample loads, preset selection and synth creation happen during setup on the owner thread. `FluidTrack::handle_event` refuses `PROGRAM_CHANGE` during `PLAYING_OFFLINE`. `initialize_fluid_globals()` installs the FluidSynth log sink and runs FluidSynth's one-time table setup once, on the owner thread, before any render.
+- **Cancellation**: only the owner thread calls `AudioOptions::cancelled`. While waiting for a block it polls about every millisecond (on Windows through a high-resolution waitable timer, since condition-variable timeouts round up to the scheduler tick). Once the predicate returns true or throws, the pool's stop flag is set; worker tasks see only that flag through their own `OfflineCancellation` scope, unwind at their next poll, and the owner surfaces the cancellation or rethrows after the block drains. A worker exception is rethrown on the owner thread the same way. If worker thread creation fails completely, synthesis falls back to the ordinary serial loop so the owner's live cancellation scope stays active inside each track.
+
+### Timing Instrumentation
+
+With `ENGRAVE_AUDIO_TIMING` set, each export prints `offline_audio_seconds key=value` lines to stderr. `synth` (equal to `synth_wall`) is the wall time of per-track synthesis and `mix` is the rest of the block pull; `synth_total` and `synth_max_track` sum each track's own synthesis time, whichever thread ran it. A final `offline_audio_synth threads=N tracks=M` line gives the fan-out actually used. With `ENGRAVE_RENDER_TIMING` set, each export prints `render_seconds format=... page=...` (or `pages=A-B` for multi-page PDF) `dpi=... raster=... encode=... bytes=...`, splitting drawing from encoding (PNG deflate, or Cairo page emission and surface finish across the exported PDF page range).
 
 ## Encoder Seam (`pro::proxy`)
 
@@ -169,9 +184,11 @@ Cancellation is polled at bounded boundaries across all stages:
 - **Event store release (`EVENT_RELEASE`)**: Checked in polled strides while
   draining cold event owners and the retained context before freeing flat
   buffers.
-- **Mix and render loops**: Checked before each track synthesis, before reverb
-  buffer zeroing/processing, before each 4096-frame block pull, before each
-  encoder write, and at intermediate file writes (chunked <= 4 KiB).
+- **Mix and render loops**: Checked before each track synthesis (serial path) or
+  before each block and about every millisecond while waiting for its parallel
+  track synthesis, before reverb buffer zeroing/processing, before each
+  4096-frame block pull, before each encoder write, and at intermediate file
+  writes (chunked <= 4 KiB).
 - **Sink delivery**: Checked before delivering each 1 MiB chunk of the finalized
   file to `ByteSink`.
 
@@ -275,6 +292,6 @@ The pipeline enforces deliberate precedence and normalization rules to resolve a
 
 ## Future Directions
 
-- **Parallel Per-Track Synthesis**: While per-track scratch buffers in `OfflineRenderSession` are disjoint and the dry/send accumulation order is deterministic, concurrent track synthesis is not ready and requires a comprehensive threading assessment. FluidSynth and the audio targets are compiled with `NO_THREADS` (`muse_audio_engine` and `native_fluidsynth` in `BUILD.bazel`), soundfonts share a mutable `SoundFontCache` in `AudioResources`, sample decompression relies on a shared process-global decoder pointer (`FluidVorbisDecoder::decoder`), and soundfont file streaming uses a thread-local bridge (`file_cache_bridge`). These shared state and loader mechanisms must be assessed and redesigned before track rendering can run concurrently across threads.
+- **Parallel Reverb and Mix**: Parallel synthesis is bounded by the heaviest track, and the owner-thread mix (sums, reverb, master stages) is now a comparable share of a dense render; both are candidates for later work. ThreadSanitizer runs (`--config=tsan`, Linux and macOS only) have not yet been part of validation.
 - **Encode Overlap**: Pipelining the synchronous 4096-frame PCM block synthesis with an asynchronous encoding queue, overlapping audio rendering with codec compression.
 - **Releasing the Owner Thread**: Detaching the offline render session from the single engine owner thread by snapshotting score properties, duration, and track configurations at the start of export, allowing long exports to run on background worker threads without blocking interactive score operations.

@@ -5,7 +5,9 @@
 //
 // Process-wide audio services and SoundFont resources require one engine per
 // process and calls on its owner thread. Each export owns a fresh render graph
-// and releases its tracks, synth sources and effects before returning. The
+// and releases its tracks, synth sources and effects before returning. Track
+// synthesis may fan out to a worker pool the engine audio owns; every callback
+// (cancellation, MIDI hook, encoder) still runs on the owner thread. The
 // native runtime must be initialized before initialize_engine_audio().
 
 #pragma once
@@ -65,7 +67,8 @@ private:
 // Setup/program/expression updates outside handle_event are not captured.
 // Startup flush reports all-notes-off, sustain and pitch bend for last_staff
 // when available. An empty hook disables capture. Calls run on the engine
-// thread; the hook must not re-enter the engine.
+// thread; the hook must not re-enter the engine. While a hook is installed,
+// tracks are synthesized serially so events keep track order.
 using MidiEventCallback = void(const muse::midi::Event &, std::uint64_t);
 using EngineAudioMidiEventHook = muse::UniqueFn<MidiEventCallback>;
 void set_engine_audio_midi_event_hook(EngineAudio &audio, EngineAudioMidiEventHook hook);
@@ -91,6 +94,9 @@ void set_engine_audio_midi_event_hook(EngineAudio &audio, EngineAudioMidiEventHo
 struct EngineAudioSetup {
     std::vector<std::string> soundfonts; // in order; the first is the default
     int sample_rate = 44100;
+    // Per-track synthesis threads, as engrave::EngineOptions::audio_threads;
+    // negative is rejected. Unlike the rate it may change between calls.
+    int audio_threads = 0;
 };
 
 // Fully parse candidates without constructing audio services or refreshing live
@@ -100,6 +106,9 @@ bool initialize_engine_audio(EngineAudio &audio, const EngineAudioSetup &setup, 
 // One SoundFont at 44100 Hz.
 bool initialize_engine_audio(EngineAudio &audio, const std::string &soundfont_path, std::string *error = nullptr);
 bool engine_audio_initialized(const EngineAudio &audio);
+// Threads the synthesis pool has started. Renders reuse them, so the count only
+// grows until the EngineAudio is destroyed.
+std::size_t engine_audio_worker_threads(const EngineAudio &audio);
 
 // SoundFont identity of the successfully initialised engine's default (first)
 // font (empty when not initialised). The URI is the encoded "file://" form used

@@ -1,14 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #pragma once
 #include <chrono>
+#include <cstddef>
 #include <cstdio>
 #include <cstdlib>
 
 #include "playbackmetrics.h"
 
 namespace muse::audio {
+// Owner-thread totals. synth is the wall time of per-track synthesis, serial or
+// fanned out; synth_total and synth_max_track sum each track's own time across
+// blocks, whichever thread ran it.
 struct OfflineTiming {
     double synth = 0, render = 0, encode = 0, setup = 0, teardown = 0, create = 0, fonts = 0, flush = 0, model = 0, tracks = 0, aux = 0;
+    double synth_total = 0, synth_max_track = 0;
+    std::size_t synth_threads = 0, synth_tracks = 0;
 
     static bool enabled() {
         static const bool value = std::getenv("ENGRAVE_AUDIO_TIMING") != nullptr;
@@ -61,6 +67,10 @@ struct OfflineTimingReport {
         std::fprintf(stderr, "offline_audio_seconds setup=%.9f teardown=%.9f create=%.9f fonts=%.9f flush=%.9f\n", t.setup, t.teardown,
                      t.create, t.fonts, t.flush);
         std::fprintf(stderr, "offline_audio_seconds model=%.9f tracks=%.9f aux=%.9f\n", t.model, t.tracks, t.aux);
+        std::fprintf(stderr, "offline_audio_seconds synth_wall=%.9f synth_total=%.9f synth_max_track=%.9f\n", t.synth, t.synth_total,
+                     t.synth_max_track);
+        std::fprintf(stderr, "offline_audio_synth threads=%llu tracks=%llu\n", static_cast<unsigned long long>(t.synth_threads),
+                     static_cast<unsigned long long>(t.synth_tracks));
     }
 };
 } // namespace muse::audio

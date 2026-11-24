@@ -22,6 +22,8 @@
 
 #include "fluidtrack.h"
 
+#include <mutex>
+
 #include <fluidsynth.h>
 
 #include "audio/common/audioerrors.h"
@@ -84,38 +86,50 @@ FluidTrack::FluidTrack(const AudioSourceParams &params, const engine::OfflineRen
 
 bool FluidTrack::is_valid() const { return fluid_->synth != nullptr; }
 
-Ret FluidTrack::init(const OutputSpec &spec) {
-    auto fluid_log_out = [](int level, const char *message, void *) {
+void muse::audio::synth::initialize_fluid_globals() {
+    static std::once_flag once;
+    std::call_once(once, [] {
+        // The pinned default sink writes to stdout, which corrupts a JSON CLI's output.
+        auto fluid_log_out = [](int level, const char *message, void *) {
 #undef LOG_TAG
 #define LOG_TAG "FluidSynth"
-        switch (level) {
-            case FLUID_PANIC:
-            case FLUID_ERR: {
-                LOGE() << message;
-            } break;
-            case FLUID_WARN: {
-                LOGW() << message;
-            } break;
-            case FLUID_INFO: {
-                LOGI() << message;
-            } break;
-            case FLUID_DBG: {
-                if (::fluid_debug) {
-                    LOGD() << message;
-                }
-            } break;
-        }
+            switch (level) {
+                case FLUID_PANIC:
+                case FLUID_ERR: {
+                    LOGE() << message;
+                } break;
+                case FLUID_WARN: {
+                    LOGW() << message;
+                } break;
+                case FLUID_INFO: {
+                    LOGI() << message;
+                } break;
+                case FLUID_DBG: {
+                    if (::fluid_debug) {
+                        LOGD() << message;
+                    }
+                } break;
+            }
 
 #undef LOG_TAG
 #define LOG_TAG CLASSFUNC
-    };
+        };
 
-    fluid_set_log_function(FLUID_PANIC, fluid_log_out, nullptr);
-    fluid_set_log_function(FLUID_ERR, fluid_log_out, nullptr);
-    fluid_set_log_function(FLUID_WARN, fluid_log_out, nullptr);
-    fluid_set_log_function(FLUID_INFO, fluid_log_out, nullptr);
-    fluid_set_log_function(FLUID_DBG, fluid_log_out, nullptr);
+        for (const int level : {FLUID_PANIC, FLUID_ERR, FLUID_WARN, FLUID_INFO, FLUID_DBG})
+            fluid_set_log_function(level, fluid_log_out, nullptr);
 
+        // new_fluid_synth() is the only entry to fluid_synth_init(), which fills the
+        // conversion and dither tables on first use.
+        fluid_settings_t *settings = new_fluid_settings();
+        fluid_settings_setint(settings, "synth.lock-memory", 0);
+        fluid_settings_setint(settings, "synth.threadsafe-api", 0);
+        delete_fluid_synth(new_fluid_synth(settings));
+        delete_fluid_settings(settings);
+    });
+}
+
+Ret FluidTrack::init(const OutputSpec &spec) {
+    initialize_fluid_globals();
     output_spec_ = spec;
 
     fluid_->settings = new_fluid_settings();
@@ -224,6 +238,12 @@ bool FluidTrack::handle_event(const midi::Event &event) {
             ret = fluid_synth_cc(fluid_->synth, event.channel(), event.index(), event.data7());
         } break;
         case Event::Opcode::PROGRAM_CHANGE: {
+            // Selecting a preset loads samples through the owner-thread SoundFont cache
+            // and rewrites shared preset counts, so only setup may change programs.
+            IF_ASSERT_FAILED(mode_ != ProcessMode::PLAYING_OFFLINE) {
+                ret = FLUID_FAILED;
+                break;
+            }
             fluid_synth_program_change(fluid_->synth, event.channel(), event.program());
         } break;
         case Event::Opcode::PITCH_BEND: {

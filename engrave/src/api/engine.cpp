@@ -109,6 +109,8 @@ Result<std::unique_ptr<Engine>> Engine::create(const EngineOptions &options) {
     if (options.audio_sample_rate < 8000 || options.audio_sample_rate > 192000)
         return fail(ErrorCode::INVALID_ARGUMENT,
                     std::format("the audio sample rate must be between 8000 and 192000 Hz, not {}", options.audio_sample_rate));
+    if (options.audio_threads < 0)
+        return fail(ErrorCode::INVALID_ARGUMENT, std::format("the audio thread count must not be negative, not {}", options.audio_threads));
     for (const auto &soundfont : options.soundfonts) {
         if (!std::filesystem::is_regular_file(soundfont, ec))
             return fail(ErrorCode::NOT_FOUND, "no SoundFont file '" + utf8(soundfont) + "'");
@@ -126,6 +128,7 @@ Result<std::unique_ptr<Engine>> Engine::create(const EngineOptions &options) {
             options.cache_dir.empty() ? std::filesystem::temp_directory_path(ec) : std::filesystem::absolute(options.cache_dir);
         for (const auto &soundfont : options.soundfonts) state->soundfonts.push_back(std::filesystem::absolute(soundfont));
         state->audio_sample_rate = options.audio_sample_rate;
+        state->audio_threads = options.audio_threads;
         state->context =
             std::make_unique<music::EngineContext>(utf8(resources), options.cache_dir.empty() ? std::string() : utf8(state->cache_dir));
         mu::engraving::MScore::test_mode = options.deterministic_ids;

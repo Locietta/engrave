@@ -100,7 +100,8 @@ struct AudioOptions {
     std::optional<std::uint64_t> max_bytes;
     std::optional<std::uint64_t> max_write_bytes;
     // Same callback contract as CaptureOptions: owner thread, no reentry;
-    // exceptions propagate. Polled per synthesis block and encoded-file write,
+    // exceptions propagate. Polled per synthesis block (and about every
+    // millisecond while tracks synthesize in parallel) and encoded-file write,
     // including finalization. No sink is called when cancellation is observed.
     std::function<bool()> cancelled;
 };

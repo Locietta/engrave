@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cfenv>
 #include <chrono>
 #include <cstdint>
 #include <cstdio>
@@ -13,7 +14,9 @@
 #include <iterator>
 #include <latch>
 #include <memory>
+#include <mutex>
 #include <optional>
+#include <set>
 #include <span>
 #include <stdexcept>
 #include <string>
@@ -37,6 +40,7 @@
 #include "audio/engine/internal/offlinerendersession.h"
 #include "audio/engine/internal/offlinetiming.h"
 #include "audio/engine/internal/synthesizers/fluidsynth/fluidsequencer.h"
+#include "audio/engine/internal/workerpool.h"
 #include "engrave/src/api/state.h"
 #include "engrave/src/audio/engine_audio.h"
 #include "engrave/src/runtime/resource_filesystem.h"
@@ -1615,4 +1619,376 @@ TEST(AudioInternal, DynamicAutomationLayersCompareByValue) {
     EXPECT_NE(a.at(0).get(), b.at(0).get());
     EXPECT_EQ(a, b);
     EXPECT_NE(a, c);
+}
+
+TEST(AudioInternal, WorkerPoolRunsEachTaskOnceStopsAndRethrows) {
+    using namespace std::chrono_literals;
+    muse::audio::engine::WorkerPool pool;
+    const auto owner = std::this_thread::get_id();
+    std::vector<std::atomic<int>> runs(200);
+    std::mutex mutex;
+    std::set<std::thread::id> threads;
+    const auto count_task = [&](std::size_t index) {
+        runs[index].fetch_add(1);
+        const std::scoped_lock lock(mutex);
+        threads.insert(std::this_thread::get_id());
+    };
+    const auto never = [] { return false; };
+    const auto check_counts = [&] {
+        for (std::size_t i = 0; i < runs.size(); ++i) EXPECT_EQ(runs[i].exchange(0), 1) << i;
+    };
+    EXPECT_TRUE(pool.run(4, runs.size(), count_task, never));
+    check_counts();
+    EXPECT_FALSE(threads.contains(owner));
+    EXPECT_LE(threads.size(), 4u);
+    EXPECT_EQ(pool.started_threads(), 4u);
+
+    // A task in flight runs to its own cancellation check; run() returns only after it does.
+    std::atomic<int> started{0}, finished{0};
+    const auto until_stopped = [&](std::size_t) {
+        started.fetch_add(1);
+        while (!pool.stopping()) std::this_thread::sleep_for(1ms);
+        finished.fetch_add(1);
+    };
+    std::vector<std::chrono::steady_clock::time_point> polls;
+    const auto stop_on_twentieth = [&] {
+        EXPECT_EQ(std::this_thread::get_id(), owner);
+        polls.push_back(std::chrono::steady_clock::now());
+        return polls.size() == 20;
+    };
+    const auto begin = std::chrono::steady_clock::now();
+    EXPECT_FALSE(pool.run(4, 100, until_stopped, stop_on_twentieth));
+    const auto elapsed = std::chrono::steady_clock::now() - begin;
+    EXPECT_EQ(polls.size(), 20u);
+    EXPECT_EQ(started.load(), finished.load());
+    EXPECT_GE(started.load(), 1);
+    EXPECT_LE(started.load(), 4);
+    // Report observed poll cadence without asserting a tight wall-clock threshold
+    // that can flake under load or when Windows falls back to scheduler-tick waits.
+    std::vector<std::chrono::steady_clock::duration> gaps;
+    for (std::size_t i = 1; i < polls.size(); ++i) gaps.push_back(polls[i] - polls[i - 1]);
+    std::ranges::sort(gaps);
+    std::printf("worker pool: 20 polls in %.3f ms, median gap %.3f ms, widest %.3f ms\n",
+                std::chrono::duration<double, std::milli>(elapsed).count(),
+                std::chrono::duration<double, std::milli>(gaps[gaps.size() / 2]).count(),
+                std::chrono::duration<double, std::milli>(gaps.back()).count());
+
+    const auto throw_fifth = [](std::size_t index) {
+        if (index == 5) throw std::runtime_error("task");
+    };
+    EXPECT_THROW(pool.run(3, 50, throw_fifth, never), std::runtime_error);
+    EXPECT_TRUE(pool.stopping());
+    const auto throwing_poll = []() -> bool { throw std::logic_error("poll"); };
+    EXPECT_THROW(pool.run(2, 10, until_stopped, throwing_poll), std::logic_error);
+    EXPECT_EQ(started.load(), finished.load());
+
+    threads.clear();
+    EXPECT_TRUE(pool.run(4, runs.size(), count_task, never));
+    check_counts();
+    EXPECT_FALSE(pool.stopping());
+    EXPECT_EQ(pool.started_threads(), 4u);
+}
+
+namespace {
+// Six parts on distinct programs, `chord` notes on every 16th at 300 BPM and a
+// new dynamic each bar, so tracks differ in cost and timbre.
+std::filesystem::path write_parallel_score(const std::string &stem, int chord, int measures) {
+#ifdef _WIN32
+    const int process = _getpid();
+#else
+    const int process = getpid();
+#endif
+    const auto path = std::filesystem::temp_directory_path() / (stem + "-" + std::to_string(process) + ".musicxml");
+    std::ofstream out(path);
+    const int programs[] = {1, 41, 74, 57, 34, 49};
+    const char *dynamics[][2] = {{"pp", "36"}, {"mf", "80"}, {"ff", "112"}, {"mp", "64"}};
+    const std::string steps = "CDEFGAB";
+    out << "<?xml version=\"1.0\"?><score-partwise version=\"4.0\"><part-list>";
+    for (int p = 1; p <= 6; ++p)
+        out << "<score-part id=\"P" << p << "\"><part-name>Part " << p << "</part-name><midi-instrument id=\"I" << p << "\"><midi-channel>"
+            << p << "</midi-channel><midi-program>" << programs[p - 1] << "</midi-program></midi-instrument></score-part>";
+    out << "</part-list>";
+    for (int p = 1; p <= 6; ++p) {
+        out << "<part id=\"P" << p << "\">";
+        for (int m = 1; m <= measures; ++m) {
+            out << "<measure number=\"" << m << "\">";
+            if (m == 1)
+                out << "<attributes><divisions>480</divisions><time><beats>4</beats><beat-type>4</beat-type></time>"
+                       "<clef><sign>G</sign><line>2</line></clef></attributes><direction><direction-type><metronome>"
+                       "<beat-unit>quarter</beat-unit><per-minute>300</per-minute></metronome></direction-type>"
+                       "<sound tempo=\"300\"/></direction>";
+            const auto &dynamic = dynamics[(m + p) % 4];
+            out << "<direction><direction-type><dynamics><" << dynamic[0] << "/></dynamics></direction-type><sound dynamics=\""
+                << dynamic[1] << "\"/></direction>";
+            for (int s = 0; s < 16; ++s) {
+                for (int c = 0; c < chord; ++c) {
+                    const int degree = s + 2 * c;
+                    out << "<note>" << (c ? "<chord/>" : "") << "<pitch><step>" << steps[degree % 7] << "</step><octave>"
+                        << std::min(3 + p % 3 + degree / 7, 7) << "</octave></pitch><duration>120</duration><type>16th</type></note>";
+                }
+            }
+            out << "</measure>";
+        }
+        out << "</part>";
+    }
+    out << "</score-partwise>";
+    return path;
+}
+
+// Sets the thread count the way render_audio passes EngineOptions::audio_threads.
+void set_audio_threads(engrave::Document &document, int threads) {
+    auto &engine = *engrave::DocumentAccess::impl(document).engine;
+    engine.audio_threads = threads;
+    music::EngineAudioSetup setup;
+    setup.sample_rate = engine.audio_sample_rate;
+    for (const auto &soundfont : engine.soundfonts) setup.soundfonts.push_back(engrave::utf8(soundfont));
+    setup.audio_threads = threads;
+    ASSERT_TRUE(music::initialize_engine_audio(engrave::DocumentAccess::context(document).audio(), setup));
+}
+
+struct AutomaticAudioThreads {
+    engrave::Document &document;
+
+    ~AutomaticAudioThreads() { set_audio_threads(document, 0); }
+};
+
+std::vector<std::byte> render_bytes(engrave::Document &document, engrave::AudioFormat format) {
+    std::vector<std::byte> bytes;
+    engrave::AudioOptions options;
+    options.format = format;
+    EXPECT_TRUE(document.render_audio(options, [&](auto chunk) { bytes.insert(bytes.end(), chunk.begin(), chunk.end()); }));
+    return bytes;
+}
+} // namespace
+
+TEST(AudioInternal, ParallelSynthesisIsBitIdenticalAcrossThreadCounts) {
+    if (std::getenv("ENGRAVE_AUDIO_THREADS")) GTEST_SKIP() << "ENGRAVE_AUDIO_THREADS overrides the thread counts under test";
+    const auto xml = write_parallel_score("engrave-parallel-identity", 3, 4);
+    auto opened = music::test::g_engine->open(xml);
+    std::filesystem::remove(xml);
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    const AutomaticAudioThreads restore{document};
+    for (const auto format : {engrave::AudioFormat::WAV, engrave::AudioFormat::OPUS}) {
+        set_audio_threads(document, 1);
+        const auto serial = render_bytes(document, format);
+        ASSERT_FALSE(serial.empty());
+        for (const int threads : {2, 3, 4}) {
+            set_audio_threads(document, threads);
+            EXPECT_TRUE(render_bytes(document, format) == serial) << "threads=" << threads << " format=" << static_cast<int>(format);
+        }
+    }
+    // Four threads did start, so the comparisons above covered the fan-out.
+    EXPECT_GE(music::engine_audio_worker_threads(engrave::DocumentAccess::context(document).audio()), 4u);
+    set_audio_threads(document, 4);
+    const auto reference = render_bytes(document, engrave::AudioFormat::WAV);
+    for (int repeat = 0; repeat < 50; ++repeat) ASSERT_TRUE(render_bytes(document, engrave::AudioFormat::WAV) == reference) << repeat;
+}
+
+TEST(AudioInternal, ParallelSynthesisCancellationUnwindsAndReusesWorkers) {
+    if (std::getenv("ENGRAVE_AUDIO_THREADS")) GTEST_SKIP() << "ENGRAVE_AUDIO_THREADS overrides the thread counts under test";
+    using Phase = muse::audio::OfflineCancellation::Phase;
+    const auto owner = std::this_thread::get_id();
+    // Dense chords keep each block busy for longer than the coordinator's poll interval.
+    const auto xml = write_parallel_score("engrave-parallel-cancel", 6, 2);
+    auto opened = music::test::g_engine->open(xml);
+    std::filesystem::remove(xml);
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    const AutomaticAudioThreads restore{document};
+    set_audio_threads(document, 4);
+    const auto baseline = render_bytes(document, engrave::AudioFormat::WAV);
+    ASSERT_FALSE(baseline.empty());
+    auto &audio = engrave::DocumentAccess::context(document).audio();
+    auto *master = engrave::DocumentAccess::master_score(document);
+    const auto workers = music::engine_audio_worker_threads(audio);
+    ASSERT_GE(workers, 4u);
+    const auto path = std::filesystem::temp_directory_path() / "engrave-parallel-cancel.wav";
+    for (const bool throws : {false, true}) {
+        int synthesis_polls = 0;
+        bool fired = false;
+        music::AudioRenderRequest request;
+        const auto utf8 = path.generic_u8string();
+        request.output_path.assign(utf8.begin(), utf8.end());
+        request.cancelled = [&]() -> bool {
+            EXPECT_EQ(std::this_thread::get_id(), owner);
+            if (muse::audio::OfflineCancellation::phase != Phase::SYNTHESIS || ++synthesis_polls < 3) return false;
+            fired = true;
+            if (throws) throw std::runtime_error("synthesis cancellation callback");
+            return true;
+        };
+        if (throws)
+            EXPECT_THROW(music::export_score_audio(audio, master, request), std::runtime_error);
+        else
+            EXPECT_EQ(music::export_score_audio(audio, master, request).failure, music::AudioRenderResult::Failure::CANCELLED);
+        EXPECT_TRUE(fired) << "throws=" << throws;
+        EXPECT_FALSE(std::filesystem::exists(path)) << "throws=" << throws;
+        EXPECT_EQ(music::engine_audio_worker_threads(audio), workers) << "throws=" << throws;
+        EXPECT_TRUE(render_bytes(document, engrave::AudioFormat::WAV) == baseline) << "throws=" << throws;
+    }
+}
+
+TEST(AudioInternal, MidiHookKeepsSynthesisSerialAndOrdered) {
+    if (std::getenv("ENGRAVE_AUDIO_THREADS")) GTEST_SKIP() << "ENGRAVE_AUDIO_THREADS overrides the thread counts under test";
+    const auto owner = std::this_thread::get_id();
+    const auto xml = write_parallel_score("engrave-parallel-hook", 2, 2);
+    auto opened = music::test::g_engine->open(xml);
+    std::filesystem::remove(xml);
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    const AutomaticAudioThreads restore{document};
+    auto &audio = engrave::DocumentAccess::context(document).audio();
+    auto *master = engrave::DocumentAccess::master_score(document);
+    const auto path = std::filesystem::temp_directory_path() / "engrave-parallel-hook.wav";
+    using Captured = std::tuple<std::uint32_t, std::uint32_t, std::uint64_t>;
+    const auto capture = [&](int threads) {
+        set_audio_threads(document, threads);
+        std::vector<Captured> events;
+        music::set_engine_audio_midi_event_hook(audio, [&](const muse::midi::Event &event, std::uint64_t frame) {
+            EXPECT_EQ(std::this_thread::get_id(), owner);
+            const auto *words = event.midi20_words();
+            events.emplace_back(words[0], words[1], frame);
+        });
+        music::AudioRenderRequest request;
+        const auto utf8 = path.generic_u8string();
+        request.output_path.assign(utf8.begin(), utf8.end());
+        const auto result = music::export_score_audio(audio, master, request);
+        music::set_engine_audio_midi_event_hook(audio, {});
+        EXPECT_TRUE(result.ok) << result.error;
+        std::ifstream in(path, std::ios::binary);
+        std::vector<char> bytes{std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()};
+        in.close();
+        std::filesystem::remove(path);
+        return std::pair{events, bytes};
+    };
+    const auto serial = capture(1);
+    ASSERT_FALSE(serial.first.empty());
+    const auto configured = capture(4);
+    EXPECT_TRUE(configured.first == serial.first);
+    EXPECT_TRUE(configured.second == serial.second);
+}
+
+TEST(AudioInternal, ParallelSynthesisMatchesSerialAcrossRoundingModesAndSrandSeeds) {
+    if (std::getenv("ENGRAVE_AUDIO_THREADS")) GTEST_SKIP() << "ENGRAVE_AUDIO_THREADS overrides the thread counts under test";
+
+    struct RestoreRounding {
+        int saved = std::fegetround();
+
+        ~RestoreRounding() {
+            if (saved >= 0) std::fesetround(saved);
+        }
+    } restore_rounding;
+
+    const auto xml = write_parallel_score("engrave-parallel-fp-mode", 6, 2);
+    auto opened = music::test::g_engine->open(xml);
+    std::filesystem::remove(xml);
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    const AutomaticAudioThreads restore{document};
+
+    // Prime the persistent worker pool under FE_TONEAREST, then verify both
+    // FE_TOWARDZERO and returning to FE_TONEAREST match serial output bit-for-bit.
+    ASSERT_EQ(std::fesetround(FE_TONEAREST), 0);
+    set_audio_threads(document, 4);
+    ASSERT_FALSE(render_bytes(document, engrave::AudioFormat::WAV).empty());
+    ASSERT_GE(music::engine_audio_worker_threads(engrave::DocumentAccess::context(document).audio()), 4u);
+
+    for (const int mode : {FE_TOWARDZERO, FE_TONEAREST}) {
+        ASSERT_EQ(std::fesetround(mode), 0);
+        set_audio_threads(document, 1);
+        const auto serial = render_bytes(document, engrave::AudioFormat::WAV);
+        ASSERT_FALSE(serial.empty());
+        set_audio_threads(document, 4);
+        EXPECT_TRUE(render_bytes(document, engrave::AudioFormat::WAV) == serial) << "mode=" << mode;
+    }
+
+    // Mutating rounding mode inside the cancellation callback during synthesis
+    // must keep serial and parallel output bit-identical while preserving the
+    // callback's rounding change on return.
+    auto &audio = engrave::DocumentAccess::context(document).audio();
+    auto *master = engrave::DocumentAccess::master_score(document);
+    const auto path = std::filesystem::temp_directory_path() / "engrave-parallel-mid-round.wav";
+    const auto render_with_mid_synthesis_flip = [&](int threads) {
+        EXPECT_EQ(std::fesetround(FE_TONEAREST), 0);
+        set_audio_threads(document, threads);
+        bool flipped = false;
+        music::AudioRenderRequest request;
+        const auto utf8 = path.generic_u8string();
+        request.output_path.assign(utf8.begin(), utf8.end());
+        request.cancelled = [&]() -> bool {
+            if (!flipped && muse::audio::OfflineCancellation::phase == muse::audio::OfflineCancellation::Phase::SYNTHESIS) {
+                flipped = true;
+                EXPECT_EQ(std::fesetround(FE_TOWARDZERO), 0);
+            } else if (flipped) {
+                EXPECT_EQ(std::fegetround(), FE_TOWARDZERO);
+            }
+            return false;
+        };
+        const auto res = music::export_score_audio(audio, master, request);
+        EXPECT_TRUE(res.ok) << res.error;
+        EXPECT_TRUE(flipped) << "threads=" << threads;
+        EXPECT_EQ(std::fegetround(), FE_TOWARDZERO) << "threads=" << threads;
+        std::ifstream in(path, std::ios::binary);
+        std::vector<char> bytes{std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()};
+        in.close();
+        std::filesystem::remove(path);
+        return bytes;
+    };
+    const auto mid_serial = render_with_mid_synthesis_flip(1);
+    ASSERT_FALSE(mid_serial.empty());
+    const auto mid_parallel = render_with_mid_synthesis_flip(4);
+    EXPECT_TRUE(mid_serial == mid_parallel);
+    ASSERT_EQ(std::fesetround(FE_TONEAREST), 0);
+
+    // Removing std::srand(0) must leave Opus encoding independent of process rand() state.
+    set_audio_threads(document, 4);
+    std::srand(1u);
+    const auto opus_a = render_bytes(document, engrave::AudioFormat::OPUS);
+    ASSERT_FALSE(opus_a.empty());
+    std::srand(0x1234567u);
+    const auto opus_b = render_bytes(document, engrave::AudioFormat::OPUS);
+    EXPECT_TRUE(opus_a == opus_b);
+}
+
+TEST(AudioInternal, SingleInstrumentWithMutedMetronomeStartsNoWorkers) {
+    if (std::getenv("ENGRAVE_AUDIO_THREADS")) GTEST_SKIP() << "ENGRAVE_AUDIO_THREADS overrides the thread counts under test";
+    if (music::test::g_soundfonts.empty()) GTEST_SKIP() << "no SoundFont configured";
+    // Isolate a fresh Engine so an earlier parallel test's live worker pool cannot mask thread starts.
+    GTEST_FLAG_SET(death_test_style, "threadsafe");
+    ASSERT_EXIT(
+        {
+            music::test::g_engine.reset();
+            const auto check = [] {
+                engrave::EngineOptions options;
+                options.resources = music::test::g_assets;
+                options.soundfonts = {music::test::g_soundfonts.front()};
+                options.audio_threads = 4;
+                auto engine = engrave::Engine::create(options);
+                if (!engine) return 1;
+
+                constexpr std::string_view one_part = R"(<?xml version="1.0"?>
+<score-partwise version="4.0">
+  <part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
+  <part id="P1">
+    <measure number="1">
+      <attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>
+      <note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><type>whole</type></note>
+    </measure>
+  </part>
+</score-partwise>)";
+                engrave::OpenOptions open_options;
+                open_options.format = engrave::Format::MUSIC_XML;
+                auto opened = (*engine)->open(std::as_bytes(std::span(one_part.data(), one_part.size())), open_options);
+                if (!opened) return 2;
+                auto &document = **opened;
+                std::size_t total_bytes = 0;
+                engrave::AudioOptions audio_options;
+                audio_options.format = engrave::AudioFormat::WAV;
+                if (!document.render_audio(audio_options, [&](auto chunk) { total_bytes += chunk.size(); })) return 3;
+                if (total_bytes == 0) return 4;
+                return music::engine_audio_worker_threads(engrave::DocumentAccess::context(document).audio()) == 0u ? 0 : 5;
+            };
+            std::exit(check());
+        },
+        ::testing::ExitedWithCode(0), "");
 }

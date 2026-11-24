@@ -24,7 +24,6 @@
 
 #include <utility>
 
-#include "../offlinetiming.h"
 #include "log.h"
 
 using namespace muse;
@@ -60,7 +59,6 @@ void FluidTrackSource::do_self_process(float *buffer, samples_t samples_per_chan
         return;
     }
 
-    OfflineTimer timer(OfflineTiming::current().synth);
     synth_->process(buffer, samples_per_channel);
 }
 

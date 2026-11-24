@@ -54,12 +54,16 @@ int fluid_sample_sanitize_loop(fluid_sample_t *sample, unsigned int max_end);
 #define fluid_preset_notify(_preset, _reason, _chan) \
     (((_preset) && (_preset)->notify) ? (*(_preset)->notify)(_preset, _reason, _chan) : FLUID_OK)
 
+/* engrave: synths on different threads share one cached SoundFont, so voices
+ * on several threads count the same sample. The builtins keep the field a plain
+ * unsigned int, identical in C and C++ translation units. Only the decrement
+ * that reaches zero notifies. */
 #define fluid_sample_incr_ref(_sample) \
-    { (_sample)->refcount++; }
+    { (void) __atomic_fetch_add(&(_sample)->refcount, 1u, __ATOMIC_RELAXED); }
 
-#define fluid_sample_decr_ref(_sample) \
-    (_sample)->refcount--;             \
-    if (((_sample)->refcount == 0) && ((_sample)->notify)) (*(_sample)->notify)(_sample, FLUID_SAMPLE_DONE);
+#define fluid_sample_decr_ref(_sample)                                                                 \
+    if ((__atomic_sub_fetch(&(_sample)->refcount, 1u, __ATOMIC_ACQ_REL) == 0u) && ((_sample)->notify)) \
+    (*(_sample)->notify)(_sample, FLUID_SAMPLE_DONE)
 
 /**
  * File callback structure to enable custom soundfont loading (e.g. from memory).

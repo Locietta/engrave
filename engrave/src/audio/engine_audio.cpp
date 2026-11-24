@@ -16,15 +16,10 @@
 #include <thread>
 #include <utility>
 
-#if defined(__SSE2__) || defined(_M_X64) || defined(_M_AMD64)
-#include <xmmintrin.h>
-#endif
-
-#include <fluidsynth.h>
-
 #include "audio/common/audioutils.h"
 #include "audio/common/soundfonttypes.h"
 #include "audio/engine/audioservices.h"
+#include "audio/engine/internal/denormalguard.h"
 #include "audio/engine/internal/export/soundtrackwriter.h"
 #include "audio/engine/internal/offlinecancellation.h"
 #include "audio/engine/internal/offlinerendersession.h"
@@ -32,6 +27,7 @@
 #include "audio/engine/internal/playbackcapture.h"
 #include "audio/engine/internal/synthesizers/fluidsynth/fluidsoundfontparser.h"
 #include "audio/engine/internal/synthesizers/fluidsynth/fluidtrack.h"
+#include "audio/engine/internal/workerpool.h"
 #include "audio/engine/offlinerendersettings.h"
 #include "audio_output.h"
 #include "engrave/src/runtime/resource_filesystem.h"
@@ -64,66 +60,6 @@ using namespace mu::engraving;
 
 namespace music {
 namespace {
-// Recursive reverb tails otherwise incur subnormal arithmetic traps. Own only
-// the denormal bits so callbacks can use and change the rest of the FP state.
-struct ScopedDenormalGuard {
-#if defined(__SSE2__) || defined(_M_X64) || defined(_M_AMD64)
-    static constexpr std::uint32_t k_denormal_mask = (1U << 15) | (1U << 6); // FTZ and DAZ
-
-    static std::uint32_t read() noexcept { return _mm_getcsr(); }
-
-    static void write(std::uint32_t state) noexcept { _mm_setcsr(state); }
-#elif defined(__aarch64__)
-    static constexpr std::uint64_t k_fpcr_fz = 1ULL << 24;
-    static constexpr std::uint64_t k_denormal_mask = k_fpcr_fz;
-
-    static std::uint64_t read() noexcept {
-        std::uint64_t fpcr;
-        asm volatile("mrs %0, fpcr" : "=r"(fpcr));
-        return fpcr;
-    }
-
-    static void write(std::uint64_t fpcr) noexcept { asm volatile("msr fpcr, %0" : : "r"(fpcr)); }
-#endif
-
-#if defined(__SSE2__) || defined(_M_X64) || defined(_M_AMD64) || defined(__aarch64__)
-    static void enable() noexcept {
-        const auto current = read();
-        if ((current & k_denormal_mask) != k_denormal_mask) write(current | k_denormal_mask);
-    }
-
-    void restore() const noexcept {
-        const auto current = read();
-        if ((current & k_denormal_mask) != entry_denormal_mode) write((current & ~k_denormal_mask) | entry_denormal_mode);
-    }
-
-    ScopedDenormalGuard() noexcept { enable(); }
-
-    ~ScopedDenormalGuard() { restore(); }
-
-    const decltype(k_denormal_mask) entry_denormal_mode = read() & k_denormal_mask;
-#else
-    static void enable() noexcept {}
-
-    static void restore() noexcept {}
-
-    ScopedDenormalGuard() = default;
-    ~ScopedDenormalGuard() = default;
-#endif
-    struct Suspend {
-        explicit Suspend(const ScopedDenormalGuard &owner) noexcept : guard(owner) { guard.restore(); }
-
-        ~Suspend() { guard.enable(); }
-
-        Suspend(const Suspend &) = delete;
-        Suspend &operator=(const Suspend &) = delete;
-        const ScopedDenormalGuard &guard;
-    };
-
-    ScopedDenormalGuard(const ScopedDenormalGuard &) = delete;
-    ScopedDenormalGuard &operator=(const ScopedDenormalGuard &) = delete;
-};
-
 constexpr sample_rate_t k_default_sample_rate = 44100;
 constexpr samples_t k_samples_per_channel = 4096;
 constexpr audioch_t k_audio_channel_count = 2;
@@ -160,6 +96,9 @@ struct EngineAudio::State {
     std::unique_ptr<engine::AudioServices> services;
     bool services_initialized = false;
     int sample_rate_value = ::music::k_default_sample_rate;
+    int audio_threads = 0;
+    // Started by the first render that fans out; idle between renders.
+    std::unique_ptr<engine::WorkerPool> synthesis_pool;
 };
 
 EngineAudio::EngineAudio(const muse::mpe::ArticulationProfilesRepository &profiles) : state_(std::make_unique<State>(profiles)) {}
@@ -313,13 +252,18 @@ void configure_master(engine::OfflineRenderSession &context, const AudioRenderRe
     control->set_volume(master_volume);
 }
 
-void fluid_log_to_logger(int level, const char *message, void *) {
-    switch (level) {
-        case FLUID_PANIC:
-        case FLUID_ERR: LOGE() << message; break;
-        case FLUID_WARN: LOGW() << message; break;
-        default: LOGI() << message; break;
+// 0 picks one thread per spare core, at most 8; ENGRAVE_AUDIO_THREADS, when a
+// positive integer, overrides the configured value.
+std::size_t synthesis_threads(int configured) {
+    if (const char *text = std::getenv("ENGRAVE_AUDIO_THREADS")) {
+        char *end = nullptr;
+        const long value = std::strtol(text, &end, 10);
+        if (end != text && *end == '\0' && value > 0)
+            configured = static_cast<int>(std::min<long>(value, engine::WorkerPool::k_max_workers));
     }
+    if (configured > 0) return std::min<std::size_t>(static_cast<std::size_t>(configured), engine::WorkerPool::k_max_workers);
+    const unsigned cores = std::thread::hardware_concurrency();
+    return std::clamp<std::size_t>(cores > 1 ? cores - 1 : 1, 1, 8);
 }
 } // namespace
 
@@ -349,13 +293,8 @@ bool validate_engine_soundfonts(const std::vector<std::string> &soundfont_paths,
         return fail("native runtime (NativeFileSystem) is not initialised; create the EngineContext first");
     }
 
-    // The pinned FluidSynth default sink writes parser errors to stdout, which
-    // corrupts a JSON CLI's output. FluidTrack::init() installs its own
-    // per-synth callbacks later, so this only covers parsing here.
-    fluid_set_log_function(FLUID_PANIC, fluid_log_to_logger, nullptr);
-    fluid_set_log_function(FLUID_ERR, fluid_log_to_logger, nullptr);
-    fluid_set_log_function(FLUID_WARN, fluid_log_to_logger, nullptr);
-    fluid_set_log_function(FLUID_INFO, fluid_log_to_logger, nullptr);
+    // Parser errors must reach the logger, not FluidSynth's default stdout sink.
+    synth::initialize_fluid_globals();
 
     // Parse every candidate before changing the live repository. The retained
     // files are immutable, so a later repository load reads the same bytes.
@@ -376,10 +315,13 @@ bool initialize_engine_audio(EngineAudio &audio, const EngineAudioSetup &setup, 
         return false;
     };
     const std::vector<std::string> &soundfont_paths = setup.soundfonts;
+    if (setup.audio_threads < 0) return fail("audio thread count must not be negative: " + std::to_string(setup.audio_threads));
     if (state.services_initialized) {
         if (!state.resources.soundfont_id.empty() && state.resources.soundfont_paths_value == soundfont_paths &&
-            state.sample_rate_value == setup.sample_rate)
+            state.sample_rate_value == setup.sample_rate) {
+            state.audio_threads = setup.audio_threads;
             return true;
+        }
         if (state.sample_rate_value != setup.sample_rate) return fail("audio sample rate is fixed");
     }
     if (setup.sample_rate < 8000 || setup.sample_rate > 192000)
@@ -454,6 +396,7 @@ bool initialize_engine_audio(EngineAudio &audio, const EngineAudioSetup &setup, 
     state.resources.soundfont_paths_value = soundfont_paths;
     state.resources.soundfont_uri = std::move(default_uri);
     state.resources.soundfont_id = std::move(default_id);
+    state.audio_threads = setup.audio_threads;
 
     return true;
 }
@@ -467,12 +410,17 @@ bool engine_audio_initialized(const EngineAudio &audio) {
     return state.services_initialized && !state.resources.soundfont_id.empty();
 }
 
+std::size_t engine_audio_worker_threads(const EngineAudio &audio) {
+    const auto &pool = audio.state().synthesis_pool;
+    return pool ? pool->started_threads() : 0;
+}
+
 std::string engine_soundfont_resource_id(const EngineAudio &audio) { return audio.state().resources.soundfont_id; }
 
 std::string engine_soundfont_uri(const EngineAudio &audio) { return audio.state().resources.soundfont_uri; }
 
 AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, const AudioRenderRequest &request) {
-    const ScopedDenormalGuard denormal_guard;
+    ScopedDenormalGuard denormal_guard;
     OfflineTimingReport timing_report;
     AudioRenderResult result;
     const auto fail = [&result](AudioRenderResult::Failure kind, std::string message) {
@@ -635,6 +583,11 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
                                          state.services->configuration().render_settings(),
                                          [&state](const midi::Event &event) { state.midi_out_port.send_event(event); });
     configure_master(context, request);
+    // A MIDI hook observes events in track order on this thread, so it keeps synthesis serial.
+    if (const std::size_t threads = state.midi_out_port.hook ? 1 : synthesis_threads(state.audio_threads); threads > 1) {
+        if (!state.synthesis_pool) state.synthesis_pool = std::make_unique<engine::WorkerPool>();
+        context.set_parallelism(state.synthesis_pool.get(), threads);
+    }
 
     // The public mix is indexed by the same deterministic track list that
     // score_audio_tracks reports. Keep the list for the selected excerpt: for
@@ -777,13 +730,6 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
     context.reset_sources();
     if (poll()) return abort_setup();
 
-    // libopusenc dithers with rand(). 4.7.6 also relied on this for the Ogg
-    // stream serial; 5.0 pins the serial itself (oggencoder.cpp:88-91), so the
-    // seed only keeps the encoder deterministic. Seed after all engine setup
-    // (synth/sequence creation) so a given request renders identically across
-    // processes.
-    std::srand(0);
-
     // The writer reports completed frames after each successfully encoded block.
     state.midi_out_port.rendered_frames = 0;
 
@@ -802,6 +748,7 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
         [&state](uint64_t frames) { state.midi_out_port.rendered_frames = frames; }, request.encoder_factory, poll);
     Ret write_ret;
     try {
+        const ScopedDenormalGuard::RenderModePin render_fp_pin(denormal_guard);
         write_ret = writer.write();
     } catch (const engine::StoreLimit &limit) {
         device.close();
