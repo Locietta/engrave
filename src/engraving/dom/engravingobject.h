@@ -250,11 +250,13 @@ struct EngravingObject {
 
     inline ElementType type() const { return type_; }
 
+    // Legacy retagging and sliced copies can leave type() out of sync with the C++ type.
+    ElementType concrete_type() const { return concrete_type_; }
+
     inline bool is_type(ElementType t) const { return t == type_; }
 
     const char *type_name() const;
     virtual TranslatableString type_user_name() const;
-    virtual String translated_type_user_name() const;
 
     EID eid() const;
     bool set_eid(EID id) const;
@@ -302,9 +304,9 @@ struct EngravingObject {
 
     virtual void init_element_style(const ElementStyle *);
 
-    virtual const ElementStyle *styled_properties() const { return element_style_ ? element_style_ : &empty_style(); }
+    const ElementStyle *styled_properties() const { return element_style_ ? element_style_ : &empty_style(); }
 
-    virtual PropertyFlags *property_flags_list() const { return property_flags_list_; }
+    PropertyFlags *property_flags_list() const { return property_flags_list_; }
 
     virtual PropertyFlags property_flags(Pid) const;
     bool is_styled(Pid pid) const;
@@ -350,6 +352,7 @@ protected:
 
 private:
     friend struct EIDRegister;
+    friend struct Factory;
 
     SourceHandle source_handle_;
     static const ElementStyle &empty_style();
@@ -358,6 +361,7 @@ private:
     void do_set_score(Score *sc);
 
     ElementType type_ = ElementType::INVALID;
+    ElementType concrete_type_;
 
     EngravingObject *parent_ = nullptr;
     EngravingObjectList children_;
@@ -508,6 +512,7 @@ public:
     CONVERT(is_string_tunings, STRING_TUNINGS)
     CONVERT(is_time_tick_anchor, TIME_TICK_ANCHOR)
     CONVERT(is_parenthesis, PARENTHESIS)
+    CONVERT(is_tapping_text, TAPPING_TEXT)
     CONVERT(is_hammer_on_pull_off, HAMMER_ON_PULL_OFF)
     CONVERT(is_hammer_on_pull_off_segment, HAMMER_ON_PULL_OFF_SEGMENT)
     CONVERT(is_hammer_on_pull_off_text, HAMMER_ON_PULL_OFF_TEXT)

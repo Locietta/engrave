@@ -6223,7 +6223,7 @@ SpannerSegment *TLayout::layout_system(Spanner *item, System *system, LayoutCont
     SpannerSegment *seg = nullptr;
     bool found = LayoutSystemVisitor::visit(LayoutSystemTypes{}, item, system, ctx, &seg);
     if (!found) {
-        SLine *line = dynamic_cast<SLine *>(item);
+        SLine *line = item_cast<SLine *>(item, CastMode::MAYBE_BAD);
         if (line) {
             seg = layout_system_s_line(line, system, ctx);
         } else {

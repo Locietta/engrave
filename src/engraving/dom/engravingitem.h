@@ -213,8 +213,6 @@ public:
     virtual void set_visible(bool f);
     bool display_visible() const;
 
-    virtual bool is_interaction_available() const;
-
     bool size_is_spatium_dependent() const override { return !flag(ElementFlag::SIZE_SPATIUM_DEPENDENT); }
 
     void set_size_is_spatium_dependent(bool v) { set_flag(ElementFlag::SIZE_SPATIUM_DEPENDENT, !v); }
@@ -312,7 +310,6 @@ public:
     // debug functions
     virtual void dump() const;
     virtual TranslatableString subtype_user_name() const;
-    virtual String translated_subtype_user_name() const;
 
     virtual void set_color(const Color &c);
     virtual Color color() const;
@@ -407,8 +404,8 @@ public:
     virtual String format_bars_and_beats() const;
 
     virtual void trigger_layout() const;
-    virtual void trigger_layout_all() const;
-    virtual void trigger_layout_to_end() const;
+    void trigger_layout_all() const;
+    void trigger_layout_to_end() const;
 
     double style_p(Sid idx) const;
 
@@ -549,7 +546,7 @@ public:
 
     protected:
 
-        virtual void sup_dump([[maybe_unused]] std::stringstream &ss) const {}
+        void sup_dump([[maybe_unused]] std::stringstream &ss) const {}
 
 #ifndef NDEBUG
         void do_set_pos_debug_hook(double x, double y);
@@ -642,11 +639,14 @@ public:
 
     void set_width(double v) { mutldata()->set_width(v); }
 
-    virtual const PointF pos() const { return ldata()->pos() + offset_; }
+    const PointF pos() const { return ldata()->pos() + offset_; }
 
-    virtual double x() const { return ldata()->pos().x() + offset_.x(); }
+    double x() const {
+        const double layout_x = ldata()->pos().x();
+        return is_segment() ? layout_x : layout_x + offset_.x();
+    }
 
-    virtual double y() const { return ldata()->pos().y() + offset_.y(); }
+    double y() const { return ldata()->pos().y() + offset_.y(); }
 
     virtual void set_pos(double x, double y) { mutldata()->set_pos(x, y); }
 

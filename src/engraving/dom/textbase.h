@@ -202,6 +202,7 @@ struct TextBlock {
     RectF bounding_rect(int col1, int col2, const TextBase *) const;
     size_t columns() const;
     void insert(TextCursor *, const String &);
+    void append(TextCursor *, const String &);
     void insert_empty_fragment_if_needed(TextCursor *);
     void remove_empty_fragment();
 
@@ -483,7 +484,6 @@ protected:
     bool layout_to_parent_width_ = false;
 
 private:
-    void insert(TextCursor *, char32_t code, LayoutData *ldata) const;
     String gen_text(const LayoutData *ldata, bool source_only = false) const;
 
     virtual int get_property_flags_idx(Pid id) const override;

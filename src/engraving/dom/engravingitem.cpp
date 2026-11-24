@@ -358,14 +358,6 @@ double EngravingItem::spatium() const {
 
 double EngravingItem::default_spatium() const { return style().default_spatium(); }
 
-bool EngravingItem::is_interaction_available() const {
-    if (!get_property(Pid::VISIBLE).to_bool() && !score()->is_show_invisible()) {
-        return false;
-    }
-
-    return true;
-}
-
 bool EngravingItem::offset_is_spatium_dependent() const { return size_is_spatium_dependent() || (flags_ & ElementFlag::ON_STAFF); }
 
 Sid EngravingItem::default_pos_sid() const { return Sid::NOSTYLE; }
@@ -394,8 +386,6 @@ PlacementV EngravingItem::placement() const {
 double EngravingItem::mag_s() const { return mag() * (style().spatium() / default_spatium()); }
 
 TranslatableString EngravingItem::subtype_user_name() const { return {}; }
-
-String EngravingItem::translated_subtype_user_name() const { return subtype_user_name().translated(); }
 
 EngravingItem *EngravingItem::linked_clone() {
     EngravingItem *e = clone();

@@ -237,8 +237,6 @@ public:
 
     System *system() const;
 
-    double x() const override { return ldata()->pos().x(); }
-
     void insert_staff(staff_idx_t staff);
     void remove_staff(staff_idx_t staff);
 

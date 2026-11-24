@@ -49,6 +49,8 @@ private:
 };
 
 struct TimeTickAnchor : EngravingItem {
+    DECLARE_CLASSOF(ElementType::TIME_TICK_ANCHOR)
+
 private:
     TimeTickAnchor(DummyParentOr<Segment> parent);
     friend struct Factory;

@@ -564,11 +564,15 @@ void TextBlock::insert(TextCursor *cursor, const String &s) {
             i->text.insert(ridx, s);
         }
     } else {
-        if (!fragments_.empty() && fragments_.back().format == *cursor->format()) {
-            fragments_.back().text.append(s);
-        } else {
-            fragments_.push_back(TextFragment(cursor, s));
-        }
+        append(cursor, s);
+    }
+}
+
+void TextBlock::append(TextCursor *cursor, const String &s) {
+    if (!fragments_.empty() && fragments_.back().format == *cursor->format()) {
+        fragments_.back().text.append(s);
+    } else {
+        fragments_.emplace_back(cursor, s);
     }
 }
 
@@ -837,24 +841,6 @@ TextBase::~TextBase() { delete cursor_; }
 
 Color TextBase::text_color(const rendering::PaintOptions &opt) const { return cur_color(opt); }
 
-//    insert character
-
-void TextBase::insert(TextCursor *cursor, char32_t code, LayoutData *ldata) const {
-    if (cursor->row() >= ldata->blocks.size()) {
-        ldata->blocks.push_back(TextBlock());
-    }
-    if (code == '\t') {
-        code = ' ';
-    }
-
-    if (cursor->row() < ldata->blocks.size()) {
-        ldata->blocks[cursor->row()].insert(cursor, String::from_ucs4(code));
-    }
-
-    cursor->set_column(cursor->column() + 1);
-    cursor->clear_selection();
-}
-
 static String parse_string_property(const String &s) {
     String rs;
     for (size_t i = 0; i < s.size(); ++i) {
@@ -877,9 +863,14 @@ void TextBase::create_blocks(LayoutData *ldata, bool source_only, const String *
     const String source = display_text ? *display_text : xml_text();
     // reset all previous formatting information
     ldata->blocks.clear();
+    ldata->blocks.emplace_back();
     TextCursor cursor = *cursor_;
-    cursor.set_row(0);
-    cursor.set_column(0);
+    // Parsing only writes at the end of the current block.
+    auto append_character = [&](char32_t code) {
+        auto &block = ldata->blocks.back();
+        block.remove_empty_fragment();
+        block.append(&cursor, String::from_ucs4(code == U'\t' ? U' ' : code));
+    };
 
     int state = 0;
     String token;
@@ -895,31 +886,12 @@ void TextBase::create_blocks(LayoutData *ldata, bool source_only, const String *
                 state = 2;
                 token.clear();
             } else if (c == '\n') {
-                if (ldata->rows() <= cursor.row()) {
-                    ldata->blocks.push_back(TextBlock());
+                auto &block = ldata->blocks.back();
+                if (block.fragments().empty()) {
+                    block.insert_empty_fragment_if_needed(&cursor);
                 }
-
-                if (cursor.row() < ldata->rows()) {
-                    if (ldata->blocks.at(cursor.row()).fragments().size() == 0) {
-                        ldata->blocks[cursor.row()].insert_empty_fragment_if_needed(
-                            &cursor); // used to preserve the Font size of the line (font info is held in TextFragments, see PR #5881)
-                    }
-
-                    ldata->blocks[cursor.row()].set_eol(true);
-                }
-
-                cursor.set_row(cursor.row() + 1);
-                cursor.set_column(0);
-                if (ldata->rows() <= cursor.row()) {
-                    ldata->blocks.push_back(TextBlock());
-                }
-
-                if (cursor.row() < ldata->rows()) {
-                    if (ldata->blocks.at(cursor.row()).fragments().size() == 0) {
-                        ldata->blocks[cursor.row()].insert_empty_fragment_if_needed(
-                            &cursor); // an empty fragment may be needed on either side of the newline
-                    }
-                }
+                block.set_eol(true);
+                ldata->blocks.emplace_back().insert_empty_fragment_if_needed(&cursor);
             } else {
                 if (sym_state) {
                     sym += c;
@@ -927,9 +899,9 @@ void TextBase::create_blocks(LayoutData *ldata, bool source_only, const String *
                     if (c.is_high_surrogate()) {
                         i++;
                         assert(i < source.size());
-                        insert(&cursor, Char::surrogate_to_ucs4(c, source.at(i)), ldata);
+                        append_character(Char::surrogate_to_ucs4(c, source.at(i)));
                     } else {
-                        insert(&cursor, c.unicode(), ldata);
+                        append_character(c.unicode());
                     }
                 }
             }
@@ -956,7 +928,7 @@ void TextBase::create_blocks(LayoutData *ldata, bool source_only, const String *
                             }
                         }
                         cursor.format()->set_font_family(u"ScoreText");
-                        insert(&cursor, code, ldata);
+                        append_character(code);
                         cursor.set_format(fmt); // restore format
                     } else {
                         LOGD("unknown symbol <%s>", muPrintable(sym));
@@ -969,23 +941,18 @@ void TextBase::create_blocks(LayoutData *ldata, bool source_only, const String *
             if (c == ';') {
                 state = 0;
                 if (token == "lt") {
-                    insert(&cursor, '<', ldata);
+                    append_character('<');
                 } else if (token == "gt") {
-                    insert(&cursor, '>', ldata);
+                    append_character('>');
                 } else if (token == "amp") {
-                    insert(&cursor, '&', ldata);
+                    append_character('&');
                 } else if (token == "quot") {
-                    insert(&cursor, '"', ldata);
-                } else {
-                    // TODO insert(&cursor, SymNames::symIdByName(token));
+                    append_character('"');
                 }
             } else {
                 token += c;
             }
         }
-    }
-    if (ldata->blocks.empty()) {
-        ldata->blocks.push_back(TextBlock());
     }
     ldata->layout_invalid = false;
 }

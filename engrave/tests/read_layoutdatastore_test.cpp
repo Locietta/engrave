@@ -1,5 +1,8 @@
+#include "engraving/dom/beam.h"
 #include "engraving/dom/dummyparent.h"
 #include "engraving/dom/guitarbend.h"
+#include "engraving/dom/lyrics.h"
+#include "engraving/dom/tremolotwochord.h"
 #include "engraving/rendering/score/layoutdatastore.h"
 #include "read_test_fixture.h"
 
@@ -124,6 +127,12 @@ TEST(LayoutDataStore, ClosedDispatchKeepsColdDefaultsSparseAndPreservesLegacyPay
     std::unique_ptr<MeasureRepeat> repeat(Factory::create_measure_repeat(master.dummy()));
     repeat->hack_to_rest_type();
     EXPECT_EQ(repeat->type(), ElementType::REST);
+    const EngravingObject *object = repeat.get();
+    EXPECT_EQ(item_cast<const MeasureRepeat *>(object), repeat.get());
+    EXPECT_EQ(item_cast<const Rest *>(object), repeat.get());
+    EXPECT_EQ(item_cast<const ChordRest *>(object), repeat.get());
+    EXPECT_EQ(item_cast<const MMRest *>(object, CastMode::MAYBE_BAD), nullptr);
+    EXPECT_EQ(item_cast<const TextBase *>(object, CastMode::MAYBE_BAD), nullptr);
     EXPECT_FALSE(repeat->has_layout_data());
     EXPECT_TRUE(repeat->ldata()->number_sym.empty());
     auto *payload = repeat->mutldata();
@@ -131,6 +140,7 @@ TEST(LayoutDataStore, ClosedDispatchKeepsColdDefaultsSparseAndPreservesLegacyPay
     EXPECT_EQ(payload->number_sym.size(), 2u);
     EXPECT_EQ(store.find(*repeat), payload);
     std::unique_ptr<Rest> slice(Factory::copy_rest(*repeat));
+    EXPECT_EQ(item_cast<const MeasureRepeat *>(static_cast<const EngravingObject *>(slice.get()), CastMode::MAYBE_BAD), nullptr);
     EXPECT_FALSE(slice->has_layout_data());
     EXPECT_EQ(slice->ldata()->sym.value(), SymId::REST_QUARTER);
     std::unique_ptr<MMRest> mm_rest(Factory::create_mm_rest(master.dummy()));
@@ -139,6 +149,35 @@ TEST(LayoutDataStore, ClosedDispatchKeepsColdDefaultsSparseAndPreservesLegacyPay
     mm_slice->hack_to_rest_type();
     EXPECT_FALSE(mm_slice->has_layout_data());
     EXPECT_EQ(mm_rest->ldata()->rest_width.value(), 4.5);
+
+    std::unique_ptr<PartialLyricsLine> partial(Factory::create_partial_lyrics_line(master.dummy()));
+    EXPECT_EQ(item_cast<const PartialLyricsLine *>(static_cast<const EngravingObject *>(partial.get())), partial.get());
+    std::unique_ptr<LyricsLine> lyrics_slice(Factory::copy_lyrics_line(*partial));
+    EXPECT_EQ(item_cast<const LyricsLine *>(static_cast<const EngravingObject *>(lyrics_slice.get())), lyrics_slice.get());
+    EXPECT_EQ(item_cast<const PartialLyricsLine *>(static_cast<const EngravingObject *>(lyrics_slice.get()), CastMode::MAYBE_BAD), nullptr);
+
+    std::unique_ptr<Beam> beam(Factory::create_beam(&master));
+    std::unique_ptr<TremoloTwoChord> tremolo(Factory::create_tremolo_two_chord(master.dummy()));
+    EXPECT_EQ(item_cast<const BeamBase *>(static_cast<const EngravingItem *>(beam.get())), beam.get());
+    EXPECT_EQ(item_cast<const BeamBase *>(static_cast<const EngravingItem *>(tremolo.get())), tremolo.get());
+    EXPECT_EQ(item_cast<const BeamBase *>(static_cast<const EngravingItem *>(slice.get()), CastMode::MAYBE_BAD), nullptr);
+}
+
+TEST(LayoutDataStore, ItemCoordinatesKeepSegmentOffsetSemantics) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto *measure = master_of(**opened).first_measure();
+    std::unique_ptr<Segment> segment(Factory::create_segment(measure, SegmentType::CHORD_REST, Fraction(0, 1)));
+    std::unique_ptr<Chord> chord(Factory::create_chord(segment.get()));
+    for (EngravingItem *item : std::array<EngravingItem *, 2>{segment.get(), chord.get()}) {
+        item->set_pos(2.0, 3.0);
+        item->set_offset(muse::PointF(5.0, 7.0));
+        EXPECT_EQ(item->pos(), muse::PointF(7.0, 10.0));
+        EXPECT_EQ(item->y(), 10.0);
+    }
+    EXPECT_EQ(static_cast<EngravingItem *>(segment.get())->x(), 2.0);
+    EXPECT_EQ(chord->x(), 7.0);
 }
 
 TEST(LayoutDataStore, StablePayloadsAndNonAllocatingTypedReads) {

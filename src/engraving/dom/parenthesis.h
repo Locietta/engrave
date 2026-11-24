@@ -25,6 +25,8 @@
 
 namespace mu::engraving {
 struct Parenthesis : EngravingItem {
+    DECLARE_CLASSOF(ElementType::PARENTHESIS)
+
 private:
     M_PROPERTY2(DirectionH, direction, set_direction, DirectionH::LEFT)
 

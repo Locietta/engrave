@@ -110,6 +110,44 @@ TEST(Read, SourceTextResetPreservesCharactersWithoutLayout) {
     }
 }
 
+TEST(Read, LongSourceTextPreservesFormattedBlocks) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(as_bytes(formatted_text_fixture()), {.format = engrave::Format::MSCX});
+    ASSERT_TRUE(opened);
+    auto *text = staff_text_of(master_of(**opened));
+    ASSERT_NE(text, nullptr);
+
+    const muse::String long_run(std::u16string(65'536, u'x'));
+    const muse::String markup = u"<b>" + long_run + u"&lt;\U0001D11E</b>\n\n<i>tail</i><sym>accidentalSharp</sym>";
+    text->set_xml_text(markup);
+    TextBase::LayoutData data;
+    const auto start = std::chrono::steady_clock::now();
+    text->create_blocks(&data, true);
+    const auto plain = text->plain_text();
+    const auto elapsed = std::chrono::steady_clock::now() - start;
+    RecordProperty("parse_and_read_ms", std::chrono::duration<double, std::milli>(elapsed).count());
+    EXPECT_LT(elapsed, std::chrono::seconds(1));
+
+    EXPECT_EQ(text->xml_text(), markup);
+    EXPECT_EQ(plain, long_run + u"<\U0001D11E\n\ntail\uE262");
+    ASSERT_EQ(data.rows(), 3u);
+    EXPECT_TRUE(data.blocks[0].eol());
+    ASSERT_EQ(data.blocks[0].fragments().size(), 1u);
+    const auto &first = data.blocks[0].fragments().front();
+    EXPECT_EQ(first.text, long_run + u"<\U0001D11E");
+    EXPECT_EQ(data.blocks[0].columns(), 65'538u);
+    EXPECT_TRUE(first.format.bold());
+    EXPECT_TRUE(data.blocks[1].eol());
+    ASSERT_EQ(data.blocks[1].fragments().size(), 1u);
+    EXPECT_TRUE(data.blocks[1].fragments().front().text.is_empty());
+    EXPECT_FALSE(data.blocks[1].fragments().front().format.bold());
+    EXPECT_FALSE(data.blocks[2].eol());
+    ASSERT_EQ(data.blocks[2].fragments().size(), 2u);
+    EXPECT_EQ(data.blocks[2].fragments().front().text, u"tail");
+    EXPECT_TRUE(data.blocks[2].fragments().front().format.italic());
+    EXPECT_EQ(data.blocks[2].fragments().back().format.font_family(), u"ScoreText");
+}
+
 TEST(Read, SourceTextFormattingReadsAgreeBeforeAndAfterRender) {
     using namespace mu::engraving;
     auto source = formatted_text_fixture();

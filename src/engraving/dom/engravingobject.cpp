@@ -52,7 +52,7 @@ const ElementStyle &EngravingObject::empty_style() {
     return style;
 }
 
-EngravingObject::EngravingObject(const ElementType &type, EngravingObject *parent) : type_(type) {
+EngravingObject::EngravingObject(const ElementType &type, EngravingObject *parent) : type_(type), concrete_type_(type) {
     IF_ASSERT_FAILED(this != parent) { return; }
 
     if (type != ElementType::SCORE) {
@@ -67,8 +67,7 @@ EngravingObject::EngravingObject(const ElementType &type, EngravingObject *paren
     }
 }
 
-EngravingObject::EngravingObject(const EngravingObject &se) {
-    type_ = se.type_;
+EngravingObject::EngravingObject(const EngravingObject &se) : type_(se.type_), concrete_type_(se.concrete_type_) {
     do_set_parent(se.parent_);
     score_ = se.score_;
     element_style_ = se.styled_properties();
@@ -684,8 +683,6 @@ void EngravingObject::style_changed() {
 const char *EngravingObject::type_name() const { return TConv::to_xml(type()).ascii(); }
 
 TranslatableString EngravingObject::type_user_name() const { return TConv::capitalized_user_name(type()); }
-
-String EngravingObject::translated_type_user_name() const { return type_user_name().translated(); }
 
 EID EngravingObject::eid() const { return master_score()->eid_register()->eid_from_item(this); }
 
