@@ -1684,11 +1684,11 @@ TEST(LiveEdit, MarkingsAndLinesUseTheRequestedOnsetAndTrack) {
     EXPECT_EQ(chord->articulations().size(), 1u);
     const auto *segment = chord->segment();
     EXPECT_EQ(segment->element(1), nullptr);
-    for (const auto type : {"Dynamic", "Fermata", "Harmony", "StaffText", "Tempo", "Expression"}) {
+    for (const std::string_view type : {"Dynamic", "Fermata", "Harmony", "StaffText", "Tempo", "Expression"}) {
         const auto items = segment->annotations();
         const auto found = std::ranges::find_if(items, [&](const auto *item) { return item->type_name() == type; });
         ASSERT_NE(found, items.end()) << type;
-        EXPECT_EQ((*found)->track(), std::string_view(type) == "Dynamic" ? 1u : 0u);
+        EXPECT_EQ((*found)->track(), type == "Dynamic" ? 1u : 0u);
     }
     const auto lines = score.spanner_list();
     ASSERT_EQ(lines.size(), 4u);
