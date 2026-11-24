@@ -2,7 +2,7 @@
 
 `engrave` is a native, headless C++ score engine library providing core music notation, layout, engraving, rendering, import/export, and audio synthesis capabilities. It is built with [Bazel](https://bazel.build/) and a hermetic Clang/libc++ (`xclang`) toolchain.
 
-The library serves as the core engraving and playback engine for the [`engrave-mcp`](https://github.com/Locietta/engrave-mcp) Model Context Protocol (MCP) host.
+The library serves as the core engraving and playback engine for the [`engrave-mcp`](https://github.com/engrave-music/engrave-mcp) Model Context Protocol (MCP) host.
 
 ## Relationship to MuseScore
 
