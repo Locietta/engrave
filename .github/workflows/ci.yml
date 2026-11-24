@@ -39,12 +39,13 @@ jobs:
           python -m pip install -r tests/requirements.txt
           python -m pip install -e .
 
-      - name: Asset installer, PID generator, and Bazel MCP checks
+      - name: Asset installer, PID generator, cache pruning, and Bazel MCP checks
         run: |
           python tools/test_install_assets.py
           python tools/test_gen_pid_support.py
           python tools/gen_pid_support.py --check
           python tools/test_bazel_server_mcp.py
+          python tools/test_prune_bazel_cache.py
 
       - name: Golden comparator and inventory mutations
         run: python tests/test_inventory.py
@@ -82,6 +83,13 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Free runner disk space
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+          df -h /
+
       - name: Install Linux runtime fonts
         if: runner.os == 'Linux'
         run: |
@@ -115,11 +123,12 @@ jobs:
           restore-keys: bazel-repo-${{ matrix.name }}-
 
       - name: Restore Bazel disk cache
+        id: disk-cache
         uses: actions/cache/restore@v6
         with:
           path: ${{ env.DISK_CACHE }}
-          key: bazel-disk-${{ matrix.name }}-${{ github.sha }}
-          restore-keys: bazel-disk-${{ matrix.name }}-
+          key: bazel-disk-${{ matrix.name }}-${{ hashFiles('bazel/engrave.bazelrc') }}-${{ github.sha }}
+          restore-keys: bazel-disk-${{ matrix.name }}-${{ hashFiles('bazel/engrave.bazelrc') }}-
 
       - name: Build unit-test targets
         id: build
@@ -156,12 +165,17 @@ jobs:
           path: ${{ env.REPO_CACHE }}
           key: bazel-repo-${{ matrix.name }}-${{ hashFiles('.bazelversion', 'MODULE.bazel', 'bazel/deps.bzl') }}
 
+      - name: Prune Bazel disk cache
+        id: prune-disk-cache
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.disk-cache.outputs.cache-hit != 'true' }}
+        run: python tools/prune_bazel_cache.py --disk-cache $env:DISK_CACHE --max-size-mb 2048 --shutdown
+
       - name: Save Bazel disk cache
-        if: ${{ !cancelled() && steps.build.outcome != 'skipped' }}
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.prune-disk-cache.outcome == 'success' && steps.disk-cache.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v6
         with:
           path: ${{ env.DISK_CACHE }}
-          key: bazel-disk-${{ matrix.name }}-${{ github.sha }}
+          key: bazel-disk-${{ matrix.name }}-${{ hashFiles('bazel/engrave.bazelrc') }}-${{ github.sha }}
 
       - name: Install runtime assets and verify the manifest
         run: |
@@ -239,6 +253,11 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Free runner disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+          df -h /
+
       - name: Install Linux runtime fonts
         run: |
           sudo apt-get update
@@ -270,11 +289,12 @@ jobs:
           restore-keys: bazel-repo-linux-xclang-
 
       - name: Restore sanitized Bazel disk cache
+        id: disk-cache
         uses: actions/cache/restore@v6
         with:
           path: ${{ env.DISK_CACHE }}
-          key: bazel-disk-linux-sanitize-${{ github.sha }}
-          restore-keys: bazel-disk-linux-sanitize-
+          key: bazel-disk-linux-sanitize-${{ hashFiles('bazel/engrave.bazelrc') }}-${{ github.sha }}
+          restore-keys: bazel-disk-linux-sanitize-${{ hashFiles('bazel/engrave.bazelrc') }}-
 
       - name: Build sanitized engine tests and probes
         id: build
@@ -290,6 +310,25 @@ jobs:
             --output_groups=+runtime_dynamic_libraries --build_event_json_file="$bep" \
             //:engrave_core_tests //:engraving_playback_tests //:mpe_tests //:engrave_output_probe //:semantic_dump
           python -c "import sys; from pathlib import Path; sys.path.insert(0, 'tests'); from gate import _stage_bep_outputs; _stage_bep_outputs(Path(sys.argv[1]), Path(sys.argv[2]))" "$bep" "$BUILD_DIR"
+
+      - name: Save Bazel repository cache
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.repo-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ env.REPO_CACHE }}
+          key: bazel-repo-linux-xclang-${{ hashFiles('.bazelversion', 'MODULE.bazel', 'bazel/deps.bzl') }}
+
+      - name: Prune sanitized Bazel disk cache
+        id: prune-disk-cache
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.disk-cache.outputs.cache-hit != 'true' }}
+        run: python tools/prune_bazel_cache.py --disk-cache "$DISK_CACHE" --max-size-mb 2560 --shutdown
+
+      - name: Save sanitized Bazel disk cache
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.prune-disk-cache.outcome == 'success' && steps.disk-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ env.DISK_CACHE }}
+          key: bazel-disk-linux-sanitize-${{ hashFiles('bazel/engrave.bazelrc') }}-${{ github.sha }}
 
       - name: Install runtime assets
         run: python tools/install_assets.py "$RUNNER_TEMP/assets"
@@ -318,17 +357,3 @@ jobs:
           python tests/gate.py --no-audio --goldens-only --skip-build --profile sanitize
           --build-dir "$BUILD_DIR" --assets "$RUNNER_TEMP/assets"
           --output "$RUNNER_TEMP/sanitized-goldens" -J 4
-
-      - name: Save Bazel repository cache
-        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.repo-cache.outputs.cache-hit != 'true' }}
-        uses: actions/cache/save@v6
-        with:
-          path: ${{ env.REPO_CACHE }}
-          key: bazel-repo-linux-xclang-${{ hashFiles('.bazelversion', 'MODULE.bazel', 'bazel/deps.bzl') }}
-
-      - name: Save sanitized Bazel disk cache
-        if: ${{ !cancelled() && steps.build.outcome != 'skipped' }}
-        uses: actions/cache/save@v6
-        with:
-          path: ${{ env.DISK_CACHE }}
-          key: bazel-disk-linux-sanitize-${{ github.sha }}
