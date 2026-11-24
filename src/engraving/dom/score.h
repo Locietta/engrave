@@ -716,7 +716,7 @@ public:
 
     void set_page_number_offset(int v) { page_number_offset_ = v; }
 
-    String mscore_version() const { return mscore_version_; }
+    const String &mscore_version() const { return mscore_version_; }
 
     int mscore_revision() const { return mscore_revision_; }
 

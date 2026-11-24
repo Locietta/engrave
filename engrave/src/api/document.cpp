@@ -4,6 +4,7 @@
 #include <format>
 #include <iterator>
 #include <limits>
+#include <span>
 
 #include "engrave/src/api/handles.h"
 #include "engrave/src/api/state.h"
@@ -15,7 +16,7 @@
 #include "engraving/engravingproject.h"
 #include "engraving/rendering/score/layoutdatastore.h"
 #include "engraving/rendering/score/scorerenderer.h"
-#include "global/io/buffer.h"
+#include "global/io/byteview.h"
 #include "global/io/writebudget.h"
 #include "global/serialization/zipreader.h"
 
@@ -127,65 +128,96 @@ Document::~Document() {
     EngineState::release(std::move(engine));
 }
 
-Result<Document::Impl::Snapshot> Document::Impl::capture_snapshot() const try {
-    auto &master = *project->master_score();
-    Snapshot snapshot;
-    auto exported = music::export_native_score(*engine->context, project, "mscz",
-                                               music::ExportOptions{.transaction_snapshot = true, .compress = false});
-    if (!exported) return std::unexpected(Error{ErrorCode::IO, std::format("cannot capture the snapshot: {}", exported.error().message)});
-    snapshot.bytes = *std::move(exported);
-    // Restore reads each snapshot entry at most once, so the central directory
-    // bounds its decompression budget without inflating any entry.
-    auto buffer = muse::io::Buffer::opened(muse::io::IODevice::READ_ONLY, muse::ByteArray(snapshot.bytes.data(), snapshot.bytes.size()));
-    muse::ZipReader zip(&buffer);
-    if (zip.file_info_list().empty() || zip.has_error())
-        return std::unexpected(Error{ErrorCode::RESOURCE_LIMIT, "the snapshot exceeds the native ZIP reader limits"});
-    snapshot.runtime_tempo = master.runtime_tempo_state();
-    snapshot.source_revision = master.source_revision();
-    snapshot.saved_revision = master.saved_revision();
-    snapshot.revision = revision;
-    for (const auto *score : master.score_list())
-        snapshot.versions.push_back({score->mscore_version().to_std_u16_string(), score->mscore_revision(), score->msc_version()});
-    return snapshot;
-} catch (const std::exception &error) {
-    return std::unexpected(Error{ErrorCode::IO, std::format("cannot capture the snapshot: {}", error.what())});
+Result<Document::Impl::Snapshot> Document::Impl::capture_snapshot(const std::function<bool()> &cancelled, std::size_t byte_limit,
+                                                                  std::optional<std::size_t> checkpoint_name_size) const {
+    muse::io::WriteBudget budget;
+    const auto poll = [&]() -> bool { return cancelled(); };
+    if (cancelled) budget.cancelled = muse::FnRef<bool() const>(poll);
+    muse::io::WriteBudgetScope scope(budget);
+    const auto stopped = [&]() -> std::unexpected<Error> {
+        if (budget.failure == muse::io::WriteBudget::Failure::CANCELLED)
+            return std::unexpected(Error{ErrorCode::CANCELLED, "snapshot capture cancelled"});
+        return std::unexpected(Error{ErrorCode::RESOURCE_LIMIT, "snapshot capture byte limit exceeded"});
+    };
+    try {
+        if (!budget.poll()) return stopped();
+        auto &master = *project->master_score();
+        auto remaining = byte_limit;
+        const auto reserve = [&](std::size_t count, std::size_t width = 1) {
+            if (count > remaining / width) return false;
+            remaining -= count * width;
+            return true;
+        };
+        if (!reserve(checkpoint_name_size ? sizeof(Checkpoint) : sizeof(Snapshot)) || !reserve(1) ||
+            (checkpoint_name_size && (!reserve(*checkpoint_name_size) || !reserve(1))))
+            return stopped();
+        if (const auto *timeline = master.tempo_timeline_override()) {
+            constexpr auto pause_bytes = sizeof(mu::engraving::PausesMap::value_type) + 4 * sizeof(void *);
+            if (!reserve(timeline->points().size(), sizeof(mu::engraving::TempoTimePoint)) ||
+                !reserve(timeline->pauses().size(), pause_bytes))
+                return stopped();
+        }
+        const auto scores = master.score_list();
+        if (!reserve(scores.size(), sizeof(Snapshot::Versions))) return stopped();
+        for (const auto *score : scores) {
+            if (!budget.poll() || !reserve(score->mscore_version().size(), sizeof(char16_t)) || !reserve(1, sizeof(char16_t)))
+                return stopped();
+        }
+        budget.output = remaining;
+        budget.archive_entry = std::min<std::size_t>(remaining, max_uncompressed_file_bytes);
+        // XML escaping and temporary entry buffers also consume working memory.
+        budget.working = 16 * static_cast<std::uint64_t>(remaining);
+        Snapshot snapshot;
+        auto exported = music::export_native_score(*engine->context, project, "mscz",
+                                                   music::ExportOptions{.transaction_snapshot = true, .compress = false});
+        if (!budget.poll()) return stopped();
+        if (!exported)
+            return std::unexpected(Error{ErrorCode::IO, std::format("cannot capture the snapshot: {}", exported.error().message)});
+        snapshot.bytes = *std::move(exported);
+        // Restore reads each snapshot entry at most once, so the central directory
+        // bounds its decompression budget without inflating any entry.
+        muse::io::ByteView buffer(std::span(reinterpret_cast<const std::uint8_t *>(snapshot.bytes.data()), snapshot.bytes.size()));
+        buffer.open(muse::io::IODevice::READ_ONLY);
+        muse::ZipReader zip(&buffer);
+        if (zip.file_info_list().empty() || zip.has_error())
+            return std::unexpected(Error{ErrorCode::RESOURCE_LIMIT, "the snapshot exceeds the native ZIP reader limits"});
+        if (!budget.poll()) return stopped();
+        snapshot.runtime_tempo = master.runtime_tempo_state();
+        snapshot.source_revision = master.source_revision();
+        snapshot.saved_revision = master.saved_revision();
+        snapshot.revision = revision;
+        snapshot.versions.reserve(scores.size());
+        for (const auto *score : scores) {
+            if (!budget.poll()) return stopped();
+            snapshot.versions.push_back({score->mscore_version().to_std_u16_string(), score->mscore_revision(), score->msc_version()});
+        }
+        snapshot.byte_count = byte_limit - remaining + snapshot.bytes.size();
+        if (!budget.poll()) return stopped();
+        return snapshot;
+    } catch (const muse::io::WriteBudgetStop &) {
+        return stopped();
+    } catch (const std::exception &error) {
+        if (budget.failure != muse::io::WriteBudget::Failure::NONE) return stopped();
+        return std::unexpected(Error{ErrorCode::IO, std::format("cannot capture the snapshot: {}", error.what())});
+    }
 }
 
-Result<void> Document::checkpoint(std::string_view name) {
+Result<void> Document::checkpoint(std::string_view name, std::function<bool()> cancelled) {
     impl_->engine->check_thread();
     if (impl_->poisoned)
         return std::unexpected(Error{.code = ErrorCode::POISONED,
                                      .message = "restore_checkpoint or reopen the document before taking a checkpoint",
                                      .poisoned = true});
-    auto captured = impl_->capture_snapshot();
-    if (!captured) return std::unexpected(captured.error());
-    Impl::Checkpoint saved{.name = std::string(name), .snapshot = std::move(*captured)};
-    const auto &snapshot = saved.snapshot;
-    const auto charge = [&](std::size_t bytes) {
-        if (bytes > impl_->checkpoint_byte_limit - saved.byte_count) return false;
-        saved.byte_count += bytes;
-        return true;
-    };
-    if (!charge(sizeof(saved)) || !charge(saved.name.capacity() + 1) || !charge(snapshot.bytes.capacity() + 1) ||
-        !charge(snapshot.versions.capacity() * sizeof(Impl::Snapshot::Versions)))
-        return std::unexpected(Error{ErrorCode::RESOURCE_LIMIT, "checkpoint byte limit exceeded"});
-    for (const auto &versions : snapshot.versions)
-        if (!charge((versions.version.capacity() + 1) * sizeof(char16_t)))
-            return std::unexpected(Error{ErrorCode::RESOURCE_LIMIT, "checkpoint byte limit exceeded"});
-    if (const auto &timeline = snapshot.runtime_tempo.override_timeline) {
-        // A pause node holds its value, three links, and alignment/color storage.
-        constexpr auto pause_bytes = sizeof(mu::engraving::PausesMap::value_type) + 4 * sizeof(void *);
-        if (!charge(timeline->points().capacity() * sizeof(mu::engraving::TempoTimePoint)) ||
-            !charge(timeline->pauses().size() * pause_bytes))
-            return std::unexpected(Error{ErrorCode::RESOURCE_LIMIT, "checkpoint byte limit exceeded"});
-    }
-    std::size_t total = saved.byte_count;
+    auto available = impl_->checkpoint_byte_limit;
     for (const auto &entry : impl_->checkpoints) {
         if (entry.name == name) continue;
-        if (entry.byte_count > impl_->checkpoint_byte_limit - total)
-            return std::unexpected(Error{ErrorCode::RESOURCE_LIMIT, "checkpoint byte limit exceeded"});
-        total += entry.byte_count;
+        if (entry.byte_count > available) return std::unexpected(Error{ErrorCode::RESOURCE_LIMIT, "checkpoint byte limit exceeded"});
+        available -= entry.byte_count;
     }
+    auto captured = impl_->capture_snapshot(cancelled, available, name.size());
+    if (!captured) return std::unexpected(captured.error());
+    const auto byte_count = captured->byte_count;
+    Impl::Checkpoint saved{.name = std::string(name), .snapshot = std::move(*captured), .byte_count = byte_count};
     auto found = std::ranges::find(impl_->checkpoints, name, &Impl::Checkpoint::name);
     if (found == impl_->checkpoints.end())
         impl_->checkpoints.push_back(std::move(saved));

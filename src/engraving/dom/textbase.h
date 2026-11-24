@@ -265,6 +265,7 @@ public:
 
     void check_custom_formatting(const String &);
     String xml_text() const;
+    const String &xml_text(String &generated) const;
     String plain_text() const;
     void reset_formatting();
 

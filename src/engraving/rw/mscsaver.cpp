@@ -27,6 +27,7 @@
 #include "engraving/automation/internal/automationrw.h"
 #include "global/io/buffer.h"
 #include "global/io/path.h"
+#include "global/io/writebudget.h"
 #include "inoutdata.h"
 #include "log.h"
 #include "rwregister.h"
@@ -37,6 +38,17 @@ using namespace muse::io;
 using namespace mu::engraving;
 using namespace mu::engraving::rw;
 
+namespace {
+struct EntryBuffer final : Buffer {
+    EntryBuffer(OpenMode mode, ByteArray &data) : Buffer(&data) { open(mode); }
+protected:
+    bool resize_data(size_t size) override {
+        if (active_write_budget && !active_write_budget->entry_size(size)) return false;
+        return Buffer::resize_data(size);
+    }
+};
+} // namespace
+
 bool MscSaver::write_mscz(MasterScore *score, MscWriter &msc_writer, const write::WriteContext *ctx) {
 
     IF_ASSERT_FAILED(msc_writer.is_opened()) { return false; }
@@ -46,7 +58,7 @@ bool MscSaver::write_mscz(MasterScore *score, MscWriter &msc_writer, const write
         //! NOTE The style is writing to a separate file only for the master score.
         //! At the moment, the style for the parts is still writing to the score file.
         ByteArray style_data;
-        auto style_buf = Buffer::opened(IODevice::WRITE_ONLY, &style_data);
+        EntryBuffer style_buf(IODevice::WRITE_ONLY, style_data);
         score->style().write(&style_buf);
         msc_writer.write_style_file(style_data);
     }
@@ -60,7 +72,7 @@ bool MscSaver::write_mscz(MasterScore *score, MscWriter &msc_writer, const write
     // Write MasterScore
     {
         ByteArray score_data;
-        auto score_buf = Buffer::opened(IODevice::READ_WRITE, &score_data);
+        EntryBuffer score_buf(IODevice::READ_WRITE, score_data);
 
         RWRegister::writer()->write_score(score, &score_buf, &master_write_out_data);
 
@@ -85,11 +97,11 @@ bool MscSaver::write_mscz(MasterScore *score, MscWriter &msc_writer, const write
                 ExcerptData data;
                 data.file_name = String(u"%1_%2").arg(String::number(excerpt_index), escape_file_name(excerpt->name()).to_string());
 
-                auto style_buf = Buffer::opened(IODevice::WRITE_ONLY, &data.style_data);
+                EntryBuffer style_buf(IODevice::WRITE_ONLY, data.style_data);
                 part_score->style().write(&style_buf);
 
                 WriteInOutData write_out_data = master_write_out_data;
-                auto score_buf = Buffer::opened(IODevice::READ_WRITE, &data.score_data);
+                EntryBuffer score_buf(IODevice::READ_WRITE, data.score_data);
                 RWRegister::writer()->write_score(part_score, &score_buf, &write_out_data);
 
                 return data;
@@ -110,7 +122,7 @@ bool MscSaver::write_mscz(MasterScore *score, MscWriter &msc_writer, const write
         ChordList *chord_list = score->chord_list();
         if (chord_list->custom_chord_list() && !chord_list->empty()) {
             ByteArray chl_data;
-            auto chl_buf = Buffer::opened(IODevice::WRITE_ONLY, &chl_data);
+            EntryBuffer chl_buf(IODevice::WRITE_ONLY, chl_data);
             chord_list->write(&chl_buf);
             msc_writer.write_chord_list_file(chl_data);
         }

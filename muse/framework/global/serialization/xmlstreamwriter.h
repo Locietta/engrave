@@ -33,6 +33,8 @@ namespace muse {
 struct TextStream;
 
 struct XmlStreamWriter {
+    inline static thread_local bool indent = true;
+
     XmlStreamWriter();
     explicit XmlStreamWriter(io::IODevice *dev);
     virtual ~XmlStreamWriter();
@@ -68,9 +70,11 @@ protected:
     void start_element_raw(const String &name);
     void element_raw(const String &name_with_attributes, const Value &body);
     void element_string_raw(const String &name_with_attributes, const String &body);
+    void element_text_raw(const String &name, std::u16string_view body, bool line_breaks);
 
 private:
 
+    void write_escaped(std::string_view value);
     void write_value(const Value &v);
 
     struct Impl;

@@ -30,6 +30,7 @@
 
 #include "engraving/automation/automationdata.h"
 #include "engraving/dom/mscore.h"
+#include "global/io/writebudget.h"
 #include "global/log.h"
 #include "global/serialization/json_fields.h"
 
@@ -253,13 +254,24 @@ void AutomationRW::read(AutomationData &data, const muse::ByteArray &bytes) {
 }
 
 muse::ByteArray AutomationRW::write(const AutomationData &data, bool write_generated) {
+    auto *budget = muse::io::active_write_budget;
+    if (budget && !budget->archive_entry) budget = nullptr;
+    // Each point can materialize four fixed decimals of up to 320 bytes,
+    // plus its container and the formatted JSON representation.
+    constexpr std::uint64_t point_workspace = 2 * sizeof(Point) + 8 * 320 + 256;
     std::vector<Curve> curves;
     for (const auto &[key, curve] : data.curves()) {
         IF_ASSERT_FAILED(key.is_valid()) { continue; }
 
+        if (budget && !budget->charge(2 * sizeof(Curve))) throw muse::io::WriteBudgetStop{};
         Curve entry = write_key(key);
         for (const auto &[tick, point] : curve) {
-            if (write_generated || !point.generated) entry.points.push_back(write_point(tick, point));
+            if (write_generated || !point.generated) {
+                if (budget && !budget->charge(point_workspace)) throw muse::io::WriteBudgetStop{};
+                entry.points.push_back(write_point(tick, point));
+            } else if (budget && !budget->poll()) {
+                throw muse::io::WriteBudgetStop{};
+            }
         }
         if (!entry.points.empty()) curves.push_back(std::move(entry));
     }

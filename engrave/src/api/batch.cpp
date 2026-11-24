@@ -12,6 +12,7 @@
 #include "engrave/src/api/handles.h"
 #include "engrave/src/api/state.h"
 #include "engrave/src/runtime/score_io.h"
+#include "engraving/dom/chord.h"
 #include "engraving/dom/chordrest.h"
 #include "engraving/dom/engravingobject.h"
 #include "engraving/dom/masterscore.h"
@@ -40,8 +41,10 @@ Result<EditResult> Document::edit(const Batch &batch, const EditOptions &options
         if (auto admitted = guard.admit(options.expected_revision); !admitted) return std::unexpected(admitted.error());
         auto steps = guard.prepare_batch(batch);
         if (!steps) return std::unexpected(steps.error());
-        if (options.mode == EditMode::Atomic && !steps->empty()) {
-            auto captured = impl_->capture_snapshot();
+        if (steps->empty()) {
+            if (options.cancelled && options.cancelled()) return std::unexpected(Error{ErrorCode::CANCELLED, "edit cancelled"});
+        } else if (options.mode == EditMode::Atomic) {
+            auto captured = impl_->capture_snapshot(options.cancelled);
             if (!captured) return std::unexpected(captured.error());
             rollback.emplace(std::move(*captured));
         }
@@ -92,6 +95,76 @@ std::unexpected<Error> fail(ErrorCode code, std::string message, std::optional<s
 bool engine_failed() { return MScore::error != MsError::MS_NO_ERROR && !MScore::error_is_warning; }
 
 bool engine_warned() { return MScore::error != MsError::MS_NO_ERROR && MScore::error_is_warning; }
+
+// Entries in disjoint spans of measure rests read the edited rhythm directly.
+// In an unlinked score with no spanning dependencies, accidental repair and
+// ID publication can wait for commit.
+bool can_defer_note_entry(const MasterScore &master, const Batch &batch) {
+    if (batch.ops.size() < 2 || !master.excerpts().empty() || !master.spanner_map().map().empty() || (batch.scope && batch.scope->excerpt))
+        return false;
+    const auto &state = master.normalize_state;
+    if (state.dirty || state.rebuild_midi_mapping || !state.includes_hidden_staves || master.need_update_ticks_and_time_sig_map())
+        return false;
+    for (const auto &op : batch.ops) {
+        const auto *entry = std::get_if<EnterNotes>(&op);
+        if (!entry || !std::holds_alternative<RelativePosition>(entry->at) || entry->pitches.size() != 1) return false;
+    }
+    for (const auto *staff : master.staves())
+        if (staff->links()) return false;
+
+    std::vector<const mu::engraving::Measure *> measures;
+    for (auto *measure = master.first_measure(); measure; measure = measure->next_measure()) {
+        if (measure->repeat_start() || measure->repeat_end()) return false;
+        measures.push_back(measure);
+        for (const auto &segment : measure->segments()) {
+            if (!segment.is_chord_rest_type()) continue;
+            for (const auto *item : segment.elist()) {
+                if (!item) continue;
+                if (!item->is_rest() && !item->is_chord()) return false;
+                const auto *rhythm = mu::engraving::to_chord_rest(item);
+                if (rhythm->tuplet() || !rhythm->lyrics().empty() || rhythm->staff_move() || rhythm->stored_staff_move()) return false;
+                if (!item->is_chord()) continue;
+                const auto *chord = mu::engraving::to_chord(item);
+                if (chord->tremolo_two_chord() || !chord->grace_notes().empty()) return false;
+                for (const auto *note : chord->notes())
+                    if (note->tie_for() || note->tie_back() || !note->spanner_for().empty() || !note->spanner_back().empty()) return false;
+            }
+        }
+    }
+
+    struct EntrySpan {
+        int staff;
+        mu::engraving::Fraction begin;
+        mu::engraving::Fraction end;
+    };
+
+    std::vector<EntrySpan> spans;
+    spans.reserve(batch.ops.size());
+    for (const auto &op : batch.ops) {
+        const auto &entry = std::get<EnterNotes>(op);
+        const auto &at = std::get<RelativePosition>(entry.at);
+        if (static_cast<std::size_t>(at.measure.index) >= measures.size() || static_cast<std::size_t>(at.staff) >= master.nstaves() ||
+            at.voice != 0)
+            return false;
+        const auto *measure = measures[at.measure.index];
+        const auto offset = to_reduced_engine_fraction(at.offset);
+        const auto length = to_reduced_engine_fraction(entry.duration);
+        if (!offset || !length || *offset + *length > measure->ticks()) return false;
+        const auto duration = mu::engraving::TDuration(*length, true);
+        if (!duration.is_valid() || duration.is_measure() || duration.fraction() != *length) return false;
+        const auto *staff = master.staff(at.staff);
+        const auto start = measure->tick() + *offset;
+        if (staff->time_stretch(start) != mu::engraving::Fraction(1, 1)) return false;
+        const auto track = mu::engraving::staff2track(at.staff, 0);
+        const auto *rest = measure->find_chord_rest(measure->tick(), track);
+        if (!rest || !rest->is_rest() || !rest->is_full_measure_rest() || rest->end_tick() < start + *length) return false;
+        spans.push_back({at.staff, start, start + *length});
+    }
+    std::ranges::sort(spans, {}, [](const EntrySpan &span) { return std::pair(span.staff, span.begin); });
+    for (std::size_t i = 1; i < spans.size(); ++i)
+        if (spans[i - 1].staff == spans[i].staff && spans[i - 1].end > spans[i].begin) return false;
+    return true;
+}
 
 std::string id_text(const EngravingObject &object) { return object.eid().is_valid() ? to_string(from_engine(object.eid())) : "(no id)"; }
 
@@ -434,6 +507,7 @@ Result<std::vector<Step>> BatchGuard::prepare_batch(const Batch &batch) {
         }
         steps.push_back(std::move(*step));
     }
+    defer_note_entry_ = can_defer_note_entry(context_.master(), batch);
     return steps;
 }
 
@@ -491,7 +565,10 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, EditMode mode) {
         master.start_cmd(muse::TranslatableString::untranslatable("engrave edit"));
         for (std::size_t i = 0; i < steps.size(); ++i) {
             context_.op_ = i;
-            context_.prepare_semantics();
+            if (!defer_note_entry_ || master.need_update_ticks_and_time_sig_map()) {
+                context_.prepare_semantics();
+                defer_note_entry_ = false;
+            }
             const auto marking = master.cmd_state().mutation_count;
             try {
                 if (context_.scope_) {

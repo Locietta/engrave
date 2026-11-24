@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string_view>
@@ -26,6 +27,9 @@ enum class EditMode { Atomic, Prefix };
 struct EditOptions {
     std::optional<std::uint64_t> expected_revision;
     EditMode mode = EditMode::Atomic;
+    // Polled during Atomic rollback capture on the document's thread.
+    // The callback must not reenter the engine.
+    std::function<bool()> cancelled = {};
 };
 
 // One open score. A Document keeps the engine runtime alive and remains usable
@@ -158,9 +162,10 @@ struct Document {
 
     // Named in-memory native snapshots share a 64 MiB budget. Replacing a name
     // never evicts another checkpoint; ResourceLimit leaves existing snapshots intact.
+    // The capture callback runs on the document's thread and must not reenter the engine.
     // Capture and restore do not lay out. Restore preserves public element ids,
     // advances the revision, dirties geometry and clears a failed edit's poison.
-    Result<void> checkpoint(std::string_view name);
+    Result<void> checkpoint(std::string_view name, std::function<bool()> cancelled = {});
     Result<void> restore_checkpoint(std::string_view name);
     Result<void> drop_checkpoint(std::string_view name);
 

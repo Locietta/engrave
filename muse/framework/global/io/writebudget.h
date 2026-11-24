@@ -15,6 +15,8 @@ struct WriteBudget {
     enum class Failure { NONE, LIMIT, CANCELLED };
     std::optional<std::uint64_t> output;
     std::optional<std::uint64_t> working;
+    std::optional<std::uint64_t> archive_entry;
+    std::uint64_t archive_written = 0;
     muse::FnRef<bool() const> cancelled = nullptr;
     std::uint64_t charged = 0;
     Failure failure = Failure::NONE;
@@ -50,6 +52,14 @@ struct WriteBudget {
             return false;
         }
         return true;
+    }
+
+    bool entry_size(std::uint64_t bytes) {
+        if (archive_entry && (bytes > *archive_entry || (output && (archive_written > *output || bytes > *output - archive_written)))) {
+            if (failure == Failure::NONE) failure = Failure::LIMIT;
+            return false;
+        }
+        return failure == Failure::NONE;
     }
 };
 

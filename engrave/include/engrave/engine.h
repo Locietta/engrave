@@ -93,8 +93,9 @@ struct InstrumentInfo {
     std::vector<DrumInfo> drums;
 };
 
-// Inputs larger than this are rejected with ResourceLimit.
+// Byte inputs and file paths other than uncompressed score XML use this limit.
 inline constexpr std::size_t max_input_bytes = 8 * 1024 * 1024;
+inline constexpr std::size_t max_uncompressed_file_bytes = 64 * 1024 * 1024;
 
 struct OpenOptions {
     // Unset: detect the format from the content, then from the extension of

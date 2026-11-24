@@ -12,6 +12,7 @@
 #include <fstream>
 #include <iostream>
 #include <limits>
+#include <span>
 #include <string>
 #include <string_view>
 #include <thread>
@@ -1073,6 +1074,127 @@ TEST(Open, ReportsCallerErrors) {
     expect_error(g_engine->open(bytes_of("MThd")), ErrorCode::INVALID_INPUT);
     expect_error(g_engine->open(g_resources / "no-such-score.mscz"), ErrorCode::NOT_FOUND);
     expect_error(g_engine->open(g_resources), ErrorCode::INVALID_ARGUMENT);
+}
+
+TEST(Open, LargerUncompressedXmlIsOnlyAcceptedFromFile) {
+    const auto stamp = std::chrono::steady_clock::now().time_since_epoch().count();
+    const auto base = std::filesystem::temp_directory_path() / ("engrave-input-ceiling-" + std::to_string(stamp));
+
+    struct Files {
+        std::filesystem::path xml;
+        std::filesystem::path archive;
+
+        ~Files() {
+            std::error_code error;
+            std::filesystem::remove(xml, error);
+            std::filesystem::remove(archive, error);
+        }
+    } files{base.string() + ".mscx", base.string() + ".mscz"};
+
+    auto original = treble_clef("Large native score");
+    ASSERT_TRUE(original);
+    auto xml = exported(*original, Format::MSCX);
+    ASSERT_FALSE(xml.empty());
+    xml.resize(engrave::max_input_bytes + 1, ' ');
+    ASSERT_TRUE(std::ofstream(files.xml, std::ios::binary).write(xml.data(), xml.size()));
+
+    const auto opened = g_engine->open(files.xml);
+    ASSERT_TRUE(opened) << opened.error().message;
+    EXPECT_EQ((*opened)->outline()->measures.size(), original->outline()->measures.size());
+    const auto bytes = g_engine->open(std::as_bytes(std::span(xml)));
+    ASSERT_FALSE(bytes);
+    EXPECT_EQ(bytes.error().code, ErrorCode::RESOURCE_LIMIT);
+
+    ASSERT_TRUE(std::ofstream(files.archive, std::ios::binary) << exported(*original, Format::MSCZ));
+    std::filesystem::resize_file(files.archive, engrave::max_input_bytes + 1);
+    const auto archive = g_engine->open(files.archive);
+    ASSERT_FALSE(archive);
+    EXPECT_EQ(archive.error().code, ErrorCode::RESOURCE_LIMIT);
+    std::filesystem::remove(files.xml);
+    std::filesystem::rename(files.archive, files.xml);
+    const auto disguised_archive = g_engine->open(files.xml);
+    ASSERT_FALSE(disguised_archive);
+    EXPECT_EQ(disguised_archive.error().code, ErrorCode::RESOURCE_LIMIT);
+
+    std::filesystem::resize_file(files.xml, engrave::max_uncompressed_file_bytes + 1);
+    const auto oversized = g_engine->open(files.xml);
+    ASSERT_FALSE(oversized);
+    EXPECT_EQ(oversized.error().code, ErrorCode::RESOURCE_LIMIT);
+    EXPECT_NE(oversized.error().message.find(std::to_string(engrave::max_uncompressed_file_bytes)), std::string::npos);
+}
+
+TEST(Open, LargerUncompressedMusicXmlUsesTheExplicitFormatOrFilenameHint) {
+    const auto stamp = std::chrono::steady_clock::now().time_since_epoch().count();
+    auto path = std::filesystem::temp_directory_path() / ("engrave-musicxml-" + std::to_string(stamp) + ".musicxml");
+
+    struct Cleanup {
+        const std::filesystem::path &path;
+
+        ~Cleanup() {
+            std::error_code error;
+            std::filesystem::remove(path, error);
+        }
+    } cleanup{path};
+
+    auto original = treble_clef("Large MusicXML score");
+    ASSERT_TRUE(original);
+    auto xml = exported(*original, Format::MUSIC_XML);
+    ASSERT_FALSE(xml.empty());
+    xml.resize(engrave::max_input_bytes + 1, ' ');
+    ASSERT_TRUE(std::ofstream(path, std::ios::binary).write(xml.data(), xml.size()));
+    const auto check = [&](const engrave::OpenOptions &options) {
+        const auto opened = g_engine->open(path, options);
+        ASSERT_TRUE(opened) << opened.error().message;
+        EXPECT_EQ((*opened)->outline()->measures.size(), original->outline()->measures.size());
+    };
+    check({});
+    auto temporary = path;
+    temporary.replace_extension(".tmp");
+    std::filesystem::rename(path, temporary);
+    path = temporary;
+    check({.format = Format::MUSIC_XML, .filename_hint = "ignore.mxl"});
+    check({.filename_hint = "score.xml"});
+    for (const auto &options : {engrave::OpenOptions{}, engrave::OpenOptions{.format = Format::MXL, .filename_hint = "score.xml"}}) {
+        const auto rejected = g_engine->open(path, options);
+        ASSERT_FALSE(rejected);
+        EXPECT_EQ(rejected.error().code, ErrorCode::RESOURCE_LIMIT);
+    }
+}
+
+TEST(Open, LargerUncompressedNativeXmlSupportsBothUtf16ByteOrders) {
+    const auto stamp = std::chrono::steady_clock::now().time_since_epoch().count();
+    const auto path = std::filesystem::temp_directory_path() / ("engrave-utf16-" + std::to_string(stamp) + ".mscx");
+
+    struct Cleanup {
+        const std::filesystem::path &path;
+
+        ~Cleanup() {
+            std::error_code error;
+            std::filesystem::remove(path, error);
+        }
+    } cleanup{path};
+
+    auto original = treble_clef();
+    ASSERT_TRUE(original);
+    auto xml = exported(*original, Format::MSCX);
+    const auto declaration_end = xml.find("?>");
+    ASSERT_NE(declaration_end, std::string::npos);
+    xml.replace(0, declaration_end + 2, " \t\r\n");
+    auto text = muse::String::from_utf8(xml).to_std_u16_string();
+    text.resize(engrave::max_input_bytes / 2 + 1, u' ');
+    for (const bool little_endian : {true, false}) {
+        SCOPED_TRACE(little_endian);
+        std::string encoded(2 + 2 * text.size(), '\0');
+        encoded.replace(0, 2, little_endian ? "\xFF\xFE" : "\xFE\xFF");
+        for (std::size_t i = 0; i < text.size(); ++i) {
+            encoded[2 + 2 * i + (little_endian ? 0 : 1)] = static_cast<char>(text[i] & 0xff);
+            encoded[2 + 2 * i + (little_endian ? 1 : 0)] = static_cast<char>(text[i] >> 8);
+        }
+        ASSERT_TRUE(std::ofstream(path, std::ios::binary).write(encoded.data(), encoded.size()));
+        const auto opened = g_engine->open(path);
+        ASSERT_TRUE(opened) << opened.error().message;
+        EXPECT_EQ((*opened)->outline()->measures.size(), original->outline()->measures.size());
+    }
 }
 
 TEST(Contract, ActiveEngineRejectsAnotherCreateAfterValidatingOptions) {

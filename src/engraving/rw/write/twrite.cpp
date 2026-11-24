@@ -512,7 +512,12 @@ void write_authored_segment_text(const EngravingItem *owner, const AuthoredOverr
             continue;
         write_authored_property(owner, key, xml, entry.pid);
     }
-    if (const auto *text = table.find(key, Pid::TEXT)) xml.write_xml(u"text", String(text->value.value<String>()).replace(u"\n", u"<br/>"));
+    if (const auto *text = table.find(key, Pid::TEXT)) {
+        if (const auto *value = text->value.string_value())
+            xml.write_xml(u"text", *value, true);
+        else
+            xml.write_xml(u"text", text->value.value<String>(), true);
+    }
     xml.end_element();
 }
 
@@ -752,12 +757,6 @@ void TWrite::write_system_lock(const RangeLock *system_lock, XmlWriter &xml) {
     xml.tag("endMeasure", system_lock->end_mb()->eid().to_std_string());
 
     xml.end_element();
-}
-
-String TWrite::line_break_to_tag(const String &str) {
-    // Raw newlines appearing next to tags (<font size="10> or <sym>...) get eaten by XML readers.
-    String s = str;
-    return s.replace(u"\n", u"<br/>");
 }
 
 void TWrite::write_styled_properties(const EngravingItem *item, XmlWriter &xml) {
@@ -1374,7 +1373,7 @@ void TWrite::write(const Dynamic *item, XmlWriter &xml, WriteContext &ctx) {
         write_property(item, xml, Pid::VELO_CHANGE_SPEED);
     }
 
-    write_properties(to_text_base(item), xml, ctx, to_dynamic(item)->has_custom_text());
+    write_properties(to_text_base(item), xml, ctx, true);
     xml.end_element();
 }
 
@@ -1405,7 +1404,9 @@ void TWrite::write_properties(const TextBase *item, XmlWriter &xml, WriteContext
         write_property(item, xml, spp.pid);
     }
     if (write_text) {
-        xml.write_xml(u"text", line_break_to_tag(item->xml_text()));
+        String generated;
+        const auto &text = item->xml_text(generated);
+        if (!item->is_dynamic() || Dynamic::dynamic_text(to_dynamic(item)->dynamic_type()) != text) xml.write_xml(u"text", text, true);
     }
 
     write_property(item, xml, Pid::TEXT_LINKED_TO_MASTER);
@@ -2022,12 +2023,12 @@ void TWrite::write(const StaffLabel &item, XmlWriter &xml) {
 void TWrite::write_properties(const StaffLabel &item, XmlWriter &xml) {
     String long_name = item.long_name();
     if (!long_name.empty()) {
-        xml.write_xml(u"longName", line_break_to_tag(long_name));
+        xml.write_xml(u"longName", long_name, true);
     }
 
     String short_name = item.short_name();
     if (!short_name.empty()) {
-        xml.write_xml(u"shortName", line_break_to_tag(short_name));
+        xml.write_xml(u"shortName", short_name, true);
     }
 }
 
@@ -2042,7 +2043,7 @@ void TWrite::write_properties(const InstrumentLabel &item, XmlWriter &xml) {
 
     String transposition = item.transposition();
     if (!transposition.empty()) {
-        xml.write_xml(u"transposition", line_break_to_tag(transposition));
+        xml.write_xml(u"transposition", transposition, true);
     }
 
     if (!item.show_transposition_long()) {

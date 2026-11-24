@@ -708,7 +708,19 @@ void ZipContainer::Impl::add_entry(EntryType type, const std::string &input_file
     const ByteArray &payload = compression == ZipContainer::ALWAYS_COMPRESS ? data : contents;
     write_u_int(header.h.compressed_size, (uint) payload.size());
     uint crc_32 = ::crc32(0, 0, 0);
-    crc_32 = ::crc32(crc_32, (const uint8_t *) contents.const_data(), (uint) contents.size());
+    if (auto *budget = io::active_write_budget; budget && budget->archive_entry && budget->cancelled) {
+        for (size_t offset = 0; offset < contents.size();) {
+            const auto count = std::min<size_t>(4096, contents.size() - offset);
+            if (!budget->poll()) {
+                status = ZipContainer::FILE_WRITE_ERROR;
+                return;
+            }
+            crc_32 = ::crc32(crc_32, contents.const_data() + offset, static_cast<uint>(count));
+            offset += count;
+        }
+    } else {
+        crc_32 = ::crc32(crc_32, contents.const_data(), static_cast<uint>(contents.size()));
+    }
     write_u_int(header.h.crc_32, crc_32);
 
     // if bit 11 is set, the filename and comment fields must be encoded using UTF-8
@@ -752,6 +764,7 @@ void ZipContainer::Impl::add_entry(EntryType type, const std::string &input_file
     ok &= write_to_device(payload);
 
     start_of_directory = (uint) device->pos();
+    if (auto *budget = io::active_write_budget; budget && budget->archive_entry) budget->archive_written = start_of_directory;
     dirty_file_tree = true;
 
     if (!ok) {

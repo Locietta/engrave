@@ -47,6 +47,12 @@ void TextStream::flush() {
     }
 }
 
+void TextStream::require_entry_space(size_t bytes) const {
+    auto *budget = io::active_write_budget;
+    if (budget && budget->archive_entry && (!budget->poll() || !budget->entry_size((device_ ? device_->pos() : 0) + buf_.size() + bytes)))
+        throw io::WriteBudgetStop{};
+}
+
 TextStream &TextStream::operator<<(char ch) {
     write(&ch, 1);
     return *this;
@@ -133,16 +139,29 @@ TextStream &TextStream::operator<<(const ByteArray &b) {
 }
 
 TextStream &TextStream::operator<<(const String &s) {
+    if (auto *budget = io::active_write_budget; budget && budget->archive_entry && s.size() > 4096 &&
+                                                (!budget->entry_size(s.size()) || !budget->charge(static_cast<uint64_t>(s.size()) * 3)))
+        throw io::WriteBudgetStop{};
     ByteArray b = s.to_utf8();
     write(reinterpret_cast<const char *>(b.const_data()), b.size());
     return *this;
 }
 
 void TextStream::write(const char *ch, size_t len) {
-    if (io::active_write_budget && !io::active_write_budget->charge(len)) throw io::WriteBudgetStop{};
+    auto *budget = io::active_write_budget;
+    require_entry_space(len);
+    if (budget && !budget->charge(len)) throw io::WriteBudgetStop{};
+    while (budget && budget->cancelled && len > 4096) {
+        const auto *first = reinterpret_cast<const uint8_t *>(ch);
+        buf_.insert(buf_.end(), first, first + 4096);
+        if (device_ && buf_.size() > ::textstream_buffersize) flush();
+        if (!budget->poll()) throw io::WriteBudgetStop{};
+        ch += 4096;
+        len -= 4096;
+    }
     buf_.insert(buf_.end(), reinterpret_cast<const uint8_t *>(ch), reinterpret_cast<const uint8_t *>(ch + len));
     if (device_ && buf_.size() > ::textstream_buffersize) {
         flush();
-        if (io::active_write_budget && !io::active_write_budget->poll()) throw io::WriteBudgetStop{};
+        if (budget && !budget->poll()) throw io::WriteBudgetStop{};
     }
 }

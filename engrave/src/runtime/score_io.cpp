@@ -1,5 +1,7 @@
 #include "score_io.h"
 
+#include <algorithm>
+#include <format>
 #include <memory>
 #include <stdexcept>
 #include <vector>
@@ -26,11 +28,13 @@
 #include "global/log.h"
 #include "global/serialization/textstream.h"
 #include "global/serialization/xmlstreamreader.h"
+#include "global/serialization/xmlstreamwriter.h"
 #include "global/serialization/zipreader.h"
 #include "global/serialization/zipwriter.h"
 #include "importexport/midi/internal/midiexport/exportmidi.h"
 #include "importexport/musicxml/internal/export/exportmusicxml.h"
 #include "importexport/musicxml/internal/import/importmusicxml.h"
+#include <engrave/engine.h>
 
 namespace music {
 using namespace muse;
@@ -70,7 +74,7 @@ engrave::Result<void> check_zip(ZipReader &zip) {
     const auto entries = zip.file_info_list();
     if (entries.empty() || entries.size() > 4096) return invalid_input("Invalid archive entry count");
     for (const auto &entry : entries) {
-        if (entry.size > 64 * 1024 * 1024 || total + entry.size > 128 * 1024 * 1024)
+        if (entry.size > engrave::max_uncompressed_file_bytes || total + entry.size > 128 * 1024 * 1024)
             return invalid_input("Uncompressed archive exceeds size limit");
         total += entry.size;
     }
@@ -114,8 +118,10 @@ void finish_load(engraving::EngravingProject &project) {
 
 engrave::Result<ScoreProject> load_native_score(const EngineContext &context, const std::string &input, const std::string &format,
                                                 bool transaction_snapshot) {
-    if (input.empty() || (!transaction_snapshot && input.size() > 8 * 1024 * 1024))
-        return invalid_input("Input must contain 1..8388608 bytes");
+    const auto limit =
+        format == "mscx" || format == "musicxml" || format == "xml" ? engrave::max_uncompressed_file_bytes : engrave::max_input_bytes;
+    if (input.empty() || (!transaction_snapshot && input.size() > limit))
+        return invalid_input(std::format("Input must contain 1..{} bytes", limit));
     // Like NotationProject::doImport (project/internal/notationproject.cpp:304) and
     // importMusicXmlfromBuffer, the whole reading + setup phase is a load: layout
     // inside it runs outside a transaction and must not push undo commands or warn.
@@ -152,7 +158,7 @@ engrave::Result<ScoreProject> load_native_score(const EngineContext &context, co
         if (format == "mscx") {
             io::Buffer out(&archive);
             out.open(io::IODevice::WRITE_ONLY);
-            ZipWriter zip(&out);
+            ZipWriter zip(&out, ZipWriter::Compression::STORE);
             zip.add_file("score.mscx", data);
             zip.close();
             data = std::move(archive);
@@ -216,13 +222,20 @@ engrave::Result<std::string> export_native_score(const EngineContext &context, c
 
 engrave::Result<std::string> export_native_score(const EngineContext &context, const ScoreProject &project, const std::string &format,
                                                  const ExportOptions &options) {
-    struct RestorePrecision {
-        bool previous = TextStream::round_trip_doubles;
+    struct RestoreXmlOptions {
+        bool precision = TextStream::round_trip_doubles;
+        bool indent = XmlStreamWriter::indent;
 
-        ~RestorePrecision() { TextStream::round_trip_doubles = previous; }
-    } restore_precision;
+        ~RestoreXmlOptions() {
+            TextStream::round_trip_doubles = precision;
+            XmlStreamWriter::indent = indent;
+        }
+    } restore_xml_options;
 
-    if (options.transaction_snapshot) TextStream::round_trip_doubles = true;
+    if (options.transaction_snapshot) {
+        TextStream::round_trip_doubles = true;
+        XmlStreamWriter::indent = false;
+    }
     // Audio formats are rendered by the worker's MuseScore engine; the
     // SoundFont parameter is retained for source compatibility.
     auto *score = options.transaction_snapshot ? project->master_score() : select_score(project->master_score(), options.excerpt_id);
@@ -321,6 +334,17 @@ engrave::Result<std::string> export_native_score(const EngineContext &context, c
         return std::unexpected(engrave::Error{engrave::ErrorCode::INVALID_ARGUMENT, "Unsupported export format"});
     buffer.close();
     if (!success || data.empty()) throw std::runtime_error("Score export failed");
+    if (auto *budget = io::active_write_budget; options.transaction_snapshot && budget && budget->cancelled) {
+        std::string result;
+        result.reserve(data.size());
+        for (std::size_t offset = 0; offset < data.size();) {
+            if (!budget->poll()) throw io::WriteBudgetStop{};
+            const auto count = std::min<std::size_t>(4096, data.size() - offset);
+            result.append(data.const_char() + offset, count);
+            offset += count;
+        }
+        return result;
+    }
     return bytes(data);
 }
 } // namespace music

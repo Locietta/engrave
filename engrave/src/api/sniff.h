@@ -3,10 +3,13 @@
 #include <filesystem>
 #include <optional>
 #include <string>
+#include <string_view>
 
 #include <engrave/output.h>
 
 namespace engrave {
+
+bool looks_like_xml(std::string_view data);
 
 // The format the content identifies itself as, in this order: a zip whose
 // META-INF/container.xml lists an .mscx (MSCZ) or a MusicXML rootfile (MXL),

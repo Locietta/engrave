@@ -21,6 +21,7 @@
  */
 #include "buffer.h"
 
+#include <algorithm>
 #include <cstring>
 #include <utility>
 
@@ -93,7 +94,18 @@ bool Buffer::resize_data(size_t size) {
 }
 
 size_t Buffer::write_data(const uint8_t *data, size_t len) {
-    if (active_write_budget && !active_write_budget->poll()) return 0;
-    std::memcpy(ref_->data() + pos(), data, len);
+    auto *budget = active_write_budget;
+    if (budget && !budget->poll()) return 0;
+    auto *dest = ref_->data() + pos();
+    if (budget && budget->archive_entry && budget->cancelled) {
+        for (size_t offset = 0; offset < len;) {
+            const auto count = std::min<size_t>(4096, len - offset);
+            if (!budget->poll()) return 0;
+            std::memcpy(dest + offset, data + offset, count);
+            offset += count;
+        }
+    } else {
+        std::memcpy(dest, data, len);
+    }
     return len;
 }

@@ -145,6 +145,7 @@ public:
     bool set_tempo_multiplier(BeatsPerSecond val);
     void set_tempo_timeline_override(std::optional<TempoTimeline> timeline);
     RuntimeTempoState runtime_tempo_state() const;
+    const TempoTimeline *tempo_timeline_override() const;
     void restore_runtime_tempo_state(RuntimeTempoState state);
 
     std::vector<Excerpt *> &excerpts() { return excerpts_; }

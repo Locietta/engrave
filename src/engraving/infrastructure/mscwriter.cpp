@@ -96,6 +96,7 @@ MscWriter::Writer *MscWriter::writer() const {
 }
 
 bool MscWriter::add_file_data(const String &file_name, const ByteArray &data) {
+    if (active_write_budget && !active_write_budget->entry_size(data.size())) throw WriteBudgetStop{};
     if (!writer()->add_file_data(file_name, data)) {
         LOGE() << "failed write file: " << file_name;
         return false;

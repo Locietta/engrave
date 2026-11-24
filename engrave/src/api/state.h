@@ -51,6 +51,7 @@ struct EngineState {
 
 struct Engine::Impl {
     std::shared_ptr<EngineState> state;
+    Result<std::unique_ptr<Document>> open_input(const std::string &bytes, const OpenOptions &options);
 };
 
 struct Document::Impl {
@@ -67,6 +68,7 @@ struct Document::Impl {
         std::uint64_t source_revision = 0;
         std::uint64_t saved_revision = 0;
         std::uint64_t revision = 0;
+        std::size_t byte_count = 0;
     };
 
     struct Checkpoint {
@@ -75,7 +77,8 @@ struct Document::Impl {
         std::size_t byte_count = 0;
     };
 
-    Result<Snapshot> capture_snapshot() const;
+    Result<Snapshot> capture_snapshot(const std::function<bool()> &cancelled = {}, std::size_t byte_limit = 128 * 1024 * 1024,
+                                      std::optional<std::size_t> checkpoint_name_size = {}) const;
     Result<void> restore_snapshot(const Snapshot &snapshot, bool advance_revision);
 
     std::vector<Checkpoint> checkpoints;

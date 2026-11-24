@@ -340,6 +340,8 @@ struct PropertyValue {
 
     bool is_enum() const { return type_ != PType::UNDEFINED && std::holds_alternative<EnumValue>(data_); }
 
+    const String *string_value() const { return std::get_if<String>(&data_); }
+
     template <typename T>
     T value() const {
         if (type_ == PType::UNDEFINED) {

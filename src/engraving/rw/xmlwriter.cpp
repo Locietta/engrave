@@ -24,6 +24,7 @@
 
 #include "dom/engravingitem.h"
 #include "dom/property.h"
+#include "global/io/writebudget.h"
 #include "log.h"
 #include "types/typesconv.h"
 
@@ -286,7 +287,14 @@ void XmlWriter::tag_fraction(const AsciiStringView &name, const Fraction &v, con
     element(name, v.to_string());
 }
 
-void XmlWriter::write_xml(const String &name, String s) {
+void XmlWriter::write_xml(const String &name, const String &text, bool line_breaks) {
+    if (const auto *budget = muse::io::active_write_budget; budget && budget->archive_entry) {
+        element_text_raw(name, text.view(), line_breaks);
+        return;
+    }
+    String s = text;
+    // XML readers can strip newlines adjacent to formatting tags.
+    if (line_breaks) s.replace(u"\n", u"<br/>");
     for (size_t i = 0; i < s.size(); ++i) {
         char16_t c = s.at(i).unicode();
         if (c < 0x20 && c != 0x09 && c != 0x0A && c != 0x0D) {

@@ -38,10 +38,7 @@ std::optional<Format> sniff_zip(const std::string &data) {
 }
 
 std::optional<Format> sniff_xml(const std::string &data) {
-    std::string_view text = data;
-    if (text.starts_with("\xEF\xBB\xBF")) text.remove_prefix(3);
-    const auto first = text.find_first_not_of(" \t\r\n");
-    if (first == std::string_view::npos || text[first] != '<') return std::nullopt;
+    if (!looks_like_xml(data)) return std::nullopt;
     muse::XmlStreamReader xml{std::string_view(data)};
     while (!xml.at_end()) {
         xml.read_next();
@@ -54,6 +51,24 @@ std::optional<Format> sniff_xml(const std::string &data) {
     return std::nullopt;
 }
 } // namespace
+
+bool looks_like_xml(std::string_view data) {
+    const bool little_endian = data.starts_with("\xFF\xFE");
+    if (little_endian || data.starts_with("\xFE\xFF")) {
+        data.remove_prefix(2);
+        while (data.size() >= 2) {
+            const char ch = data[little_endian ? 0 : 1];
+            if (data[little_endian ? 1 : 0] != '\0') return false;
+            if (ch == '<') return true;
+            if (ch != ' ' && ch != '\t' && ch != '\r' && ch != '\n') return false;
+            data.remove_prefix(2);
+        }
+        return false;
+    }
+    if (data.starts_with("\xEF\xBB\xBF")) data.remove_prefix(3);
+    const auto first = data.find_first_not_of(" \t\r\n");
+    return first != std::string_view::npos && data[first] == '<';
+}
 
 std::optional<Format> sniff_format(const std::string &data) {
     const std::string_view head(data.data(), std::min<std::size_t>(data.size(), 64));

@@ -42,6 +42,7 @@ struct TextStream {
     void set_device(io::IODevice *device);
 
     void flush();
+    void require_entry_space(size_t bytes) const;
 
     TextStream &operator<<(char ch);
     TextStream &operator<<(int32_t);

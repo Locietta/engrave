@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdio>
 #include <filesystem>
@@ -9,6 +10,7 @@
 #include <span>
 #include <string>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -23,9 +25,11 @@
 #include "engraving/dom/chord.h"
 #include "engraving/dom/chordline.h"
 #include "engraving/dom/chordlist.h"
+#include "engraving/dom/deadslapped.h"
 #include "engraving/dom/drumset.h"
 #include "engraving/dom/excerpt.h"
 #include "engraving/dom/factory.h"
+#include "engraving/dom/harmony.h"
 #include "engraving/dom/instrument.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
@@ -168,6 +172,171 @@ TEST(Checkpoint, LimitRefusalKeepsExistingCheckpoint) {
     ASSERT_TRUE(document->edit({{SetProperty{note, "color", Color{255, 0, 0}}}}));
     ASSERT_TRUE(document->restore_checkpoint("before"));
     EXPECT_EQ(native_source(*document), before);
+}
+
+TEST(Checkpoint, CancelsDuringSerializationAndKeepsOriginalCheckpoint) {
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    const auto revision = document->revision();
+    const auto before = document->export_score({.format = engrave::Format::MSCX});
+    ASSERT_TRUE(before);
+    ASSERT_TRUE(document->checkpoint("before"));
+    int polls = 0;
+    const auto rejected = document->checkpoint("before", [&] { return ++polls == 64; });
+    ASSERT_FALSE(rejected);
+    EXPECT_EQ(rejected.error().code, ErrorCode::CANCELLED);
+    EXPECT_FALSE(rejected.error().poisoned);
+    EXPECT_EQ(polls, 64);
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_EQ(document->export_score({.format = engrave::Format::MSCX}).value(), *before);
+    ASSERT_TRUE(document->edit({{SetProperty{find_id(*document, "Note"), "color", Color{255, 0, 0}}}}));
+    ASSERT_TRUE(document->restore_checkpoint("before"));
+    EXPECT_EQ(document->export_score({.format = engrave::Format::MSCX}).value(), *before);
+}
+
+TEST(Checkpoint, StopsBeforeCompletingAnOversizedCapture) {
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    master.meta_tags()[u"large metadata"] = muse::String::from_std_string(std::string(48 * 1024, '&'));
+    auto &state = engrave::DocumentAccess::impl(*document);
+    const auto revision = document->revision();
+    state.checkpoint_byte_limit = 64 * 1024;
+    int limited_polls = 0;
+    const auto rejected = document->checkpoint("large", [&] {
+        ++limited_polls;
+        return false;
+    });
+    ASSERT_FALSE(rejected);
+    EXPECT_EQ(rejected.error().code, ErrorCode::RESOURCE_LIMIT);
+    EXPECT_FALSE(rejected.error().poisoned);
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_TRUE(state.checkpoints.empty());
+    state.checkpoint_byte_limit = 1024 * 1024;
+    int full_polls = 0;
+    ASSERT_TRUE(document->checkpoint("large", [&] {
+        ++full_polls;
+        return false;
+    }));
+    EXPECT_GT(limited_polls, 64);
+    EXPECT_LT(limited_polls, full_polls);
+}
+
+TEST(Checkpoint, LargeTextCaptureStopsOnLimitAndCancellation) {
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    const auto added = document->edit({{engrave::AddText{engrave::RelativePosition{}, "staff", "seed"}}});
+    ASSERT_TRUE(added && !added->rejection);
+    const auto id = added->ops.front().created.front().value();
+    const auto item = engrave::resolve(engrave::harness::master_of(*document), id);
+    ASSERT_TRUE(item && item->object->is_text_base());
+    std::u16string text(2 * 1024 * 1024, u'a');
+    for (std::size_t i = 1023; i < text.size(); i += 1024) text[i] = u'\n';
+    mu::engraving::to_text_base(item->object)->set_xml_text(muse::String(std::u16string_view(text)));
+
+    auto &state = engrave::DocumentAccess::impl(*document);
+    state.checkpoint_byte_limit = 64 * 1024;
+    int refused_at = 0;
+    const auto too_large = document->checkpoint("text", [&] {
+        ++refused_at;
+        return false;
+    });
+    ASSERT_FALSE(too_large);
+    EXPECT_EQ(too_large.error().code, ErrorCode::RESOURCE_LIMIT);
+    EXPECT_TRUE(state.checkpoints.empty());
+
+    state.checkpoint_byte_limit = 8 * 1024 * 1024;
+    int polls = 0;
+    const auto stopped = document->checkpoint("text", [&] { return ++polls == refused_at + 20; });
+    ASSERT_FALSE(stopped);
+    EXPECT_EQ(stopped.error().code, ErrorCode::CANCELLED);
+    EXPECT_TRUE(state.checkpoints.empty());
+    polls = 0;
+    ASSERT_TRUE(document->checkpoint("text", [&] {
+        ++polls;
+        return false;
+    }));
+    EXPECT_GT(polls, refused_at + 100);
+}
+
+TEST(Checkpoint, ReplacingANameNearTheLimitReusesItsSpace) {
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    const auto &state = engrave::DocumentAccess::impl(*document);
+    const auto baseline = state.capture_snapshot();
+    ASSERT_TRUE(baseline);
+    const std::string name(state.checkpoint_byte_limit - 3 * baseline->byte_count, 'x');
+    ASSERT_TRUE(document->checkpoint(name));
+    ASSERT_TRUE(document->checkpoint("other"));
+    const auto note = find_id(*document, "Note");
+    const auto original = property(*document, note, "color");
+    const engrave::Value red = Color{255, 0, 0};
+    ASSERT_TRUE(document->edit({{SetProperty{note, "color", red}}}));
+    ASSERT_TRUE(document->checkpoint(name));
+    EXPECT_EQ(state.checkpoints.size(), 2u);
+    ASSERT_TRUE(document->restore_checkpoint("other"));
+    EXPECT_EQ(property(*document, note, "color"), original);
+    ASSERT_TRUE(document->restore_checkpoint(name));
+    EXPECT_EQ(property(*document, note, "color"), red);
+}
+
+TEST(Checkpoint, TempoTimelineCanExhaustTheBudgetBeforeSerialization) {
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    auto &state = engrave::DocumentAccess::impl(*document);
+    state.checkpoint_byte_limit = 64 * 1024;
+    mu::engraving::TempoValues tempo;
+    for (int tick = 0; tick < 4096; ++tick) tempo.emplace_back(tick, 2.0 + (tick % 2));
+    mu::engraving::TempoTimeline timeline;
+    timeline.rebuild(tempo, {});
+    master.set_tempo_timeline_override(std::move(timeline));
+    int polls = 0;
+    const auto result = document->checkpoint("timeline", [&] {
+        ++polls;
+        return false;
+    });
+    ASSERT_FALSE(result);
+    EXPECT_EQ(result.error().code, ErrorCode::RESOURCE_LIMIT);
+    EXPECT_EQ(polls, 1);
+    EXPECT_TRUE(state.checkpoints.empty());
+}
+
+TEST(Checkpoint, CompactXmlPreservesWhitespaceInPublicMscx) {
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    const engrave::RelativePosition at{};
+    const auto added = document->edit(
+        {{engrave::AddText{at, "staff", "  first  line\nsecond  "}, engrave::AddText{at, "lyrics_odd", "  lyric  one\nlyric  two  "},
+          engrave::Add{at, "Harmony", {{"text", std::string("no chord")}}}}});
+    ASSERT_TRUE(added && !added->rejection) << (added ? added->rejection->error.message : added.error().message);
+    const auto harmony = engrave::resolve(engrave::harness::master_of(*document), added->ops[2].created.front().value());
+    ASSERT_TRUE(harmony && harmony->object->is_harmony());
+    auto *symbol = mu::engraving::to_harmony(harmony->object);
+    ASSERT_FALSE(symbol->chords().empty());
+    symbol->chords().front()->set_text_name(u"  chord  one\nchord  two  ");
+    const engrave::ExportOptions mscx{.format = engrave::Format::MSCX};
+    const auto before = document->export_score(mscx);
+    ASSERT_TRUE(before);
+    const std::string_view xml(reinterpret_cast<const char *>(before->data()), before->size());
+    EXPECT_TRUE(xml.contains("<text>  first  line<br/>second  </text>"));
+    EXPECT_TRUE(xml.contains("<text>  lyric  one<br/>lyric  two  </text>"));
+    EXPECT_TRUE(xml.contains("<name>  chord  one\nchord  two  </name>"));
+    ASSERT_TRUE(document->checkpoint("whitespace"));
+    ASSERT_TRUE(document->restore_checkpoint("whitespace"));
+    EXPECT_EQ(document->export_score(mscx).value(), *before);
+}
+
+TEST(EditAtomic, CancelledEmptyBatchLeavesTheRevisionUnchanged) {
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    const auto revision = document->revision();
+    for (const auto mode : {engrave::EditMode::Atomic, engrave::EditMode::Prefix}) {
+        const auto result = document->edit({}, engrave::EditOptions{.mode = mode, .cancelled = [] { return true; }});
+        ASSERT_FALSE(result);
+        EXPECT_EQ(result.error().code, ErrorCode::CANCELLED);
+        EXPECT_EQ(document->revision(), revision);
+    }
 }
 
 TEST(Checkpoint, RestoresRuntimeTempoForPlayback) {
@@ -392,6 +561,9 @@ TEST(EditAtomic, LateRejectionRestoresLinkedIdsRevisionsVersionsAndCheckpoints) 
     ASSERT_NE(linked, notes->elements.end());
     const auto note_id = linked->id;
     const auto links = linked->links;
+    const auto style =
+        document->edit({{SetStyle{{}, "staffDistance", 9.25}, SetStyle{engrave::ScoreSel{excerpt_id}, "staffDistance", 11.75}}});
+    ASSERT_TRUE(style && !style->rejection);
     master.set_mscore_version(u"4.6.3");
     master.set_mscore_revision(170);
     excerpt.set_mscore_version(u"4.7.0");
@@ -403,6 +575,11 @@ TEST(EditAtomic, LateRejectionRestoresLinkedIdsRevisionsVersionsAndCheckpoints) 
     master.set_tempo_timeline_override(std::move(timeline));
 
     const auto before = native_source(*document);
+    const engrave::ExportOptions master_xml{.format = engrave::Format::MSCX};
+    const engrave::ExportOptions excerpt_xml{.format = engrave::Format::MSCX, .score = engrave::ScoreSel{excerpt_id}};
+    const auto public_before = document->export_score(master_xml);
+    const auto excerpt_before = document->export_score(excerpt_xml);
+    ASSERT_TRUE(public_before && excerpt_before);
     const auto revision = document->revision();
     const auto original_color = property(*document, note_id, "color");
     ASSERT_TRUE(document->checkpoint("before"));
@@ -427,6 +604,8 @@ TEST(EditAtomic, LateRejectionRestoresLinkedIdsRevisionsVersionsAndCheckpoints) 
     EXPECT_EQ(result->revision, revision);
     EXPECT_EQ(document->revision(), revision);
     EXPECT_EQ(native_source(*document), before);
+    EXPECT_EQ(document->export_score(master_xml).value(), *public_before);
+    EXPECT_EQ(document->export_score(excerpt_xml).value(), *excerpt_before);
     EXPECT_EQ(property(*document, note_id, "color"), original_color);
     for (const auto &id : links) EXPECT_TRUE(document->get(id));
     const auto after_notes = document->query({.types = {"Note"}});
@@ -458,6 +637,28 @@ TEST(EditAtomic, LateRejectionRestoresLinkedIdsRevisionsVersionsAndCheckpoints) 
     EXPECT_EQ(property(*document, note_id, "color"), (engrave::Value{Color{0, 0, 255}}));
     ASSERT_TRUE(document->restore_checkpoint("before"));
     EXPECT_EQ(native_source(*document), before);
+    EXPECT_EQ(document->export_score(master_xml).value(), *public_before);
+    EXPECT_EQ(document->export_score(excerpt_xml).value(), *excerpt_before);
+}
+
+TEST(EditAtomic, CancelsDuringRollbackCaptureBeforeApplyingEdits) {
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    const auto note = find_id(*document, "Note");
+    const auto color = property(*document, note, "color");
+    const auto revision = document->revision();
+    int polls = 0;
+    const Batch batch{{SetProperty{note, "color", Color{255, 0, 0}}}};
+    const auto rejected = document->edit(batch, engrave::EditOptions{.cancelled = [&] { return ++polls == 64; }});
+    ASSERT_FALSE(rejected);
+    EXPECT_EQ(rejected.error().code, ErrorCode::CANCELLED);
+    EXPECT_EQ(rejected.error().message, "snapshot capture cancelled");
+    EXPECT_FALSE(rejected.error().poisoned);
+    EXPECT_EQ(polls, 64);
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_EQ(property(*document, note, "color"), color);
+    ASSERT_TRUE(document->edit(batch, engrave::EditOptions{}));
+    EXPECT_EQ(document->revision(), revision + 1);
 }
 
 TEST(EditAtomic, RestoresAfterRejectionDuringMeasureRewrite) {
@@ -758,6 +959,130 @@ TEST(Edit, SegmentAddressesResolveAfterEarlierNoteEntry) {
     EXPECT_EQ(chord.tick.den, 4);
     EXPECT_EQ(chord.duration.num, 1);
     EXPECT_EQ(chord.duration.den, 4);
+}
+
+TEST(Edit, RelativeNoteBatchPublishesFinalIdsAndNormalizesLikeSingleEntries) {
+    auto batched = g_engine->create_document({.template_id = "Treble_Clef"});
+    auto sequential = g_engine->create_document({.template_id = "Treble_Clef"});
+    ASSERT_TRUE(batched && sequential);
+    const std::array pitches{66, 65, 67, 69};
+    Batch batch;
+    for (int beat = 0; beat < 4; ++beat) {
+        engrave::EnterNotes entry{engrave::RelativePosition{engrave::MeasureIndex{0}, 0, 0, {beat, 4}}, {1, 4}, {{pitches[beat]}}};
+        batch.ops.push_back(entry);
+        const auto result = (*sequential)->edit({{entry}});
+        ASSERT_TRUE(result && !result->rejection);
+    }
+    const auto old_rest = find_id(**batched, "Rest");
+    const auto result = (*batched)->edit(batch);
+    ASSERT_TRUE(result && !result->rejection);
+    ASSERT_EQ(result->applied, pitches.size());
+    EXPECT_NE(std::ranges::find(result->replaced, old_rest), result->replaced.end());
+    const auto stale = (*batched)->get(old_rest);
+    ASSERT_FALSE(stale);
+    EXPECT_EQ(stale.error().code, ErrorCode::NOT_FOUND);
+
+    auto &master = engrave::harness::master_of(**batched);
+    for (int beat = 0; beat < 4; ++beat) {
+        auto *rhythm = master.find_cr(mu::engraving::Fraction(beat, 4), 0);
+        ASSERT_TRUE(rhythm && rhythm->is_chord());
+        EXPECT_EQ(rhythm->ticks(), (mu::engraving::Fraction{1, 4}));
+        const auto *note = mu::engraving::to_chord(rhythm)->notes().front();
+        EXPECT_EQ(note->pitch(), pitches[beat]);
+        const auto &made = result->ops[beat].created;
+        ASSERT_EQ(made.size(), 2u);
+        EXPECT_EQ(made[0], engrave::from_engine(rhythm->eid()));
+        EXPECT_EQ(made[1], engrave::from_engine(note->eid()));
+        ASSERT_TRUE(made[1]);
+        EXPECT_TRUE((*batched)->get(*made[1]));
+    }
+    const auto pages = (*batched)->page_count();
+    ASSERT_TRUE(pages);
+    EXPECT_GT(*pages, 0);
+    EXPECT_EQ(*pages, (*sequential)->page_count().value());
+    const engrave::ExportOptions xml{.format = engrave::Format::MUSIC_XML};
+    const auto actual = (*batched)->export_score(xml);
+    ASSERT_TRUE(actual);
+    EXPECT_EQ(*actual, (*sequential)->export_score(xml).value());
+}
+
+TEST(Edit, DeferredNoteEntryMatchesEverySequentialIdDiff) {
+    auto batched = g_engine->create_document({.template_id = "Treble_Clef"});
+    ASSERT_TRUE(batched);
+    const auto first = (*batched)->outline()->measures.front().id;
+    ASSERT_TRUE((*batched)->edit({{engrave::InsertMeasures{first, 3}}}));
+    const auto input = (*batched)->export_score({.format = engrave::Format::MSCX});
+    ASSERT_TRUE(input);
+
+    struct DeterministicIds {
+        bool previous = std::exchange(mu::engraving::MScore::test_mode, true);
+
+        ~DeterministicIds() { mu::engraving::MScore::test_mode = previous; }
+    } deterministic;
+
+    batched = g_engine->open(*input);
+    auto sequential = g_engine->open(*input);
+    ASSERT_TRUE(batched && sequential);
+    Batch batch;
+    engrave::EditResult expected;
+    for (int measure = 0; measure < 3; ++measure) {
+        const engrave::EnterNotes entry{engrave::RelativePosition{engrave::MeasureIndex{measure}, 0, 0, {0, 1}}, {1, 1}, {{60 + measure}}};
+        batch.ops.push_back(entry);
+        const auto single = (*sequential)->edit({{entry}});
+        ASSERT_TRUE(single && !single->rejection);
+        ASSERT_EQ(single->ops.size(), 1u);
+        expected.ops.push_back(single->ops.front());
+        expected.created.insert(expected.created.end(), single->created.begin(), single->created.end());
+        expected.removed.insert(expected.removed.end(), single->removed.begin(), single->removed.end());
+        expected.replaced.insert(expected.replaced.end(), single->replaced.begin(), single->replaced.end());
+    }
+    std::ranges::sort(expected.created);
+    std::ranges::sort(expected.removed);
+    std::ranges::sort(expected.replaced);
+    const auto actual = (*batched)->edit(batch);
+    ASSERT_TRUE(actual && !actual->rejection);
+    EXPECT_EQ(actual->created, expected.created);
+    EXPECT_EQ(actual->removed, expected.removed);
+    EXPECT_EQ(actual->replaced, expected.replaced);
+    ASSERT_EQ(actual->ops.size(), expected.ops.size());
+    for (std::size_t i = 0; i < actual->ops.size(); ++i) EXPECT_EQ(actual->ops[i].created, expected.ops[i].created);
+}
+
+TEST(Edit, DeferredNoteEntryPublishesThePrefixAfterARejection) {
+    auto made = g_engine->create_document({.template_id = "Treble_Clef"});
+    ASSERT_TRUE(made);
+    auto &document = **made;
+    auto &master = engrave::harness::master_of(document);
+    const auto first = document.outline()->measures.front().id;
+    ASSERT_TRUE(document.edit({{engrave::InsertMeasures{first, 3}}}));
+    const auto *second = master.first_measure()->next_measure();
+    auto *rest = mu::engraving::to_rest(master.find_cr(second->tick(), 0));
+    ASSERT_TRUE(rest && rest->is_full_measure_rest());
+    rest->add(mu::engraving::Factory::create_dead_slapped(rest));
+    const auto entry = [](int measure, int pitch) {
+        return engrave::EnterNotes{engrave::RelativePosition{engrave::MeasureIndex{measure}, 0, 0, {0, 1}}, {1, 4}, {{pitch}}};
+    };
+    const auto revision = document.revision();
+    const auto partial = document.edit({{entry(0, 66), entry(1, 62), entry(2, 64)}});
+    ASSERT_TRUE(partial) << partial.error().message;
+    ASSERT_TRUE(partial->rejection);
+    EXPECT_EQ(partial->rejection->op_index, 1u);
+    EXPECT_FALSE(partial->rejection->error.poisoned);
+    EXPECT_EQ(partial->applied, 1u);
+    EXPECT_EQ(document.revision(), revision + 1);
+    EXPECT_FALSE(master.normalize_state.dirty);
+    EXPECT_TRUE(master.normalize_state.includes_hidden_staves);
+    ASSERT_EQ(partial->ops.size(), 1u);
+    ASSERT_EQ(partial->ops.front().created.size(), 2u);
+    const auto id = partial->ops.front().created.back().value();
+    EXPECT_TRUE(document.get(id));
+    EXPECT_EQ(property(document, id, "pitch"), (engrave::Value{std::int32_t{66}}));
+    const auto third_tick = second->next_measure()->tick();
+    ASSERT_TRUE(master.find_cr(third_tick, 0)->is_rest());
+    const auto followup = document.edit({{entry(2, 64)}});
+    ASSERT_TRUE(followup && !followup->rejection);
+    EXPECT_EQ(document.revision(), revision + 2);
+    EXPECT_TRUE(master.find_cr(third_tick, 0)->is_chord());
 }
 
 TEST(Edit, OpensMeasureRestAtBeatTwoInPrimaryAndUnusedVoices) {

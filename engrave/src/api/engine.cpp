@@ -45,6 +45,8 @@ const char *backend_name(Format format) {
     return "";
 }
 
+bool uncompressed_xml(std::optional<Format> format) { return format == Format::MSCX || format == Format::MUSIC_XML; }
+
 // The upstream template names carry an ordering prefix: "01-Treble_Clef".
 std::string template_id(const std::filesystem::path &mscx) {
     std::string stem = utf8(mscx.stem());
@@ -237,10 +239,13 @@ std::vector<InstrumentInfo> Engine::instruments() const {
 
 Result<std::unique_ptr<Document>> Engine::open(std::span<const std::byte> data, const OpenOptions &options) {
     impl_->state->check_thread();
-    if (data.empty()) return fail(ErrorCode::INVALID_INPUT, "the input is empty");
     if (data.size() > max_input_bytes) return fail(ErrorCode::RESOURCE_LIMIT, std::format("the input exceeds {} bytes", max_input_bytes));
-    const std::string bytes(reinterpret_cast<const char *>(data.data()), data.size());
+    if (data.empty()) return fail(ErrorCode::INVALID_INPUT, "the input is empty");
+    return impl_->open_input(std::string(reinterpret_cast<const char *>(data.data()), data.size()), options);
+}
 
+Result<std::unique_ptr<Document>> Engine::Impl::open_input(const std::string &bytes, const OpenOptions &options) {
+    if (bytes.empty()) return fail(ErrorCode::INVALID_INPUT, "the input is empty");
     std::vector<Diagnostic> diagnostics;
     std::optional<Format> format = options.format ? options.format : sniff_format(bytes);
     if (!format) {
@@ -249,14 +254,16 @@ Result<std::unique_ptr<Document>> Engine::open(std::span<const std::byte> data, 
         diagnostics.push_back(
             {Severity::INFO, std::format("the content was not recognised; reading it as {} because of its file name", to_string(*format))});
     }
+    if (bytes.size() > max_input_bytes && !uncompressed_xml(format))
+        return fail(ErrorCode::RESOURCE_LIMIT, std::format("the input exceeds {} bytes", max_input_bytes));
     music::ScoreProject project;
     try {
         if (*format == Format::MNX) {
-            auto opened = open_mnx(*impl_->state->context, bytes);
+            auto opened = open_mnx(*state->context, bytes);
             if (!opened) return fail(ErrorCode::INVALID_INPUT, std::format("cannot read the data as MNX: {}", opened.error()));
             project = *std::move(opened);
         } else {
-            auto loaded = music::load_native_score(*impl_->state->context, bytes, backend_name(*format));
+            auto loaded = music::load_native_score(*state->context, bytes, backend_name(*format));
             if (!loaded) {
                 if (loaded.error().code == ErrorCode::UNSUPPORTED) return std::unexpected(std::move(loaded.error()));
                 return fail(ErrorCode::INVALID_INPUT,
@@ -280,7 +287,7 @@ Result<std::unique_ptr<Document>> Engine::open(std::span<const std::byte> data, 
         return fail(ErrorCode::INVALID_INPUT, "the score has malformed or duplicated element ids: " + repairs.front().message);
     }
     diagnostics.insert(diagnostics.end(), repairs.begin(), repairs.end());
-    return Document::Impl::make(impl_->state, std::move(project), std::move(audio_defaults), std::move(diagnostics));
+    return Document::Impl::make(state, std::move(project), std::move(audio_defaults), std::move(diagnostics));
 }
 
 Result<std::unique_ptr<Document>> Engine::open(const std::filesystem::path &file, const OpenOptions &options) {
@@ -291,15 +298,19 @@ Result<std::unique_ptr<Document>> Engine::open(const std::filesystem::path &file
     if (!std::filesystem::is_regular_file(status)) return fail(ErrorCode::INVALID_ARGUMENT, "'" + utf8(file) + "' is not a file");
     const auto size = std::filesystem::file_size(file, ec);
     if (ec) return fail(ErrorCode::IO, "cannot read '" + utf8(file) + "': " + ec.message());
-    if (size > max_input_bytes) return fail(ErrorCode::RESOURCE_LIMIT, std::format("'{}' exceeds {} bytes", utf8(file), max_input_bytes));
-
-    std::vector<std::byte> data(size);
-    std::ifstream in(file, std::ios::binary);
-    if (!in.read(reinterpret_cast<char *>(data.data()), static_cast<std::streamsize>(size)))
-        return fail(ErrorCode::IO, "cannot read '" + utf8(file) + "'");
     OpenOptions effective = options;
     if (effective.filename_hint.empty()) effective.filename_hint = file;
-    return open(data, effective);
+    const auto format = effective.format ? effective.format : format_from_extension(effective.filename_hint);
+    const auto limit = uncompressed_xml(format) ? max_uncompressed_file_bytes : max_input_bytes;
+    if (size > limit) return fail(ErrorCode::RESOURCE_LIMIT, std::format("'{}' exceeds {} bytes", utf8(file), limit));
+
+    std::string data(size, '\0');
+    std::ifstream in(file, std::ios::binary);
+    if (!in.read(data.data(), static_cast<std::streamsize>(size))) return fail(ErrorCode::IO, "cannot read '" + utf8(file) + "'");
+    // A renamed archive must be refused before format sniffing can inflate it.
+    if (size > max_input_bytes && !looks_like_xml(data))
+        return fail(ErrorCode::RESOURCE_LIMIT, std::format("'{}' exceeds {} bytes", utf8(file), max_input_bytes));
+    return impl_->open_input(data, effective);
 }
 
 Result<std::unique_ptr<Document>> Engine::create_document(const CreateOptions &options) {

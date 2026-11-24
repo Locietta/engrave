@@ -151,6 +151,7 @@ private:
 
     Document &document_;
     EditContext context_;
+    bool defer_note_entry_ = false;
 };
 
 } // namespace engrave::api

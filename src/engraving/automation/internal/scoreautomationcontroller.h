@@ -69,6 +69,8 @@ struct ScoreAutomationController {
 
     RuntimeTempoState runtime_tempo_state() const { return {tempo_timeline_.tempo_multiplier(), tempo_timeline_override_}; }
 
+    const TempoTimeline *tempo_timeline_override() const { return tempo_timeline_override_ ? &*tempo_timeline_override_ : nullptr; }
+
     void restore_runtime_tempo_state(RuntimeTempoState state) {
         set_tempo_multiplier(state.multiplier);
         tempo_timeline_override_ = std::move(state.override_timeline);

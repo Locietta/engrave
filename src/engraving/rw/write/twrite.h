@@ -359,7 +359,6 @@ private:
     static void write_page_lock(const RangeLock *page_lock, XmlWriter &xml);
     static void write_system_lock(const RangeLock *system_lock, XmlWriter &xml);
 
-    static muse::String line_break_to_tag(const String &str);
     static void write_properties(const StaffLabel &item, XmlWriter &xml);
     static void write_properties(const InstrumentLabel &item, XmlWriter &xml);
 

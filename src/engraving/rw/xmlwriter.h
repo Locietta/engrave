@@ -54,7 +54,7 @@ struct XmlWriter : muse::XmlStreamWriter {
     void tag_fraction(const AsciiStringView &name, const Fraction &v, const Fraction &def = Fraction());
     void tag_point(const AsciiStringView &name, const PointF &v);
 
-    void write_xml(const String &, String s);
+    void write_xml(const String &name, const String &text, bool line_breaks = false);
 
     void comment(const String &text);
 

@@ -21,6 +21,7 @@
  */
 #include "xmlstreamwriter.h"
 
+#include <algorithm>
 #include <limits>
 #include <vector>
 
@@ -34,11 +35,21 @@
 using namespace std::literals;
 using namespace muse;
 
+namespace {
+size_t utf16_chunk_size(std::u16string_view text) {
+    size_t count = std::min<size_t>(text.size(), 4096);
+    if (count < text.size() && text[count] >= 0xdc00 && text[count] <= 0xdfff) --count;
+    return count;
+}
+} // namespace
+
 struct XmlStreamWriter::Impl {
     std::vector<std::string> stack;
     TextStream stream;
+    bool indent = XmlStreamWriter::indent;
 
     void put_level() {
+        if (!indent) return;
         size_t level = stack.size();
         for (size_t i = 0; i < level * 2; ++i) {
             stream << ' ';
@@ -84,21 +95,42 @@ std::string XmlStreamWriter::escape_code_point(const char32_t c) {
 std::string XmlStreamWriter::escape_string(const std::string_view str) {
     // XML escaping can expand one input byte to six output bytes. Account for
     // that temporary before constructing it, and poll inside a large value.
-    if (io::active_write_budget) {
+    auto *budget = io::active_write_budget;
+    if (budget) {
         const auto max = std::numeric_limits<std::uint64_t>::max();
         const auto amount = str.size() > max / 6 ? max : static_cast<std::uint64_t>(str.size()) * 6;
-        if (!io::active_write_budget->charge(amount)) throw io::WriteBudgetStop{};
+        if (!budget->charge(amount)) throw io::WriteBudgetStop{};
     }
+    const bool compact = !indent;
     std::string escaped{};
     auto it = str.begin();
-    std::size_t checked = 0;
+    auto next_poll = it;
     while (it != str.end()) {
-        if ((checked++ & 4095u) == 0 && io::active_write_budget && !io::active_write_budget->poll()) throw io::WriteBudgetStop{};
+        if (it >= next_poll) {
+            if (budget && !budget->poll()) throw io::WriteBudgetStop{};
+            next_poll = it + std::min<std::ptrdiff_t>(4093, str.end() - it);
+        }
         const char32_t c = utf8::next(it, str.end());
-        escaped += escape_code_point(c);
+        if (compact && c >= U' ' && c < 0x80 && c != U'<' && c != U'>' && c != U'&' && c != U'"')
+            escaped.push_back(static_cast<char>(c));
+        else
+            escaped += escape_code_point(c);
     }
 
     return escaped;
+}
+
+void XmlStreamWriter::write_escaped(std::string_view value) {
+    if (const auto *budget = io::active_write_budget; budget && budget->archive_entry) {
+        while (value.size() > 4096) {
+            std::size_t length = 4096;
+            // Keep a multibyte code point in the next chunk if it straddles the boundary.
+            while (length > 4093 && (static_cast<unsigned char>(value[length]) & 0xc0) == 0x80) --length;
+            impl_->stream << escape_string(value.substr(0, length));
+            value.remove_prefix(length);
+        }
+    }
+    impl_->stream << escape_string(value);
 }
 
 void XmlStreamWriter::write_value(const Value &v) {
@@ -113,9 +145,26 @@ void XmlStreamWriter::write_value(const Value &v) {
         case 5: impl_->stream << int64_t{std::get<signed long long>(v)}; break;
         case 6: impl_->stream << uint64_t{std::get<unsigned long long>(v)}; break;
         case 7: impl_->stream << std::get<double>(v); break;
-        case 8: impl_->stream << escape_string(AsciiStringView(std::get<const char *>(v))); break;
-        case 9: impl_->stream << escape_string(std::get<std::string_view>(v)); break;
-        case 10: impl_->stream << escape_string(std::get<String>(v).to_std_string()); break;
+        case 8: write_escaped(AsciiStringView(std::get<const char *>(v))); break;
+        case 9: write_escaped(std::get<std::string_view>(v)); break;
+        case 10: {
+            const auto &value = std::get<String>(v);
+            if (const auto *budget = io::active_write_budget; budget && budget->archive_entry && value.size() > 4096) {
+                auto text = value.view();
+                std::string utf8;
+                while (!text.empty()) {
+                    impl_->stream.require_entry_space(text.size());
+                    const auto count = utf16_chunk_size(text);
+                    utf8.clear();
+                    UtfCodec::utf16to8(text.substr(0, count), utf8);
+                    write_escaped(utf8);
+                    text.remove_prefix(count);
+                }
+            } else {
+                write_escaped(value.to_std_string());
+            }
+            break;
+        }
         default:
             LOGI() << "index: " << v.index();
             UNREACHABLE;
@@ -213,6 +262,36 @@ void XmlStreamWriter::element_string_raw(const String &name_with_attributes, con
         impl_->stream << body;
         impl_->stream << "</" << ename << '>' << '\n';
     }
+}
+
+void XmlStreamWriter::element_text_raw(const String &name, std::u16string_view body, bool line_breaks) {
+    // Every code unit contributes at least one UTF-8 byte after control replacement.
+    impl_->stream.require_entry_space(body.size());
+    impl_->put_level();
+    impl_->stream << '<' << name;
+    if (body.empty()) {
+        impl_->stream << "/>\n";
+        return;
+    }
+    impl_->stream << '>';
+    std::u16string chunk;
+    std::string utf8;
+    while (!body.empty()) {
+        impl_->stream.require_entry_space(body.size());
+        const auto count = utf16_chunk_size(body);
+        chunk.clear();
+        for (char16_t ch : body.substr(0, count)) {
+            if (line_breaks && ch == u'\n')
+                chunk += u"<br/>";
+            else
+                chunk += ch < 0x20 && ch != u'\t' && ch != u'\n' && ch != u'\r' ? u'?' : ch;
+        }
+        utf8.clear();
+        UtfCodec::utf16to8(chunk, utf8);
+        impl_->stream << std::string_view(utf8);
+        body.remove_prefix(count);
+    }
+    impl_->stream << "</" << name << ">\n";
 }
 
 void XmlStreamWriter::comment(const String &text) {

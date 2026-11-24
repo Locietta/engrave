@@ -1430,12 +1430,19 @@ String TextBase::plain_text() const {
 }
 
 String TextBase::xml_text() const {
+    String generated;
+    const auto &source = xml_text(generated);
+    if (&source == &generated) return generated;
+    return source;
+}
+
+const String &TextBase::xml_text(String &generated) const {
     if ((is_capo() && !cursor_->editing()) || !text_invalid_) {
         return text_;
     }
 
-    String text = gen_text(ldata());
-    return text;
+    generated = gen_text(ldata());
+    return generated;
 }
 
 String TextBase::un_escape(String s) {
