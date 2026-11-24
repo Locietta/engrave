@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <expected>
 #include <optional>
 #include <string>
@@ -32,10 +33,21 @@ enum struct ErrorCode {
 
 std::string_view to_string(ErrorCode code) noexcept;
 
+// An edit operand named a measure or staff past the end of the score. Lets a
+// caller with another numbering report the failure without parsing message.
+struct PositionError {
+    enum struct Kind { MEASURE, STAFF };
+    Kind kind = Kind::MEASURE;
+    std::string field; // the operation's operand, e.g. "measure", "at" or "end"
+    std::int32_t index = 0;
+    std::size_t count = 0; // measures or staves the score has
+};
+
 struct Error {
     ErrorCode code = ErrorCode::INVALID_ARGUMENT;
     std::string message;
     std::optional<std::size_t> op_index; // the failing operation of an edit batch
+    std::optional<PositionError> position;
     // Present when an export is refused to prevent unreported loss.
     std::vector<ExportWarning> export_warnings;
     bool poisoned = false;

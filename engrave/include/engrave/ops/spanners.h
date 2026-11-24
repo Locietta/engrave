@@ -30,7 +30,7 @@ struct AddSpanner {
 };
 
 struct MeasureEnd {
-    ElementId measure;
+    Ref measure;
 };
 
 // Places a segment-anchored line through the trailing edge of an authored measure.

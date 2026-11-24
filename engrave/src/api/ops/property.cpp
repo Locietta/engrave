@@ -40,7 +40,7 @@ Result<EngravingObject *> settable_object(const EditContext &context, const Targ
 } // namespace
 
 Result<Step> prepare(EditContext &context, const SetProperty &op) {
-    auto target = context.target(op.target);
+    auto target = context.target(op.target, "target");
     if (!target) return std::unexpected(target.error());
     const auto pid = property_id(op.property);
     if (!pid) return std::unexpected(pid.error());
@@ -61,7 +61,7 @@ Result<Step> prepare(EditContext &context, const SetProperty &op) {
 }
 
 Result<Step> prepare(EditContext &context, const ResetProperty &op) {
-    auto target = context.target(op.target);
+    auto target = context.target(op.target, "target");
     if (!target) return std::unexpected(target.error());
     const auto pid = property_id(op.property);
     if (!pid) return std::unexpected(pid.error());
@@ -78,14 +78,16 @@ Result<Step> prepare(EditContext &context, const ResetProperty &op) {
 }
 
 Result<Step> prepare(EditContext &context, const SetStyle &op) {
-    if (auto score = context.score(op.score); !score) return std::unexpected(score.error());
+    auto selection = context.style_selection(op.score);
+    if (!selection) return std::unexpected(selection.error());
+    if (auto score = context.score(*selection); !score) return std::unexpected(score.error());
     const mu::engraving::Sid sid = mu::engraving::MStyle::style_idx(muse::String::from_std_string(op.style));
     if (sid == mu::engraving::Sid::NOSTYLE) return invalid(std::format("no style '{}'", op.style));
     auto value = from_value(mu::engraving::MStyle::value_type(sid), op.value);
     if (!value) return std::unexpected(value.error());
     // The score is looked up again when the step runs: an earlier operation may
     // have removed the excerpt.
-    return [selection = op.score, sid, value = *value](EditContext &context) -> Result<void> {
+    return [selection = *selection, sid, value = *value](EditContext &context) -> Result<void> {
         auto score = context.score(selection);
         if (!score) return std::unexpected(score.error());
         (*score)->undo_change_style_val(sid, value);

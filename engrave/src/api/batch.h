@@ -18,17 +18,26 @@ struct EngravingObject;
 struct MasterScore;
 struct Measure;
 struct Score;
+struct Segment;
 } // namespace mu::engraving
 
 namespace engrave::api {
 
-// Only EIDs can supply a preflight object. Segment positions and OpRefs depend
-// on what the preceding operations leave in the score.
+enum struct Selector { NONE, MEASURE, STAFF, POSITION };
+
+// Only EIDs can supply a preflight object. The other references depend on
+// what preceding operations leave in the score.
 struct Target {
-    std::variant<ElementId, OpRef, SegmentAddress> ref;
+    std::variant<ElementId, OpRef, SegmentAddress, MeasureIndex, StaffIndex, RelativePosition> ref;
+    std::string_view field;
     mu::engraving::EngravingObject *object = nullptr;
     std::size_t epoch = 0;
     mu::engraving::SourceHandle handle;
+};
+
+struct Position {
+    SegmentAddress address;
+    mu::engraving::Measure *measure;
 };
 
 struct BatchGuard;
@@ -41,12 +50,15 @@ struct EditContext {
     // The operation being prepared or run.
     std::size_t op() const { return op_; }
 
-    Result<Target> target(const Ref &ref) const;
+    Result<Target> target(const Ref &ref, std::string_view field, Selector selector = Selector::NONE) const;
+    Result<Target> position_target(const EditAddress &at, bool chord_rest_only) const;
+    Result<Target> position_target(const EntryAddress &at) const;
+    Result<Position> position(const Target &target) const;
+    Result<mu::engraving::Segment *> segment(const Position &position, const Target &target) const;
     // While running: the live element. A target is resolved again when an earlier
     // operation changed more than properties, since it may have removed it.
     Result<mu::engraving::EngravingObject *> object(const Target &target) const;
-    Result<mu::engraving::Measure *> writable_measure(const SegmentAddress &address) const;
-    // The master score or the excerpt a selection names.
+    Result<ScoreSel> style_selection(const std::optional<ScoreSel> &selection) const;
     Result<mu::engraving::Score *> score(const ScoreSel &selection) const;
 
     // Records an element the running operation created, for OpRef and OpResult.
@@ -60,7 +72,12 @@ struct EditContext {
 private:
     friend struct BatchGuard;
 
+    Result<mu::engraving::Measure *> measure_at(MeasureIndex index) const;
+    Result<void> check_scope(const mu::engraving::EngravingObject &object) const;
+
     mu::engraving::MasterScore &master_;
+    std::optional<ScoreSel> scope_;
+    mu::engraving::Score *scoped_score_ = nullptr;
     std::size_t op_ = 0;
     std::size_t epoch_ = 0; // advanced by every operation that changed more than properties
     std::vector<std::vector<mu::engraving::SourceHandle>> created_;

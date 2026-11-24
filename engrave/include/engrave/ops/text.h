@@ -20,7 +20,7 @@ namespace engrave {
 // is its initial text in the engine's markup (<sym>...</sym>, <b>, ...); an empty
 // one is refused, because the engine stores no id for an empty text.
 struct AddText {
-    Address at;
+    EditAddress at;
     std::string style;
     std::string text;
 };

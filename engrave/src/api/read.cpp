@@ -148,11 +148,11 @@ int score_index(MasterScore &master, const Score *score) {
 
 // The measures of one score in score order, with the start tick of each, so that the
 // measure an element sits in is one search rather than a walk per element.
-struct MeasureIndex {
+struct MeasureLookup {
     std::vector<Measure *> measures;
     std::vector<Fraction> ticks;
 
-    explicit MeasureIndex(Score &score) {
+    explicit MeasureLookup(Score &score) {
         for (Measure *measure = score.first_measure(); measure; measure = measure->next_measure()) {
             measures.push_back(measure);
             ticks.push_back(fraction_of(measure->tick()));
@@ -193,7 +193,7 @@ struct Where {
     std::optional<ElementId> measure;
 };
 
-Where where_of(const EngravingObject &object, const MeasureIndex &index) {
+Where where_of(const EngravingObject &object, const MeasureLookup &index) {
     Where where;
     if (object.is_measure()) {
         const Measure *measure = mu::engraving::to_measure(&object);
@@ -401,7 +401,7 @@ Result<MeasureWindow> measure_window(const Query &request, Score &score, MasterS
         if (found->object->type() != mu::engraving::ElementType::MEASURE) {
             return fail(ErrorCode::INVALID_ARGUMENT, std::format("{} is not a measure", what));
         }
-        const MeasureIndex index(score);
+        const MeasureLookup index(score);
         const auto position = index.index_of(mu::engraving::to_measure(found->object));
         if (position < 0) return fail(ErrorCode::INVALID_ARGUMENT, std::format("{} is not a measure of the score", what));
         return position;
@@ -527,7 +527,7 @@ Result<QueryResult> Document::query(const Query &request) {
     if (!window) return std::unexpected(window.error());
 
     const int index = score_index(master, &score);
-    const MeasureIndex measures(score);
+    const MeasureLookup measures(score);
     const ScoreSel selection = selection_of(score);
     // The properties of each type the query meets, so that a property an element does
     // not have is left out rather than read.
@@ -631,7 +631,11 @@ Result<std::vector<PropertyRead>> Document::get(const Ref &target, const std::ve
                             value);
                         if (!prepared) return std::unexpected(prepared.error());
                     }
-                    return resolve(master, value);
+                    if constexpr (std::is_same_v<T, ElementId> || std::is_same_v<T, Address>) {
+                        return resolve(master, value);
+                    } else {
+                        return fail(ErrorCode::INVALID_ARGUMENT, "ordinal and relative selectors are only available in edit batches");
+                    }
                 }
             },
             target);

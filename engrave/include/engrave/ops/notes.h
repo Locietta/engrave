@@ -25,7 +25,7 @@ struct Pitch {
 // created (for an OpRef of a later operation), then its notes in input order.
 // Any continuation pieces follow in score order, each with its own notes.
 struct EnterNotes {
-    Address at;
+    EditAddress at;
     Fraction duration; // of a whole note, e.g. {1, 4} for a quarter
     std::vector<Pitch> pitches;
 };
@@ -56,7 +56,7 @@ struct DrumKey {
 // An empty key list enters rests. Notes stay in the requested voice and in one
 // measure and tuplet. The first key determines the single stem direction of the chord.
 struct EnterDrums {
-    SegmentAddress at;
+    EntryAddress at;
     Fraction duration;
     std::vector<DrumKey> keys;
 };

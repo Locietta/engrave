@@ -695,7 +695,7 @@ TEST(Edit, PreflightFailureKeepsNativeBytes) {
         {ResetProperty{note, "noSuchProperty"}, ErrorCode::INVALID_ARGUMENT},
         {SetStyle{{}, "noSuchStyle", 1.0}, ErrorCode::INVALID_ARGUMENT},
         {SetStyle{{}, "staffDistance", true}, ErrorCode::INVALID_ARGUMENT},
-        {SetStyle{{ElementId{1, 2}}, "staffDistance", 9.0}, ErrorCode::NOT_FOUND},
+        {SetStyle{engrave::ScoreSel{ElementId{1, 2}}, "staffDistance", 9.0}, ErrorCode::NOT_FOUND},
     };
     for (const Bad &entry : bad) {
         const auto result = document->edit({{red, entry.op}});

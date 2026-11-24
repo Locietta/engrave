@@ -426,6 +426,18 @@ Result<Score *> select_score(MasterScore &master, const ScoreSel &selection) {
     return mu::engraving::to_score(found->object);
 }
 
+std::optional<mu::engraving::Fraction> to_reduced_engine_fraction(Fraction value) {
+    if (value.den <= 0) return std::nullopt;
+    // Taking the remainder first keeps INT64_MIN out of std::gcd.
+    const auto divisor = std::gcd(value.num % value.den, value.den);
+    value.num /= divisor;
+    value.den /= divisor;
+    if (value.num < std::numeric_limits<int>::min() || value.num > std::numeric_limits<int>::max() ||
+        value.den > std::numeric_limits<int>::max())
+        return std::nullopt;
+    return mu::engraving::Fraction(static_cast<int>(value.num), static_cast<int>(value.den));
+}
+
 Result<void> validate_segment_address(const SegmentAddress &address) {
     if (segment_type_of(address.kind) == SegmentType::INVALID)
         return fail(ErrorCode::INVALID_ARGUMENT, std::format("'{}' is not a segment type", address.kind));
@@ -444,7 +456,8 @@ Result<Measure *> segment_measure(MasterScore &master, const SegmentAddress &add
     return mu::engraving::to_measure(measure->object);
 }
 
-Segment *find_segment(Measure &measure, const SegmentAddress &address) {
+Segment *find_segment(Measure &measure, const SegmentAddress &address, bool *ambiguous) {
+    Segment *found = nullptr;
     const SegmentType kind = segment_type_of(address.kind);
     // Compare absolute ticks to avoid overflow in the subtraction from the bar's start.
     for (Segment *candidate = measure.first(); candidate; candidate = candidate->next()) {
@@ -452,10 +465,15 @@ Segment *find_segment(Measure &measure, const SegmentAddress &address) {
         const auto position = candidate->tick();
         if (position.denominator64() > 0 &&
             detail::compare_fraction(position.numerator64(), position.denominator64(), address.tick.num, address.tick.den) == 0) {
-            return candidate;
+            if (!ambiguous) return candidate;
+            if (found) {
+                *ambiguous = true;
+                return nullptr;
+            }
+            found = candidate;
         }
     }
-    return nullptr;
+    return found;
 }
 
 Error missing_segment(const SegmentAddress &address) {

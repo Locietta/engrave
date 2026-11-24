@@ -72,7 +72,7 @@ Result<Step> prepare(EditContext &context, const AddPart &op) {
     if (!found.instr_template) return invalid(std::format("no instrument '{}'", op.instrument_id));
     std::optional<Target> before;
     if (op.before) {
-        auto target = context.target(*op.before);
+        auto target = context.target(*op.before, "before");
         if (!target) return std::unexpected(target.error());
         before = *target;
     }
@@ -104,7 +104,7 @@ Result<Step> prepare(EditContext &context, const AddPart &op) {
 }
 
 Result<Step> prepare(EditContext &context, const RemovePart &op) {
-    auto target = context.target(op.part);
+    auto target = context.target(op.part, "part");
     if (!target) return std::unexpected(target.error());
     return [target = *target](EditContext &context) -> Result<void> {
         auto found = part_at(context, target);
@@ -134,7 +134,7 @@ Result<Step> prepare(EditContext &context, const RemovePart &op) {
 }
 
 Result<Step> prepare(EditContext &context, const AddStaff &op) {
-    auto target = context.target(op.part);
+    auto target = context.target(op.part, "part");
     if (!target) return std::unexpected(target.error());
     return [target = *target](EditContext &context) -> Result<void> {
         auto found = part_at(context, target);
@@ -159,8 +159,9 @@ Result<Step> prepare(EditContext &context, const AddStaff &op) {
 }
 
 Result<Step> prepare(EditContext &context, const RemoveStaff &op) {
-    auto target = context.target(op.staff);
+    auto target = context.target(op.staff, "staff", Selector::STAFF);
     if (!target) return std::unexpected(target.error());
+    if (target->object && !target->object->is_staff()) return invalid("staff: a staff is required");
     return [target = *target](EditContext &context) -> Result<void> {
         auto found = staff_at(context, target);
         if (!found) return std::unexpected(found.error());
@@ -184,7 +185,7 @@ Result<Step> prepare(EditContext &context, const GenerateExcerpts &op) {
     std::vector<Target> targets;
     targets.reserve(op.parts.size());
     for (const Ref &ref : op.parts) {
-        auto target = context.target(ref);
+        auto target = context.target(ref, "parts");
         if (!target) return std::unexpected(target.error());
         targets.push_back(*target);
     }

@@ -20,6 +20,7 @@
 
 namespace mu::engraving {
 struct EID;
+struct Fraction;
 struct EngravingItem;
 struct EngravingObject;
 struct MasterScore;
@@ -101,9 +102,10 @@ struct Resolved {
 Result<Resolved> resolve(mu::engraving::MasterScore &score, const ElementId &id);
 Result<Resolved> resolve(mu::engraving::MasterScore &score, const Address &address);
 
+std::optional<mu::engraving::Fraction> to_reduced_engine_fraction(Fraction value);
 Result<void> validate_segment_address(const SegmentAddress &address);
 Result<mu::engraving::Measure *> segment_measure(mu::engraving::MasterScore &master, const SegmentAddress &address);
-mu::engraving::Segment *find_segment(mu::engraving::Measure &measure, const SegmentAddress &address);
+mu::engraving::Segment *find_segment(mu::engraving::Measure &measure, const SegmentAddress &address, bool *ambiguous = nullptr);
 Error missing_segment(const SegmentAddress &address);
 
 // Whether an object still hangs off one of the document's scores. Weaker than

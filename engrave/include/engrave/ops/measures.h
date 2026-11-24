@@ -49,7 +49,7 @@ struct SetKeySig {
 // a staff and not to a voice.  A clef at the start of a measure that has one before it
 // goes at the end of that measure, as it does when it is dropped there in the editor.
 struct InsertClef {
-    Address at;
+    EditAddress at;
     std::string clef; // a clef type token: "G", "F", "C3", "PERC", ...
 };
 

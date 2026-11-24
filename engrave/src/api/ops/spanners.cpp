@@ -65,6 +65,12 @@ Result<ChordRest *> chord_rest(const EditContext &context, const Target &target)
     auto object = context.object(target);
     if (!object) return std::unexpected(object.error());
     EngravingObject *found = *object;
+    if (const auto *relative = std::get_if<RelativePosition>(&target.ref)) {
+        auto *item = mu::engraving::to_segment(found)->element(mu::engraving::staff2track(relative->staff, relative->voice));
+        if (!item || !item->is_chord_rest())
+            return rejected(std::format("{}: a chord or rest is required at the specified staff and voice", target.field));
+        return mu::engraving::to_chord_rest(item);
+    }
     if (found->is_note()) found = mu::engraving::to_note(found)->chord();
     if (!found->is_chord_rest()) return invalid(std::format("{} is not a chord or a rest", found->type_name()));
     return mu::engraving::to_chord_rest(found);
@@ -73,8 +79,46 @@ Result<ChordRest *> chord_rest(const EditContext &context, const Target &target)
 Result<mu::engraving::Measure *> measure_endpoint(const EditContext &context, const Target &target) {
     auto object = context.object(target);
     if (!object) return std::unexpected(object.error());
-    if (!(*object)->is_measure()) return invalid("the endpoint must be a measure");
+    if (!(*object)->is_measure()) return invalid(std::format("{}: a measure is required", target.field));
     return mu::engraving::to_measure(*object);
+}
+
+struct LineEndpoint {
+    Segment *segment;
+    mu::engraving::track_idx_t track;
+};
+
+Result<LineEndpoint> line_endpoint(const EditContext &context, const Target &target) {
+    if (const auto *relative = std::get_if<RelativePosition>(&target.ref)) {
+        auto object = context.object(target);
+        if (!object) return std::unexpected(object.error());
+        return LineEndpoint{mu::engraving::to_segment(*object), mu::engraving::staff2track(relative->staff, relative->voice)};
+    }
+    const auto rest = chord_rest(context, target);
+    if (!rest) return std::unexpected(rest.error());
+    auto *segment = (*rest)->segment();
+    if (!segment) return invalid(std::format("{}: the chord or rest must occupy a segment", target.field));
+    return LineEndpoint{segment, (*rest)->track()};
+}
+
+bool segment_line(ElementType type) {
+    switch (type) {
+        case ElementType::OTTAVA:
+        case ElementType::TEXTLINE:
+        case ElementType::TRILL:
+        case ElementType::LET_RING:
+        case ElementType::GRADUAL_TEMPO_CHANGE:
+        case ElementType::VIBRATO:
+        case ElementType::PALM_MUTE:
+        case ElementType::WHAMMY_BAR:
+        case ElementType::RASGUEADO:
+        case ElementType::HARMONIC_MARK:
+        case ElementType::PICK_SCRAPE:
+        case ElementType::PEDAL:
+        case ElementType::HAIRPIN:
+        case ElementType::PARTIAL_LYRICSLINE: return true;
+        default: return false;
+    }
 }
 
 void add_at_ticks(Spanner *spanner, mu::engraving::track_idx_t track, const mu::engraving::Fraction &start,
@@ -123,47 +167,49 @@ void set_properties(EngravingItem &object, const std::vector<std::pair<Pid, Prop
 } // namespace
 
 Result<Step> prepare(EditContext &context, const AddSpanner &op) {
-    auto start = context.target(op.start);
+    auto start = context.target(op.start, "start", Selector::POSITION);
     if (!start) return std::unexpected(start.error());
-    auto end = context.target(op.end);
+    auto end = context.target(op.end, "end", Selector::POSITION);
     if (!end) return std::unexpected(end.error());
     const ElementType type = mu::engraving::TConv::from_xml(muse::AsciiStringView(op.type), ElementType::INVALID);
-    if (type == ElementType::INVALID) return invalid(std::format("no element type '{}'", op.type));
+    if (type != ElementType::SLUR && !segment_line(type)) return invalid(std::format("'{}' is not an addable spanner type", op.type));
     auto props = properties(op.props);
     if (!props) return std::unexpected(props.error());
-    return [start = *start, end = *end, type, name = op.type, props = std::move(*props)](EditContext &context) -> Result<void> {
-        auto first = chord_rest(context, start);
-        if (!first) return std::unexpected(first.error());
-        auto last = chord_rest(context, end);
-        if (!last) return std::unexpected(last.error());
-        Score *score = (*first)->score();
-        if ((*last)->score() != score) return invalid("a spanner starts and ends in one score");
-
+    if (auto valid = validate_properties(mu::engraving::TConv::to_xml(type).ascii(), *props); !valid) return std::unexpected(valid.error());
+    return [start = *start, end = *end, type, props = std::move(*props)](EditContext &context) -> Result<void> {
         Spanner *spanner = nullptr;
         if (type == ElementType::SLUR) {
-            if (auto valid = validate_properties(mu::engraving::TConv::to_xml(type).ascii(), props); !valid) return valid;
-            // The engine's own slur: it follows the chain of tied notes up to the note
-            // the slur has to end at.
+            auto first = chord_rest(context, start);
+            if (!first) return std::unexpected(first.error());
+            auto last = chord_rest(context, end);
+            if (!last) return std::unexpected(last.error());
+            Score *score = (*first)->score();
+            if ((*last)->score() != score) return invalid("a spanner starts and ends in one score");
             spanner = score->add_slur(*first, *last, nullptr);
             if (!spanner) return rejected("the engine did not make the slur");
         } else {
+            auto first = line_endpoint(context, start);
+            if (!first) return std::unexpected(first.error());
+            auto last = line_endpoint(context, end);
+            if (!last) return std::unexpected(last.error());
+            Score *score = first->segment->score();
+            if (last->segment->score() != score) return invalid("a spanner starts and ends in one score");
+            const bool positional =
+                std::holds_alternative<RelativePosition>(start.ref) || std::holds_alternative<RelativePosition>(end.ref);
+            const auto from = first->segment->tick();
+            const auto to = last->segment->tick();
+            if (positional && to <= from) return rejected("end: the end onset must follow the start");
             std::unique_ptr<EngravingItem> created(mu::engraving::Factory::create_item(type, score->dummy()));
-            if (!created) return invalid(std::format("{} cannot be created", name));
-            if (!created->is_spanner()) return invalid(std::format("a {} is not a spanner", created->type_name()));
-            Spanner *placed = mu::engraving::to_spanner(created.get());
-            if (placed->anchor() != Spanner::Anchor::SEGMENT) {
-                return invalid(
-                    std::format("AddSpanner places spanners that run from one segment to the next; a {} is not one", placed->type_name()));
+            if (!created || !created->is_spanner() || mu::engraving::to_spanner(created.get())->anchor() != Spanner::Anchor::SEGMENT)
+                return invalid("the spanner must be anchored to segments");
+            spanner = mu::engraving::to_spanner(created.release());
+            if (positional) {
+                // The end operand supplies only a tick. Linked copies use the track delta in their own score.
+                add_at_ticks(spanner, first->track, from, to);
+            } else {
+                mu::engraving::EditSpanner::add_spanner(score->transaction_manager()->current_or_dummy_transaction(), score, spanner,
+                                                        mu::engraving::track2staff(first->track), first->segment, last->segment);
             }
-            if (auto valid = validate_properties(placed->type_name(), props); !valid) return valid;
-            // All spanners of this kind live on one staff: the one the start names.
-            Segment *start_segment = (*first)->segment();
-            Segment *end_segment = (*last)->segment();
-            if (!start_segment || !end_segment) return invalid("the chord rest has no segment to start at");
-            created.release();
-            mu::engraving::EditSpanner::add_spanner(score->transaction_manager()->current_or_dummy_transaction(), score, placed,
-                                                    (*first)->staff_idx(), start_segment, end_segment);
-            spanner = placed;
         }
         set_properties(*spanner, props);
         context.created(spanner);
@@ -172,35 +218,33 @@ Result<Step> prepare(EditContext &context, const AddSpanner &op) {
 }
 
 Result<Step> prepare(EditContext &context, const AddSpannerToBarEnd &op) {
-    auto start = context.target(op.start);
+    auto start = context.target(op.start, "start", Selector::POSITION);
     if (!start) return std::unexpected(start.error());
-    auto end = context.target(Ref{op.end.measure});
+    auto end = context.target(op.end.measure, "end", Selector::MEASURE);
     if (!end) return std::unexpected(end.error());
-    if (auto measure = measure_endpoint(context, *end); !measure) return std::unexpected(measure.error());
+    if (end->object && !end->object->is_measure()) return invalid("end: a measure is required");
     const ElementType type = mu::engraving::TConv::from_xml(muse::AsciiStringView(op.type), ElementType::INVALID);
-    if (type == ElementType::INVALID) return invalid(std::format("no element type '{}'", op.type));
-    if (type == ElementType::SLUR || type == ElementType::TIE) return invalid("slurs and ties require musical endpoints");
+    if (!segment_line(type)) return invalid(std::format("'{}' is not an addable segment spanner type", op.type));
     auto props = properties(op.props);
     if (!props) return std::unexpected(props.error());
+    if (auto valid = validate_properties(mu::engraving::TConv::to_xml(type).ascii(), *props); !valid) return std::unexpected(valid.error());
     return [start = *start, end = *end, type, props = std::move(*props)](EditContext &context) -> Result<void> {
-        auto first = chord_rest(context, start);
+        auto first = line_endpoint(context, start);
         if (!first) return std::unexpected(first.error());
         auto measure = measure_endpoint(context, end);
         if (!measure) return std::unexpected(measure.error());
-        Score *score = (*first)->score();
+        Score *score = first->segment->score();
         if ((*measure)->score() != score) return invalid("a spanner starts and ends in one score");
-        if (!(*first)->segment()) return invalid("the starting chord or rest must occupy a segment");
-        const auto from = (*first)->tick();
+        const auto from = first->segment->tick();
         const auto to = (*measure)->end_tick();
-        if (to <= from) return invalid("the barline must follow the start of the spanner");
+        if (to <= from) return invalid("end: the barline must follow the start of the spanner");
 
         std::unique_ptr<EngravingItem> item(mu::engraving::Factory::create_item(type, score->dummy()));
         if (!item || !item->is_spanner() || mu::engraving::to_spanner(item.get())->anchor() != Spanner::Anchor::SEGMENT) {
             return invalid("a bar-end spanner must be anchored to segments");
         }
-        if (auto valid = validate_properties(item->type_name(), props); !valid) return valid;
         auto *spanner = mu::engraving::to_spanner(item.release());
-        add_at_ticks(spanner, (*first)->track(), from, to);
+        add_at_ticks(spanner, first->track, from, to);
         set_properties(*spanner, props);
         context.created(spanner);
         return {};
@@ -208,9 +252,9 @@ Result<Step> prepare(EditContext &context, const AddSpannerToBarEnd &op) {
 }
 
 Result<Step> prepare(EditContext &context, const AddVolta &op) {
-    auto first = context.target(op.first_measure);
+    auto first = context.target(op.first_measure, "first_measure", Selector::MEASURE);
     if (!first) return std::unexpected(first.error());
-    auto last = context.target(op.last_measure);
+    auto last = context.target(op.last_measure, "last_measure", Selector::MEASURE);
     if (!last) return std::unexpected(last.error());
     if ((first->object && !first->object->is_measure()) || (last->object && !last->object->is_measure()))
         return invalid("a volta spans measures");
@@ -250,11 +294,11 @@ Result<Step> prepare(EditContext &context, const AddVolta &op) {
 }
 
 Result<Step> prepare(EditContext &context, const AddTie &op) {
-    auto target = context.target(op.note);
+    auto target = context.target(op.note, "note");
     if (!target) return std::unexpected(target.error());
     std::optional<Target> end_target;
     if (op.end_note) {
-        auto end = context.target(*op.end_note);
+        auto end = context.target(*op.end_note, "end_note");
         if (!end) return std::unexpected(end.error());
         end_target = *end;
     }
@@ -308,9 +352,9 @@ Result<Step> prepare(EditContext &context, const AddTie &op) {
 
 Result<Step> prepare(EditContext &context, const AddTuplet &op) {
     if (op.actual <= 0 || op.normal <= 0) return invalid(std::format("{}:{} is not a tuplet ratio", op.actual, op.normal));
-    auto first = context.target(op.first);
+    auto first = context.target(op.first, "first");
     if (!first) return std::unexpected(first.error());
-    auto last = context.target(op.last);
+    auto last = context.target(op.last, "last");
     if (!last) return std::unexpected(last.error());
     return [first = *first, last = *last, actual = op.actual, normal = op.normal](EditContext &context) -> Result<void> {
         auto first_rest = chord_rest(context, first);

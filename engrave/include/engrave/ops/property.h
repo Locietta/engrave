@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <string>
 #include <tuple>
 
@@ -28,7 +29,7 @@ struct ResetProperty {
 // Sets a style of the master score or of one excerpt. style is the style's
 // name (StyleInfo::name) and value must have its kind.
 struct SetStyle {
-    ScoreSel score;
+    std::optional<ScoreSel> score; // unset inherits the batch scope, or the master for an unscoped batch
     std::string style;
     Value value;
 };

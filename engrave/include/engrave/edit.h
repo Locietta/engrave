@@ -37,6 +37,7 @@ using Op = detail::OpVariant<PropertyOps, NoteOps, MeasureOps, PartOps, SpannerO
 // Operations prepared together and applied in order.
 struct Batch {
     std::vector<Op> ops;
+    std::optional<ScoreSel> scope; // unset allows document-wide IDs and resolves ordinals in the master
 };
 
 // What one operation of a committed batch did.

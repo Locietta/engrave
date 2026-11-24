@@ -72,8 +72,24 @@ struct OpRef {
     std::size_t item = 0;
 };
 
-// What an operation acts on: an element by id, a position, or something an
-// earlier operation of the same batch created.
-using Ref = std::variant<ElementId, Address, OpRef>;
+// Edit selectors are zero-based and evaluated against the score at the step.
+struct MeasureIndex {
+    std::int32_t index = 0;
+};
+
+struct StaffIndex {
+    std::int32_t index = 0;
+};
+
+struct RelativePosition {
+    MeasureIndex measure{};
+    std::int32_t staff = 0;
+    std::int32_t voice = 0;
+    Fraction offset{}; // whole-note units from the measure's start
+};
+
+using Ref = std::variant<ElementId, Address, OpRef, MeasureIndex, StaffIndex, RelativePosition>;
+using EditAddress = std::variant<Address, RelativePosition>;
+using EntryAddress = std::variant<SegmentAddress, RelativePosition>;
 
 } // namespace engrave

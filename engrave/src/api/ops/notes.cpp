@@ -1,7 +1,5 @@
 #include <algorithm>
 #include <format>
-#include <limits>
-#include <numeric>
 #include <optional>
 #include <string>
 #include <utility>
@@ -52,18 +50,6 @@ using mu::engraving::TDuration;
 using mu::engraving::Transpose;
 
 std::unexpected<Error> invalid(std::string message) { return std::unexpected(Error{ErrorCode::INVALID_ARGUMENT, std::move(message)}); }
-
-std::optional<mu::engraving::Fraction> to_reduced_engine_fraction(Fraction value) {
-    if (value.den <= 0) return std::nullopt;
-    // Taking the remainder first keeps INT64_MIN out of std::gcd.
-    const auto divisor = std::gcd(value.num % value.den, value.den);
-    value.num /= divisor;
-    value.den /= divisor;
-    if (value.num < std::numeric_limits<int>::min() || value.num > std::numeric_limits<int>::max() ||
-        value.den > std::numeric_limits<int>::max())
-        return std::nullopt;
-    return mu::engraving::Fraction(static_cast<int>(value.num), static_cast<int>(value.den));
-}
 
 ChordRest *rhythm_covering(mu::engraving::Measure &measure, const mu::engraving::Fraction &tick, mu::engraving::track_idx_t track) {
     EngravingItem *previous = nullptr;
@@ -170,23 +156,25 @@ Result<void> validate_chord(const std::vector<NoteVal> &values) {
     return {};
 }
 
-Result<Step> prepare_entry(EditContext &context, const SegmentAddress &address, Fraction length, std::vector<NoteVal> values,
-                           bool percussion) {
-    if (address.kind != "ChordRest") return invalid("rhythmic entry requires a ChordRest segment address");
+Result<Step> prepare_entry(Target target, Fraction length, std::vector<NoteVal> values, bool percussion) {
     const auto duration = to_reduced_engine_fraction(length);
     if (!duration || length.num <= 0) return invalid("the duration must be a positive fraction of a whole note");
     if (auto valid = validate_chord(values); !valid) return std::unexpected(valid.error());
-    auto target = context.target(Ref{Address{address}});
-    if (!target) return std::unexpected(target.error());
-    const auto tick = *to_reduced_engine_fraction(address.tick);
 
-    return [target = *target, tick, duration = *duration, values = std::move(values), percussion](EditContext &context) -> Result<void> {
-        const auto &at = std::get<SegmentAddress>(target.ref);
-        const auto location = context.writable_measure(at);
+    return [target = std::move(target), duration = *duration, values = std::move(values),
+            percussion](EditContext &context) -> Result<void> {
+        const auto location = context.position(target);
         if (!location) return std::unexpected(location.error());
-        auto *measure = *location;
+        const auto &at = location->address;
+        const auto tick = *to_reduced_engine_fraction(at.tick);
+        auto *measure = location->measure;
         Score *score = measure->score();
-        Segment *start = find_segment(*measure, at);
+        const bool relative = std::holds_alternative<RelativePosition>(target.ref);
+        bool ambiguous = false;
+        Segment *start = find_segment(*measure, at, relative ? &ambiguous : nullptr);
+        if (ambiguous)
+            return std::unexpected(
+                Error{ErrorCode::EDIT_REJECTED, std::format("{}: more than one ChordRest segment matches this onset", target.field)});
         if (start && id_class(*start) == IdClass::LAYOUT) return invalid("layout builds this segment; it cannot be edited");
         const auto track = mu::engraving::staff2track(at.staff, at.voice);
         const Staff *staff = score->staff(at.staff);
@@ -207,7 +195,12 @@ Result<Step> prepare_entry(EditContext &context, const SegmentAddress &address, 
         if (covered && !covered->is_rest()) return invalid("the entry position falls inside a sounding event");
         auto *covering = covered ? mu::engraving::to_rest(covered) : nullptr;
         const bool open_voice = interior && at.voice != 0 && !measure->has_voice(track);
-        if (!start && !covering && !open_voice) return std::unexpected(missing_segment(at));
+        if (!start && !covering && !open_voice) {
+            auto error = missing_segment(at);
+            error.message = "at: " + error.message;
+            if (relative) error.code = ErrorCode::EDIT_REJECTED;
+            return std::unexpected(std::move(error));
+        }
         auto *tuplet = covering ? covering->tuplet() : nullptr;
         if (const auto *item = start ? start->element(track) : nullptr; item && item->is_chord_rest())
             tuplet = mu::engraving::to_chord_rest(item)->tuplet();
@@ -344,11 +337,11 @@ Result<Step> prepare_entry(EditContext &context, const SegmentAddress &address, 
 } // namespace
 
 Result<Step> prepare(EditContext &context, const EnterNotes &op) {
-    const auto *at = std::get_if<SegmentAddress>(&op.at);
-    if (!at) return invalid("EnterNotes enters notes at a segment address");
+    auto at = context.position_target(op.at, true);
+    if (!at) return std::unexpected(at.error());
     auto values = note_values(op.pitches);
     if (!values) return std::unexpected(values.error());
-    return prepare_entry(context, *at, op.duration, std::move(*values), false);
+    return prepare_entry(std::move(*at), op.duration, std::move(*values), false);
 }
 
 Result<Step> prepare(EditContext &context, const EnterDrums &op) {
@@ -359,7 +352,9 @@ Result<Step> prepare(EditContext &context, const EnterDrums &op) {
             return invalid(std::format("drum key {} must be between 0 and 127", key.key));
         values.emplace_back(key.key);
     }
-    return prepare_entry(context, op.at, op.duration, std::move(values), true);
+    auto at = context.position_target(op.at);
+    if (!at) return std::unexpected(at.error());
+    return prepare_entry(std::move(*at), op.duration, std::move(values), true);
 }
 
 Result<Step> prepare(EditContext &context, const AddGraceChord &op) {
@@ -375,7 +370,7 @@ Result<Step> prepare(EditContext &context, const AddGraceChord &op) {
     auto values = note_values(op.grace.pitches);
     if (!values) return std::unexpected(values.error());
     if (auto valid = validate_chord(*values); !valid) return std::unexpected(valid.error());
-    auto target = context.target(op.principal);
+    auto target = context.target(op.principal, "principal");
     if (!target) return std::unexpected(target.error());
     const bool after = bool(style->type & (NoteType::GRACE8_AFTER | NoteType::GRACE16_AFTER | NoteType::GRACE32_AFTER));
     const auto event_end = op.event_end ? to_reduced_engine_fraction(*op.event_end) : std::nullopt;
@@ -425,7 +420,7 @@ Result<Step> prepare(EditContext &context, const AddGraceChord &op) {
 Result<Step> prepare(EditContext &context, const SetPitch &op) {
     if (!mu::engraving::pitch_is_valid(op.pitch)) return invalid(std::format("{} is not a pitch", op.pitch));
     if (op.tpc && !mu::engraving::tpc_is_valid(*op.tpc)) return invalid(std::format("{} is not a tonal pitch class", *op.tpc));
-    auto target = context.target(op.note);
+    auto target = context.target(op.note, "note");
     if (!target) return std::unexpected(target.error());
     return [target = *target, pitch = op.pitch, tpc = op.tpc](EditContext &context) -> Result<void> {
         auto item = edited_item(context, target);
@@ -456,7 +451,7 @@ Result<Step> prepare(EditContext &context, const SetPitch &op) {
 Result<Step> prepare(EditContext &context, const SetDuration &op) {
     const auto duration = to_reduced_engine_fraction(op.duration);
     if (!duration || op.duration.num <= 0) return invalid("the duration must be a positive fraction of a whole note");
-    auto target = context.target(op.chord_rest);
+    auto target = context.target(op.chord_rest, "chord_rest");
     if (!target) return std::unexpected(target.error());
     return [target = *target, duration = *duration](EditContext &context) -> Result<void> {
         auto item = edited_item(context, target);
@@ -470,7 +465,7 @@ Result<Step> prepare(EditContext &context, const SetDuration &op) {
 }
 
 Result<Step> prepare(EditContext &context, const Remove &op) {
-    auto target = context.target(op.target);
+    auto target = context.target(op.target, "target");
     if (!target) return std::unexpected(target.error());
     return [target = *target](EditContext &context) -> Result<void> {
         auto item = edited_item(context, target);

@@ -22,6 +22,7 @@
 #include <gtest/gtest.h>
 
 #include "core_test_env.h"
+#include "engrave/src/api/handles.h"
 #include "engrave/src/api/sniff.h"
 #include "engrave/src/render/cairo_painter.h"
 #include "engrave/src/runtime/engine_context.h"
@@ -31,13 +32,16 @@
 #include "engraving/dom/bend.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/drumset.h"
+#include "engraving/dom/factory.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/note.h"
 #include "engraving/dom/pitchspelling.h"
 #include "engraving/dom/repeatlist.h"
+#include "engraving/dom/segment.h"
 #include "engraving/dom/spanner.h"
+#include "engraving/dom/staff.h"
 #include "engraving/dom/tie.h"
 #include "engraving/dom/volta.h"
 #include "global/hashmap.h"
@@ -1280,6 +1284,523 @@ std::unique_ptr<engrave::Document> notation_score(int bars, bool pickup = false,
     return opened ? std::move(*opened) : nullptr;
 }
 
+TEST(LiveEdit, InsertionShiftsOrdinalsAndSpannerEndpoints) {
+    using namespace engrave;
+    auto document = notation_score(2);
+    ASSERT_TRUE(document);
+    auto &score = harness::master_of(*document);
+    const auto original_second = from_engine(score.last_measure()->eid());
+    const auto edited = document->edit({{
+        InsertMeasures{MeasureIndex{1}, 1},
+        EnterNotes{RelativePosition{{1}}, {1, 4}, {{62}}},
+        EnterNotes{RelativePosition{{2}}, {1, 4}, {{64}}},
+        AddSpanner{"HairPin", RelativePosition{{1}}, RelativePosition{{2}}, {}},
+    }});
+    ASSERT_TRUE(edited) << edited.error().message;
+    ASSERT_FALSE(edited->rejection) << edited->rejection->error.message;
+    EXPECT_EQ(edited->applied, 4u);
+    EXPECT_EQ(from_engine(score.last_measure()->eid()), original_second);
+    const auto *inserted = score.find_cr({1, 1}, 0);
+    const auto *shifted = score.find_cr({2, 1}, 0);
+    ASSERT_TRUE(inserted && inserted->is_chord());
+    ASSERT_TRUE(shifted && shifted->is_chord());
+    EXPECT_EQ(mu::engraving::to_chord(inserted)->notes().front()->pitch(), 62);
+    EXPECT_EQ(mu::engraving::to_chord(shifted)->notes().front()->pitch(), 64);
+    const auto lines = score.spanner_list();
+    ASSERT_EQ(lines.size(), 1u);
+    EXPECT_TRUE(lines.front()->is_hairpin());
+    EXPECT_EQ(lines.front()->tick(), mu::engraving::Fraction(1, 1));
+    EXPECT_EQ(lines.front()->tick2(), mu::engraving::Fraction(2, 1));
+}
+
+TEST(LiveEdit, DeletingOrdinalRangeRetargetsTheFollowingEntry) {
+    using namespace engrave;
+    auto document = notation_score(4);
+    ASSERT_TRUE(document);
+    auto &score = harness::master_of(*document);
+    const auto original_last = from_engine(score.last_measure()->eid());
+    const auto edited = document->edit({{
+        RemoveMeasures{MeasureIndex{1}, MeasureIndex{2}},
+        EnterNotes{RelativePosition{{1}, 0, 0, {1, 4}}, {1, 4}, {{67}}},
+    }});
+    ASSERT_TRUE(edited) << edited.error().message;
+    ASSERT_FALSE(edited->rejection) << edited->rejection->error.message;
+    EXPECT_EQ(score.first_measure()->next_measure(), score.last_measure());
+    EXPECT_EQ(from_engine(score.last_measure()->eid()), original_last);
+    const auto *entered = score.find_cr({5, 4}, 0);
+    ASSERT_TRUE(entered && entered->is_chord());
+    EXPECT_EQ(mu::engraving::to_chord(entered)->notes().front()->pitch(), 67);
+}
+
+TEST(LiveEdit, ExpandingMeterMakesNewOffsetsWritable) {
+    using namespace engrave;
+    auto document = notation_score(1);
+    ASSERT_TRUE(document);
+    const auto edited = document->edit({{
+        SetTimeSig{MeasureIndex{0}, {5, 4}},
+        EnterNotes{RelativePosition{{0}, 0, 0, {1, 1}}, {1, 4}, {{70}}},
+    }});
+    ASSERT_TRUE(edited) << edited.error().message;
+    ASSERT_FALSE(edited->rejection) << edited->rejection->error.message;
+    auto &score = harness::master_of(*document);
+    EXPECT_EQ(score.first_measure()->ticks(), mu::engraving::Fraction(5, 4));
+    const auto *entered = score.find_cr({1, 1}, 0);
+    ASSERT_TRUE(entered && entered->is_chord());
+    EXPECT_EQ(mu::engraving::to_chord(entered)->notes().front()->pitch(), 70);
+}
+
+TEST(LiveEdit, ShrinkingMeterRejectsAFormerOnsetWithAtomicAndPrefixSemantics) {
+    using namespace engrave;
+    for (const auto mode : {EditMode::Atomic, EditMode::Prefix}) {
+        auto document = notation_score(1);
+        ASSERT_TRUE(document);
+        const auto revision = document->revision();
+        const auto edited = document->edit({{
+                                               SetTimeSig{MeasureIndex{0}, {3, 4}},
+                                               EnterNotes{RelativePosition{{0}, 0, 0, {3, 4}}, {1, 4}, {{62}}},
+                                           }},
+                                           {.mode = mode});
+        ASSERT_TRUE(edited) << edited.error().message;
+        ASSERT_TRUE(edited->rejection);
+        EXPECT_EQ(edited->rejection->op_index, 1u);
+        EXPECT_EQ(edited->rejection->error.code, ErrorCode::EDIT_REJECTED);
+        EXPECT_TRUE(edited->rejection->error.message.starts_with("at:"));
+        EXPECT_NE(edited->rejection->error.message.find("offset"), std::string::npos);
+        EXPECT_FALSE(edited->rejection->error.poisoned);
+        const bool prefix = mode == EditMode::Prefix;
+        EXPECT_EQ(edited->applied, prefix ? 1u : 0u);
+        EXPECT_EQ(document->revision(), revision + prefix);
+        auto &score = harness::master_of(*document);
+        EXPECT_EQ(score.first_measure()->ticks(), prefix ? mu::engraving::Fraction(3, 4) : mu::engraving::Fraction(1, 1));
+        const auto retry = document->edit({{EnterNotes{RelativePosition{{0}, 0, 0, {1, 4}}, {1, 4}, {{65}}}}});
+        ASSERT_TRUE(retry) << retry.error().message;
+        EXPECT_FALSE(retry->rejection);
+        const auto *entered = score.find_cr({1, 4}, 0);
+        ASSERT_TRUE(entered && entered->is_chord());
+        EXPECT_EQ(mu::engraving::to_chord(entered)->notes().front()->pitch(), 65);
+    }
+}
+
+TEST(LiveEdit, AddingPartsAndStavesMovesStaffOrdinalsBeforeEntry) {
+    using namespace engrave;
+    auto document = notation_score(1);
+    ASSERT_TRUE(document);
+    auto &score = harness::master_of(*document);
+    const auto original_part = harness::find_id(*document, "Part");
+    const auto *original_staff = score.staff(0);
+    const auto edited = document->edit({{
+        AddPart{"violin", original_part},
+        AddStaff{OpRef{0, 0}},
+        SetKeySig{MeasureIndex{0}, 2, StaffIndex{2}},
+        EnterNotes{RelativePosition{{0}, 2}, {1, 4}, {{68}}},
+        EnterNotes{RelativePosition{{0}, 1}, {1, 4}, {{72}}},
+    }});
+    ASSERT_TRUE(edited) << edited.error().message;
+    ASSERT_FALSE(edited->rejection) << edited->rejection->error.message;
+    ASSERT_EQ(score.nstaves(), 3u);
+    EXPECT_EQ(score.staff(2), original_staff);
+    EXPECT_EQ(static_cast<int>(score.staff(2)->key({0, 1})), 2);
+    EXPECT_EQ(static_cast<int>(score.staff(0)->key({0, 1})), 0);
+    for (const auto [track, pitch] : {std::pair{4, 72}, {8, 68}}) {
+        const auto *entered = score.find_cr({0, 1}, track);
+        ASSERT_TRUE(entered && entered->is_chord());
+        EXPECT_EQ(mu::engraving::to_chord(entered)->notes().front()->pitch(), pitch);
+    }
+    const auto removed = document->edit({{RemoveStaff{StaffIndex{1}}}});
+    ASSERT_TRUE(removed) << removed.error().message;
+    EXPECT_FALSE(removed->rejection);
+    ASSERT_EQ(score.nstaves(), 2u);
+    EXPECT_EQ(score.staff(1), original_staff);
+}
+
+TEST(LiveEdit, ExcerptScopeUsesLocalStaffAndRejectsForeignOperands) {
+    using namespace engrave;
+    auto document = notation_score(2);
+    ASSERT_TRUE(document);
+    const auto setup = document->edit({{AddPart{"violin"}, GenerateExcerpts{{OpRef{0, 0}}}}});
+    ASSERT_TRUE(setup) << setup.error().message;
+    ASSERT_FALSE(setup->rejection) << setup->rejection->error.message;
+    const ScoreSel excerpt_scope{setup->ops[1].created[0]};
+    ASSERT_TRUE(excerpt_scope.excerpt);
+    auto &master = harness::master_of(*document);
+    auto *excerpt = master.score_list().back();
+    ASSERT_NE(excerpt, &master);
+    ASSERT_EQ(excerpt->nstaves(), 1u);
+    const auto *first_bar = master.first_measure();
+    const auto master_bar = from_engine(first_bar->eid());
+    const auto master_rest = harness::find_id(*document, "Rest", [&](const auto &object) { return &object == master.find_cr({0, 1}, 0); });
+    using mu::engraving::Sid;
+    const auto master_width = master.style().style_d(Sid::PAGE_WIDTH);
+    const auto edited = document->edit({
+        .ops = {EnterNotes{RelativePosition{{0}}, {1, 4}, {{69}}}, SetStyle{std::nullopt, "pageWidth", 9.0}},
+        .scope = excerpt_scope,
+    });
+    ASSERT_TRUE(edited) << edited.error().message;
+    ASSERT_FALSE(edited->rejection) << edited->rejection->error.message;
+    for (const auto *chord : {excerpt->find_cr({0, 1}, 0), master.find_cr({0, 1}, 4)}) {
+        ASSERT_TRUE(chord && chord->is_chord());
+        EXPECT_EQ(mu::engraving::to_chord(chord)->notes().front()->pitch(), 69);
+    }
+    EXPECT_TRUE(master.find_cr({0, 1}, 0)->is_rest());
+    EXPECT_EQ(excerpt->style().style_d(Sid::PAGE_WIDTH), 9.0);
+    EXPECT_EQ(master.style().style_d(Sid::PAGE_WIDTH), master_width);
+    const auto revision = document->revision();
+    const auto part = harness::find_id(*document, "Part", [&](const auto &object) { return object.score() == &master; });
+    for (const Op &op : std::vector<Op>{
+             SetProperty{master_rest, "visible", false},
+             EnterNotes{SegmentAddress{master_bar, 0, 0, {0, 1}, "ChordRest"}, {1, 4}, {{70}}},
+             InsertMeasures{{}, 1},
+             RemoveMeasures{MeasureIndex{0}, MeasureIndex{0}},
+             AddPart{"violin"},
+             RemovePart{part},
+             GenerateExcerpts{{part}},
+             SetStyle{ScoreSel{}, "pageWidth", 12.0},
+         }) {
+        const auto refused = document->edit(
+            {
+                .ops = {SetStyle{std::nullopt, "pageWidth", 10.0}, op},
+                .scope = excerpt_scope,
+            },
+            {.mode = EditMode::Prefix});
+        ASSERT_FALSE(refused);
+        EXPECT_EQ(refused.error().code, ErrorCode::INVALID_ARGUMENT);
+        EXPECT_EQ(refused.error().op_index, 1u);
+        EXPECT_EQ(document->revision(), revision);
+        EXPECT_EQ(excerpt->style().style_d(Sid::PAGE_WIDTH), 9.0);
+    }
+    const auto foreign_result = document->edit(
+        {
+            .ops = {GenerateExcerpts{{part}}, SetProperty{OpRef{0, 0}, "visible", false}},
+            .scope = ScoreSel{},
+        },
+        {.mode = EditMode::Prefix});
+    ASSERT_TRUE(foreign_result) << foreign_result.error().message;
+    ASSERT_TRUE(foreign_result->rejection);
+    EXPECT_EQ(foreign_result->applied, 1u);
+    EXPECT_EQ(foreign_result->rejection->op_index, 1u);
+    EXPECT_NE(foreign_result->rejection->error.message.find("different score"), std::string::npos);
+
+    const auto invalid_scope = document->edit({.ops = {}, .scope = ScoreSel{master_bar}});
+    ASSERT_FALSE(invalid_scope);
+    EXPECT_EQ(invalid_scope.error().code, ErrorCode::INVALID_ARGUMENT);
+}
+
+TEST(LiveEdit, ExcerptStaffEditsStayLocalAndKeepTheMasterSaveGuard) {
+    using namespace engrave;
+    auto document = notation_score(2);
+    ASSERT_TRUE(document);
+    const auto master_part = harness::find_id(*document, "Part");
+    const auto setup = document->edit({{GenerateExcerpts{{master_part}}}});
+    ASSERT_TRUE(setup) << setup.error().message;
+    ASSERT_FALSE(setup->rejection) << setup->rejection->error.message;
+    const ScoreSel scope{setup->ops[0].created[0]};
+    ASSERT_TRUE(scope.excerpt);
+    auto &master = harness::master_of(*document);
+    ASSERT_EQ(master.score_list().size(), 2u);
+    auto *excerpt = master.score_list().back();
+    const auto excerpt_part = harness::find_id(*document, "Part", [&](const auto &object) { return object.score() == excerpt; });
+
+    const auto added = document->edit({.ops = {AddStaff{excerpt_part}}, .scope = scope});
+    ASSERT_TRUE(added) << added.error().message;
+    ASSERT_FALSE(added->rejection) << added->rejection->error.message;
+    EXPECT_EQ(excerpt->nstaves(), 2u);
+    EXPECT_EQ(master.nstaves(), 1u);
+
+    const auto removed = document->edit({.ops = {RemoveStaff{StaffIndex{1}}}, .scope = scope});
+    ASSERT_TRUE(removed) << removed.error().message;
+    ASSERT_FALSE(removed->rejection) << removed->rejection->error.message;
+    EXPECT_EQ(excerpt->nstaves(), 1u);
+    EXPECT_EQ(master.nstaves(), 1u);
+
+    const auto guarded = document->edit({{AddStaff{master_part}}});
+    ASSERT_TRUE(guarded) << guarded.error().message;
+    ASSERT_TRUE(guarded->rejection);
+    EXPECT_EQ(guarded->rejection->error.code, ErrorCode::INVALID_ARGUMENT);
+    EXPECT_NE(guarded->rejection->error.message.find("does not survive a save"), std::string::npos);
+    EXPECT_EQ(guarded->applied, 0u);
+
+    const auto saved = document->export_score({.format = Format::MSCZ});
+    ASSERT_TRUE(saved) << saved.error().message;
+    const auto reopened = g_engine->open(*saved);
+    ASSERT_TRUE(reopened) << reopened.error().message;
+    const auto scores = harness::master_of(**reopened).score_list();
+    ASSERT_EQ(scores.size(), 2u);
+    for (auto *score : scores) EXPECT_EQ(score->nstaves(), 1u);
+}
+
+TEST(LiveEdit, MeasureOrdinalsSkipFramesAndUseAuthoredBarsInsideMultiMeasureRests) {
+    using namespace engrave;
+    using Tick = mu::engraving::Fraction;
+    constexpr std::string_view source = R"(<museScore version="4.70"><Score><Division>480</Division>
+<Style><createMultiMeasureRests>1</createMultiMeasureRests></Style>
+<Part><Staff id="1"/><Instrument><trackName>Piano</trackName></Instrument></Part><Staff id="1">
+<VBox><height>10</height></VBox>
+<Measure><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
+<Chord><durationType>whole</durationType><Note><pitch>60</pitch><tpc>14</tpc></Note></Chord>
+</voice></Measure><HBox><width>5</width></HBox>
+<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>
+<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>
+<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>
+</Staff></Score></museScore>)";
+    const auto document = g_engine->open(bytes_of(source));
+    ASSERT_TRUE(document) << document.error().message;
+    auto &score = harness::master_of(**document);
+    ASSERT_TRUE((*document)->render({.format = RenderFormat::SVG}));
+    auto *first = score.first_measure();
+    ASSERT_TRUE(first->prev() && first->prev()->is_v_box());
+    ASSERT_TRUE(first->next() && first->next()->is_h_box());
+    const auto *rest_run = first->next_measure()->mm_rest();
+    ASSERT_NE(rest_run, nullptr);
+    ASSERT_EQ(rest_run->mm_rest_count(), 3);
+
+    const auto edited = (*document)->edit({{
+        EnterNotes{RelativePosition{{2}, 0, 0, {1, 4}}, {1, 4}, {{67}}},
+        SetLayoutBreak{MeasureIndex{3}, "line", true},
+    }});
+    ASSERT_TRUE(edited) << edited.error().message;
+    ASSERT_FALSE(edited->rejection) << edited->rejection->error.message;
+    const auto *second = first->next_measure();
+    const auto *third = second->next_measure();
+    ASSERT_EQ(third->tick(), Tick(2, 1));
+    const auto *segment = third->find_segment_r(mu::engraving::SegmentType::CHORD_REST, {1, 4});
+    ASSERT_NE(segment, nullptr);
+    ASSERT_TRUE(segment->element(0) && segment->element(0)->is_chord());
+    EXPECT_EQ(mu::engraving::to_chord(segment->element(0))->notes().front()->pitch(), 67);
+    EXPECT_TRUE(second->first(mu::engraving::SegmentType::CHORD_REST)->element(0)->is_rest());
+    EXPECT_EQ(score.last_measure()->tick(), Tick(3, 1));
+    EXPECT_TRUE(score.last_measure()->line_break());
+    EXPECT_FALSE(third->line_break());
+}
+
+TEST(LiveEdit, MarkingsAndLinesUseTheRequestedOnsetAndTrack) {
+    using namespace engrave;
+    auto document = notation_score(1);
+    ASSERT_TRUE(document);
+    const RelativePosition first{{0}, 0, 0, {0, 1}};
+    const RelativePosition second{{0}, 0, 0, {1, 4}};
+    const RelativePosition line_start{{0}, 0, 1, {0, 1}};
+    const RelativePosition line_end{{0}, 0, 1, {1, 4}};
+    const auto edited = document->edit({{
+        EnterNotes{first, {1, 4}, {{60}}},
+        EnterNotes{second, {1, 4}, {{62}}},
+        Add{first, "Articulation", {{"symbol", Enum{"articStaccatoAbove"}}}},
+        Add{line_start, "Dynamic", {{"DYNAMIC_TYPE", Enum{"ff"}}}},
+        Add{first, "Fermata", {{"symbol", Enum{"fermataAbove"}}}},
+        Add{first, "Harmony", {{"text", "Dm"}}},
+        Add{first, "StaffText", {{"text", "dolce"}}},
+        Add{first, "Tempo", {{"text", "Vivace"}}},
+        Add{first, "Expression", {{"text", "sempre"}}},
+        AddText{second, "staff", "second beat"},
+        InsertClef{second, "F"},
+        AddSpanner{"Slur", first, second, {}},
+        AddSpanner{"HairPin", line_start, line_end, {}},
+        InsertMeasures{{}, 1},
+        AddSpannerToBarEnd{"TextLine", line_start, {MeasureIndex{1}}, {}},
+        AddSpannerToBarEnd{"Pedal", first, {OpRef{13, 0}}, {}},
+    }});
+    ASSERT_TRUE(edited) << edited.error().message;
+    ASSERT_FALSE(edited->rejection) << edited->rejection->op_index << " " << edited->rejection->error.message;
+    auto &score = harness::master_of(*document);
+    const auto *chord = mu::engraving::to_chord(score.find_cr({0, 1}, 0));
+    EXPECT_EQ(chord->articulations().size(), 1u);
+    const auto *segment = chord->segment();
+    EXPECT_EQ(segment->element(1), nullptr);
+    for (const auto type : {"Dynamic", "Fermata", "Harmony", "StaffText", "Tempo", "Expression"}) {
+        const auto items = segment->annotations();
+        const auto found = std::ranges::find_if(items, [&](const auto *item) { return item->type_name() == type; });
+        ASSERT_NE(found, items.end()) << type;
+        EXPECT_EQ((*found)->track(), std::string_view(type) == "Dynamic" ? 1u : 0u);
+    }
+    const auto lines = score.spanner_list();
+    ASSERT_EQ(lines.size(), 4u);
+    for (const auto *line : lines) {
+        EXPECT_EQ(line->tick(), mu::engraving::Fraction(0, 1));
+        EXPECT_EQ(line->tick2(), line->is_slur() || line->is_hairpin() ? mu::engraving::Fraction(1, 4) : mu::engraving::Fraction(2, 1));
+        EXPECT_EQ(line->track(), line->is_hairpin() || line->is_text_line() ? 1u : 0u);
+    }
+}
+
+TEST(LiveEdit, FailedAnchorLookupsLeaveTheSegmentListIntact) {
+    using namespace engrave;
+    using mu::engraving::SegmentType;
+    auto document = notation_score(2);
+    ASSERT_TRUE(document);
+    const auto revision = document->revision();
+    auto &score = harness::master_of(*document);
+    auto *first_bar = score.first_measure();
+    const RelativePosition first{{0}};
+    const RelativePosition absent{{0}, 0, 0, {1, 2}};
+    const RelativePosition empty_voice{{1}, 0, 1};
+    for (const Op &op : std::vector<Op>{
+             Add{absent, "Dynamic", {{"DYNAMIC_TYPE", Enum{"ff"}}}},
+             Add{first, "Articulation", {{"symbol", Enum{"articStaccatoAbove"}}}},
+             AddSpanner{"Slur", first, empty_voice, {}},
+             AddSpanner{"HairPin", first, absent, {}},
+             AddSpannerToBarEnd{"HairPin", absent, {MeasureIndex{1}}, {}},
+             InsertClef{absent, "F"},
+             AddText{absent, "staff", "missing"},
+         }) {
+        const auto edited = document->edit({{op}});
+        ASSERT_TRUE(edited) << edited.error().message;
+        ASSERT_TRUE(edited->rejection);
+        EXPECT_EQ(edited->applied, 0u);
+        EXPECT_EQ(edited->rejection->op_index, 0u);
+        EXPECT_FALSE(edited->rejection->error.poisoned);
+        EXPECT_EQ(document->revision(), revision);
+        EXPECT_FALSE(first_bar->find_segment(SegmentType::CHORD_REST, {1, 2}));
+        EXPECT_TRUE(score.spanner_list().empty());
+    }
+
+    // Two ChordRest segments can share an onset. The edit must not choose by list order.
+    auto *duplicate = mu::engraving::Factory::create_segment(first_bar, SegmentType::CHORD_REST, {0, 1});
+    first_bar->add(duplicate);
+    const auto edited = document->edit({{Add{first, "StaffText", {{"text", "ambiguous"}}}}});
+    ASSERT_TRUE(edited) << edited.error().message;
+    ASSERT_TRUE(edited->rejection);
+    EXPECT_NE(edited->rejection->error.message.find("more than one"), std::string::npos);
+    EXPECT_TRUE(duplicate->annotations().empty());
+    EXPECT_TRUE(first_bar->first(SegmentType::CHORD_REST)->annotations().empty());
+}
+
+TEST(LiveEdit, AmbiguousRelativeNoteAndDrumEntryDoNotMutateOrPoisonTheBatch) {
+    using namespace engrave;
+    using mu::engraving::SegmentType;
+    for (const auto mode : {EditMode::Atomic, EditMode::Prefix}) {
+        for (const Op &op :
+             std::vector<Op>{EnterNotes{RelativePosition{{0}, 0}, {1, 4}, {{65}}}, EnterDrums{RelativePosition{{0}, 1}, {1, 4}, {{38}}}}) {
+            auto document = notation_score(2);
+            ASSERT_TRUE(document);
+            const auto setup = document->edit({{AddPart{"drumset"}}});
+            ASSERT_TRUE(setup) << setup.error().message;
+            ASSERT_FALSE(setup->rejection) << setup->rejection->error.message;
+            auto *bar = harness::master_of(*document).first_measure();
+            auto *original = bar->first(SegmentType::CHORD_REST);
+            ASSERT_TRUE(original->element(0) && original->element(0)->is_rest());
+            ASSERT_TRUE(original->element(4) && original->element(4)->is_rest());
+            const auto note_rest = original->element(0)->eid();
+            const auto drum_rest = original->element(4)->eid();
+            auto *duplicate = mu::engraving::Factory::create_segment(bar, SegmentType::CHORD_REST, {0, 1});
+            bar->add(duplicate);
+            const auto revision = document->revision();
+            const auto result = document->edit({{op}}, {.mode = mode});
+            ASSERT_TRUE(result) << result.error().message;
+            ASSERT_TRUE(result->rejection);
+            EXPECT_EQ(result->rejection->error.code, ErrorCode::EDIT_REJECTED);
+            EXPECT_EQ(result->rejection->error.message, "at: more than one ChordRest segment matches this onset");
+            EXPECT_FALSE(result->rejection->error.poisoned);
+            EXPECT_EQ(result->applied, 0u);
+            EXPECT_TRUE(result->created.empty() && result->removed.empty() && result->replaced.empty());
+            EXPECT_EQ(document->revision(), revision);
+
+            // Atomic rollback reopens the score and drops the empty fixture segment.
+            auto &score = harness::master_of(*document);
+            for (const auto &[track, id] : {std::pair{0u, note_rest}, std::pair{4u, drum_rest}}) {
+                const auto *rest = score.find_cr({0, 1}, track);
+                ASSERT_TRUE(rest && rest->is_rest());
+                EXPECT_EQ(rest->eid(), id);
+                EXPECT_EQ(rest->ticks(), mu::engraving::Fraction(1, 1));
+            }
+            if (mode == EditMode::Prefix) {
+                EXPECT_EQ(duplicate->element(0), nullptr);
+                EXPECT_EQ(duplicate->element(4), nullptr);
+            }
+            EXPECT_EQ(score.first_measure()->find_segment(SegmentType::CHORD_REST, {1, 4}), nullptr);
+            const auto retry = document->edit({{EnterNotes{RelativePosition{{1}, 0, 0, {1, 4}}, {1, 4}, {{65}}}}}, {.mode = mode});
+            ASSERT_TRUE(retry) << retry.error().message;
+            ASSERT_FALSE(retry->rejection) << retry->rejection->error.message;
+            const auto *chord = score.find_cr({5, 4}, 0);
+            ASSERT_TRUE(chord && chord->is_chord());
+            EXPECT_EQ(mu::engraving::to_chord(chord)->notes().front()->pitch(), 65);
+        }
+    }
+}
+
+TEST(LiveEdit, OutOfRangeOrdinalsAndUnrepresentableTicksRejectTheStep) {
+    using namespace engrave;
+    auto document = notation_score(3);
+    ASSERT_TRUE(document);
+    const auto revision = document->revision();
+    const auto max_term = std::numeric_limits<std::int32_t>::max();
+    using Kind = PositionError::Kind;
+
+    struct Case {
+        Op op;
+        std::string_view field;
+        std::optional<PositionError> position;
+    };
+
+    // The fixture has three measures and one staff.
+    for (const auto &[op, field, position] : std::vector<Case>{
+             {SetLayoutBreak{MeasureIndex{3}, "line", true}, "measure:", PositionError{Kind::MEASURE, "measure", 3, 3}},
+             {SetKeySig{MeasureIndex{0}, 2, StaffIndex{1}}, "staff:", PositionError{Kind::STAFF, "staff", 1, 1}},
+             {EnterNotes{RelativePosition{{7}}, {1, 4}, {{65}}}, "at:", PositionError{Kind::MEASURE, "at", 7, 3}},
+             {EnterNotes{RelativePosition{{0}, 1}, {1, 4}, {{65}}}, "at:", PositionError{Kind::STAFF, "at", 1, 1}},
+             {AddSpannerToBarEnd{"HairPin", RelativePosition{}, {MeasureIndex{4}}, {}}, "end:", PositionError{Kind::MEASURE, "end", 4, 3}},
+             {EnterNotes{RelativePosition{{0}, 0, 4}, {1, 4}, {{65}}}, "at:", std::nullopt},
+             {EnterNotes{RelativePosition{{2}, 0, 0, {1, max_term}}, {1, 4}, {{65}}}, "at:", std::nullopt},
+         }) {
+        const auto edited = document->edit({{op}});
+        ASSERT_TRUE(edited) << edited.error().message;
+        ASSERT_TRUE(edited->rejection);
+        const auto &error = edited->rejection->error;
+        EXPECT_EQ(error.code, ErrorCode::EDIT_REJECTED);
+        EXPECT_TRUE(error.message.starts_with(field)) << error.message;
+        ASSERT_EQ(error.position.has_value(), position.has_value()) << error.message;
+        if (position) {
+            EXPECT_EQ(error.position->kind, position->kind) << error.message;
+            EXPECT_EQ(error.position->field, position->field) << error.message;
+            EXPECT_EQ(error.position->index, position->index) << error.message;
+            EXPECT_EQ(error.position->count, position->count) << error.message;
+        }
+        EXPECT_EQ(edited->applied, 0u);
+        EXPECT_EQ(document->revision(), revision);
+    }
+}
+
+TEST(LiveEdit, DrumEntryUsesTheNewPercussionStaffAtAMeasureOffset) {
+    using namespace engrave;
+    auto document = notation_score(2);
+    ASSERT_TRUE(document);
+    const auto edited = document->edit({{
+        AddPart{"drumset"},
+        EnterDrums{RelativePosition{{1}, 1, 0, {1, 2}}, {1, 4}, {{38}}},
+    }});
+    ASSERT_TRUE(edited) << edited.error().message;
+    ASSERT_FALSE(edited->rejection) << edited->rejection->error.message;
+    auto &score = harness::master_of(*document);
+    ASSERT_EQ(score.nstaves(), 2u);
+    const auto *entered = score.find_cr({3, 2}, 4);
+    ASSERT_TRUE(entered && entered->is_chord());
+    EXPECT_EQ(mu::engraving::to_chord(entered)->notes().front()->pitch(), 38);
+}
+
+TEST(LiveEdit, StaticSelectorErrorsDoNotStartABatch) {
+    using namespace engrave;
+    auto document = notation_score(1);
+    ASSERT_TRUE(document);
+    const auto revision = document->revision();
+    for (const Op &op : std::vector<Op>{
+             SetTimeSig{MeasureIndex{-1}, {3, 4}},
+             RemoveStaff{StaffIndex{-1}},
+             Remove{MeasureIndex{0}},
+             Remove{StaffIndex{0}},
+             Remove{RelativePosition{}},
+             EnterNotes{RelativePosition{{-1}}, {1, 4}, {}},
+             EnterNotes{RelativePosition{{0}, -1}, {1, 4}, {}},
+             EnterNotes{RelativePosition{{0}, 0, -1}, {1, 4}, {}},
+             EnterNotes{RelativePosition{{0}, 0, 0, {1, 0}}, {1, 4}, {}},
+             EnterNotes{RelativePosition{{0}, 0, 0, {-1, 4}}, {1, 4}, {}},
+             EnterNotes{RelativePosition{{0}, 0, 0, {1, max_fraction_term}}, {1, 4}, {}},
+             AddSpannerToBarEnd{"HairPin", RelativePosition{}, {OpRef{3, 0}}, {}},
+         }) {
+        const auto edited = document->edit({{InsertMeasures{{}, 1}, op}}, {.mode = EditMode::Prefix});
+        ASSERT_FALSE(edited);
+        EXPECT_EQ(edited.error().op_index, 1u);
+        EXPECT_EQ(edited.error().code, ErrorCode::INVALID_ARGUMENT);
+        EXPECT_EQ(document->revision(), revision);
+    }
+}
+
 TEST(NotationEdits, SegmentLinesReachPickupAndFinalBarlines) {
     using namespace engrave;
     using Tick = mu::engraving::Fraction;
@@ -1327,7 +1848,133 @@ TEST(NotationEdits, SegmentLinesReachPickupAndFinalBarlines) {
     EXPECT_EQ(rejected.error().code, ErrorCode::INVALID_ARGUMENT);
 }
 
-TEST(NotationEdits, UnsupportedSpannerPropertiesLeaveThePrefixEditable) {
+TEST(NotationEdits, MixedLineEndpointsKeepBothTracksOnTheStartStaffInLinkedScores) {
+    using namespace engrave;
+    using Tick = mu::engraving::Fraction;
+    auto document = notation_score(2);
+    ASSERT_TRUE(document);
+    const RelativePosition lead{{0}, 1};
+    const RelativePosition second_voice{{0}, 1, 1};
+    const RelativePosition other_staff{{0}, 0, 0, {1, 4}};
+    const RelativePosition end{{0}, 1, 0, {1, 4}};
+    const auto edited = document->edit({{
+        AddPart{"violin"},
+        EnterNotes{lead, {1, 4}, {{67}}},
+        EnterNotes{second_voice, {1, 4}, {{62}}},
+        EnterNotes{other_staff, {1, 4}, {{60}}},
+        EnterNotes{end, {1, 4}, {{69}}},
+        GenerateExcerpts{{OpRef{0, 0}}},
+        AddSpanner{"HairPin", OpRef{1, 0}, other_staff, {}},
+        AddSpanner{"TextLine", second_voice, OpRef{4, 0}, {}},
+    }});
+    ASSERT_TRUE(edited) << edited.error().message;
+    ASSERT_FALSE(edited->rejection) << edited->rejection->op_index << " " << edited->rejection->error.message;
+    auto check = [](mu::engraving::MasterScore &master) {
+        const auto scores = master.score_list();
+        ASSERT_EQ(scores.size(), 2u);
+        ASSERT_EQ(master.nstaves(), 2u);
+        const auto *excerpt = scores.back();
+        ASSERT_EQ(excerpt->nstaves(), 1u);
+        const auto master_lines = master.spanner_list();
+        const auto excerpt_lines = excerpt->spanner_list();
+        ASSERT_EQ(master_lines.size(), 2u);
+        ASSERT_EQ(excerpt_lines.size(), 2u);
+        for (const auto *line : master_lines) {
+            SCOPED_TRACE(line->type_name());
+            ASSERT_TRUE(line->is_hairpin() || line->is_text_line());
+            const unsigned voice = line->is_text_line() ? 1 : 0;
+            EXPECT_EQ(line->track(), 4u + voice);
+            EXPECT_EQ(line->effective_track2(), 4u + voice);
+            const auto copy = std::ranges::find_if(excerpt_lines, [&](const auto *item) { return item->type() == line->type(); });
+            ASSERT_NE(copy, excerpt_lines.end());
+            const auto *copy_line = *copy;
+            EXPECT_EQ(line->find_linked_in_score(excerpt), copy_line);
+            EXPECT_EQ(copy_line->track(), voice);
+            EXPECT_EQ(copy_line->effective_track2(), voice);
+            for (const auto *linked : {line, copy_line}) {
+                EXPECT_EQ(linked->tick(), Tick(0, 1));
+                EXPECT_EQ(linked->tick2(), Tick(1, 4));
+            }
+        }
+    };
+    check(harness::master_of(*document));
+    const auto saved = document->export_score({.format = Format::MSCZ});
+    ASSERT_TRUE(saved) << saved.error().message;
+    const auto reopened = g_engine->open(*saved);
+    ASSERT_TRUE(reopened) << reopened.error().message;
+    ASSERT_TRUE((*reopened)->render({.format = RenderFormat::SVG}));
+    check(harness::master_of(**reopened));
+}
+
+TEST(NotationEdits, LyricsLineRequiresAnOwnerForEitherSpannerOperation) {
+    using namespace engrave;
+    auto document = notation_score(2);
+    ASSERT_TRUE(document);
+    const auto revision = document->revision();
+    const RelativePosition first{{0}};
+    for (const Op &op : std::vector<Op>{AddSpanner{"LyricsLine", first, RelativePosition{{1}}, {}},
+                                        AddSpannerToBarEnd{"LyricsLine", first, {MeasureIndex{1}}, {}}}) {
+        const auto result = document->edit({{op}});
+        ASSERT_FALSE(result);
+        EXPECT_EQ(result.error().code, ErrorCode::INVALID_ARGUMENT);
+        EXPECT_EQ(result.error().op_index, 0u);
+        EXPECT_NE(result.error().message.find("LyricsLine"), std::string::npos);
+        EXPECT_EQ(document->revision(), revision);
+        EXPECT_TRUE(harness::master_of(*document).spanner_list().empty());
+    }
+}
+
+TEST(NotationEdits, PositionalAnchorsUsePrincipalChordsAtGraceOnsets) {
+    using namespace engrave;
+    using Tick = mu::engraving::Fraction;
+    auto document = notation_score(1);
+    ASSERT_TRUE(document);
+    const RelativePosition first{{0}};
+    const RelativePosition second{{0}, 0, 0, {1, 4}};
+    const auto edited = document->edit({{
+        EnterNotes{first, {1, 4}, {{60}}},
+        EnterNotes{second, {1, 4}, {{62}}},
+        AddGraceChord{OpRef{0, 0}, {GraceKind::Acciaccatura, {1, 8}, {{65}}}},
+        AddGraceChord{OpRef{1, 0}, {GraceKind::Grace8After, {1, 8}, {{67}}}},
+        AddSpanner{"Slur", first, second, {}},
+        AddSpanner{"TextLine", OpRef{2, 1}, second, {}},
+        Add{second, "Articulation", {{"symbol", Enum{"articStaccatoAbove"}}}},
+    }});
+    ASSERT_TRUE(edited) << edited.error().message;
+    ASSERT_FALSE(edited->rejection) << edited->rejection->op_index << " " << edited->rejection->error.message;
+    auto &score = harness::master_of(*document);
+    auto *from = score.find_cr(Tick(0, 1), 0);
+    auto *to = score.find_cr(Tick(1, 4), 0);
+    ASSERT_TRUE(from && from->is_chord());
+    ASSERT_TRUE(to && to->is_chord());
+    const auto *from_chord = mu::engraving::to_chord(from);
+    const auto *to_chord = mu::engraving::to_chord(to);
+    const auto before = from_chord->grace_notes_before();
+    const auto after = to_chord->grace_notes_after();
+    ASSERT_EQ(before.size(), 1u);
+    ASSERT_EQ(after.size(), 1u);
+    EXPECT_EQ((*before.begin())->notes().front()->pitch(), 65);
+    EXPECT_EQ((*after.begin())->notes().front()->pitch(), 67);
+    EXPECT_EQ(to_chord->articulations().size(), 1u);
+    EXPECT_TRUE((*after.begin())->articulations().empty());
+
+    const auto spanners = score.spanner_list();
+    ASSERT_EQ(spanners.size(), 2u);
+    for (const auto *spanner : spanners) {
+        EXPECT_EQ(spanner->tick(), Tick(0, 1));
+        EXPECT_EQ(spanner->tick2(), Tick(1, 4));
+        if (spanner->is_slur()) {
+            EXPECT_EQ(spanner->start_element(), from);
+            EXPECT_EQ(spanner->end_element(), to);
+        } else {
+            ASSERT_TRUE(spanner->is_text_line());
+            EXPECT_EQ(spanner->start_segment(), from->segment());
+            EXPECT_EQ(spanner->end_segment(), to->segment());
+        }
+    }
+}
+
+TEST(NotationEdits, UnsupportedSpannerPropertiesRejectTheBatchBeforeMutation) {
     using namespace engrave;
     auto document = notation_score(2);
     ASSERT_TRUE(document);
@@ -1341,17 +1988,12 @@ TEST(NotationEdits, UnsupportedSpannerPropertiesLeaveThePrefixEditable) {
         AddSpanner{"HairPin", first, last, {{"pitch", 60}}},
         AddSpanner{"Slur", first, last, {{"pitch", 60}}},
     };
-    bool visible = true;
     for (const auto &op : invalid) {
-        visible = !visible;
-        const auto result = document->edit({{SetProperty{first, "visible", visible}, op}}, {.mode = EditMode::Prefix});
-        ASSERT_TRUE(result) << result.error().message;
-        ASSERT_TRUE(result->rejection);
-        EXPECT_EQ(result->rejection->op_index, 1u);
-        EXPECT_EQ(result->rejection->error.code, ErrorCode::INVALID_ARGUMENT);
-        EXPECT_FALSE(result->rejection->error.poisoned);
-        EXPECT_EQ(result->applied, 1u);
-        EXPECT_EQ(harness::property(*document, first, "visible"), Value{visible});
+        const auto result = document->edit({{SetProperty{first, "visible", false}, op}}, {.mode = EditMode::Prefix});
+        ASSERT_FALSE(result);
+        EXPECT_EQ(result.error().op_index, 1u);
+        EXPECT_EQ(result.error().code, ErrorCode::INVALID_ARGUMENT);
+        EXPECT_EQ(harness::property(*document, first, "visible"), Value{true});
         EXPECT_TRUE(score.spanner_list().empty());
     }
     const auto result = document->edit({{AddSpannerToBarEnd{"HairPin", first, {final}, {}}}}, {.mode = EditMode::Prefix});

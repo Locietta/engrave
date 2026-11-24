@@ -44,7 +44,6 @@ using mu::engraving::TConv;
 using mu::engraving::TimeSig;
 using mu::engraving::TimeSigType;
 using mu::engraving::Transaction;
-using mu::engraving::voices;
 
 std::unexpected<Error> invalid(std::string message) { return std::unexpected(Error{ErrorCode::INVALID_ARGUMENT, std::move(message)}); }
 
@@ -89,7 +88,7 @@ Clef *clef_in_effect(Score *score, const mu::engraving::Fraction &tick, mu::engr
 Result<Step> prepare(EditContext &context, const InsertMeasures &op) {
     std::optional<Target> before;
     if (op.before) {
-        auto target = context.target(*op.before);
+        auto target = context.target(*op.before, "before", Selector::MEASURE);
         if (!target) return std::unexpected(target.error());
         if (target->object && !target->object->is_measure_base())
             return invalid(std::format("a {} is not a measure or a frame", target->object->type_name()));
@@ -134,9 +133,9 @@ Result<Step> prepare(EditContext &context, const InsertMeasures &op) {
 }
 
 Result<Step> prepare(EditContext &context, const RemoveMeasures &op) {
-    auto first = context.target(op.first);
+    auto first = context.target(op.first, "first", Selector::MEASURE);
     if (!first) return std::unexpected(first.error());
-    auto last = context.target(op.last);
+    auto last = context.target(op.last, "last", Selector::MEASURE);
     if (!last) return std::unexpected(last.error());
     if (first->object && !first->object->is_measure()) return invalid(std::format("a {} is not a measure", first->object->type_name()));
     if (last->object && !last->object->is_measure()) return invalid(std::format("a {} is not a measure", last->object->type_name()));
@@ -161,7 +160,7 @@ Result<Step> prepare(EditContext &context, const RemoveMeasures &op) {
 }
 
 Result<Step> prepare(EditContext &context, const SetRepeatBarlines &op) {
-    auto target = context.target(op.measure);
+    auto target = context.target(op.measure, "measure", Selector::MEASURE);
     if (!target) return std::unexpected(target.error());
     if (target->object && !target->object->is_measure()) return invalid("repeat barlines belong to a measure");
     if (op.count && *op.count < 2) return invalid("a repeat must have at least two passes");
@@ -187,8 +186,9 @@ Result<Step> prepare(EditContext &context, const SetRepeatBarlines &op) {
 }
 
 Result<Step> prepare(EditContext &context, const SetTimeSig &op) {
-    auto measure = context.target(op.measure);
+    auto measure = context.target(op.measure, "measure", Selector::MEASURE);
     if (!measure) return std::unexpected(measure.error());
+    if (measure->object && !measure->object->is_measure()) return invalid("measure: a time signature belongs to a measure");
     if (op.sig.num <= 0 || op.sig.den <= 0) return invalid("a time signature is a positive fraction");
     if (op.sig.num > INT32_MAX || op.sig.den > INT32_MAX) return invalid("the time signature does not fit in an int");
     const mu::engraving::Fraction sig(int(op.sig.num), int(op.sig.den));
@@ -209,12 +209,14 @@ Result<Step> prepare(EditContext &context, const SetTimeSig &op) {
 }
 
 Result<Step> prepare(EditContext &context, const SetKeySig &op) {
-    auto measure = context.target(op.measure);
+    auto measure = context.target(op.measure, "measure", Selector::MEASURE);
     if (!measure) return std::unexpected(measure.error());
+    if (measure->object && !measure->object->is_measure()) return invalid("measure: a key signature belongs to a measure");
     std::optional<Target> staff;
     if (op.staff) {
-        auto target = context.target(*op.staff);
+        auto target = context.target(*op.staff, "staff", Selector::STAFF);
         if (!target) return std::unexpected(target.error());
+        if (target->object && !target->object->is_staff()) return invalid("staff: a staff is required");
         staff = *target;
     }
     if (op.key < int(Key::MIN) || op.key > int(Key::MAX)) {
@@ -242,23 +244,20 @@ Result<Step> prepare(EditContext &context, const SetKeySig &op) {
 }
 
 Result<Step> prepare(EditContext &context, const InsertClef &op) {
-    auto target = context.target(Ref{op.at});
+    auto target = context.position_target(op.at, false);
     if (!target) return std::unexpected(target.error());
-    const auto *address = std::get_if<SegmentAddress>(&op.at);
-    if (!address) return invalid("a clef goes at a segment");
     auto value = from_value(mu::engraving::PType::CLEF_TYPE, Enum{op.clef});
     if (!value) return std::unexpected(value.error());
     const ClefType clef = value->value<ClefType>();
-    return [target = *target, staff = address->staff, voice = address->voice, clef](EditContext &context) -> Result<void> {
-        auto object = context.object(target);
-        if (!object) return std::unexpected(object.error());
-        if (!(*object)->is_segment()) return invalid(std::format("a {} is not a segment", (*object)->type_name()));
-        Segment *segment = mu::engraving::to_segment(*object);
+    return [target = *target, clef](EditContext &context) -> Result<void> {
+        const auto at = context.position(target);
+        if (!at) return std::unexpected(at.error());
+        const auto found = context.segment(*at, target);
+        if (!found) return std::unexpected(found.error());
+        Segment *segment = *found;
         Score *score = segment->score();
-        if (staff < 0 || std::size_t(staff) >= score->nstaves()) {
-            return invalid(std::format("the score has no staff {}", staff));
-        }
-        if (voice < 0 || std::size_t(voice) >= ::mu::engraving::voices) return invalid(std::format("the score has no voice {}", voice));
+        const auto staff = at->address.staff;
+        const auto voice = at->address.voice;
         Staff *staff_of = score->staff(mu::engraving::staff_idx_t(staff));
         EngravingItem *before =
             segment->element(mu::engraving::staff2track(mu::engraving::staff_idx_t(staff), mu::engraving::voice_idx_t(voice)));
@@ -276,8 +275,9 @@ Result<Step> prepare(EditContext &context, const InsertClef &op) {
 }
 
 Result<Step> prepare(EditContext &context, const SetLayoutBreak &op) {
-    auto measure = context.target(op.measure);
+    auto measure = context.target(op.measure, "measure", Selector::MEASURE);
     if (!measure) return std::unexpected(measure.error());
+    if (measure->object && !measure->object->is_measure_base()) return invalid("measure: a layout break belongs to a measure or frame");
     const auto kind = token<LayoutBreakType>(op.kind, LayoutBreakType::LINE);
     if (!kind) return invalid(std::format("'{}' is not a layout break kind", op.kind));
     return [measure = *measure, kind = *kind, on = op.on](EditContext &context) -> Result<void> {

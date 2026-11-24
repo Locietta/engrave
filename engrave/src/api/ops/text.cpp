@@ -56,20 +56,6 @@ std::unexpected<Error> invalid(std::string message) { return std::unexpected(Err
 
 std::unexpected<Error> rejected(std::string message) { return std::unexpected(Error{ErrorCode::EDIT_REJECTED, std::move(message)}); }
 
-// --- where an operation writes ----------------------------------------------
-
-// The segment address of an operation, checked as far as its own fields go. Its
-// staff is checked against the score once the address is resolved.
-Result<SegmentAddress> chord_rest_address(const Address &address) {
-    const auto *at = std::get_if<SegmentAddress>(&address);
-    if (!at) return invalid("text is added at a segment address, not at a page or a spanner segment");
-    if (at->kind != "ChordRest") {
-        return invalid(std::format("text attaches to a ChordRest segment, not to a '{}' one", at->kind));
-    }
-    return *at;
-}
-
-// The track an address names, once its score is known.
 Result<mu::engraving::track_idx_t> address_track(const SegmentAddress &at, const Score &score) {
     if (static_cast<std::size_t>(at.staff) >= score.nstaves()) {
         return invalid(std::format("the score has no staff {}", at.staff));
@@ -223,25 +209,26 @@ mu::engraving::TempoText *add_tempo_text(Score &score, Segment &segment, const s
 } // namespace
 
 Result<Step> prepare(EditContext &context, const AddText &op) {
-    auto at = chord_rest_address(op.at);
-    if (!at) return std::unexpected(at.error());
+    auto target = context.position_target(op.at, true);
+    if (!target) return std::unexpected(target.error());
     auto style = add_text_style(op.style);
     if (!style) return std::unexpected(style.error());
     // The writer stores no id for an empty text, so one is not an item a caller can
     // address afterwards.
     if (op.text.empty()) return invalid("a text has at least one character");
-    auto target = context.target(op.at);
-    if (!target) return std::unexpected(target.error());
-    return [target = *target, at = *at, style = *style, text = op.text, name = op.style](EditContext &context) -> Result<void> {
-        auto object = context.object(target);
-        if (!object) return std::unexpected(object.error());
-        Segment *segment = mu::engraving::to_segment(*object);
+    return [target = *target, style = *style, text = op.text, name = op.style](EditContext &context) -> Result<void> {
+        const auto location = context.position(target);
+        if (!location) return std::unexpected(location.error());
+        const auto found = context.segment(*location, target);
+        if (!found) return std::unexpected(found.error());
+        const auto &at = location->address;
+        Segment *segment = *found;
         Score *score = segment->score();
-        auto track = address_track(at, *score);
-        if (!track) return std::unexpected(track.error());
-        EngravingItem *anchor = segment->element(*track);
+        EngravingItem *anchor = segment->element(mu::engraving::staff2track(at.staff, at.voice));
         if (!anchor || !anchor->is_chord_rest()) {
-            return invalid(std::format("there is no chord or rest at staff {} voice {} to write on", at.staff, at.voice));
+            auto message = std::format("at: there is no chord or rest at staff {} voice {} to write on", at.staff, at.voice);
+            if (std::holds_alternative<RelativePosition>(target.ref)) return rejected(std::move(message));
+            return invalid(std::move(message));
         }
         TextBase *added = nullptr;
         if (style == TextStyleType::TEMPO) {
@@ -284,7 +271,7 @@ Result<Step> prepare(EditContext &context, const Add &op) {
         if (std::ranges::none_of(text.to_std_u16_string(), [](char16_t c) { return c != u'|' && !muse::Char::is_space(c); }))
             return invalid("a harmony requires nonempty initial text");
     }
-    auto anchor = context.target(op.anchor);
+    auto anchor = context.target(op.anchor, "anchor", Selector::POSITION);
     if (!anchor) return std::unexpected(anchor.error());
     // Deferred anchors are checked when the step runs against the live score.
     if (anchor->object) {
@@ -292,15 +279,33 @@ Result<Step> prepare(EditContext &context, const Add &op) {
         if (auto track = anchor_track(*anchor->object, *anchor); !track) return std::unexpected(track.error());
     }
     return [anchor = *anchor, type, name, props = std::move(*props)](EditContext &context) -> Result<void> {
-        auto object = context.object(anchor);
-        if (!object) return std::unexpected(object.error());
-        if (auto pair = check_pair(**object, name); !pair) return std::unexpected(pair.error());
-        auto track = anchor_track(**object, anchor);
-        if (!track) return std::unexpected(track.error());
-        if (!(*object)->is_engraving_item()) return invalid("an item is added to an element");
-        std::unique_ptr<EngravingItem> created(mu::engraving::Factory::create_item(type, mu::engraving::to_engraving_item(*object)));
+        EngravingObject *object = nullptr;
+        mu::engraving::track_idx_t track;
+        if (const auto *relative = std::get_if<RelativePosition>(&anchor.ref)) {
+            const auto found = context.object(anchor);
+            if (!found) return std::unexpected(found.error());
+            auto *segment = mu::engraving::to_segment(*found);
+            track = mu::engraving::staff2track(relative->staff, relative->voice);
+            if (type == ElementType::ARTICULATION) {
+                auto *item = segment->element(track);
+                if (!item || !item->is_chord())
+                    return rejected("anchor: an articulation requires a chord at the specified staff and voice");
+                object = item;
+            } else {
+                object = segment;
+            }
+        } else {
+            const auto found = context.object(anchor);
+            if (!found) return std::unexpected(found.error());
+            object = *found;
+            if (auto pair = check_pair(*object, name); !pair) return std::unexpected(pair.error());
+            const auto selected_track = anchor_track(*object, anchor);
+            if (!selected_track) return std::unexpected(selected_track.error());
+            track = *selected_track;
+        }
+        std::unique_ptr<EngravingItem> created(mu::engraving::Factory::create_item(type, mu::engraving::to_engraving_item(object)));
         if (!created) return invalid(std::format("the engine does not create a {}", name));
-        created->set_track(*track);
+        created->set_track(track);
         if (type == ElementType::HARMONY) {
             // The parser's meaning depends on the type, independently of property order.
             for (const Setting &setting : props)
