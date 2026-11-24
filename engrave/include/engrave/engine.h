@@ -44,8 +44,10 @@ struct EngineOptions {
     // to 1..8; 1 synthesizes on the calling thread; larger values are used as
     // given, capped at 64. Negative values are INVALID_ARGUMENT. A positive
     // integer in the ENGRAVE_AUDIO_THREADS environment variable overrides it.
-    // Callbacks still run on the Engine's thread, and a render with one active
-    // track never fans out.
+    // Above 1, an audio render also encodes on its own thread and a multi-page
+    // PNG render deflates pages on up to this many threads, again with
+    // identical bytes. Callbacks still run on the Engine's thread, and a render
+    // with one active track never fans out its synthesis.
     std::int32_t audio_threads = 0;
 };
 

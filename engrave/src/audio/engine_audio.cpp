@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <cstdint>
 #include <cstdlib>
 #include <exception>
@@ -31,6 +32,7 @@
 #include "audio/engine/offlinerendersettings.h"
 #include "audio_output.h"
 #include "engrave/src/runtime/resource_filesystem.h"
+#include "engrave/src/runtime/worker_threads.h"
 #include "engrave/src/score/score_excerpts.h"
 #include "engraving/dom/excerpt.h"
 #include "engraving/dom/instrument.h"
@@ -252,19 +254,7 @@ void configure_master(engine::OfflineRenderSession &context, const AudioRenderRe
     control->set_volume(master_volume);
 }
 
-// 0 picks one thread per spare core, at most 8; ENGRAVE_AUDIO_THREADS, when a
-// positive integer, overrides the configured value.
-std::size_t synthesis_threads(int configured) {
-    if (const char *text = std::getenv("ENGRAVE_AUDIO_THREADS")) {
-        char *end = nullptr;
-        const long value = std::strtol(text, &end, 10);
-        if (end != text && *end == '\0' && value > 0)
-            configured = static_cast<int>(std::min<long>(value, engine::WorkerPool::k_max_workers));
-    }
-    if (configured > 0) return std::min<std::size_t>(static_cast<std::size_t>(configured), engine::WorkerPool::k_max_workers);
-    const unsigned cores = std::thread::hardware_concurrency();
-    return std::clamp<std::size_t>(cores > 1 ? cores - 1 : 1, 1, 8);
-}
+static_assert(::music::k_max_worker_threads == engine::WorkerPool::k_max_workers);
 } // namespace
 
 void set_engine_audio_midi_event_hook(EngineAudio &audio, EngineAudioMidiEventHook hook) {
@@ -583,11 +573,14 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
                                          state.services->configuration().render_settings(),
                                          [&state](const midi::Event &event) { state.midi_out_port.send_event(event); });
     configure_master(context, request);
-    // A MIDI hook observes events in track order on this thread, so it keeps synthesis serial.
-    if (const std::size_t threads = state.midi_out_port.hook ? 1 : synthesis_threads(state.audio_threads); threads > 1) {
+    // A MIDI hook observes events in track order on this thread, and reads the frames encoded so far,
+    // so it keeps synthesis and encoding serial.
+    const std::size_t threads = state.midi_out_port.hook ? 1 : render_worker_threads(state.audio_threads);
+    if (threads > 1) {
         if (!state.synthesis_pool) state.synthesis_pool = std::make_unique<engine::WorkerPool>();
         context.set_parallelism(state.synthesis_pool.get(), threads);
     }
+    const bool async_encode = threads > 1 && !engine::OfflineRenderSession::serial_only();
 
     // The public mix is indexed by the same deterministic track list that
     // score_audio_tracks reports. Keep the list for the selected excerpt: for
@@ -734,29 +727,44 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
     state.midi_out_port.rendered_frames = 0;
 
     setup_timer.reset();
-    io::StreamingFileDevice device(std::filesystem::u8path(request.output_path), request.max_bytes, request.max_write_bytes, poll);
+    // An encoder thread writes the file in an async render and must not run the user callback; it
+    // sees only the stop flag that the writer raises from this thread.
+    std::atomic<bool> encoder_stop{false};
+    const auto owner = std::this_thread::get_id();
+    const auto device_cancelled = [&] {
+        return std::this_thread::get_id() == owner ? poll() : encoder_stop.load(std::memory_order_relaxed);
+    };
+    io::StreamingFileDevice device(std::filesystem::u8path(request.output_path), request.max_bytes, request.max_write_bytes,
+                                   device_cancelled);
     if (!device.open(io::IODevice::WRITE_ONLY)) {
         return fail(AudioRenderResult::Failure::IO,
                     std::string("cannot write ") + audio_format_name(request.format) + " output: '" + request.output_path + "'");
     }
 
-    // The writer owns the render loop (soundtrackwriter.cpp:133-207): it sets
-    // the source to PlayingOffline, renders in 4096-frame chunks, encodes them
-    // and reports the completed frame count after each one.
-    soundtrack::SoundTrackWriter writer(
-        device, make_soundtrack_format(request.format, request, output_spec(state.sample_rate_value)), render_secs, &context,
-        [&state](uint64_t frames) { state.midi_out_port.rendered_frames = frames; }, request.encoder_factory, poll);
+    // The writer owns the render loop: it sets the source to PlayingOffline,
+    // renders in 4096-frame chunks, encodes them (on its encoder thread when
+    // async) and reports the completed frame count after each one.
     Ret write_ret;
+    std::exception_ptr write_error;
     try {
         const ScopedDenormalGuard::RenderModePin render_fp_pin(denormal_guard);
+        soundtrack::SoundTrackWriter writer(
+            device, make_soundtrack_format(request.format, request, output_spec(state.sample_rate_value)), render_secs, &context,
+            [&state](uint64_t frames) { state.midi_out_port.rendered_frames = frames; }, request.encoder_factory, poll,
+            async_encode ? &encoder_stop : nullptr);
         write_ret = writer.write();
     } catch (const engine::StoreLimit &limit) {
         device.close();
         context.set_mode(ProcessMode::IDLE);
         std::error_code remove_error;
         std::filesystem::remove(std::filesystem::u8path(request.output_path), remove_error);
-        if (callback_error) std::rethrow_exception(callback_error);
+        if (poll()) {
+            if (callback_error) std::rethrow_exception(callback_error);
+            return fail(AudioRenderResult::Failure::CANCELLED, "audio render cancelled");
+        }
         return fail(AudioRenderResult::Failure::RESOURCE_LIMIT, limit.message);
+    } catch (...) {
+        write_error = std::current_exception();
     }
 
     // Flush before the FileSystem size check below.
@@ -783,6 +791,8 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
         }
         return fail(AudioRenderResult::Failure::RESOURCE_LIMIT, "audio intermediate byte limit exceeded");
     }
+
+    if (write_error) std::rethrow_exception(write_error);
 
     if (!write_ret || device.has_error()) {
         // SoundTrackWriter returns Err::ErrorEncode when an encoder could not

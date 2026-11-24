@@ -22,6 +22,7 @@
 
 #include "wavencoder.h"
 
+#include <cstring>
 #include <limits>
 
 #include "../dsp/audiomathutils.h"
@@ -152,42 +153,29 @@ size_t WavEncoder::encode(const samples_t samples_per_channel, const float *inpu
         header_written_ = true;
     }
 
-    const int channels = format_.output_spec.audio_channel_count;
+    const size_t samples = static_cast<size_t>(samples_per_channel) * static_cast<size_t>(format_.output_spec.audio_channel_count);
 
     if (format_.sample_format == AudioSampleFormat::FLOAT32) {
-        for (samples_t sample_idx = 0; sample_idx < samples_per_channel; ++sample_idx) {
-            for (audioch_t audio_ch_num = 0; audio_ch_num < channels; ++audio_ch_num) {
-                const int idx = static_cast<int>(sample_idx) * channels + audio_ch_num;
-                if (dst_device_->write(reinterpret_cast<const std::uint8_t *>(input + idx), 4) != 4) {
-                    return 0;
-                }
-            }
-        }
-    } else {
-        int bits_per_sample = 0;
-        switch (format_.sample_format) {
-            case AudioSampleFormat::INT16: bits_per_sample = 16; break;
-            case AudioSampleFormat::INT24: bits_per_sample = 24; break;
-            default: return 0;
-        }
-
-        const int bytes_to_write = bits_per_sample / 8;
-
-        for (samples_t sample_idx = 0; sample_idx < samples_per_channel; ++sample_idx) {
-            for (audioch_t audio_ch_num = 0; audio_ch_num < channels; ++audio_ch_num) {
-                const int idx = static_cast<int>(sample_idx) * channels + audio_ch_num;
-
-                const int32_t sample_int = dsp::convert_float_samples<int32_t>(input[idx], bits_per_sample);
-
-                if (dst_device_->write(reinterpret_cast<const std::uint8_t *>(&sample_int), bytes_to_write) !=
-                    static_cast<size_t>(bytes_to_write)) {
-                    return 0;
-                }
-            }
-        }
+        const size_t bytes = samples * sizeof(float);
+        return dst_device_->write(reinterpret_cast<const std::uint8_t *>(input), bytes) == bytes ? samples : 0;
     }
 
-    return static_cast<size_t>(samples_per_channel) * static_cast<size_t>(channels);
+    int bits_per_sample = 0;
+    switch (format_.sample_format) {
+        case AudioSampleFormat::INT16: bits_per_sample = 16; break;
+        case AudioSampleFormat::INT24: bits_per_sample = 24; break;
+        default: return 0;
+    }
+
+    // The low bytes of the host (little-endian) int32 are the PCM sample.
+    const size_t bytes_per_sample = static_cast<size_t>(bits_per_sample / 8);
+    pcm_.resize(samples * bytes_per_sample);
+    std::uint8_t *out = pcm_.data();
+    for (size_t i = 0; i < samples; ++i, out += bytes_per_sample) {
+        const int32_t sample_int = dsp::convert_float_samples<int32_t>(input[i], bits_per_sample);
+        std::memcpy(out, &sample_int, bytes_per_sample);
+    }
+    return dst_device_->write(pcm_.data(), pcm_.size()) == pcm_.size() ? samples : 0;
 }
 
 Ret WavEncoder::end() {

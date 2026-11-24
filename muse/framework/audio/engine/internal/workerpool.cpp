@@ -2,42 +2,22 @@
 #include "workerpool.h"
 
 #include <algorithm>
-#include <chrono>
+#include <stdexcept>
 #include <system_error>
 #include <utility>
 
-#ifdef _WIN32
-#include <windows.h>
-#ifndef CREATE_WAITABLE_TIMER_HIGH_RESOLUTION
-#define CREATE_WAITABLE_TIMER_HIGH_RESOLUTION 0x00000002
-#endif
-#endif
-
 using namespace muse::audio::engine;
 
-WorkerPool::WorkerPool() {
-#ifdef _WIN32
-    drained_event_ = CreateEventW(nullptr, FALSE, FALSE, nullptr);
-    poll_timer_ = CreateWaitableTimerExW(nullptr, nullptr, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION, TIMER_ALL_ACCESS);
-    if (!drained_event_ || !poll_timer_) {
-        if (drained_event_) CloseHandle(drained_event_);
-        if (poll_timer_) CloseHandle(poll_timer_);
-        drained_event_ = poll_timer_ = nullptr;
-    }
-#endif
-}
+WorkerPool::WorkerPool() = default;
 
 WorkerPool::~WorkerPool() {
+    abandon();
     {
         const std::scoped_lock lock(mutex_);
         shutdown_ = true;
     }
     work_cv_.notify_all();
     for (auto &thread : threads_) thread.join();
-#ifdef _WIN32
-    if (drained_event_) CloseHandle(drained_event_);
-    if (poll_timer_) CloseHandle(poll_timer_);
-#endif
 }
 
 std::size_t WorkerPool::started_threads() const {
@@ -74,7 +54,7 @@ void WorkerPool::loop(const std::size_t index) {
             lock.unlock();
             std::exception_ptr error;
             try {
-                (*task_)(task);
+                task_(task);
             } catch (...) {
                 error = std::current_exception();
             }
@@ -84,73 +64,46 @@ void WorkerPool::loop(const std::size_t index) {
                 stop_.store(true, std::memory_order_relaxed);
             }
         }
-        if (--running_ == 0) {
-            done_cv_.notify_one();
-#ifdef _WIN32
-            if (drained_event_) SetEvent(drained_event_);
-#endif
-        }
+        if (--running_ == 0) drained_.signal();
     }
 }
 
-bool WorkerPool::wait_drained(std::unique_lock<std::mutex> &lock) {
-#ifdef _WIN32
-    if (poll_timer_) {
-        if (running_ == 0) return true;
-        LARGE_INTEGER due;
-        // Relative, in 100 ns units. The timer fires up to ~0.5 ms late, so ask for half the interval.
-        due.QuadPart = -5'000;
-        lock.unlock();
-        if (SetWaitableTimer(poll_timer_, &due, 0, nullptr, nullptr, FALSE)) {
-            const HANDLE handles[] = {drained_event_, poll_timer_};
-            WaitForMultipleObjects(2, handles, FALSE, INFINITE);
-        } else {
-            WaitForSingleObject(drained_event_, 1);
-        }
-        lock.lock();
-        return running_ == 0;
-    }
-#endif
-    return done_cv_.wait_for(lock, std::chrono::milliseconds(1), [&] { return running_ == 0; });
-}
-
-bool WorkerPool::run(std::size_t workers, const std::size_t count, const muse::FnRef<void(std::size_t) const> task,
-                     const muse::FnRef<bool() const> poll) {
-    stop_.store(false, std::memory_order_relaxed);
-    if (count == 0) return true;
-    workers = std::clamp<std::size_t>(std::min(workers, count), 1, k_max_workers);
+bool WorkerPool::start(std::size_t workers, const std::size_t count, const muse::FnRef<void(std::size_t) const> task) {
     std::unique_lock lock(mutex_);
-    grow_locked(workers);
-    if (threads_.empty()) {
-        lock.unlock();
-        for (std::size_t i = 0; i < count; ++i) {
-            if (poll()) {
-                stop_.store(true, std::memory_order_relaxed);
-                return false;
-            }
-            task(i);
-        }
-        return true;
+    if (in_flight_) throw std::logic_error("WorkerPool::start called while a block is already in flight");
+    stop_.store(false, std::memory_order_relaxed);
+    if (count > 0) {
+        workers = std::clamp<std::size_t>(std::min(workers, count), 1, k_max_workers);
+        grow_locked(workers);
+        if (threads_.empty()) return false;
+        task_ = task;
+        participants_ = std::min(workers, threads_.size());
     }
-
-    task_ = &task;
-    participants_ = std::min(workers, threads_.size());
     count_ = count;
     next_ = 0;
     running_ = participants_;
     error_ = nullptr;
     ++generation_;
-#ifdef _WIN32
-    if (drained_event_) ResetEvent(drained_event_);
-#endif
+    in_flight_ = true;
     lock.unlock();
-    work_cv_.notify_all();
+    if (count > 0) work_cv_.notify_all();
+    return true;
+}
 
+std::exception_ptr WorkerPool::end_block_locked() {
+    task_ = nullptr;
+    participants_ = 0;
+    in_flight_ = false;
+    return std::exchange(error_, nullptr);
+}
+
+bool WorkerPool::finish(const muse::FnRef<bool() const> poll) {
     bool stopped = false;
     std::exception_ptr poll_error;
-    lock.lock();
-    while (!wait_drained(lock)) {
-        if (stopped) continue;
+    std::unique_lock lock(mutex_);
+    while (running_ != 0) {
+        drained_.wait(lock);
+        if (running_ == 0 || stopped) continue;
         lock.unlock();
         try {
             stopped = poll();
@@ -161,11 +114,41 @@ bool WorkerPool::run(std::size_t workers, const std::size_t count, const muse::F
         if (stopped) stop_.store(true, std::memory_order_relaxed);
         lock.lock();
     }
-    task_ = nullptr;
-    participants_ = 0;
-    std::exception_ptr error = std::exchange(error_, nullptr);
+    std::exception_ptr error = end_block_locked();
     lock.unlock();
+    // Prioritize cancellation and poll exceptions over concurrent worker errors,
+    // including when a worker failed before the first poll tick elapsed.
+    if (!stopped && error) {
+        try {
+            stopped = poll();
+        } catch (...) {
+            poll_error = std::current_exception();
+            stopped = true;
+        }
+    }
     if (poll_error) std::rethrow_exception(poll_error);
+    if (stopped) return false;
     if (error) std::rethrow_exception(error);
-    return !stopped;
+    return true;
+}
+
+void WorkerPool::abandon() noexcept {
+    if (!in_flight_) return;
+    stop_.store(true, std::memory_order_relaxed);
+    std::unique_lock lock(mutex_);
+    while (running_ != 0) drained_.wait(lock);
+    end_block_locked();
+}
+
+bool WorkerPool::run(std::size_t workers, const std::size_t count, const muse::FnRef<void(std::size_t) const> task,
+                     const muse::FnRef<bool() const> poll) {
+    if (start(workers, count, task)) return finish(poll);
+    for (std::size_t i = 0; i < count; ++i) {
+        if (poll()) {
+            stop_.store(true, std::memory_order_relaxed);
+            return false;
+        }
+        task(i);
+    }
+    return true;
 }

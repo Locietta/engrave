@@ -1,17 +1,29 @@
+#include <atomic>
+#include <chrono>
+#include <condition_variable>
+#include <cstdio>
+#include <deque>
+#include <exception>
 #include <format>
 #include <limits>
+#include <mutex>
+#include <optional>
 #include <string>
+#include <system_error>
+#include <thread>
 #include <utility>
 #include <vector>
 
 #include "engrave/src/api/handles.h"
 #include "engrave/src/api/state.h"
 #include "engrave/src/render/score_render.h"
+#include "engrave/src/runtime/worker_threads.h"
 #include "engrave/src/score/export_options.h"
 #include "engrave/src/score/score_positions.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/score.h"
 #include "engraving/engravingproject.h"
+#include "global/pollwait.h"
 #include <engrave/document.h>
 
 namespace engrave {
@@ -31,6 +43,156 @@ const char *backend_name(RenderFormat format) {
         case RenderFormat::SVG: return "svg";
     }
     return nullptr;
+}
+
+// Raw ARGB32 surfaces handed to encoders at once, beyond the page being drawn;
+// a single page larger than this still encodes alone.
+constexpr std::size_t k_max_queued_png_bytes = 256u << 20;
+
+// Deflate threads for one multi-page PNG render. Pages are drawn in order on
+// the calling thread, which alone polls cancellation; workers only encode the
+// surfaces handed to them and see the stop flag. The destructor stops and joins
+// the workers and frees every surface not yet encoded.
+struct PngEncoders {
+    explicit PngEncoders(std::size_t pages) : encoded(pages), encode_seconds(pages) {}
+
+    ~PngEncoders() { stop_and_join(); }
+
+    PngEncoders(const PngEncoders &) = delete;
+    PngEncoders &operator=(const PngEncoders &) = delete;
+
+    std::size_t start(std::size_t count, int first) {
+        for (std::size_t i = 0; i < count; ++i) {
+            try {
+                threads.emplace_back([this, first] { loop(first); });
+            } catch (const std::system_error &) {
+                break;
+            }
+        }
+        return threads.size();
+    }
+
+    void stop_and_join() {
+        stop.store(true, std::memory_order_relaxed);
+        { const std::scoped_lock lock(mutex); }
+        work.notify_all();
+        for (auto &thread : threads) thread.join();
+        threads.clear();
+        queue.clear();
+    }
+
+    void loop(int first) {
+        for (;;) {
+            music::PngRaster raster;
+            {
+                std::unique_lock lock(mutex);
+                work.wait(lock, [&] { return stop.load(std::memory_order_relaxed) || closed || !queue.empty(); });
+                if (stop.load(std::memory_order_relaxed) || queue.empty()) return;
+                raster = std::move(queue.front());
+                queue.pop_front();
+            }
+            const std::size_t bytes = raster.bytes();
+            const auto index = static_cast<std::size_t>(raster.page - first);
+            std::exception_ptr failure;
+            try {
+                encoded[index] = bytes_of(raster.encode());
+                encode_seconds[index] = raster.encode_seconds;
+            } catch (...) {
+                failure = std::current_exception();
+            }
+            {
+                const std::scoped_lock lock(mutex);
+                --in_flight;
+                in_flight_bytes -= bytes;
+                if (failure) {
+                    if (!error) error = std::move(failure);
+                    stop.store(true, std::memory_order_relaxed);
+                }
+            }
+            progress.signal();
+        }
+    }
+
+    // Written by one worker per page, read after the workers have joined.
+    std::vector<std::vector<std::byte>> encoded;
+    std::vector<double> encode_seconds;
+    std::mutex mutex;
+    std::condition_variable work;
+    muse::PollWait progress;
+    std::vector<std::thread> threads;
+    std::atomic<bool> stop{false};
+    // Guarded by mutex. in_flight counts surfaces queued or being encoded.
+    std::deque<music::PngRaster> queue;
+    std::size_t in_flight = 0, in_flight_bytes = 0;
+    bool closed = false;
+    std::exception_ptr error;
+};
+
+// Empty when no worker thread could start.
+std::optional<Result<RenderOutput>> render_png_pages(const music::EngineContext &context, mu::engraving::Score &score,
+                                                     music::ExportOptions &backend, std::int32_t first, std::int32_t last,
+                                                     std::size_t workers) {
+    const auto count = static_cast<std::size_t>(last - first + 1);
+    PngEncoders encoders(count);
+    workers = encoders.start(workers, first);
+    if (workers == 0) return std::nullopt;
+    const auto poll = [&] { return backend.cancelled && backend.cancelled(); };
+    const auto cancelled = [] { return fail(ErrorCode::CANCELLED, "render cancelled"); };
+    std::vector<double> raster_seconds(count);
+    std::vector<int> dpis(count);
+    // Waits, polling cancellation, until `ready` holds or an encoder failed;
+    // false when the render was cancelled.
+    const auto wait_until = [&](std::unique_lock<std::mutex> &lock, const auto &ready) {
+        while (!encoders.error && !ready()) {
+            encoders.progress.wait(lock);
+            if (encoders.error || ready()) break;
+            lock.unlock();
+            const bool stop = poll();
+            lock.lock();
+            if (stop) return false;
+        }
+        return true;
+    };
+    for (std::int32_t page = first; page <= last; ++page) {
+        backend.page = page;
+        auto raster = music::rasterize_png(context, &score, backend);
+        if (!raster) return std::unexpected(std::move(raster.error()));
+        const auto index = static_cast<std::size_t>(page - first);
+        raster_seconds[index] = raster->raster_seconds;
+        dpis[index] = raster->dpi;
+        const std::size_t bytes = raster->bytes();
+        std::unique_lock lock(encoders.mutex);
+        const bool proceed = wait_until(lock, [&] {
+            return encoders.in_flight < workers && (encoders.in_flight == 0 || encoders.in_flight_bytes + bytes <= k_max_queued_png_bytes);
+        });
+        if (!proceed) return cancelled();
+        if (encoders.error) break;
+        ++encoders.in_flight;
+        encoders.in_flight_bytes += bytes;
+        encoders.queue.push_back(std::move(*raster));
+        lock.unlock();
+        encoders.work.notify_one();
+    }
+    {
+        std::unique_lock lock(encoders.mutex);
+        encoders.closed = true;
+        lock.unlock();
+        encoders.work.notify_all();
+        lock.lock();
+        if (!wait_until(lock, [&] { return encoders.in_flight == 0; })) return cancelled();
+    }
+    encoders.stop_and_join();
+    if (encoders.error) std::rethrow_exception(encoders.error);
+    if (poll()) return cancelled();
+    RenderOutput output;
+    output.pages = std::move(encoders.encoded);
+    if (music::render_timing_enabled()) {
+        for (std::size_t i = 0; i < count; ++i)
+            std::fprintf(stderr, "render_seconds format=png page=%d dpi=%d raster=%.9f encode=%.9f bytes=%llu\n",
+                         first + static_cast<int>(i), dpis[i], raster_seconds[i], encoders.encode_seconds[i],
+                         static_cast<unsigned long long>(output.pages[i].size()));
+    }
+    return output;
 }
 
 } // namespace
@@ -84,6 +246,24 @@ Result<RenderOutput> Document::render(const RenderOptions &options) {
         output.document = bytes_of(*data);
         return output;
     }
+    const auto started = std::chrono::steady_clock::now();
+    std::size_t workers = 1;
+    const auto report_wall = [&] {
+        if (options.format != RenderFormat::PNG || last == first || !music::render_timing_enabled()) return;
+        std::fprintf(stderr, "render_wall format=png pages=%d-%d dpi=%d workers=%llu seconds=%.9f\n", first, last, options.dpi,
+                     static_cast<unsigned long long>(workers),
+                     std::chrono::duration<double>(std::chrono::steady_clock::now() - started).count());
+    };
+    if (options.format == RenderFormat::PNG && last > first) {
+        workers = std::min(music::render_worker_threads(impl_->engine->audio_threads), static_cast<std::size_t>(last - first + 1));
+        if (workers > 1) {
+            if (auto encoded = render_png_pages(*impl_->engine->context, score, backend, first, last, workers)) {
+                if (*encoded) report_wall();
+                return std::move(*encoded);
+            }
+            workers = 1;
+        }
+    }
     output.pages.reserve(static_cast<std::size_t>(last - first + 1));
     for (std::int32_t page = first; page <= last; ++page) {
         backend.page = page;
@@ -91,6 +271,7 @@ Result<RenderOutput> Document::render(const RenderOptions &options) {
         if (!data) return std::unexpected(std::move(data.error()));
         output.pages.push_back(bytes_of(*data));
     }
+    report_wall();
     return output;
 }
 

@@ -8,6 +8,7 @@
 #include <exception>
 #include <memory>
 #include <stdexcept>
+#include <utility>
 
 #include <cairo/cairo-pdf.h>
 #include <cairo/cairo-svg.h>
@@ -60,6 +61,8 @@ struct RenderTiming {
         if (enabled()) encode_seconds += std::chrono::duration<double>(Clock::now() - since).count();
     }
 
+    double elapsed() const { return enabled() ? std::chrono::duration<double>(Clock::now() - start).count() : 0.0; }
+
     void report(const std::string &format, int first_page, int last_page, int dpi, std::size_t bytes) const {
         if (!enabled()) return;
         const double total = std::chrono::duration<double>(Clock::now() - start).count();
@@ -73,16 +76,16 @@ struct RenderTiming {
         }
     }
 };
-} // namespace
 
-engrave::Result<std::string> render_score(const EngineContext &engine, mu::engraving::Score *score, const std::string &format, int page) {
-    ExportOptions options;
-    options.page = page;
-    return render_score(engine, score, format, options);
-}
+// A drawn PNG page handed out before encoding.
+struct RasterOut {
+    cairo_surface_t *surface = nullptr;
+    int dpi = 0;
+    double seconds = 0;
+};
 
-engrave::Result<std::string> render_score(const EngineContext &engine, mu::engraving::Score *score, const std::string &format,
-                                          const ExportOptions &options) {
+engrave::Result<std::string> render_impl(const EngineContext &engine, mu::engraving::Score *score, const std::string &format,
+                                         const ExportOptions &options, RasterOut *raster) {
     const auto poll = [&] { return options.cancelled && options.cancelled(); };
     if (poll()) return std::unexpected(engrave::Error{engrave::ErrorCode::CANCELLED, "render cancelled"});
     using namespace mu::engraving;
@@ -172,6 +175,15 @@ engrave::Result<std::string> render_score(const EngineContext &engine, mu::engra
     if (poll())
         return std::unexpected(engrave::Error{engrave::ErrorCode::CANCELLED, "render cancelled"}); // final page drawn, before encoding
     check(cairo_status(context.get()));
+    if (raster) {
+        cairo_surface_flush(surface.get());
+        check(cairo_surface_status(surface.get()));
+        // The extra reference outlives this function's context and surface owners.
+        raster->surface = cairo_surface_reference(surface.get());
+        raster->dpi = dpi;
+        raster->seconds = timing.elapsed();
+        return std::string();
+    }
     const auto final_encode_start = timing.begin_encode();
     if (format == "png")
         check(cairo_surface_write_to_png_stream(surface.get(), append_bytes, &output));
@@ -186,4 +198,69 @@ engrave::Result<std::string> render_score(const EngineContext &engine, mu::engra
     if (poll()) return std::unexpected(engrave::Error{engrave::ErrorCode::CANCELLED, "render cancelled"});
     return output;
 }
+} // namespace
+
+engrave::Result<std::string> render_score(const EngineContext &engine, mu::engraving::Score *score, const std::string &format, int page) {
+    ExportOptions options;
+    options.page = page;
+    return render_score(engine, score, format, options);
+}
+
+engrave::Result<std::string> render_score(const EngineContext &engine, mu::engraving::Score *score, const std::string &format,
+                                          const ExportOptions &options) {
+    return render_impl(engine, score, format, options, nullptr);
+}
+
+engrave::Result<PngRaster> rasterize_png(const EngineContext &engine, mu::engraving::Score *score, const ExportOptions &options) {
+    RasterOut out;
+    auto drawn = render_impl(engine, score, "png", options, &out);
+    if (!drawn) return std::unexpected(std::move(drawn.error()));
+    PngRaster raster;
+    raster.surface_ = out.surface;
+    raster.page = options.page;
+    raster.dpi = out.dpi;
+    raster.raster_seconds = out.seconds;
+    return raster;
+}
+
+PngRaster::PngRaster(PngRaster &&other) noexcept
+    : page(other.page), dpi(other.dpi), raster_seconds(other.raster_seconds), encode_seconds(other.encode_seconds),
+      surface_(std::exchange(other.surface_, nullptr)) {}
+
+PngRaster &PngRaster::operator=(PngRaster &&other) noexcept {
+    if (this != &other) {
+        if (surface_) cairo_surface_destroy(surface_);
+        surface_ = std::exchange(other.surface_, nullptr);
+        page = other.page;
+        dpi = other.dpi;
+        raster_seconds = other.raster_seconds;
+        encode_seconds = other.encode_seconds;
+    }
+    return *this;
+}
+
+PngRaster::~PngRaster() {
+    if (surface_) cairo_surface_destroy(surface_);
+}
+
+std::size_t PngRaster::bytes() const noexcept {
+    if (!surface_) return 0;
+    return static_cast<std::size_t>(cairo_image_surface_get_stride(surface_)) *
+           static_cast<std::size_t>(cairo_image_surface_get_height(surface_));
+}
+
+std::string PngRaster::encode() {
+    const std::unique_ptr<cairo_surface_t, decltype(&cairo_surface_destroy)> surface(std::exchange(surface_, nullptr),
+                                                                                     cairo_surface_destroy);
+    if (!surface) throw std::runtime_error("PNG page has no surface");
+    const auto start = RenderTiming::enabled() ? RenderTiming::Clock::now() : RenderTiming::Clock::time_point();
+    std::string output;
+    check(cairo_surface_write_to_png_stream(surface.get(), append_bytes, &output));
+    cairo_surface_finish(surface.get());
+    if (RenderTiming::enabled()) encode_seconds = std::chrono::duration<double>(RenderTiming::Clock::now() - start).count();
+    check(cairo_surface_status(surface.get()));
+    return output;
+}
+
+bool render_timing_enabled() { return RenderTiming::enabled(); }
 } // namespace music

@@ -22,6 +22,9 @@
 
 #pragma once
 
+#include <cstdint>
+#include <vector>
+
 #include "audioencoder.h"
 
 namespace muse::io {
@@ -46,5 +49,6 @@ private:
     muse::io::IODevice *dst_device_ = nullptr;
     bool header_written_ = false;
     size_t pcm_start_pos_ = 0;
+    std::vector<std::uint8_t> pcm_;
 };
 } // namespace muse::audio::encode

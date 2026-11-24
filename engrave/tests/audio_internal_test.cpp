@@ -5,6 +5,7 @@
 #include <atomic>
 #include <cfenv>
 #include <chrono>
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -58,6 +59,22 @@
 
 namespace {
 
+// Sets the thread count the way render_audio passes EngineOptions::audio_threads.
+void set_audio_threads(engrave::Document &document, int threads) {
+    auto &engine = *engrave::DocumentAccess::impl(document).engine;
+    engine.audio_threads = threads;
+    music::EngineAudioSetup setup;
+    setup.sample_rate = engine.audio_sample_rate;
+    for (const auto &soundfont : engine.soundfonts) setup.soundfonts.push_back(engrave::utf8(soundfont));
+    setup.audio_threads = threads;
+    ASSERT_TRUE(music::initialize_engine_audio(engrave::DocumentAccess::context(document).audio(), setup));
+}
+
+struct AutomaticAudioThreads {
+    engrave::Document &document;
+
+    ~AutomaticAudioThreads() { set_audio_threads(document, 0); }
+};
 #if defined(__SSE2__) || defined(_M_X64) || defined(_M_AMD64)
 struct TestFpState {
     static constexpr std::uint32_t k_denormal_mask = (1U << 15) | (1U << 6);
@@ -207,10 +224,15 @@ private:
     int &writes_;
 };
 
+// Owner-thread write granularity: one audio thread keeps encoding, and so every device write, on the
+// caller. AsyncEncodeCancellationDrainsAndRecovers covers the encoder thread.
 TEST(AudioInternal, CancellationAtSynthesisWriteAndFinalFlushRemovesFileAndRecovers) {
+    if (std::getenv("ENGRAVE_AUDIO_THREADS")) GTEST_SKIP() << "ENGRAVE_AUDIO_THREADS overrides the thread count under test";
     auto opened = music::test::g_engine->open(music::test::corpus_file("ghost_note.mscx"));
     ASSERT_TRUE(opened);
     auto &document = **opened;
+    const AutomaticAudioThreads restore{document};
+    set_audio_threads(document, 1);
     auto render = [&] {
         std::vector<std::byte> bytes;
         auto result =
@@ -450,9 +472,13 @@ TEST(AudioInternal, SoundFontRefreshWaitsForNextRender) {
 // Real driver/graph teardown is included. Phase requests occur synchronously on
 // the owner thread; the separate delayed case samples arbitrary operation work.
 TEST(AudioInternal, CancellationGranularityAndRecovery) {
+    if (std::getenv("ENGRAVE_AUDIO_THREADS")) GTEST_SKIP() << "ENGRAVE_AUDIO_THREADS overrides the thread count under test";
     auto opened = music::test::g_engine->open(music::test::corpus_file("repeat70.mscx"));
     ASSERT_TRUE(opened);
     auto &document = **opened;
+    // The test encoders write and poll on the caller's thread.
+    const AutomaticAudioThreads restore{document};
+    set_audio_threads(document, 1);
     const auto render = [&] {
         std::vector<std::byte> bytes;
         EXPECT_TRUE(document.render_audio({}, [&](auto chunk) { bytes.insert(bytes.end(), chunk.begin(), chunk.end()); }));
@@ -1687,6 +1713,59 @@ TEST(AudioInternal, WorkerPoolRunsEachTaskOnceStopsAndRethrows) {
     check_counts();
     EXPECT_FALSE(pool.stopping());
     EXPECT_EQ(pool.started_threads(), 4u);
+
+    // A started block runs while the coordinator is free; finish() completes it as run() would.
+    ASSERT_TRUE(pool.start(4, runs.size(), count_task));
+    EXPECT_TRUE(pool.in_flight());
+    EXPECT_TRUE(pool.finish(never));
+    EXPECT_FALSE(pool.in_flight());
+    check_counts();
+    // Starting a second block while one is in flight is rejected without disturbing the running block.
+    std::atomic<bool> release{false};
+    std::atomic<int> entered{0}, completed{0};
+    const auto gated_task = [&](std::size_t) {
+        entered.fetch_add(1);
+        while (!release.load(std::memory_order_acquire)) std::this_thread::sleep_for(1ms);
+        completed.fetch_add(1);
+    };
+    ASSERT_TRUE(pool.start(2, 10, gated_task));
+    while (entered.load() == 0) std::this_thread::sleep_for(1ms);
+    EXPECT_THROW(pool.start(2, 10, count_task), std::logic_error);
+    EXPECT_TRUE(pool.in_flight());
+    EXPECT_FALSE(pool.stopping());
+    release.store(true, std::memory_order_release);
+    EXPECT_TRUE(pool.finish(never));
+    EXPECT_FALSE(pool.in_flight());
+    EXPECT_EQ(completed.load(), 10);
+
+    // abandon() stops a started block, returns once its running tasks have, and drops task errors.
+    started = 0;
+    finished = 0;
+    ASSERT_TRUE(pool.start(4, 100, until_stopped));
+    while (started.load() == 0) std::this_thread::sleep_for(1ms);
+    pool.abandon();
+    EXPECT_FALSE(pool.in_flight());
+    EXPECT_EQ(started.load(), finished.load());
+    EXPECT_LE(started.load(), 4);
+    ASSERT_TRUE(pool.start(2, 10, throw_fifth));
+    pool.abandon();
+
+    // Cancellation and throwing poll callbacks take precedence over concurrent worker exceptions.
+    // Wait until the worker error has set stopping() before calling finish() so the race is deterministic.
+    const auto throw_first = [](std::size_t index) {
+        if (index == 0) throw std::runtime_error("worker race");
+    };
+    const auto always_stop = [] { return true; };
+    ASSERT_TRUE(pool.start(2, 10, throw_first));
+    while (!pool.stopping()) std::this_thread::sleep_for(1ms);
+    EXPECT_FALSE(pool.finish(always_stop));
+    ASSERT_TRUE(pool.start(2, 10, throw_first));
+    while (!pool.stopping()) std::this_thread::sleep_for(1ms);
+    EXPECT_THROW(pool.finish(throwing_poll), std::logic_error);
+
+    EXPECT_TRUE(pool.run(4, runs.size(), count_task, never));
+    check_counts();
+    EXPECT_EQ(pool.started_threads(), 4u);
 }
 
 namespace {
@@ -1734,23 +1813,6 @@ std::filesystem::path write_parallel_score(const std::string &stem, int chord, i
     out << "</score-partwise>";
     return path;
 }
-
-// Sets the thread count the way render_audio passes EngineOptions::audio_threads.
-void set_audio_threads(engrave::Document &document, int threads) {
-    auto &engine = *engrave::DocumentAccess::impl(document).engine;
-    engine.audio_threads = threads;
-    music::EngineAudioSetup setup;
-    setup.sample_rate = engine.audio_sample_rate;
-    for (const auto &soundfont : engine.soundfonts) setup.soundfonts.push_back(engrave::utf8(soundfont));
-    setup.audio_threads = threads;
-    ASSERT_TRUE(music::initialize_engine_audio(engrave::DocumentAccess::context(document).audio(), setup));
-}
-
-struct AutomaticAudioThreads {
-    engrave::Document &document;
-
-    ~AutomaticAudioThreads() { set_audio_threads(document, 0); }
-};
 
 std::vector<std::byte> render_bytes(engrave::Document &document, engrave::AudioFormat format) {
     std::vector<std::byte> bytes;
@@ -1991,4 +2053,350 @@ TEST(AudioInternal, SingleInstrumentWithMutedMetronomeStartsNoWorkers) {
             std::exit(check());
         },
         ::testing::ExitedWithCode(0), "");
+}
+
+namespace {
+// Records which threads drive one encoder and injects a failure at its third block.
+struct EncoderRecord {
+    enum class Mode { OK, BEGIN_FAILS, ENCODE_FAILS, END_FAILS, ENCODE_THROWS };
+    Mode mode = Mode::OK;
+    bool end_throws = false;
+    bool throw_on_short_write = false;
+    // Encoder-thread writes are read only after export_score_audio has joined that thread.
+    std::set<std::thread::id> threads;
+    int begun = 0, encoded = 0, ended = 0;
+    // Read by the caller's cancellation callback while the encoder runs.
+    std::atomic<int> blocks{0};
+    std::chrono::milliseconds delay{0};
+};
+
+struct RecordingEncoder final {
+    RecordingEncoder(const muse::audio::SoundTrackFormat &, muse::io::IODevice &device, EncoderRecord &record)
+        : device_(device), record_(record) {
+        note();
+    }
+
+    bool begin(muse::audio::samples_t) {
+        note();
+        ++record_.begun;
+        return record_.mode != EncoderRecord::Mode::BEGIN_FAILS;
+    }
+
+    size_t encode(muse::audio::samples_t samples, const float *input) {
+        note();
+        ++record_.encoded;
+        if (record_.delay.count()) std::this_thread::sleep_for(record_.delay);
+        if (record_.encoded == 3 && record_.mode == EncoderRecord::Mode::ENCODE_FAILS) return 0;
+        if (record_.encoded == 3 && record_.mode == EncoderRecord::Mode::ENCODE_THROWS) throw std::runtime_error("encoder threw");
+        const auto bytes = static_cast<size_t>(samples) * 2 * sizeof(float);
+        if (device_.write(reinterpret_cast<const std::uint8_t *>(input), bytes) != bytes) {
+            if (record_.throw_on_short_write) throw std::runtime_error("short write");
+            return 0;
+        }
+        record_.blocks.fetch_add(1);
+        return samples;
+    }
+
+    muse::Ret end() {
+        note();
+        ++record_.ended;
+        if (record_.end_throws) throw std::logic_error("end threw");
+        if (record_.mode == EncoderRecord::Mode::END_FAILS)
+            return muse::audio::make_ret(muse::audio::Err::ERROR_ENCODE, "injected end failure");
+        return muse::make_ok();
+    }
+private:
+    void note() { record_.threads.insert(std::this_thread::get_id()); }
+
+    muse::io::IODevice &device_;
+    EncoderRecord &record_;
+};
+
+std::filesystem::path temp_output(const std::string &stem, const char *extension) {
+#ifdef _WIN32
+    const int process = _getpid();
+#else
+    const int process = getpid();
+#endif
+    return std::filesystem::temp_directory_path() / (stem + "-" + std::to_string(process) + extension);
+}
+
+music::AudioRenderRequest request_for(const std::filesystem::path &path) {
+    music::AudioRenderRequest request;
+    const auto utf8 = path.generic_u8string();
+    request.output_path.assign(utf8.begin(), utf8.end());
+    return request;
+}
+
+std::vector<char> read_file(const std::filesystem::path &path) {
+    std::ifstream in(path, std::ios::binary);
+    return std::vector<char>{std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()};
+}
+
+std::vector<std::byte> render_bytes(engrave::Document &document, engrave::AudioFormat format, int bit_depth) {
+    std::vector<std::byte> bytes;
+    engrave::AudioOptions options;
+    options.format = format;
+    options.bit_depth = bit_depth;
+    EXPECT_TRUE(document.render_audio(options, [&](auto chunk) { bytes.insert(bytes.end(), chunk.begin(), chunk.end()); }));
+    return bytes;
+}
+} // namespace
+
+// The encoder thread and the overlapped mix must not change a byte of any container.
+TEST(AudioInternal, AsyncEncodeAndOverlapMatchSerialForEveryFormat) {
+    if (std::getenv("ENGRAVE_AUDIO_THREADS")) GTEST_SKIP() << "ENGRAVE_AUDIO_THREADS overrides the thread counts under test";
+    const auto xml = write_parallel_score("engrave-async-formats", 3, 6);
+    auto opened = music::test::g_engine->open(xml);
+    std::filesystem::remove(xml);
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    const AutomaticAudioThreads restore{document};
+
+    const struct {
+        engrave::AudioFormat format;
+        int bit_depth;
+    } cases[] = {{engrave::AudioFormat::WAV, 16},  {engrave::AudioFormat::WAV, 24},  {engrave::AudioFormat::WAV, 32},
+                 {engrave::AudioFormat::FLAC, 16}, {engrave::AudioFormat::FLAC, 24}, {engrave::AudioFormat::OPUS, 0},
+                 {engrave::AudioFormat::MP3, 0}};
+
+    for (const auto &c : cases) {
+        set_audio_threads(document, 1);
+        const auto serial = render_bytes(document, c.format, c.bit_depth);
+        ASSERT_FALSE(serial.empty());
+        set_audio_threads(document, 4);
+        EXPECT_TRUE(render_bytes(document, c.format, c.bit_depth) == serial)
+            << "format=" << static_cast<int>(c.format) << " bit_depth=" << c.bit_depth;
+    }
+    EXPECT_GE(music::engine_audio_worker_threads(engrave::DocumentAccess::context(document).audio()), 4u);
+}
+
+// Integer WAV samples are the float render converted by the PCM rule
+// round(clamp(x, -1, 1) * (2^(bits-1) - 1)), little-endian, after a 46-byte header.
+TEST(AudioInternal, IntegerWavSamplesAreTheConvertedFloatRender) {
+    auto opened = music::test::g_engine->open(music::test::corpus_file("ghost_note.mscx"));
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    constexpr std::size_t header = 46;
+    const auto float_wav = render_bytes(document, engrave::AudioFormat::WAV, 32);
+    ASSERT_GT(float_wav.size(), header);
+    const std::size_t samples = (float_wav.size() - header) / 4;
+    for (const int bits : {16, 24}) {
+        const auto pcm = render_bytes(document, engrave::AudioFormat::WAV, bits);
+        const std::size_t width = static_cast<std::size_t>(bits / 8);
+        ASSERT_EQ(pcm.size(), header + samples * width) << bits;
+        const float scale = static_cast<float>((1 << (bits - 1)) - 1);
+        std::size_t mismatches = 0;
+        for (std::size_t i = 0; i < samples; ++i) {
+            float value;
+            std::memcpy(&value, float_wav.data() + header + i * 4, 4);
+            const auto expected = static_cast<std::int32_t>(std::round(std::clamp(value, -1.0f, 1.0f) * scale));
+            std::uint32_t actual = 0;
+            for (std::size_t b = 0; b < width; ++b) actual |= std::to_integer<std::uint32_t>(pcm[header + i * width + b]) << (8 * b);
+            const std::uint32_t mask = (1u << bits) - 1;
+            if (actual != (static_cast<std::uint32_t>(expected) & mask)) ++mismatches;
+        }
+        EXPECT_EQ(mismatches, 0u) << bits << "-bit samples differ from the converted float render";
+    }
+}
+
+TEST(AudioInternal, AsyncEncoderStaysOnOneThreadAndReportsFailures) {
+    if (std::getenv("ENGRAVE_AUDIO_THREADS")) GTEST_SKIP() << "ENGRAVE_AUDIO_THREADS overrides the thread counts under test";
+    using Mode = EncoderRecord::Mode;
+    const auto owner = std::this_thread::get_id();
+    const auto xml = write_parallel_score("engrave-async-failures", 2, 4);
+    auto opened = music::test::g_engine->open(xml);
+    std::filesystem::remove(xml);
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    const AutomaticAudioThreads restore{document};
+    auto &audio = engrave::DocumentAccess::context(document).audio();
+    auto *master = engrave::DocumentAccess::master_score(document);
+    const auto path = temp_output("engrave-async-failures", ".wav");
+    set_audio_threads(document, 4);
+    const auto baseline = render_bytes(document, engrave::AudioFormat::WAV, 0);
+    for (const int threads : {1, 4}) {
+        set_audio_threads(document, threads);
+        for (const Mode mode : {Mode::OK, Mode::BEGIN_FAILS, Mode::ENCODE_FAILS, Mode::END_FAILS, Mode::ENCODE_THROWS}) {
+            SCOPED_TRACE(testing::Message() << "threads=" << threads << " mode=" << static_cast<int>(mode));
+            EncoderRecord record;
+            record.mode = mode;
+            auto request = request_for(path);
+            request.encoder_factory = [&record](const muse::audio::SoundTrackFormat &format, muse::io::IODevice &device) {
+                return std::make_unique<RecordingEncoder>(format, device, record);
+            };
+            int polls = 0;
+            request.cancelled = [&] {
+                EXPECT_EQ(std::this_thread::get_id(), owner);
+                ++polls;
+                return false;
+            };
+            if (mode == Mode::ENCODE_THROWS) {
+                EXPECT_THROW(music::export_score_audio(audio, master, request), std::runtime_error);
+            } else {
+                const auto result = music::export_score_audio(audio, master, request);
+                EXPECT_EQ(result.ok, mode == Mode::OK) << result.error;
+                if (mode != Mode::OK) EXPECT_EQ(result.failure, music::AudioRenderResult::Failure::ENGINE_FAILURE);
+                EXPECT_EQ(result.error.find("injected end failure") != std::string::npos, mode == Mode::END_FAILS) << result.error;
+            }
+            ASSERT_EQ(record.threads.size(), 1u) << "the encoder migrated between threads";
+            EXPECT_EQ(*record.threads.begin() == owner, threads == 1);
+            EXPECT_GT(polls, 0);
+            EXPECT_EQ(record.begun, 1);
+            if (mode == Mode::BEGIN_FAILS) EXPECT_EQ(record.encoded, 0);
+            if (mode == Mode::ENCODE_FAILS || mode == Mode::ENCODE_THROWS) EXPECT_EQ(record.encoded, 3);
+            EXPECT_EQ(record.ended, mode == Mode::BEGIN_FAILS ? 0 : 1);
+            std::error_code ec;
+            std::filesystem::remove(path, ec);
+        }
+        // A throwing finalizer must not terminate or mask a prior encode failure/exception.
+        for (const Mode mode : {Mode::ENCODE_FAILS, Mode::ENCODE_THROWS}) {
+            SCOPED_TRACE(testing::Message() << "throwing end threads=" << threads << " mode=" << static_cast<int>(mode));
+            EncoderRecord record;
+            record.mode = mode;
+            record.end_throws = true;
+            auto request = request_for(path);
+            request.encoder_factory = [&record](const muse::audio::SoundTrackFormat &format, muse::io::IODevice &device) {
+                return std::make_unique<RecordingEncoder>(format, device, record);
+            };
+            if (mode == Mode::ENCODE_THROWS) {
+                EXPECT_THROW(music::export_score_audio(audio, master, request), std::runtime_error);
+            } else {
+                const auto result = music::export_score_audio(audio, master, request);
+                EXPECT_FALSE(result.ok);
+                EXPECT_EQ(result.failure, music::AudioRenderResult::Failure::ENGINE_FAILURE);
+            }
+            EXPECT_EQ(record.ended, 1);
+            std::error_code ec;
+            std::filesystem::remove(path, ec);
+        }
+        // An encoder exception after an over-budget write still reports RESOURCE_LIMIT and deletes the file.
+        {
+            EncoderRecord record;
+            record.throw_on_short_write = true;
+            auto request = request_for(path);
+            request.max_bytes = 1024;
+            request.encoder_factory = [&record](const muse::audio::SoundTrackFormat &format, muse::io::IODevice &device) {
+                return std::make_unique<RecordingEncoder>(format, device, record);
+            };
+            const auto result = music::export_score_audio(audio, master, request);
+            EXPECT_FALSE(result.ok);
+            EXPECT_EQ(result.failure, music::AudioRenderResult::Failure::RESOURCE_LIMIT) << result.error;
+            EXPECT_FALSE(std::filesystem::exists(path));
+        }
+        // A factory that returns no encoder fails cleanly.
+        auto request = request_for(path);
+        request.encoder_factory = [](const muse::audio::SoundTrackFormat &, muse::io::IODevice &) {
+            return std::unique_ptr<RecordingEncoder>{};
+        };
+        const auto result = music::export_score_audio(audio, master, request);
+        EXPECT_FALSE(result.ok);
+        EXPECT_EQ(result.failure, music::AudioRenderResult::Failure::ENGINE_FAILURE);
+        std::error_code ec;
+        std::filesystem::remove(path, ec);
+    }
+    set_audio_threads(document, 4);
+    EXPECT_TRUE(render_bytes(document, engrave::AudioFormat::WAV, 0) == baseline);
+}
+
+TEST(AudioInternal, AsyncEncodeCancellationDrainsAndRecovers) {
+    if (std::getenv("ENGRAVE_AUDIO_THREADS")) GTEST_SKIP() << "ENGRAVE_AUDIO_THREADS overrides the thread counts under test";
+    using Phase = muse::audio::OfflineCancellation::Phase;
+    const auto owner = std::this_thread::get_id();
+    const auto xml = write_parallel_score("engrave-async-cancel", 6, 3);
+    auto opened = music::test::g_engine->open(xml);
+    std::filesystem::remove(xml);
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    const AutomaticAudioThreads restore{document};
+    set_audio_threads(document, 4);
+    const auto baseline = render_bytes(document, engrave::AudioFormat::WAV, 0);
+    ASSERT_FALSE(baseline.empty());
+    auto &audio = engrave::DocumentAccess::context(document).audio();
+    auto *master = engrave::DocumentAccess::master_score(document);
+    const auto workers = music::engine_audio_worker_threads(audio);
+    ASSERT_GE(workers, 4u);
+    const auto path = temp_output("engrave-async-cancel", ".wav");
+    // 0: waiting on a slow encoder; 1: the same, the callback throws; 2: waiting on the
+    // prefetched block's synthesis after the encoder has taken some blocks.
+    for (int scenario = 0; scenario < 3; ++scenario) {
+        SCOPED_TRACE(scenario);
+        EncoderRecord record;
+        if (scenario < 2) record.delay = std::chrono::milliseconds(3);
+        auto request = request_for(path);
+        request.encoder_factory = [&record](const muse::audio::SoundTrackFormat &format, muse::io::IODevice &device) {
+            return std::make_unique<RecordingEncoder>(format, device, record);
+        };
+        int phase_polls = 0;
+        bool fired = false;
+        request.cancelled = [&]() -> bool {
+            EXPECT_EQ(std::this_thread::get_id(), owner);
+            const auto phase = muse::audio::OfflineCancellation::phase;
+            const bool armed = scenario < 2 ? phase == Phase::ENCODING : phase == Phase::SYNTHESIS && record.blocks.load() >= 3;
+            if (fired || !armed || ++phase_polls < 3) return fired;
+            fired = true;
+            if (scenario == 1) throw std::runtime_error("encode-wait cancellation callback");
+            return true;
+        };
+        if (scenario == 1)
+            EXPECT_THROW(music::export_score_audio(audio, master, request), std::runtime_error);
+        else
+            EXPECT_EQ(music::export_score_audio(audio, master, request).failure, music::AudioRenderResult::Failure::CANCELLED);
+        EXPECT_TRUE(fired);
+        EXPECT_FALSE(std::filesystem::exists(path));
+        ASSERT_EQ(record.threads.size(), 1u);
+        EXPECT_NE(*record.threads.begin(), owner);
+        EXPECT_EQ(record.ended, 0) << "a cancelled stream was ended";
+        EXPECT_EQ(music::engine_audio_worker_threads(audio), workers);
+        EXPECT_TRUE(render_bytes(document, engrave::AudioFormat::WAV, 0) == baseline);
+    }
+}
+
+// The byte limits hold for writes from the encoder thread, including the header rewrites in end().
+TEST(AudioInternal, AsyncEncodeEnforcesByteLimitsIncludingHeaderRewrites) {
+    if (std::getenv("ENGRAVE_AUDIO_THREADS")) GTEST_SKIP() << "ENGRAVE_AUDIO_THREADS overrides the thread counts under test";
+    const auto xml = write_parallel_score("engrave-async-limits", 2, 4);
+    auto opened = music::test::g_engine->open(xml);
+    std::filesystem::remove(xml);
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    const AutomaticAudioThreads restore{document};
+    auto &audio = engrave::DocumentAccess::context(document).audio();
+    auto *master = engrave::DocumentAccess::master_score(document);
+    for (const int threads : {1, 4}) {
+        set_audio_threads(document, threads);
+        for (const auto format : {music::EngineAudioFormat::WAV, music::EngineAudioFormat::FLAC}) {
+            SCOPED_TRACE(testing::Message() << "threads=" << threads << " format=" << static_cast<int>(format));
+            const auto path = temp_output("engrave-async-limits", format == music::EngineAudioFormat::WAV ? ".wav" : ".flac");
+            auto unlimited = request_for(path);
+            unlimited.format = format;
+            const auto full = music::export_score_audio(audio, master, unlimited);
+            ASSERT_TRUE(full.ok) << full.error;
+            const auto expected = read_file(path);
+            const std::uint64_t size = expected.size();
+            ASSERT_GT(size, 4096u);
+            const auto expect_limit = [&](std::optional<std::uint64_t> max_bytes, std::optional<std::uint64_t> max_write_bytes) {
+                auto request = request_for(path);
+                request.format = format;
+                request.max_bytes = max_bytes;
+                request.max_write_bytes = max_write_bytes;
+                const auto result = music::export_score_audio(audio, master, request);
+                EXPECT_FALSE(result.ok);
+                EXPECT_EQ(result.failure, music::AudioRenderResult::Failure::RESOURCE_LIMIT) << result.error;
+                EXPECT_FALSE(std::filesystem::exists(path));
+            };
+            expect_limit(size / 2, std::nullopt);
+            expect_limit(std::nullopt, size / 2);
+            // Every byte of the file fits, but its header rewrite does not.
+            expect_limit(std::nullopt, size);
+            auto roomy = request_for(path);
+            roomy.format = format;
+            roomy.max_bytes = size;
+            roomy.max_write_bytes = size + 4096;
+            const auto fits = music::export_score_audio(audio, master, roomy);
+            EXPECT_TRUE(fits.ok) << fits.error;
+            EXPECT_TRUE(read_file(path) == expected);
+            std::filesystem::remove(path);
+        }
+    }
 }

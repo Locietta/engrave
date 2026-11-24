@@ -10,9 +10,14 @@
 namespace muse::audio {
 // Owner-thread totals. synth is the wall time of per-track synthesis, serial or
 // fanned out; synth_total and synth_max_track sum each track's own time across
-// blocks, whichever thread ran it.
+// blocks, whichever thread ran it. mix covers summing, the reverb and the master
+// stages. A pipelined render overlaps stages: a prefetched block's synth runs
+// from its start to its finish, and encode is the encoder thread's own time
+// (added after it joins), so the stages can sum to more than the wall time;
+// encode_wait is the time the owner spent blocked on the encoder.
 struct OfflineTiming {
     double synth = 0, render = 0, encode = 0, setup = 0, teardown = 0, create = 0, fonts = 0, flush = 0, model = 0, tracks = 0, aux = 0;
+    double mix = 0, encode_wait = 0;
     double synth_total = 0, synth_max_track = 0;
     std::size_t synth_threads = 0, synth_tracks = 0;
 
@@ -63,7 +68,8 @@ struct OfflineTimingReport {
     ~OfflineTimingReport() {
         if (!OfflineTiming::enabled()) return;
         const auto &t = OfflineTiming::current();
-        std::fprintf(stderr, "offline_audio_seconds synth=%.9f mix=%.9f encode=%.9f\n", t.synth, t.render - t.synth, t.encode);
+        std::fprintf(stderr, "offline_audio_seconds synth=%.9f mix=%.9f encode=%.9f encode_wait=%.9f\n", t.synth, t.mix, t.encode,
+                     t.encode_wait);
         std::fprintf(stderr, "offline_audio_seconds setup=%.9f teardown=%.9f create=%.9f fonts=%.9f flush=%.9f\n", t.setup, t.teardown,
                      t.create, t.fonts, t.flush);
         std::fprintf(stderr, "offline_audio_seconds model=%.9f tracks=%.9f aux=%.9f\n", t.model, t.tracks, t.aux);

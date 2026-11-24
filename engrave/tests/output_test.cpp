@@ -24,6 +24,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <thread>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -32,6 +33,7 @@
 #include "draw/internal/fontsdatabase.h"
 #include "draw/types/pen.h"
 #include "draw/types/pixmap.h"
+#include "engrave/src/api/state.h"
 #include "engrave/src/runtime/fonts_database.h"
 #include "engrave/src/score/json.h"
 #include "global/io/buffer.h"
@@ -311,11 +313,27 @@ TEST(Output, PageRangesAndLimits) {
     music::test::expect_code(page.document->render(huge), engrave::ErrorCode::RESOURCE_LIMIT, "an oversized page");
 }
 
+// Sets the worker threads a render reads from EngineOptions::audio_threads, for one scope.
+struct RenderThreads {
+    RenderThreads(engrave::Document &document, std::int32_t threads)
+        : engine(*engrave::DocumentAccess::impl(document).engine), saved(engine.audio_threads) {
+        engine.audio_threads = threads;
+    }
+
+    ~RenderThreads() { engine.audio_threads = saved; }
+
+    engrave::EngineState &engine;
+    std::int32_t saved;
+};
+
+// The serial schedule: one thread draws and encodes every page in turn.
 TEST(Output, CancellationPollsPageBoundariesAndDiscardsAllPages) {
+    if (std::getenv("ENGRAVE_AUDIO_THREADS")) GTEST_SKIP() << "ENGRAVE_AUDIO_THREADS overrides the thread count under test";
     // This fixture has exactly two pages on both supported platforms.
     auto opened = music::test::open("slurs.mscz");
     ASSERT_TRUE(opened.document);
     auto &document = *opened.document;
+    const RenderThreads serial(document, 1);
     ASSERT_EQ(*document.page_count(), 2);
     for (auto format : {engrave::RenderFormat::PDF, engrave::RenderFormat::SVG, engrave::RenderFormat::PNG}) {
         engrave::RenderOptions options;
@@ -342,6 +360,108 @@ TEST(Output, CancellationPollsPageBoundariesAndDiscardsAllPages) {
         ASSERT_TRUE(document.render(options));
         EXPECT_EQ(polls, total);
     }
+}
+
+namespace {
+// One part of dense sixteenths, long enough to fill several pages.
+std::unique_ptr<engrave::Document> open_multi_page_score() {
+    std::string xml =
+        R"(<?xml version="1.0"?><score-partwise version="4.0"><part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list><part id="P1">)";
+    const std::string steps = "CDEFGAB";
+    for (int m = 1; m <= 160; ++m) {
+        xml += "<measure number=\"" + std::to_string(m) + "\">";
+        if (m == 1)
+            xml += "<attributes><divisions>4</divisions><time><beats>4</beats><beat-type>4</beat-type></time>"
+                   "<clef><sign>G</sign><line>2</line></clef></attributes>";
+        for (int s = 0; s < 16; ++s)
+            xml += std::string("<note><pitch><step>") + steps[(m + s) % 7] + "</step><octave>" + std::to_string(4 + (s / 7) % 2) +
+                   "</octave></pitch><duration>1</duration><type>16th</type></note>";
+        xml += "</measure>";
+    }
+    xml += "</part></score-partwise>";
+    auto opened = g_engine->open(std::as_bytes(std::span(xml.data(), xml.size())), {.format = engrave::Format::MUSIC_XML});
+    return opened ? std::move(*opened) : nullptr;
+}
+} // namespace
+
+// Pages drawn on the caller and deflated on worker threads equal the serial render, and only
+// the caller polls.
+TEST(Output, ParallelPngEncodeMatchesSerialPages) {
+    if (std::getenv("ENGRAVE_AUDIO_THREADS")) GTEST_SKIP() << "ENGRAVE_AUDIO_THREADS overrides the thread counts under test";
+    const auto document = open_multi_page_score();
+    ASSERT_TRUE(document);
+    const std::int32_t pages = *document->page_count();
+    ASSERT_GE(pages, 4);
+    const auto owner = std::this_thread::get_id();
+    int polls = 0;
+    engrave::RenderOptions options;
+    options.format = engrave::RenderFormat::PNG;
+    options.dpi = 72;
+    options.cancelled = [&] {
+        EXPECT_EQ(std::this_thread::get_id(), owner);
+        ++polls;
+        return false;
+    };
+    std::vector<std::vector<std::byte>> serial;
+    {
+        const RenderThreads one(*document, 1);
+        const auto rendered = document->render(options);
+        ASSERT_TRUE(rendered) << rendered.error().message;
+        serial = rendered->pages;
+        EXPECT_EQ(polls, 3 * pages);
+    }
+    ASSERT_EQ(serial.size(), static_cast<std::size_t>(pages));
+    for (const std::int32_t threads : {2, 4}) {
+        const RenderThreads parallel(*document, threads);
+        polls = 0;
+        const auto rendered = document->render(options);
+        ASSERT_TRUE(rendered) << rendered.error().message;
+        EXPECT_TRUE(rendered->pages == serial) << "threads=" << threads;
+        // Each page polls before drawing and before encoding, and the render once more at the end.
+        EXPECT_GE(polls, 2 * pages + 1) << "threads=" << threads;
+    }
+    const RenderThreads parallel(*document, 4);
+    options.first_page = 1;
+    options.last_page = 3;
+    const auto ranged = document->render(options);
+    ASSERT_TRUE(ranged);
+    EXPECT_TRUE(ranged->pages == std::vector(serial.begin() + 1, serial.begin() + 4));
+}
+
+TEST(Output, ParallelPngCancellationAndCallbackExceptionsStopEveryPage) {
+    if (std::getenv("ENGRAVE_AUDIO_THREADS")) GTEST_SKIP() << "ENGRAVE_AUDIO_THREADS overrides the thread counts under test";
+    const auto document = open_multi_page_score();
+    ASSERT_TRUE(document);
+    const std::int32_t pages = *document->page_count();
+    ASSERT_GE(pages, 4);
+    const RenderThreads parallel(*document, 4);
+    engrave::RenderOptions options;
+    options.format = engrave::RenderFormat::PNG;
+    options.dpi = 72;
+    const auto baseline = document->render(options);
+    ASSERT_TRUE(baseline);
+    // At least 2 * pages + 1 polls happen, so every one of these stops the render where it polls.
+    for (int stop = 1; stop <= 2 * pages + 1; ++stop) {
+        int polls = 0;
+        options.cancelled = [&] { return ++polls == stop; };
+        const auto result = document->render(options);
+        ASSERT_FALSE(result) << stop;
+        EXPECT_EQ(result.error().code, engrave::ErrorCode::CANCELLED) << stop;
+        EXPECT_EQ(polls, stop);
+    }
+    for (const int stop : {1, 2, pages, 2 * pages + 1}) {
+        int polls = 0;
+        options.cancelled = [&]() -> bool {
+            if (++polls == stop) throw std::invalid_argument("callback failed");
+            return false;
+        };
+        EXPECT_THROW(std::ignore = document->render(options), std::invalid_argument) << stop;
+        EXPECT_EQ(polls, stop);
+    }
+    options.cancelled = {};
+    const auto recovered = document->render(options);
+    ASSERT_TRUE(recovered);
+    EXPECT_TRUE(recovered->pages == baseline->pages);
 }
 
 TEST(Output, PdfPageBoundaryPropagatesCallbackException) {

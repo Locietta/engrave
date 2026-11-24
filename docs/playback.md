@@ -34,7 +34,7 @@ AudioEncoder (pro::proxy runtime seam)
 ByteSink / IODevice (Stream output)
 ```
 
-The pipeline operates on the single dedicated engine owner thread, keeping data separate from behavior and avoiding runtime virtual dispatch outside genuine format seams.
+The pipeline is driven by the single dedicated engine owner thread, keeping data separate from behavior and avoiding runtime virtual dispatch outside genuine format seams. With more than one audio thread, track synthesis fans out to a worker pool, the next block's synthesis overlaps the current block's mix, and encoding runs on a per-render encoder thread (see Parallel Rendering below); the owner thread still runs every user callback.
 
 ## Data Flow and Ownership
 
@@ -90,13 +90,13 @@ Non-trivially copyable events stored separately in `std::vector<ColdEvent>`:
 
 `OfflineRenderSession` executes offline mixing in a deterministic order (`synthesize` and `mix` in `offlinerendersession.cpp`):
 
-1. **Per-Track Synthesis**: Each non-muted track synthesizes audio into its own dedicated buffer (`track.buffer`) via `process_track` (which drives the track's source, insert effects, and level controls). Tracks run serially on the owner thread or in parallel on the worker pool (see below).
-2. **Combined Dry Accumulation and Aux Send Pass**: On the owner thread, in a single pass over active tracks in ascending index order, non-silent track buffers are summed into the master output buffer while simultaneously scaling by active aux send amounts and accumulating into the reverb send buffer (`reverb_.buffer`).
-3. **Aux Reverb Processing and Mixdown**: If reverb is present and active (or non-silent), `reverb_.buffer` is processed through `fx::ReverbProcessor` (Muse Reverb DSP) and its wet return is summed into the master output buffer.
+1. **Per-Track Synthesis**: Each non-muted track synthesizes audio into one of its two output slots (`track.slots[i].buffer`) via `process_track` (which drives the track's source, insert effects, and level controls), then records whether its signal is silent in the same slot. Tracks run serially on the owner thread or in parallel on the worker pool (see below).
+2. **Combined Dry Accumulation and Aux Send Pass**: On the owner thread, in a single pass over active tracks in ascending index order, non-silent slot buffers are summed into the master output buffer while simultaneously scaling by active aux send amounts and accumulating into the reverb send buffer.
+3. **Aux Reverb Processing and Mixdown**: If reverb is present and active (or non-silent), the reverb send buffer is processed through `fx::ReverbProcessor` (Muse Reverb DSP) and its wet return is summed into the master output buffer.
 
 Disjoint track buffers isolate synthesis state from mixing, ensuring identical floating-point summation order across runs and thread counts. Cooperative cancellation is polled before synthesis, before reverb buffer zeroing, before each track's accumulation pass, and before reverb processing.
 
-### Parallel Per-Track Synthesis
+### Parallel Rendering
 
 `EngineOptions::audio_threads` (`EngineAudioSetup::audio_threads` internally) selects how many threads synthesize a block's tracks: `0` is `hardware_concurrency - 1` clamped to 1..8, `1` is the serial path, larger values are capped at 64, and negative values are rejected. A positive integer in `ENGRAVE_AUDIO_THREADS` overrides the configured value; other values are ignored. Synthesis stays serial while a MIDI event hook is installed, while playback-harness capture, allocation counting or fault injection is active, if the OS refuses thread creation, and for renders with at most one active (unmuted) track (so a single-instrument score with a muted metronome track never starts workers).
 
@@ -105,11 +105,28 @@ The pool (`muse/framework/audio/engine/internal/workerpool.h`) is owned by `Engi
 - **Per-thread FP state**: synthesis and encoding pin the active FP mode (FTZ/DAZ plus rounding mode) via `ScopedDenormalGuard::RenderModePin`, and every worker task applies and restores that pinned mode via `ScopedDenormalGuard::WorkerScope` (`denormalguard.h`). Mid-render cancellation callbacks still see and keep their own rounding-mode changes on return without altering serial vs. parallel audio output.
 - **Shared SoundFont, read-mostly**: synths share the cached defsfont. FluidSynth stays built with `NO_THREADS`; two patches make worker-side writes safe: sample voice refcounts use atomic builtins (`fluid_sample_incr_ref`/`fluid_sample_decr_ref` in `fluid_sfont.h`), and `fluid_zone_inside_range` stores the zone `ignore` flag only when it is set (only mono legato sets it; tracks pin legato mode 0).
 - **Owner-only loading**: SoundFont loads, sample loads, preset selection and synth creation happen during setup on the owner thread. `FluidTrack::handle_event` refuses `PROGRAM_CHANGE` during `PLAYING_OFFLINE`. `initialize_fluid_globals()` installs the FluidSynth log sink and runs FluidSynth's one-time table setup once, on the owner thread, before any render.
-- **Cancellation**: only the owner thread calls `AudioOptions::cancelled`. While waiting for a block it polls about every millisecond (on Windows through a high-resolution waitable timer, since condition-variable timeouts round up to the scheduler tick). Once the predicate returns true or throws, the pool's stop flag is set; worker tasks see only that flag through their own `OfflineCancellation` scope, unwind at their next poll, and the owner surfaces the cancellation or rethrows after the block drains. A worker exception is rethrown on the owner thread the same way. If worker thread creation fails completely, synthesis falls back to the ordinary serial loop so the owner's live cancellation scope stays active inside each track.
+- **Cancellation**: only the owner thread calls `AudioOptions::cancelled`. While waiting for a block it polls about every millisecond (`muse::PollWait`; on Windows through a high-resolution waitable timer, since condition-variable timeouts round up to the scheduler tick). Once the predicate returns true or throws, the pool's stop flag is set; worker tasks see only that flag through their own `OfflineCancellation` scope, unwind at their next poll, and the owner surfaces the cancellation or rethrows after the block drains. A worker exception is rethrown on the owner thread the same way. If worker thread creation fails completely, synthesis falls back to the ordinary serial loop so the owner's live cancellation scope stays active inside each track.
+
+#### Synthesis/Mix Overlap
+
+When synthesis fans out, `SoundTrackWriter` passes each block's pull the size of the next one (never past the end of the audio data, so the final partial block keeps its size), and `OfflineRenderSession::process` starts synthesizing that block on the pool (`WorkerPool::start`) before mixing the current one, then finishes it (`WorkerPool::finish`, polling cancellation in the `SYNTHESIS` phase) at the next pull. The two slots per track keep the stages apart: workers write only the next block's slot and the track's synth, DSP, control and signal state; the mix reads only the current slot (buffer, processed flag, silence snapshot) and the immutable sends, and writes only the reverb, master stages and the output block. Leaving `PLAYING_OFFLINE`, the writer's exit (normal or by exception) and the session's destructor abandon an in-flight block (`WorkerPool::abandon`: stop flag, then wait for running tasks).
+
+#### Encoder Thread
+
+With more than one audio thread (and outside MIDI-hook, playback-harness capture, allocation-counting and fault-injection renders, which encode on the owner thread), `SoundTrackWriter` hands rendered blocks through a four-slot single-producer/single-consumer ring to an encoder thread. Silent lead-in and tail blocks carry only a flag and are encoded from a shared zero buffer. Invariants:
+
+- **One thread per codec**: the encoder thread calls the encoder factory, `begin`, every `encode` and `end`, and destroys the encoder; the owner never touches it. If the thread cannot start, the owner encodes instead.
+- **FP mode**: the thread runs in the render's pinned FP mode through `ScopedDenormalGuard::WorkerScope`, so every codec matches the serial render bit for bit.
+- **Cancellation**: the owner alone calls the user predicate, including while it waits for a free slot or for the final drain (about every millisecond, in the `ENCODING` phase, and at least once during the drain). The encoder thread, and the `StreamingFileDevice` when written from that thread, see only the render's stop flag, which the owner raises.
+- **Error precedence and completion**: the owner reports `block_completed` (the encoded frame count) in block order as the encoder consumes blocks, and joins the encoder thread before `write()` returns or unwinds. Cancellation or a latched callback exception wins, then `RESOURCE_LIMIT` from the device (including WAV/FLAC header rewrites in `end()` under `max_write_bytes`), then encoder or I/O failure. As on the owner thread, a stream whose `encode` fails or throws is still ended unless cancelled; an encoder exception is rethrown on the owner after the join.
+
+#### Multi-Page PNG
+
+`Document::render` of a PNG page range draws each page in order on the owner thread into its own ARGB32 image surface, then hands the flushed surface to one of up to `audio_threads` transient worker threads (same default and `ENGRAVE_AUDIO_THREADS` override, at most one per page) that runs `cairo_surface_write_to_png_stream` and frees it. Workers own their surfaces exclusively; Cairo's reference counts are atomic and its global caches are mutex-protected, and libpng/zlib keep all state per call, so concurrent encodes of independent surfaces are safe. At most one surface per worker waits or encodes, and at most 256 MiB of surfaces beyond the page being drawn (always at least one), so a 600 dpi render holds about two pages. Only the owner polls `RenderOptions::cancelled`: before and after drawing each page, while waiting for capacity or for the final drain, and once at the end. On cancellation, a callback exception or an encode failure the owner stops the workers, joins them, frees every unencoded surface and returns `CANCELLED` or rethrows. Single pages and one-thread renders draw and encode on the owner thread, three polls per page.
 
 ### Timing Instrumentation
 
-With `ENGRAVE_AUDIO_TIMING` set, each export prints `offline_audio_seconds key=value` lines to stderr. `synth` (equal to `synth_wall`) is the wall time of per-track synthesis and `mix` is the rest of the block pull; `synth_total` and `synth_max_track` sum each track's own synthesis time, whichever thread ran it. A final `offline_audio_synth threads=N tracks=M` line gives the fan-out actually used. With `ENGRAVE_RENDER_TIMING` set, each export prints `render_seconds format=... page=...` (or `pages=A-B` for multi-page PDF) `dpi=... raster=... encode=... bytes=...`, splitting drawing from encoding (PNG deflate, or Cairo page emission and surface finish across the exported PDF page range).
+With `ENGRAVE_AUDIO_TIMING` set, each export prints `offline_audio_seconds key=value` lines to stderr. `synth` (equal to `synth_wall`) is the wall time of per-track synthesis; `mix` is summing, the reverb and the master stages; `encode` is encoder time on whichever thread ran it and `encode_wait` the owner's time blocked on the encoder thread; `synth_total` and `synth_max_track` sum each track's own synthesis time, whichever thread ran it. In a pipelined render the stages overlap (a prefetched block's `synth` runs from its start to its finish, while the owner mixes), so the stage times can sum to more than the wall time. A final `offline_audio_synth threads=N tracks=M` line gives the fan-out actually used. With `ENGRAVE_RENDER_TIMING` set, each export prints `render_seconds format=... page=...` (or `pages=A-B` for multi-page PDF) `dpi=... raster=... encode=... bytes=...`, splitting drawing from encoding (PNG deflate, or Cairo page emission and surface finish across the exported PDF page range); a multi-page PNG render also prints `render_wall format=png pages=A-B dpi=... workers=N seconds=...`, and its per-page `encode` times overlap.
 
 ## Encoder Seam (`pro::proxy`)
 
@@ -132,7 +149,7 @@ Format encoders are decoupled from the render loop using proxy (`pro::proxy`, ng
 - **Unique Ownership (`UniqueEncoder`)**:
   `struct UniqueEncoder` wraps `AudioEncoder`, accepting only `std::unique_ptr<T>` from encoder factories. It normalizes null instances and rejects raw or shared pointers at compile time, guaranteeing sole ownership of encoder state.
 - **Render Loop (`SoundTrackWriter`)**:
-  Pulls audio from `OfflineRenderSession` in fixed 4096-frame steps, zeroes its intermediate buffer, invokes `session->process(...)`, checks cancellation, and passes the chunk to `encoder_ptr_->encode(chunk, buffer)`.
+  Pulls audio from `OfflineRenderSession` in fixed 4096-frame steps, zeroes the block buffer, invokes `session->process(...)`, checks cancellation, and passes the chunk to the encoder, either directly or through the encoder thread's ring (see Encoder Thread).
 
 ## Cooperative Cancellation and Budgets
 
@@ -186,9 +203,11 @@ Cancellation is polled at bounded boundaries across all stages:
   buffers.
 - **Mix and render loops**: Checked before each track synthesis (serial path) or
   before each block and about every millisecond while waiting for its parallel
-  track synthesis, before reverb buffer zeroing/processing, before each
-  4096-frame block pull, before each encoder write, and at intermediate file
-  writes (chunked <= 4 KiB).
+  (or prefetched) track synthesis, before reverb buffer zeroing/processing,
+  before each 4096-frame block pull, before each encoder write, and at
+  intermediate file writes (chunked <= 4 KiB) on the owner thread; with an
+  encoder thread, about every millisecond while waiting for a free ring slot or
+  the final drain instead of at encoder writes.
 - **Sink delivery**: Checked before delivering each 1 MiB chunk of the finalized
   file to `ByteSink`.
 
@@ -292,6 +311,5 @@ The pipeline enforces deliberate precedence and normalization rules to resolve a
 
 ## Future Directions
 
-- **Parallel Reverb and Mix**: Parallel synthesis is bounded by the heaviest track, and the owner-thread mix (sums, reverb, master stages) is now a comparable share of a dense render; both are candidates for later work. ThreadSanitizer runs (`--config=tsan`, Linux and macOS only) have not yet been part of validation.
-- **Encode Overlap**: Pipelining the synchronous 4096-frame PCM block synthesis with an asynchronous encoding queue, overlapping audio rendering with codec compression.
+- **Heaviest Track**: Parallel synthesis is bounded by the heaviest track; the owner-thread mix and the encoder now overlap with it. ThreadSanitizer runs (`--config=tsan`, Linux and macOS only) have not yet been part of validation.
 - **Releasing the Owner Thread**: Detaching the offline render session from the single engine owner thread by snapshotting score properties, duration, and track configurations at the start of export, allowing long exports to run on background worker threads without blocking interactive score operations.
