@@ -101,7 +101,50 @@ struct EngineAudio::State {
     int audio_threads = 0;
     // Started by the first render that fans out; idle between renders.
     std::unique_ptr<engine::WorkerPool> synthesis_pool;
+    // Held from prepare_score_audio() until its render session is gone. The
+    // release store publishes the teardown (FluidSynth sample unloads, shared
+    // SoundFont reference counts, the pool) to the next acquirer.
+    std::atomic<bool> render_active{false};
 };
+
+struct PreparedAudioRender::Impl {
+    explicit Impl(EngineAudio::State &state) noexcept : state(state) {}
+
+    ~Impl() {
+        session.reset();
+        if (owns_lane) state.render_active.store(false, std::memory_order_release);
+    }
+
+    Impl(const Impl &) = delete;
+    Impl &operator=(const Impl &) = delete;
+
+    bool acquire_lane() noexcept {
+        owns_lane = !state.render_active.exchange(true, std::memory_order_acquire);
+        return owns_lane;
+    }
+
+    EngineAudio::State &state;
+    bool owns_lane = false;
+    std::unique_ptr<engine::OfflineRenderSession> session;
+    EngineAudioFormat format = EngineAudioFormat::WAV;
+    SoundTrackFormat soundtrack_format;
+    secs_t render_secs;
+    std::uint64_t total_frames = 0;
+    double play_time = 0.0;
+    double duration_secs = 0.0;
+    std::optional<std::uint64_t> max_bytes;
+    std::optional<std::uint64_t> max_write_bytes;
+    bool async_encode = false;
+    // The preparing thread's setup timings, carried to the run's report.
+    OfflineTiming timing;
+};
+
+PreparedAudioRender::PreparedAudioRender() noexcept = default;
+PreparedAudioRender::PreparedAudioRender(PreparedAudioRender &&) noexcept = default;
+PreparedAudioRender &PreparedAudioRender::operator=(PreparedAudioRender &&) noexcept = default;
+PreparedAudioRender::~PreparedAudioRender() = default;
+
+bool PreparedAudioRender::ready() const noexcept { return impl && impl->session; }
 
 EngineAudio::EngineAudio(const muse::mpe::ArticulationProfilesRepository &profiles) : state_(std::make_unique<State>(profiles)) {}
 
@@ -305,6 +348,8 @@ bool initialize_engine_audio(EngineAudio &audio, const EngineAudioSetup &setup, 
         return false;
     };
     const std::vector<std::string> &soundfont_paths = setup.soundfonts;
+    // A live render session borrows the repository, its cached fonts and the configuration.
+    if (state.render_active.load(std::memory_order_acquire)) return fail("cannot change the audio setup while an audio render is active");
     if (setup.audio_threads < 0) return fail("audio thread count must not be negative: " + std::to_string(setup.audio_threads));
     if (state.services_initialized) {
         if (!state.resources.soundfont_id.empty() && state.resources.soundfont_paths_value == soundfont_paths &&
@@ -400,6 +445,8 @@ bool engine_audio_initialized(const EngineAudio &audio) {
     return state.services_initialized && !state.resources.soundfont_id.empty();
 }
 
+bool engine_audio_render_active(const EngineAudio &audio) { return audio.state().render_active.load(std::memory_order_acquire); }
+
 std::size_t engine_audio_worker_threads(const EngineAudio &audio) {
     const auto &pool = audio.state().synthesis_pool;
     return pool ? pool->started_threads() : 0;
@@ -409,15 +456,16 @@ std::string engine_soundfont_resource_id(const EngineAudio &audio) { return audi
 
 std::string engine_soundfont_uri(const EngineAudio &audio) { return audio.state().resources.soundfont_uri; }
 
-AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, const AudioRenderRequest &request) {
+std::expected<PreparedAudioRender, AudioRenderResult> prepare_score_audio(EngineAudio &audio, MasterScore *master,
+                                                                          const AudioRenderRequest &request) {
     ScopedDenormalGuard denormal_guard;
-    OfflineTimingReport timing_report;
-    AudioRenderResult result;
-    const auto fail = [&result](AudioRenderResult::Failure kind, std::string message) {
-        result.ok = false;
+    // Setup timings start from zero here and travel with the render to the run's report.
+    OfflineTiming::current() = {};
+    const auto fail = [](AudioRenderResult::Failure kind, std::string message) {
+        AudioRenderResult result;
         result.failure = kind;
         result.error = std::move(message);
-        return result;
+        return std::unexpected(std::move(result));
     };
 
     EngineAudio::State &state = audio.state();
@@ -427,15 +475,13 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
     if (!master) {
         return fail(AudioRenderResult::Failure::ENGINE_FAILURE, "score is null");
     }
-    if (request.output_path.empty()) {
-        return fail(AudioRenderResult::Failure::ENGINE_FAILURE, "output path is empty");
-    }
+    // Declared first so a failed setup releases the lane only after the partial session is gone.
+    auto render = std::make_unique<PreparedAudioRender::Impl>(state);
+    if (!render->acquire_lane()) return fail(AudioRenderResult::Failure::RESOURCE_LIMIT, "another audio render is already active");
 
     bool cancelled = false;
     std::exception_ptr callback_error;
     const auto poll = [&] {
-        // Encoder file writes may originate in C codec callbacks. Unwind only
-        // after leaving the codec, closing the file and idling the graph.
         if (!cancelled && request.cancelled) {
             const ScopedDenormalGuard::Suspend suspend(denormal_guard);
             try {
@@ -569,18 +615,18 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
                         std::to_string(projected_bytes / (1024 * 1024)) + " MiB) exceeds the 1 GiB audio export limit");
     }
 
-    engine::OfflineRenderSession context(output_spec(state.sample_rate_value), state.resources,
-                                         state.services->configuration().render_settings(),
-                                         [&state](const midi::Event &event) { state.midi_out_port.send_event(event); });
-    configure_master(context, request);
+    // Destroyed before `playback` on a failed setup, as the graph always was.
+    auto session = std::make_unique<engine::OfflineRenderSession>(
+        output_spec(state.sample_rate_value), state.resources, state.services->configuration().render_settings(),
+        [&state](const midi::Event &event) { state.midi_out_port.send_event(event); });
+    configure_master(*session, request);
     // A MIDI hook observes events in track order on this thread, and reads the frames encoded so far,
     // so it keeps synthesis and encoding serial.
     const std::size_t threads = state.midi_out_port.hook ? 1 : render_worker_threads(state.audio_threads);
     if (threads > 1) {
         if (!state.synthesis_pool) state.synthesis_pool = std::make_unique<engine::WorkerPool>();
-        context.set_parallelism(state.synthesis_pool.get(), threads);
+        session->set_parallelism(state.synthesis_pool.get(), threads);
     }
-    const bool async_encode = threads > 1 && !engine::OfflineRenderSession::serial_only();
 
     // The public mix is indexed by the same deterministic track list that
     // score_audio_tracks reports. Keep the list for the selected excerpt: for
@@ -677,7 +723,7 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
         const std::string name = track_name(master_score, track_id);
         RetVal2<TrackId, TrackParams> added;
         try {
-            added = context.add_track(name, events, params);
+            added = session->add_track(name, events, params);
         } catch (const engine::StoreLimit &limit) {
             if (callback_error) std::rethrow_exception(callback_error);
             return fail(AudioRenderResult::Failure::RESOURCE_LIMIT, limit.message);
@@ -691,7 +737,7 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
     {
         // Every sequencer has lowered its track and keeps its own copy of the dynamics, so the flat store
         // is released before synthesis. Drain cold owners and the retained context in polled strides,
-        // then free the flat buffers.
+        // then free the flat buffers. From here on the render holds no reference to the score.
         OfflineCancellation::EventReleaseScope phase;
         if (poll()) return abort_setup();
         try {
@@ -709,37 +755,104 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
     auto aux_timer = std::make_unique<OfflineTimer>(OfflineTiming::current().aux);
     TrackParams reverb_params;
     reverb_params.fx_chain = make_reverb_fx_chain();
-    RetVal2<TrackId, TrackParams> reverb = context.add_aux_track(::music::k_reverb_track_name, reverb_params);
+    RetVal2<TrackId, TrackParams> reverb = session->add_aux_track(::music::k_reverb_track_name, reverb_params);
     if (!reverb.ret) {
         return fail(AudioRenderResult::Failure::ENGINE_FAILURE, "addAuxTrack(reverb) failed: " + reverb.ret.to_string());
     }
-    RetVal2<TrackId, TrackParams> aux2 = context.add_aux_track(::music::k_aux_track_name, TrackParams());
+    RetVal2<TrackId, TrackParams> aux2 = session->add_aux_track(::music::k_aux_track_name, TrackParams());
     if (!aux2.ret) {
         return fail(AudioRenderResult::Failure::ENGINE_FAILURE, "addAuxTrack(aux 2) failed: " + aux2.ret.to_string());
     }
 
     aux_timer.reset();
     if (poll()) return abort_setup();
-    context.reset_sources();
+    session->reset_sources();
     if (poll()) return abort_setup();
+    setup_timer.reset();
+
+    render->session = std::move(session);
+    render->format = request.format;
+    render->soundtrack_format = make_soundtrack_format(request.format, request, output_spec(state.sample_rate_value));
+    render->render_secs = render_secs;
+    render->total_frames = total_frames;
+    render->play_time = play_time;
+    render->duration_secs = duration_secs_value;
+    render->max_bytes = request.max_bytes;
+    render->max_write_bytes = request.max_write_bytes;
+    render->async_encode = threads > 1 && !engine::OfflineRenderSession::serial_only();
+    render->timing = OfflineTiming::current();
+    PreparedAudioRender prepared;
+    prepared.impl = std::move(render);
+    return prepared;
+}
+
+AudioRenderResult run_prepared_audio(PreparedAudioRender &prepared, const std::string &output_path, muse::UniqueFn<bool() const> cancel,
+                                     muse::FnRef<EncoderFactory> encoder_factory, bool remove_on_encoder_failure) {
+    ScopedDenormalGuard denormal_guard;
+    OfflineTimingReport timing_report;
+    AudioRenderResult result;
+    const auto fail = [&result](AudioRenderResult::Failure kind, std::string message) {
+        result.ok = false;
+        result.failure = kind;
+        result.error = std::move(message);
+        return result;
+    };
+
+    if (!prepared.ready()) return fail(AudioRenderResult::Failure::ENGINE_FAILURE, "audio render was not prepared or has already run");
+    if (output_path.empty()) return fail(AudioRenderResult::Failure::ENGINE_FAILURE, "output path is empty");
+    PreparedAudioRender::Impl &render = *prepared.impl;
+    EngineAudio::State &state = render.state;
+    OfflineTiming::current() = render.timing;
+    // A render runs once: the session is torn down on this thread before the
+    // report prints, and the EngineAudio stays held until `prepared` is destroyed.
+    const std::unique_ptr<engine::OfflineRenderSession> session = std::move(render.session);
+
+    bool cancelled = false;
+    std::exception_ptr callback_error;
+    const auto poll = [&] {
+        // Encoder file writes may originate in C codec callbacks. Unwind only
+        // after leaving the codec, closing the file and idling the graph.
+        if (!cancelled && cancel) {
+            const ScopedDenormalGuard::Suspend suspend(denormal_guard);
+            try {
+                cancelled = cancel();
+            } catch (...) {
+                callback_error = std::current_exception();
+                cancelled = true;
+            }
+        }
+        return cancelled;
+    };
+    OfflineCancellation cancellation_scope(poll);
 
     // The writer reports completed frames after each successfully encoded block.
     state.midi_out_port.rendered_frames = 0;
 
-    setup_timer.reset();
     // An encoder thread writes the file in an async render and must not run the user callback; it
     // sees only the stop flag that the writer raises from this thread.
     std::atomic<bool> encoder_stop{false};
-    const auto owner = std::this_thread::get_id();
+    const auto caller = std::this_thread::get_id();
     const auto device_cancelled = [&] {
-        return std::this_thread::get_id() == owner ? poll() : encoder_stop.load(std::memory_order_relaxed);
+        return std::this_thread::get_id() == caller ? poll() : encoder_stop.load(std::memory_order_relaxed);
     };
-    io::StreamingFileDevice device(std::filesystem::u8path(request.output_path), request.max_bytes, request.max_write_bytes,
-                                   device_cancelled);
+    const std::filesystem::path output_fs = std::filesystem::u8path(output_path);
+    const auto remove_output = [&output_fs] {
+        std::error_code remove_error;
+        std::filesystem::remove(output_fs, remove_error);
+        return remove_error;
+    };
+    io::StreamingFileDevice device(output_fs, render.max_bytes, render.max_write_bytes, device_cancelled);
     if (!device.open(io::IODevice::WRITE_ONLY)) {
         return fail(AudioRenderResult::Failure::IO,
-                    std::string("cannot write ") + audio_format_name(request.format) + " output: '" + request.output_path + "'");
+                    std::string("cannot write ") + audio_format_name(render.format) + " output: '" + output_path + "'");
     }
+    bool cleanup_armed = true;
+    DEFER {
+        if (!cleanup_armed) return;
+        device.close();
+        session->set_mode(ProcessMode::IDLE);
+        remove_output();
+    };
 
     // The writer owns the render loop: it sets the source to PlayingOffline,
     // renders in 4096-frame chunks, encodes them (on its encoder thread when
@@ -749,15 +862,18 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
     try {
         const ScopedDenormalGuard::RenderModePin render_fp_pin(denormal_guard);
         soundtrack::SoundTrackWriter writer(
-            device, make_soundtrack_format(request.format, request, output_spec(state.sample_rate_value)), render_secs, &context,
-            [&state](uint64_t frames) { state.midi_out_port.rendered_frames = frames; }, request.encoder_factory, poll,
-            async_encode ? &encoder_stop : nullptr);
+            device, render.soundtrack_format, render.render_secs, session.get(),
+            [&state](uint64_t frames) { state.midi_out_port.rendered_frames = frames; }, encoder_factory, poll,
+            render.async_encode ? &encoder_stop : nullptr);
         write_ret = writer.write();
     } catch (const engine::StoreLimit &limit) {
         device.close();
-        context.set_mode(ProcessMode::IDLE);
-        std::error_code remove_error;
-        std::filesystem::remove(std::filesystem::u8path(request.output_path), remove_error);
+        session->set_mode(ProcessMode::IDLE);
+        cleanup_armed = false;
+        if (const std::error_code remove_error = remove_output()) {
+            return fail(AudioRenderResult::Failure::IO,
+                        "cannot remove over-budget audio output: '" + output_path + "': " + remove_error.message());
+        }
         if (poll()) {
             if (callback_error) std::rethrow_exception(callback_error);
             return fail(AudioRenderResult::Failure::CANCELLED, "audio render cancelled");
@@ -772,56 +888,99 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
 
     // Leave the graph idle, like AudioContext::doSaveSoundTrack()
     // (audiocontext.cpp:934-940).
-    context.set_mode(ProcessMode::IDLE);
+    session->set_mode(ProcessMode::IDLE);
 
     if (poll()) {
-        std::error_code remove_error;
-        std::filesystem::remove(std::filesystem::u8path(request.output_path), remove_error);
-        if (remove_error) return fail(AudioRenderResult::Failure::IO, "cannot remove cancelled audio output: " + remove_error.message());
+        cleanup_armed = false;
+        if (const std::error_code remove_error = remove_output())
+            return fail(AudioRenderResult::Failure::IO, "cannot remove cancelled audio output: " + remove_error.message());
         if (callback_error) std::rethrow_exception(callback_error);
         return fail(AudioRenderResult::Failure::CANCELLED, "audio render cancelled");
     }
 
     if (device.limit_exceeded()) {
-        std::error_code remove_error;
-        std::filesystem::remove(std::filesystem::u8path(request.output_path), remove_error);
-        if (remove_error) {
+        cleanup_armed = false;
+        if (const std::error_code remove_error = remove_output()) {
             return fail(AudioRenderResult::Failure::IO,
-                        "cannot remove over-budget audio output: '" + request.output_path + "': " + remove_error.message());
+                        "cannot remove over-budget audio output: '" + output_path + "': " + remove_error.message());
         }
         return fail(AudioRenderResult::Failure::RESOURCE_LIMIT, "audio intermediate byte limit exceeded");
     }
 
-    if (write_error) std::rethrow_exception(write_error);
+    if (write_error) {
+        cleanup_armed = false;
+        if (const std::error_code remove_error = remove_output()) {
+            return fail(AudioRenderResult::Failure::IO,
+                        "cannot remove failed audio output: '" + output_path + "': " + remove_error.message());
+        }
+        std::rethrow_exception(write_error);
+    }
 
     if (!write_ret || device.has_error()) {
+        cleanup_armed = false;
+        if (remove_on_encoder_failure) {
+            if (const std::error_code remove_error = remove_output()) {
+                return fail(AudioRenderResult::Failure::IO,
+                            "cannot remove failed audio output: '" + output_path + "': " + remove_error.message());
+            }
+        }
         // SoundTrackWriter returns Err::ErrorEncode when an encoder could not
         // be created or stopped accepting data, e.g. the destination is not
         // writable, and the bare Ret has no context. Name the format and path
         // instead of reporting the raw code.
         const std::string detail = device.has_error() ? device.error_string() : write_ret.to_string();
         return fail(device.has_error() ? AudioRenderResult::Failure::IO : AudioRenderResult::Failure::ENGINE_FAILURE,
-                    std::string(audio_format_name(request.format)) + " encoder failed (" + detail + "): '" + request.output_path + "'");
+                    std::string(audio_format_name(render.format)) + " encoder failed (" + detail + "): '" + output_path + "'");
     }
 
     result.ok = true;
-    result.frames = total_frames;
-    result.play_time_secs = play_time;
-    result.duration_secs = duration_secs_value;
+    result.frames = render.total_frames;
+    result.play_time_secs = render.play_time;
+    result.duration_secs = render.duration_secs;
     std::error_code size_error;
-    const auto size = std::filesystem::file_size(std::filesystem::u8path(request.output_path), size_error);
+    const auto size = std::filesystem::file_size(output_fs, size_error);
     if (size_error) {
-        return fail(AudioRenderResult::Failure::IO,
-                    "cannot determine audio output size: '" + request.output_path + "': " + size_error.message());
+        cleanup_armed = false;
+        if (remove_on_encoder_failure) {
+            if (const std::error_code remove_error = remove_output()) {
+                return fail(AudioRenderResult::Failure::IO,
+                            "cannot remove audio output after size error: '" + output_path + "': " + remove_error.message());
+            }
+        }
+        return fail(AudioRenderResult::Failure::IO, "cannot determine audio output size: '" + output_path + "': " + size_error.message());
     }
     result.bytes = static_cast<std::uint64_t>(size);
     if (result.bytes == 0) {
+        cleanup_armed = false;
+        if (remove_on_encoder_failure) {
+            if (const std::error_code remove_error = remove_output()) {
+                return fail(AudioRenderResult::Failure::IO,
+                            "cannot remove empty audio output: '" + output_path + "': " + remove_error.message());
+            }
+        }
         result.ok = false;
         result.failure = AudioRenderResult::Failure::ENGINE_FAILURE;
         result.error = "audio export reported success but wrote no data";
+        return result;
     }
 
+    cleanup_armed = false;
     return result;
+}
+
+AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, const AudioRenderRequest &request) {
+    if (request.output_path.empty()) {
+        AudioRenderResult result;
+        result.failure = AudioRenderResult::Failure::ENGINE_FAILURE;
+        result.error = "output path is empty";
+        return result;
+    }
+    auto prepared = prepare_score_audio(audio, master, request);
+    if (!prepared) return std::move(prepared.error());
+    muse::UniqueFn<bool() const> cancelled;
+    if (request.cancelled) cancelled = [&request] { return request.cancelled(); };
+    return run_prepared_audio(*prepared, request.output_path, std::move(cancelled), request.encoder_factory,
+                              /*remove_on_encoder_failure=*/false);
 }
 
 std::vector<EngineAudioTrackInfo> engine_audio_tracks(MasterScore *master, int excerpt_id) {

@@ -95,6 +95,8 @@ void EngineState::release(std::shared_ptr<EngineState> state) noexcept {
     // The weak slot expires before teardown starts. Keep startup excluded until
     // the final owner's reset finishes cleaning up process globals.
     const std::scoped_lock lock(s_engine_slot_mutex);
+    if (state.use_count() == 1)
+        check(!state->audio_job_active.load(std::memory_order_acquire), "Engine destroyed while a PreparedAudio is still active");
     state.reset();
 }
 

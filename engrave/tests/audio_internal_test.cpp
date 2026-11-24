@@ -2400,3 +2400,364 @@ TEST(AudioInternal, AsyncEncodeEnforcesByteLimitsIncludingHeaderRewrites) {
         }
     }
 }
+
+namespace {
+using namespace std::chrono_literals;
+
+std::vector<char> render_chars(engrave::Document &document, const engrave::AudioOptions &options) {
+    std::vector<char> bytes;
+    const auto result = document.render_audio(options, [&](std::span<const std::byte> chunk) {
+        const auto *data = reinterpret_cast<const char *>(chunk.data());
+        bytes.insert(bytes.end(), data, data + chunk.size());
+    });
+    EXPECT_TRUE(result) << (result ? std::string() : result.error().message);
+    return bytes;
+}
+
+// False after a minute, so a broken background render fails the test instead of hanging it.
+bool wait_for(const std::atomic<bool> &flag) {
+    const auto deadline = std::chrono::steady_clock::now() + 60s;
+    while (!flag.load(std::memory_order_acquire)) {
+        if (std::chrono::steady_clock::now() > deadline) return false;
+        std::this_thread::sleep_for(1ms);
+    }
+    return true;
+}
+
+struct RemoveFile {
+    std::filesystem::path path;
+
+    ~RemoveFile() {
+        std::error_code ignored;
+        std::filesystem::remove(path, ignored);
+    }
+};
+
+const char *extension_of(engrave::AudioFormat format) {
+    switch (format) {
+        case engrave::AudioFormat::WAV: return ".wav";
+        case engrave::AudioFormat::FLAC: return ".flac";
+        case engrave::AudioFormat::OPUS: return ".ogg";
+        case engrave::AudioFormat::MP3: return ".mp3";
+    }
+    return ".audio";
+}
+
+using RunResult = std::optional<engrave::Result<engrave::AudioRenderResult>>;
+
+std::string run_error(const RunResult &result) {
+    if (!result) return "the run did not return";
+    return *result ? std::string() : (*result).error().message;
+}
+} // namespace
+
+TEST(AudioInternal, PreparedAudioRunOnAnotherThreadMatchesRenderAudio) {
+    auto opened = music::test::g_engine->open(music::test::corpus_file("ghost_note.mscx"));
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    for (const auto format :
+         {engrave::AudioFormat::WAV, engrave::AudioFormat::FLAC, engrave::AudioFormat::OPUS, engrave::AudioFormat::MP3}) {
+        SCOPED_TRACE(engrave::to_string(format));
+        engrave::AudioOptions options;
+        options.format = format;
+        const auto baseline = render_chars(document, options);
+        ASSERT_FALSE(baseline.empty());
+        const RemoveFile output{temp_output("engrave-prepared-thread", extension_of(format))};
+        auto prepared = document.prepare_audio(options);
+        ASSERT_TRUE(prepared) << prepared.error().message;
+        EXPECT_EQ(prepared->source_revision(), document.revision());
+        RunResult result;
+        std::thread([&] { result = prepared->run(output.path); }).join();
+        ASSERT_TRUE(result && *result) << run_error(result);
+        const auto written = read_file(output.path);
+        EXPECT_TRUE(written == baseline);
+        EXPECT_EQ((*result)->bytes, written.size());
+        EXPECT_GT((*result)->frames, 0u);
+        EXPECT_GT((*result)->seconds, 3.0);
+    }
+}
+
+// The owner queries, edits, draws, opens another score and finally destroys the
+// document the render came from: first while the run thread synthesizes, then while
+// that thread is held at a poll mid-render (the encoder thread keeps draining).
+TEST(AudioInternal, PreparedAudioOutlivesEditsAndItsDocument) {
+    auto opened = music::test::g_engine->open(music::test::corpus_file("repeat70.mscx"));
+    ASSERT_TRUE(opened);
+    const auto baseline = render_chars(**opened, {});
+    ASSERT_GT(baseline.size(), 1u << 20);
+    const RemoveFile output{temp_output("engrave-prepared-edit", ".wav")};
+    auto prepared = (*opened)->prepare_audio({});
+    ASSERT_TRUE(prepared);
+    const std::uint64_t revision = (*opened)->revision();
+    EXPECT_EQ(prepared->source_revision(), revision);
+
+    std::atomic<bool> started{false}, paused{false}, resume{false}, done{false};
+    std::atomic<int> foreign_polls{0};
+    RunResult result;
+    std::uint64_t source_revision = 0;
+    std::thread runner([&, held = std::move(*prepared)]() mutable {
+        const auto self = std::this_thread::get_id();
+        int polls = 0;
+        result = held.run(output.path, [&] {
+            if (std::this_thread::get_id() != self) ++foreign_polls;
+            if (++polls == 1) started.store(true, std::memory_order_release);
+            if (polls == 40) {
+                paused.store(true, std::memory_order_release);
+                wait_for(resume);
+            }
+            return false;
+        });
+        source_revision = held.source_revision();
+        // Destroyed off the owner thread: the graph is gone before the engine is free again.
+        { const auto finished = std::move(held); }
+        done.store(true, std::memory_order_release);
+    });
+
+    const auto owner_work = [&] {
+        ASSERT_TRUE(wait_for(started));
+        const auto notes = (*opened)->query(engrave::Query{.types = {"Note"}, .limit = 1});
+        ASSERT_TRUE(notes);
+        ASSERT_FALSE(notes->elements.empty());
+        const auto edited = (*opened)->edit(engrave::Batch{{engrave::SetPitch{notes->elements.front().id, 85, std::nullopt}}});
+        ASSERT_TRUE(edited) << edited.error().message;
+        EXPECT_GT((*opened)->revision(), revision);
+        EXPECT_FALSE(done.load()) << "the render finished before the owner's edits";
+        ASSERT_TRUE(wait_for(paused));
+        engrave::RenderOptions png;
+        png.format = engrave::RenderFormat::PNG;
+        png.last_page = 0;
+        EXPECT_TRUE((*opened)->render(png));
+        auto other = music::test::g_engine->open(music::test::corpus_file("ghost_note.mscx"));
+        EXPECT_TRUE(other);
+    };
+    owner_work();
+    opened->reset();
+    resume.store(true, std::memory_order_release);
+    runner.join();
+
+    ASSERT_TRUE(result && *result) << run_error(result);
+    EXPECT_EQ(source_revision, revision);
+    EXPECT_EQ(foreign_polls.load(), 0);
+    EXPECT_TRUE(read_file(output.path) == baseline);
+    auto reopened = music::test::g_engine->open(music::test::corpus_file("repeat70.mscx"));
+    ASSERT_TRUE(reopened);
+    EXPECT_TRUE(render_chars(**reopened, {}) == baseline);
+}
+
+TEST(AudioInternal, SetSoundFontsDuringBackgroundRun) {
+    using namespace music::test;
+    auto opened = g_engine->open(corpus_file("repeat70.mscx"));
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    const auto baseline = render_chars(document, {});
+    ASSERT_FALSE(baseline.empty());
+    const std::vector<std::filesystem::path> replacement{g_soundfonts.size() >= 2 ? g_soundfonts[1] : g_soundfonts[0]};
+    const RemoveFile output{temp_output("engrave-prepared-fonts", ".wav")};
+    {
+        auto prepared = document.prepare_audio({});
+        ASSERT_TRUE(prepared);
+        std::atomic<bool> started{false}, paused{false}, resume{false}, done{false};
+        RunResult result;
+        std::thread runner([held = std::move(*prepared), &output, &started, &paused, &resume, &done, &result]() mutable {
+            int polls = 0;
+            result = held.run(output.path, [&] {
+                if (++polls == 1) started.store(true, std::memory_order_release);
+                if (polls == 40) {
+                    paused.store(true, std::memory_order_release);
+                    wait_for(resume);
+                }
+                return false;
+            });
+            // Destroy on the run thread so teardown overlaps owner-thread set_soundfonts.
+            { const auto finished = std::move(held); }
+            done.store(true, std::memory_order_release);
+        });
+        const auto owner_work = [&] {
+            ASSERT_TRUE(wait_for(started));
+            // Each call freezes and fully parses its SoundFonts (fresh FluidSynth settings,
+            // loader and font): first while the render synthesizes from the cached fonts,
+            // then while it is held mid-render and during background teardown.
+            int rounds = 0;
+            while ((!paused.load(std::memory_order_acquire) && !done.load(std::memory_order_acquire)) || rounds < 2) {
+                EXPECT_TRUE(g_engine->set_soundfonts(replacement));
+                EXPECT_TRUE(g_engine->set_soundfonts(g_soundfonts));
+                ++rounds;
+            }
+            EXPECT_TRUE(g_engine->set_soundfonts(replacement));
+            EXPECT_FALSE(done.load()) << "the render ended before its 40th poll";
+            const auto refused = document.prepare_audio({});
+            ASSERT_FALSE(refused);
+            EXPECT_EQ(refused.error().code, engrave::ErrorCode::RESOURCE_LIMIT);
+            resume.store(true, std::memory_order_release);
+            while (!done.load(std::memory_order_acquire)) EXPECT_TRUE(g_engine->set_soundfonts(replacement));
+        };
+        owner_work();
+        runner.join();
+        ASSERT_TRUE(result && *result) << run_error(result);
+        EXPECT_TRUE(read_file(output.path) == baseline);
+    }
+    {
+        // The next render refreshes the engine's fonts to the new selection.
+        auto next = document.prepare_audio({});
+        ASSERT_TRUE(next) << next.error().message;
+        ASSERT_TRUE(next->run(output.path));
+        if (g_soundfonts.size() >= 2) EXPECT_FALSE(read_file(output.path) == baseline);
+    }
+    ASSERT_TRUE(g_engine->set_soundfonts(g_soundfonts));
+    EXPECT_TRUE(render_chars(document, {}) == baseline);
+}
+
+TEST(AudioInternal, PreparedAudioHoldsTheEngineUntilDestroyed) {
+    auto opened = music::test::g_engine->open(music::test::corpus_file("ghost_note.mscx"));
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    const auto baseline = render_chars(document, {});
+    ASSERT_FALSE(baseline.empty());
+    auto &audio = engrave::DocumentAccess::context(document).audio();
+    const auto &engine = *engrave::DocumentAccess::impl(document).engine;
+    const RemoveFile output{temp_output("engrave-prepared-lane", ".wav")};
+    {
+        auto first = document.prepare_audio({});
+        ASSERT_TRUE(first);
+        EXPECT_TRUE(music::engine_audio_render_active(audio));
+        const auto second = document.prepare_audio({});
+        ASSERT_FALSE(second);
+        EXPECT_EQ(second.error().code, engrave::ErrorCode::RESOURCE_LIMIT);
+        const auto rendered = document.render_audio({}, [](auto) { ADD_FAILURE() << "a refused render reached the sink"; });
+        ASSERT_FALSE(rendered);
+        EXPECT_EQ(rendered.error().code, engrave::ErrorCode::RESOURCE_LIMIT);
+        // The driver refuses a second render and a setup change by itself.
+        const auto driver = music::prepare_score_audio(audio, engrave::DocumentAccess::master_score(document), {});
+        ASSERT_FALSE(driver);
+        EXPECT_EQ(driver.error().failure, music::AudioRenderResult::Failure::RESOURCE_LIMIT);
+        music::EngineAudioSetup setup;
+        setup.sample_rate = engine.audio_sample_rate;
+        setup.audio_threads = engine.audio_threads;
+        for (const auto &soundfont : engine.soundfonts) setup.soundfonts.push_back(engrave::utf8(soundfont));
+        std::string error;
+        EXPECT_FALSE(music::initialize_engine_audio(audio, setup, &error));
+        EXPECT_NE(error.find("active"), std::string::npos) << error;
+
+        engrave::PreparedAudio moved = std::move(*first);
+        const auto from_moved = first->run(output.path);
+        ASSERT_FALSE(from_moved);
+        EXPECT_EQ(from_moved.error().code, engrave::ErrorCode::INVALID_ARGUMENT);
+        EXPECT_FALSE(std::filesystem::exists(output.path));
+        const auto no_path = moved.run({});
+        ASSERT_FALSE(no_path);
+        EXPECT_EQ(no_path.error().code, engrave::ErrorCode::INVALID_ARGUMENT);
+        EXPECT_TRUE(music::engine_audio_render_active(audio));
+    }
+    // Destroying a render that never ran frees the engine.
+    EXPECT_FALSE(music::engine_audio_render_active(audio));
+    {
+        auto prepared = document.prepare_audio({});
+        ASSERT_TRUE(prepared);
+        ASSERT_TRUE(prepared->run(output.path));
+        EXPECT_TRUE(read_file(output.path) == baseline);
+        const auto again = prepared->run(output.path);
+        ASSERT_FALSE(again);
+        EXPECT_EQ(again.error().code, engrave::ErrorCode::INVALID_ARGUMENT);
+        EXPECT_TRUE(read_file(output.path) == baseline);
+        const auto refused = document.prepare_audio({});
+        ASSERT_FALSE(refused);
+        EXPECT_EQ(refused.error().code, engrave::ErrorCode::RESOURCE_LIMIT);
+    }
+    {
+        // A missing parent directory is an I/O failure, and the render is spent.
+        auto prepared = document.prepare_audio({});
+        ASSERT_TRUE(prepared);
+        const auto missing = prepared->run(temp_output("engrave-missing-dir", "") / "out.wav");
+        ASSERT_FALSE(missing);
+        EXPECT_EQ(missing.error().code, engrave::ErrorCode::IO);
+        const auto spent = prepared->run(output.path);
+        ASSERT_FALSE(spent);
+        EXPECT_EQ(spent.error().code, engrave::ErrorCode::INVALID_ARGUMENT);
+    }
+    EXPECT_FALSE(music::engine_audio_render_active(audio));
+    EXPECT_TRUE(render_chars(document, {}) == baseline);
+
+    // Synchronous render_audio must preserve a value-captured mutable cancellation
+    // counter across setup and run, and must release the lane before calling the sink.
+    {
+        std::vector<int> seen_counts;
+        bool saw_setup_phase = false;
+        bool saw_run_phase = false;
+        engrave::AudioOptions stateful;
+        stateful.cancelled = [count = 0, &seen_counts, &saw_setup_phase, &saw_run_phase]() mutable {
+            const int current = ++count;
+            seen_counts.push_back(current);
+            const auto phase = muse::audio::OfflineCancellation::phase;
+            if (phase == muse::audio::OfflineCancellation::Phase::PLAYBACK_MODEL ||
+                phase == muse::audio::OfflineCancellation::Phase::SEQUENCER ||
+                phase == muse::audio::OfflineCancellation::Phase::EVENT_RELEASE) {
+                saw_setup_phase = true;
+            } else if (phase == muse::audio::OfflineCancellation::Phase::SYNTHESIS ||
+                       phase == muse::audio::OfflineCancellation::Phase::ENCODING) {
+                saw_run_phase = true;
+            }
+            return false;
+        };
+        ASSERT_TRUE(document.render_audio(stateful, [](auto) {}));
+        ASSERT_TRUE(saw_setup_phase);
+        ASSERT_TRUE(saw_run_phase);
+        ASSERT_GT(seen_counts.size(), 2u);
+        for (std::size_t i = 0; i < seen_counts.size(); ++i) {
+            EXPECT_EQ(seen_counts[i], static_cast<int>(i + 1)) << "counter reset at poll " << i;
+        }
+
+        // Re-entering render_audio from the synchronous ByteSink must succeed because the lane is already released.
+        bool nested_ran = false;
+        const auto outer = document.render_audio({}, [&](std::span<const std::byte>) {
+            if (nested_ran) return;
+            nested_ran = true;
+            std::size_t nested_bytes = 0;
+            const auto inner = document.render_audio({}, [&](std::span<const std::byte> chunk) { nested_bytes += chunk.size(); });
+            EXPECT_TRUE(inner) << (inner ? "" : inner.error().message);
+            EXPECT_EQ(nested_bytes, baseline.size());
+        });
+        ASSERT_TRUE(outer) << outer.error().message;
+        EXPECT_TRUE(nested_ran);
+    }
+}
+
+TEST(AudioInternal, BackgroundRunCancellationStaysOnTheRunThread) {
+    auto opened = music::test::g_engine->open(music::test::corpus_file("repeat70.mscx"));
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    const auto baseline = render_chars(document, {});
+    ASSERT_FALSE(baseline.empty());
+    const RemoveFile output{temp_output("engrave-prepared-cancel", ".wav")};
+    for (const bool throws : {false, true}) {
+        SCOPED_TRACE(throws ? "throwing callback" : "cancelling callback");
+        auto prepared = document.prepare_audio({});
+        ASSERT_TRUE(prepared);
+        std::atomic<int> foreign_polls{0};
+        RunResult result;
+        bool threw = false;
+        std::thread([&] {
+            const auto self = std::this_thread::get_id();
+            int polls = 0;
+            const auto cancelled = [&]() -> bool {
+                if (std::this_thread::get_id() != self) ++foreign_polls;
+                if (++polls < 30) return false;
+                if (throws) throw std::runtime_error("run cancellation callback");
+                return true;
+            };
+            try {
+                result = prepared->run(output.path, cancelled);
+            } catch (const std::runtime_error &) {
+                threw = true;
+            }
+        }).join();
+        EXPECT_EQ(foreign_polls.load(), 0);
+        EXPECT_EQ(threw, throws);
+        if (!throws) {
+            ASSERT_TRUE(result);
+            ASSERT_FALSE(*result);
+            EXPECT_EQ((*result).error().code, engrave::ErrorCode::CANCELLED);
+        }
+        EXPECT_FALSE(std::filesystem::exists(output.path));
+    }
+    EXPECT_TRUE(render_chars(document, {}) == baseline);
+}

@@ -6,14 +6,17 @@
 // Process-wide audio services and SoundFont resources require one engine per
 // process and calls on its owner thread. Each export owns a fresh render graph
 // and releases its tracks, synth sources and effects before returning. Track
-// synthesis may fan out to a worker pool the engine audio owns; every callback
-// (cancellation, MIDI hook, encoder) still runs on the owner thread. The
-// native runtime must be initialized before initialize_engine_audio().
+// synthesis may fan out to a worker pool the engine audio owns. An export is
+// prepared on the owner thread and run on any one thread (one render at a time
+// per EngineAudio); every callback (cancellation, MIDI hook, encoder factory)
+// runs on the thread of the step it belongs to. The native runtime must be
+// initialized before initialize_engine_audio().
 
 #pragma once
 
 #include <cstddef>
 #include <cstdint>
+#include <expected>
 #include <memory>
 #include <optional>
 #include <string>
@@ -21,6 +24,7 @@
 
 #include "audio/engine/internal/export/audioencoder.h"
 #include "engraving/types/types.h"
+#include "global/fn.h"
 #include "global/unique_fn.h"
 #include "midi/miditypes.h"
 
@@ -66,9 +70,10 @@ private:
 // event offset. The probe retains its existing event schema and truncation limit.
 // Setup/program/expression updates outside handle_event are not captured.
 // Startup flush reports all-notes-off, sustain and pitch bend for last_staff
-// when available. An empty hook disables capture. Calls run on the engine
-// thread; the hook must not re-enter the engine. While a hook is installed,
-// tracks are synthesized serially so events keep track order.
+// when available. An empty hook disables capture. Calls run on the thread
+// that prepares (setup events) or runs the render; the hook must not re-enter
+// the engine and must not change while a render is active. While a hook is
+// installed, tracks are synthesized serially so events keep track order.
 using MidiEventCallback = void(const muse::midi::Event &, std::uint64_t);
 using EngineAudioMidiEventHook = muse::UniqueFn<MidiEventCallback>;
 void set_engine_audio_midi_event_hook(EngineAudio &audio, EngineAudioMidiEventHook hook);
@@ -85,7 +90,8 @@ void set_engine_audio_midi_event_hook(EngineAudio &audio, EngineAudioMidiEventHo
 // The sample rate is fixed here for the life of the process, like the context
 // output spec it feeds; every render the engine writes is at that rate.
 //
-// Returns false and fills `error` (when not null) if the engine was already
+// Returns false and fills `error` (when not null) while a PreparedAudioRender
+// is alive, if the engine was already
 // initialised at a different rate, a path is not .sf2/.sf3, the
 // native runtime/NativeFileSystem is missing, a font cannot be parsed, or a parsed
 // font does not show up as an engine input resource. A failed replacement
@@ -106,6 +112,9 @@ bool initialize_engine_audio(EngineAudio &audio, const EngineAudioSetup &setup, 
 // One SoundFont at 44100 Hz.
 bool initialize_engine_audio(EngineAudio &audio, const std::string &soundfont_path, std::string *error = nullptr);
 bool engine_audio_initialized(const EngineAudio &audio);
+// True while prepare_score_audio() runs and then until the PreparedAudioRender
+// it returned (and therefore its render session) has been destroyed. Any thread.
+bool engine_audio_render_active(const EngineAudio &audio);
 // Threads the synthesis pool has started. Renders reuse them, so the count only
 // grows until the EngineAudio is destroyed.
 std::size_t engine_audio_worker_threads(const EngineAudio &audio);
@@ -144,8 +153,10 @@ using EncoderFactory = muse::audio::encode::UniqueEncoder(const muse::audio::Sou
 
 struct AudioRenderRequest {
     EngineAudioFormat format = EngineAudioFormat::WAV;
+    // Read only by export_score_audio(); a prepared render takes its path at run time.
     std::string output_path;
     // Internal test seam; an empty factory uses the format's built-in encoder.
+    // Read only by export_score_audio().
     muse::UniqueFn<EncoderFactory> encoder_factory;
     // -1 renders the master score. A non-negative value renders the master
     // score with every part that is absent from, or invisible in, that excerpt
@@ -227,7 +238,46 @@ struct AudioRenderResult {
 // Never throws for a bad score/format/engine state; inspect AudioRenderResult.
 // Exceptions from request.cancelled are rethrown after closing/removing the
 // intermediate and idling the render graph; none unwind through codec callbacks.
+// prepare_score_audio() followed by run_prepared_audio() on the same thread.
 AudioRenderResult export_score_audio(EngineAudio &audio, mu::engraving::MasterScore *master, const AudioRenderRequest &request);
+
+// A render graph with every track loaded, owning no reference to the score, its
+// playback model or the request. While one exists (including after it ran), its
+// EngineAudio refuses another prepare_score_audio() and initialize_engine_audio().
+// Destruction may happen on any thread: it tears the render session down, then
+// releases the EngineAudio. Destroy it before the EngineAudio.
+struct PreparedAudioRender {
+    PreparedAudioRender() noexcept;
+    PreparedAudioRender(PreparedAudioRender &&) noexcept;
+    PreparedAudioRender &operator=(PreparedAudioRender &&) noexcept;
+    ~PreparedAudioRender();
+
+    // False once run_prepared_audio() has taken the session (even when that run
+    // failed or threw) and after a move.
+    bool ready() const noexcept;
+
+    struct Impl;
+    std::unique_ptr<Impl> impl;
+};
+
+// Owner thread. Everything that reads the score or loads SoundFonts: excerpt
+// selection, the flat playback model, the duration and 1 GiB projection, the
+// mix, every track's synth, SoundFont, preset and sample loads, and the aux
+// returns. request.cancelled is polled here only; request.output_path and
+// request.encoder_factory are ignored. A failure carries the AudioRenderResult
+// export_score_audio() would return; RESOURCE_LIMIT while another render is
+// active. Callback exceptions are rethrown after the partial graph is released.
+std::expected<PreparedAudioRender, AudioRenderResult> prepare_score_audio(EngineAudio &audio, mu::engraving::MasterScore *master,
+                                                                          const AudioRenderRequest &request);
+
+// Any one thread at a time. Synthesizes, mixes and encodes directly into
+// output_path, polling `cancelled` only on the calling thread (worker and
+// encoder threads see only stop flags), and tears the render session down
+// before returning, so a render runs once. Error precedence and output removal
+// follow export_score_audio(); a callback exception is rethrown after cleanup.
+// encoder_factory is the export_score_audio() test seam.
+AudioRenderResult run_prepared_audio(PreparedAudioRender &prepared, const std::string &output_path, muse::UniqueFn<bool() const> cancelled,
+                                     muse::FnRef<EncoderFactory> encoder_factory = {}, bool remove_on_encoder_failure = true);
 
 // One playable track for score_audio_tracks. `id` is the raw score identity
 // (muse::ID hex string / muse::String); the public trackId is this entry's

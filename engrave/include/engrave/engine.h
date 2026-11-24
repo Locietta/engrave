@@ -46,8 +46,10 @@ struct EngineOptions {
     // integer in the ENGRAVE_AUDIO_THREADS environment variable overrides it.
     // Above 1, an audio render also encodes on its own thread and a multi-page
     // PNG render deflates pages on up to this many threads, again with
-    // identical bytes. Callbacks still run on the Engine's thread, and a render
-    // with one active track never fans out its synthesis.
+    // identical bytes. Synchronous callbacks run on the Engine's thread
+    // (PreparedAudio::run invokes its cancellation callback on the thread
+    // calling run()), and a render with one active track never fans out its
+    // synthesis.
     std::int32_t audio_threads = 0;
 };
 

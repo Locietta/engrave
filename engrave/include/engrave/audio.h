@@ -2,7 +2,9 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <functional>
+#include <memory>
 #include <optional>
 #include <span>
 #include <string>
@@ -10,6 +12,7 @@
 #include <variant>
 #include <vector>
 
+#include <engrave/error.h>
 #include <engrave/handle.h>
 
 namespace engrave {
@@ -100,9 +103,11 @@ struct AudioOptions {
     std::optional<std::uint64_t> max_bytes;
     std::optional<std::uint64_t> max_write_bytes;
     // Same callback contract as CaptureOptions: owner thread, no reentry;
-    // exceptions propagate. Polled per synthesis block (and about every
-    // millisecond while tracks synthesize in parallel) and encoded-file write,
-    // including finalization. No sink is called when cancellation is observed.
+    // exceptions propagate. Polled during setup, then per synthesis block (and
+    // about every millisecond while tracks synthesize in parallel) and
+    // encoded-file write, including finalization. No sink is called when
+    // cancellation is observed. prepare_audio polls it during setup only;
+    // PreparedAudio::run takes its own callback.
     std::function<bool()> cancelled;
 };
 
@@ -111,9 +116,47 @@ struct AudioOptions {
 using ByteSink = std::function<void(std::span<const std::byte> chunk)>;
 
 struct AudioRenderResult {
-    std::uint64_t bytes = 0;  // what the sink received
+    std::uint64_t bytes = 0;  // what the sink received, or the size of the file PreparedAudio::run wrote
     std::uint64_t frames = 0; // sample frames the engine rendered
     double seconds = 0.0;     // the encoded span: play time plus the 3 s tail
+};
+
+// An audio render that Document::prepare_audio set up on the Engine's thread:
+// every track is loaded and nothing refers to the Document any more, so the
+// Document may be edited, rendered or destroyed while run() synthesizes.
+//
+// One render at a time per Engine: from prepare_audio until the PreparedAudio
+// holding the render is destroyed, whether or not run() was called,
+// prepare_audio and render_audio answer ResourceLimit. Destroying it (on any
+// thread) tears the render graph down and then frees the Engine for the next
+// render. It does not keep the Engine alive: destroy every PreparedAudio before
+// the Engine and all of its Documents are gone; releasing the last of them
+// while a render is held aborts.
+struct PreparedAudio {
+    PreparedAudio(PreparedAudio &&) noexcept;
+    PreparedAudio &operator=(PreparedAudio &&) noexcept;
+    ~PreparedAudio();
+
+    // Synthesizes, mixes and encodes on the calling thread, which may be any
+    // thread (one call at a time), writing directly to output_path. Its parent
+    // directory must exist: IO otherwise. A render runs once; InvalidArgument
+    // for a second call, a moved-from object or an empty path. Cancelled,
+    // ResourceLimit (a byte limit of the AudioOptions) and IO as render_audio
+    // reports them; throws std::runtime_error if the engine's audio graph or
+    // encoder fails. Cancellation, a byte limit or an exception removes
+    // output_path. `cancelled` is polled only on this thread (worker and encoder
+    // threads see only stop flags) and must not reenter the Engine or any
+    // Document; its exceptions propagate after cleanup.
+    Result<AudioRenderResult> run(const std::filesystem::path &output_path, std::function<bool()> cancelled = {});
+
+    // Document::revision() when prepare_audio ran.
+    std::uint64_t source_revision() const noexcept;
+
+private:
+    friend struct Document;
+    struct Impl;
+    explicit PreparedAudio(std::unique_ptr<Impl> impl) noexcept;
+    std::unique_ptr<Impl> impl_;
 };
 
 } // namespace engrave

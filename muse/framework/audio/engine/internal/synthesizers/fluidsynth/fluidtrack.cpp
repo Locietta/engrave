@@ -22,6 +22,7 @@
 
 #include "fluidtrack.h"
 
+#include <atomic>
 #include <mutex>
 
 #include <fluidsynth.h>
@@ -44,7 +45,8 @@ using namespace muse::audio::synth;
 using namespace muse::mpe;
 
 #ifdef ENGRAVE_PLAYBACK_HARNESS
-static thread_local int live_tracks = 0;
+// Process-wide: a prepared render creates its tracks on the owner thread and may tear them down on another.
+static std::atomic<int> live_tracks = 0;
 
 int FluidTrack::live_instances() { return live_tracks; }
 #endif

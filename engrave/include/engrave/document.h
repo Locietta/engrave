@@ -111,7 +111,17 @@ struct Document {
     // output exceeds the 1 GiB cap or a caller-supplied audio byte limit.
     // Throws std::runtime_error if the engine's
     // audio graph or encoder fails.
+    // ResourceLimit while a PreparedAudio of this Engine holds a render.
     Result<AudioRenderResult> render_audio(const AudioOptions &options, const ByteSink &sink);
+
+    // The setup half of render_audio, with the same errors (except the sink's):
+    // validates the options, refreshes the Engine's SoundFonts, walks the score
+    // and loads every track, polling options.cancelled. The returned render
+    // holds no reference to this Document; PreparedAudio::run synthesizes it on
+    // any thread, with its own cancellation callback. ResourceLimit while another
+    // PreparedAudio of this Engine holds a render. Destroy the PreparedAudio
+    // before the Engine and all of its Documents are gone.
+    Result<PreparedAudio> prepare_audio(const AudioOptions &options);
 
     // The score's structure, without layout: metadata, parts and staves, measures,
     // time, key and tempo changes, and excerpts. Page counts are unset while

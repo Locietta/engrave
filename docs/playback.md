@@ -1,6 +1,6 @@
 # Audio Render Pipeline Architecture
 
-This document describes the architecture, data flow, ownership model, and deterministic behavior of the `engrave` engine's offline audio render pipeline (`Document::render_audio`).
+This document describes the architecture, data flow, ownership model, and deterministic behavior of the `engrave` engine's offline audio render pipeline (`Document::render_audio`, and its two halves `Document::prepare_audio` and `PreparedAudio::run`).
 
 ## Pipeline Overview
 
@@ -34,17 +34,29 @@ AudioEncoder (pro::proxy runtime seam)
 ByteSink / IODevice (Stream output)
 ```
 
-The pipeline is driven by the single dedicated engine owner thread, keeping data separate from behavior and avoiding runtime virtual dispatch outside genuine format seams. With more than one audio thread, track synthesis fans out to a worker pool, the next block's synthesis overlaps the current block's mix, and encoding runs on a per-render encoder thread (see Parallel Rendering below); the owner thread still runs every user callback.
+Everything up to and including the release of the flat MPE store runs on the engine owner thread; synthesis, mix and encoding run on the thread that runs the prepared render, which is the owner thread for `render_audio` and may be any thread for `PreparedAudio::run` (see Prepared Renders below). The pipeline keeps data separate from behavior and avoids runtime virtual dispatch outside genuine format seams. With more than one audio thread, track synthesis fans out to a worker pool, the next block's synthesis overlaps the current block's mix, and encoding runs on a per-render encoder thread (see Parallel Rendering below); the thread driving each step still runs every user callback of that step.
 
 ## Data Flow and Ownership
 
 The pipeline enforces strict single ownership and avoids shared ownership graphs or reference cycles:
 
-- **Engine Audio Resources (`AudioResources`)**: Engine-lifetime audio resources, including loaded SoundFonts, sound preset metadata, and audio services, are owned by `EngineAudio` on the engine owner thread. Render sessions borrow these resources by reference; sessions never outlive the engine.
+- **Engine Audio Resources (`AudioResources`)**: Engine-lifetime audio resources, including loaded SoundFonts, sound preset metadata, and audio services, are owned by `EngineAudio` and changed only on the engine owner thread, never while a render is active. Render sessions borrow these resources by reference; sessions never outlive the engine.
 - **Render Session (`OfflineRenderSession`)**: Each export creates a fresh `OfflineRenderSession`. The session owns its track list, aux bus configurations, reverb effect processors (`fx::ReverbProcessor`), and intermediate mix buffers. Render configuration parameters (`OfflineRenderSettings`) are snapshotted and owned by value.
 - **Track Synthesis (`FluidTrack`)**: Each track owns its FluidSynth synthesizer instance (`std::unique_ptr<Fluid> fluid_`), its channel mapping (`ChannelMap`), and its sequencer (`FluidSequencer`). Synthesizers are not shared across tracks or exports.
 - **Flat MPE Store (`PlaybackScore`)**: Owned by the export orchestration in `engine_audio.cpp`. Tracks borrow event slices only while lowering their MIDI sequences; once lowered, the flat store is released before synthesis begins, draining cold event owners and the retained playback context in polled strides during the `EVENT_RELEASE` phase before freeing the flat buffers.
 - **Encoders (`AudioEncoder`)**: Format encoders are owned exclusively through type-erased proxy wrappers (`UniqueEncoder`), which enforce sole ownership via `std::unique_ptr`.
+
+### Prepared Renders and the Audio Lane
+
+An export has two halves (`prepare_score_audio` and `run_prepared_audio` in `engrave/src/audio/engine_audio.cpp`; `export_score_audio` runs both on one thread):
+
+- **`Document::prepare_audio(options)`** (owner thread) validates the options exactly as `render_audio` does, refreshes the Engine's SoundFonts through `initialize_engine_audio`, then does every step that reads the score or loads SoundFonts: excerpt selection, the flat model build, the duration and 1 GiB projection, the mix track list, every `add_track` (FluidSynth synth creation and SoundFont, preset and sample loads), `playback.release`, the aux returns and `reset_sources`. After `playback.release` the prepared render holds no pointer to the DOM, the `MasterScore`, the `PlaybackScore` or the request: its session owns the lowered MIDI timelines, synths and effects, and borrows only `EngineAudio` (resources, worker pool, MIDI port). It records `Document::revision()` as `PreparedAudio::source_revision()`.
+- **`PreparedAudio::run(path, cancelled)`** (any one thread, once) enters `ScopedDenormalGuard` and `RenderModePin` on the calling thread, writes the encoded file directly to `path` through `StreamingFileDevice`, polls `cancelled` only on that thread (workers, the encoder thread and the device see only stop flags) and tears the session down on that thread before returning. Error precedence is the driver's: cancellation or a callback exception, then a byte limit, then encoder or I/O failure. Cancellation, a byte limit or an exception removes `path`; the public `run()` also removes it after an encoder or I/O failure once the file was opened. A second call, a moved-from object or an empty path answers `INVALID_ARGUMENT`.
+- **`Document::render_audio`** is `prepare_audio`, then `run()` into one temporary file in the cache directory on the owner thread, then publication to the sink.
+- **Single lane**: `prepare_score_audio` takes `EngineAudio::State::render_active` (an acquiring exchange) and `~PreparedAudioRender` destroys the session before releasing it (a releasing store), so the next prepare or `initialize_engine_audio` sees the FluidSynth teardown (sample unloads into the process-wide sample cache, the cached SoundFont's preset and sample reference counts) complete. While it is held, `prepare_audio` and `render_audio` answer `RESOURCE_LIMIT` and `initialize_engine_audio` refuses.
+- **Teardown order**: `~PreparedAudio`, on any thread, destroys the `PreparedAudioRender` (session, then the `EngineAudio` lane) and only then clears `EngineState::audio_job_active`.
+- **Engine lifetime**: a `PreparedAudio` borrows the engine state without owning it, so that `~EngineState` never runs off the owner thread. `EngineState::release` aborts if the last `Engine` or `Document` reference goes while `audio_job_active` is set: destroy every `PreparedAudio` first.
+- **What the owner may do during a run**: edit, query, draw or destroy any document (including the source), open or create documents and call `Engine::set_soundfonts`. `set_soundfonts` freezes content-addressed copies (a retained file never changes) and parses each candidate with its own FluidSynth settings, loader and font with dynamic sample loading, so it touches neither the sample cache nor a cached font; the FluidSynth globals it reads (the log table, the synth's conversion tables) are written once under `initialize_fluid_globals`' `call_once` before any render. FluidSynth is built with `NO_THREADS`, which makes its sample-cache mutex a no-op: the cache is touched only by preset selection during setup (owner thread) and by synth deletion during teardown (run thread), and the lane orders the two. The font loader's file bridge (`file_cache_bridge`, thread-local) and the Vorbis decoder serve only setup sample loads on the owner thread; `FluidTrack` refuses `PROGRAM_CHANGE` while `PLAYING_OFFLINE`, so a run never loads samples. The MIDI hook (a test seam) must not change while a render is active.
 
 ## Flat Playback Walk and Articulation Profiles
 
@@ -100,12 +112,12 @@ Disjoint track buffers isolate synthesis state from mixing, ensuring identical f
 
 `EngineOptions::audio_threads` (`EngineAudioSetup::audio_threads` internally) selects how many threads synthesize a block's tracks: `0` is `hardware_concurrency - 1` clamped to 1..8, `1` is the serial path, larger values are capped at 64, and negative values are rejected. A positive integer in `ENGRAVE_AUDIO_THREADS` overrides the configured value; other values are ignored. Synthesis stays serial while a MIDI event hook is installed, while playback-harness capture, allocation counting or fault injection is active, if the OS refuses thread creation, and for renders with at most one active (unmuted) track (so a single-instrument score with a muted metronome track never starts workers).
 
-The pool (`muse/framework/audio/engine/internal/workerpool.h`) is owned by `EngineAudio::State`, starts its threads on the first render that fans out, reuses them across renders and joins them when the engine audio is destroyed. Per block, the owner thread handles muted tracks inline, hands active tracks to workers longest-previous-block first, waits, then mixes in track order. Invariants:
+The pool (`muse/framework/audio/engine/internal/workerpool.h`) is owned by `EngineAudio::State`, starts its threads on the first render that fans out, reuses them across renders and joins them when the engine audio is destroyed. From here through Encoder Thread, "owner" means the thread running the render: the engine owner thread under `render_audio`, the calling thread under `PreparedAudio::run`; setup ("owner-only loading") always runs on the engine owner thread. Per block, the owner thread handles muted tracks inline, hands active tracks to workers longest-previous-block first, waits, then mixes in track order. Invariants:
 
 - **Per-thread FP state**: synthesis and encoding pin the active FP mode (FTZ/DAZ plus rounding mode) via `ScopedDenormalGuard::RenderModePin`, and every worker task applies and restores that pinned mode via `ScopedDenormalGuard::WorkerScope` (`denormalguard.h`). Mid-render cancellation callbacks still see and keep their own rounding-mode changes on return without altering serial vs. parallel audio output.
 - **Shared SoundFont, read-mostly**: synths share the cached defsfont. FluidSynth stays built with `NO_THREADS`; two patches make worker-side writes safe: sample voice refcounts use atomic builtins (`fluid_sample_incr_ref`/`fluid_sample_decr_ref` in `fluid_sfont.h`), and `fluid_zone_inside_range` stores the zone `ignore` flag only when it is set (only mono legato sets it; tracks pin legato mode 0).
 - **Owner-only loading**: SoundFont loads, sample loads, preset selection and synth creation happen during setup on the owner thread. `FluidTrack::handle_event` refuses `PROGRAM_CHANGE` during `PLAYING_OFFLINE`. `initialize_fluid_globals()` installs the FluidSynth log sink and runs FluidSynth's one-time table setup once, on the owner thread, before any render.
-- **Cancellation**: only the owner thread calls `AudioOptions::cancelled`. While waiting for a block it polls about every millisecond (`muse::PollWait`; on Windows through a high-resolution waitable timer, since condition-variable timeouts round up to the scheduler tick). Once the predicate returns true or throws, the pool's stop flag is set; worker tasks see only that flag through their own `OfflineCancellation` scope, unwind at their next poll, and the owner surfaces the cancellation or rethrows after the block drains. A worker exception is rethrown on the owner thread the same way. If worker thread creation fails completely, synthesis falls back to the ordinary serial loop so the owner's live cancellation scope stays active inside each track.
+- **Cancellation**: only the thread driving the render (the owner thread during setup, the `run()` thread afterwards) calls the cancellation predicate. While waiting for a block it polls about every millisecond (`muse::PollWait`; on Windows through a high-resolution waitable timer, since condition-variable timeouts round up to the scheduler tick). Once the predicate returns true or throws, the pool's stop flag is set; worker tasks see only that flag through their own `OfflineCancellation` scope, unwind at their next poll, and the owner surfaces the cancellation or rethrows after the block drains. A worker exception is rethrown on the owner thread the same way. If worker thread creation fails completely, synthesis falls back to the ordinary serial loop so the owner's live cancellation scope stays active inside each track.
 
 #### Synthesis/Mix Overlap
 
@@ -126,7 +138,7 @@ With more than one audio thread (and outside MIDI-hook, playback-harness capture
 
 ### Timing Instrumentation
 
-With `ENGRAVE_AUDIO_TIMING` set, each export prints `offline_audio_seconds key=value` lines to stderr. `synth` (equal to `synth_wall`) is the wall time of per-track synthesis; `mix` is summing, the reverb and the master stages; `encode` is encoder time on whichever thread ran it and `encode_wait` the owner's time blocked on the encoder thread; `synth_total` and `synth_max_track` sum each track's own synthesis time, whichever thread ran it. In a pipelined render the stages overlap (a prefetched block's `synth` runs from its start to its finish, while the owner mixes), so the stage times can sum to more than the wall time. A final `offline_audio_synth threads=N tracks=M` line gives the fan-out actually used. With `ENGRAVE_RENDER_TIMING` set, each export prints `render_seconds format=... page=...` (or `pages=A-B` for multi-page PDF) `dpi=... raster=... encode=... bytes=...`, splitting drawing from encoding (PNG deflate, or Cairo page emission and surface finish across the exported PDF page range); a multi-page PNG render also prints `render_wall format=png pages=A-B dpi=... workers=N seconds=...`, and its per-page `encode` times overlap.
+With `ENGRAVE_AUDIO_TIMING` set, each export prints `offline_audio_seconds key=value` lines to stderr when its run returns. The setup timings (`setup`, `model`, `tracks`, `aux`, `create`, `fonts`) are measured on the preparing thread and carried in the prepared render to the run thread's report, which adds the run's own (`synth`, `mix`, `encode`, `teardown`); a setup that fails prints nothing. `synth` (equal to `synth_wall`) is the wall time of per-track synthesis; `mix` is summing, the reverb and the master stages; `encode` is encoder time on whichever thread ran it and `encode_wait` the owner's time blocked on the encoder thread; `synth_total` and `synth_max_track` sum each track's own synthesis time, whichever thread ran it. In a pipelined render the stages overlap (a prefetched block's `synth` runs from its start to its finish, while the owner mixes), so the stage times can sum to more than the wall time. A final `offline_audio_synth threads=N tracks=M` line gives the fan-out actually used. With `ENGRAVE_RENDER_TIMING` set, each export prints `render_seconds format=... page=...` (or `pages=A-B` for multi-page PDF) `dpi=... raster=... encode=... bytes=...`, splitting drawing from encoding (PNG deflate, or Cairo page emission and surface finish across the exported PDF page range); a multi-page PNG render also prints `render_wall format=png pages=A-B dpi=... workers=N seconds=...`, and its per-page `encode` times overlap.
 
 ## Encoder Seam (`pro::proxy`)
 
@@ -164,9 +176,10 @@ struct AudioOptions {
 
 ### Calling Contract and Invariants
 
-- **Owner thread only, no re-entrancy**: The predicate runs exclusively on the
-  engine owner thread and must not call back into the engine or mutate open
-  documents.
+- **One thread, no re-entrancy**: `AudioOptions::cancelled` runs exclusively on the
+  engine owner thread (`prepare_audio` polls it during setup only); the predicate
+  passed to `PreparedAudio::run` runs only on the thread calling `run()`. Neither
+  may call back into the engine or mutate open documents.
 - **Unpoisoned state and error code**: A cancelled render returns
   `ErrorCode::CANCELLED` in `Result<AudioRenderResult>` and leaves `Document`
   and `Engine` clean for subsequent operations. Repeat exports on unchanged
@@ -176,12 +189,13 @@ struct AudioOptions {
   and no bytes reach `ByteSink`. Cancellation during sink streaming halts
   further chunk delivery immediately.
 - **Callback exception handling**:
-  - Inside the driver (`export_score_audio` in `engrave/src/audio/engine_audio.cpp`),
+  - Inside the driver (`prepare_score_audio` and `run_prepared_audio` in `engrave/src/audio/engine_audio.cpp`),
     exceptions thrown by `cancelled` are caught and latched as a cancellation so
     the DSP graph is idled, the file device is closed, and the intermediate file
     is removed before unwinding. If removing the intermediate file fails,
     `ErrorCode::IO` is returned first; otherwise the latched exception is
-    rethrown.
+    rethrown. A setup cancelled or failed in `prepare_score_audio` releases its
+    partial render graph before returning or rethrowing.
   - Outside the driver (`Document::render_audio` in `engrave/src/api/audio.cpp`),
     pre-render and `ByteSink` chunk-delivery polls propagate callback (or sink)
     exceptions directly. During stack unwinding, `TempFile`'s destructor removes
@@ -312,4 +326,3 @@ The pipeline enforces deliberate precedence and normalization rules to resolve a
 ## Future Directions
 
 - **Heaviest Track**: Parallel synthesis is bounded by the heaviest track; the owner-thread mix and the encoder now overlap with it. ThreadSanitizer runs (`--config=tsan`, Linux and macOS only) have not yet been part of validation.
-- **Releasing the Owner Thread**: Detaching the offline render session from the single engine owner thread by snapshotting score properties, duration, and track configurations at the start of export, allowing long exports to run on background worker threads without blocking interactive score operations.

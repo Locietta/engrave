@@ -1,17 +1,21 @@
-// The audio API: audio_tracks() and render_audio().  The tracks and the default
-// mix come from the score code in engrave/src/audio/ (score_audio), the mix
-// and the render from the engine driver there (engine_audio).
+// The audio API: audio_tracks(), prepare_audio() with PreparedAudio::run(),
+// and render_audio(). The tracks and the default mix come from the score code
+// in engrave/src/audio/ (score_audio), the mix and the render from the engine
+// driver there (engine_audio).
 //
-// The driver encodes to a file; the public call hands the encoded stream to a
-// sink. The WAV and FLAC encoders patch their headers when the stream ends (the
-// WAV chunk sizes, FLAC's STREAMINFO), so a truly streaming destination cannot
-// work: the render goes to one temporary file in the engine's cache directory,
-// which is then read back in chunks and removed.
+// The driver encodes to a file. PreparedAudio::run writes the caller's file;
+// render_audio hands the encoded stream to a sink. The WAV and FLAC encoders
+// patch their headers when the stream ends (the WAV chunk sizes, FLAC's
+// STREAMINFO), so a truly streaming destination cannot work: render_audio runs
+// into one temporary file in the engine's cache directory, which is then read
+// back in chunks and removed.
 
+#include <atomic>
 #include <cmath>
 #include <filesystem>
 #include <format>
 #include <fstream>
+#include <memory>
 #include <optional>
 #include <span>
 #include <stdexcept>
@@ -99,8 +103,10 @@ Result<int> soundfont_index(const SoundFontSelection &selection, const std::vect
 
 struct TempFile {
     std::filesystem::path path;
+    bool armed = true;
 
     ~TempFile() {
+        if (!armed || path.empty()) return;
         std::error_code ignored;
         std::filesystem::remove(path, ignored);
     }
@@ -163,12 +169,71 @@ Result<AudioTracks> Document::audio_tracks(const ScoreSel &selection) {
     return result;
 }
 
-Result<AudioRenderResult> Document::render_audio(const AudioOptions &options, const ByteSink &sink) {
+namespace {
+
+// The public error for a failed prepare or run; the engine's own failures throw.
+std::unexpected<Error> render_failure(const music::AudioRenderResult &rendered) {
+    switch (rendered.failure) {
+        case music::AudioRenderResult::Failure::CANCELLED: return fail(ErrorCode::CANCELLED, rendered.error);
+        case music::AudioRenderResult::Failure::RESOURCE_LIMIT: return fail(ErrorCode::RESOURCE_LIMIT, rendered.error);
+        case music::AudioRenderResult::Failure::INVALID_SCORE: return fail(ErrorCode::INVALID_ARGUMENT, rendered.error);
+        case music::AudioRenderResult::Failure::IO: return fail(ErrorCode::IO, rendered.error);
+        case music::AudioRenderResult::Failure::ENGINE_FAILURE:
+        case music::AudioRenderResult::Failure::NONE: break;
+    }
+    throw std::runtime_error(rendered.error);
+}
+
+} // namespace
+
+struct PreparedAudio::Impl {
+    Impl(std::atomic<bool> &job_active, music::PreparedAudioRender render, std::uint64_t revision) noexcept
+        : job_active(job_active), render(std::move(render)), revision(revision) {
+        // Published only after operator new succeeds so allocation failure never poisons the lane.
+        job_active.store(true, std::memory_order_release);
+    }
+
+    // The render graph is gone before the Engine may start another render or be released.
+    ~Impl() {
+        render = {};
+        job_active.store(false, std::memory_order_release);
+    }
+
+    Impl(const Impl &) = delete;
+    Impl &operator=(const Impl &) = delete;
+
+    std::atomic<bool> &job_active;
+    music::PreparedAudioRender render;
+    std::uint64_t revision = 0;
+};
+
+PreparedAudio::PreparedAudio(std::unique_ptr<Impl> impl) noexcept : impl_(std::move(impl)) {}
+
+PreparedAudio::PreparedAudio(PreparedAudio &&) noexcept = default;
+PreparedAudio &PreparedAudio::operator=(PreparedAudio &&) noexcept = default;
+PreparedAudio::~PreparedAudio() = default;
+
+std::uint64_t PreparedAudio::source_revision() const noexcept { return impl_ ? impl_->revision : 0; }
+
+Result<AudioRenderResult> PreparedAudio::run(const std::filesystem::path &output_path, std::function<bool()> cancelled) {
+    if (!impl_ || !impl_->render.ready()) return fail(ErrorCode::INVALID_ARGUMENT, "the prepared audio has already run or was moved from");
+    if (output_path.empty()) return fail(ErrorCode::INVALID_ARGUMENT, "the audio output path is empty");
+    const std::string path = utf8(output_path);
+    muse::UniqueFn<bool() const> poll;
+    if (cancelled) poll = std::move(cancelled);
+    const music::AudioRenderResult rendered = music::run_prepared_audio(impl_->render, path, std::move(poll));
+    if (rendered.ok) return AudioRenderResult{rendered.bytes, rendered.frames, rendered.duration_secs};
+    return render_failure(rendered);
+}
+
+Result<PreparedAudio> Document::prepare_audio(const AudioOptions &options) {
     impl_->engine->check_thread();
     const auto format = engine_format(options.format);
     if (!format) return fail(ErrorCode::INVALID_ARGUMENT, "unrecognized audio format");
     if (options.cancelled && options.cancelled()) return fail(ErrorCode::CANCELLED, "audio render cancelled");
     EngineState &engine = *impl_->engine;
+    if (engine.audio_job_active.load(std::memory_order_acquire))
+        return fail(ErrorCode::RESOURCE_LIMIT, "another audio render is already active");
     MasterScore &master = *impl_->project->master_score();
     const Result<int> excerpt_id = excerpt_id_of(master, options.score);
     if (!excerpt_id) return std::unexpected(excerpt_id.error());
@@ -226,7 +291,9 @@ Result<AudioRenderResult> Document::render_audio(const AudioOptions &options, co
     request.bit_depth = options.bit_depth;
     request.max_bytes = options.max_bytes;
     request.max_write_bytes = options.max_write_bytes;
-    request.cancelled = options.cancelled;
+    // Reference options.cancelled instead of copying it so stateful mutable
+    // predicates preserve state across setup and run in synchronous render_audio.
+    if (options.cancelled) request.cancelled = [&options] { return options.cancelled(); };
     request.reverb = options.reverb;
     request.reverb_send = options.reverb_send;
     request.tracks.resize(context->tracks.size());
@@ -259,35 +326,46 @@ Result<AudioRenderResult> Document::render_audio(const AudioOptions &options, co
     // refreshed here rather than by set_soundfonts().
     if (!music::initialize_engine_audio(engine.context->audio(), setup, &error)) return fail(ErrorCode::INVALID_INPUT, error);
 
-    std::error_code ec;
-    std::filesystem::create_directories(engine.cache_dir, ec);
-    if (!std::filesystem::is_directory(engine.cache_dir, ec))
-        return fail(ErrorCode::IO, "cannot use the cache directory '" + utf8(engine.cache_dir) + "' for the render");
-#ifdef _WIN32
-    const int process = _getpid();
-#else
-    const int process = getpid();
-#endif
-    TempFile file{engine.cache_dir /
-                  std::format("engrave-audio-{}-{}{}", process, ++engine.audio_render_index, file_extension(options.format))};
-    request.output_path = utf8(file.path);
+    auto prepared = music::prepare_score_audio(engine.context->audio(), &master, request);
+    if (!prepared) return render_failure(prepared.error());
+    return PreparedAudio(std::make_unique<PreparedAudio::Impl>(engine.audio_job_active, *std::move(prepared), impl_->revision));
+}
 
-    const music::AudioRenderResult rendered = music::export_score_audio(engine.context->audio(), &master, request);
-    if (!rendered.ok) {
-        switch (rendered.failure) {
-            case music::AudioRenderResult::Failure::CANCELLED: return fail(ErrorCode::CANCELLED, rendered.error);
-            case music::AudioRenderResult::Failure::RESOURCE_LIMIT: return fail(ErrorCode::RESOURCE_LIMIT, rendered.error);
-            case music::AudioRenderResult::Failure::INVALID_SCORE: return fail(ErrorCode::INVALID_ARGUMENT, rendered.error);
-            case music::AudioRenderResult::Failure::IO: return fail(ErrorCode::IO, rendered.error);
-            case music::AudioRenderResult::Failure::ENGINE_FAILURE:
-            case music::AudioRenderResult::Failure::NONE: throw std::runtime_error(rendered.error);
-        }
+Result<AudioRenderResult> Document::render_audio(const AudioOptions &options, const ByteSink &sink) {
+    EngineState &engine = *impl_->engine;
+    std::optional<TempFile> file;
+    Result<AudioRenderResult> rendered;
+    {
+        Result<PreparedAudio> prepared = prepare_audio(options);
+        if (!prepared) return std::unexpected(prepared.error());
+
+        std::error_code ec;
+        std::filesystem::create_directories(engine.cache_dir, ec);
+        if (!std::filesystem::is_directory(engine.cache_dir, ec))
+            return fail(ErrorCode::IO, "cannot use the cache directory '" + utf8(engine.cache_dir) + "' for the render");
+#ifdef _WIN32
+        const int process = _getpid();
+#else
+        const int process = getpid();
+#endif
+        file.emplace(engine.cache_dir /
+                     std::format("engrave-audio-{}-{}{}", process, ++engine.audio_render_index, file_extension(options.format)));
+
+        std::function<bool()> run_cancelled;
+        if (options.cancelled) run_cancelled = [&options] { return options.cancelled(); };
+        // run_prepared_audio removes the file on any post-open failure/exception,
+        // so arm TempFile cleanup only after run() succeeds to avoid double removal.
+        file->armed = false;
+        rendered = prepared->run(file->path, std::move(run_cancelled));
+        if (rendered) file->armed = true;
     }
+    // Release the prepared render graph and audio lane before calling the synchronous sink.
+    if (!rendered) return std::unexpected(rendered.error());
 
     // Publication starts only after the whole encoded file has succeeded.
     if (options.cancelled && options.cancelled()) return fail(ErrorCode::CANCELLED, "audio render cancelled");
-    std::ifstream in(file.path, std::ios::binary);
-    if (!in) return fail(ErrorCode::IO, "cannot read the rendered audio '" + utf8(file.path) + "'");
+    std::ifstream in(file->path, std::ios::binary);
+    if (!in) return fail(ErrorCode::IO, "cannot read the rendered audio '" + utf8(file->path) + "'");
     std::uint64_t bytes = 0;
     std::vector<std::byte> chunk(audio_chunk_bytes);
     while (in) {
@@ -298,8 +376,8 @@ Result<AudioRenderResult> Document::render_audio(const AudioOptions &options, co
         sink(std::span<const std::byte>(chunk.data(), static_cast<std::size_t>(count)));
         bytes += static_cast<std::uint64_t>(count);
     }
-    if (in.bad()) return fail(ErrorCode::IO, "cannot read the rendered audio '" + utf8(file.path) + "'");
-    return AudioRenderResult{bytes, rendered.frames, rendered.duration_secs};
+    if (in.bad()) return fail(ErrorCode::IO, "cannot read the rendered audio '" + utf8(file->path) + "'");
+    return AudioRenderResult{bytes, rendered->frames, rendered->seconds};
 }
 
 } // namespace engrave

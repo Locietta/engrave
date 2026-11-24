@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -41,6 +42,10 @@ struct EngineState {
     std::int32_t audio_threads = 0;
     std::uint64_t font_generation = 0;
     unsigned audio_render_index = 0;
+    // Set by prepare_audio and cleared, possibly on another thread, by the
+    // PreparedAudio once its render graph is gone. A PreparedAudio borrows
+    // this state without owning it, so the final release must find it clear.
+    std::atomic<bool> audio_job_active{false};
     std::unique_ptr<music::EngineContext> context;
 
     static void release(std::shared_ptr<EngineState> state) noexcept;
