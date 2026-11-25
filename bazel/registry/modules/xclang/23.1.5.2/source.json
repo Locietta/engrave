@@ -1,0 +1,5 @@
+{
+  "integrity": "sha256-+zA+0o7FACIIzO8hBXiOUDyrZrL5e00kV22C8eNo7q8=",
+  "strip_prefix": "xclang-bazel-23.1.5.2",
+  "url": "https://github.com/clice-io/bazel/releases/download/xclang-23.1.5.2/xclang-bazel-23.1.5.2.tar.gz"
+}

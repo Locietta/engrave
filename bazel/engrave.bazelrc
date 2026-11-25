@@ -1,5 +1,5 @@
 common --enable_platform_specific_config
-common --registry=https://bazel.clice.io/
+common --registry=file:///%workspace%/bazel/registry
 common --registry=https://bcr.bazel.build/
 common --experimental_repository_downloader_retries=10 --http_timeout_scaling=2
 common --repo_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1

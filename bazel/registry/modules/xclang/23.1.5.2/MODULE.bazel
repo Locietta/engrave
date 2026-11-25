@@ -1,0 +1,45 @@
+"""xclang as a Bazel module: the C++ toolchains of the host for every target,
+platforms for those targets, and libclang and the option tables as
+repositories, all from the release of the module's version
+(bazel/versions.bzl); the vendor SDKs a root module accepts the license of
+(bazel/sdk.bzl)."""
+
+module(
+    name = "xclang",
+    version = "23.1.5.2",
+    bazel_compatibility = [">=9.0.0"],
+)
+
+bazel_dep(name = "platforms", version = "1.0.0")
+bazel_dep(name = "rules_cc", version = "0.2.25")
+
+# What xclang's copy of rules_cc's unix toolchain config loads
+# (bazel/unix_cc_toolchain_config.bzl), which resolves them from here.
+bazel_dep(name = "apple_support", version = "2.8.0")
+bazel_dep(name = "bazel_skylib", version = "1.8.0")
+
+xclang = use_extension("//bazel:extensions.bzl", "xclang")
+use_repo(
+    xclang,
+    "libclang",
+    "xclang_aarch64-apple-darwin",
+    "xclang_aarch64-unknown-linux-gnu",
+    "xclang_aarch64-w64-mingw32",
+    "xclang_macos_sdk",
+    "xclang_sdks",
+    "xclang_thinlto_cache",
+    "xclang_windows_sdk_aarch64",
+    "xclang_windows_sdk_x86_64",
+    "xclang_x86_64-apple-darwin",
+    "xclang_x86_64-unknown-linux-gnu",
+    "xclang_x86_64-w64-mingw32",
+)
+
+# The toolchains of the C libraries that are not their os's own first, musl's
+# and the MSVC targets': they ask a platform for it, the others only for os
+# and cpu, which a platform of those has too.
+register_toolchains(
+    "//bazel/toolchains/musl:all",
+    "//bazel/toolchains/msvc:all",
+    "//bazel/toolchains:all",
+)
