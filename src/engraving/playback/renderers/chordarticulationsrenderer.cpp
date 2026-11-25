@@ -51,20 +51,20 @@ const mpe::ArticulationTypeSet &ChordArticulationsRenderer::supported_types() {
 }
 
 void ChordArticulationsRenderer::do_render(const EngravingItem *item, const mpe::ArticulationType /*type*/, const RenderingContext &ctx,
-                                           mpe::PlaybackEventList &result) {
+                                           const NoteEmitter &emitter) {
     IF_ASSERT_FAILED(item->is_chord()) { return; }
 
     const mpe::ArticulationType grace_type = select_grace_type(ctx.common_articulations);
     if (grace_type != mpe::ArticulationType::UNDEFINED) {
-        render_chord_with_grace_chords(to_chord(item), grace_type, ctx, result);
+        render_chord_with_grace_chords(to_chord(item), grace_type, ctx, emitter);
         return;
     }
 
-    render_chord(to_chord(item), ctx, result);
+    render_chord(to_chord(item), ctx, emitter);
 }
 
-void ChordArticulationsRenderer::render_chord(const Chord *chord, const RenderingContext &ctx, muse::mpe::PlaybackEventList &result) {
-    if (render_chord_articulations(chord, ctx, result)) {
+void ChordArticulationsRenderer::render_chord(const Chord *chord, const RenderingContext &ctx, const NoteEmitter &emitter) {
+    if (render_chord_articulations(chord, ctx, emitter)) {
         return;
     }
 
@@ -72,29 +72,29 @@ void ChordArticulationsRenderer::render_chord(const Chord *chord, const Renderin
 
     for (const Note *note : chord->notes()) {
         if (supports_multibend && BendsRenderer::is_multibend_part(note)) {
-            BendsRenderer::render(note, ctx, result);
+            BendsRenderer::render(note, ctx, emitter);
         } else {
-            NoteRenderer::render(note, ctx, result);
+            NoteRenderer::render(note, ctx, emitter);
         }
     }
 }
 
 void ChordArticulationsRenderer::render_chord_with_grace_chords(const Chord *chord, const muse::mpe::ArticulationType type,
-                                                                const RenderingContext &ctx, muse::mpe::PlaybackEventList &result) {
+                                                                const RenderingContext &ctx, const NoteEmitter &emitter) {
     const GraceChordCtx grace_chord_ctx = GraceChordCtx::build_ctx(chord, type, ctx);
 
     if (is_grace_note_placed_before_principal_note(type)) {
         for (const auto &pair : grace_chord_ctx.grace_chord_ctx_list) {
-            render_chord(pair.first, pair.second, result);
+            render_chord(pair.first, pair.second, emitter);
         }
-        render_chord(chord, grace_chord_ctx.principal_chord_ctx, result);
+        render_chord(chord, grace_chord_ctx.principal_chord_ctx, emitter);
         for (const auto &pair : grace_chord_ctx.after_grace_chord_ctx_list) {
-            render_chord(pair.first, pair.second, result);
+            render_chord(pair.first, pair.second, emitter);
         }
     } else {
-        render_chord(chord, grace_chord_ctx.principal_chord_ctx, result);
+        render_chord(chord, grace_chord_ctx.principal_chord_ctx, emitter);
         for (const auto &pair : grace_chord_ctx.grace_chord_ctx_list) {
-            render_chord(pair.first, pair.second, result);
+            render_chord(pair.first, pair.second, emitter);
         }
     }
 }
@@ -108,8 +108,7 @@ static constexpr std::array<mpe::ArticulationType, 5> chord_articulation_precede
     mpe::ArticulationType::ARPEGGIO_STRAIGHT_DOWN,
 };
 
-bool ChordArticulationsRenderer::render_chord_articulations(const Chord *chord, const RenderingContext &ctx,
-                                                            mpe::PlaybackEventList &result) {
+bool ChordArticulationsRenderer::render_chord_articulations(const Chord *chord, const RenderingContext &ctx, const NoteEmitter &emitter) {
     const bool has_tremolo = chord->tremolo_single_chord() || chord->tremolo_two_chord();
     const mpe::ArticulationType type =
         mpe::select_articulation(ctx.common_articulations, chord_articulation_precedence, [chord, has_tremolo](mpe::ArticulationType t) {
@@ -122,11 +121,11 @@ bool ChordArticulationsRenderer::render_chord_articulations(const Chord *chord, 
     }
 
     if (OrnamentsRenderer::is_able_to_render(type)) {
-        OrnamentsRenderer::render(chord, type, ctx, result);
+        OrnamentsRenderer::render(chord, type, ctx, emitter);
     } else if (TremoloRenderer::is_able_to_render(type)) {
-        TremoloRenderer::render(chord, type, ctx, result);
+        TremoloRenderer::render(chord, type, ctx, emitter);
     } else {
-        ArpeggioRenderer::render(chord, type, ctx, result);
+        ArpeggioRenderer::render(chord, type, ctx, emitter);
     }
 
     return true;

@@ -24,6 +24,7 @@
 
 #include "dom/ornament.h"
 #include "dom/utils.h"
+#include "noteemitter.h"
 #include "noterenderer.h"
 #include "playback/metaparsers/notearticulationsparser.h"
 #include "playback/utils/expressionutils.h"
@@ -249,7 +250,7 @@ const ArticulationTypeSet &OrnamentsRenderer::supported_types() {
 }
 
 void OrnamentsRenderer::do_render(const EngravingItem *item, const ArticulationType preferred_type, const RenderingContext &ctx,
-                                  mpe::PlaybackEventList &result) {
+                                  const NoteEmitter &emitter) {
     const Chord *chord = to_chord(item);
     IF_ASSERT_FAILED(chord) { return; }
 
@@ -284,7 +285,7 @@ void OrnamentsRenderer::do_render(const EngravingItem *item, const ArticulationT
         NoteArticulationsParser::build_note_articulation_map(note, note_ctx.chord_ctx, note_ctx.articulations);
 
         convert(preferred_type, nominal_pattern.build_actual_pattern(note, intervals_info, ornament_ctx.beats_per_second.val),
-                std::move(note_ctx), result);
+                std::move(note_ctx), emitter);
     }
 }
 
@@ -304,16 +305,16 @@ void OrnamentsRenderer::apply_tied_notes_duration(const Note *note, const Articu
 }
 
 void OrnamentsRenderer::convert(const ArticulationType type, const DisclosurePattern &pattern, NominalNoteCtx &&note_ctx,
-                                mpe::PlaybackEventList &result) {
+                                const NoteEmitter &emitter) {
     if (note_ctx.chord_ctx.nominal_duration_ticks <= pattern.boundaries.low_tempo_duration_ticks) {
-        result.emplace_back(build_note_event(std::move(note_ctx)));
+        emitter.emit(note_ctx);
         return;
     }
 
     // convert prefix
     if (!pattern.prefix_pitch_offsets.empty()) {
         create_events(type, note_ctx, 1, pattern.prefix_duration_ticks, note_ctx.chord_ctx.nominal_duration_ticks,
-                      pattern.prefix_pitch_offsets, result);
+                      pattern.prefix_pitch_offsets, emitter);
     }
 
     // convert body
@@ -326,18 +327,18 @@ void OrnamentsRenderer::convert(const ArticulationType type, const DisclosurePat
         }
 
         if (alterations_count == 0) {
-            result.emplace_back(build_note_event(note_ctx));
+            emitter.emit(note_ctx);
         } else {
             create_events(type, note_ctx, alterations_count,
                           note_ctx.chord_ctx.nominal_duration_ticks - pattern.prefix_duration_ticks - pattern.suffix_duration_ticks,
-                          note_ctx.chord_ctx.nominal_duration_ticks, pattern.alteration_step_pitch_offsets, result);
+                          note_ctx.chord_ctx.nominal_duration_ticks, pattern.alteration_step_pitch_offsets, emitter);
         }
     }
 
     // convert suffix
     if (!pattern.suffix_pitch_offsets.empty()) {
         create_events(type, note_ctx, 1, pattern.suffix_duration_ticks, note_ctx.chord_ctx.nominal_duration_ticks,
-                      pattern.suffix_pitch_offsets, result);
+                      pattern.suffix_pitch_offsets, emitter);
     }
 }
 
@@ -350,7 +351,7 @@ int OrnamentsRenderer::alterations_number_by_tempo(const double beats_per_second
 
 void OrnamentsRenderer::create_events(const ArticulationType type, NominalNoteCtx &note_ctx, const int alterations_count,
                                       const int available_duration_ticks, const int overall_duration_ticks,
-                                      const std::vector<mpe::pitch_level_t> &pitch_offsets, mpe::PlaybackEventList &result) {
+                                      const std::vector<mpe::pitch_level_t> &pitch_offsets, const NoteEmitter &emitter) {
     float available_duration_ratio = available_duration_ticks / static_cast<float>(overall_duration_ticks);
 
     size_t total_notes_count = alterations_count * pitch_offsets.size();
@@ -369,7 +370,7 @@ void OrnamentsRenderer::create_events(const ArticulationType type, NominalNoteCt
 
             update_articulation_boundaries(type, sub_note_ctx.timestamp, sub_note_ctx.duration, sub_note_ctx.articulations);
 
-            result.emplace_back(build_note_event(std::move(sub_note_ctx)));
+            emitter.emit(sub_note_ctx);
 
             note_ctx.timestamp += duration_step;
         }

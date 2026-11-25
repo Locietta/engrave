@@ -30,6 +30,7 @@
 #include "dom/tremolotwochord.h"
 #include "glissandosrenderer.h"
 #include "global/hashmap.h"
+#include "noteemitter.h"
 #include "playback/metaparsers/chordarticulationsparser.h"
 #include "playback/metaparsers/notearticulationsparser.h"
 #include "playback/utils/repeatutils.h"
@@ -115,7 +116,7 @@ bool NoteRenderer::should_render(const Note *note, const RenderingContext &ctx, 
     return true;
 }
 
-void NoteRenderer::render(const Note *note, const RenderingContext &ctx, mpe::PlaybackEventList &result) {
+void NoteRenderer::render(const Note *note, const RenderingContext &ctx, const NoteEmitter &emitter) {
     IF_ASSERT_FAILED(note) { return; }
 
     NominalNoteCtx note_ctx = build_nominal_note_ctx(note, ctx);
@@ -135,29 +136,16 @@ void NoteRenderer::render(const Note *note, const RenderingContext &ctx, mpe::Pl
     apply_swing_if_need(note, note_ctx);
 
     if (note_ctx.articulations.contains(ArticulationType::DISCRETE_GLISSANDO)) {
-        GlissandosRenderer::render_discrete_glissando(note, note_ctx, result);
+        GlissandosRenderer::render_discrete_glissando(note, note_ctx, emitter);
         return;
     }
 
     if (note_ctx.articulations.contains(ArticulationType::CONTINUOUS_GLISSANDO)) {
-        GlissandosRenderer::render_continuous_glissando(note, note_ctx, result);
+        GlissandosRenderer::render_continuous_glissando(note, note_ctx, emitter);
         return;
     }
 
-    mpe::NoteEvent ev = build_note_event(std::move(note_ctx));
-
-    if (ev.arrangement_ctx().actual_timestamp >= 0) {
-        result.emplace_back(std::move(ev));
-    } else {
-        ArrangementContext arr_ctx = ev.arrangement_ctx();
-        arr_ctx.actual_duration = arr_ctx.actual_duration + arr_ctx.actual_timestamp;
-        arr_ctx.actual_timestamp = 0;
-
-        PitchContext pitch_ctx = ev.pitch_ctx();
-        ExpressionContext exp_ctx = ev.expression_ctx();
-
-        result.emplace_back(mpe::NoteEvent(std::move(arr_ctx), std::move(pitch_ctx), std::move(exp_ctx)));
-    }
+    emitter.emit(note_ctx, true);
 }
 
 void NoteRenderer::render_partial_tie(const Note *outgoing_note, NominalNoteCtx &outgoing_note_ctx) {

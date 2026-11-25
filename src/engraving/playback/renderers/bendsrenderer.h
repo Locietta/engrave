@@ -23,6 +23,7 @@
 
 #include "global/flatmap.h"
 #include "mpe/events.h"
+#include "noteemitter.h"
 
 namespace mu::engraving {
 struct Note;
@@ -34,7 +35,11 @@ struct GraceChordCtx;
 struct BendsRenderer {
     static bool is_multibend_part(const Note *note);
 
-    static void render(const Note *note, const RenderingContext &ctx, muse::mpe::PlaybackEventList &result);
+    static void render(const Note *note, const RenderingContext &ctx, const NoteEmitter &emitter);
+
+    static void render(const Note *note, const RenderingContext &ctx, muse::mpe::PlaybackEventList &events) {
+        render(note, ctx, NoteEmitter{events});
+    }
 
 private:
     struct BendTimeFactors {
@@ -46,21 +51,21 @@ private:
     using PitchOffsets = std::vector<std::pair<muse::mpe::timestamp_t, muse::mpe::pitch_level_t>>;
     using BendTimeFactorMap = muse::FlatMap<muse::mpe::timestamp_t, BendTimeFactors>;
 
-    static void render_multibend(const Note *start_note, const RenderingContext &start_note_ctx, muse::mpe::PlaybackEventList &result);
-    static void render_note(const Note *note, const RenderingContext &ctx, muse::mpe::PlaybackEventList &result);
-    static void render_grace_note(const Note *note, const GraceChordCtx &ctx, muse::mpe::PlaybackEventList &result);
-    static void render_slight_bend(const Note *note, const GuitarBend *bend, const RenderingContext &ctx,
-                                   muse::mpe::PlaybackEventList &result);
-    static void render_scoop(const Note *note, const GuitarBend *bend, const RenderingContext &ctx, muse::mpe::PlaybackEventList &result);
-    static void render_dip(const Note *note, const GuitarBend *bend, const RenderingContext &ctx, muse::mpe::PlaybackEventList &result);
+    static void render_multibend(const Note *start_note, const RenderingContext &start_note_ctx, const NoteEmitter &emitter);
+    static void render_note(const Note *note, const RenderingContext &ctx, const NoteEmitter &emitter);
+    static void render_grace_note(const Note *note, const GraceChordCtx &ctx, const NoteEmitter &emitter);
+    static void render_slight_bend(const Note *note, const GuitarBend *bend, const RenderingContext &ctx, BendCollector &collector);
+    static void render_scoop(const Note *note, const GuitarBend *bend, const RenderingContext &ctx, BendCollector &collector);
+    static void render_dip(const Note *note, const GuitarBend *bend, const RenderingContext &ctx, BendCollector &collector);
 
     static BendTimeFactors time_factors(const GuitarBend *bend);
 
     static RenderingContext build_rendering_context(const Note *note, const RenderingContext &initial_ctx);
-    static muse::mpe::NoteEvent build_bend_event(const Note *start_note, const RenderingContext &start_note_ctx,
-                                                 const muse::mpe::PlaybackEventList &bend_note_events,
-                                                 const BendTimeFactorMap &time_factor_map);
-    static muse::mpe::PitchCurve build_pitch_curve(muse::mpe::timestamp_t bend_start_time, muse::mpe::duration_t total_bend_duration,
-                                                   const PitchOffsets &pitch_offsets, const BendTimeFactorMap &time_factor_map);
+    static void emit_bend(const Note *start_note, const RenderingContext &start_note_ctx, BendCollector &collector,
+                          const BendTimeFactorMap &time_factor_map, const NoteEmitter &emitter);
+    static amc::vector<muse::mpe::CurvePoint> build_pitch_curve(muse::mpe::timestamp_t bend_start_time,
+                                                                muse::mpe::duration_t total_bend_duration,
+                                                                const PitchOffsets &pitch_offsets,
+                                                                const BendTimeFactorMap &time_factor_map);
 };
 } // namespace mu::engraving

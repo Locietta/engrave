@@ -11,7 +11,7 @@ Score (DOM)
   │
   ▼
 PlaybackScoreBuilder (Score walk)
-  │  emits hot & cold MPE events
+  │  appends notes, articulations and curves directly to track pools
   ▼
 PlaybackScore (Flat MPE Store)
   │
@@ -207,7 +207,7 @@ Cancellation is polled at bounded boundaries across all stages:
 
 - **Setup and track build**: Checked before playback build, per track build, and
   after track setup.
-- **Score walk and MPE freeze**: Checked every `FreezeProgress::k_stride` (4096
+- **Score walk and MPE emission**: Checked every `FreezeProgress::k_stride` (4096
   records), and during context materialization (cold event scans and dynamic
   layer collection).
 - **Sequencer lowering and sorting**: Checked every 4096 copied events and every

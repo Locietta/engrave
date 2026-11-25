@@ -25,11 +25,12 @@
 #include "playback/renderingcontext.h"
 
 namespace mu::engraving {
+struct NoteEmitter;
 struct Note;
 
 struct NoteRenderer {
     static bool should_render(const Note *note, const RenderingContext &ctx, const muse::mpe::ArticulationMap &articulations);
-    static void render(const Note *note, const RenderingContext &ctx, muse::mpe::PlaybackEventList &result);
+    static void render(const Note *note, const RenderingContext &ctx, const NoteEmitter &emitter);
 
 private:
     static void render_partial_tie(const Note *outgoing_note, NominalNoteCtx &outgoing_note_ctx);

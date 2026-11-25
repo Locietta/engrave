@@ -34,7 +34,7 @@ using renderer_detail::make_standard_articulation_map;
 void PlaybackEventsRenderer::render_fixed_note_event(const Note *note, const mpe::timestamp_t actual_timestamp,
                                                      const mpe::duration_t actual_duration, const mpe::dynamic_level_t actual_dynamic_level,
                                                      const PlaybackContextPtr playback_ctx, const mpe::ArticulationsProfilePtr profile,
-                                                     mpe::PlaybackEventList &result) const {
+                                                     const NoteEmitter &emitter) const {
     static const ArticulationMap articulations;
 
     const Score *score = note->score();
@@ -68,8 +68,7 @@ void PlaybackEventsRenderer::render_fixed_note_event(const Note *note, const mpe
         ctx.common_articulations.pre_calculate_average_data();
     }
 
-    NominalNoteCtx note_ctx(note, ctx);
-    result.emplace_back(build_note_event(std::move(note_ctx)));
+    emitter.emit(NominalNoteCtx{note, ctx});
 }
 
 // The legacy map sink is the one this unit owns; other sinks instantiate in their own units

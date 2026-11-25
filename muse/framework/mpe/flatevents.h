@@ -2,7 +2,7 @@
 #pragma once
 
 //! NOTE: the flat MPE store (playback DoD design 4.1). One TrackEvents holds a track's frozen
-//! per-chord event lists as plain records in emission order: every record carries its legacy group
+//! playback events as plain records in emission order: every record carries its legacy group
 //! key (the PlaybackEventsMap timestamp) and a per-track emission ordinal shared by notes, cold
 //! events and empty groups, so a stable order by (group, seq) is the legacy map order. Owner thread only
 
@@ -71,6 +71,25 @@ struct CurvePoint {
     percentage_t value = 0;
 };
 
+struct NoteEmitInput {
+    timestamp_t nominal_timestamp;
+    duration_t nominal_duration;
+    voice_layer_idx_t voice_layer;
+    staff_layer_idx_t staff_layer;
+    pitch_level_t nominal_pitch_level;
+    dynamic_level_t nominal_dynamic_level;
+    double bps;
+    bool clamp_negative_timestamp = false;
+    float required_velocity_fraction = 0.f;
+};
+
+struct NoteTiming {
+    timestamp_t actual_timestamp;
+    duration_t actual_duration;
+};
+
+NoteTiming compute_note_timing(const NoteEmitInput &input, const ArticulationMap &articulations);
+
 struct NoteRecord {
     timestamp_t group_timestamp = 0;
     std::uint32_t seq = 0;
@@ -132,7 +151,9 @@ static_assert(std::is_same_v<sorted_value_t<std::span<const CurvePoint>>, sorted
 static_assert(std::is_same_v<sorted_value_t<std::span<const CurvePoint>>, sorted_value_t<ExpressionCurve>>);
 static_assert(sizeof(CurvePoint::value) == sizeof(percentage_t) && sizeof(CurvePoint::at) == sizeof(duration_percentage_t));
 
-//! Bounded cancellation inside the freeze loops (design 4.4): checkpoint runs after every
+struct TrackEvents;
+
+//! Bounded cancellation inside the emission loops (design 4.4): checkpoint runs after every
 //! k_stride frozen records (notes, articulations, curve points, cold events, empty groups,
 //! dynamic points), counted across calls. It may throw to abort; the store is then discarded
 struct FreezeProgress {
@@ -141,8 +162,8 @@ struct FreezeProgress {
     muse::FnRef<void()> checkpoint;
     std::uint32_t pending = 0;
 #ifdef ENGRAVE_PLAYBACK_HARNESS
-    //! Test only: serializes each NoteEvent as it is frozen (new-path dump A); the text goes to TrackEvents::note_dumps
-    muse::FnRef<std::string(const NoteEvent &)> dump_note;
+    // Dump A reads the original articulation data before it leaves the renderer.
+    muse::FnRef<std::string(const TrackEvents &, const NoteRecord &, const ArticulationMap &)> dump_note;
 #endif
 
     void advance() {
@@ -185,6 +206,11 @@ private:
         return checked_span(buf, span);
     }
 };
+
+// Custom pitch points are supplied in ascending order with unique keys.
+void emit_note(TrackEvents &track, timestamp_t group_timestamp, const NoteEmitInput &input, const ArticulationMap &articulations,
+               std::span<const CurvePoint> custom_pitch_curve, FreezeProgress &progress);
+void emit_empty_group(TrackEvents &track, timestamp_t group_timestamp, FreezeProgress &progress);
 
 //! Appends one completed per-chord list under its group key. NoteEvents become NoteRecords, text,
 //! preset and syllable events become cold events; an empty list records the empty group.

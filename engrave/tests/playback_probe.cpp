@@ -108,10 +108,10 @@ int export_probe(int argc, char **argv, std::unique_ptr<engrave::Engine> &engine
             c.open(dir / "C.txt", std::ios::binary);
             a << "legacy-mpe-v1\n";
             c << "synth-input-v2\n";
-            // Dump A from the new path: each NoteEvent as the builder freezes it, then the flat track
-            music::FlatPlaybackCapture::dump_note = [](const muse::mpe::NoteEvent &event) {
+            music::FlatPlaybackCapture::dump_note = [](const muse::mpe::TrackEvents &track, const muse::mpe::NoteRecord &note,
+                                                       const muse::mpe::ArticulationMap &articulations) {
                 std::ostringstream text;
-                music::test::LegacyDump{text}.note(event);
+                music::test::LegacyDump{text}.note(track, note, articulations);
                 return text.str();
             };
             test::PlaybackCapture::track = [&](auto id, const auto &instrument, const auto &events) {

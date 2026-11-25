@@ -16,7 +16,6 @@
 #include "mpe/flatevents.h"
 
 namespace music::test {
-// Deliberately walks the legacy const surface only. No freeze/projection code.
 struct LegacyDump {
     std::ostream &out;
 
@@ -53,10 +52,19 @@ struct LegacyDump {
     static constexpr std::size_t note_event_index = 1;
     static_assert(std::is_same_v<std::variant_alternative_t<note_event_index, muse::mpe::PlaybackEvent>, muse::mpe::NoteEvent>);
 
-    // One NoteEvent exactly as event() writes it, for the new-path dump A (serialized when it is frozen)
-    void note(const muse::mpe::NoteEvent &e) {
+    void note(const muse::mpe::TrackEvents &track, const muse::mpe::NoteRecord &n, const muse::mpe::ArticulationMap &articulations) {
         out << "event " << note_event_index << '\n';
-        note_body(e);
+        out << "arrangement " << n.nominal_timestamp << ' ' << n.actual_timestamp << ' ' << n.nominal_duration << ' ' << n.actual_duration
+            << ' ' << +n.voice_layer << ' ' << +n.staff_layer;
+        bits(n.bps);
+        out << '\n';
+        out << "pitch " << n.nominal_pitch_level << '\n';
+        curve(track.pitch_curve(n));
+        out << "expression " << n.nominal_dynamic_level << ' ' << n.velocity_override.has_value();
+        if (n.velocity_override) bits(*n.velocity_override);
+        out << '\n';
+        curve(track.expression_curve(n));
+        articulation_data(articulations);
     }
 
     void note_body(const muse::mpe::NoteEvent &e) {
@@ -73,7 +81,10 @@ struct LegacyDump {
         if (x.velocity_override) bits(*x.velocity_override);
         out << '\n';
         curve(x.expression_curve);
-        const auto &arts = x.articulations;
+        articulation_data(x.articulations);
+    }
+
+    void articulation_data(const muse::mpe::ArticulationMap &arts) {
         out << "articulations " << arts.size() << '\n';
         for (const auto &[key, data] : arts) {
             const auto &m = data.meta;
@@ -166,10 +177,7 @@ struct LegacyDump {
     }
 };
 
-// New-path dump A, in the legacy format: one track of the flat store, whose NoteEvents were serialized by
-// LegacyDump::note when they were frozen (TrackEvents::note_dumps). Groups are rebuilt from the records'
-// (group key, emission ordinal) pairs, the cold events and the empty-group marks; setup and dynamics come
-// from the store. It never reads a legacy PlaybackData
+// Dump A rebuilds legacy map order from (group key, emission ordinal) pairs.
 struct FlatDump {
     std::ostream &out;
 

@@ -27,10 +27,11 @@ their uninstrumented code paths.
 `playback_probe ASSETS FONT SCORE OUTDIR` writes:
 
 - **`A.txt` (Dump A)**: Full MPE dump in `legacy-mpe-v1` format emitted from the
-  flat store (`PlaybackScoreBuilder`). Each `NoteEvent` is serialized when
-  frozen, and groups are rebuilt from records, cold events, and empty-group
-  marks. Serialization uses const legacy accessors, UTF-16 code units for MPE
-  strings, original-width integers, and hexadecimal float bits.
+  flat store (`PlaybackScoreBuilder`). Each note is serialized at emission using
+  its flat record, curve pools, and the renderer's articulation map. Groups are
+  rebuilt from records, cold events, and empty-group marks. Serialization uses
+  UTF-16 code units for MPE strings, original-width integers, and hexadecimal
+  float bits.
 - **`B.txt` (Dump B)**: Flat-record projection of the track setup, dynamics,
   group order, and event fields, including hexadecimal float bits.
 - **`C.txt` (Dump C v2)**: FluidSynth setup calls (using the exact call

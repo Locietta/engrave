@@ -5,14 +5,17 @@
 #include <iterator>
 #include <utility>
 
-#include "mpe/events.h"
+#include "mpe/flatevents.h"
 
 namespace mu::engraving {
-//! NOTE: receives each completed event list with its group key (the legacy PlaybackEventsMap key),
-//! as sink(key, std::move(list)). A list may be empty: the key is still emitted. The caller may
-//! clear() and reuse the moved-from list
+struct FlatEventsSink {
+    muse::mpe::TrackEvents &track;
+    muse::mpe::FreezeProgress &progress;
+};
+
 template <typename Sink>
 concept PlaybackEventSink =
+    std::same_as<Sink, FlatEventsSink> ||
     requires(Sink &sink, muse::mpe::timestamp_t key, muse::mpe::PlaybackEventList list) { sink(key, std::move(list)); };
 
 //! NOTE: legacy-compatible sink: appends to map[key], creating the key for an empty list too,

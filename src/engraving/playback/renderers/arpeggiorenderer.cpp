@@ -67,7 +67,7 @@ const ArticulationTypeSet &ArpeggioRenderer::supported_types() {
 }
 
 void ArpeggioRenderer::do_render(const EngravingItem *item, const mpe::ArticulationType preferred_type, const RenderingContext &ctx,
-                                 mpe::PlaybackEventList &result) {
+                                 const NoteEmitter &emitter) {
     const Chord *chord = to_chord(item);
     IF_ASSERT_FAILED(chord) { return; }
 
@@ -85,7 +85,7 @@ void ArpeggioRenderer::do_render(const EngravingItem *item, const mpe::Articulat
         note_ctx.nominal_timestamp += offset;
         note_ctx.nominal_duration -= offset;
 
-        NoteRenderer::render(note, note_ctx, result);
+        NoteRenderer::render(note, note_ctx, emitter);
     };
 
     const muse::FlatMap<int, const Note *> notes = arpeggio_notes(chord);

@@ -30,18 +30,6 @@ struct PlaybackScore {
     void release(muse::FnRef<void()> checkpoint = {});
 };
 
-//! Freezes each completed list into the track's flat records; the list itself is left untouched
-struct FlatEventsSink {
-    muse::mpe::TrackEvents &track;
-    muse::mpe::FreezeProgress &progress;
-
-    void operator()(const muse::mpe::timestamp_t key, muse::mpe::PlaybackEventList &&list) const {
-        muse::mpe::freeze_events(track, key, list, progress);
-    }
-};
-
-static_assert(PlaybackEventSink<FlatEventsSink>);
-
 //! Builds an export snapshot on the score's owner thread.
 struct PlaybackScoreBuilder {
     // Resolved profile data, owned by this builder.
@@ -50,7 +38,8 @@ struct PlaybackScoreBuilder {
     bool metronome_enabled = false;
 #ifdef ENGRAVE_PLAYBACK_HARNESS
     // Test only: installed as FreezeProgress::dump_note for the whole build (new-path dump A)
-    muse::UniqueFn<std::string(const muse::mpe::NoteEvent &) const> dump_note;
+    muse::UniqueFn<std::string(const muse::mpe::TrackEvents &, const muse::mpe::NoteRecord &, const muse::mpe::ArticulationMap &) const>
+        dump_note;
 #endif
 
     // checkpoint runs between walk steps and inside the freeze loops and may throw to abort; the partial store

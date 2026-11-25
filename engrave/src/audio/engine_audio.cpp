@@ -557,8 +557,12 @@ std::expected<PreparedAudioRender, AudioRenderResult> prepare_score_audio(Engine
             builder.play_repeats = request.use_repeats;
             builder.metronome_enabled = false;
 #ifdef ENGRAVE_PLAYBACK_HARNESS
-            if (FlatPlaybackCapture::dump_note)
-                builder.dump_note = [](const muse::mpe::NoteEvent &event) { return FlatPlaybackCapture::dump_note(event); };
+            if (FlatPlaybackCapture::dump_note) {
+                builder.dump_note = [](const muse::mpe::TrackEvents &track, const muse::mpe::NoteRecord &note,
+                                       const muse::mpe::ArticulationMap &articulations) {
+                    return FlatPlaybackCapture::dump_note(track, note, articulations);
+                };
+            }
 #endif
             playback = builder.build(master_score, checkpoint);
         } catch (const CancelledModel &) {

@@ -23,6 +23,7 @@
 #include "glissandosrenderer.h"
 
 #include "dom/glissando.h"
+#include "noteemitter.h"
 #include "playback/renderingcontext.h"
 #include "playback/utils/expressionutils.h"
 
@@ -58,7 +59,7 @@ muse::mpe::duration_t GlissandosRenderer::discrete_glissando_step_duration(const
     return note_duration / static_cast<float>(steps.size());
 }
 
-void GlissandosRenderer::render_discrete_glissando(const Note *note, NominalNoteCtx &ctx, mpe::PlaybackEventList &result) {
+void GlissandosRenderer::render_discrete_glissando(const Note *note, NominalNoteCtx &ctx, const NoteEmitter &emitter) {
     const std::vector<int> steps = pitch_steps(note);
     if (steps.empty()) {
         return;
@@ -86,10 +87,8 @@ void GlissandosRenderer::render_discrete_glissando(const Note *note, NominalNote
 
         update_articulation_boundaries(ArticulationType::DISCRETE_GLISSANDO, note_ctx.timestamp, note_ctx.duration, note_ctx.articulations);
 
-        result.emplace_back(build_note_event(std::move(note_ctx)));
+        emitter.emit(note_ctx);
     }
 }
 
-void GlissandosRenderer::render_continuous_glissando(const Note *, NominalNoteCtx &ctx, muse::mpe::PlaybackEventList &result) {
-    result.emplace_back(build_note_event(ctx));
-}
+void GlissandosRenderer::render_continuous_glissando(const Note *, NominalNoteCtx &ctx, const NoteEmitter &emitter) { emitter.emit(ctx); }

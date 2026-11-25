@@ -27,6 +27,7 @@
 #include "dom/tremolotwochord.h"
 #include "global/hashmap.h"
 #include "log.h"
+#include "noteemitter.h"
 #include "noterenderer.h"
 #include "playback/metaparsers/notearticulationsparser.h"
 #include "playback/utils/expressionutils.h"
@@ -131,7 +132,7 @@ const ArticulationTypeSet &TremoloRenderer::supported_types() {
 }
 
 void TremoloRenderer::do_render(const EngravingItem *item, const mpe::ArticulationType preferred_type, const RenderingContext &ctx,
-                                mpe::PlaybackEventList &result) {
+                                const NoteEmitter &emitter) {
     const Chord *chord = item_cast<const Chord *>(item);
     IF_ASSERT_FAILED(chord) { return; }
 
@@ -193,7 +194,7 @@ void TremoloRenderer::do_render(const EngravingItem *item, const mpe::Articulati
             }
 
             build_and_append_events(current_chord, preferred_type, step_duration_ticks,
-                                    ctx.nominal_position_start_tick + i * step_duration_ticks, ctx, tremolo_time_cache, result);
+                                    ctx.nominal_position_start_tick + i * step_duration_ticks, ctx, tremolo_time_cache, emitter);
         }
 
         return;
@@ -201,7 +202,7 @@ void TremoloRenderer::do_render(const EngravingItem *item, const mpe::Articulati
 
     for (int i = 0; i < steps_count; ++i) {
         build_and_append_events(chord, preferred_type, step_duration_ticks, ctx.nominal_position_start_tick + i * step_duration_ticks, ctx,
-                                tremolo_time_cache, result);
+                                tremolo_time_cache, emitter);
     }
 }
 
@@ -215,7 +216,7 @@ int TremoloRenderer::step_duration_ticks(const Chord *chord, int tremolo_lines) 
 
 void TremoloRenderer::build_and_append_events(const Chord *chord, const ArticulationType type, const int step_duration_ticks,
                                               const int start_tick, const RenderingContext &ctx, TremoloTimeCache &tremolo_cache,
-                                              mpe::PlaybackEventList &result) {
+                                              const NoteEmitter &emitter) {
     for (const Note *note : chord->notes()) {
         if (!NoteRenderer::should_render(note, ctx, ctx.common_articulations)) {
             continue;
@@ -240,7 +241,7 @@ void TremoloRenderer::build_and_append_events(const Chord *chord, const Articula
 
         update_articulation_boundaries(type, note_ctx.timestamp, note_ctx.duration, note_ctx.articulations);
 
-        result.emplace_back(build_note_event(std::move(note_ctx)));
+        emitter.emit(note_ctx);
     }
 }
 

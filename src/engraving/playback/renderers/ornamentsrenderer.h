@@ -20,8 +20,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef MU_ENGRAVING_ORNAMENTSRENDERER_H
-#define MU_ENGRAVING_ORNAMENTSRENDERER_H
+#pragma once
 
 #include "renderbase.h"
 
@@ -32,21 +31,19 @@ struct OrnamentsRenderer : RenderBase<OrnamentsRenderer> {
     static const muse::mpe::ArticulationTypeSet &supported_types();
 
     static void do_render(const EngravingItem *item, const muse::mpe::ArticulationType preferred_type, const RenderingContext &ctx,
-                          muse::mpe::PlaybackEventList &result);
+                          const NoteEmitter &emitter);
 
 private:
     static void apply_tied_notes_duration(const Note *note, const muse::mpe::ArticulationType ornament_type, RenderingContext &ctx);
 
     static void convert(const muse::mpe::ArticulationType type, const DisclosurePattern &pattern, NominalNoteCtx &&note_ctx,
-                        muse::mpe::PlaybackEventList &result);
+                        const NoteEmitter &emitter);
 
     static int alterations_number_by_tempo(const double beats_per_seconds, const int principal_note_duration_ticks,
                                            const DisclosurePattern &pattern);
 
     static void create_events(const muse::mpe::ArticulationType type, NominalNoteCtx &note_ctx, const int alterations_count,
                               const int available_duration_ticks, const int overall_duration_ticks,
-                              const std::vector<muse::mpe::pitch_level_t> &pitch_offsets, muse::mpe::PlaybackEventList &result);
+                              const std::vector<muse::mpe::pitch_level_t> &pitch_offsets, const NoteEmitter &emitter);
 };
 } // namespace mu::engraving
-
-#endif // MU_ENGRAVING_ORNAMENTSRENDERER_H

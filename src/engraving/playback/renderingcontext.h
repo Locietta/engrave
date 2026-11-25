@@ -110,10 +110,4 @@ struct NominalNoteCtx {
     NominalNoteCtx(const Note *, RenderingContext &&) = delete;
 };
 
-inline muse::mpe::NoteEvent build_note_event(auto &&ctx, muse::mpe::PitchCurve pitch_curve = {}) {
-    return muse::mpe::NoteEvent(ctx.timestamp, ctx.duration, static_cast<muse::mpe::voice_layer_idx_t>(ctx.voice_idx),
-                                static_cast<muse::mpe::staff_layer_idx_t>(ctx.staff_idx), ctx.pitch_level, ctx.dynamic_level,
-                                std::forward<decltype(ctx)>(ctx).articulations, ctx.tempo.val, ctx.user_velocity_fraction,
-                                std::move(pitch_curve));
-}
 } // namespace mu::engraving

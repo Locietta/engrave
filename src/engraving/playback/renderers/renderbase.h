@@ -20,13 +20,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef MU_ENGRAVING_RENDERBASE_H
-#define MU_ENGRAVING_RENDERBASE_H
+#pragma once
 
 #include "global/asserts.h"
 #include "playback/renderingcontext.h"
 
 namespace mu::engraving {
+struct NoteEmitter;
+
 template <class T>
 struct RenderBase {
     static bool is_able_to_render(const muse::mpe::ArticulationType &type) {
@@ -36,12 +37,10 @@ struct RenderBase {
     }
 
     static void render(const EngravingItem *item, const muse::mpe::ArticulationType preferred_type, const RenderingContext &context,
-                       muse::mpe::PlaybackEventList &result) {
+                       const NoteEmitter &emitter) {
         IF_ASSERT_FAILED(item) { return; }
 
-        T::do_render(item, preferred_type, context, result);
+        T::do_render(item, preferred_type, context, emitter);
     }
 };
 } // namespace mu::engraving
-
-#endif // MU_ENGRAVING_RENDERBASE_H

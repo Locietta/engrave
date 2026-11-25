@@ -28,13 +28,10 @@
 
 namespace mu::engraving {
 struct Chord;
+struct NoteEmitter;
 struct Score;
 struct Note;
 
-//! NOTE: every top-level function emits its completed per-chord (or per-click) event lists through
-//! a PlaybackEventSink. The sink template definitions are in playbackeventsrenderer_impl.h: a unit
-//! using another sink includes it or instantiates the sink with ENGRAVE_INSTANTIATE_PLAYBACK_EVENTS_RENDERER.
-//! The PlaybackEventsMap overloads go through EventsMapSink, instantiated in playbackeventsrenderer.cpp
 struct PlaybackEventsRenderer {
     PlaybackEventsRenderer() = default;
 
@@ -120,6 +117,6 @@ private:
     void render_fixed_note_event(const Note *note, const muse::mpe::timestamp_t actual_timestamp,
                                  const muse::mpe::duration_t actual_duration, const muse::mpe::dynamic_level_t actual_dynamic_level,
                                  const PlaybackContextPtr playback_ctx, const muse::mpe::ArticulationsProfilePtr profile,
-                                 muse::mpe::PlaybackEventList &result) const;
+                                 const NoteEmitter &emitter) const;
 };
 } // namespace mu::engraving

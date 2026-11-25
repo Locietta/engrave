@@ -22,10 +22,7 @@
 
 #pragma once
 
-//! NOTE: the definitions of the PlaybackEventsRenderer sink templates. A translation unit that uses the
-//! renderer with its own sink includes this header (implicit instantiation), or instantiates the
-//! sink once with ENGRAVE_INSTANTIATE_PLAYBACK_EVENTS_RENDERER(Sink) and lets other units link to it.
-//! The renderer implementation is never edited to add a sink
+// Include this header to instantiate renderer entry points for a local sink.
 
 #include "dom/chord.h"
 #include "dom/harmony.h"
@@ -39,11 +36,31 @@
 #include "metaparsers/chordarticulationsparser.h"
 #include "playbackeventsrenderer.h"
 #include "renderers/chordarticulationsrenderer.h"
+#include "renderers/noteemitter.h"
 #include "types/bps.h"
 #include "utils/arrangementutils.h"
 
 namespace mu::engraving {
 namespace renderer_detail {
+template <PlaybackEventSink Sink, typename Render>
+void render_group(Sink &sink, muse::mpe::timestamp_t group, bool keep_empty, Render &&render) {
+    using namespace muse::mpe;
+
+    if constexpr (std::same_as<Sink, FlatEventsSink>) {
+        const auto start = sink.track.notes.size();
+        render(NoteEmitter{sink.track, group, sink.progress});
+        if (keep_empty && sink.track.notes.size() == start) {
+            emit_empty_group(sink.track, group, sink.progress);
+        }
+    } else {
+        PlaybackEventList events;
+        render(NoteEmitter{events});
+        if (keep_empty || !events.empty()) {
+            sink(group, std::move(events));
+        }
+    }
+}
+
 inline muse::mpe::ArticulationMap make_standard_articulation_map(const muse::mpe::ArticulationsProfilePtr profile,
                                                                  muse::mpe::timestamp_t timestamp, muse::mpe::duration_t duration) {
     using namespace muse;
@@ -60,23 +77,21 @@ inline muse::mpe::ArticulationMap make_standard_articulation_map(const muse::mpe
     return articulations;
 }
 
-inline muse::mpe::NoteEvent build_metronome_event(const TimeSigFrac &time_sig, const double bps, const BeatType beat_type,
-                                                  const muse::mpe::timestamp_t actual_timestamp,
-                                                  const muse::mpe::ArticulationsProfilePtr profile) {
+template <PlaybackEventSink Sink>
+void emit_metronome(const TimeSigFrac &time_sig, const double bps, const BeatType beat_type, const muse::mpe::timestamp_t actual_timestamp,
+                    const muse::mpe::ArticulationsProfilePtr profile, Sink &sink) {
     using namespace muse;
     using namespace muse::mpe;
 
     int ticks_per_beat = time_sig.ticks() / time_sig.numerator();
     duration_t duration = duration_from_tempo_and_ticks(bps, ticks_per_beat);
 
-    pitch_level_t event_pitch_level = beat_type == BeatType::DOWNBEAT ? pitch_level(PitchClass::E, 5) // high wood block
-                                                                        :
-                                                                        pitch_level(PitchClass::F, 5); // low wood block
-
-    ArticulationMap articulations = make_standard_articulation_map(profile, actual_timestamp, duration);
-
-    return mpe::NoteEvent(actual_timestamp, duration, 0, 0, event_pitch_level, dynamic_level_from_type(mpe::DynamicType::MF),
-                          std::move(articulations), bps);
+    // The downbeat uses the higher wood block.
+    const pitch_level_t pitch = beat_type == BeatType::DOWNBEAT ? pitch_level(PitchClass::E, 5) : pitch_level(PitchClass::F, 5);
+    const ArticulationMap articulations = make_standard_articulation_map(profile, actual_timestamp, duration);
+    render_group(sink, actual_timestamp, false, [&](const NoteEmitter &emitter) {
+        emitter.emit({actual_timestamp, duration, 0, 0, pitch, dynamic_level_from_type(mpe::DynamicType::MF), bps}, articulations);
+    });
 }
 } // namespace renderer_detail
 
@@ -99,17 +114,15 @@ void PlaybackEventsRenderer::render(const EngravingItem *item, const muse::mpe::
 
     if (item->is_chord()) {
         const Chord *chord = to_chord(item);
-        mpe::PlaybackEventList events;
-
-        for (const Note *note : chord->notes()) {
-            render_fixed_note_event(note, actual_timestamp, actual_duration, actual_dynamic_level, playback_ctx, profile, events);
-        }
-
-        sink(actual_timestamp, std::move(events));
+        renderer_detail::render_group(sink, actual_timestamp, true, [&](const NoteEmitter &emitter) {
+            for (const Note *note : chord->notes()) {
+                render_fixed_note_event(note, actual_timestamp, actual_duration, actual_dynamic_level, playback_ctx, profile, emitter);
+            }
+        });
     } else if (item->is_note()) {
-        mpe::PlaybackEventList events;
-        render_fixed_note_event(to_note(item), actual_timestamp, actual_duration, actual_dynamic_level, playback_ctx, profile, events);
-        sink(actual_timestamp, std::move(events));
+        renderer_detail::render_group(sink, actual_timestamp, false, [&](const NoteEmitter &emitter) {
+            render_fixed_note_event(to_note(item), actual_timestamp, actual_duration, actual_dynamic_level, playback_ctx, profile, emitter);
+        });
     } else {
         UNREACHABLE;
     }
@@ -137,7 +150,6 @@ void PlaybackEventsRenderer::render_chord_symbol(const Harmony *chord_symbol, co
     int position_tick_with_offset = position_tick + ticks_position_offset;
 
     timestamp_t event_timestamp = timestamp_from_ticks(score, position_tick_with_offset);
-    PlaybackEventList events;
 
     int duration_ticks = realized.get_actual_duration(position_tick_with_offset).ticks();
     duration_t duration = timestamp_from_ticks(score, position_tick_with_offset + duration_ticks) - event_timestamp;
@@ -150,18 +162,16 @@ void PlaybackEventsRenderer::render_chord_symbol(const Harmony *chord_symbol, co
 
     double bps = score->multiplied_tempo_at_utick(position_tick_with_offset).val;
 
-    for (auto it = notes.cbegin(); it != notes.cend(); ++it) {
-        int pitch = it->first;
-        int tpc = pitch2tpc(pitch, key, Prefer::NEAREST);
-        int octave = playing_octave(pitch, tpc);
-        pitch_level_t pitch_level = note_pitch_level(tpc, octave);
-
-        events.emplace_back(mpe::NoteEvent(event_timestamp, duration, voice_idx, staff_idx, pitch_level,
-                                           playback_ctx->appliable_dynamic_level(chord_symbol->track(), position_tick_with_offset),
-                                           articulations, bps));
-    }
-
-    sink(event_timestamp, std::move(events));
+    renderer_detail::render_group(sink, event_timestamp, true, [&](const NoteEmitter &emitter) {
+        for (auto it = notes.cbegin(); it != notes.cend(); ++it) {
+            int pitch = it->first;
+            int tpc = pitch2tpc(pitch, key, Prefer::NEAREST);
+            int octave = playing_octave(pitch, tpc);
+            emitter.emit({event_timestamp, duration, voice_idx, staff_idx, note_pitch_level(tpc, octave),
+                          playback_ctx->appliable_dynamic_level(chord_symbol->track(), position_tick_with_offset), bps},
+                         articulations);
+        }
+    });
 }
 
 template <PlaybackEventSink Sink>
@@ -182,25 +192,22 @@ void PlaybackEventsRenderer::render_chord_symbol(const Harmony *chord_symbol, co
     const RealizedHarmony &realized = chord_symbol->get_realized_harmony();
     const RealizedHarmony::PitchMap &notes = realized.notes();
 
-    PlaybackEventList events;
-
     voice_layer_idx_t voice_idx = static_cast<voice_layer_idx_t>(chord_symbol->voice());
     staff_layer_idx_t staff_idx = static_cast<staff_layer_idx_t>(chord_symbol->staff_idx());
     Key key = staff->key(chord_symbol->tick());
 
     ArticulationMap articulations = renderer_detail::make_standard_articulation_map(profile, actual_timestamp, actual_duration);
 
-    for (auto it = notes.cbegin(); it != notes.cend(); ++it) {
-        int pitch = it->first;
-        int tpc = pitch2tpc(pitch, key, Prefer::NEAREST);
-        int octave = playing_octave(pitch, tpc);
-        pitch_level_t pitch_level = note_pitch_level(tpc, octave);
-
-        events.emplace_back(mpe::NoteEvent(actual_timestamp, actual_duration, voice_idx, staff_idx, pitch_level, actual_dynamic_level,
-                                           articulations, Constants::default_tempo.val));
-    }
-
-    sink(actual_timestamp, std::move(events));
+    renderer_detail::render_group(sink, actual_timestamp, true, [&](const NoteEmitter &emitter) {
+        for (auto it = notes.cbegin(); it != notes.cend(); ++it) {
+            int pitch = it->first;
+            int tpc = pitch2tpc(pitch, key, Prefer::NEAREST);
+            int octave = playing_octave(pitch, tpc);
+            emitter.emit({actual_timestamp, actual_duration, voice_idx, staff_idx, note_pitch_level(tpc, octave), actual_dynamic_level,
+                          Constants::default_tempo.val},
+                         articulations);
+        }
+    });
 }
 
 template <PlaybackEventSink Sink>
@@ -229,8 +236,6 @@ void PlaybackEventsRenderer::render_metronome(const Score *score, const Measure 
         rtick = remaining_ticks + time_signature_fraction.ticks_per_measure() - measure->ticks().ticks();
     }
 
-    PlaybackEventList events;
-
     // Tempo can change mid-measure (automation point or ramp), so re-read it for every click
     // rather than reusing the tempo from the start of the measure; the click grid itself stays fixed
     for (int tick = start_tick; tick < measure_end_tick; tick += step, rtick += step) {
@@ -238,12 +243,7 @@ void PlaybackEventsRenderer::render_metronome(const Score *score, const Measure 
 
         timestamp_t event_timestamp = timestamp_from_ticks(score, tick + ticks_position_offset);
         BeatType beat_type = time_signature_fraction.rtick2beat_type(rtick);
-        mpe::NoteEvent event =
-            renderer_detail::build_metronome_event(time_signature_fraction, bps.val, beat_type, event_timestamp, profile);
-
-        events.clear();
-        events.emplace_back(std::move(event));
-        sink(event_timestamp, std::move(events));
+        renderer_detail::emit_metronome(time_signature_fraction, bps.val, beat_type, event_timestamp, profile, sink);
     }
 }
 
@@ -258,11 +258,7 @@ void PlaybackEventsRenderer::render_metronome(const Score *score, const int tick
     TimeSigFrac time_signature_fraction = score->sigmap()->timesig(tick).timesig();
     BeatsPerSecond bps = score->multiplied_tempo(Fraction::from_ticks(tick));
     BeatType beat_type = score->tick2beat_type(Fraction::from_ticks(tick));
-    mpe::NoteEvent event = renderer_detail::build_metronome_event(time_signature_fraction, bps.val, beat_type, actual_timestamp, profile);
-
-    PlaybackEventList events;
-    events.emplace_back(std::move(event));
-    sink(actual_timestamp, std::move(events));
+    renderer_detail::emit_metronome(time_signature_fraction, bps.val, beat_type, actual_timestamp, profile, sink);
 }
 
 template <PlaybackEventSink Sink>
@@ -302,17 +298,11 @@ void PlaybackEventsRenderer::render_count_in(const Score *score, const int start
     remaining_ticks += closest_main_beat_tick - start_tick;
 
     timestamp_t event_timestamp = actual_timestamp;
-    PlaybackEventList events;
 
     for (int tick = 0; tick < end_tick; tick += step) {
         int rtick = tick % ticks_per_measure;
         BeatType beat_type = time_signature_fraction.rtick2beat_type(rtick);
-        mpe::NoteEvent event =
-            renderer_detail::build_metronome_event(time_signature_fraction, bps.val, beat_type, event_timestamp, profile);
-
-        events.clear();
-        events.emplace_back(std::move(event));
-        sink(event_timestamp, std::move(events));
+        renderer_detail::emit_metronome(time_signature_fraction, bps.val, beat_type, event_timestamp, profile, sink);
         event_timestamp += step_duration;
     }
 
@@ -339,12 +329,9 @@ void PlaybackEventsRenderer::render_note_events(const Chord *chord, const int ti
 
     ChordArticulationsParser::build_chord_articulation_map(chord, ctx, ctx.common_articulations);
 
-    PlaybackEventList new_events;
-    ChordArticulationsRenderer::render(chord, ArticulationType::LAST, ctx, new_events);
-
-    if (!new_events.empty()) {
-        sink(ctx.nominal_timestamp, std::move(new_events));
-    }
+    renderer_detail::render_group(sink, ctx.nominal_timestamp, false, [&](const NoteEmitter &emitter) {
+        ChordArticulationsRenderer::render(chord, ArticulationType::LAST, ctx, emitter);
+    });
 }
 } // namespace mu::engraving
 
