@@ -267,22 +267,25 @@ void OfflineRenderSession::mix(float *out, samples_t frames, int slot) {
 
 void OfflineRenderSession::process(float *out, samples_t frames, samples_t next_frames) {
     using Clock = std::chrono::steady_clock;
-    if (prefetched_frames_) {
-        IF_ASSERT_FAILED(prefetched_frames_ == frames) {
-            cancel_prefetch();
-            return;
-        }
-        prefetched_frames_ = 0;
+    bool cancelled = false;
+    {
         OfflineCancellation::SynthesisScope phase;
-        const auto poll = [] { return OfflineCancellation::requested(); };
-        pool_->finish(poll);
-        if (OfflineTiming::enabled())
-            OfflineTiming::current().synth += std::chrono::duration<double>(Clock::now() - prefetch_start_).count();
-    } else {
-        synthesize(frames, slot_, false);
+        if (prefetched_frames_) {
+            IF_ASSERT_FAILED(prefetched_frames_ == frames) {
+                cancel_prefetch();
+                return;
+            }
+            prefetched_frames_ = 0;
+            const auto poll = [] { return OfflineCancellation::requested(); };
+            pool_->finish(poll);
+            if (OfflineTiming::enabled())
+                OfflineTiming::current().synth += std::chrono::duration<double>(Clock::now() - prefetch_start_).count();
+        } else {
+            synthesize(frames, slot_, false);
+        }
+        cancelled = OfflineCancellation::requested();
     }
     const int slot = slot_;
-    const bool cancelled = OfflineCancellation::requested();
     if (!cancelled && next_frames && synthesize(next_frames, slot ^ 1, true)) slot_ = slot ^ 1;
     const auto mix_start = OfflineTiming::enabled() ? Clock::now() : Clock::time_point();
     if (!cancelled) mix(out, frames, slot);

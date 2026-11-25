@@ -58,8 +58,8 @@ also supplies `thirdparty/music_theory/music_theory.hpp` unchanged.
 
 Malformed input never throws. Syntax and schema errors come back from
 `read_document`, semantic errors from `build_index` as `{pointer, message}`
-diagnostics, and `engrave::open_mnx` returns either as an `INVALID_INPUT`
-error. A missing initial clef is a warning: the importer gives the staff a
+diagnostics, and `engrave::open_mnx` returns either as an error string, which
+`Engine::open` maps to `ErrorCode::INVALID_INPUT`. A missing initial clef is a warning: the importer gives the staff a
 default clef. Exceptions remain only for engine bugs and allocation failures,
 which `Engine::open` still catches as a last resort.
 

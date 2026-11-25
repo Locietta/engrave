@@ -34,7 +34,7 @@ from engrave_testing.public_output import (
     run_capture_pipeline,
 )
 
-PROFILES = ("release", "debug", "releasedbg", "sanitize", "tsan")
+PROFILES = ("release", "debug", "releasedbg", "asan", "tsan")
 
 
 def _find_bazel(env_prefix: Path) -> str:
@@ -399,15 +399,16 @@ def main():
         "--python=" + sys.executable,
         "--mnx-out=" + str(a.output / "mnx-export"),
     ]
-    font = (
-        Path("C:/Windows/Fonts/arial.ttf")
-        if platform == "windows"
-        else (
-            native / "fonts/DejaVuSans.ttf"
-            if (native / "fonts/DejaVuSans.ttf").is_file()
-            else Path("/usr/share/fonts/TTF/DejaVuSans.ttf")
+    if platform == "windows":
+        font = Path("C:/Windows/Fonts/arial.ttf")
+    else:
+        font_candidates = (
+            native / "fonts/DejaVuSans.ttf",
+            Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
+            Path("/usr/share/fonts/TTF/DejaVuSans.ttf"),
+            Path("/usr/share/fonts/dejavu/DejaVuSans.ttf"),
         )
-    )
+        font = next((path for path in font_candidates if path.is_file()), font_candidates[1])
     tasks = [
         dict(name="comparator-mutations", command=[sys.executable, REPO_ROOT / "tests/test_inventory.py"]),
         dict(

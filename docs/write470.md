@@ -50,9 +50,11 @@ struct ExportOutput {
   composite/locator forms.
 - **Ordering on success**: `convert_degradations` first collects serialized XML
   degradations (`B470_SHARED_PART_DROPPED`, `B470_STAVE_SHARING_LABEL_DROPPED`,
-  `B470_PAGE_LOCK_DROPPED`, `B470_GROUP_BRACKET_DROPPED`) in pre-order XML
-  traversal, then a pass over source scores and parts appends
-  `B470_INSTRUMENT_GROUP_NAME_DROPPED`.
+  `B470_PAGE_LOCK_DROPPED`, `B470_GROUP_BRACKET_DROPPED`, and
+  `B470_INSTRUMENT_GROUP_NAME_DROPPED` for `<InstrumentLabel>` group-name
+  overrides) in pre-order XML traversal, then `warn_active_instrument_groups`
+  walks active grouped source parts to append any remaining
+  `B470_INSTRUMENT_GROUP_NAME_DROPPED` warnings.
 - **Ordering on refusal**: When refusal reaches post-serialization checks,
   degradation warnings precede unsupported-feature warnings. An invalid tie
   returns early before degradation and style scans run, so only

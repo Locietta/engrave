@@ -11,7 +11,8 @@ build -c opt
 build:release -c opt --features=gc_sections --linkopt=-Wl,--icf=safe
 build:releasedbg -c opt --copt=-g
 build:debug -c dbg
-build:sanitize -c fastbuild --strip=never --copt=-O1 --copt=-gline-tables-only --features=asan --features=ubsan
-# ThreadSanitizer for the parallel synthesis path. xclang ships TSan runtimes for
-# glibc Linux and macOS only; its Windows targets reject --features=tsan.
+build:asan -c fastbuild --strip=never --copt=-O1 --copt=-gline-tables-only --features=asan --features=ubsan
+# ThreadSanitizer for parallel synthesis, async encoding, background audio, and
+# multi-page PNG verification. xclang ships TSan runtimes for glibc Linux and
+# macOS only; its Windows targets reject --features=tsan.
 build:tsan -c fastbuild --strip=never --copt=-O1 --copt=-gline-tables-only --features=tsan

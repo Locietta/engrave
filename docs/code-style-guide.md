@@ -9,7 +9,7 @@ If not specified here, follow the style of modern refactored code nearby. Build,
 Enforced by [.clang-tidy](../.clang-tidy):
 
 - Types (`struct`, `enum`, `union`): `CamelCase`.
-- Functions, methods, parameters, variables, and struct fields: `lower_case` (Add trailing `_` if the field is meant to be private).
+- Functions, methods, parameters, variables, and struct fields: `lower_case` (no `m_` prefix; avoid trailing `_` on public/plain data fields, while trailing `_` is permitted for private implementation fields per `.clang-tidy`).
 - Enum constants: `UPPER_CASE`.
 - Short uppercase template parameters or domain acronyms (`T`, `ID`) are fine.
 
@@ -121,4 +121,4 @@ refactor(render): align cairo painter pen transform with upstream geometry
 
 ## Scope and Upstream Code
 
-Untouched upstream MuseScore code under `src/` and `muse/` retains its existing classes, virtual hierarchies, and conventions to keep cherry-picks clean. Dependency-injection interfaces with one production implementation are removed when touched, and any newly written or refactored subsystem (such as `engrave/` and the flat playback/audio pipeline in [playback.md](playback.md)) follows all rules above.
+Untouched upstream MuseScore code under `src/` and `muse/` retains its existing classes, virtual hierarchies, and conventions to keep cherry-picks clean. Dependency-injection interfaces with one production implementation are removed when touched, and any newly written or refactored subsystem (such as `engrave/` and the flat playback/audio pipeline in [playback.md](playback.md)) follows all rules above. New `EngravingObject` subclasses under `src/engraving/` must keep `DECLARE_CLASSOF` / `item_type_allows` in sync with `concrete_type()` so `item_cast` dispatch stays sound.

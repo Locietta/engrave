@@ -38,7 +38,8 @@ their uninstrumented code paths.
 - **WAV + metadata**: A FLOAT32 WAV, build metadata, and phase measurements.
 
 Probe options: `--rate 44100|48000`, `--no-repeats`, `--no-reverb`,
-`--mute-part N`, `--excerpt N`.
+`--mute-part N`, `--excerpt N`, `--measure`, `--cancel-phase 1..5`,
+`--cancel-poll N`, `--next SCORE OUTDIR`.
 
 ## Running Comparisons and Measurements
 
@@ -80,8 +81,8 @@ pixi run python vendor/engrave/tests/integration/test_playback_dod.py measure --
   and resource bootstrap. Peak working set is process-wide.
 - Phase times follow `OfflineTiming` (nested/inclusive); allocation attribution
   uses the innermost active timer (exclusive). Unscoped work is attributed to
-  `other`. In the test build, Windows MPE release is additionally attributed to
-  `teardown`.
+  `other`. MPE release runs inside `tracks` during setup, and `teardown` covers
+  `OfflineRenderSession` destruction.
 
 ### Allocation Columns (Windows)
 
@@ -100,7 +101,7 @@ Columns are `new delete malloc realloc free calloc aligned_new`:
 ## Scheduled-Poll Cancellation Sampling
 
 Cancellation phase numbers are `1=model`, `2=sequencer`, `3=synthesis`,
-`4=encoding` (`--phases 1` selects model-only measurements):
+`4=encoding`, `5=event_release` (`--phases 1` selects model-only measurements):
 
 - Model samples arm at poll `2000 + trial * 3000` (matching the dense regression
   test offsets); other phases arm at `1 + trial * 3`.

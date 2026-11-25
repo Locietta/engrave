@@ -134,7 +134,7 @@ With more than one audio thread (and outside MIDI-hook, playback-harness capture
 
 #### Multi-Page PNG
 
-`Document::render` of a PNG page range draws each page in order on the owner thread into its own ARGB32 image surface, then hands the flushed surface to one of up to `audio_threads` transient worker threads (same default and `ENGRAVE_AUDIO_THREADS` override, at most one per page) that runs `cairo_surface_write_to_png_stream` and frees it. Workers own their surfaces exclusively; Cairo's reference counts are atomic and its global caches are mutex-protected, and libpng/zlib keep all state per call, so concurrent encodes of independent surfaces are safe. At most one surface per worker waits or encodes, and at most 256 MiB of surfaces beyond the page being drawn (always at least one), so a 600 dpi render holds about two pages. Only the owner polls `RenderOptions::cancelled`: before and after drawing each page, while waiting for capacity or for the final drain, and once at the end. On cancellation, a callback exception or an encode failure the owner stops the workers, joins them, frees every unencoded surface and returns `CANCELLED` or rethrows. Single pages and one-thread renders draw and encode on the owner thread, three polls per page.
+`Document::render` of a PNG page range draws each page in order on the owner thread into its own ARGB32 image surface, then hands the flushed surface to one of up to `audio_threads` transient worker threads (same default and `ENGRAVE_AUDIO_THREADS` override, at most one per page) that runs `cairo_surface_write_to_png_stream` and frees it. Workers own their surfaces exclusively; Cairo's reference counts are atomic and its global caches are mutex-protected, and libpng/zlib keep all state per call, so concurrent encodes of independent surfaces are safe. At most one surface per worker waits or encodes, and at most 256 MiB of surfaces beyond the page being drawn (always at least one), so a 600 dpi render holds about two pages. Only the owner polls `RenderOptions::cancelled`: before and after drawing each page, while waiting for capacity or for the final drain, and once at the end. Workers share an atomic `encoded_bytes` counter bounded by `RenderOptions::max_bytes`. On cancellation, a callback or encode exception, or exceeding `max_bytes`, the owner stops the workers, joins them, frees every unencoded surface, and returns `CANCELLED`, rethrows the exception, or returns `RESOURCE_LIMIT` (in that precedence order). Single pages and one-thread renders draw and encode on the owner thread, three polls per page.
 
 ### Timing Instrumentation
 
@@ -277,12 +277,12 @@ python tests/integration/test_playback_dod.py executables \
     --other-exe path/to/new/playback_probe.exe \
     --assets .runtime/assets \
     --font /path/to/FluidR3Mono_GM.sf3 \
-    --output notes/playback-comparison
+    --output notes/runs/playback-comparison
 
 # Compare two previously captured dump directories
 python tests/integration/test_playback_dod.py compare \
-    --left notes/playback-comparison/left \
-    --right notes/playback-comparison/right
+    --left notes/runs/playback-comparison/left \
+    --right notes/runs/playback-comparison/right
 
 # Capture dumps from a single probe binary
 python tests/integration/test_playback_dod.py capture \
@@ -310,7 +310,7 @@ The pipeline enforces deliberate precedence and normalization rules to resolve a
 1. **Articulation Precedence**:
    Arpeggio articulations take highest precedence over ornaments and tremolos (`ARPEGGIO`, `ARPEGGIO_UP`, `ARPEGGIO_DOWN`, `ARPEGGIO_STRAIGHT_UP`, `ARPEGGIO_STRAIGHT_DOWN`), ensuring rolled chords stay rolled. Unlisted articulations follow ascending `ArticulationType` enum order.
 2. **Grace Note Timing**:
-   Both pre-grace and post-grace groups on a chord are rendered using proportional "share half" timing (`GraceChordCtx::build_grouped_ctx`). If the combined duration of before and after grace chords exceeds half of the principal chord duration, both groups shrink proportionally to occupy exactly half, leaving the remaining duration for the principal chord.
+   Both pre-grace and post-grace groups on a chord are rendered using proportional "share half" timing (`GraceChordCtx::build_ctx` and file-local `build_grouped_ctx` in `gracechordcontext.cpp`). If the combined duration of before and after grace chords exceeds half of the principal chord duration, both groups shrink proportionally to occupy exactly half, leaving the remaining duration for the principal chord.
 3. **Bend Collision Resolution**:
    When overlapping pitch bend curves or reset events (such as centering to 8192) occur at the exact same timestamp, events are emitted in ascending `ArticulationType` enum order. In the resulting MIDI event stream, the later event wins.
 4. **Program Choice (Technique over Timbre)**:
@@ -325,4 +325,4 @@ The pipeline enforces deliberate precedence and normalization rules to resolve a
 
 ## Future Directions
 
-- **Heaviest Track**: Parallel synthesis is bounded by the heaviest track; the owner-thread mix and the encoder now overlap with it. ThreadSanitizer validation (`--config=tsan` / `--profile tsan`, Linux and macOS only) passes across the parallel audio, async-encoder, background `PreparedAudio::run`, and multi-page PNG suites (not yet wired as a default CI job).
+- **Heaviest Track**: Parallel synthesis is bounded by the heaviest track; the owner-thread mix and the encoder now overlap with it. ThreadSanitizer validation (`--config=tsan` / `--profile tsan`, Linux and macOS only) runs in Linux CI across `engrave_output_test` (covering parallel audio synthesis, async encoding, background `PreparedAudio::run`, and multi-page PNG encoding).

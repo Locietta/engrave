@@ -31,8 +31,11 @@ def make_list(list_type: str, data: bytes) -> bytes:
     return make_chunk("LIST", list_type.encode("ascii") + data)
 
 
-def generate_sine_soundfont(output_path: Path | str) -> bytes:
+def generate_sine_soundfont(output_path: Path | str, *, cycles: int = 22) -> bytes:
     """Generate SF2 binary content and write to output_path."""
+    n_samples = 2205
+    if isinstance(cycles, bool) or not isinstance(cycles, int) or not (1 <= cycles < n_samples // 2):
+        raise ValueError(f"cycles must be an integer in [1, {n_samples // 2 - 1}], got {cycles!r}")
     output = Path(output_path)
     output.parent.mkdir(parents=True, exist_ok=True)
 
@@ -44,11 +47,10 @@ def generate_sine_soundfont(output_path: Path | str) -> bytes:
         + make_chunk("INAM", b"SineSoundFont\x00"),
     )
 
-    # 2. sdta list: 2205 samples of 440 Hz sine @ 44100 Hz (exact 22 cycles) + 46 zero-padding samples
+    # 2. sdta list: 2205 samples @ 44100 Hz (exact integer-cycle loop; 22 cycles = 440 Hz) + 46 zero-padding samples
     sr = 44100
-    n_samples = 2205
     amplitude = int(32767 * 0.9)  # 0.9 full-scale peak
-    pcm_samples = [int(amplitude * math.sin(2.0 * math.pi * 22.0 * i / n_samples)) for i in range(n_samples)]
+    pcm_samples = [int(amplitude * math.sin(2.0 * math.pi * float(cycles) * i / n_samples)) for i in range(n_samples)]
     pcm_samples.extend([0] * 46)  # SF2 spec requires >= 46 trailing zero samples
     smpl_data = struct.pack(f"<{len(pcm_samples)}h", *pcm_samples)
     sdta = make_list("sdta", make_chunk("smpl", smpl_data))
@@ -181,9 +183,15 @@ def main() -> None:
         default=REPO_ROOT / "tests/data/engine_audio" / "sine.sf2",
         help="Destination SF2 path (default: tests/data/engine_audio/sine.sf2)",
     )
+    parser.add_argument(
+        "--cycles",
+        type=int,
+        default=22,
+        help="Integer sine cycles per 2205-sample loop at 44.1 kHz (default: 22 = 440 Hz)",
+    )
     args = parser.parse_args()
 
-    content = generate_sine_soundfont(args.output)
+    content = generate_sine_soundfont(args.output, cycles=args.cycles)
     print(f"Generated {args.output} ({len(content)} bytes)")
 
 
