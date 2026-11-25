@@ -65,6 +65,22 @@ Span append_pitch_curve(TrackEvents &track, const ArticulationMap &articulations
                 throw std::logic_error("custom pitch curve must have strictly ascending keys");
             }
         }
+        const auto *begin = track.curve_points.data();
+        const auto *end = begin + track.curve_points.size();
+        const bool aliases_pool = !track.curve_points.empty() && !std::less<const CurvePoint *>{}(custom_pitch_curve.data(), begin) &&
+                                  std::less<const CurvePoint *>{}(custom_pitch_curve.data(), end);
+        if (aliases_pool) {
+            const std::size_t src_first = static_cast<std::size_t>(custom_pitch_curve.data() - begin);
+            const std::size_t src_count = custom_pitch_curve.size();
+            reserve_checked(track.curve_points, checked_grow<CurvePoint>(track.curve_points.size(), src_count));
+            const Span span{buffer_end(track.curve_points), 0};
+            for (std::size_t i = 0; i < src_count; ++i) {
+                const CurvePoint point = track.curve_points[src_first + i];
+                emplace_checked(track.curve_points, point);
+                progress.advance();
+            }
+            return {span.first, buffer_end(track.curve_points) - span.first};
+        }
         return append_curve(track, custom_pitch_curve, progress);
     }
 
@@ -76,8 +92,11 @@ Span append_pitch_curve(TrackEvents &track, const ArticulationMap &articulations
 
     const float ratio = static_cast<float>(average_pitch_range) / static_cast<float>(pitch_level_step);
     const float pattern_unit_ratio = pitch_level_step / static_cast<float>(one_percent);
+    constexpr double min_level = std::numeric_limits<pitch_level_t>::min();
+    constexpr double max_level = std::numeric_limits<pitch_level_t>::max();
     return append_curve(track, curve, progress, [=](pitch_level_t value) {
-        return static_cast<pitch_level_t>(real_round(static_cast<float>(value) * ratio * pattern_unit_ratio, 0));
+        return static_cast<pitch_level_t>(
+            std::clamp(real_round(static_cast<float>(value) * ratio * pattern_unit_ratio, 0), min_level, max_level));
     });
 }
 
@@ -132,14 +151,14 @@ void freeze_cold_list(TrackEvents &track, const timestamp_t group_timestamp, std
 
 NoteTiming compute_note_timing(const NoteEmitInput &input, const ArticulationMap &articulations) {
     NoteTiming timing{input.nominal_timestamp, input.nominal_duration};
-    if (!articulations.empty()) {
-        if (input.nominal_duration != infinite_duration) {
-            timing.actual_duration = mult(input.nominal_duration, percentage_to_factor(articulations.average_duration_factor()));
-        }
+    if (!articulations.empty() && input.nominal_duration != infinite_duration) {
+        timing.actual_duration = mult(input.nominal_duration, percentage_to_factor(articulations.average_duration_factor()));
         timing.actual_timestamp += mult(input.nominal_duration, percentage_to_factor(articulations.average_timestamp_offset()));
     }
     if (input.clamp_negative_timestamp && timing.actual_timestamp < 0) {
-        timing.actual_duration += timing.actual_timestamp;
+        if (timing.actual_duration != infinite_duration) {
+            timing.actual_duration += timing.actual_timestamp;
+        }
         timing.actual_timestamp = 0;
     }
     return timing;

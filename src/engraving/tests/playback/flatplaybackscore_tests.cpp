@@ -235,6 +235,46 @@ TEST(FlatPlaybackStoreTests, EmissionRejectsMismatchedArticulationKey) {
     articulations.emplace(ArticulationType::ACCENT, applied(ArticulationType::MARCATO, 0, 1));
     EXPECT_THROW(emit_note(track, 0, {}, articulations, {}, progress), std::logic_error);
     EXPECT_TRUE(track.notes.empty());
+
+    const std::array<CurvePoint, 2> unordered{{{5000, 100}, {5000, 200}}};
+    EXPECT_THROW(emit_note(track, 0, {}, {}, unordered, progress), std::logic_error);
+    EXPECT_TRUE(track.notes.empty());
+
+    // Passing a custom pitch curve that aliases track.curve_points survives forced buffer growth.
+    const std::array<CurvePoint, 2> seed{{{0, 0}, {5000, 750}}};
+    emit_note(track, 0, {0, 1000, 0, 0, 6000, 5000, 2.0}, {}, seed, progress);
+    for (int i = 0; i < 8; ++i) {
+        emit_note(track, i + 1, {0, 1000, 0, 0, 6000, 5000, 2.0}, {}, track.pitch_curve(track.notes[0]), progress);
+    }
+    const auto copied = track.pitch_curve(track.notes.back());
+    ASSERT_EQ(copied.size(), 2u);
+    EXPECT_EQ(copied[0].at, 0);
+    EXPECT_EQ(copied[0].value, 0);
+    EXPECT_EQ(copied[1].at, 5000);
+    EXPECT_EQ(copied[1].value, 750);
+
+    // Scaled pitch curves clamp extreme profile offsets to int32 bounds, and infinite_duration stays untouched.
+    ArticulationPatternSegment extreme_segment;
+    extreme_segment.arrangement_pattern.duration_factor_value = hundred_percent;
+    extreme_segment.arrangement_pattern.timestamp_offset_value = 500;
+    extreme_segment.pitch_pattern.pitch_offset_map.emplace(0, std::numeric_limits<pitch_level_t>::max());
+    extreme_segment.pitch_pattern.pitch_offset_map.emplace(hundred_percent, std::numeric_limits<pitch_level_t>::min());
+    auto extreme_pattern = std::make_shared<const ArticulationPattern>(ArticulationPattern{{0, extreme_segment}});
+    ArticulationMap scaled_arts;
+    ArticulationMeta meta(ArticulationType::CONTINUOUS_GLISSANDO, extreme_pattern, 0, 1000, 4 * pitch_level_step, 0);
+    scaled_arts.emplace(ArticulationType::CONTINUOUS_GLISSANDO, ArticulationAppliedData(std::move(meta), 0, hundred_percent));
+    scaled_arts.pre_calculate_average_data();
+
+    const NoteTiming inf_timing = compute_note_timing({-10, infinite_duration, 0, 0, 6000, 5000, 2.0, true, 0.f}, scaled_arts);
+    EXPECT_EQ(inf_timing.actual_timestamp, 0);
+    EXPECT_EQ(inf_timing.actual_duration, infinite_duration);
+
+    TrackEvents scaled_track;
+    emit_note(scaled_track, 0, {0, 1000, 0, 0, 6000, 5000, 2.0}, scaled_arts, {}, progress);
+    const auto clamped_pitch = scaled_track.pitch_curve(scaled_track.notes[0]);
+    ASSERT_EQ(clamped_pitch.size(), 2u);
+    EXPECT_EQ(clamped_pitch[0].value, std::numeric_limits<pitch_level_t>::max());
+    EXPECT_EQ(clamped_pitch[1].value, std::numeric_limits<pitch_level_t>::min());
 }
 
 TEST(FlatPlaybackStoreTests, CurvePointsRetainSignedValuesAndAmplitude) {

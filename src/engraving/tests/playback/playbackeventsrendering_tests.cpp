@@ -83,7 +83,8 @@ protected:
         renderer_.render(item, tick_offset, default_profile_, ctx, track, progress);
     }
 
-    static std::vector<std::span<const NoteRecord>> note_groups(const TrackEvents &track) {
+    static std::vector<std::span<const NoteRecord>> note_groups(const TrackEvents &track, bool allow_empty = false) {
+        EXPECT_TRUE(track.empty_groups.empty());
         std::vector<std::span<const NoteRecord>> groups;
         std::span<const NoteRecord> notes{track.notes.data(), track.notes.size()};
         while (!notes.empty()) {
@@ -95,6 +96,9 @@ protected:
         std::ranges::sort(groups, {}, [](const auto group) { return group.front().group_timestamp; });
         for (std::size_t i = 1; i < groups.size(); ++i) {
             EXPECT_NE(groups[i - 1].front().group_timestamp, groups[i].front().group_timestamp);
+        }
+        if (!allow_empty) {
+            EXPECT_FALSE(groups.empty());
         }
         return groups;
     }
@@ -2436,7 +2440,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, Single_Note_Tremolo_OnTiedNote_Play
 
     // [THEN] Since tremolo playback is disabled, this should NOT render the tied note
     // This verifies that our fix prevents double playback when playTremolo = false
-    EXPECT_EQ(note_groups(result).size(), 0); // No events should be rendered for disabled tremolo on tied note
+    EXPECT_EQ(note_groups(result, /*allow_empty*/ true).size(), 0); // No events should be rendered for disabled tremolo on tied note
 
     delete score;
 }

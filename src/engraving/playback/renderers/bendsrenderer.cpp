@@ -361,13 +361,23 @@ amc::vector<CurvePoint> BendsRenderer::build_pitch_curve(timestamp_t note_timest
         }
     };
 
+    if (note_duration <= 0) {
+        if (!pitch_offsets.empty()) {
+            insert_or_assign(0, pitch_offsets.back().second);
+        }
+        return result;
+    }
+
     mpe::percentage_t prev_nominal_offset_precent = 0;
+    constexpr float max_raw_percent = static_cast<float>(std::numeric_limits<mpe::percentage_t>::max() / mpe::one_percent);
+    constexpr float min_raw_percent = static_cast<float>(std::numeric_limits<mpe::percentage_t>::min() / mpe::one_percent);
 
     for (const auto &pair : pitch_offsets) {
         const BendTimeFactors &factors = find_factors_at_time(pair.first);
-        const float ratio = static_cast<float>(pair.first - note_timestamp) / note_duration;
+        const float ratio = static_cast<float>(pair.first - note_timestamp) / static_cast<float>(note_duration);
+        const float clamped_percent = std::clamp(ratio * 100.f, min_raw_percent, max_raw_percent);
 
-        const mpe::percentage_t nominal_offset_percent = static_cast<mpe::percentage_t>(ratio * 100.f) * mpe::one_percent;
+        const mpe::percentage_t nominal_offset_percent = static_cast<mpe::percentage_t>(clamped_percent) * mpe::one_percent;
         const mpe::percentage_t nominal_percent_diff = nominal_offset_percent - prev_nominal_offset_precent;
 
         const mpe::percentage_t actual_offset_start_percent = prev_nominal_offset_precent + nominal_percent_diff * factors.start_factor;

@@ -27,7 +27,8 @@ int main() {
     const auto value = out.str();
     if (!value.contains("groups 2\ngroup 17 0\ngroup 18 4\nevent 2\ntext 0 0 3:0061000a0062\nevent 3\npreset 0 0:\n"
                         "event 4\ntext 0 0 0:\nevent 1\narrangement 20 20 1000 1000 0 0 f64:4000000000000000\n"
-                        "pitch 6000\n curve 0\nexpression 5000 0\n curve 0\narticulations 0\n")) {
+                        "pitch 6000\n curve 0\nexpression 5000 0\n curve 0\narticulations 0\n"
+                        "averages 10000 0 0 0 0\n curve 0\n curve 0\n")) {
         throw std::runtime_error(value);
     }
 }
