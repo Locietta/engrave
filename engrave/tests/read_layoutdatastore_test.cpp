@@ -1,8 +1,11 @@
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
 #include <stdexcept>
+#include <vector>
 
+#include "engraving/dom/accidental.h"
 #include "engraving/dom/articulation.h"
 #include "engraving/dom/beam.h"
 #include "engraving/dom/dummyparent.h"
@@ -10,8 +13,14 @@
 #include "engraving/dom/lyrics.h"
 #include "engraving/dom/ornament.h"
 #include "engraving/dom/sharedpart.h"
+#include "engraving/dom/tapping.h"
 #include "engraving/dom/tremolotwochord.h"
+#include "engraving/rendering/score/beamlayout.h"
+#include "engraving/rendering/score/chordlayout.h"
+#include "engraving/rendering/score/layoutcontext.h"
 #include "engraving/rendering/score/layoutdatastore.h"
+#include "engraving/rendering/score/passresetlayoutdata.h"
+#include "engraving/rendering/score/tlayout.h"
 #include "global/slab_pool.h"
 #include "read_test_fixture.h"
 
@@ -25,6 +34,28 @@ struct alignas(8) SlabValue {
 struct alignas(8) ThrowingSlabValue {
     explicit ThrowingSlabValue(bool fail) {
         if (fail) throw std::runtime_error("slot construction failed");
+    }
+};
+
+struct ReentrantSlabValue;
+using ReentrantSlabPool = muse::SlabPool<ReentrantSlabValue, int, 16>;
+
+struct ReentrantSlabState {
+    ReentrantSlabPool *pool;
+    int owner = 0;
+    unsigned destroyed = 0;
+    std::uint32_t first_spawned_slot = 0;
+};
+
+struct ReentrantSlabValue {
+    ReentrantSlabState *state;
+    bool spawn;
+
+    ~ReentrantSlabValue() {
+        ++state->destroyed;
+        if (!spawn) return;
+        state->first_spawned_slot = state->pool->emplace(&state->owner, state, false).first;
+        for (int i = 1; i < 256; ++i) state->pool->emplace(&state->owner, state, false);
     }
 };
 } // namespace
@@ -94,6 +125,166 @@ TEST(LayoutDataSlabPool, FailedConstructionLeavesNoLiveSlotAndPreservesReuse) {
     EXPECT_EQ(reused, second);
     EXPECT_EQ(pool.detach(first_slot), first);
     pool.finish_destroy(first_slot, first);
+}
+
+TEST(LayoutDataSlabPool, FinishDestroyCanGrowPoolBeforePublishingDetachedSlot) {
+    ReentrantSlabState state{};
+    {
+        ReentrantSlabPool pool;
+        state.pool = &pool;
+        const auto slot = pool.emplace(&state.owner, &state, true).first;
+        pool.finish_destroy(slot, pool.detach(slot));
+        EXPECT_EQ(state.destroyed, 1u);
+        EXPECT_EQ(state.first_spawned_slot, 1u);
+        EXPECT_EQ(pool.live_count(), 256u);
+        EXPECT_EQ(pool.emplace(&state.owner, &state, false).first, slot);
+    }
+    EXPECT_EQ(state.destroyed, 258u);
+}
+
+TEST(LayoutDataSlabPool, DestructorDrainsSlotsEmplacedByPayloadDestructors) {
+    ReentrantSlabState state{};
+    {
+        ReentrantSlabPool pool;
+        state.pool = &pool;
+        for (int i = 0; i < 64; ++i) pool.emplace(&state.owner, &state, i == 63);
+    }
+    EXPECT_EQ(state.first_spawned_slot, 62u);
+    EXPECT_EQ(state.destroyed, 320u);
+}
+
+TEST(LayoutDataSlabPool, VisitsSkipEmptyLeadingChunkAndKeepTheHighBitLive) {
+    std::array<std::uint32_t, 130> owners{};
+    muse::SlabPool<SlabValue, std::uint32_t, 64> pool;
+    for (std::uint32_t i = 0; i < owners.size(); ++i) {
+        owners[i] = i;
+        pool.emplace(&owners[i], i + 1000u);
+    }
+    for (std::uint32_t i = 0; i < 63; ++i) pool.finish_destroy(i, pool.detach(i));
+    EXPECT_EQ(pool.first_live_owner(), &owners[63]);
+    pool.finish_destroy(63, pool.detach(63));
+    for (std::uint32_t i = 65; i < 127; ++i) pool.finish_destroy(i, pool.detach(i));
+    EXPECT_EQ(pool.first_live_owner(), &owners[64]);
+
+    const std::vector<std::uint32_t> expected{64, 127, 128, 129};
+    std::vector<std::uint32_t> visited;
+    pool.for_each_live([&](std::uint32_t &owner, SlabValue &data) {
+        EXPECT_EQ(data.value, owner + 1000u);
+        visited.push_back(owner);
+    });
+    EXPECT_EQ(visited, expected);
+    visited.clear();
+    pool.drain_owners([&](std::uint32_t &owner) {
+        visited.push_back(owner);
+        pool.finish_destroy(owner, pool.detach(owner));
+    });
+    EXPECT_EQ(visited, expected);
+    EXPECT_TRUE(pool.empty());
+    EXPECT_EQ(pool.first_live_owner(), nullptr);
+}
+
+TEST(LayoutDataStore, ResetPassClearsArticulationFamilyOverrides) {
+    using namespace mu::engraving;
+    using namespace mu::engraving::rendering::score;
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    ASSERT_NE(chord, nullptr);
+    const std::array<Articulation *, 3> articulations{Factory::create_articulation(chord), Factory::create_ornament(chord),
+                                                      Factory::create_tapping(chord)};
+#ifdef NDEBUG
+    constexpr bool reset_up = false;
+#else
+    constexpr bool reset_up = true;
+#endif
+    for (auto *articulation : articulations) {
+        chord->add(articulation);
+        auto *data = articulation->mutldata();
+        data->up.set_value(!reset_up);
+        data->sym_id.set_value(SymId::ARTIC_STACCATO_ABOVE);
+        data->set_bbox(0, 0, 5, 5);
+    }
+
+    LayoutContext ctx(&master);
+    ctx.mut_state().set_is_layout_all(true);
+    PassResetLayoutData{}.run(&master, ctx);
+
+    for (const auto *articulation : articulations) {
+        SCOPED_TRACE(static_cast<int>(articulation->type()));
+        EXPECT_EQ(articulation->ldata()->up.value(LdAccess::MAYBE_NOTINITED), reset_up);
+        EXPECT_EQ(articulation->ldata()->sym_id.value(LdAccess::MAYBE_NOTINITED), SymId::NO_SYM);
+        EXPECT_FALSE(articulation->ldata()->is_valid());
+    }
+}
+
+TEST(LayoutDataStore, AccidentalValidityRequiresBothShapeAndSymbols) {
+    using namespace mu::engraving;
+    using namespace mu::engraving::rendering::score;
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    std::unique_ptr<Accidental> accidental(Factory::create_accidental(chord->up_note()));
+    accidental->set_accidental_type(AccidentalType::SHARP);
+    accidental->set_bracket(AccidentalBracket::PARENTHESIS);
+    auto *data = accidental->mutldata();
+    EXPECT_FALSE(data->is_valid());
+    data->set_bbox(0, 0, 5, 5);
+    EXPECT_FALSE(data->is_valid());
+
+    LayoutContext ctx(&master);
+    TLayout::layout_item(accidental.get(), ctx);
+    if (data->syms.size() == 1) {
+        EXPECT_EQ(data->syms.front().sym, SymId::ACCIDENTAL_SHARP_PARENS);
+    } else {
+        ASSERT_EQ(data->syms.size(), 3u);
+        EXPECT_EQ(data->syms[0].sym, SymId::ACCIDENTAL_PARENS_LEFT);
+        EXPECT_EQ(data->syms[1].sym, SymId::ACCIDENTAL_SHARP);
+        EXPECT_EQ(data->syms[2].sym, SymId::ACCIDENTAL_PARENS_RIGHT);
+    }
+    EXPECT_TRUE(data->is_valid());
+    data->clear_shape();
+    EXPECT_FALSE(data->is_valid());
+}
+
+TEST(LayoutDataStore, BeamAndTremoloValidityDependsOnBeamType) {
+    using namespace mu::engraving;
+    using namespace mu::engraving::rendering::score;
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    std::unique_ptr<Beam> beam(Factory::create_beam(&master));
+    std::unique_ptr<TremoloTwoChord> tremolo(Factory::create_tremolo_two_chord(master.dummy()));
+    const auto verify = [](BeamBase &item, BeamType type) {
+        EXPECT_FALSE(item.ldata()->is_valid());
+        auto *data = item.mutldata();
+        data->set_bbox(0, 0, 5, 5);
+        EXPECT_FALSE(data->is_valid());
+        data->clear_shape();
+        data->beam_type = type;
+        EXPECT_TRUE(item.ldata()->is_valid());
+    };
+    verify(*beam, BeamType::BEAM);
+    verify(*tremolo, BeamType::TREMOLO);
+
+    LayoutContext ctx(&master);
+    const RectF sentinel_bbox(0, 0, 5, 5);
+    beam->mutldata()->set_bbox(sentinel_bbox);
+    BeamLayout::layout_if_need(beam.get(), ctx);
+    EXPECT_EQ(beam->ldata()->bbox(), sentinel_bbox);
+    beam->mutldata()->beam_type = BeamType::INVALID;
+    BeamLayout::layout_if_need(beam.get(), ctx);
+    EXPECT_NE(beam->ldata()->bbox(), sentinel_bbox);
+
+    master.ensure_layout();
+    auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    const auto anchor_y = std::max(chord->up_note()->page_pos().y(), chord->down_note()->page_pos().y()) + 100 * chord->spatium();
+    tremolo->set_start_anchor({1, anchor_y});
+    tremolo->set_end_anchor({2, anchor_y});
+    EXPECT_FALSE(ChordLayout::is_chord_pos_below_trem(chord, tremolo.get()));
+    tremolo->mutldata()->beam_type = BeamType::INVALID;
+    EXPECT_TRUE(ChordLayout::is_chord_pos_below_trem(chord, tremolo.get()));
 }
 
 TEST(LayoutDataStore, RepeatedDiscardRebuildPreservesMusicOverridesAndPublishedGeometry) {

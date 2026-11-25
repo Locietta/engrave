@@ -5,7 +5,6 @@
 #include <cassert>
 #include <cstdint>
 #include <stdexcept>
-#include <tuple>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -247,26 +246,44 @@ struct LayoutDataPools<LayoutDataDispatch<Bindings...>> : LayoutPool<Bindings>..
 
     void for_each_live_data(muse::FnRef<void(ItemLayoutData &)> visit) { (LayoutPool<Bindings>::for_each_live_data(visit), ...); }
 
-    EngravingItem *first_live_owner() const noexcept {
-        EngravingItem *owner = nullptr;
-        std::ignore = ((owner = LayoutPool<Bindings>::first_live_owner()) || ...);
-        return owner;
+    template <typename Fn>
+    void drain_owners(Fn &&visit) {
+        (LayoutPool<Bindings>::drain_owners(visit), ...);
     }
 
     void release_all_chunks() noexcept { (LayoutPool<Bindings>::release_all_chunks(), ...); }
 
     template <typename Fn>
     void for_each_beam_data(Fn &&visit) {
-        pool<Beam::LayoutData>().for_each_live_data(visit);
-        pool<TremoloTwoChord::LayoutData>().for_each_live_data(visit);
+        for_each_derived_data<BeamBase::LayoutData>(visit);
     }
 
     template <typename Fn>
     void for_each_chord_rest_data(Fn &&visit) {
-        pool<Chord::LayoutData>().for_each_live_data(visit);
-        pool<Rest::LayoutData>().for_each_live_data(visit);
-        pool<MMRest::LayoutData>().for_each_live_data(visit);
-        pool<MeasureRepeat::LayoutData>().for_each_live_data(visit);
+        for_each_derived_data<ChordRest::LayoutData>(visit);
+    }
+
+    template <typename Fn>
+    void for_each_spanner_data(Fn &&visit) {
+        (
+            [&] {
+                if constexpr (std::is_base_of_v<Spanner::LayoutData, typename Bindings::Data>) {
+                    LayoutPool<Bindings>::for_each_live(visit);
+                }
+            }(),
+            ...);
+    }
+
+private:
+    template <typename Base, typename Fn>
+    void for_each_derived_data(Fn &visit) {
+        (
+            [&] {
+                if constexpr (std::is_base_of_v<Base, typename Bindings::Data>) {
+                    LayoutPool<Bindings>::for_each_live_data(visit);
+                }
+            }(),
+            ...);
     }
 };
 
@@ -420,9 +437,7 @@ void LayoutDataStore::drain_records() {
     BoolGuard guard(clearing_, true);
     // Erasing a payload can delete other owners, including owners in the same pool.
     while (total_size_ > 0) {
-        auto *owner = records_->first_live_owner();
-        assert(owner);
-        erase(*owner);
+        records_->drain_owners([&](EngravingItem &owner) { erase(owner); });
     }
     records_->release_all_chunks();
 }
@@ -592,13 +607,9 @@ void LayoutDataStore::retire_item_borrowers(const EngravingItem &item) {
 
 void LayoutDataStore::prune_spanner_segments() {
     std::vector<Spanner *> spanners;
-    records_->pool<Spanner::LayoutData>().for_each_live([&](EngravingItem &owner, Spanner::LayoutData &) {
+    records_->for_each_spanner_data([&](EngravingItem &owner, Spanner::LayoutData &) {
         if (owner.is_spanner()) spanners.push_back(to_spanner(&owner));
     });
-    const auto collect = [&](EngravingItem &owner, Spanner::LayoutData &) { spanners.push_back(to_spanner(&owner)); };
-    records_->pool<SlurTie::LayoutData>().for_each_live(collect);
-    records_->pool<Hairpin::LayoutData>().for_each_live(collect);
-    records_->pool<GuitarBend::LayoutData>().for_each_live(collect);
     for (auto *spanner : spanners) spanner->erase_detached_segments();
     std::erase_if(output_.beams, [](Beam *beam) {
         if (!beam->rendered_elements().empty()) return false;

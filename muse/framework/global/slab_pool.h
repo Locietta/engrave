@@ -40,6 +40,9 @@ struct SlabPool {
                 }
             }
         }
+#ifndef NDEBUG
+        assert(detached_count_ == 0);
+#endif
         release_all_chunks();
     }
 
@@ -73,6 +76,9 @@ struct SlabPool {
         chunk.live_mask &= ~bit(local);
         chunk.meta[local].owner = nullptr;
         --live_count_;
+#ifndef NDEBUG
+        ++detached_count_;
+#endif
         return payload(chunk, local);
     }
 
@@ -81,6 +87,10 @@ struct SlabPool {
         const auto local = slot % ChunkSize;
         assert(!(chunk.live_mask & bit(local)) && ptr == payload(chunk, local));
         std::destroy_at(ptr);
+#ifndef NDEBUG
+        assert(detached_count_ > 0);
+        --detached_count_;
+#endif
         auto &storage = chunk.storage[local];
         poison(&storage, sizeof(storage));
         // A destructor can allocate from this pool. Publish the slot only after it returns.
@@ -93,6 +103,19 @@ struct SlabPool {
             if (chunk->live_mask != 0) return chunk->meta[std::countr_zero(chunk->live_mask)].owner;
         }
         return nullptr;
+    }
+
+    // The callback must detach the passed owner. It may also erase or emplace other slots.
+    // Insertions into already visited chunks are left for another pass.
+    template <typename Fn>
+    void drain_owners(Fn &&fn) {
+        if (empty()) return;
+        for (std::size_t i = 0; i < chunks_.size(); ++i) {
+            auto &chunk = *chunks_[i];
+            while (chunk.live_mask != 0) {
+                fn(*chunk.meta[std::countr_zero(chunk.live_mask)].owner);
+            }
+        }
     }
 
     // Callbacks can modify payloads. Membership must stay fixed during iteration.
@@ -109,6 +132,9 @@ struct SlabPool {
     // All detached slots must have finished destruction before releasing storage.
     void release_all_chunks() noexcept {
         assert(empty());
+#ifndef NDEBUG
+        assert(detached_count_ == 0);
+#endif
         for (const auto &chunk : chunks_) unpoison(chunk->storage, sizeof(chunk->storage));
         chunks_.clear();
         next_fresh_ = 0;
@@ -185,6 +211,9 @@ private:
 
     std::vector<std::unique_ptr<Chunk>> chunks_;
     std::uint32_t live_count_ = 0;
+#ifndef NDEBUG
+    std::uint32_t detached_count_ = 0;
+#endif
     std::uint32_t next_fresh_ = 0;
     std::uint32_t free_head_ = invalid_slot;
 };

@@ -180,7 +180,7 @@ public:
     void add_beam_fragment(BeamFragment *f) { mutldata()->fragments.push_back(f); }
 
     struct LayoutData : BeamBase::LayoutData {
-        ~LayoutData() override;
+        ~LayoutData();
         std::vector<BeamFragment *> fragments;
         std::optional<std::vector<ChordRest *>> members;
         std::optional<staff_idx_t> visual_staff_idx;

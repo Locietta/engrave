@@ -304,7 +304,7 @@ public:
         ld_field<std::vector<Accidental *>> octaves = {"[Accidental] octaves", std::vector<Accidental *>{}};
         ld_field<std::vector<Accidental *>> seconds = {"[Accidental] seconds", std::vector<Accidental *>{}};
 
-        bool is_valid() const override { return EngravingItem::LayoutData::is_valid() && !syms.empty(); }
+        bool is_valid() const { return EngravingItem::LayoutData::is_valid() && !syms.empty(); }
     };
     DECLARE_LAYOUTDATA_METHODS(Accidental)
 

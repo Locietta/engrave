@@ -196,7 +196,7 @@ public:
     bool has_preceding_jump_item() const;
 
     struct LayoutData : public DurationElement::LayoutData {
-        ~LayoutData() override;
+        ~LayoutData();
         TabDurationSymbol *tab_dur = nullptr;
         std::vector<JianpuDurationLine *> jianpu_duration_lines;
         bool melisma_end = false;

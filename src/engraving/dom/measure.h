@@ -456,7 +456,7 @@ public:
     bool can_add_staff_type_change(staff_idx_t staff_idx) const;
 
     struct LayoutData : public MeasureBase::LayoutData {
-        ~LayoutData() override;
+        ~LayoutData();
         Measure *mm_rest = nullptr;
         Measure *mm_rest_first = nullptr;
         Measure *mm_rest_last = nullptr;

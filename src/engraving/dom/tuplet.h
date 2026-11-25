@@ -47,7 +47,7 @@ struct Tuplet final : DurationElement {
         PointF p1, p2;
         PointF bracket_l[4];
         PointF bracket_r[3];
-        ~LayoutData() override;
+        ~LayoutData();
         Text *number = nullptr;
     };
     DECLARE_LAYOUTDATA_METHODS(Tuplet)

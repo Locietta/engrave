@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 #pragma once
 
+#include "global/btree.h"
 #include "global/flatmap.h"
 #include "types.h"
 

@@ -129,7 +129,7 @@ public:
     struct LayoutData : public ChordRest::LayoutData {
         int dotline = -1;
         RestVerticalClearance vertical_clearance;
-        ~LayoutData() override;
+        ~LayoutData();
         std::vector<NoteDot *> dots;
         std::vector<Rest *> merged_rests; // Rests from other voices that may be merged with this
         ld_field<SymId> sym = {"[Rest] sym", SymId::REST_QUARTER};

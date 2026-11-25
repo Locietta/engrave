@@ -24,6 +24,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <type_traits>
 
 #include "../infrastructure/ld_access.h"
 #include "../infrastructure/shape.h"
@@ -138,16 +139,16 @@ struct ItemLayoutData {
     };
 
     SharingLinks sharing_links;
-    virtual ~ItemLayoutData() = default;
+    ~ItemLayoutData() = default;
 
-    virtual void reset() {
+    void reset() {
         shape_.reset();
         mask_.reset();
         //! NOTE Temporary removed, have problems, need investigation
         //pos_.reset();
     }
 
-    virtual bool is_valid() const { return shape_.has_value() && shape_.value().bbox().is_valid(); }
+    bool is_valid() const { return shape_.has_value() && shape_.value().bbox().is_valid(); }
 
     bool is_skip_draw() const { return is_skip_draw_; }
 
@@ -275,6 +276,8 @@ protected:
     EngravingItem *item_snapped_before_ = nullptr;
     EngravingItem *item_snapped_after_ = nullptr;
 };
+
+static_assert(!std::is_polymorphic_v<ItemLayoutData>);
 
 ///     \brief Base class of score layout elements
 ///

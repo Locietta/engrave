@@ -190,7 +190,7 @@ public:
         ld_field<bool> up = {"[Articulation] up", true};
         ld_field<SymId> sym_id = {"[Articulation] symId", SymId::NO_SYM};
 
-        void reset() override {
+        void reset() {
             EngravingItem::LayoutData::reset();
             up.reset();
             sym_id.reset();

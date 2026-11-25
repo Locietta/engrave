@@ -143,7 +143,7 @@ public:
     enum class CrossStaffBeamPosition : signed char { INVALID, BETWEEN, ABOVE, BELOW };
 
     struct LayoutData : public EngravingItem::LayoutData {
-        ~LayoutData() override;
+        ~LayoutData();
         std::vector<BeamSegment *> beam_segments;
         BeamType beam_type = BeamType::INVALID;
         const Beam *beam = nullptr;
@@ -173,7 +173,7 @@ public:
             end_anchor = end_a;
         }
 
-        bool is_valid() const override { return !(beam_type == BeamType::INVALID); }
+        bool is_valid() const { return !(beam_type == BeamType::INVALID); }
     };
     DECLARE_LAYOUTDATA_METHODS(BeamBase)
 

@@ -3,6 +3,7 @@
 
 #include <array>
 #include <cstddef>
+#include <type_traits>
 
 #include "dom/accidental.h"
 #include "dom/ambitus.h"
@@ -63,6 +64,7 @@ namespace mu::engraving::rendering::score {
 template <typename Item, std::size_t ChunkSize, ElementType... Types>
 struct LayoutDataBinding {
     using Data = typename Item::LayoutData;
+    static_assert(!std::is_polymorphic_v<Data>);
     static constexpr std::size_t chunk_size = ChunkSize;
 
     template <typename Action>
@@ -78,6 +80,8 @@ struct LayoutDataBinding {
 
 template <typename... Bindings>
 struct LayoutDataDispatch {
+    static_assert(std::is_same_v<std::underlying_type_t<ElementType>, unsigned char>);
+
     template <typename Action>
     static decltype(auto) dispatch(ElementType type, Action action) {
         using Result = decltype(action.template operator()<EngravingItem::LayoutData>());

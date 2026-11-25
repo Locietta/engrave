@@ -4,9 +4,11 @@
 #include <cstddef>
 #include <memory>
 #include <span>
+#include <utility>
 #include <vector>
 
 #include "engraving/types/stavesharing.h"
+#include "global/flatmap.h"
 #include "global/fn.h"
 #include "global/unique_fn.h"
 

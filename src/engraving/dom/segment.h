@@ -210,7 +210,7 @@ public:
     void set_trailer(bool value) { mutldata()->trailer = value; }
 
     struct LayoutData : EngravingItem::LayoutData {
-        ~LayoutData() override;
+        ~LayoutData();
         std::vector<EngravingItem *> display_copies;
         std::vector<EngravingItem *> display_annotations;
         std::vector<bool> suppressed_source_tracks;

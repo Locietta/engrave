@@ -520,7 +520,7 @@ public:
         String fret_string;
         std::vector<LineAttachPoint> line_attach_points;
         DirectionV dot_position = DirectionV::AUTO;
-        ~LayoutData() override;
+        ~LayoutData();
         std::vector<NoteDot *> dots;
         // Jianpu display derived from pitch and key during layout; the note itself stays unchanged.
         String jianpu_digit;

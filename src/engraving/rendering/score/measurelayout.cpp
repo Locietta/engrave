@@ -27,6 +27,7 @@
 #include "beamlayout.h"
 #include "chordbracketlayout.h"
 #include "chordlayout.h"
+#include "dom/accidental.h"
 #include "dom/ambitus.h"
 #include "dom/barline.h"
 #include "dom/beam.h"
@@ -1346,6 +1347,15 @@ void MeasureLayout::set_courtesy_clef(Measure *m, const Fraction &ref_clef_tick,
     }
 }
 
+static bool is_layout_data_valid(const EngravingItem *item) {
+    switch (item->type()) {
+        case ElementType::ACCIDENTAL: return to_accidental(item)->ldata()->is_valid();
+        case ElementType::BEAM:
+        case ElementType::TREMOLO_TWOCHORD: return item_cast<const BeamBase *>(item)->ldata()->is_valid();
+        default: return item->ldata()->is_valid();
+    }
+}
+
 static void calc_paren_top_bottom(Parenthesis *item, double &top, double &bottom, LayoutContext &ctx) {
     EngravingItem *parent = item->layout_parent();
     const double spatium = item->spatium();
@@ -1353,7 +1363,7 @@ static void calc_paren_top_bottom(Parenthesis *item, double &top, double &bottom
         return;
     }
 
-    if (!parent->ldata()->is_valid()) {
+    if (!is_layout_data_valid(parent)) {
         TLayout::layout_item(parent, ctx);
     }
 
