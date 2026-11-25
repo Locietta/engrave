@@ -325,4 +325,4 @@ The pipeline enforces deliberate precedence and normalization rules to resolve a
 
 ## Future Directions
 
-- **Heaviest Track**: Parallel synthesis is bounded by the heaviest track; the owner-thread mix and the encoder now overlap with it. ThreadSanitizer runs (`--config=tsan`, Linux and macOS only) have not yet been part of validation.
+- **Heaviest Track**: Parallel synthesis is bounded by the heaviest track; the owner-thread mix and the encoder now overlap with it. ThreadSanitizer validation (`--config=tsan` / `--profile tsan`, Linux and macOS only) passes across the parallel audio, async-encoder, background `PreparedAudio::run`, and multi-page PNG suites (not yet wired as a default CI job).
