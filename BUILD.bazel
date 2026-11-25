@@ -90,7 +90,6 @@ cc_library(
         ":public_headers",
         "@amc",
         "@gtl",
-        "@ngcpp_proxy",
         "@pixi_deps//:zlib",
         "@unordered_dense",
     ],

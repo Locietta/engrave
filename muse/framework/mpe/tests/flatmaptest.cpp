@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 #include <algorithm>
+#include <array>
+#include <cstdint>
 #include <functional>
 #include <limits>
 #include <memory>
@@ -440,6 +442,160 @@ struct NonMovableArg {
 struct MemberHolder {
     int field = 7;
 };
+
+void check_unique_fn_storage() {
+    using AddressFn = UniqueFn<std::uintptr_t() const noexcept>;
+    static_assert(std::is_nothrow_move_constructible_v<AddressFn>);
+    static_assert(std::is_nothrow_move_assignable_v<AddressFn>);
+
+    AddressFn small = [value = 17]() noexcept { return reinterpret_cast<std::uintptr_t>(&value); };
+    const auto small_address = small();
+    AddressFn moved_small = std::move(small);
+    EXPECT_FALSE(small);
+    EXPECT_NE(moved_small(), small_address);
+
+    UniqueFn<int()> move_only = [value = std::make_unique<int>(19)] { return *value; };
+    auto moved_only = std::move(move_only);
+    EXPECT_FALSE(move_only);
+    auto &same = moved_only;
+    moved_only = std::move(same);
+    ASSERT_TRUE(moved_only);
+    EXPECT_EQ(moved_only(), 19);
+
+    struct Lifetime {
+        int &destructions;
+
+        ~Lifetime() { ++destructions; }
+    };
+
+    struct LargeTarget {
+        std::array<int, 32> values;
+        std::unique_ptr<Lifetime> lifetime;
+
+        int operator()(std::uintptr_t &address) const {
+            address = reinterpret_cast<std::uintptr_t>(this);
+            return values.front();
+        }
+    };
+
+    static_assert(sizeof(LargeTarget) > 3 * sizeof(void *));
+
+    int destructions = 0;
+    {
+        UniqueFn<int(std::uintptr_t &) const> large = LargeTarget{{23}, std::make_unique<Lifetime>(destructions)};
+        std::uintptr_t address = 0;
+        EXPECT_EQ(large(address), 23);
+        auto moved_large = std::move(large);
+        EXPECT_FALSE(large);
+        std::uintptr_t moved_address = 0;
+        EXPECT_EQ(moved_large(moved_address), 23);
+        EXPECT_EQ(moved_address, address);
+        EXPECT_EQ(destructions, 0);
+    }
+    EXPECT_EQ(destructions, 1);
+
+    struct alignas(64) AlignedTarget {
+        std::uintptr_t operator()() const noexcept { return reinterpret_cast<std::uintptr_t>(this); }
+    };
+
+    AddressFn aligned = AlignedTarget{};
+    const auto aligned_address = aligned();
+    EXPECT_EQ(aligned_address % 64, 0u);
+    AddressFn moved_aligned = std::move(aligned);
+    EXPECT_FALSE(aligned);
+    EXPECT_EQ(moved_aligned(), aligned_address);
+}
+
+void check_unique_fn_failed_replacement() {
+    struct ThrowingTarget {
+        bool reject_copy = false;
+
+        ThrowingTarget() = default;
+
+        ThrowingTarget(const ThrowingTarget &other) : reject_copy(other.reject_copy) {
+            if (reject_copy) {
+                throw std::runtime_error("copy failed");
+            }
+        }
+
+        ThrowingTarget(ThrowingTarget &&) { throw std::runtime_error("move failed"); }
+
+        int operator()() const noexcept { return 31; }
+    };
+
+    using Fn = UniqueFn<int() noexcept>;
+    static_assert(std::is_nothrow_move_constructible_v<Fn>);
+    static_assert(std::is_nothrow_move_assignable_v<Fn>);
+
+    ThrowingTarget source;
+    Fn original = source;
+    Fn moved = std::move(original);
+    EXPECT_FALSE(original);
+    original = std::move(moved);
+    EXPECT_FALSE(moved);
+    ASSERT_TRUE(original);
+    EXPECT_EQ(original(), 31);
+
+    source.reject_copy = true;
+    EXPECT_THROW(original = source, std::runtime_error);
+    ASSERT_TRUE(original);
+    EXPECT_EQ(original(), 31);
+}
+
+void check_unique_fn_reentrant_replacement() {
+    using Fn = UniqueFn<int()>;
+
+    struct OnDestroy {
+        Fn *owner;
+        void (*callback)(Fn &);
+
+        OnDestroy(Fn &fn, void (*action)(Fn &)) : owner(&fn), callback(action) {}
+
+        OnDestroy(OnDestroy &&other) noexcept : owner(std::exchange(other.owner, nullptr)), callback(other.callback) {}
+
+        ~OnDestroy() {
+            if (owner) {
+                callback(*owner);
+            }
+        }
+
+        int operator()() const { return 11; }
+    };
+
+    Fn fn;
+    fn = OnDestroy(fn, [](Fn &owner) {
+        EXPECT_FALSE(owner);
+        owner.reset();
+        owner = [] { return 37; };
+    });
+    fn.reset();
+    ASSERT_TRUE(fn);
+    EXPECT_EQ(fn(), 37);
+
+    fn = OnDestroy(fn, [](Fn &owner) {
+        ASSERT_TRUE(owner);
+        EXPECT_EQ(owner(), 41);
+        owner = [] { return 43; };
+    });
+    fn = [] { return 41; };
+    ASSERT_TRUE(fn);
+    EXPECT_EQ(fn(), 43);
+
+    fn = [&fn] {
+        fn.reset();
+        return 47;
+    };
+    EXPECT_EQ(fn(), 47);
+    EXPECT_FALSE(fn);
+
+    fn = [&fn] {
+        fn = [] { return 53; };
+        return 51;
+    };
+    EXPECT_EQ(fn(), 51);
+    ASSERT_TRUE(fn);
+    EXPECT_EQ(fn(), 53);
+}
 } // namespace
 
 TEST(MpeFlatMapTest, FnRefAndUniqueFnSemantics) {
@@ -576,6 +732,12 @@ TEST(MpeFlatMapTest, FnRefAndUniqueFnSemantics) {
 
     UniqueFn<int(int)> null_fp_owned = null_fp;
     EXPECT_FALSE(static_cast<bool>(null_fp_owned));
+
+    UniqueFn<int(int)> from_empty_unique = UniqueFn<int(int) const>{};
+    EXPECT_FALSE(from_empty_unique);
+    check_unique_fn_storage();
+    check_unique_fn_failed_replacement();
+    check_unique_fn_reentrant_replacement();
 }
 
 TEST(MpeFlatMapTest, VocabularyContainerShimsAndTransparency) {
