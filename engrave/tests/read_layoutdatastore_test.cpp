@@ -73,12 +73,11 @@ TEST(LayoutDataSlabPool, GrowthKeepsPayloadsStableAndVisitsOnlyLiveSlots) {
         payloads[i] = data;
     }
     EXPECT_EQ(pool.live_count(), owners.size());
-    EXPECT_EQ(pool.first_live_owner(), &owners.front());
 
     auto *dying = pool.detach(0);
     EXPECT_EQ(dying, payloads[0]);
     EXPECT_EQ(pool.live_count(), owners.size() - 1);
-    EXPECT_EQ(pool.first_live_owner(), &owners[1]);
+    EXPECT_FALSE(pool.release_all_chunks());
     auto [fresh_slot, fresh] = pool.emplace(&owners[0], 1000u);
     EXPECT_EQ(fresh_slot, owners.size());
     EXPECT_NE(fresh, dying);
@@ -99,8 +98,7 @@ TEST(LayoutDataSlabPool, GrowthKeepsPayloadsStableAndVisitsOnlyLiveSlots) {
     EXPECT_EQ(visited, owners.size());
     for (std::uint32_t slot = 0; slot < owners.size(); ++slot) pool.finish_destroy(slot, pool.detach(slot));
     EXPECT_TRUE(pool.empty());
-    EXPECT_EQ(pool.first_live_owner(), nullptr);
-    pool.release_all_chunks();
+    EXPECT_TRUE(pool.release_all_chunks());
     const auto [first_slot, first] = pool.emplace(&owners[0]);
     EXPECT_EQ(first_slot, 0u);
     EXPECT_EQ(first->value, 0u);
@@ -111,7 +109,6 @@ TEST(LayoutDataSlabPool, FailedConstructionLeavesNoLiveSlotAndPreservesReuse) {
     muse::SlabPool<ThrowingSlabValue, int, 16> pool;
     EXPECT_THROW(pool.emplace(&owner, true), std::runtime_error);
     EXPECT_TRUE(pool.empty());
-    EXPECT_EQ(pool.first_live_owner(), nullptr);
     const auto [first_slot, first] = pool.emplace(&owner, false);
     EXPECT_EQ(first_slot, 0u);
     const auto [second_slot, second] = pool.emplace(&owner, false);
@@ -119,7 +116,6 @@ TEST(LayoutDataSlabPool, FailedConstructionLeavesNoLiveSlotAndPreservesReuse) {
     pool.finish_destroy(second_slot, pool.detach(second_slot));
     EXPECT_THROW(pool.emplace(&owner, true), std::runtime_error);
     EXPECT_EQ(pool.live_count(), 1u);
-    EXPECT_EQ(pool.first_live_owner(), &owner);
     const auto [reused_slot, reused] = pool.emplace(&owner, false);
     EXPECT_EQ(reused_slot, second_slot);
     EXPECT_EQ(reused, second);
@@ -161,10 +157,13 @@ TEST(LayoutDataSlabPool, VisitsSkipEmptyLeadingChunkAndKeepTheHighBitLive) {
         pool.emplace(&owners[i], i + 1000u);
     }
     for (std::uint32_t i = 0; i < 63; ++i) pool.finish_destroy(i, pool.detach(i));
-    EXPECT_EQ(pool.first_live_owner(), &owners[63]);
+    std::vector<std::uint32_t> chunk0_tail;
+    pool.for_each_live([&](std::uint32_t &owner, SlabValue &) {
+        if (owner < 64) chunk0_tail.push_back(owner);
+    });
+    EXPECT_EQ(chunk0_tail, (std::vector<std::uint32_t>{63}));
     pool.finish_destroy(63, pool.detach(63));
     for (std::uint32_t i = 65; i < 127; ++i) pool.finish_destroy(i, pool.detach(i));
-    EXPECT_EQ(pool.first_live_owner(), &owners[64]);
 
     const std::vector<std::uint32_t> expected{64, 127, 128, 129};
     std::vector<std::uint32_t> visited;
@@ -174,13 +173,46 @@ TEST(LayoutDataSlabPool, VisitsSkipEmptyLeadingChunkAndKeepTheHighBitLive) {
     });
     EXPECT_EQ(visited, expected);
     visited.clear();
+    bool released_in_final_callback = false;
     pool.drain_owners([&](std::uint32_t &owner) {
         visited.push_back(owner);
         pool.finish_destroy(owner, pool.detach(owner));
+        if (pool.empty()) released_in_final_callback = pool.release_all_chunks();
     });
     EXPECT_EQ(visited, expected);
+    EXPECT_TRUE(released_in_final_callback);
     EXPECT_TRUE(pool.empty());
-    EXPECT_EQ(pool.first_live_owner(), nullptr);
+}
+
+TEST(LayoutDataSlabPool, ReleaseAllChunksDuringConstructionIsRejected) {
+    struct ReleasingSlabValue;
+    using Pool = muse::SlabPool<ReleasingSlabValue, int, 16>;
+
+    struct alignas(8) ReleasingSlabValue {
+        std::size_t tag = 0;
+
+        ReleasingSlabValue(Pool &pool, bool &released_during_ctor, bool fail, std::size_t t) : tag(t) {
+            released_during_ctor = pool.release_all_chunks();
+            if (fail) throw std::runtime_error("ctor failed after release attempt");
+        }
+    };
+
+    int owner = 0;
+    Pool pool;
+    bool released = true;
+    EXPECT_THROW(pool.emplace(&owner, pool, released, true, 11u), std::runtime_error);
+    EXPECT_FALSE(released);
+    EXPECT_TRUE(pool.empty());
+    EXPECT_TRUE(pool.release_all_chunks());
+
+    released = true;
+    const auto [slot, ptr] = pool.emplace(&owner, pool, released, false, 42u);
+    EXPECT_FALSE(released);
+    EXPECT_EQ(slot, 0u);
+    EXPECT_EQ(ptr->tag, 42u);
+    EXPECT_FALSE(pool.release_all_chunks());
+    pool.finish_destroy(slot, pool.detach(slot));
+    EXPECT_TRUE(pool.release_all_chunks());
 }
 
 TEST(LayoutDataStore, ResetPassClearsArticulationFamilyOverrides) {

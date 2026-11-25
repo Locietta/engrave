@@ -68,12 +68,18 @@ struct LayoutDataBinding {
     static constexpr std::size_t chunk_size = ChunkSize;
 
     template <typename Action>
-    static constexpr void bind(auto &table) {
+    static constexpr void bind(auto &table, std::array<bool, 256> &seen) {
         const auto invoke = +[](Action &action) -> decltype(auto) { return action.template operator()<Data>(); };
         if constexpr (sizeof...(Types) == 0) {
             table.fill(invoke);
         } else {
-            ((table[static_cast<unsigned char>(Types)] = invoke), ...);
+            (([&] {
+                 const auto idx = static_cast<unsigned char>(Types);
+                 if (seen[idx]) throw "duplicate ElementType in LayoutDataDispatch";
+                 seen[idx] = true;
+                 table[idx] = invoke;
+             }()),
+             ...);
         }
     }
 };
@@ -87,7 +93,8 @@ struct LayoutDataDispatch {
         using Result = decltype(action.template operator()<EngravingItem::LayoutData>());
         static constexpr auto table = [] {
             std::array<Result (*)(Action &), 256> result{};
-            (Bindings::template bind<Action>(result), ...);
+            std::array<bool, 256> seen{};
+            (Bindings::template bind<Action>(result, seen), ...);
             return result;
         }();
         return table[static_cast<unsigned char>(type)](action);

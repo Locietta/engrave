@@ -141,6 +141,8 @@ struct ItemLayoutData {
     SharingLinks sharing_links;
     ~ItemLayoutData() = default;
 
+    // Non-virtual: Articulation::LayoutData shadows reset() for ARTICULATION, ORNAMENT, and TAPPING.
+    // Generic EngravingItem* callers must dispatch explicitly (see passresetlayoutdata.cpp).
     void reset() {
         shape_.reset();
         mask_.reset();
@@ -148,6 +150,8 @@ struct ItemLayoutData {
         //pos_.reset();
     }
 
+    // Non-virtual: shadowed by Accidental::LayoutData and BeamBase::LayoutData (BEAM, TREMOLO_TWOCHORD).
+    // Generic EngravingItem* callers must dispatch explicitly (see measurelayout.cpp).
     bool is_valid() const { return shape_.has_value() && shape_.value().bbox().is_valid(); }
 
     bool is_skip_draw() const { return is_skip_draw_; }

@@ -24,6 +24,7 @@ namespace muse {
 template <typename T, typename Owner, std::size_t ChunkSize>
 struct SlabPool {
     static_assert(ChunkSize > 0 && ChunkSize <= 64 && (ChunkSize & (ChunkSize - 1)) == 0);
+    // Match ASan's 8-byte shadow-memory granularity so adjacent slots poison independently.
     static_assert(alignof(T) >= 8 && sizeof(T) % 8 == 0);
 
     SlabPool() = default;
@@ -40,9 +41,7 @@ struct SlabPool {
                 }
             }
         }
-#ifndef NDEBUG
-        assert(detached_count_ == 0);
-#endif
+        assert(in_flight_count_ == 0);
         release_all_chunks();
     }
 
@@ -54,6 +53,7 @@ struct SlabPool {
         const auto local = slot % ChunkSize;
         auto &storage = chunk.storage[local];
         unpoison(&storage, sizeof(storage));
+        const InFlightGuard in_flight{in_flight_count_};
         T *ptr;
         try {
             ptr = std::construct_at(reinterpret_cast<T *>(storage.bytes), std::forward<Args>(args)...);
@@ -76,9 +76,7 @@ struct SlabPool {
         chunk.live_mask &= ~bit(local);
         chunk.meta[local].owner = nullptr;
         --live_count_;
-#ifndef NDEBUG
-        ++detached_count_;
-#endif
+        ++in_flight_count_;
         return payload(chunk, local);
     }
 
@@ -87,32 +85,22 @@ struct SlabPool {
         const auto local = slot % ChunkSize;
         assert(!(chunk.live_mask & bit(local)) && ptr == payload(chunk, local));
         std::destroy_at(ptr);
-#ifndef NDEBUG
-        assert(detached_count_ > 0);
-        --detached_count_;
-#endif
+        assert(in_flight_count_ > 0);
+        --in_flight_count_;
         auto &storage = chunk.storage[local];
         poison(&storage, sizeof(storage));
         // A destructor can allocate from this pool. Publish the slot only after it returns.
         free_slot(chunk, local, slot);
     }
 
-    Owner *first_live_owner() const noexcept {
-        if (empty()) return nullptr;
-        for (const auto &chunk : chunks_) {
-            if (chunk->live_mask != 0) return chunk->meta[std::countr_zero(chunk->live_mask)].owner;
-        }
-        return nullptr;
-    }
-
-    // The callback must detach the passed owner. It may also erase or emplace other slots.
+    // The callback must detach the passed owner. It may also erase, emplace, or release chunks once empty.
     // Insertions into already visited chunks are left for another pass.
     template <typename Fn>
     void drain_owners(Fn &&fn) {
         if (empty()) return;
         for (std::size_t i = 0; i < chunks_.size(); ++i) {
-            auto &chunk = *chunks_[i];
-            while (chunk.live_mask != 0) {
+            while (i < chunks_.size() && chunks_[i]->live_mask != 0) {
+                auto &chunk = *chunks_[i];
                 fn(*chunk.meta[std::countr_zero(chunk.live_mask)].owner);
             }
         }
@@ -129,16 +117,14 @@ struct SlabPool {
         for_each_live_slot([&](Chunk &chunk, std::size_t local) { fn(*payload(chunk, local)); });
     }
 
-    // All detached slots must have finished destruction before releasing storage.
-    void release_all_chunks() noexcept {
-        assert(empty());
-#ifndef NDEBUG
-        assert(detached_count_ == 0);
-#endif
+    // Releases chunk storage only when no live, constructing, or detached slots remain.
+    bool release_all_chunks() noexcept {
+        if (!empty() || in_flight_count_ != 0) return false;
         for (const auto &chunk : chunks_) unpoison(chunk->storage, sizeof(chunk->storage));
         chunks_.clear();
         next_fresh_ = 0;
         free_head_ = invalid_slot;
+        return true;
     }
 
     std::uint32_t live_count() const noexcept { return live_count_; }
@@ -146,6 +132,14 @@ struct SlabPool {
     bool empty() const noexcept { return live_count_ == 0; }
 
 private:
+    struct InFlightGuard {
+        std::uint32_t &count;
+
+        explicit InFlightGuard(std::uint32_t &c) noexcept : count(c) { ++count; }
+
+        ~InFlightGuard() noexcept { --count; }
+    };
+
     struct alignas(T) SlotStorage {
         std::byte bytes[sizeof(T)];
     };
@@ -211,9 +205,7 @@ private:
 
     std::vector<std::unique_ptr<Chunk>> chunks_;
     std::uint32_t live_count_ = 0;
-#ifndef NDEBUG
-    std::uint32_t detached_count_ = 0;
-#endif
+    std::uint32_t in_flight_count_ = 0;
     std::uint32_t next_fresh_ = 0;
     std::uint32_t free_head_ = invalid_slot;
 };
