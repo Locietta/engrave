@@ -60,6 +60,11 @@ void append_note(TrackEvents &track, const NoteRecord &record, [[maybe_unused]] 
 Span append_pitch_curve(TrackEvents &track, const ArticulationMap &articulations, std::span<const CurvePoint> custom_pitch_curve,
                         FreezeProgress &progress) {
     if (!custom_pitch_curve.empty()) {
+        for (std::size_t i = 1; i < custom_pitch_curve.size(); ++i) {
+            if (custom_pitch_curve[i].at <= custom_pitch_curve[i - 1].at) {
+                throw std::logic_error("custom pitch curve must have strictly ascending keys");
+            }
+        }
         return append_curve(track, custom_pitch_curve, progress);
     }
 

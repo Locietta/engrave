@@ -73,20 +73,20 @@ struct CurvePoint {
 };
 
 struct NoteEmitInput {
-    timestamp_t nominal_timestamp;
-    duration_t nominal_duration;
-    voice_layer_idx_t voice_layer;
-    staff_layer_idx_t staff_layer;
-    pitch_level_t nominal_pitch_level;
-    dynamic_level_t nominal_dynamic_level;
-    double bps;
+    timestamp_t nominal_timestamp = 0;
+    duration_t nominal_duration = 0;
+    voice_layer_idx_t voice_layer = 0;
+    staff_layer_idx_t staff_layer = 0;
+    pitch_level_t nominal_pitch_level = 0;
+    dynamic_level_t nominal_dynamic_level = 0;
+    double bps = 0.0;
     bool clamp_negative_timestamp = false;
     float required_velocity_fraction = 0.f;
 };
 
 struct NoteTiming {
-    timestamp_t actual_timestamp;
-    duration_t actual_duration;
+    timestamp_t actual_timestamp = 0;
+    duration_t actual_duration = 0;
 };
 
 NoteTiming compute_note_timing(const NoteEmitInput &input, const ArticulationMap &articulations);

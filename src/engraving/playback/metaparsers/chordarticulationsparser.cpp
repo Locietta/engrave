@@ -93,8 +93,8 @@ void ChordArticulationsParser::parse_spanners(const Chord *chord, const Renderin
         return;
     }
 
-    auto intervals = spanner_map.find_overlapping(ctx.nominal_position_start_tick, ctx.nominal_position_end_tick,
-                                                  /*excludeCollisions*/ true);
+    const auto &intervals = spanner_map.find_overlapping(ctx.nominal_position_start_tick, ctx.nominal_position_end_tick,
+                                                         /*excludeCollisions*/ true);
 
     for (const auto &interval : intervals) {
         const Spanner *spanner = interval.value;

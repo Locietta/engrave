@@ -703,10 +703,6 @@ struct ArticulationMap : public FlatMap<ArticulationType, ArticulationAppliedDat
         reset_data();
 
         ParamsSum params_sum;
-        for (size_t i = 0; i < ::muse::mpe::ArticulationMap::expected_size; ++i) {
-            params_sum.pitch_offset_map.insert_or_assign(static_cast<int>(i) * ::muse::mpe::ten_percent, 0);
-            params_sum.dynamic_offset_map.insert_or_assign(static_cast<int>(i) * ::muse::mpe::ten_percent, 0);
-        }
 
         for (auto it = cbegin(); it != cend(); ++it) {
             const ArticulationAppliedData &applied_articulation = it->second;
@@ -733,8 +729,8 @@ private:
         std::int64_t max_amplitude_level = 0;
         std::int64_t pitch_range = 0;
         std::int64_t dynamic_range = 0;
-        ValuesCurve<std::int64_t> pitch_offset_map;
-        ValuesCurve<std::int64_t> dynamic_offset_map;
+        std::array<std::int64_t, expected_size> pitch_offset_map{};
+        std::array<std::int64_t, expected_size> dynamic_offset_map{};
     };
 
     template <typename T>
@@ -761,13 +757,10 @@ private:
             !exp_pattern.dynamic_offset_map.empty() && exp_pattern.max_amplitude_level() != dynamic_level_from_type(DynamicType::NATURAL);
 
         if (has_meaningful_dynamic_offset) {
-            auto out_it = out.dynamic_offset_map.begin();
-            auto seg_it = exp_pattern.dynamic_offset_map.cbegin();
-
-            while (out_it != out.dynamic_offset_map.end() && seg_it != exp_pattern.dynamic_offset_map.cend()) {
-                out_it->second += seg_it->second;
-                ++out_it;
-                ++seg_it;
+            std::size_t idx = 0;
+            for (auto seg_it = exp_pattern.dynamic_offset_map.cbegin();
+                 idx < out.dynamic_offset_map.size() && seg_it != exp_pattern.dynamic_offset_map.cend(); ++idx, ++seg_it) {
+                out.dynamic_offset_map[idx] += seg_it->second;
             }
         }
 
@@ -776,13 +769,10 @@ private:
         const bool has_meaningful_pitch_offset = !pitch_pattern.pitch_offset_map.empty() && pitch_pattern.max_amplitude_level() != 0;
 
         if (has_meaningful_pitch_offset) {
-            auto out_it = out.pitch_offset_map.begin();
-            auto seg_it = pitch_pattern.pitch_offset_map.cbegin();
-
-            while (out_it != out.pitch_offset_map.end() && seg_it != pitch_pattern.pitch_offset_map.cend()) {
-                out_it->second += seg_it->second;
-                ++out_it;
-                ++seg_it;
+            std::size_t idx = 0;
+            for (auto seg_it = pitch_pattern.pitch_offset_map.cbegin();
+                 idx < out.pitch_offset_map.size() && seg_it != pitch_pattern.pitch_offset_map.cend(); ++idx, ++seg_it) {
+                out.pitch_offset_map[idx] += seg_it->second;
             }
         }
     }
@@ -830,10 +820,12 @@ private:
         if (dynamic_changes_count > 0) {
             average_max_amplitude_level_ = clamped_average<dynamic_level_t>(params_sum.max_amplitude_level, dynamic_changes_count);
             average_dynamic_range_ = clamped_average<dynamic_level_t>(params_sum.dynamic_range, dynamic_changes_count);
+            average_dynamic_offset_map_.reserve(expected_size);
 
-            for (const auto &pair : params_sum.dynamic_offset_map) {
-                average_dynamic_offset_map_.insert_or_assign(pair.first,
-                                                             clamped_average<dynamic_level_t>(pair.second, dynamic_changes_count));
+            for (std::size_t i = 0; i < expected_size; ++i) {
+                average_dynamic_offset_map_.insert_or_assign(
+                    static_cast<int>(i) * ::muse::mpe::ten_percent,
+                    clamped_average<dynamic_level_t>(params_sum.dynamic_offset_map[i], dynamic_changes_count));
             }
         } else if (dynamic_changes_count == 0) {
             average_max_amplitude_level_ = cbegin()->second.applied_pattern_segment().expression_pattern.max_amplitude_level();
@@ -843,9 +835,12 @@ private:
 
         if (pitch_changes_count > 0) {
             average_pitch_range_ = clamped_average<pitch_level_t>(params_sum.pitch_range, pitch_changes_count);
+            average_pitch_offset_map_.reserve(expected_size);
 
-            for (const auto &pair : params_sum.pitch_offset_map) {
-                average_pitch_offset_map_.insert_or_assign(pair.first, clamped_average<pitch_level_t>(pair.second, pitch_changes_count));
+            for (std::size_t i = 0; i < expected_size; ++i) {
+                average_pitch_offset_map_.insert_or_assign(
+                    static_cast<int>(i) * ::muse::mpe::ten_percent,
+                    clamped_average<pitch_level_t>(params_sum.pitch_offset_map[i], pitch_changes_count));
             }
         } else if (pitch_changes_count == 0) {
             average_pitch_range_ = cbegin()->second.meta.overall_pitch_changes_range;

@@ -302,6 +302,7 @@ RenderingContext BendsRenderer::build_rendering_context(const Note *note, const 
 
 void BendsRenderer::emit_bend(const Note *start_note, const RenderingContext &start_note_ctx, BendCollector &collector,
                               const BendTimeFactorMap &time_factor_map, const NoteEmitter &emitter) {
+    IF_ASSERT_FAILED(collector.start_articulations && !collector.points.empty()) { return; }
     ArticulationMap &articulations = *collector.start_articulations;
     const BendPoint &first = collector.points.front();
     const timestamp_t timestamp = first.actual_timestamp;
