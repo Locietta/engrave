@@ -441,10 +441,19 @@ struct NonMovableArg {
 
 struct MemberHolder {
     int field = 7;
+
+    int doubled() const { return field * 2; }
+
+    int bump(int delta) {
+        field += delta;
+        return field;
+    }
 };
 
 void check_unique_fn_storage() {
     using AddressFn = UniqueFn<std::uintptr_t() const noexcept>;
+    static_assert(sizeof(AddressFn) == 4 * sizeof(void *));
+    static_assert(alignof(AddressFn) == alignof(void *));
     static_assert(std::is_nothrow_move_constructible_v<AddressFn>);
     static_assert(std::is_nothrow_move_assignable_v<AddressFn>);
 
@@ -494,6 +503,22 @@ void check_unique_fn_storage() {
     }
     EXPECT_EQ(destructions, 1);
 
+    // Over-aligned target with sizeof <= SBO size still falls back to aligned global heap allocation.
+    struct alignas(16) SmallAlignedTarget {
+        std::uint64_t a = 1;
+        std::uint64_t b = 2;
+
+        std::uintptr_t operator()() const noexcept { return reinterpret_cast<std::uintptr_t>(this); }
+    };
+
+    static_assert(sizeof(SmallAlignedTarget) <= 3 * sizeof(void *));
+    AddressFn small_aligned = SmallAlignedTarget{};
+    const auto small_aligned_addr = small_aligned();
+    EXPECT_EQ(small_aligned_addr % 16, 0u);
+    AddressFn moved_small_aligned = std::move(small_aligned);
+    EXPECT_FALSE(small_aligned);
+    EXPECT_EQ(moved_small_aligned(), small_aligned_addr);
+
     struct alignas(64) AlignedTarget {
         std::uintptr_t operator()() const noexcept { return reinterpret_cast<std::uintptr_t>(this); }
     };
@@ -504,6 +529,33 @@ void check_unique_fn_storage() {
     AddressFn moved_aligned = std::move(aligned);
     EXPECT_FALSE(aligned);
     EXPECT_EQ(moved_aligned(), aligned_address);
+
+    // Heap allocation uses ::new / ::delete and ignores class-specific operator new overrides.
+    struct NullClassNewTarget {
+        std::array<int, 16> pad{};
+
+        static void *operator new(std::size_t) noexcept { return nullptr; }
+
+        static void operator delete(void *) noexcept {}
+
+        int operator()() const { return 73; }
+    };
+
+    struct DeletedClassNewTarget {
+        std::array<int, 16> pad{};
+
+        static void *operator new(std::size_t) = delete;
+        static void operator delete(void *) = delete;
+
+        int operator()() const { return 79; }
+    };
+
+    UniqueFn<int()> from_null_new = NullClassNewTarget{};
+    ASSERT_TRUE(static_cast<bool>(from_null_new));
+    EXPECT_EQ(from_null_new(), 73);
+    UniqueFn<int()> from_deleted_new = DeletedClassNewTarget{};
+    ASSERT_TRUE(static_cast<bool>(from_deleted_new));
+    EXPECT_EQ(from_deleted_new(), 79);
 }
 
 void check_unique_fn_failed_replacement() {
@@ -547,13 +599,19 @@ void check_unique_fn_reentrant_replacement() {
 
     struct OnDestroy {
         Fn *owner;
+        int *destructions;
         void (*callback)(Fn &);
 
-        OnDestroy(Fn &fn, void (*action)(Fn &)) : owner(&fn), callback(action) {}
+        OnDestroy(Fn &fn, int &count, void (*action)(Fn &)) : owner(&fn), destructions(&count), callback(action) {}
 
-        OnDestroy(OnDestroy &&other) noexcept : owner(std::exchange(other.owner, nullptr)), callback(other.callback) {}
+        OnDestroy(OnDestroy &&other) noexcept
+            : owner(std::exchange(other.owner, nullptr)), destructions(std::exchange(other.destructions, nullptr)),
+              callback(other.callback) {}
 
         ~OnDestroy() {
+            if (destructions) {
+                ++(*destructions);
+            }
             if (owner) {
                 callback(*owner);
             }
@@ -562,24 +620,101 @@ void check_unique_fn_reentrant_replacement() {
         int operator()() const { return 11; }
     };
 
+    int reset_destructions = 0;
     Fn fn;
-    fn = OnDestroy(fn, [](Fn &owner) {
+    fn = OnDestroy(fn, reset_destructions, [](Fn &owner) {
         EXPECT_FALSE(owner);
         owner.reset();
         owner = [] { return 37; };
     });
     fn.reset();
+    EXPECT_EQ(reset_destructions, 1);
     ASSERT_TRUE(fn);
     EXPECT_EQ(fn(), 37);
 
-    fn = OnDestroy(fn, [](Fn &owner) {
+    // Move-assignment publishes incoming rhs before running the old target's destructor once.
+    int assign_destructions = 0;
+    fn = OnDestroy(fn, assign_destructions, [](Fn &owner) {
         ASSERT_TRUE(owner);
         EXPECT_EQ(owner(), 41);
         owner = [] { return 43; };
     });
-    fn = [] { return 41; };
+    Fn incoming = [] { return 41; };
+    fn = std::move(incoming);
+    EXPECT_FALSE(incoming);
+    EXPECT_EQ(assign_destructions, 1);
     ASSERT_TRUE(fn);
     EXPECT_EQ(fn(), 43);
+
+    // A non-trivially-destructible target with defaulted move ctor must neither double-destroy nor corrupt storage on move-assign.
+    struct ReentrantDefaultedMove {
+        std::unique_ptr<int> live;
+        Fn *owner;
+        int *destructions;
+
+        ReentrantDefaultedMove(std::unique_ptr<int> v, Fn *o, int *d) noexcept : live(std::move(v)), owner(o), destructions(d) {}
+
+        ReentrantDefaultedMove(ReentrantDefaultedMove &&) noexcept = default;
+
+        ~ReentrantDefaultedMove() {
+            if (live) {
+                if (destructions) {
+                    ++(*destructions);
+                }
+                if (owner) {
+                    EXPECT_TRUE(*owner);
+                    EXPECT_EQ((*owner)(), 61);
+                    *owner = [p = std::make_unique<int>(67)] { return *p; };
+                }
+            }
+        }
+
+        int operator()() const { return *live; }
+    };
+
+    int defaulted_destructions = 0;
+    fn = ReentrantDefaultedMove(std::make_unique<int>(59), &fn, &defaulted_destructions);
+    Fn rhs = [] { return 61; };
+    fn = std::move(rhs);
+    EXPECT_FALSE(rhs);
+    EXPECT_EQ(defaulted_destructions, 1);
+    ASSERT_TRUE(fn);
+    EXPECT_EQ(fn(), 67);
+
+    // Scope-exit ~UniqueFnBase drains heap targets installed re-entrantly during destruction.
+    int scope_inner_destructions = 0;
+    int scope_outer_destructions = 0;
+    {
+        Fn scoped;
+
+        struct ScopeInstall {
+            Fn *owner;
+            int *outer_count;
+            int *inner_count;
+
+            ScopeInstall(Fn *o, int *outer, int *inner) noexcept : owner(o), outer_count(outer), inner_count(inner) {}
+
+            ScopeInstall(ScopeInstall &&other) noexcept
+                : owner(std::exchange(other.owner, nullptr)), outer_count(std::exchange(other.outer_count, nullptr)),
+                  inner_count(other.inner_count) {}
+
+            ~ScopeInstall() {
+                if (outer_count) {
+                    ++(*outer_count);
+                }
+                if (owner) {
+                    int *count = inner_count;
+                    *owner = [guard = std::shared_ptr<int>(nullptr, [count](int *) { ++(*count); })] { return guard ? 1 : 0; };
+                }
+            }
+
+            int operator()() const { return 0; }
+        };
+
+        scoped = ScopeInstall(&scoped, &scope_outer_destructions, &scope_inner_destructions);
+    }
+    EXPECT_EQ(scope_outer_destructions, 1);
+    EXPECT_EQ(scope_inner_destructions, 1);
 
     fn = [&fn] {
         fn.reset();
@@ -679,7 +814,7 @@ TEST(MpeFlatMapTest, FnRefAndUniqueFnSemantics) {
     void_owned(7);
     EXPECT_EQ(void_side_effect, 12);
 
-    // Null member pointer yields empty UniqueFn; engaged member pointer invokes cleanly.
+    // Null member pointer yields empty UniqueFn; engaged member pointers invoke cleanly.
     int MemberHolder::*null_mp = nullptr;
     UniqueFn<int(MemberHolder &)> mp_empty = null_mp;
     EXPECT_FALSE(static_cast<bool>(mp_empty));
@@ -687,6 +822,41 @@ TEST(MpeFlatMapTest, FnRefAndUniqueFnSemantics) {
     ASSERT_TRUE(static_cast<bool>(mp_engaged));
     MemberHolder holder{11};
     EXPECT_EQ(mp_engaged(holder), 11);
+
+    int (MemberHolder::*null_mfp)() const = nullptr;
+    UniqueFn<int(const MemberHolder &) const> mfp_empty = null_mfp;
+    EXPECT_FALSE(static_cast<bool>(mfp_empty));
+    UniqueFn<int(const MemberHolder &) const> mfp_const = &MemberHolder::doubled;
+    EXPECT_EQ(mfp_const(holder), 22);
+    UniqueFn<int(MemberHolder &, int)> mfp_mut = &MemberHolder::bump;
+    EXPECT_EQ(mfp_mut(holder, 4), 15);
+    EXPECT_EQ(holder.field, 15);
+
+    std::function<int(int)> live_std_fn = [](int x) { return x + 9; };
+    UniqueFn<int(int)> from_live_std = live_std_fn;
+    ASSERT_TRUE(static_cast<bool>(from_live_std));
+    EXPECT_EQ(from_live_std(3), 12);
+    UniqueFn<int(int) const> strict_unique = [](int x) { return x * 5; };
+    UniqueFn<int(int)> widened_unique = std::move(strict_unique);
+    EXPECT_FALSE(static_cast<bool>(strict_unique));
+    ASSERT_TRUE(static_cast<bool>(widened_unique));
+    EXPECT_EQ(widened_unique(4), 20);
+
+    struct ConstOverload {
+        int operator()() { return 1; }
+
+        int operator()() const { return 2; }
+    };
+
+    UniqueFn<int()> call_non_const = ConstOverload{};
+    const UniqueFn<int() const> call_const = ConstOverload{};
+    EXPECT_EQ(call_non_const(), 1);
+    EXPECT_EQ(call_const(), 2);
+
+    auto mutable_only = [n = 0]() mutable { return ++n; };
+    auto throwing_fn = []() { return 1; };
+    static_assert(!std::is_constructible_v<UniqueFn<int() const>, decltype(mutable_only)>);
+    static_assert(!std::is_constructible_v<UniqueFn<int() noexcept>, decltype(throwing_fn)>);
 
     // UniqueFn supports implicit lambda conversion, move-only captures, null reset, and const callables.
     UniqueFn<int(int)> empty_owned;

@@ -32,7 +32,12 @@ struct UniqueFnBase {
 
     UniqueFnBase(std::nullptr_t) noexcept {}
 
-    UniqueFnBase(UniqueFnBase &&other) noexcept { move_from(other); }
+    UniqueFnBase(UniqueFnBase &&other) noexcept {
+        if (other.ops_) {
+            std::memcpy(buf_, other.buf_, k_sbo_size);
+            ops_ = std::exchange(other.ops_, nullptr);
+        }
+    }
 
     UniqueFnBase(const UniqueFnBase &) = delete;
     UniqueFnBase &operator=(const UniqueFnBase &) = delete;
@@ -46,14 +51,18 @@ struct UniqueFnBase {
 
     UniqueFnBase &operator=(UniqueFnBase &&other) noexcept {
         if (this != &other) {
-            UniqueFnBase old(std::move(*this));
-            if (ops_) {
-                // A moved-from inline target's destructor may have already replaced this target.
-                other.reset();
-            } else {
-                move_from(other);
+            const Ops *old_ops = ops_;
+            void *old_ptr = nullptr;
+            if (old_ops && old_ops->destroy) {
+                std::memcpy(&old_ptr, buf_, sizeof(old_ptr));
             }
-            old.destroy_detached();
+            if (other.ops_) {
+                std::memcpy(buf_, other.buf_, k_sbo_size);
+            }
+            ops_ = std::exchange(other.ops_, nullptr);
+            if (old_ops && old_ops->destroy) {
+                old_ops->destroy(old_ptr);
+            }
         }
         return *this;
     }
@@ -76,25 +85,32 @@ struct UniqueFnBase {
     }
 
     void reset() noexcept {
-        UniqueFnBase old(std::move(*this));
-        old.destroy_detached();
+        if (const Ops *ops = std::exchange(ops_, nullptr)) {
+            if (ops->destroy) {
+                void *ptr = nullptr;
+                std::memcpy(&ptr, buf_, sizeof(ptr));
+                ops->destroy(ptr);
+            }
+        }
     }
 
     explicit operator bool() const noexcept { return ops_ != nullptr; }
 
 private:
     static constexpr std::size_t k_sbo_size = 3 * sizeof(void *);
-    static constexpr std::size_t k_sbo_align = alignof(std::max_align_t);
+    static constexpr std::size_t k_sbo_align = alignof(void *);
     using InvokeByte = std::conditional_t<IsConst, const std::byte, std::byte>;
 
     struct Ops {
         R (*invoke)(InvokeByte *, Args &&...) noexcept(IsNoexcept);
-        bool (*move_to)(std::byte *, std::byte *) noexcept;
-        void (*destroy)(std::byte *) noexcept;
+        void (*destroy)(void *) noexcept;
     };
 
+    // Trivially copyable, trivially move-constructible, and trivially destructible targets are
+    // implicit-lifetime types that relocate via memcpy with no user code running during moves or reset.
     template <class T>
-    static constexpr bool fits_inline = sizeof(T) <= k_sbo_size && alignof(T) <= k_sbo_align && std::is_nothrow_move_constructible_v<T>;
+    static constexpr bool fits_inline = sizeof(T) <= k_sbo_size && alignof(T) <= k_sbo_align && std::is_trivially_copyable_v<T> &&
+                                        std::is_trivially_move_constructible_v<T> && std::is_trivially_destructible_v<T>;
 
     template <class T, class Byte>
     static auto *target(Byte *buf) noexcept {
@@ -102,10 +118,15 @@ private:
         if constexpr (fits_inline<T>) {
             return std::launder(reinterpret_cast<Target *>(buf));
         } else {
-            void *ptr;
+            void *ptr = nullptr;
             std::memcpy(&ptr, buf, sizeof(ptr));
             return static_cast<Target *>(ptr);
         }
+    }
+
+    template <class T>
+    static void destroy_heap(void *ptr) noexcept {
+        ::delete static_cast<T *>(ptr);
     }
 
     template <class T>
@@ -113,40 +134,8 @@ private:
         [](InvokeByte *buf, Args &&...args) noexcept(IsNoexcept) -> R {
             return invoke_r_or_void<R>(*target<T>(buf), std::forward<Args>(args)...);
         },
-        [](std::byte *dst, std::byte *src) noexcept {
-            if constexpr (fits_inline<T>) {
-                std::construct_at(reinterpret_cast<T *>(dst), std::move(*target<T>(src)));
-                return true;
-            } else {
-                std::memcpy(dst, src, sizeof(void *));
-                return false;
-            }
-        },
-        [](std::byte *buf) noexcept {
-            if constexpr (fits_inline<T>) {
-                std::destroy_at(target<T>(buf));
-            } else {
-                delete target<T>(buf);
-            }
-        },
+        fits_inline<T> ? nullptr : &destroy_heap<T>,
     };
-
-    void move_from(UniqueFnBase &other) noexcept {
-        if (const Ops *ops = std::exchange(other.ops_, nullptr)) {
-            const bool destroy_source = ops->move_to(buf_, other.buf_);
-            ops_ = ops;
-            // An inline move leaves a live source object. Publish both states before its destructor can re-enter.
-            if (destroy_source) {
-                ops->destroy(other.buf_);
-            }
-        }
-    }
-
-    void destroy_detached() noexcept {
-        if (const Ops *ops = std::exchange(ops_, nullptr)) {
-            ops->destroy(buf_);
-        }
-    }
 
 protected:
     alignas(k_sbo_align) std::byte buf_[k_sbo_size];
@@ -164,7 +153,7 @@ protected:
         if constexpr (fits_inline<Decayed>) {
             std::construct_at(reinterpret_cast<Decayed *>(buf_), std::forward<F>(fn));
         } else {
-            void *ptr = new Decayed(std::forward<F>(fn));
+            void *ptr = ::new Decayed(std::forward<F>(fn));
             std::memcpy(buf_, &ptr, sizeof(ptr));
         }
         ops_ = &target_ops<Decayed>;
@@ -180,7 +169,7 @@ protected:
 
 } // namespace detail
 
-// Owning move-only callable with inline storage for small, nothrow-movable targets.
+// Owning move-only callable with inline storage for small, trivially relocatable targets.
 // Empty function pointers, member pointers, and nullable wrappers yield an empty UniqueFn.
 template <class Sig>
 struct UniqueFn;

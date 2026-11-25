@@ -16,6 +16,7 @@
 
 namespace engrave {
 
+// Include <engrave/edit.h> to call edit()/write_phrase(), and <engrave/music.h> for read_music()/write_phrase().
 struct Batch;
 struct EditResult;
 struct MusicRange;
