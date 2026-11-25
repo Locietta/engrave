@@ -7,10 +7,44 @@
 #include "engraving/dom/barline.h"
 #include "engraving/types/symnames.h"
 #include "engraving/types/typesconv.h"
+#include "global/types/translatablestring.h"
 
 using namespace mu::engraving;
 using muse::AsciiStringView;
 using muse::String;
+using muse::TranslatableString;
+
+TEST(TranslatableString, FormatsIntegersStringsAndNestedArguments) {
+    const TranslatableString verse("test", "Verse %1");
+    const auto third_verse = verse.arg(3);
+    EXPECT_EQ(third_verse.translated(), String(u"Verse 3"));
+    EXPECT_EQ(verse.translated(), String(u"Verse %1"));
+    EXPECT_EQ(TranslatableString::untranslatable("%1 section").arg(String(u"Brass")).translated(), String(u"Brass section"));
+
+    const TranslatableString locator("test", "%2: %1", "rehearsal mark", 2);
+    const auto location = locator.arg(third_verse, String(u"Rehearsal"));
+    EXPECT_EQ(location.translated(), String(u"Rehearsal: Verse 3"));
+    EXPECT_EQ(location.translated(4), String(u"Rehearsal: Verse 3"));
+    EXPECT_TRUE(location.is_translatable());
+    EXPECT_STREQ(location.disambiguation, "rehearsal mark");
+    EXPECT_EQ(location.default_n, 2);
+    EXPECT_EQ(locator.arg(String(u"Verse 3")).arg(String(u"Rehearsal")), location);
+    EXPECT_NE(locator.arg(verse.arg(4), String(u"Rehearsal")), location);
+}
+
+TEST(TranslatableString, PreservesEmptyKeysAndLiteralArgumentText) {
+    EXPECT_TRUE(TranslatableString().arg(3).is_empty());
+
+    const TranslatableString label("test", "%1");
+    const auto blank = label.arg(String());
+    EXPECT_FALSE(blank.is_empty());
+    EXPECT_TRUE(blank.translated().empty());
+
+    const String literal(std::u16string_view(u"A\0B", 3));
+    const auto formatted = label.arg(literal);
+    EXPECT_EQ(formatted.translated(), literal);
+    EXPECT_NE(formatted, TranslatableString("test", literal));
+}
 
 TEST(StaticTables, ElementNamesAndPluralMetadata) {
     EXPECT_TRUE(TConv::to_xml(ElementType::BAR_LINE) == "BarLine");

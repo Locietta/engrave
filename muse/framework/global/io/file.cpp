@@ -37,7 +37,7 @@ NativeFileSystem *muse::io::file_system() { return s_file_system; }
 
 void muse::io::set_file_system(NativeFileSystem *file_system) { s_file_system = file_system; }
 
-File::File(const PathT &file_path) : file_path_(file_path) { set_meta("file_path", file_path_.to_std_string()); }
+File::File(const PathT &file_path) : file_path_(file_path) {}
 
 File::~File() { close(); }
 

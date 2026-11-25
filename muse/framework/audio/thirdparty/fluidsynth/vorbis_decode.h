@@ -22,16 +22,9 @@
 #pragma once
 
 namespace muse::audio::fluid {
-class IVorbisDecoder {
-public:
-    virtual ~IVorbisDecoder() = default;
-
-    virtual int decode_memory(const unsigned char *mem, unsigned int len, short **output, unsigned int *channels = nullptr,
-                              unsigned int *sample_rate = nullptr) = 0;
-};
-
-class FluidVorbisDecoder {
-public:
-    static IVorbisDecoder *decoder;
+struct FluidVorbisDecoder {
+    using DecodeMemoryFn = int (*)(const unsigned char *mem, unsigned int len, short **output, unsigned int *channels,
+                                   unsigned int *sample_rate);
+    static DecodeMemoryFn decoder;
 };
 } // namespace muse::audio::fluid

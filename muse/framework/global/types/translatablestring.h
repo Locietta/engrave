@@ -22,6 +22,9 @@
 #ifndef MUSE_GLOBAL_TRANSLATABLESTRING_H
 #define MUSE_GLOBAL_TRANSLATABLESTRING_H
 
+#include <cstring>
+#include <type_traits>
+
 #include "translation.h"
 #include "types/string.h"
 
@@ -46,105 +49,52 @@ struct TranslatableString {
 
     static TranslatableString untranslatable(const String &str) { return TranslatableString(nullptr, str); }
 
-    inline bool is_empty() const { return str.empty(); }
+    inline bool is_empty() const { return str.empty() && !formatted_; }
 
     inline bool is_translatable() const { return context && context[0]; }
 
     inline String translated() const { return translated(default_n); }
 
     inline String translated(int n) const {
-        if (is_empty()) {
-            return {};
-        }
-
-        String res = is_translatable() ? mtrc(context, str, disambiguation, n) : str;
-
-        for (const auto &arg : args) {
-            arg->apply(res);
-        }
-
-        return res;
+        return !formatted_ && !str.empty() && is_translatable() ? mtrc(context, str, disambiguation, n) : str;
     }
 
     template <typename... Args>
-    inline TranslatableString arg(const Args &...) const;
+    TranslatableString arg(const Args &...args) const {
+        if (is_empty()) {
+            return *this;
+        }
+
+        const auto resolve = []<typename T>(const T &value) -> decltype(auto) {
+            if constexpr (std::is_same_v<T, TranslatableString>) {
+                return value.translated();
+            } else {
+                return value;
+            }
+        };
+
+        TranslatableString result;
+        result.context = context;
+        result.disambiguation = disambiguation;
+        result.default_n = default_n;
+        result.str = translated().arg(resolve(args)...);
+        result.formatted_ = true;
+        return result;
+    }
 
     bool operator==(const TranslatableString &other) const {
-        return (context == other.context || (context && other.context && strcmp(context, other.context) == 0)) && str == other.str &&
+        return (context == other.context || (context && other.context && std::strcmp(context, other.context) == 0)) && str == other.str &&
                (disambiguation == other.disambiguation ||
-                (disambiguation && other.disambiguation && strcmp(disambiguation, other.disambiguation) == 0)) &&
-               default_n == other.default_n && args == other.args;
+                (disambiguation && other.disambiguation && std::strcmp(disambiguation, other.disambiguation) == 0)) &&
+               default_n == other.default_n && formatted_ == other.formatted_;
     }
 
     bool operator!=(const TranslatableString &other) const { return !operator==(other); }
 
 private:
-    struct IArg {
-        virtual ~IArg() = default;
-
-        virtual void apply(String &res) const = 0;
-    };
-
-    template <typename... Args>
-    struct Arg;
-
-    std::vector<std::shared_ptr<const IArg>> args;
+    // Formatted text can be empty or contain user data that must bypass translation.
+    bool formatted_ = false;
 };
-
-template <typename... Args>
-struct TranslatableString::Arg : public TranslatableString::IArg {
-    std::tuple<Args...> args;
-
-    Arg(const Args &...args) : args(args...) {}
-
-    void apply(String &res) const override {
-        res = std::apply([&](const Args &...args) { return res.arg(make_arg(args)...); }, args);
-    }
-
-    template <typename T>
-    static inline auto make_arg(const T &t) {
-        if constexpr (std::is_same_v<T, TranslatableString>) {
-            return t.translated();
-        } else {
-            return t;
-        }
-    }
-};
-
-template <typename Int>
-struct TranslatableString::Arg<Int> : public TranslatableString::IArg {
-    const Int arg;
-
-    Arg(Int arg) : arg(arg) {}
-
-    void apply(String &res) const override { res = res.arg(arg); }
-};
-
-template <>
-struct TranslatableString::Arg<String> : public TranslatableString::IArg {
-    const String arg;
-
-    template <typename... T>
-    Arg(const T &...arg) : arg(arg...) {}
-
-    void apply(String &res) const override { res = res.arg(arg); }
-};
-
-template <>
-struct TranslatableString::Arg<TranslatableString> : public TranslatableString::IArg {
-    const TranslatableString arg;
-
-    Arg(const TranslatableString &arg) : arg(arg) {}
-
-    void apply(String &res) const override { res = res.arg(arg.translated()); }
-};
-
-template <typename... Args>
-TranslatableString TranslatableString::arg(const Args &...args) const {
-    TranslatableString res = *this;
-    res.args.push_back(std::make_shared<Arg<Args...>>(args...));
-    return res;
-}
 } // namespace muse
 
 #endif // MUSE_GLOBAL_TRANSLATABLESTRING_H

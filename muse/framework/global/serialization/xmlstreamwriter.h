@@ -37,7 +37,7 @@ struct XmlStreamWriter {
 
     XmlStreamWriter();
     explicit XmlStreamWriter(io::IODevice *dev);
-    virtual ~XmlStreamWriter();
+    ~XmlStreamWriter();
 
     XmlStreamWriter(const XmlStreamWriter &) = delete;
     XmlStreamWriter &operator=(const XmlStreamWriter &) = delete;

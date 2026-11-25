@@ -22,8 +22,6 @@
 
 #include "vorbisdecoder.h"
 
-#include <algorithm>
-
 #if (defined(_MSCVER) || defined(_MSC_VER))
 #pragma warning(push)
 #pragma warning(disable : 4456) // declaration hides previous local declaration
@@ -33,10 +31,8 @@
 #pragma warning(pop)
 #endif
 
-using namespace muse::audio::codec;
-
-int VorbisDecoder::decode_memory(const unsigned char *mem, unsigned int len, short **output, unsigned int *channels,
-                                 unsigned int *sample_rate) {
+int muse::audio::codec::decode_vorbis_memory(const unsigned char *mem, unsigned int len, short **output, unsigned int *channels,
+                                             unsigned int *sample_rate) {
     int channels_value = 0;
     int sample_rate_value = 0;
     int samples = stb_vorbis_decode_memory(mem, len, &channels_value, &sample_rate_value, output);
@@ -49,36 +45,4 @@ int VorbisDecoder::decode_memory(const unsigned char *mem, unsigned int len, sho
     }
 
     return samples;
-}
-
-int VorbisDecoder::decode_file(const std::string &filepath, std::vector<float> &output, unsigned int *channels, unsigned int *sample_rate) {
-    int vorbis_error;
-    stb_vorbis *decoder = stb_vorbis_open_filename(filepath.c_str(), &vorbis_error, nullptr);
-
-    if (!decoder) {
-        return -1;
-    }
-
-    if (channels) {
-        *channels = decoder->channels;
-    }
-
-    if (sample_rate) {
-        *sample_rate = decoder->sample_rate;
-    }
-
-    float predata[1000];
-    int total = 0;
-
-    while (auto readed = stb_vorbis_get_samples_float_interleaved(decoder, decoder->channels, predata, 1000)) {
-        output.resize(total + readed, 0.f);
-        auto start = output.begin() + total;
-        std::copy_n(predata, readed, start);
-
-        total += readed;
-    }
-
-    stb_vorbis_close(decoder);
-
-    return total;
 }

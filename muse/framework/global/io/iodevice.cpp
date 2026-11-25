@@ -171,18 +171,6 @@ size_t IODevice::write(const uint8_t *data, size_t len) {
 
 size_t IODevice::write(const ByteArray &ba) { return write(ba.const_data(), ba.size()); }
 
-const std::string &IODevice::meta(const std::string &key) const {
-    auto it = meta_.find(key);
-    if (it != meta_.end()) {
-        return it->second;
-    }
-
-    static const std::string dummy_val;
-    return dummy_val;
-}
-
-void IODevice::set_meta(const std::string &key, const std::string &val) { meta_[key] = val; }
-
 bool IODevice::has_error() const { return error_ != 0; }
 
 int IODevice::error() const { return error_; }

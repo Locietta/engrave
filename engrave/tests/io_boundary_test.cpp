@@ -1,13 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #include <array>
+#include <type_traits>
 
 #include <gtest/gtest.h>
 
 #include "global/io/buffer.h"
 #include "global/serialization/internal/zipcontainer.h"
+#include "global/serialization/textstream.h"
 #include "global/serialization/xmlstreamreader.h"
+#include "global/serialization/xmlstreamwriter.h"
 #include "global/types/bytearray.h"
 #include "io/byteview.h"
+
+static_assert(!std::is_polymorphic_v<muse::TextStream>);
+static_assert(!std::is_polymorphic_v<muse::XmlStreamReader>);
+static_assert(!std::is_polymorphic_v<muse::XmlStreamWriter>);
 
 TEST(ByteView, BorrowsBytesAndPreservesSeekBounds) {
     const std::array<uint8_t, 5> data{0, 0xff, 3, 4, 5};

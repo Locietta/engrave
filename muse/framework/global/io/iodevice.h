@@ -24,7 +24,6 @@
 #include <cstdint>
 #include <string>
 
-#include "global/hashmap.h"
 #include "global/types/bytearray.h"
 
 namespace muse::io {
@@ -57,9 +56,6 @@ struct IODevice {
     size_t write(const uint8_t *data, size_t len);
     size_t write(const ByteArray &ba);
 
-    const std::string &meta(const std::string &key) const;
-    void set_meta(const std::string &key, const std::string &val);
-
     bool has_error() const;
     int error() const;
     const std::string &error_string() const;
@@ -87,7 +83,6 @@ private:
 
     OpenMode mode_ = OpenMode::UNKNOWN;
     size_t pos_ = 0;
-    muse::SegmentedHashMap<std::string, std::string> meta_;
 
     int error_ = 0;
     std::string error_string_;

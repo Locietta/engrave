@@ -8,7 +8,6 @@
 
 #include "audio/common/audiotypes.h"
 #include "global/flatmap.h"
-#include "internal/codecs/vorbisdecoder.h"
 #include "internal/synthesizers/soundfontrepository.h"
 
 namespace muse::audio::synth {
@@ -36,7 +35,6 @@ struct AudioResources {
     std::vector<AudioInputParams> font_inputs;
     std::string soundfont_uri;
     std::string soundfont_id;
-    std::unique_ptr<codec::VorbisDecoder> decoder;
     std::unique_ptr<synth::SoundFontCache> cache;
 };
 

@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #include "audioresources.h"
 
+#include "thirdparty/fluidsynth/vorbis_decode.h"
+
+#include "internal/codecs/vorbisdecoder.h"
 #include "internal/synthesizers/fluidsynth/sfcachedloader.h"
-#include "log.h"
 
 using namespace muse;
 using namespace muse::audio;
@@ -11,8 +13,8 @@ using namespace muse::audio::engine;
 
 static const AudioResourceVendor fluid_vendor_name = "Fluid";
 
-AudioResources::AudioResources() : decoder(std::make_unique<codec::VorbisDecoder>()), cache(std::make_unique<SoundFontCache>()) {
-    fluid::FluidVorbisDecoder::decoder = decoder.get();
+AudioResources::AudioResources() : cache(std::make_unique<SoundFontCache>()) {
+    fluid::FluidVorbisDecoder::decoder = codec::decode_vorbis_memory;
     file_cache_bridge = cache.get();
     repository.set_on_sound_fonts_changed([this] { refresh_audio_resources(*this); });
 }
@@ -20,11 +22,8 @@ AudioResources::AudioResources() : decoder(std::make_unique<codec::VorbisDecoder
 AudioResources::~AudioResources() {
     repository.set_on_sound_fonts_changed({});
     // All render graphs and synthesizers, then the services/resolvers, are already gone.
-    // Preserve the old order: detach the Vorbis bridge before releasing cached fonts.
+    // Detach the Vorbis bridge before releasing cached fonts.
     fluid::FluidVorbisDecoder::decoder = nullptr;
-    decoder.reset();
-    // The resolver metadata cache and repository used to die with services,
-    // between decoder teardown and the final loaded-font cache release.
     resources.clear();
     repository.load_sound_fonts({});
     // Fluid instances deliberately leave fonts and file streams open in the cache.

@@ -22,18 +22,6 @@
 
 #pragma once
 
-#include <string>
-#include <vector>
-
-#include "thirdparty/fluidsynth/vorbis_decode.h"
-
 namespace muse::audio::codec {
-struct VorbisDecoder : fluid::IVorbisDecoder {
-    VorbisDecoder() = default;
-
-    int decode_memory(const unsigned char *mem, unsigned int len, short **output, unsigned int *channels = nullptr,
-                      unsigned int *sample_rate = nullptr) override;
-    int decode_file(const std::string &filepath, std::vector<float> &output, unsigned int *channels = nullptr,
-                    unsigned int *sample_rate = nullptr);
-};
+int decode_vorbis_memory(const unsigned char *mem, unsigned int len, short **output, unsigned int *channels, unsigned int *sample_rate);
 } // namespace muse::audio::codec

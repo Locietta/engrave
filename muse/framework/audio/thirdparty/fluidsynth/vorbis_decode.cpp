@@ -21,21 +21,19 @@
  */
 
 #include "vorbis_decode.h"
+
 #include "../../engine/internal/offlinecancellation.h"
 
 extern "C" {
 // Owner-thread cooperative hook. Never throws through the C sample loader.
 int engrave_fluid_cancelled() { return muse::audio::OfflineCancellation::requested() ? 1 : 0; }
 
-//! NOTE Used in fluid
 int vorbis_decode_memory(const unsigned char *mem, unsigned int len, short **output, unsigned int *channels, unsigned int *sample_rate) {
-    if (!muse::audio::fluid::FluidVorbisDecoder::decoder) {
-        return -1;
-    }
-    return muse::audio::fluid::FluidVorbisDecoder::decoder->decode_memory(mem, len, output, channels, sample_rate);
+    const auto decoder = muse::audio::fluid::FluidVorbisDecoder::decoder;
+    return decoder ? decoder(mem, len, output, channels, sample_rate) : -1;
 }
 }
 
 namespace muse::audio::fluid {
-IVorbisDecoder *FluidVorbisDecoder::decoder = nullptr;
+FluidVorbisDecoder::DecodeMemoryFn FluidVorbisDecoder::decoder = nullptr;
 } // namespace muse::audio::fluid

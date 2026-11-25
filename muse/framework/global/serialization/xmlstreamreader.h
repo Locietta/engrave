@@ -45,7 +45,7 @@ struct XmlStreamReader {
     explicit XmlStreamReader(io::IODevice *device);
     explicit XmlStreamReader(const ByteArray &data);
     explicit XmlStreamReader(std::string_view data);
-    virtual ~XmlStreamReader();
+    ~XmlStreamReader();
 
     XmlStreamReader(const XmlStreamReader &) = delete;
     XmlStreamReader &operator=(const XmlStreamReader &) = delete;
