@@ -3249,7 +3249,7 @@ TEST(Read, GraceGroupsAreOwnedByLayoutScope) {
     Chord *chord = to_chord(segment->element(0));
     add_test_grace(chord, NoteType::ACCIACCATURA);
     EXPECT_EQ(grace_group_count(&master), 0);
-    // A retained segment clone has elements but no attachment buffer.
+    // A retained segment clone has elements and empty attachment slots.
     std::unique_ptr<Segment> retained(segment->clone());
     {
         LayoutContext context(&master);

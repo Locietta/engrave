@@ -40,7 +40,7 @@ Everything up to and including the release of the flat MPE store runs on the eng
 
 The pipeline enforces strict single ownership and avoids shared ownership graphs or reference cycles:
 
-- **Engine Audio Resources (`AudioResources`)**: Engine-lifetime audio resources, including loaded SoundFonts, sound preset metadata, and audio services, are owned by `EngineAudio` and changed only on the engine owner thread, never while a render is active. Render sessions borrow these resources by reference; sessions never outlive the engine.
+- **Engine Audio Resources (`AudioResources`) and Services (`AudioServices`)**: Engine-lifetime audio resources (loaded SoundFonts and sound preset metadata in `AudioResources`, destroyed after sibling `AudioServices`) are owned by `EngineAudio` and changed only on the engine owner thread, never while a render is active. Render sessions borrow these resources by reference; sessions never outlive the engine.
 - **Render Session (`OfflineRenderSession`)**: Each export creates a fresh `OfflineRenderSession`. The session owns its track list, aux bus configurations, reverb effect processors (`fx::ReverbProcessor`), and intermediate mix buffers. Render configuration parameters (`OfflineRenderSettings`) are snapshotted and owned by value.
 - **Track Synthesis (`FluidTrack`)**: Each track owns its FluidSynth synthesizer instance (`std::unique_ptr<Fluid> fluid_`), its channel mapping (`ChannelMap`), and its sequencer (`FluidSequencer`). Synthesizers are not shared across tracks or exports.
 - **Flat MPE Store (`PlaybackScore`)**: Owned by the export orchestration in `engine_audio.cpp`. Tracks borrow event slices only while lowering their MIDI sequences; once lowered, the flat store is released before synthesis begins, draining cold event owners and the retained playback context in polled strides during the `EVENT_RELEASE` phase before freeing the flat buffers.
@@ -230,7 +230,7 @@ Cancellation is polled at bounded boundaries across all stages:
 The following stages execute without internal cancellation polling:
 
 - Document loading and initial layout (`Engine::open`) and conditional relayout
-  (`Score::doLayout`) when an unlaid-out score or excerpt is selected.
+  (`Score::do_layout`) when an unlaid-out score or excerpt is selected.
 - First-use font parsing, text shaping cache population, and audio service
   initialization.
 - Repeat/tempo cache updates and automation curve resampling.

@@ -52,7 +52,7 @@ Never introduce `virtual` functions, abstract base classes, or vtable hierarchie
 - **Single-signature callables**:
   - **Non-storing inline callbacks**: When a callback does not cross a compilation boundary and is not stored, prefer a template parameter (`template <class Fn>`).
   - **Non-owning synchronous callbacks**: Use `muse::FnRef<Sig>` (`"global/fn.h"`) — a 16-byte trivially copyable view with zero heap allocation and no `<proxy/proxy.h>` include.
-  - **Owning stored callbacks**: Use `muse::UniqueFn<Sig>` (`"global/unique_fn.h"`) instead of `std::function`. Public `engrave/include/engrave/` headers stay on standard C++ (`std::function`) so they carry no third-party header dependencies.
+  - **Owning stored callbacks**: Use `muse::UniqueFn<Sig>` (`"global/unique_fn.h"`) instead of `std::function` — self-contained with 32-byte SBO and no `<proxy/proxy.h>` include. Public `engrave/include/engrave/` headers stay on standard C++ (`std::function`) so they carry no third-party header dependencies.
 
 ## Containers and JSON
 

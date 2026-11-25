@@ -586,7 +586,7 @@ void LayoutDataStore::delete_layout_child(EngravingItem *item) {
 }
 
 void LayoutDataStore::delete_unborrowed_scratch(EngravingItem *item) {
-    assert(item);
+    if (!item) return;
     assert(!item->layout_data_ || (!item->layout_data_->item_snapped_before() && !item->layout_data_->item_snapped_after()));
     assert(!item->shared_item());
     assert(item->origin_items().empty());
@@ -594,9 +594,11 @@ void LayoutDataStore::delete_unborrowed_scratch(EngravingItem *item) {
 
     auto *score_store = item->score() && Score::is_alive(item->score()) ? item->score()->layout_data_store() : nullptr;
     auto *bound_store = item->layout_store_;
-    bool unused = false;
-    BoolGuard score_guard(score_store ? score_store->suppress_shape_prune_ : unused, true);
-    BoolGuard bound_guard(bound_store ? bound_store->suppress_shape_prune_ : unused, true);
+    if (bound_store == score_store) bound_store = nullptr;
+    bool unused_score = false;
+    bool unused_bound = false;
+    BoolGuard score_guard(score_store ? score_store->suppress_shape_prune_ : unused_score, true);
+    BoolGuard bound_guard(bound_store ? bound_store->suppress_shape_prune_ : unused_bound, true);
     delete item;
 }
 

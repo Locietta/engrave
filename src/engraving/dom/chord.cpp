@@ -2066,6 +2066,9 @@ void GraceNotesGroup::set_pos(double x, double y) {
 }
 
 void GraceNotesGroup::add_to_shape() {
+    if (!empty()) {
+        appended_segment_value->mark_pre_appended_shapes();
+    }
     for (Chord *grace : *this) {
         const PointF y_offset = grace->staff_offset();
         staff_idx_t staff_idx = grace->staff_idx();

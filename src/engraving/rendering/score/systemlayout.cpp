@@ -1708,6 +1708,7 @@ void SystemLayout::create_skylines(const ElementsToLayout &elements_to_layout, L
                                     } else if (chord->track() == arp->end_track()) {
                                         staff_bbox.set_bottom(arp_bbox.bottom());
                                     }
+                                    // Preserve legacy double-translation parity for clipped spanning arpeggios.
                                     element_shape.add((arp_bbox & staff_bbox).translated(pos), arp);
                                 }
                             }

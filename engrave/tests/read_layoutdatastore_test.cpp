@@ -538,22 +538,6 @@ TEST(LayoutDataStore, StablePayloadsAndNonAllocatingTypedReads) {
     EXPECT_TRUE(std::ranges::any_of(impl.layout_outputs, [&](const auto &output) { return output.get() == &store; }));
 }
 
-TEST(LayoutDataStore, UnborrowedScratchReleasesBoundSlabSlot) {
-    using namespace mu::engraving;
-    using namespace mu::engraving::rendering::score;
-    auto opened = g_engine->open(write470_fixture());
-    ASSERT_TRUE(opened);
-    auto &master = master_of(**opened);
-    auto &store = master.renderer()->layout_data_store(master);
-    const auto before = store.size();
-
-    auto *text = Factory::create_text(master.dummy(), TextStyleType::HEADER);
-    text->mutldata()->set_bbox(0.0, 0.0, 10.0, 10.0);
-    ASSERT_EQ(store.size(), before + 1);
-    LayoutDataStore::delete_unborrowed_scratch(text);
-    EXPECT_EQ(store.size(), before);
-}
-
 TEST(LayoutDataStore, EmptyMacrosRetireBorrowersOnlyForPublishedHeadersAndFooters) {
     using namespace mu::engraving;
     using namespace mu::engraving::rendering::score;
@@ -597,11 +581,111 @@ TEST(LayoutDataStore, EmptyMacrosRetireBorrowersOnlyForPublishedHeadersAndFooter
     EXPECT_EQ(page->footer_text(1), nullptr);
     EXPECT_EQ(shape.size(), shape_size);
     EXPECT_EQ(store.size(), after_removal);
+    // Removing published headers/footers must invalidate the page BSP tree before any rebuild.
+    EXPECT_TRUE(page->items(page->page_bounding_rect()).empty());
 
+    // Rebuilding the BSP and re-running empty macros disposes unpublished scratch text
+    // cleanly without invalidating the page BSP or leaking slab slots.
+    page->rebuild_bsp_tree();
+    ASSERT_FALSE(page->items(page->page_bounding_rect()).empty());
     HeaderFooterLayout::layout_header_footer(ctx, page);
     EXPECT_EQ(page->header_text(1), nullptr);
     EXPECT_EQ(page->footer_text(1), nullptr);
     EXPECT_EQ(store.size(), after_removal);
+    EXPECT_FALSE(page->items(page->page_bounding_rect()).empty());
+}
+
+TEST(LayoutDataStore, CrossStaffGraceRefreshClearsDestinationStaffAfterGraceScopeEnds) {
+    using namespace mu::engraving;
+    using namespace mu::engraving::rendering::score;
+    constexpr std::string_view two_staff_mscx = R"(<?xml version="1.0" encoding="UTF-8"?>
+<museScore version="5.00"><Score><Division>480</Division>
+<Part id="1"><Staff id="1"/><Staff id="2"/><Instrument id="piano"><trackName>Piano</trackName></Instrument></Part>
+<Staff id="1"><Measure><voice>
+  <Chord><durationType>quarter</durationType><Note><pitch>60</pitch><tpc>14</tpc></Note></Chord>
+  <Chord><durationType>quarter</durationType><Note><pitch>62</pitch><tpc>16</tpc></Note></Chord>
+</voice></Measure></Staff>
+<Staff id="2"><Measure><voice>
+  <Chord><durationType>quarter</durationType><Note><pitch>48</pitch><tpc>14</tpc></Note></Chord>
+  <Chord><durationType>quarter</durationType><Note><pitch>50</pitch><tpc>16</tpc></Note></Chord>
+</voice></Measure></Staff>
+</Score></museScore>)";
+    auto opened = g_engine->open(as_bytes(two_staff_mscx));
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    ASSERT_EQ(master.nstaves(), 2u);
+    auto *segment = master.first_measure()->first(SegmentType::CHORD_REST);
+    ASSERT_NE(segment, nullptr);
+    auto *main = to_chord(segment->element(4));
+    ASSERT_NE(main, nullptr);
+    auto *grace = add_test_grace(main, NoteType::ACCIACCATURA);
+    grace->set_staff_move(-1);
+    ASSERT_EQ(grace->staff_idx(), 1u);
+    ASSERT_EQ(grace->v_staff_idx(), 0u);
+
+    master.set_layout_all();
+    master.ensure_layout();
+    ASSERT_FALSE(segment->has_pre_appended_items());
+    ASSERT_TRUE(segment->has_pre_appended_shapes());
+
+    const auto contains_grace_note = [](const Shape &shape, const Chord *target) {
+        const auto *note = target->up_note();
+        return std::ranges::any_of(shape.elements(), [&](const ShapeElement &el) { return el.item() == note || el.item() == target; });
+    };
+    ASSERT_TRUE(contains_grace_note(segment->staff_shape(0), grace));
+
+    // Refresh after the LayoutContext has already cleared pre_appended_items_:
+    // destination staff 0 must also be rebuilt instead of retaining stale grace geometry.
+    ChordLayout::refresh_shape(grace);
+    EXPECT_FALSE(contains_grace_note(segment->staff_shape(0), grace));
+    EXPECT_FALSE(segment->has_pre_appended_shapes());
+}
+
+TEST(LayoutDataStore, ClonedSegmentInitializesPreAppendedSlotsAndUpdatesCountOnStaffRemoval) {
+    using namespace mu::engraving;
+    using namespace mu::engraving::rendering::score;
+    constexpr std::string_view two_staff_mscx = R"(<?xml version="1.0" encoding="UTF-8"?>
+<museScore version="5.00"><Score><Division>480</Division>
+<Part id="1"><Staff id="1"/><Staff id="2"/><Instrument id="piano"><trackName>Piano</trackName></Instrument></Part>
+<Staff id="1"><Measure><voice>
+  <Chord><durationType>whole</durationType><Note><pitch>60</pitch><tpc>14</tpc></Note></Chord>
+</voice></Measure></Staff>
+<Staff id="2"><Measure><voice>
+  <Chord><durationType>whole</durationType><Note><pitch>48</pitch><tpc>14</tpc></Note></Chord>
+</voice></Measure></Staff>
+</Score></museScore>)";
+    auto opened = g_engine->open(as_bytes(two_staff_mscx));
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto *segment = master.first_measure()->first(SegmentType::CHORD_REST);
+    ASSERT_NE(segment, nullptr);
+    auto *chord = to_chord(segment->element(0));
+    ASSERT_NE(chord, nullptr);
+    add_test_grace(chord, NoteType::ACCIACCATURA);
+
+    std::unique_ptr<Segment> cloned;
+    {
+        LayoutContext ctx(&master);
+        ChordLayout::append_grace_notes(chord, ctx);
+        ASSERT_TRUE(segment->has_pre_appended_items());
+        cloned.reset(segment->clone());
+    }
+    ASSERT_NE(cloned, nullptr);
+    EXPECT_EQ(cloned->pre_appended_items().size(), cloned->elist().size());
+    EXPECT_FALSE(cloned->has_pre_appended_items());
+
+    cloned->pre_append(chord, 0);
+    EXPECT_TRUE(cloned->has_pre_appended_items());
+    cloned->pre_append(chord, 0);
+    EXPECT_TRUE(cloned->has_pre_appended_items());
+    cloned->clear_pre_appended(0);
+    EXPECT_FALSE(cloned->has_pre_appended_items());
+
+    cloned->pre_append(chord, 0);
+    ASSERT_TRUE(cloned->has_pre_appended_items());
+    cloned->remove_staff(0);
+    EXPECT_FALSE(cloned->has_pre_appended_items());
+    EXPECT_EQ(cloned->pre_appended_items().size(), cloned->elist().size());
 }
 
 TEST(LayoutDataStore, TeardownClearsBorrowersBeforeItemDestruction) {

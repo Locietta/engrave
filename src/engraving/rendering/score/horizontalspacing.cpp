@@ -675,7 +675,8 @@ void HorizontalSpacing::move_right_aligned_segments(std::vector<SegmentPosition>
 
 void HorizontalSpacing::check_collisions_with_cross_staff_stems(const Segment *this_seg, const Segment *next_seg, staff_idx_t staff_idx,
                                                                 double &cur_min_dist) {
-    next_seg->any_effective_element([&](EngravingItem *item) {
+    // Returning true aborts the scan early, matching the original early returns.
+    std::ignore = next_seg->any_effective_element([&](EngravingItem *item) {
         if (item->v_staff_idx() != staff_idx) return false;
         ChordRest *cr = to_chord_rest(item);
         if (!cr->beam() || !cr->beam()->cross()) return false;
@@ -930,7 +931,7 @@ HorizontalSpacing::CrossBeamSpacing HorizontalSpacing::compute_cross_beam_spacin
 
     // Spacing can be adjusted for cross-beam cases only if there aren't
     // chords in other voices in this or next segment.
-    const bool opposing_directions = this_seg->any_effective_element([&](EngravingItem *e) {
+    const bool skip_adjustment = this_seg->any_effective_element([&](EngravingItem *e) {
         if (!e->is_chord_rest() || !e->staff()->visible()) {
             return false;
         }
@@ -975,7 +976,7 @@ HorizontalSpacing::CrossBeamSpacing HorizontalSpacing::compute_cross_beam_spacin
             return up_down && down_up;
         });
     });
-    if (opposing_directions) return cross_beam_type;
+    if (skip_adjustment) return cross_beam_type;
 
     cross_beam_type.up_down = up_down;
     cross_beam_type.down_up = down_up;

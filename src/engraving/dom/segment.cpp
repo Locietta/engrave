@@ -412,7 +412,8 @@ Segment::Segment(const Segment &s) : EngravingItem(s) {
         }
         elist_.push_back(ne);
     }
-    // Reset transient collision shapes rather than borrowing source item pointers on an unlaid-out clone.
+    // Reset transient collision shapes and pre-appended slots rather than borrowing source item pointers on an unlaid-out clone.
+    pre_appended_items_.assign(elist_.size(), nullptr);
     shapes_.assign(s.shapes_.size(), Shape());
 }
 
@@ -467,6 +468,7 @@ void Segment::init() {
     elist_.assign(tracks, 0);
     pre_appended_items_.assign(tracks, nullptr);
     pre_appended_count_ = 0;
+    has_pre_appended_shapes_ = false;
     shapes_.assign(staves, Shape());
 }
 
@@ -2047,6 +2049,7 @@ EngravingItem *Segment::first_element(staff_idx_t staff_idx) const {
 
 void Segment::create_shapes() {
     set_visible(false);
+    has_pre_appended_shapes_ = false;
     for (size_t staff_idx = 0; staff_idx < score()->nstaves(); ++staff_idx) {
         create_shape(staff_idx);
     }
@@ -2169,6 +2172,7 @@ void Segment::create_shape(staff_idx_t staff_idx) {
         if (item->is_grace_notes_group()) {
             to_grace_notes_group(item)->add_to_shape();
         } else {
+            mark_pre_appended_shapes();
             Shape &shape = shapes_[item->v_staff_idx()];
             item->append_shape(shape, item->pos() + item->staff_offset());
         }

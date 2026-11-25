@@ -377,6 +377,7 @@ public:
 
     void clear_shapes() {
         for (auto &shape : shapes_) shape.clear();
+        has_pre_appended_shapes_ = false;
     }
 
     void create_shapes();
@@ -465,6 +466,12 @@ public:
 
     bool has_pre_appended_items() const { return pre_appended_count_ != 0; }
 
+    bool has_pre_appended_shapes() const { return has_pre_appended_shapes_; }
+
+    void mark_pre_appended_shapes() { has_pre_appended_shapes_ = true; }
+
+    void clear_pre_appended_shapes() { has_pre_appended_shapes_ = false; }
+
     void pre_append(EngravingItem *item, track_idx_t track) {
         auto *&slot = pre_appended_items_[track];
         pre_appended_count_ -= slot != nullptr;
@@ -518,6 +525,7 @@ private:
     }
 
     size_t pre_appended_count_ = 0;
+    bool has_pre_appended_shapes_ = false;
     std::vector<EngravingItem *> elist_; // EngravingItem storage, size = staves * VOICES.
     std::vector<EngravingItem *>
         pre_appended_items_;    // Container for items appended to the left of this segment (example: grace notes), size = staves * VOICES.

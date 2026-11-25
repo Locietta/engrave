@@ -28,6 +28,8 @@ struct Tuplet;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
+struct HeaderFooterLayout;
+
 struct LayoutDataStore {
     explicit LayoutDataStore(Score &score);
     ~LayoutDataStore();
@@ -66,8 +68,6 @@ struct LayoutDataStore {
     void retire_shape_borrowers(const EngravingItem &item);
     void retire_item_borrowers(const EngravingItem &item);
     static void delete_layout_child(EngravingItem *item);
-    // The item and its payload must never have been published to layout borrowers.
-    static void delete_unborrowed_scratch(EngravingItem *item);
     void prune_spanner_segments();
 
     struct RetireEntry;
@@ -102,6 +102,11 @@ struct LayoutDataStore {
     void for_each_output(muse::FnRef<void(EngravingItem &, ItemLayoutData &)> complete);
 
 private:
+    friend struct HeaderFooterLayout;
+
+    // The item and its payload must never have been published to layout borrowers.
+    static void delete_unborrowed_scratch(EngravingItem *item);
+
     void drain_records();
     bool is_retired_in_flight(const EngravingItem &item) const;
     bool has_borrower_containers() const;

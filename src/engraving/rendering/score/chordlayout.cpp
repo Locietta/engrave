@@ -1350,9 +1350,12 @@ void ChordLayout::refresh_shape(Chord *item) {
             if (staff < count && !segment->staff_shape(staff).empty()) segment->create_shape(staff);
         };
 
-        // A pre-appended grace group can write to other staff shapes. Keep the
-        // original staff order for those segments and for spanning arpeggios.
-        if (segment->has_pre_appended_items() || item->span_arpeggio() || (item->arpeggio() && item->arpeggio()->cross_staff())) {
+        // A pre-appended grace group can write to other staff shapes and its rectangles
+        // outlive the LayoutContext attachment. Keep the ordered sweep for those segments
+        // and for spanning arpeggios.
+        if (segment->has_pre_appended_items() || segment->has_pre_appended_shapes() || item->span_arpeggio() ||
+            (item->arpeggio() && item->arpeggio()->cross_staff())) {
+            segment->clear_pre_appended_shapes();
             for (staff_idx_t staff = 0; staff < count; ++staff) refresh_staff(staff);
             return;
         }
