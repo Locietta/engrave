@@ -66,6 +66,8 @@ struct LayoutDataStore {
     void retire_shape_borrowers(const EngravingItem &item);
     void retire_item_borrowers(const EngravingItem &item);
     static void delete_layout_child(EngravingItem *item);
+    // The item and its payload must never have been published to layout borrowers.
+    static void delete_unborrowed_scratch(EngravingItem *item);
     void prune_spanner_segments();
 
     struct RetireEntry;

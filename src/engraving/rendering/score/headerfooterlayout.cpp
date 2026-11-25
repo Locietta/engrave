@@ -29,6 +29,7 @@
 #include "dom/text.h"
 #include "engraving/dom/dummyparent.h"
 #include "engraving/infrastructure/localfileinfoprovider.h"
+#include "layoutdatastore.h"
 #include "tlayout.h"
 
 using namespace mu::engraving;
@@ -72,7 +73,8 @@ void HeaderFooterLayout::create_update_header_text(LayoutContext &ctx, Page *pag
     }
 
     Text *text = page->header_text(area);
-    if (!text) {
+    const bool created = !text;
+    if (created) {
         text = Factory::create_text(page, TextStyleType::HEADER);
         text->set_flag(ElementFlag::MOVABLE, false);
         text->set_flag(ElementFlag::GENERATED, true); // set to disable editing
@@ -97,7 +99,12 @@ void HeaderFooterLayout::create_update_header_text(LayoutContext &ctx, Page *pag
     }
 
     if (!update_header_footer_text(ctx, page, text, s)) {
-        remove_header_text(page, area);
+        if (created) {
+            page->set_header_text(area, nullptr);
+            LayoutDataStore::delete_unborrowed_scratch(text);
+        } else {
+            remove_header_text(page, area);
+        }
     }
 }
 
@@ -108,7 +115,8 @@ void HeaderFooterLayout::create_update_footer_text(LayoutContext &ctx, Page *pag
     }
 
     Text *text = page->footer_text(area);
-    if (!text) {
+    const bool created = !text;
+    if (created) {
         text = Factory::create_text(page, TextStyleType::FOOTER);
         text->set_flag(ElementFlag::MOVABLE, false);
         text->set_flag(ElementFlag::GENERATED, true); // set to disable editing
@@ -133,7 +141,12 @@ void HeaderFooterLayout::create_update_footer_text(LayoutContext &ctx, Page *pag
     }
 
     if (!update_header_footer_text(ctx, page, text, s)) {
-        remove_footer_text(page, area);
+        if (created) {
+            page->set_footer_text(area, nullptr);
+            LayoutDataStore::delete_unborrowed_scratch(text);
+        } else {
+            remove_footer_text(page, area);
+        }
     }
 }
 
@@ -171,7 +184,7 @@ bool HeaderFooterLayout::update_header_footer_text(LayoutContext &ctx, Page *pag
             empty_blocks++; // count empty blocks to remove them later if there is only 1 empty block
         }
         new_blocks.insert(new_blocks.end(), dummy_text->ldata()->blocks.cbegin(), dummy_text->ldata()->blocks.cend());
-        delete dummy_text;
+        LayoutDataStore::delete_unborrowed_scratch(dummy_text);
     }
 
     if (new_blocks.empty() || (new_blocks.size() == 1 && empty_blocks == 1)) {

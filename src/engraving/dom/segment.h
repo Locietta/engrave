@@ -223,6 +223,40 @@ public:
     };
     DECLARE_LAYOUTDATA_METHODS(Segment)
 
+    template <typename Fn>
+    bool any_effective_element(Fn &&fn) const {
+        const auto *ld = ldata();
+        if (ld->suppressed) return false;
+        if (ld->suppressed_source_tracks.empty() && ld->display_copies.empty() && ld->generated.empty()) {
+            for (auto *item : elist_)
+                if (item && fn(item)) return true;
+        } else {
+            for (track_idx_t track = 0; track < elist_.size(); ++track)
+                if (auto *item = resolve_effective_element(*ld, track); item && fn(item)) return true;
+        }
+        return false;
+    }
+
+    template <typename Fn>
+    void for_each_effective_element(Fn &&fn) const {
+        any_effective_element([&](EngravingItem *item) {
+            fn(item);
+            return false;
+        });
+    }
+
+    template <typename Fn>
+    void for_each_rendered_annotation(Fn &&fn) const {
+        const auto *ld = ldata();
+        if (ld->suppressed_annotations.empty()) {
+            for (auto *item : annotations_) fn(item);
+        } else {
+            for (auto *item : annotations_)
+                if (!muse::contains(ld->suppressed_annotations, item)) fn(item);
+        }
+        for (auto *item : ld->display_annotations) fn(item);
+    }
+
     EngravingItem *element(track_idx_t track) const;
 
     const std::vector<EngravingItem *> &elist() const { return elist_; }
@@ -429,9 +463,16 @@ public:
 
     EngravingItem *pre_appended_item(track_idx_t track) const { return pre_appended_items_[track]; }
 
-    void pre_append(EngravingItem *item, track_idx_t track) { pre_appended_items_[track] = item; }
+    bool has_pre_appended_items() const { return pre_appended_count_ != 0; }
 
-    void clear_pre_appended(track_idx_t track) { pre_appended_items_[track] = nullptr; }
+    void pre_append(EngravingItem *item, track_idx_t track) {
+        auto *&slot = pre_appended_items_[track];
+        pre_appended_count_ -= slot != nullptr;
+        pre_appended_count_ += item != nullptr;
+        slot = item;
+    }
+
+    void clear_pre_appended(track_idx_t track) { pre_append(nullptr, track); }
 
     bool goes_before(const Segment *next_segment, bool rendered = false) const;
 
@@ -468,6 +509,15 @@ private:
     Segment *prev_ = nullptr;
 
     std::vector<EngravingItem *> annotations_;
+
+    EngravingItem *resolve_effective_element(const LayoutData &ld, track_idx_t track) const {
+        const auto &suppressed = ld.suppressed_source_tracks;
+        if (track < elist_.size() && elist_[track] && !(track < suppressed.size() && suppressed[track])) return elist_[track];
+        if (track < ld.display_copies.size() && ld.display_copies[track]) return ld.display_copies[track];
+        return track < ld.generated.size() ? ld.generated[track] : nullptr;
+    }
+
+    size_t pre_appended_count_ = 0;
     std::vector<EngravingItem *> elist_; // EngravingItem storage, size = staves * VOICES.
     std::vector<EngravingItem *>
         pre_appended_items_;    // Container for items appended to the left of this segment (example: grace notes), size = staves * VOICES.

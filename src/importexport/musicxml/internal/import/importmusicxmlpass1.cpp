@@ -3405,11 +3405,8 @@ void MusicXmlParserPass1::note(const String &part_id, const Fraction &s_time, Fr
     if (dura.is_valid() && dura > Fraction(0, 1)) {
         // count the chords
         int voice_int = voice_to_int(voice);
-        if (!muse::contains(muse::value(parts_, part_id).voicelist, voice_int)) {
-            VoiceDesc vs;
-            parts_[part_id].voicelist.insert({voice_int, vs});
-        }
-        parts_[part_id].voicelist[voice_int].incr_chord_rests(staff);
+        auto &voicelist = parts_[part_id].voicelist;
+        voicelist[voice_int].incr_chord_rests(staff);
         // determine note length for voiceInt overlap detection
         vod.add_note((s_time + missing_prev).ticks(), (s_time + missing_prev + dura).ticks(), voice_int, staff);
     }

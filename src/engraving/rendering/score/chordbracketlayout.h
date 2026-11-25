@@ -49,7 +49,6 @@ private:
         double bottom_y = 0.0;
     };
 
-    static std::vector<ChordBracket *> chord_brackets_in_segment(const Segment *segment);
     static BracketVisualSpan bracket_visual_span(const ChordBracket *bracket);
     static Shape bracket_collision_shape(const ChordBracket *bracket, const BracketVisualSpan &span, staff_idx_t staff_idx, double x);
     static void layout_horizontal(ChordBracket *bracket);

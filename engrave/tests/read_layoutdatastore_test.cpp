@@ -17,6 +17,7 @@
 #include "engraving/dom/tremolotwochord.h"
 #include "engraving/rendering/score/beamlayout.h"
 #include "engraving/rendering/score/chordlayout.h"
+#include "engraving/rendering/score/headerfooterlayout.h"
 #include "engraving/rendering/score/layoutcontext.h"
 #include "engraving/rendering/score/layoutdatastore.h"
 #include "engraving/rendering/score/passresetlayoutdata.h"
@@ -535,6 +536,72 @@ TEST(LayoutDataStore, StablePayloadsAndNonAllocatingTypedReads) {
     auto &impl = engrave::DocumentAccess::impl(document);
     impl.adopt_layout_output(master);
     EXPECT_TRUE(std::ranges::any_of(impl.layout_outputs, [&](const auto &output) { return output.get() == &store; }));
+}
+
+TEST(LayoutDataStore, UnborrowedScratchReleasesBoundSlabSlot) {
+    using namespace mu::engraving;
+    using namespace mu::engraving::rendering::score;
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto &store = master.renderer()->layout_data_store(master);
+    const auto before = store.size();
+
+    auto *text = Factory::create_text(master.dummy(), TextStyleType::HEADER);
+    text->mutldata()->set_bbox(0.0, 0.0, 10.0, 10.0);
+    ASSERT_EQ(store.size(), before + 1);
+    LayoutDataStore::delete_unborrowed_scratch(text);
+    EXPECT_EQ(store.size(), before);
+}
+
+TEST(LayoutDataStore, EmptyMacrosRetireBorrowersOnlyForPublishedHeadersAndFooters) {
+    using namespace mu::engraving;
+    using namespace mu::engraving::rendering::score;
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    master.style().set(Sid::SHOW_HEADER, true);
+    master.style().set(Sid::SHOW_FOOTER, true);
+    master.style().set(Sid::HEADER_FIRST_PAGE, true);
+    master.style().set(Sid::FOOTER_FIRST_PAGE, true);
+    master.style().set(Sid::HEADER_ODD_EVEN, false);
+    master.style().set(Sid::FOOTER_ODD_EVEN, false);
+    master.style().set(Sid::ODD_HEADER_C, muse::String(u"Header"));
+    master.style().set(Sid::ODD_FOOTER_C, muse::String(u"Footer"));
+    master.set_layout_all();
+    master.ensure_layout();
+
+    LayoutContext ctx(&master);
+    auto *page = master.pages().front();
+    auto *header = page->header_text(1);
+    auto *footer = page->footer_text(1);
+    ASSERT_NE(header, nullptr);
+    ASSERT_NE(footer, nullptr);
+    const auto items = page->items(page->page_bounding_rect());
+    ASSERT_NE(std::find(items.begin(), items.end(), header), items.end());
+    ASSERT_NE(std::find(items.begin(), items.end(), footer), items.end());
+
+    auto *segment = master.first_measure()->first(SegmentType::CHORD_REST);
+    auto &shape = segment->staff_shape(0);
+    const auto shape_size = shape.size();
+    shape.add(muse::RectF(1, 1, 1, 1), header);
+    shape.add(muse::RectF(2, 2, 1, 1), footer);
+
+    const auto empty_macro = muse::String(u"$:missingHeaderFooterTag:");
+    master.style().set(Sid::ODD_HEADER_C, empty_macro);
+    master.style().set(Sid::ODD_FOOTER_C, empty_macro);
+    auto &store = master.renderer()->layout_data_store(master);
+    const auto after_removal = store.size() - 2;
+    HeaderFooterLayout::layout_header_footer(ctx, page);
+    EXPECT_EQ(page->header_text(1), nullptr);
+    EXPECT_EQ(page->footer_text(1), nullptr);
+    EXPECT_EQ(shape.size(), shape_size);
+    EXPECT_EQ(store.size(), after_removal);
+
+    HeaderFooterLayout::layout_header_footer(ctx, page);
+    EXPECT_EQ(page->header_text(1), nullptr);
+    EXPECT_EQ(page->footer_text(1), nullptr);
+    EXPECT_EQ(store.size(), after_removal);
 }
 
 TEST(LayoutDataStore, TeardownClearsBorrowersBeforeItemDestruction) {

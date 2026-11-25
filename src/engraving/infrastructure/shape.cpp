@@ -479,6 +479,18 @@ void Shape::add(const Shape &s) {
     elements_.insert(elements_.end(), s.elements_.begin(), s.elements_.end());
 }
 
+void Shape::add_translated(const Shape &other, const PointF &offset) {
+    type_ = Type::COMPOSITE;
+    const auto count = other.elements_.size();
+    const auto required = elements_.size() + count;
+    if (required > elements_.capacity()) elements_.reserve(std::max(required, elements_.capacity() * 2));
+    for (size_t i = 0; i < count; ++i) {
+        auto element = other.elements_[i];
+        element.translate(offset);
+        elements_.push_back(element);
+    }
+}
+
 void Shape::add(const ShapeElement &shape_el) {
     type_ = Type::COMPOSITE;
     elements_.push_back(shape_el);
@@ -560,6 +572,16 @@ bool Shape::intersects(const Shape &other) const {
     for (const RectF &r : other.elements_) {
         if (intersects(r)) {
             return true;
+        }
+    }
+    return false;
+}
+
+bool Shape::intersects_translated(const PointF &offset, const Shape &other, const PointF &other_offset) const {
+    for (const RectF &rect : other.elements_) {
+        const RectF translated = rect.translated(other_offset);
+        for (const RectF &element : elements_) {
+            if (element.translated(offset).intersects(translated)) return true;
         }
     }
     return false;

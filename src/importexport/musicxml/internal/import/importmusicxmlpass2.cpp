@@ -2471,7 +2471,7 @@ void MusicXmlParserPass2::part() {
 
     // set the part name
     Part *part = pass1_.get_part(id);
-    MusicXmlPart mxml_part = pass1_.get_music_xml_part(id);
+    const MusicXmlPart &mxml_part = pass1_.get_music_xml_part(id);
     String part_name = mxml_part.get_name();
     set_part_instruments(logger_, &e_, part, id, score_, pass1_.get_instr_list(id), pass1_.get_intervals(id), instruments, part_name);
     part_name = replace_part_name_accidentals(part_name);

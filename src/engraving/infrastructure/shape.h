@@ -93,6 +93,11 @@ struct Shape {
 
     void clear() { elements_.clear(); }
 
+    void clear(Type type) {
+        clear();
+        type_ = type;
+    }
+
     bool equal(const Shape &sh) const {
         if (type_ != sh.type_) {
             return false;
@@ -112,6 +117,7 @@ struct Shape {
 
     // Composite
     void add(const Shape &s);
+    void add_translated(const Shape &other, const PointF &offset);
     void add(const ShapeElement &shape_el);
 
     void add(const RectF &r, const EngravingItem *p, bool ignore_for_layout) { add(ShapeElement(r, p, ignore_for_layout)); }
@@ -180,6 +186,7 @@ struct Shape {
     bool contains(const PointF &) const;
     bool intersects(const RectF &rr) const;
     bool intersects(const Shape &other) const;
+    bool intersects_translated(const PointF &offset, const Shape &other, const PointF &other_offset) const;
     bool clears_vertically(const Shape &a) const;
 
     void paint(muse::draw::Painter &painter) const;

@@ -140,27 +140,22 @@ void Segment::remove_display_item(EngravingItem *item) {
 
 std::vector<EngravingItem *> Segment::rendered_annotations() const {
     std::vector<EngravingItem *> result;
-    for (auto *item : annotations_) {
-        if (!muse::contains(ldata()->suppressed_annotations, item)) result.push_back(item);
-    }
-    const auto &copies = ldata()->display_annotations;
-    result.insert(result.end(), copies.begin(), copies.end());
+    for_each_rendered_annotation([&](EngravingItem *item) { result.push_back(item); });
     return result;
 }
 
 EngravingItem *Segment::effective_element(track_idx_t track) const {
-    if (ldata()->suppressed) return nullptr;
-    const auto &suppressed = ldata()->suppressed_source_tracks;
-    if (auto *authored = element(track); authored && !(track < suppressed.size() && suppressed[track])) return authored;
-    const auto &copies = ldata()->display_copies;
-    if (track < copies.size() && copies[track]) return copies[track];
-    const auto &generated = ldata()->generated;
-    return track < generated.size() ? generated[track] : nullptr;
+    const auto *ld = ldata();
+    return ld->suppressed ? nullptr : resolve_effective_element(*ld, track);
 }
 
 std::vector<EngravingItem *> Segment::effective_elements() const {
-    auto result = elist_;
-    for (track_idx_t track = 0; track < result.size(); ++track) result[track] = effective_element(track);
+    const auto *ld = ldata();
+    if (ld->suppressed) return std::vector<EngravingItem *>(elist_.size());
+    if (ld->suppressed_source_tracks.empty() && ld->display_copies.empty() && ld->generated.empty()) return elist_;
+
+    std::vector<EngravingItem *> result(elist_.size());
+    for (track_idx_t track = 0; track < result.size(); ++track) result[track] = resolve_effective_element(*ld, track);
     return result;
 }
 
@@ -470,7 +465,8 @@ void Segment::init() {
     size_t staves = score()->nstaves();
     size_t tracks = staves * ::mu::engraving::voices;
     elist_.assign(tracks, 0);
-    pre_appended_items_.assign(tracks, 0);
+    pre_appended_items_.assign(tracks, nullptr);
+    pre_appended_count_ = 0;
     shapes_.assign(staves, Shape());
 }
 
@@ -762,6 +758,7 @@ void Segment::insert_staff(staff_idx_t staff) {
 void Segment::remove_staff(staff_idx_t staff) {
     track_idx_t track = staff * ::mu::engraving::voices;
     elist_.erase(elist_.begin() + track, elist_.begin() + track + ::mu::engraving::voices);
+    for (auto t = track; t < track + ::mu::engraving::voices; ++t) clear_pre_appended(t);
     pre_appended_items_.erase(pre_appended_items_.begin() + track, pre_appended_items_.begin() + track + ::mu::engraving::voices);
     shapes_.erase(shapes_.begin() + staff);
 
@@ -2073,10 +2070,7 @@ void Segment::create_shape(staff_idx_t staff_idx) {
 
     track_idx_t strack = staff_idx * ::mu::engraving::voices;
     track_idx_t etrack = strack + ::mu::engraving::voices;
-    for (EngravingItem *e : effective_elements()) {
-        if (!e) {
-            continue;
-        }
+    for_each_effective_element([&](EngravingItem *e) {
         track_idx_t effective_track = e->v_staff_idx() * ::mu::engraving::voices + e->voice();
         if (effective_track >= strack && effective_track < etrack) {
             set_visible(true);
@@ -2092,11 +2086,11 @@ void Segment::create_shape(staff_idx_t staff_idx) {
                     }
                 }
                 if (!is_all_full_rests) {
-                    continue;
+                    return;
                 }
             }
             if (e->is_mm_rest() || (e->is_measure_repeat() && to_measure_repeat(e)->num_measures() > 1)) {
-                continue;
+                return;
             }
             if (e->add_to_skyline() || (e->is_chord_rest() && to_chord_rest(e)->lyrics().size() > 0)) {
                 if (e->is_chord_rest()) {
@@ -2104,18 +2098,18 @@ void Segment::create_shape(staff_idx_t staff_idx) {
                     auto *cr = to_chord_rest(e);
                     rendering::score::ChordLayout::fill_shape(cr, cr->mutldata(), ctx.conf());
                 }
-                s.add(e->shape().translate((e->is_clef() ? e->ldata()->pos() : e->pos()) + e->staff_offset()));
+                e->append_shape(s, (e->is_clef() ? e->ldata()->pos() : e->pos()) + e->staff_offset());
             }
             // Non-standard trills display a cue note that we must add to shape here
             if (e->is_chord()) {
                 add_articulations_to_shape(to_chord(e), s);
             }
         }
-    }
+    });
 
-    for (EngravingItem *e : rendered_annotations()) {
+    for_each_rendered_annotation([&](EngravingItem *e) {
         if (!e || e->staff_idx() != staff_idx) {
-            continue;
+            return;
         }
 
         set_visible(true);
@@ -2126,7 +2120,7 @@ void Segment::create_shape(staff_idx_t staff_idx) {
         }
 
         if (!e->add_to_skyline()) {
-            continue;
+            return;
         }
 
         if (e->is_harmony() || e->is_fret_diagram()) {
@@ -2163,9 +2157,9 @@ void Segment::create_shape(staff_idx_t staff_idx) {
                    !e->is_harp_pedal_diagram() && !e->is_play_tech_annotation() && !e->is_capo() && !e->is_string_tunings() &&
                    !e->is_play_count_text()) {
             // annotations added here are candidates for collision detection
-            s.add(e->shape().translate(e->pos() + e->staff_offset()));
+            e->append_shape(s, e->pos() + e->staff_offset());
         }
-    }
+    });
 
     for (track_idx_t track = strack; track < etrack; ++track) {
         if (!pre_appended_items_[track]) {
@@ -2176,7 +2170,7 @@ void Segment::create_shape(staff_idx_t staff_idx) {
             to_grace_notes_group(item)->add_to_shape();
         } else {
             Shape &shape = shapes_[item->v_staff_idx()];
-            shape.add(item->shape().translate(item->pos() + item->staff_offset()));
+            item->append_shape(shape, item->pos() + item->staff_offset());
         }
     }
 }
@@ -2198,7 +2192,7 @@ void Segment::add_articulations_to_shape(const Chord *chord, Shape &shape) {
         if (art->is_ornament() || !art->add_to_skyline()) {
             continue;
         }
-        shape.add(art->shape().translated(art->pos() + chord->pos()));
+        art->append_shape(shape, art->pos() + chord->pos());
         if (art->is_tapping()) {
             if (TappingHalfSlur *half_slur = to_tapping(art)->half_slur_above()) {
                 add_tapping_half_slur_to_shape(half_slur);
@@ -2213,7 +2207,7 @@ void Segment::add_articulations_to_shape(const Chord *chord, Shape &shape) {
     if (ornament) {
         Chord *cue_note_chord = ornament->cue_note_chord();
         if (cue_note_chord && cue_note_chord->up_note()->add_to_skyline()) {
-            shape.add(cue_note_chord->shape().translate(cue_note_chord->pos() + cue_note_chord->staff_offset()));
+            cue_note_chord->append_shape(shape, cue_note_chord->pos() + cue_note_chord->staff_offset());
         }
     }
 }
@@ -2222,20 +2216,22 @@ void Segment::add_articulations_to_shape(const Chord *chord, Shape &shape) {
 
 double Segment::min_right() const {
     double distance = 0.0;
-    for (Shape sh : shapes()) {
-        sh.remove_if([](ShapeElement &el) { return el.item() && el.item()->is_articulation_or_fermata(); });
-        distance = std::max(distance, sh.right());
+    for (const Shape &shape : shapes()) {
+        for (const auto &element : shape.elements()) {
+            if (element.item() && element.item()->is_articulation_or_fermata()) continue;
+            distance = std::max(distance, element.right());
+        }
     }
     return distance;
 }
 
 double Segment::min_left() const {
     double distance = DBL_MAX;
-    for (Shape sh : shapes()) {
-        sh.remove_if([](ShapeElement &el) { return el.item() && el.item()->is_articulation_or_fermata(); });
-        double l = sh.left();
-        if (l < distance) {
-            distance = l;
+    for (const Shape &shape : shapes()) {
+        for (const auto &element : shape.elements()) {
+            if (muse::real_is_null(element.height())) continue;
+            if (const auto *item = element.item(); item && (item->is_articulation_or_fermata() || item->is_fingering())) continue;
+            distance = std::min(distance, element.left());
         }
     }
     return distance != DBL_MAX ? -distance : 0.0;

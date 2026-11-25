@@ -195,6 +195,14 @@ struct ItemLayoutData {
     void clear_shape() { shape_.reset(); }
 
     Shape shape(LdAccess mode = LdAccess::CHECK) const;
+    void append_shape(Shape &dst, const PointF &offset) const;
+    bool intersects_shape_translated(const PointF &offset, const ItemLayoutData &other, const PointF &other_offset) const;
+
+    Shape &reset_composite_shape() {
+        auto &shape = mut_shape();
+        shape.clear(Shape::Type::COMPOSITE);
+        return shape;
+    }
 
     void set_shape(const Shape &sh) { shape_.set_value(sh); }
 
@@ -266,6 +274,19 @@ protected:
     Shape &mut_shape() { return shape_.mut_value(); }
 
     bool is_shape_composite() const { return shape_.has_value() && shape_.value().is_composite(); }
+
+private:
+
+    struct ShapeOffset {
+        const PointF &position;
+        const ShapeOffset *outer = nullptr;
+    };
+
+    LdAccess shape_access() const;
+    void append_shape(Shape &dst, const ShapeOffset &offset) const;
+    bool has_shape_parentheses() const;
+
+protected:
 
     friend struct EngravingItem;
     friend struct rendering::score::LayoutDataStore;
@@ -604,6 +625,8 @@ public:
     void scan_connected_items_in_snapping_chain(const System *system, muse::FnRef<void(EngravingItem *)> func) const;
 
     Shape shape(LdAccess mode = LdAccess::CHECK) const { return ldata()->shape(mode); }
+
+    void append_shape(Shape &dst, const PointF &offset) const { ldata()->append_shape(dst, offset); }
 
     virtual double base_line() const { return -height(); }
 

@@ -2069,45 +2069,9 @@ RectF ItemLayoutData::bbox([[maybe_unused]] LdAccess mode) const {
     return sh.bbox();
 }
 
-Shape ItemLayoutData::shape([[maybe_unused]] LdAccess mode) const {
-    //! NOTE Temporary disabled CHECK - a lot of messages
-    Shape sh = shape_.value(LdAccess::MAYBE_NOTINITED);
-
-    if (!item_) {
-        return sh;
-    }
-
-    const Parenthesis *left_paren = item_->left_paren();
-    if (left_paren && left_paren->add_to_skyline()) {
-        sh.add(left_paren->ldata()->shape().translated(left_paren->pos()));
-    }
-    const Parenthesis *right_paren = item_->right_paren();
-    if (right_paren && right_paren->add_to_skyline()) {
-        sh.add(right_paren->ldata()->shape().translated(right_paren->pos()));
-    }
-
-    //! NOTE Temporary
-    //! Reimplementation: done
-    {
+LdAccess ItemLayoutData::shape_access() const {
+    if (item_) {
         switch (item_->type()) {
-            case ElementType::BEAM:
-            case ElementType::GRACE_NOTES_GROUP:
-            case ElementType::ORNAMENT:
-            case ElementType::OTTAVA_SEGMENT:
-            case ElementType::VOLTA_SEGMENT:
-            case ElementType::PEDAL_SEGMENT:
-            case ElementType::TEXTLINE_SEGMENT:
-            case ElementType::HARMONIC_MARK_SEGMENT:
-            case ElementType::PALM_MUTE_SEGMENT:
-            case ElementType::LET_RING_SEGMENT:
-            case ElementType::GRADUAL_TEMPO_CHANGE_SEGMENT:
-            case ElementType::RASGUEADO_SEGMENT:
-            case ElementType::WHAMMY_BAR_SEGMENT:
-            case ElementType::SLUR_SEGMENT:
-            case ElementType::TIE_SEGMENT:
-            case ElementType::LAISSEZ_VIB_SEGMENT:
-            case ElementType::PARTIAL_TIE_SEGMENT:
-            case ElementType::NOTE: return sh;
             // Composite producers already include their parentheses and children.
             case ElementType::CHORD:
             case ElementType::REST:
@@ -2116,12 +2080,55 @@ Shape ItemLayoutData::shape([[maybe_unused]] LdAccess mode) const {
             case ElementType::GUITAR_BEND_SEGMENT:
             case ElementType::HAIRPIN_SEGMENT:
             case ElementType::TRILL_SEGMENT:
-            case ElementType::TUPLET: return shape_.value(LdAccess::CHECK);
+            case ElementType::TUPLET: return LdAccess::CHECK;
             default: break;
         }
     }
+    return LdAccess::MAYBE_NOTINITED;
+}
 
-    return sh;
+Shape ItemLayoutData::shape([[maybe_unused]] LdAccess mode) const {
+    const auto access = shape_access();
+    if (access == LdAccess::CHECK) return shape_.value(access);
+
+    Shape result = shape_.value(access);
+    if (item_) {
+        for (const auto *paren : {item_->left_paren(), item_->right_paren()}) {
+            if (paren && paren->add_to_skyline()) paren->append_shape(result, paren->pos());
+        }
+    }
+    return result;
+}
+
+void ItemLayoutData::append_shape(Shape &dst, const PointF &offset) const { append_shape(dst, ShapeOffset{offset}); }
+
+void ItemLayoutData::append_shape(Shape &dst, const ShapeOffset &offset) const {
+    const auto access = shape_access();
+    const auto &stored = shape_.value(access);
+    if (!offset.outer) {
+        dst.add_translated(stored, offset.position);
+    } else {
+        // Translate inner rectangles before outer ones to keep rounding identical to nested shapes.
+        for (auto element : stored.elements()) {
+            for (auto step = &offset; step; step = step->outer) element.translate(step->position);
+            dst.add(element);
+        }
+    }
+
+    if (access != LdAccess::CHECK && item_) {
+        for (const auto *paren : {item_->left_paren(), item_->right_paren()}) {
+            if (paren && paren->add_to_skyline()) paren->ldata()->append_shape(dst, ShapeOffset{paren->pos(), &offset});
+        }
+    }
+}
+
+bool ItemLayoutData::has_shape_parentheses() const { return item_ && (item_->left_paren() || item_->right_paren()); }
+
+bool ItemLayoutData::intersects_shape_translated(const PointF &offset, const ItemLayoutData &other, const PointF &other_offset) const {
+    if (has_shape_parentheses() || other.has_shape_parentheses()) {
+        return shape().intersects_translated(offset, other.shape(), other_offset);
+    }
+    return shape_.value(shape_access()).intersects_translated(offset, other.shape_.value(other.shape_access()), other_offset);
 }
 
 #ifndef NDEBUG

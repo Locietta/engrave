@@ -203,7 +203,11 @@ struct MusicXmlParserPass1 {
 
     engraving::Part *get_part(const muse::String &id) const { return muse::value(part_map_, id); }
 
-    MusicXmlPart get_music_xml_part(const muse::String &id) const { return muse::value(parts_, id); }
+    const MusicXmlPart &get_music_xml_part(const muse::String &id) const {
+        static const MusicXmlPart empty;
+        auto it = parts_.find(id);
+        return it != parts_.end() ? it->second : empty;
+    }
 
     size_t nparts() const { return parts_.size(); }
 

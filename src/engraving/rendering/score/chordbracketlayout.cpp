@@ -39,31 +39,17 @@ using namespace muse;
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
-//---------------------------------------------------------
-//   chordBracketsInSegment
-//---------------------------------------------------------
-
-std::vector<ChordBracket *> ChordBracketLayout::chord_brackets_in_segment(const Segment *segment) {
-    std::vector<ChordBracket *> result;
-
-    if (!segment) {
-        return result;
-    }
-
-    for (EngravingItem *item : segment->effective_elements()) {
-        if (!item || !item->is_chord()) {
-            continue;
-        }
-
+namespace {
+template <typename Fn>
+void for_each_chord_bracket(const Segment &segment, Fn &&fn) {
+    segment.for_each_effective_element([&](EngravingItem *item) {
+        if (!item->is_chord()) return;
         for (EngravingItem *child : to_chord(item)->el()) {
-            if (child && child->is_chord_bracket()) {
-                result.push_back(to_chord_bracket(child));
-            }
+            if (child && child->is_chord_bracket()) fn(to_chord_bracket(child));
         }
-    }
-
-    return result;
+    });
 }
+} // namespace
 
 //---------------------------------------------------------
 //   bracketVisualSpan
@@ -210,10 +196,10 @@ void ChordBracketLayout::layout_segment(Segment *segment, LayoutContext &ctx) {
         return;
     }
 
-    for (ChordBracket *bracket : chord_brackets_in_segment(segment)) {
+    for_each_chord_bracket(*segment, [&](ChordBracket *bracket) {
         Chord *owner = bracket->chord();
         if (!owner || owner->segment() != segment || !bracket->part() || owner->on_tab_staff()) {
-            continue;
+            return;
         }
 
         // Initialize the bracket's width, vertical geometry, and Shape.
@@ -223,7 +209,7 @@ void ChordBracketLayout::layout_segment(Segment *segment, LayoutContext &ctx) {
 
         // Rebuild the owner Shape after moving the bracket.
         ChordLayout::fill_shape(owner, owner->mutldata());
-    }
+    });
 }
 
 //---------------------------------------------------------
@@ -237,24 +223,24 @@ void ChordBracketLayout::update_horizontal_spacing(const Segment *first_segment,
     }
 
     auto update_for_brackets = [&](const Segment *segment, const Shape &other_shape, bool right_side) {
-        for (ChordBracket *bracket : chord_brackets_in_segment(segment)) {
+        for_each_chord_bracket(*segment, [&](ChordBracket *bracket) {
             const Chord *owner = bracket->chord();
             if (!owner || owner->on_tab_staff() || !bracket->visible() || !bracket->add_to_skyline() ||
                 bracket->right_side() != right_side) {
-                continue;
+                return;
             }
 
             const BracketVisualSpan span = bracket_visual_span(bracket);
 
             if (span.top_staff == span.bottom_staff) {
-                continue;
+                return;
             }
 
             const double x = owner->pos().x() + bracket->pos().x();
             const Shape bracket_shape = bracket_collision_shape(bracket, span, staff_idx, x);
 
             if (bracket_shape.empty()) {
-                continue;
+                return;
             }
 
             const double distance =
@@ -262,7 +248,7 @@ void ChordBracketLayout::update_horizontal_spacing(const Segment *first_segment,
                              HorizontalSpacing::min_horizontal_distance(other_shape, bracket_shape, bracket->spatium(), squeeze_factor);
 
             min_distance = std::max(min_distance, distance);
-        }
+        });
     };
 
     // Check the brackets facing the gap between the two Segments:

@@ -585,6 +585,21 @@ void LayoutDataStore::delete_layout_child(EngravingItem *item) {
     delete item;
 }
 
+void LayoutDataStore::delete_unborrowed_scratch(EngravingItem *item) {
+    assert(item);
+    assert(!item->layout_data_ || (!item->layout_data_->item_snapped_before() && !item->layout_data_->item_snapped_after()));
+    assert(!item->shared_item());
+    assert(item->origin_items().empty());
+    assert(item->children().empty());
+
+    auto *score_store = item->score() && Score::is_alive(item->score()) ? item->score()->layout_data_store() : nullptr;
+    auto *bound_store = item->layout_store_;
+    bool unused = false;
+    BoolGuard score_guard(score_store ? score_store->suppress_shape_prune_ : unused, true);
+    BoolGuard bound_guard(bound_store ? bound_store->suppress_shape_prune_ : unused, true);
+    delete item;
+}
+
 void LayoutDataStore::retire_spanner_borrowers(const SpannerSegment &segment) { retire_shape_borrowers(segment); }
 
 void LayoutDataStore::retire_shape_borrowers(const EngravingItem &retired) {

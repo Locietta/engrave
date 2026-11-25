@@ -1633,6 +1633,7 @@ void SystemLayout::collect_spanners_to_layout(ElementsToLayout &elements, const 
 }
 
 void SystemLayout::create_skylines(const ElementsToLayout &elements_to_layout, LayoutContext &ctx) {
+    Shape element_shape;
     System *system = elements_to_layout.system;
     for (size_t staff_idx = 0; staff_idx < ctx.dom().nstaves(); ++staff_idx) {
         SysStaff *ss = system->staff(staff_idx);
@@ -1664,19 +1665,18 @@ void SystemLayout::create_skylines(const ElementsToLayout &elements_to_layout, L
                 } else {
                     track_idx_t strack = staff_idx * ::mu::engraving::voices;
                     track_idx_t etrack = strack + ::mu::engraving::voices;
-                    for (EngravingItem *e : s.effective_elements()) {
-                        if (!e) {
-                            continue;
-                        }
+                    s.for_each_effective_element([&](EngravingItem *e) {
                         track_idx_t effective_track = e->v_staff_idx() * ::mu::engraving::voices + e->voice();
                         if (effective_track < strack || effective_track >= etrack) {
-                            continue;
+                            return;
                         }
 
                         // add element to skyline
                         if (e->add_to_skyline()) {
                             const PointF offset = e->staff_offset();
-                            Shape shape = e->shape();
+                            const PointF pos = e->pos() + p + offset;
+                            element_shape.clear();
+                            e->append_shape(element_shape, pos);
                             // add grace notes to skyline
                             if (e->is_chord()) {
                                 Chord *chord = to_chord(e);
@@ -1698,13 +1698,9 @@ void SystemLayout::create_skylines(const ElementsToLayout &elements_to_layout, L
                                     }
                                 }
 
-                                // Don't include cross-staff arpeggios
-                                shape.remove_if([chord](ShapeElement &s) {
-                                    return (s.item()->is_arpeggio() || s.item()->is_chord_bracket()) &&
-                                           to_arpeggio(s.item()) == chord->span_arpeggio();
-                                });
-                                Arpeggio *arp = chord->span_arpeggio();
-                                if (arp) {
+                                if (const Arpeggio *arp = chord->span_arpeggio()) {
+                                    // Only the part within this staff belongs in its skyline.
+                                    element_shape.remove_if([arp](const ShapeElement &s) { return s.item() == arp; });
                                     RectF staff_bbox = ss->bbox();
                                     RectF arp_bbox = arp->ldata()->bbox().translated(e->pos() + p + offset);
                                     if (chord->track() == arp->track()) {
@@ -1712,10 +1708,10 @@ void SystemLayout::create_skylines(const ElementsToLayout &elements_to_layout, L
                                     } else if (chord->track() == arp->end_track()) {
                                         staff_bbox.set_bottom(arp_bbox.bottom());
                                     }
-                                    shape.add(arp_bbox & staff_bbox, arp);
+                                    element_shape.add((arp_bbox & staff_bbox).translated(pos), arp);
                                 }
                             }
-                            skyline.add(shape.translate(e->pos() + p + offset));
+                            skyline.add(element_shape);
                         }
 
                         // add tremolo to skyline
@@ -1742,7 +1738,7 @@ void SystemLayout::create_skylines(const ElementsToLayout &elements_to_layout, L
                                 b->add_skyline(skyline);
                             }
                         }
-                    }
+                    });
                 }
             }
         }

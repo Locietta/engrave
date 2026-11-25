@@ -675,19 +675,10 @@ void HorizontalSpacing::move_right_aligned_segments(std::vector<SegmentPosition>
 
 void HorizontalSpacing::check_collisions_with_cross_staff_stems(const Segment *this_seg, const Segment *next_seg, staff_idx_t staff_idx,
                                                                 double &cur_min_dist) {
-    std::vector<ChordRest *> items_to_check;
-    items_to_check.reserve(::mu::engraving::voices);
-
-    for (EngravingItem *el : next_seg->effective_elements()) {
-        if (el && el->v_staff_idx() == staff_idx) {
-            ChordRest *cr = to_chord_rest(el);
-            if (cr->beam() && cr->beam()->cross()) {
-                items_to_check.push_back(to_chord_rest(el));
-            }
-        }
-    }
-
-    for (ChordRest *cr : items_to_check) {
+    next_seg->any_effective_element([&](EngravingItem *item) {
+        if (item->v_staff_idx() != staff_idx) return false;
+        ChordRest *cr = to_chord_rest(item);
+        if (!cr->beam() || !cr->beam()->cross()) return false;
         Chord *potential_colliding_chord = nullptr;
         for (ChordRest *beam_element : cr->beam()->rendered_elements()) {
             if (beam_element->is_chord() && beam_element->parent() == this_seg) {
@@ -697,13 +688,13 @@ void HorizontalSpacing::check_collisions_with_cross_staff_stems(const Segment *t
         }
 
         if (!potential_colliding_chord || potential_colliding_chord->up() != cr->up() || !potential_colliding_chord->stem()) {
-            return;
+            return true;
         }
 
         bool check_stem_collision = (cr->up() && potential_colliding_chord->v_staff_idx() > cr->v_staff_idx()) ||
                                     (!cr->up() && potential_colliding_chord->v_staff_idx() < cr->v_staff_idx());
         if (!check_stem_collision) {
-            return;
+            return true;
         }
 
         Stem *stem = potential_colliding_chord->stem();
@@ -717,7 +708,8 @@ void HorizontalSpacing::check_collisions_with_cross_staff_stems(const Segment *t
         double min_dist = min_horizontal_distance(prev_stem_shape, staff_shape, stem->spatium());
 
         cur_min_dist = std::max(cur_min_dist, min_dist);
-    }
+        return false;
+    });
 }
 
 double HorizontalSpacing::chord_rest_segment_natural_width(Segment *segment, HorizontalSpacingContext &ctx) {
@@ -860,14 +852,14 @@ double HorizontalSpacing::min_stem_dist_on_non_adjacent_cross(const Segment *thi
     // (which causes them to escape the previous cross-staff spacing checks) c) stemmed up->down (see #27786)
     const PaddingTable &padding_table = this_seg->score()->padding_tables().horizontal_padding_table();
     double dist = -DBL_MAX;
-    for (EngravingItem *item : next_seg->effective_elements()) {
-        if (!item || !item->is_chord()) {
-            continue;
+    next_seg->for_each_effective_element([&](EngravingItem *item) {
+        if (!item->is_chord()) {
+            return;
         }
 
         Chord *chord = to_chord(item);
         if (!chord->stem() || chord->up() || !(chord->beam() && chord->beam()->cross())) {
-            continue;
+            return;
         }
 
         Beam *beam = chord->beam();
@@ -884,14 +876,14 @@ double HorizontalSpacing::min_stem_dist_on_non_adjacent_cross(const Segment *thi
         }
 
         if (!prev_chord_on_beam || prev_chord_on_beam->parent() != this_seg || !prev_chord_on_beam->up() || !prev_chord_on_beam->stem()) {
-            continue;
+            return;
         }
 
         double min_stem_dist = prev_chord_on_beam->x() + prev_chord_on_beam->stem()->x() - (chord->x() + chord->stem()->x());
         min_stem_dist += padding_table.at(ElementType::STEM).at(ElementType::STEM);
 
         dist = std::max(dist, min_stem_dist);
-    }
+    });
 
     return dist;
 }
@@ -905,28 +897,28 @@ HorizontalSpacing::CrossBeamSpacing HorizontalSpacing::compute_cross_beam_spacin
 
     bool prevent_cross_staff_kerning = false;
     bool ensure_min_stem_distance = false;
-    for (EngravingItem *e : this_seg->effective_elements()) {
-        if (!e || !e->is_chord() || !e->visible() || !e->staff()->visible()) {
-            continue;
+    this_seg->for_each_effective_element([&](EngravingItem *e) {
+        if (!e->is_chord() || !e->visible() || !e->staff()->visible()) {
+            return;
         }
 
         Chord *this_chord = to_chord(e);
         ChordRest *next_cr = to_chord_rest(next_seg->effective_element(this_chord->track()));
         Chord *next_chord = next_cr && next_cr->is_chord() ? to_chord(next_cr) : nullptr;
         if (!next_chord) {
-            continue;
+            return;
         }
 
         int this_staff_move = this_chord->staff_move();
         int next_staff_move = next_chord->staff_move();
         if (this_staff_move == next_staff_move) {
-            continue;
+            return;
         }
 
         prevent_cross_staff_kerning = this_staff_move > next_staff_move;
         ensure_min_stem_distance = (this_staff_move > next_staff_move && this_chord->up() && !next_chord->up()) ||
                                    (this_staff_move < next_staff_move && this_chord->up() == next_chord->up());
-    }
+    });
 
     cross_beam_type.prevent_cross_staff_kerning = prevent_cross_staff_kerning;
     cross_beam_type.ensure_min_stem_distance = ensure_min_stem_distance;
@@ -938,38 +930,38 @@ HorizontalSpacing::CrossBeamSpacing HorizontalSpacing::compute_cross_beam_spacin
 
     // Spacing can be adjusted for cross-beam cases only if there aren't
     // chords in other voices in this or next segment.
-    for (EngravingItem *e : this_seg->effective_elements()) {
-        if (!e || !e->is_chord_rest() || !e->staff()->visible()) {
-            continue;
+    const bool opposing_directions = this_seg->any_effective_element([&](EngravingItem *e) {
+        if (!e->is_chord_rest() || !e->staff()->visible()) {
+            return false;
         }
         ChordRest *this_cr = to_chord_rest(e);
         if (!this_cr->visible() || this_cr->is_full_measure_rest() || (this_cr->is_rest() && to_rest(this_cr)->is_gap())) {
-            continue;
+            return false;
         }
         Beam *beam = this_cr->beam();
         if (!beam && this_cr->actual_ticks() <= this_seg->ticks()) {
             can_be_adjusted = false;
         }
         if (!beam || (beam->rendered_elements().size() == 2 && this_cr->up())) {
-            continue;
+            return false;
         }
-        for (EngravingItem *ee : next_seg->effective_elements()) {
-            if (!ee || !ee->is_chord_rest() || !ee->staff()->visible()) {
-                continue;
+        return next_seg->any_effective_element([&](EngravingItem *ee) {
+            if (!ee->is_chord_rest() || !ee->staff()->visible()) {
+                return false;
             }
             ChordRest *next_cr = to_chord_rest(ee);
             if (!next_cr->visible() || next_cr->is_full_measure_rest() || (this_cr->is_rest() && to_rest(this_cr)->is_gap())) {
-                continue;
+                return false;
             }
             if (!next_cr->beam()) {
                 can_be_adjusted = false;
-                continue;
+                return false;
             }
             if (next_cr->beam() != beam) {
-                continue;
+                return false;
             }
             if (this_cr->up() == next_cr->up()) {
-                return cross_beam_type;
+                return true;
             }
             if (this_cr->up() && !next_cr->up()) {
                 if (this_cr->beamlet() && next_cr->beamlet()) {
@@ -980,11 +972,10 @@ HorizontalSpacing::CrossBeamSpacing HorizontalSpacing::compute_cross_beam_spacin
             if (!this_cr->up() && next_cr->up()) {
                 down_up = true;
             }
-            if (up_down && down_up) {
-                return cross_beam_type;
-            }
-        }
-    }
+            return up_down && down_up;
+        });
+    });
+    if (opposing_directions) return cross_beam_type;
 
     cross_beam_type.up_down = up_down;
     cross_beam_type.down_up = down_up;
@@ -1438,7 +1429,7 @@ void HorizontalSpacing::compute_note_padding(const Note *note, const EngravingIt
     bool same_voice_note_or_stem = (item2->is_note() || item2->is_stem()) && note->track() == item2->track();
     bool are_adjacent_by_duration = (note->rtick() + note->chord()->actual_ticks()) == item2->rtick();
     if (same_voice_note_or_stem || are_adjacent_by_duration) {
-        bool intersection = note->shape().translate(note->pos()).intersects(item2->shape().translate(item2->pos()));
+        bool intersection = note->ldata()->intersects_shape_translated(note->pos(), *item2->ldata(), item2->pos());
         if (intersection) {
             padding = std::max(padding, static_cast<double>(style.style_absolute(Sid::MIN_NOTE_DISTANCE)));
         }

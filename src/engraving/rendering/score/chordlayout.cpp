@@ -1342,17 +1342,28 @@ void ChordLayout::layout_articulations3(Chord *item, Slur *slur, LayoutContext &
 void ChordLayout::refresh_shape(Chord *item) {
     if (!item->ldata()->is_set_shape()) return;
     fill_shape(item, item->mutldata());
-    auto refresh_segment = [](Segment *segment) {
+    const Chord *owner = item->is_grace() ? to_chord(item->ownership_parent()) : item;
+    auto refresh_segment = [&](Segment *segment) {
         if (!segment) return;
-        const auto count = static_cast<const Segment *>(segment)->shapes().size();
-        for (size_t staff = 0; staff < count; ++staff)
-            if (!segment->staff_shape(staff).empty()) segment->create_shape(staff);
+        const auto count = std::as_const(*segment).shapes().size();
+        const auto refresh_staff = [&](staff_idx_t staff) {
+            if (staff < count && !segment->staff_shape(staff).empty()) segment->create_shape(staff);
+        };
+
+        // A pre-appended grace group can write to other staff shapes. Keep the
+        // original staff order for those segments and for spanning arpeggios.
+        if (segment->has_pre_appended_items() || item->span_arpeggio() || (item->arpeggio() && item->arpeggio()->cross_staff())) {
+            for (staff_idx_t staff = 0; staff < count; ++staff) refresh_staff(staff);
+            return;
+        }
+
+        const auto authored = owner->staff_idx();
+        const auto visual = owner->v_staff_idx();
+        refresh_staff(std::min(authored, visual));
+        if (visual != authored) refresh_staff(std::max(authored, visual));
     };
     refresh_segment(item->segment());
-    if (item->is_grace()) {
-        const auto *main = to_chord(item->ownership_parent());
-        if (item->is_grace_after()) refresh_segment(grace_notes_after_segment(main));
-    }
+    if (item->is_grace_after()) refresh_segment(grace_notes_after_segment(owner));
 }
 
 //! May be called again when the chord is added to or removed from a beam.
@@ -3870,7 +3881,7 @@ bool ChordLayout::leave_space_for_tie(const Articulation *item) {
 }
 
 void ChordLayout::fill_shape(const Chord *item, ChordRest::LayoutData *ldata) {
-    Shape shape(Shape::Type::COMPOSITE);
+    Shape &shape = ldata->reset_composite_shape();
 
     Hook *hook = item->hook();
     if (hook) {
@@ -3905,36 +3916,36 @@ void ChordLayout::fill_shape(const Chord *item, ChordRest::LayoutData *ldata) {
     BeamSegment *beamlet = item->beamlet();
 
     if (hook && hook->add_to_skyline()) {
-        shape.add(hook->shape().translate(hook->pos()));
+        hook->append_shape(shape, hook->pos());
     }
 
     if (stem && stem->add_to_skyline()) {
-        shape.add(stem->shape().translate(stem->pos()));
+        stem->append_shape(shape, stem->pos());
     }
 
     if (stem_slash && stem_slash->add_to_skyline()) {
-        shape.add(stem_slash->shape().translate(stem_slash->pos()));
+        stem_slash->append_shape(shape, stem_slash->pos());
     }
 
     if (tremolo && tremolo->add_to_skyline()) {
-        shape.add(tremolo->shape().translate(tremolo->pos()));
+        tremolo->append_shape(shape, tremolo->pos());
     }
 
     if (arpeggio && arpeggio->add_to_skyline()) {
-        shape.add(arpeggio->shape().translate(arpeggio->pos()));
+        arpeggio->append_shape(shape, arpeggio->pos());
     }
 
     if (span_arpeggio && !arpeggio && span_arpeggio->v_staff_idx() != item->v_staff_idx() && span_arpeggio->add_to_skyline()) {
         PointF span_arp_pos = span_arpeggio->pos() - (item->page_pos() - span_arpeggio->chord()->page_pos());
-        shape.add(span_arpeggio->shape().translate(span_arp_pos));
+        span_arpeggio->append_shape(shape, span_arp_pos);
     }
 
     for (Note *note : item->notes()) {
-        shape.add(note->shape().translate(note->pos()));
+        note->append_shape(shape, note->pos());
     }
 
     if (item->tab_dur() && item->tab_dur()->add_to_skyline()) {
-        shape.add(item->tab_dur()->shape().translate(item->tab_dur()->pos()));
+        item->tab_dur()->append_shape(shape, item->tab_dur()->pos());
     }
 
     for (const auto &paren_info : item->layout_parentheses()) {
@@ -3942,27 +3953,27 @@ void ChordLayout::fill_shape(const Chord *item, ChordRest::LayoutData *ldata) {
         Parenthesis *right_paren = paren_info.right;
 
         if (left_paren && left_paren->add_to_skyline()) {
-            shape.add(left_paren->shape().translate(left_paren->pos()));
+            left_paren->append_shape(shape, left_paren->pos());
         }
         if (right_paren && right_paren->add_to_skyline()) {
-            shape.add(right_paren->shape().translate(right_paren->pos()));
+            right_paren->append_shape(shape, right_paren->pos());
         }
     }
 
     for (EngravingItem *e : item->el()) {
         if (e->add_to_skyline()) {
-            shape.add(e->shape().translate(e->pos()));
+            e->append_shape(shape, e->pos());
         }
     }
 
     shape.add(chord_rest_shape(item)); // add lyrics
 
     for (const LedgerLine *l : item->ledger_lines()) {
-        shape.add(l->shape().translate(l->pos()));
+        l->append_shape(shape, l->pos());
     }
 
     for (const JianpuDurationLine *line : item->jianpu_duration_lines()) {
-        shape.add(line->shape().translate(line->pos()));
+        line->append_shape(shape, line->pos());
     }
 
     if (beamlet && stem) {
@@ -3978,29 +3989,25 @@ void ChordLayout::fill_shape(const Chord *item, ChordRest::LayoutData *ldata) {
     for (const Articulation *a : item->articulations()) {
         // Only add lv to shape
         if (a->is_laissez_vib()) {
-            shape.add(a->shape().translate(a->pos()));
+            a->append_shape(shape, a->pos());
         }
     }
 
     const Parenthesis *left_paren = item->left_paren();
     if (left_paren && left_paren->add_to_skyline()) {
-        shape.add(left_paren->ldata()->shape().translated(left_paren->pos()));
+        left_paren->append_shape(shape, left_paren->pos());
     }
     const Parenthesis *right_paren = item->right_paren();
     if (right_paren && right_paren->add_to_skyline()) {
-        shape.add(right_paren->ldata()->shape().translated(right_paren->pos()));
+        right_paren->append_shape(shape, right_paren->pos());
     }
-
-    ldata->set_shape(shape);
 }
 
 void ChordLayout::fill_shape(const MeasureRepeat *item, MeasureRepeat::LayoutData *ldata, const LayoutConfiguration &) {
-    Shape shape(Shape::Type::COMPOSITE);
+    Shape &shape = ldata->reset_composite_shape();
 
     shape.add(item->number_rect(), item);
     shape.add(item->sym_bbox(ldata->sym_id), item);
-
-    ldata->set_shape(shape);
 }
 
 void ChordLayout::add_line_attach_points(Spanner *spanner) {
