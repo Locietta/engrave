@@ -23,9 +23,19 @@
 #ifndef MUSE_MPE_TESTS_ARTICULATIONSPROFILEEXAMPLE_H
 #define MUSE_MPE_TESTS_ARTICULATIONSPROFILEEXAMPLE_H
 
-#include "mpe/mpetypes.h"
+#include <algorithm>
+#include <span>
+
+#include "mpe/flatevents.h"
 
 namespace muse::mpe::tests {
+template <class Curve>
+bool curve_matches(std::span<const CurvePoint> actual, const Curve &expected) {
+    return std::ranges::equal(actual, expected, [](const CurvePoint &point, const auto &entry) {
+        return point.at == entry.first && point.value == entry.second;
+    });
+}
+
 inline ArrangementPattern create_arrangement_pattern(const duration_percentage_t duration_factor,
                                                      const duration_percentage_t timestamp_offset) {
     ArrangementPattern result;

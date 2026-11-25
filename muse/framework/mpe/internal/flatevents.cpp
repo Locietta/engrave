@@ -6,7 +6,6 @@
 #include <functional>
 #include <limits>
 #include <stdexcept>
-#include <type_traits>
 
 #include "realfn.h"
 
@@ -108,31 +107,6 @@ T mult(T value, float factor) {
     return static_cast<T>(static_cast<float>(value) * factor);
 }
 
-void freeze_note(TrackEvents &track, const timestamp_t group_timestamp, const NoteEvent &event, FreezeProgress &progress) {
-    const ArrangementContext &arrangement = event.arrangement_ctx();
-    const PitchContext &pitch = event.pitch_ctx();
-    const ExpressionContext &expression = event.expression_ctx();
-
-    NoteRecord record;
-    record.group_timestamp = group_timestamp;
-    record.seq = take_seq(track);
-    record.nominal_timestamp = arrangement.nominal_timestamp;
-    record.actual_timestamp = arrangement.actual_timestamp;
-    record.nominal_duration = arrangement.nominal_duration;
-    record.actual_duration = arrangement.actual_duration;
-    record.bps = arrangement.bps;
-    record.nominal_pitch_level = pitch.nominal_pitch_level;
-    record.nominal_dynamic_level = expression.nominal_dynamic_level;
-    record.velocity_override = expression.velocity_override;
-    record.staff_layer = arrangement.staff_layer_index;
-    record.voice_layer = arrangement.voice_layer_index;
-
-    record.articulations = append_articulations(track, expression.articulations, progress);
-    record.pitch_curve = append_curve(track, pitch.pitch_curve, progress);
-    record.expression_curve = append_curve(track, expression.expression_curve, progress);
-    append_note(track, record, expression.articulations, progress);
-}
-
 template <class Event>
 void freeze_cold(TrackEvents &track, const timestamp_t group_timestamp, const Event &event, FreezeProgress &progress) {
     track.cold.push_back(ColdEvent{group_timestamp, take_seq(track), event});
@@ -196,32 +170,6 @@ void emit_empty_group(TrackEvents &track, const timestamp_t group_timestamp, Fre
     progress.advance();
 }
 
-void freeze_events(TrackEvents &track, const timestamp_t group_timestamp, std::span<const PlaybackEvent> events, FreezeProgress &progress) {
-    if (events.empty()) {
-        emit_empty_group(track, group_timestamp, progress);
-        return;
-    }
-
-    for (const PlaybackEvent &event : events) {
-        std::visit(
-            [&](const auto &value) {
-                using T = std::decay_t<decltype(value)>;
-                if constexpr (std::is_same_v<T, NoteEvent>) {
-                    freeze_note(track, group_timestamp, value, progress);
-                } else if constexpr (std::is_same_v<T, TextArticulationEvent> || std::is_same_v<T, SoundPresetChangeEvent> ||
-                                     std::is_same_v<T, SyllableEvent>) {
-                    freeze_cold(track, group_timestamp, value, progress);
-                } else if constexpr (std::is_same_v<T, std::monostate>) {
-                    throw std::logic_error("flat playback store: monostate event has no producer");
-                } else {
-                    static_assert(std::is_same_v<T, ControllerChangeEvent>, "freeze every PlaybackEvent variant explicitly");
-                    throw std::logic_error("flat playback store: ControllerChangeEvent has no producer");
-                }
-            },
-            event);
-    }
-}
-
 void freeze_cold_events(TrackEvents &track, const timestamp_t group_timestamp, std::span<const SoundPresetChangeEvent> events,
                         FreezeProgress &progress) {
     freeze_cold_list(track, group_timestamp, events, progress);
@@ -254,14 +202,4 @@ void freeze_dynamics(TrackEvents &track, const DynamicAutomationLayers &dynamics
     }
 }
 
-TrackEvents freeze_playback_data(const PlaybackData &data) {
-    TrackEvents track;
-    FreezeProgress progress;
-    track.setup = data.setup_data;
-    freeze_dynamics(track, data.dynamics, progress);
-    for (const auto &[group, events] : data.origin_events) {
-        freeze_events(track, group, std::span{events}, progress);
-    }
-    return track;
-}
 } // namespace muse::mpe

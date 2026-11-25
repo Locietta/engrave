@@ -12,7 +12,7 @@
 //!   void resolve_setup(const InstrumentTrackId &, Resolve);   // creates the track, resolve(PlaybackSetupData &)
 //!   const PlaybackSetupData *find_setup(const InstrumentTrackId &) const;
 //!   void apply_context(const InstrumentTrackId &, PlaybackPartData &, Walk &, bool last_track); // dynamics and context events
-//!   void emit(const InstrumentTrackId &, Render);             // creates the track, render(sink)
+//!   void emit(const InstrumentTrackId &, Render);             // creates the track, render(track, progress)
 
 #include "../dom/fret.h"
 #include "../dom/harmony.h"
@@ -225,8 +225,8 @@ struct PlaybackWalk {
             }
 
             if (chord_symbol->play()) {
-                store.emit(track_id, [&](auto &sink) {
-                    renderer.render_chord_symbol(chord_symbol, tick_position_offset, profile, playback_ctx, sink);
+                store.emit(track_id, [&](auto &track, auto &progress) {
+                    renderer.render_chord_symbol(chord_symbol, tick_position_offset, profile, playback_ctx, track, progress);
                 });
             }
 
@@ -284,7 +284,9 @@ struct PlaybackWalk {
                 continue;
             }
 
-            store.emit(track_id, [&](auto &sink) { renderer.render(item, tick_position_offset, profile, playback_ctx, sink); });
+            store.emit(track_id, [&](auto &track, auto &progress) {
+                renderer.render(item, tick_position_offset, profile, playback_ctx, track, progress);
+            });
 
             collect_changes_tracks(track_id, track_changes);
         }
@@ -335,7 +337,7 @@ struct PlaybackWalk {
         muse::FlatSet<staff_idx_t> staff_to_process_idx_set(dom_staves.begin(), dom_staves.end());
 
         const muse::mpe::ArticulationsProfilePtr metronome_profile = default_articulation_profile(playback_metronome_track_id());
-        // The metronome entry exists before the walk, as the legacy sink construction here always created it
+        // Keep an empty metronome track even when metronome rendering is disabled.
         store.touch(playback_metronome_track_id());
 
         for (const RepeatSegment *repeat_segment : repeat_list()) {
@@ -391,8 +393,8 @@ struct PlaybackWalk {
                 }
 
                 if (metronome_enabled) {
-                    store.emit(playback_metronome_track_id(), [&](auto &sink) {
-                        renderer.render_metronome(score, measure, tick_position_offset, metronome_profile, sink);
+                    store.emit(playback_metronome_track_id(), [&](auto &track, auto &progress) {
+                        renderer.render_metronome(score, measure, tick_position_offset, metronome_profile, track, progress);
                     });
                     collect_changes_tracks(playback_metronome_track_id(), track_changes);
                 }

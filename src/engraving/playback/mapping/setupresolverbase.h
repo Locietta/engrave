@@ -26,7 +26,7 @@
 #include <cassert>
 
 #include "dom/instrument.h"
-#include "mpe/events.h"
+#include "mpe/playbacksetupdata.h"
 
 namespace mu::engraving {
 template <class T>

@@ -1030,21 +1030,13 @@ TEST(AudioInternal, BoundedStableSortAndDedupCancellation) {
     // 5. End-to-end FluidSequencer::load cancellation during a long dynamic curve stops resampling at the first
     //    positive 4,096-sample poll and discards the timeline.
     {
-        muse::mpe::PlaybackData data;
+        muse::mpe::TrackEvents track;
+        muse::mpe::FreezeProgress progress;
         muse::mpe::PlaybackSetupData setup;
         setup.supports_single_note_dynamics = true;
 
-        muse::mpe::ArrangementContext arr;
-        arr.nominal_timestamp = 0;
-        arr.actual_timestamp = 0;
-        arr.nominal_duration = 1000;
-        arr.actual_duration = 1000;
-        arr.voice_layer_index = 0;
-        muse::mpe::PitchContext pitch;
-        pitch.nominal_pitch_level = 0;
-        muse::mpe::ExpressionContext expr;
-        expr.nominal_dynamic_level = muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::MF);
-        data.origin_events[0].emplace_back(muse::mpe::NoteEvent(std::move(arr), std::move(pitch), std::move(expr)));
+        const auto level = muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::MF);
+        muse::mpe::emit_note(track, 0, {0, 1000, 0, 0, 0, level}, {}, {}, progress);
 
         // Non-flat curve spanning 100,000 steps of 30,000 us (~24.4x the 4,096-sample poll stride), plus a second layer.
         muse::mpe::DynamicAutomationMap curve0;
@@ -1056,9 +1048,11 @@ TEST(AudioInternal, BoundedStableSortAndDedupCancellation) {
         curve1[30000ULL * 50000ULL] =
             muse::mpe::AutomationPoint{muse::mpe::AutomationPoint::ExplicitArrival{muse::real_t(0.8), {}}, muse::real_t(0.8)};
 
-        data.dynamics.emplace(0, std::make_shared<const muse::mpe::DynamicAutomationMap>(std::move(curve0)));
-        data.dynamics.emplace(1, std::make_shared<const muse::mpe::DynamicAutomationMap>(std::move(curve1)));
+        muse::mpe::DynamicAutomationLayers dynamics;
+        dynamics.emplace(0, std::make_shared<const muse::mpe::DynamicAutomationMap>(std::move(curve0)));
+        dynamics.emplace(1, std::make_shared<const muse::mpe::DynamicAutomationMap>(std::move(curve1)));
 
+        muse::mpe::freeze_dynamics(track, dynamics, progress);
         ExposedSequencer seq;
         seq.init(setup, muse::midi::Program{0, 0}, true, k_fluid_channel_count);
         seq.main_stream_events_.cursor = 5;
@@ -1070,7 +1064,7 @@ TEST(AudioInternal, BoundedStableSortAndDedupCancellation) {
         const auto cancel_in_curve = [&] { return ++polls >= 3; };
         {
             muse::audio::OfflineCancellation scope(cancel_in_curve);
-            seq.load(muse::mpe::freeze_playback_data(data));
+            seq.load(track);
         }
         EXPECT_EQ(polls, 3);
         EXPECT_TRUE(seq.main_stream_events_.empty());
@@ -1079,20 +1073,15 @@ TEST(AudioInternal, BoundedStableSortAndDedupCancellation) {
 
     // 6. End-to-end FluidSequencer::load cancellation during sort/merge/dedup leaves a cleared timeline and recovers.
     {
-        muse::mpe::PlaybackData data;
+        muse::mpe::TrackEvents track;
+        muse::mpe::FreezeProgress progress;
         muse::mpe::PlaybackSetupData setup;
         setup.supports_single_note_dynamics = true;
         for (int i = 0; i < 5000; ++i) {
-            muse::mpe::ArrangementContext arr;
-            arr.nominal_timestamp = (5000 - i) * 10;
-            arr.actual_timestamp = (5000 - i) * 10;
-            arr.nominal_duration = 100;
-            arr.actual_duration = 100;
-            muse::mpe::PitchContext pitch;
-            pitch.nominal_pitch_level = (i % 24) * muse::mpe::pitch_level_step;
-            muse::mpe::ExpressionContext expr;
-            expr.nominal_dynamic_level = muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::MF);
-            data.origin_events[arr.nominal_timestamp].emplace_back(muse::mpe::NoteEvent(std::move(arr), std::move(pitch), std::move(expr)));
+            const muse::mpe::timestamp_t timestamp = (5000 - i) * 10;
+            const auto pitch = (i % 24) * muse::mpe::pitch_level_step;
+            const auto level = muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::MF);
+            muse::mpe::emit_note(track, timestamp, {timestamp, 100, 0, 0, pitch, level}, {}, {}, progress);
         }
 
         ExposedSequencer seq;
@@ -1104,14 +1093,14 @@ TEST(AudioInternal, BoundedStableSortAndDedupCancellation) {
         const auto cancel_in_sort = [&] { return ++polls == 5004; };
         {
             muse::audio::OfflineCancellation scope(cancel_in_sort);
-            seq.load(muse::mpe::freeze_playback_data(data));
+            seq.load(track);
         }
         EXPECT_EQ(polls, 5004);
         EXPECT_TRUE(seq.main_stream_events_.empty());
         EXPECT_EQ(seq.main_stream_events_.cursor, 0u);
 
         // Subsequent non-cancelled load recovers cleanly.
-        seq.load(muse::mpe::freeze_playback_data(data));
+        seq.load(track);
         EXPECT_EQ(seq.main_stream_events_.events.size(), 10000u);
         EXPECT_EQ(seq.main_stream_events_.cursor, 0u);
     }
@@ -1575,7 +1564,7 @@ TEST(AudioInternal, AmplitudeValuePointHandlesIntMinWithoutOverflow) {
     EXPECT_EQ(level, std::numeric_limits<dynamic_level_t>::min());
 }
 
-TEST(AudioInternal, NoteEventHandlesIntMinExpressionOffsetFromProfile) {
+TEST(AudioInternal, EmitsIntMinExpressionOffsetFromProfile) {
     using namespace muse::mpe;
     ProfileResourceFixture resources;
     const auto path = resources.root / "assets/mpe/resources/general_strings_articulations_profile.json";
@@ -1598,14 +1587,19 @@ TEST(AudioInternal, NoteEventHandlesIntMinExpressionOffsetFromProfile) {
     applied.pre_calculate_average_data();
 
     for (const auto dynamic : {DynamicType::NATURAL, DynamicType::PPPPPPPPP}) {
-        const NoteEvent note(0, duration, 0, 0, pitch_level(PitchClass::C, 4), dynamic_level_from_type(dynamic), applied, 2.0);
-        const auto &curve = note.expression_ctx().expression_curve;
+        TrackEvents track;
+        FreezeProgress progress;
+        emit_note(track, 0, {0, duration, 0, 0, pitch_level(PitchClass::C, 4), dynamic_level_from_type(dynamic), 2.0}, applied, {},
+                  progress);
+        ASSERT_EQ(track.notes.size(), 1u);
+        const auto curve = track.expression_curve(track.notes.front());
         ASSERT_EQ(curve.size(), 1u);
-        EXPECT_EQ(curve.at(0), std::numeric_limits<dynamic_level_t>::min());
+        EXPECT_EQ(curve.front().at, 0);
+        EXPECT_EQ(curve.front().value, std::numeric_limits<dynamic_level_t>::min());
     }
 }
 
-TEST(AudioInternal, NoteEventAveragesCombinedArticulationExpressionOffsets) {
+TEST(AudioInternal, EmitsAverageOfCombinedArticulationExpressionOffsets) {
     using namespace muse::mpe;
     const auto make_pattern = [](dynamic_level_t offset) {
         ArticulationPatternSegment segment;
@@ -1627,8 +1621,19 @@ TEST(AudioInternal, NoteEventAveragesCombinedArticulationExpressionOffsets) {
 
     EXPECT_EQ(applied.average_max_amplitude_level(), expected_average);
     EXPECT_EQ(applied.average_dynamic_offset_map().at(0), expected_average);
-    const NoteEvent note(0, duration, 0, 0, pitch_level(PitchClass::C, 4), dynamic_level_from_type(DynamicType::NATURAL), applied, 2.0);
-    EXPECT_EQ(note.expression_ctx().expression_curve.at(0), expected_average);
+    TrackEvents track;
+    FreezeProgress progress;
+    emit_note(track, 0, {0, duration, 0, 0, pitch_level(PitchClass::C, 4), dynamic_level_from_type(DynamicType::NATURAL), 2.0}, applied, {},
+              progress);
+    ASSERT_EQ(track.notes.size(), 1u);
+    const auto curve = track.expression_curve(track.notes.front());
+    ASSERT_EQ(curve.size(), 11u);
+    EXPECT_EQ(curve.front().at, 0);
+    EXPECT_EQ(curve.front().value, expected_average);
+    for (std::size_t i = 1; i < curve.size(); ++i) {
+        EXPECT_EQ(curve[i].at, static_cast<duration_percentage_t>(i) * ten_percent);
+        EXPECT_EQ(curve[i].value, 0);
+    }
 }
 
 TEST(AudioInternal, DynamicAutomationLayersCompareByValue) {

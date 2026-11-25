@@ -12,7 +12,6 @@
 #include "mpe/events.h"
 #include "mpe/flatevents.h"
 #include "playbackcontext.h"
-#include "playbackeventsink.h"
 
 namespace mu::engraving {
 struct Score;

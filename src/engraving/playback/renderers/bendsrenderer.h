@@ -22,7 +22,6 @@
 #pragma once
 
 #include "global/flatmap.h"
-#include "mpe/events.h"
 #include "noteemitter.h"
 
 namespace mu::engraving {
@@ -36,10 +35,6 @@ struct BendsRenderer {
     static bool is_multibend_part(const Note *note);
 
     static void render(const Note *note, const RenderingContext &ctx, const NoteEmitter &emitter);
-
-    static void render(const Note *note, const RenderingContext &ctx, muse::mpe::PlaybackEventList &events) {
-        render(note, ctx, NoteEmitter{events});
-    }
 
 private:
     struct BendTimeFactors {

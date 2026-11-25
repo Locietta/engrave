@@ -263,7 +263,6 @@ bool FluidSequencer::add_note_event(engine::MidiTimeline &destination, const mpe
     // So staffLayerIndex is constant. It changes only when moving staffs.
     last_staff_ = note.staff_layer;
 
-    // As ArrangementContext::has_start/has_end
     const bool has_start = note.actual_duration > 0;
     const bool has_end = note.actual_duration != mpe::infinite_duration;
 
@@ -295,7 +294,7 @@ bool FluidSequencer::add_note_event(engine::MidiTimeline &destination, const mpe
         engine::emplace_checked(destination.events, engine::TimedMidiEvent{timestamp_to, note_off});
     }
 
-    // The record type is also the legacy map key (freeze rejects a key that differs from its meta type)
+    // The emitter validates the articulation key against its type.
     for (const mpe::ArticulationRecord &meta : articulations) {
         if (meta.type == ArticulationType::STANDARD) {
             continue;

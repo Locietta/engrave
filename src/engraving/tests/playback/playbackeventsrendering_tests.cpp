@@ -20,7 +20,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <algorithm>
 #include <memory>
+#include <span>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -75,6 +78,27 @@ protected:
         return nullptr;
     }
 
+    void render(const EngravingItem *item, const int tick_offset, const PlaybackContextPtr &ctx, TrackEvents &track) const {
+        FreezeProgress progress;
+        renderer_.render(item, tick_offset, default_profile_, ctx, track, progress);
+    }
+
+    static std::vector<std::span<const NoteRecord>> note_groups(const TrackEvents &track) {
+        std::vector<std::span<const NoteRecord>> groups;
+        std::span<const NoteRecord> notes{track.notes.data(), track.notes.size()};
+        while (!notes.empty()) {
+            const timestamp_t timestamp = notes.front().group_timestamp;
+            const auto end = std::ranges::find_if(notes, [timestamp](const NoteRecord &note) { return note.group_timestamp != timestamp; });
+            groups.emplace_back(notes.begin(), end);
+            notes = notes.subspan(groups.back().size());
+        }
+        std::ranges::sort(groups, {}, [](const auto group) { return group.front().group_timestamp; });
+        for (std::size_t i = 1; i < groups.size(); ++i) {
+            EXPECT_NE(groups[i - 1].front().group_timestamp, groups[i].front().group_timestamp);
+        }
+        return groups;
+    }
+
     ArticulationsProfilePtr default_profile_ = nullptr;
 
     ArticulationPattern dummy_pattern_;
@@ -109,26 +133,26 @@ TEST_F(EngravingPlaybackEventsRendererTests, SingleNote_TenutoAccent) {
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord with the F4 note on it
-    PlaybackEventsMap result;
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    TrackEvents result;
+    render(chord, 0, ctx, result);
 
     // [THEN] We expect that a single note event will be rendered from the chord
-    EXPECT_EQ(result.size(), 1);
+    ASSERT_EQ(result.notes.size(), 1u);
 
-    mpe::NoteEvent event = std::get<mpe::NoteEvent>(result.begin()->second.front());
+    const NoteRecord &event = result.notes.front();
 
     // [THEN] We expect that the note event will match time expectations of the very first quarter note with 120BPM tempo
-    EXPECT_EQ(event.arrangement_ctx().nominal_timestamp, 0);
-    EXPECT_EQ(event.arrangement_ctx().nominal_duration, ::quarter_note_duration);
+    EXPECT_EQ(event.nominal_timestamp, 0);
+    EXPECT_EQ(event.nominal_duration, ::quarter_note_duration);
 
     // [THEN] We expect that the note event will match pitch expectations of F4 quarter note
-    EXPECT_EQ(event.pitch_ctx().nominal_pitch_level, pitch_level(PitchClass::F, 4));
+    EXPECT_EQ(event.nominal_pitch_level, pitch_level(PitchClass::F, 4));
 
     // [THEN] We expect that the note event will match expression expectations of our note
-    EXPECT_EQ(event.expression_ctx().nominal_dynamic_level, dynamic_level_from_type(mpe::DynamicType::NATURAL));
-    EXPECT_EQ(event.expression_ctx().articulations.size(), 2);
-    EXPECT_TRUE(event.expression_ctx().articulations.contains(ArticulationType::TENUTO));
-    EXPECT_TRUE(event.expression_ctx().articulations.contains(ArticulationType::ACCENT));
+    EXPECT_EQ(event.nominal_dynamic_level, dynamic_level_from_type(mpe::DynamicType::NATURAL));
+    EXPECT_EQ(result.note_articulations(event).size(), 2);
+    EXPECT_TRUE(contains_articulation(result.note_articulations(event), ArticulationType::TENUTO));
+    EXPECT_TRUE(contains_articulation(result.note_articulations(event), ArticulationType::ACCENT));
     delete score;
 }
 
@@ -157,25 +181,25 @@ TEST_F(EngravingPlaybackEventsRendererTests, SingleNote_NoArticulations) {
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord with the F4 note on it
-    PlaybackEventsMap result;
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    TrackEvents result;
+    render(chord, 0, ctx, result);
 
     // [THEN] We expect that a single note event will be rendered from the chord
-    EXPECT_EQ(result.size(), 1);
+    ASSERT_EQ(result.notes.size(), 1u);
 
-    mpe::NoteEvent event = std::get<mpe::NoteEvent>(result.begin()->second.front());
+    const NoteRecord &event = result.notes.front();
 
     // [THEN] We expect that the note event will match time expectations of the very first quarter note with 120BPM tempo
-    EXPECT_EQ(event.arrangement_ctx().nominal_timestamp, 0);
-    EXPECT_EQ(event.arrangement_ctx().nominal_duration, ::quarter_note_duration);
+    EXPECT_EQ(event.nominal_timestamp, 0);
+    EXPECT_EQ(event.nominal_duration, ::quarter_note_duration);
 
     // [THEN] We expect that the note event will match pitch expectations of F4 quarter note
-    EXPECT_EQ(event.pitch_ctx().nominal_pitch_level, pitch_level(PitchClass::F, 4));
+    EXPECT_EQ(event.nominal_pitch_level, pitch_level(PitchClass::F, 4));
 
     // [THEN] We expect that the note event will match expression expectations of our note
-    EXPECT_EQ(event.expression_ctx().nominal_dynamic_level, dynamic_level_from_type(mpe::DynamicType::NATURAL));
-    EXPECT_EQ(event.expression_ctx().articulations.size(), 1);
-    EXPECT_TRUE(event.expression_ctx().articulations.contains(ArticulationType::STANDARD));
+    EXPECT_EQ(event.nominal_dynamic_level, dynamic_level_from_type(mpe::DynamicType::NATURAL));
+    EXPECT_EQ(result.note_articulations(event).size(), 1);
+    EXPECT_TRUE(contains_articulation(result.note_articulations(event), ArticulationType::STANDARD));
     delete score;
 }
 
@@ -208,31 +232,28 @@ TEST_F(EngravingPlaybackEventsRendererTests, SingleNote_Trill_Modern) {
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord with the F4 note on it
-    PlaybackEventsMap result;
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    TrackEvents result;
+    render(chord, 0, ctx, result);
 
-    for (const auto &pair : result) {
+    for (const auto group : note_groups(result)) {
         // [THEN] We expect that rendered note events number will match expectations
-        EXPECT_EQ(pair.second.size(), expected_trill_sub_notes_count);
+        EXPECT_EQ(group.size(), expected_trill_sub_notes_count);
 
-        for (size_t i = 0; i < pair.second.size(); ++i) {
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(pair.second.at(i));
+        for (size_t i = 0; i < group.size(); ++i) {
+            const NoteRecord &note_event = group[i];
 
             // [THEN] We expect that each note event has only one articulation applied - Trill
-            EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
-            EXPECT_TRUE(note_event.expression_ctx().articulations.contains(ArticulationType::TRILL));
+            EXPECT_EQ(result.note_articulations(note_event).size(), 1);
+            EXPECT_TRUE(contains_articulation(result.note_articulations(note_event), ArticulationType::TRILL));
 
-            // [THEN] The amount of trill alterations depends on many things, such as a tempo
-            //        However, there is a couple of general rules of this disclosure:
-            //        - Trill should start from a principal note
-            //        - Trill should end up on a principal note. For that reasons is highly common to put a triplet on the last notes
-            if (i == 0 || i == result.size() - 1) {
-                EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, pitch_level(PitchClass::F, 4));
+            // The trill opens on the principal note.
+            if (i == 0) {
+                EXPECT_EQ(note_event.nominal_pitch_level, pitch_level(PitchClass::F, 4));
             }
 
             // [THEN] In modern trills each even note should be higher than the principal one on a single diatonic step
             if ((i + 1) % 2 == 0) {
-                EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, pitch_level(PitchClass::F, 4) + 2 * ::muse::mpe::pitch_level_step);
+                EXPECT_EQ(note_event.nominal_pitch_level, pitch_level(PitchClass::F, 4) + 2 * ::muse::mpe::pitch_level_step);
             }
         }
     }
@@ -268,12 +289,12 @@ TEST_F(EngravingPlaybackEventsRendererTests, SingleNote_Unexpandable_Trill) {
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord with the F4 note on it
-    PlaybackEventsMap result;
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    TrackEvents result;
+    render(chord, 0, ctx, result);
 
     // [THEN] We expect that the only one note event will be rendered,
     //        since Trill consists of 32-nd note, we can't break down 32-nd principal note into smaller sub-notes
-    EXPECT_EQ(result.size(), expected_trill_sub_notes_count);
+    EXPECT_EQ(note_groups(result).size(), expected_trill_sub_notes_count);
     delete score;
 }
 
@@ -305,40 +326,40 @@ TEST_F(EngravingPlaybackEventsRendererTests, SingleNote_Trill_Baroque) {
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord with the F4 note on it
-    PlaybackEventsMap result;
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    TrackEvents result;
+    render(chord, 0, ctx, result);
 
-    for (const auto &pair : result) {
+    for (const auto group : note_groups(result)) {
         // [THEN] We expect that rendered note events number will match expectations
-        EXPECT_EQ(pair.second.size(), expected_trill_sub_notes_count);
+        EXPECT_EQ(group.size(), expected_trill_sub_notes_count);
 
-        for (size_t i = 0; i < pair.second.size(); ++i) {
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(pair.second.at(i));
+        for (size_t i = 0; i < group.size(); ++i) {
+            const NoteRecord &note_event = group[i];
 
             // [THEN] We expect that each note event has only one articulation applied - TrillBaroque
-            EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
-            EXPECT_TRUE(note_event.expression_ctx().articulations.contains(ArticulationType::TRILL_BAROQUE));
+            EXPECT_EQ(result.note_articulations(note_event).size(), 1);
+            EXPECT_TRUE(contains_articulation(result.note_articulations(note_event), ArticulationType::TRILL_BAROQUE));
 
             // [THEN] The amount of trill alterations depends on various things, such as a tempo
             //        However, there is a couple of general rules of this disclosure in Baroque style:
             //        - Trill should start from a principal note + 1 diatonic step
             //        - Trill should end up on a principal note. For that reasons is highly common to put a triplet on the last notes
             if (i == 0) {
-                EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, pitch_level(PitchClass::F, 4) + 2 * ::muse::mpe::pitch_level_step);
+                EXPECT_EQ(note_event.nominal_pitch_level, pitch_level(PitchClass::F, 4) + 2 * ::muse::mpe::pitch_level_step);
             }
 
-            if (i == pair.second.size() - 1) {
-                EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, pitch_level(PitchClass::F, 4));
+            if (i == group.size() - 1) {
+                EXPECT_EQ(note_event.nominal_pitch_level, pitch_level(PitchClass::F, 4));
             }
 
             // [THEN] In baroque trills each odd note should be higher than the principal one on a single diatonic step
-            if (i % 2 == 0 && i < pair.second.size() - 2) {
-                EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, pitch_level(PitchClass::F, 4) + 2 * ::muse::mpe::pitch_level_step);
+            if (i % 2 == 0 && i < group.size() - 2) {
+                EXPECT_EQ(note_event.nominal_pitch_level, pitch_level(PitchClass::F, 4) + 2 * ::muse::mpe::pitch_level_step);
             }
 
             // [THEN] However, the note before the last should be lowe than the principal one on a single diatonic step
-            if (i == pair.second.size() - 2) {
-                EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, pitch_level(PitchClass::F, 4) - ::muse::mpe::pitch_level_step);
+            if (i == group.size() - 2) {
+                EXPECT_EQ(note_event.nominal_pitch_level, pitch_level(PitchClass::F, 4) - ::muse::mpe::pitch_level_step);
             }
         }
     }
@@ -386,26 +407,26 @@ TEST_F(EngravingPlaybackEventsRendererTests, SingleNote_Turn_Regular) {
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord with the F4 note on it
-    PlaybackEventsMap result;
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    TrackEvents result;
+    render(chord, 0, ctx, result);
 
-    for (const auto &pair : result) {
+    for (const auto group : note_groups(result)) {
         // [THEN] We expect that rendered note events number will match expectations
-        EXPECT_EQ(pair.second.size(), expected_sub_notes_count);
+        EXPECT_EQ(group.size(), expected_sub_notes_count);
 
-        for (size_t i = 0; i < pair.second.size(); ++i) {
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(pair.second.at(i));
+        for (size_t i = 0; i < group.size(); ++i) {
+            const NoteRecord &note_event = group[i];
 
             // [THEN] We expect that each note event has only one articulation applied - Turn
-            EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
-            EXPECT_TRUE(note_event.expression_ctx().articulations.contains(ArticulationType::TURN));
+            EXPECT_EQ(result.note_articulations(note_event).size(), 1);
+            EXPECT_TRUE(contains_articulation(result.note_articulations(note_event), ArticulationType::TURN));
 
             // [THEN] We expect that each sub-note in Regular Turn articulation will be equal to 0.25 of the principal note
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_duration, expected_durations[i]);
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_timestamp, expected_timestamps[i]);
+            EXPECT_EQ(note_event.nominal_duration, expected_durations[i]);
+            EXPECT_EQ(note_event.nominal_timestamp, expected_timestamps[i]);
 
             // [THEN] We expect that each note event will match expected pitch disclosure
-            EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
+            EXPECT_EQ(note_event.nominal_pitch_level, expected_pitches.at(i));
         }
     }
     delete score;
@@ -452,26 +473,26 @@ TEST_F(EngravingPlaybackEventsRendererTests, SingleNote_Turn_Inverted) {
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord with the F4 note on it
-    PlaybackEventsMap result;
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    TrackEvents result;
+    render(chord, 0, ctx, result);
 
-    for (const auto &pair : result) {
+    for (const auto group : note_groups(result)) {
         // [THEN] We expect that rendered note events number will match expectations
-        EXPECT_EQ(pair.second.size(), expected_sub_notes_count);
+        EXPECT_EQ(group.size(), expected_sub_notes_count);
 
-        for (size_t i = 0; i < pair.second.size(); ++i) {
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(pair.second.at(i));
+        for (size_t i = 0; i < group.size(); ++i) {
+            const NoteRecord &note_event = group[i];
 
             // [THEN] We expect that each note event has only one articulation applied - InvertedTurn
-            EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
-            EXPECT_TRUE(note_event.expression_ctx().articulations.contains(ArticulationType::INVERTED_TURN));
+            EXPECT_EQ(result.note_articulations(note_event).size(), 1);
+            EXPECT_TRUE(contains_articulation(result.note_articulations(note_event), ArticulationType::INVERTED_TURN));
 
             // [THEN] We expect that each sub-note in Inverted Turn articulation will be equal to 0.25 of the principal note
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_duration, expected_durations[i]);
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_timestamp, expected_timestamps[i]);
+            EXPECT_EQ(note_event.nominal_duration, expected_durations[i]);
+            EXPECT_EQ(note_event.nominal_timestamp, expected_timestamps[i]);
 
             // [THEN] We expect that each note event will match expected pitch disclosure
-            EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
+            EXPECT_EQ(note_event.nominal_pitch_level, expected_pitches.at(i));
         }
     }
     delete score;
@@ -520,26 +541,26 @@ TEST_F(EngravingPlaybackEventsRendererTests, SingleNote_Turn_Inverted_Slash_Vari
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord with the F4 note on it
-    PlaybackEventsMap result;
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    TrackEvents result;
+    render(chord, 0, ctx, result);
 
-    for (const auto &pair : result) {
+    for (const auto group : note_groups(result)) {
         // [THEN] We expect that rendered note events number will match expectations
-        EXPECT_EQ(pair.second.size(), expected_sub_notes_count);
+        EXPECT_EQ(group.size(), expected_sub_notes_count);
 
-        for (size_t i = 0; i < pair.second.size(); ++i) {
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(pair.second.at(i));
+        for (size_t i = 0; i < group.size(); ++i) {
+            const NoteRecord &note_event = group[i];
 
             // [THEN] We expect that each note event has only one articulation applied - InvertedTurn
-            EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
-            EXPECT_TRUE(note_event.expression_ctx().articulations.contains(ArticulationType::INVERTED_TURN));
+            EXPECT_EQ(result.note_articulations(note_event).size(), 1);
+            EXPECT_TRUE(contains_articulation(result.note_articulations(note_event), ArticulationType::INVERTED_TURN));
 
             // [THEN] We expect that each sub-note in Inverted Turn articulation will be equal to 0.25 of the principal note
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_duration, expected_durations[i]);
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_timestamp, expected_timestamps[i]);
+            EXPECT_EQ(note_event.nominal_duration, expected_durations[i]);
+            EXPECT_EQ(note_event.nominal_timestamp, expected_timestamps[i]);
 
             // [THEN] We expect that each note event will match expected pitch disclosure
-            EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
+            EXPECT_EQ(note_event.nominal_pitch_level, expected_pitches.at(i));
         }
     }
     delete score;
@@ -583,26 +604,26 @@ TEST_F(EngravingPlaybackEventsRendererTests, SingleNote_Upper_Mordent) {
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord with the F4 note on it
-    PlaybackEventsMap result;
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    TrackEvents result;
+    render(chord, 0, ctx, result);
 
-    for (const auto &pair : result) {
+    for (const auto group : note_groups(result)) {
         // [THEN] We expect that rendered note events number will match expectations
-        EXPECT_EQ(pair.second.size(), expected_sub_notes_count);
+        EXPECT_EQ(group.size(), expected_sub_notes_count);
 
-        for (size_t i = 0; i < pair.second.size(); ++i) {
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(pair.second.at(i));
+        for (size_t i = 0; i < group.size(); ++i) {
+            const NoteRecord &note_event = group[i];
 
             // [THEN] We expect that each note event has only one articulation applied - Upper Mordent
-            EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
-            EXPECT_TRUE(note_event.expression_ctx().articulations.contains(ArticulationType::UPPER_MORDENT));
+            EXPECT_EQ(result.note_articulations(note_event).size(), 1);
+            EXPECT_TRUE(contains_articulation(result.note_articulations(note_event), ArticulationType::UPPER_MORDENT));
 
             // [THEN] We expect that each sub-note in Upper Mordent articulation has expected duration
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_duration, expected_durations.at(i));
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_timestamp, expected_timestamps.at(i));
+            EXPECT_EQ(note_event.nominal_duration, expected_durations.at(i));
+            EXPECT_EQ(note_event.nominal_timestamp, expected_timestamps.at(i));
 
             // [THEN] We expect that each note event will match expected pitch disclosure
-            EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
+            EXPECT_EQ(note_event.nominal_pitch_level, expected_pitches.at(i));
         }
     }
     delete score;
@@ -646,26 +667,26 @@ TEST_F(EngravingPlaybackEventsRendererTests, SingleNote_Lower_Mordent) {
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord with the F4 note on it
-    PlaybackEventsMap result;
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    TrackEvents result;
+    render(chord, 0, ctx, result);
 
-    for (const auto &pair : result) {
+    for (const auto group : note_groups(result)) {
         // [THEN] We expect that rendered note events number will match expectations
-        EXPECT_EQ(pair.second.size(), expected_sub_notes_count);
+        EXPECT_EQ(group.size(), expected_sub_notes_count);
 
-        for (size_t i = 0; i < pair.second.size(); ++i) {
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(pair.second.at(i));
+        for (size_t i = 0; i < group.size(); ++i) {
+            const NoteRecord &note_event = group[i];
 
             // [THEN] We expect that each note event has only one articulation applied - Lower Mordent
-            EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
-            EXPECT_TRUE(note_event.expression_ctx().articulations.contains(ArticulationType::LOWER_MORDENT));
+            EXPECT_EQ(result.note_articulations(note_event).size(), 1);
+            EXPECT_TRUE(contains_articulation(result.note_articulations(note_event), ArticulationType::LOWER_MORDENT));
 
             // [THEN] We expect that each sub-note has an expected duration
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_duration, expected_durations.at(i));
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_timestamp, expected_timestamps.at(i));
+            EXPECT_EQ(note_event.nominal_duration, expected_durations.at(i));
+            EXPECT_EQ(note_event.nominal_timestamp, expected_timestamps.at(i));
 
             // [THEN] We expect that each note event will match expected pitch disclosure
-            EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
+            EXPECT_EQ(note_event.nominal_pitch_level, expected_pitches.at(i));
         }
     }
     delete score;
@@ -708,26 +729,26 @@ TEST_F(EngravingPlaybackEventsRendererTests, TwoNotes_Discrete_Glissando) {
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord with the F4 note on it
-    PlaybackEventsMap result;
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    TrackEvents result;
+    render(chord, 0, ctx, result);
 
-    for (const auto &pair : result) {
+    for (const auto group : note_groups(result)) {
         // [THEN] We expect that rendered note events number will match expectations
-        EXPECT_EQ(pair.second.size(), expected_sub_notes_count);
+        EXPECT_EQ(group.size(), expected_sub_notes_count);
 
-        for (size_t i = 0; i < pair.second.size(); ++i) {
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(pair.second.at(i));
+        for (size_t i = 0; i < group.size(); ++i) {
+            const NoteRecord &note_event = group[i];
 
             // [THEN] We expect that each note event has only one articulation applied - Discrete Glissando
-            EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
-            EXPECT_TRUE(note_event.expression_ctx().articulations.contains(ArticulationType::DISCRETE_GLISSANDO));
+            EXPECT_EQ(result.note_articulations(note_event).size(), 1);
+            EXPECT_TRUE(contains_articulation(result.note_articulations(note_event), ArticulationType::DISCRETE_GLISSANDO));
 
             // [THEN] We expect that each sub-note in Discrete Glissando articulation has expected duration
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_duration, static_cast<int>(expected_duration));
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_timestamp, static_cast<int>(i * expected_duration));
+            EXPECT_EQ(note_event.nominal_duration, static_cast<int>(expected_duration));
+            EXPECT_EQ(note_event.nominal_timestamp, static_cast<int>(i * expected_duration));
 
             // [THEN] We expect that each note event will match expected pitch disclosure
-            EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
+            EXPECT_EQ(note_event.nominal_pitch_level, expected_pitches.at(i));
         }
     }
     delete score;
@@ -780,42 +801,43 @@ TEST_F(EngravingPlaybackEventsRendererTests, TwoNotes_Continuous_Glissando) {
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord with the F4 note on it
-    PlaybackEventsMap result;
+    TrackEvents result;
     for (const RepeatSegment *repeat_segment : score->repeat_list()) {
         int tick_position_offset = repeat_segment->utick - repeat_segment->tick;
-        renderer_.render(chord, tick_position_offset, default_profile_, ctx, result);
+        render(chord, tick_position_offset, ctx, result);
     }
 
     // [THEN] 2 events, as we have 2 repeat segments
-    EXPECT_EQ(result.size(), 2);
-    ASSERT_EQ(expected_timestamps.size(), result.size());
+    EXPECT_EQ(note_groups(result).size(), 2);
+    ASSERT_EQ(expected_timestamps.size(), note_groups(result).size());
 
     size_t note_event_num = 0;
 
-    for (const auto &pair : result) {
+    for (const auto group : note_groups(result)) {
         // [THEN] We expect that rendered note events number will match expectations
-        EXPECT_EQ(pair.second.size(), expected_sub_notes_count);
+        EXPECT_EQ(group.size(), expected_sub_notes_count);
 
-        for (size_t i = 0; i < pair.second.size(); ++i) {
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(pair.second.at(i));
+        for (size_t i = 0; i < group.size(); ++i) {
+            const NoteRecord &note_event = group[i];
 
             // [THEN] We expect that each sub-note has an expected duration
             timestamp_t expected_timestamp = expected_timestamps.at(note_event_num);
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_duration, expected_duration);
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_timestamp, expected_timestamp);
+            EXPECT_EQ(note_event.nominal_duration, expected_duration);
+            EXPECT_EQ(note_event.nominal_timestamp, expected_timestamp);
 
             // [THEN] We expect that each note event has only one articulation applied - Continuous Glissando
-            EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
-            auto gliss_it = note_event.expression_ctx().articulations.find(ArticulationType::CONTINUOUS_GLISSANDO);
-            ASSERT_TRUE(gliss_it != note_event.expression_ctx().articulations.end());
+            EXPECT_EQ(result.note_articulations(note_event).size(), 1);
+            const auto articulations = result.note_articulations(note_event);
+            auto gliss_it = std::ranges::find(articulations, ArticulationType::CONTINUOUS_GLISSANDO, &ArticulationRecord::type);
+            ASSERT_TRUE(gliss_it != articulations.end());
 
             // [THEN] The articulation has the correct timestamp & duration
-            const ArticulationMeta &art_meta = gliss_it->second.meta;
+            const ArticulationRecord &art_meta = *gliss_it;
             EXPECT_EQ(art_meta.timestamp, expected_timestamp);
             EXPECT_EQ(art_meta.overall_duration, expected_duration);
 
             // [THEN] We expect that each note event will match expected pitch disclosure
-            EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
+            EXPECT_EQ(note_event.nominal_pitch_level, expected_pitches.at(i));
 
             note_event_num++;
         }
@@ -863,26 +885,26 @@ TEST_F(EngravingPlaybackEventsRendererTests, TwoNotes_Glissando_NoPlay) {
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord with the F4 note on it
-    PlaybackEventsMap result;
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    TrackEvents result;
+    render(chord, 0, ctx, result);
 
-    for (const auto &pair : result) {
+    for (const auto group : note_groups(result)) {
         // [THEN] We expect that rendered note events number will match expectations
-        EXPECT_EQ(pair.second.size(), expected_sub_notes_count);
+        EXPECT_EQ(group.size(), expected_sub_notes_count);
 
-        for (size_t i = 0; i < pair.second.size(); ++i) {
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(pair.second.at(i));
+        for (size_t i = 0; i < group.size(); ++i) {
+            const NoteRecord &note_event = group[i];
 
             // [THEN] We expect that each note event has only one articulation applied - Standard articulation
-            EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
-            EXPECT_TRUE(note_event.expression_ctx().articulations.contains(ArticulationType::STANDARD));
+            EXPECT_EQ(result.note_articulations(note_event).size(), 1);
+            EXPECT_TRUE(contains_articulation(result.note_articulations(note_event), ArticulationType::STANDARD));
 
             // [THEN] We expect that each sub-note has an expected duration
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_duration, expected_duration);
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_timestamp, static_cast<duration_t>(i) * expected_duration);
+            EXPECT_EQ(note_event.nominal_duration, expected_duration);
+            EXPECT_EQ(note_event.nominal_timestamp, static_cast<duration_t>(i) * expected_duration);
 
             // [THEN] We expect that each note event will match expected pitch disclosure
-            EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
+            EXPECT_EQ(note_event.nominal_pitch_level, expected_pitches.at(i));
         }
     }
     delete score;
@@ -937,26 +959,26 @@ TEST_F(EngravingPlaybackEventsRendererTests, TwoNotes_Discrete_Harp_Glissando) {
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
-    PlaybackEventsMap result;
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    TrackEvents result;
+    render(chord, 0, ctx, result);
 
-    for (const auto &pair : result) {
+    for (const auto group : note_groups(result)) {
         // [THEN] We expect that rendered note events number will match expectations
-        EXPECT_EQ(pair.second.size(), expected_sub_notes_count);
+        EXPECT_EQ(group.size(), expected_sub_notes_count);
 
-        for (size_t i = 0; i < pair.second.size(); ++i) {
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(pair.second.at(i));
+        for (size_t i = 0; i < group.size(); ++i) {
+            const NoteRecord &note_event = group[i];
 
             // [THEN] We expect that each note event has only one articulation applied - Discrete Glissando
-            EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
-            EXPECT_TRUE(note_event.expression_ctx().articulations.contains(ArticulationType::DISCRETE_GLISSANDO));
+            EXPECT_EQ(result.note_articulations(note_event).size(), 1);
+            EXPECT_TRUE(contains_articulation(result.note_articulations(note_event), ArticulationType::DISCRETE_GLISSANDO));
 
             // [THEN] We expect that each sub-note in Discrete Glissando articulation has expected duration
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_duration, static_cast<int>(expected_duration));
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_timestamp, static_cast<int>(i * expected_duration));
+            EXPECT_EQ(note_event.nominal_duration, static_cast<int>(expected_duration));
+            EXPECT_EQ(note_event.nominal_timestamp, static_cast<int>(i * expected_duration));
 
             // [THEN] We expect that each note event will match expected pitch disclosure
-            EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
+            EXPECT_EQ(note_event.nominal_pitch_level, expected_pitches.at(i));
         }
     }
 
@@ -976,27 +998,27 @@ TEST_F(EngravingPlaybackEventsRendererTests, TwoNotes_Discrete_Harp_Glissando) {
 
     default_profile_->set_pattern(ArticulationType::DISCRETE_GLISSANDO, dummy_pattern_);
 
-    PlaybackEventsMap result2;
-    renderer_.render(second_chord, 0, default_profile_, ctx, result2);
+    TrackEvents result2;
+    render(second_chord, 0, ctx, result2);
 
-    for (const auto &pair : result2) {
+    for (const auto group : note_groups(result2)) {
         // [THEN] We expect that rendered note events number will match expectations
-        EXPECT_EQ(pair.second.size(), expected_sub_notes_count);
+        EXPECT_EQ(group.size(), expected_sub_notes_count);
 
-        for (size_t i = 0; i < pair.second.size(); ++i) {
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(pair.second.at(i));
+        for (size_t i = 0; i < group.size(); ++i) {
+            const NoteRecord &note_event = group[i];
 
             // [THEN] We expect that each note event has only one articulation applied - Discrete Glissando
-            EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
-            EXPECT_TRUE(note_event.expression_ctx().articulations.contains(ArticulationType::DISCRETE_GLISSANDO));
+            EXPECT_EQ(result2.note_articulations(note_event).size(), 1);
+            EXPECT_TRUE(contains_articulation(result2.note_articulations(note_event), ArticulationType::DISCRETE_GLISSANDO));
 
             // [THEN] We expect that each sub-note in Discrete Glissando articulation has expected duration
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_duration, static_cast<int>(expected_duration));
+            EXPECT_EQ(note_event.nominal_duration, static_cast<int>(expected_duration));
 
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_timestamp, ::whole_note_duration + static_cast<int>(i * expected_duration));
+            EXPECT_EQ(note_event.nominal_timestamp, ::whole_note_duration + static_cast<int>(i * expected_duration));
 
             // [THEN] We expect that each note event will match expected pitch disclosure
-            EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
+            EXPECT_EQ(note_event.nominal_pitch_level, expected_pitches.at(i));
         }
     }
     delete score;
@@ -1026,20 +1048,19 @@ TEST_F(EngravingPlaybackEventsRendererTests, Glissando_on_tied_notes) {
     ASSERT_TRUE(chord->notes().front()->tie_for());
 
     // [WHEN] Request to render a chord with the A4 note on it
-    PlaybackEventsMap result;
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    TrackEvents result;
+    render(chord, 0, ctx, result);
 
     // [THEN] Note event has the correct duration and standard articulation (no glissando)
     pitch_level_t nominal_pitch_level = pitch_level(PitchClass::A, 4);
     duration_t glissando_note_duration = ::quarter_note_duration / 4;
 
-    ASSERT_EQ(result.size(), 1);
-    ASSERT_EQ(result.begin()->second.size(), 1);
-    mpe::NoteEvent resulting_note_event = std::get<mpe::NoteEvent>(result.begin()->second.at(0));
-    EXPECT_EQ(resulting_note_event.expression_ctx().articulations.size(), 1);
-    EXPECT_TRUE(resulting_note_event.expression_ctx().articulations.contains(ArticulationType::STANDARD));
-    EXPECT_EQ(resulting_note_event.pitch_ctx().nominal_pitch_level, nominal_pitch_level);
-    EXPECT_EQ(resulting_note_event.arrangement_ctx().nominal_duration,
+    ASSERT_EQ(result.notes.size(), 1u);
+    const NoteRecord &resulting_note_event = result.notes[0];
+    EXPECT_EQ(result.note_articulations(resulting_note_event).size(), 1);
+    EXPECT_TRUE(contains_articulation(result.note_articulations(resulting_note_event), ArticulationType::STANDARD));
+    EXPECT_EQ(resulting_note_event.nominal_pitch_level, nominal_pitch_level);
+    EXPECT_EQ(resulting_note_event.nominal_duration,
               ::quarter_note_duration + glissando_note_duration); // A4 + 1st glissando note
 
     // [GIVEN] Tied A4 with discrete glissando
@@ -1049,8 +1070,8 @@ TEST_F(EngravingPlaybackEventsRendererTests, Glissando_on_tied_notes) {
     ASSERT_TRUE(chord->notes().front()->tie_back());
 
     // [WHEN] Request to render a chord with the A4 note on it
-    result.clear();
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    result = {};
+    render(chord, 0, ctx, result);
 
     // [THEN] Expected glissando disclosure
     size_t expected_sub_notes_count = 3;
@@ -1062,23 +1083,23 @@ TEST_F(EngravingPlaybackEventsRendererTests, Glissando_on_tied_notes) {
         expected_pitches.push_back(nominal_pitch_level + pitches_wt.at(i) * ::muse::mpe::pitch_level_step);
     }
 
-    for (const auto &pair : result) {
+    for (const auto group : note_groups(result)) {
         // [THEN] We expect that rendered note events number will match expectations
-        EXPECT_EQ(pair.second.size(), expected_sub_notes_count);
+        EXPECT_EQ(group.size(), expected_sub_notes_count);
 
-        for (size_t i = 0; i < pair.second.size(); ++i) {
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(pair.second.at(i));
+        for (size_t i = 0; i < group.size(); ++i) {
+            const NoteRecord &note_event = group[i];
 
             // [THEN] We expect that each note event has only one articulation applied - Discrete Glissando
-            EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
-            EXPECT_TRUE(note_event.expression_ctx().articulations.contains(ArticulationType::DISCRETE_GLISSANDO));
+            EXPECT_EQ(result.note_articulations(note_event).size(), 1);
+            EXPECT_TRUE(contains_articulation(result.note_articulations(note_event), ArticulationType::DISCRETE_GLISSANDO));
 
             // [THEN] We expect that each sub-note in Discrete Glissando articulation has expected duration
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_duration, glissando_note_duration);
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_timestamp, expected_timestamp + static_cast<int>(i * glissando_note_duration));
+            EXPECT_EQ(note_event.nominal_duration, glissando_note_duration);
+            EXPECT_EQ(note_event.nominal_timestamp, expected_timestamp + static_cast<int>(i * glissando_note_duration));
 
             // [THEN] We expect that each note event will match expected pitch disclosure
-            EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
+            EXPECT_EQ(note_event.nominal_pitch_level, expected_pitches.at(i));
         }
     }
 
@@ -1091,8 +1112,8 @@ TEST_F(EngravingPlaybackEventsRendererTests, Glissando_on_tied_notes) {
     ASSERT_TRUE(chord->notes().front()->tie_for());
 
     // [WHEN] Request to render a chord with the A4 note on it
-    result.clear();
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    result = {};
+    render(chord, 0, ctx, result);
 
     // [THEN] Expected glissando disclosure
     expected_sub_notes_count = 1;
@@ -1105,24 +1126,23 @@ TEST_F(EngravingPlaybackEventsRendererTests, Glissando_on_tied_notes) {
         expected_pitches.push_back(nominal_pitch_level + int(i) * ::muse::mpe::pitch_level_step);
     }
 
-    for (const auto &pair : result) {
+    for (const auto group : note_groups(result)) {
         // [THEN] We expect that rendered note events number will match expectations
-        EXPECT_EQ(pair.second.size(), expected_sub_notes_count);
+        EXPECT_EQ(group.size(), expected_sub_notes_count);
 
-        for (size_t i = 0; i < pair.second.size(); ++i) {
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(pair.second.at(i));
+        for (size_t i = 0; i < group.size(); ++i) {
+            const NoteRecord &note_event = group[i];
 
             // [THEN] We expect that each note event has only one articulation applied - Continuous Glissando
-            EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
-            EXPECT_TRUE(note_event.expression_ctx().articulations.contains(ArticulationType::CONTINUOUS_GLISSANDO));
+            EXPECT_EQ(result.note_articulations(note_event).size(), 1);
+            EXPECT_TRUE(contains_articulation(result.note_articulations(note_event), ArticulationType::CONTINUOUS_GLISSANDO));
 
             // [THEN] We expect that each sub-note has an expected duration
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_duration, glissando_note_duration);
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_timestamp,
-                      expected_timestamp + static_cast<duration_t>(i) * glissando_note_duration);
+            EXPECT_EQ(note_event.nominal_duration, glissando_note_duration);
+            EXPECT_EQ(note_event.nominal_timestamp, expected_timestamp + static_cast<duration_t>(i) * glissando_note_duration);
 
             // [THEN] We expect that each note event will match expected pitch disclosure
-            EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
+            EXPECT_EQ(note_event.nominal_pitch_level, expected_pitches.at(i));
         }
     }
 
@@ -1172,26 +1192,26 @@ TEST_F(EngravingPlaybackEventsRendererTests, SingleNote_Acciaccatura) {
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord with the F4 note on it
-    PlaybackEventsMap result;
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    TrackEvents result;
+    render(chord, 0, ctx, result);
 
-    for (const auto &pair : result) {
+    for (const auto group : note_groups(result)) {
         // [THEN] We expect that rendered note events number will match expectations
-        EXPECT_EQ(pair.second.size(), expected_sub_notes_count);
+        EXPECT_EQ(group.size(), expected_sub_notes_count);
 
-        for (size_t i = 0; i < pair.second.size(); ++i) {
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(pair.second.at(i));
+        for (size_t i = 0; i < group.size(); ++i) {
+            const NoteRecord &note_event = group[i];
 
             // [THEN] We expect that Acciaccatura is only applied to the grace note event
-            EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
-            EXPECT_TRUE(note_event.expression_ctx().articulations.contains(expected_articulations.at(i)));
+            EXPECT_EQ(result.note_articulations(note_event).size(), 1);
+            EXPECT_TRUE(contains_articulation(result.note_articulations(note_event), expected_articulations.at(i)));
 
             // [THEN] We expect that each sub-note has expected duration
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_duration, expected_durations.at(i));
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_timestamp, expected_timestamps.at(i));
+            EXPECT_EQ(note_event.nominal_duration, expected_durations.at(i));
+            EXPECT_EQ(note_event.nominal_timestamp, expected_timestamps.at(i));
 
             // [THEN] We expect that each note event will match expected pitch disclosure
-            EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
+            EXPECT_EQ(note_event.nominal_pitch_level, expected_pitches.at(i));
         }
     }
     delete score;
@@ -1242,26 +1262,26 @@ TEST_F(EngravingPlaybackEventsRendererTests, SingleNote_AcciaccaturaChord) {
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord with the F4 note on it
-    PlaybackEventsMap result;
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    TrackEvents result;
+    render(chord, 0, ctx, result);
 
-    for (const auto &pair : result) {
+    for (const auto group : note_groups(result)) {
         // [THEN] We expect that rendered note events number will match expectations
-        EXPECT_EQ(pair.second.size(), expected_sub_notes_count);
+        EXPECT_EQ(group.size(), expected_sub_notes_count);
 
-        for (size_t i = 0; i < pair.second.size(); ++i) {
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(pair.second.at(i));
+        for (size_t i = 0; i < group.size(); ++i) {
+            const NoteRecord &note_event = group[i];
 
             // [THEN] We expect that Acciaccatura is only applied to the grace note events
-            EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
-            EXPECT_TRUE(note_event.expression_ctx().articulations.contains(expected_articulations.at(i)));
+            EXPECT_EQ(result.note_articulations(note_event).size(), 1);
+            EXPECT_TRUE(contains_articulation(result.note_articulations(note_event), expected_articulations.at(i)));
 
             // [THEN] We expect that each sub-note has expected duration
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_duration, expected_durations.at(i));
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_timestamp, expected_timestamps.at(i));
+            EXPECT_EQ(note_event.nominal_duration, expected_durations.at(i));
+            EXPECT_EQ(note_event.nominal_timestamp, expected_timestamps.at(i));
 
             // [THEN] We expect that each note event will match expected pitch disclosure
-            EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
+            EXPECT_EQ(note_event.nominal_pitch_level, expected_pitches.at(i));
         }
     }
     delete score;
@@ -1313,26 +1333,26 @@ TEST_F(EngravingPlaybackEventsRendererTests, SingleNote_MultiAcciaccatura) {
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord
-    PlaybackEventsMap result;
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    TrackEvents result;
+    render(chord, 0, ctx, result);
 
-    for (const auto &pair : result) {
+    for (const auto group : note_groups(result)) {
         // [THEN] We expect that rendered note events number will match expectations
-        EXPECT_EQ(pair.second.size(), expected_sub_notes_count);
+        EXPECT_EQ(group.size(), expected_sub_notes_count);
 
-        for (size_t i = 0; i < pair.second.size(); ++i) {
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(pair.second.at(i));
+        for (size_t i = 0; i < group.size(); ++i) {
+            const NoteRecord &note_event = group[i];
 
             // [THEN] We expect that Acciaccatura is only applied to the grace note events
-            EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
-            EXPECT_TRUE(note_event.expression_ctx().articulations.contains(expected_articulations.at(i)));
+            EXPECT_EQ(result.note_articulations(note_event).size(), 1);
+            EXPECT_TRUE(contains_articulation(result.note_articulations(note_event), expected_articulations.at(i)));
 
             // [THEN] We expect that each sub-note has expected duration
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_duration, expected_durations.at(i));
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_timestamp, expected_timestamps.at(i));
+            EXPECT_EQ(note_event.nominal_duration, expected_durations.at(i));
+            EXPECT_EQ(note_event.nominal_timestamp, expected_timestamps.at(i));
 
             // [THEN] We expect that each note event will match expected pitch disclosure
-            EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
+            EXPECT_EQ(note_event.nominal_pitch_level, expected_pitches.at(i));
         }
     }
     delete score;
@@ -1385,29 +1405,29 @@ TEST_F(EngravingPlaybackEventsRendererTests, GraceNoteWithTiedNotes) {
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord with the F4 note on it
-    PlaybackEventsMap result;
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    TrackEvents result;
+    render(chord, 0, ctx, result);
 
     // [THEN] The events map is not empty
-    EXPECT_FALSE(result.empty());
+    EXPECT_FALSE(result.notes.empty());
 
-    for (const auto &pair : result) {
+    for (const auto group : note_groups(result)) {
         // [THEN] We expect that rendered note events number will match expectations
-        EXPECT_EQ(pair.second.size(), expected_sub_notes_count);
+        EXPECT_EQ(group.size(), expected_sub_notes_count);
 
-        for (size_t i = 0; i < pair.second.size(); ++i) {
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(pair.second.at(i));
+        for (size_t i = 0; i < group.size(); ++i) {
+            const NoteRecord &note_event = group[i];
 
             // [THEN] We expect that PreAppoggiatura is only applied to the grace note event
-            EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
-            EXPECT_TRUE(note_event.expression_ctx().articulations.contains(expected_articulations.at(i)));
+            EXPECT_EQ(result.note_articulations(note_event).size(), 1);
+            EXPECT_TRUE(contains_articulation(result.note_articulations(note_event), expected_articulations.at(i)));
 
             // [THEN] We expect that each sub-note has expected duration
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_duration, expected_durations.at(i));
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_timestamp, expected_timestamps.at(i));
+            EXPECT_EQ(note_event.nominal_duration, expected_durations.at(i));
+            EXPECT_EQ(note_event.nominal_timestamp, expected_timestamps.at(i));
 
             // [THEN] We expect that each note event will match expected pitch disclosure
-            EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
+            EXPECT_EQ(note_event.nominal_pitch_level, expected_pitches.at(i));
         }
     }
     delete score;
@@ -1453,26 +1473,26 @@ TEST_F(EngravingPlaybackEventsRendererTests, SingleNote_Appoggiatura_Post) {
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord
-    PlaybackEventsMap result;
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    TrackEvents result;
+    render(chord, 0, ctx, result);
 
-    for (const auto &pair : result) {
+    for (const auto group : note_groups(result)) {
         // [THEN] We expect that rendered note events number will match expectations
-        EXPECT_EQ(pair.second.size(), expected_sub_notes_count);
+        EXPECT_EQ(group.size(), expected_sub_notes_count);
 
-        for (size_t i = 0; i < pair.second.size(); ++i) {
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(pair.second.at(i));
+        for (size_t i = 0; i < group.size(); ++i) {
+            const NoteRecord &note_event = group[i];
 
             // [THEN] We expect that PostAppoggiatura is only applied to the grace note event
-            EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
-            EXPECT_TRUE(note_event.expression_ctx().articulations.contains(expected_articulations.at(i)));
+            EXPECT_EQ(result.note_articulations(note_event).size(), 1);
+            EXPECT_TRUE(contains_articulation(result.note_articulations(note_event), expected_articulations.at(i)));
 
             // [THEN] We expect that each sub-note has expected duration
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_duration, expected_durations.at(i));
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_timestamp, expected_timestamps.at(i));
+            EXPECT_EQ(note_event.nominal_duration, expected_durations.at(i));
+            EXPECT_EQ(note_event.nominal_timestamp, expected_timestamps.at(i));
 
             // [THEN] We expect that each note event will match expected pitch disclosure
-            EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
+            EXPECT_EQ(note_event.nominal_pitch_level, expected_pitches.at(i));
         }
     }
     delete score;
@@ -1523,26 +1543,26 @@ TEST_F(EngravingPlaybackEventsRendererTests, SingleNote_AppoggiaturaChord_Post) 
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord
-    PlaybackEventsMap result;
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    TrackEvents result;
+    render(chord, 0, ctx, result);
 
-    for (const auto &pair : result) {
+    for (const auto group : note_groups(result)) {
         // [THEN] We expect that rendered note events number will match expectations
-        EXPECT_EQ(pair.second.size(), expected_sub_notes_count);
+        EXPECT_EQ(group.size(), expected_sub_notes_count);
 
-        for (size_t i = 0; i < pair.second.size(); ++i) {
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(pair.second.at(i));
+        for (size_t i = 0; i < group.size(); ++i) {
+            const NoteRecord &note_event = group[i];
 
             // [THEN] We expect that PostAppoggiatura is only applied to the grace note events
-            EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
-            EXPECT_TRUE(note_event.expression_ctx().articulations.contains(expected_articulations.at(i)));
+            EXPECT_EQ(result.note_articulations(note_event).size(), 1);
+            EXPECT_TRUE(contains_articulation(result.note_articulations(note_event), expected_articulations.at(i)));
 
             // [THEN] We expect that each sub-note has expected duration
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_duration, expected_durations.at(i));
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_timestamp, expected_timestamps.at(i));
+            EXPECT_EQ(note_event.nominal_duration, expected_durations.at(i));
+            EXPECT_EQ(note_event.nominal_timestamp, expected_timestamps.at(i));
 
             // [THEN] We expect that each note event will match expected pitch disclosure
-            EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
+            EXPECT_EQ(note_event.nominal_pitch_level, expected_pitches.at(i));
         }
     }
     delete score;
@@ -1596,26 +1616,26 @@ TEST_F(EngravingPlaybackEventsRendererTests, SingleNote_MultiAppoggiatura_Post) 
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord
-    PlaybackEventsMap result;
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    TrackEvents result;
+    render(chord, 0, ctx, result);
 
-    for (const auto &pair : result) {
+    for (const auto group : note_groups(result)) {
         // [THEN] We expect that rendered note events number will match expectations
-        EXPECT_EQ(pair.second.size(), expected_sub_notes_count);
+        EXPECT_EQ(group.size(), expected_sub_notes_count);
 
-        for (size_t i = 0; i < pair.second.size(); ++i) {
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(pair.second.at(i));
+        for (size_t i = 0; i < group.size(); ++i) {
+            const NoteRecord &note_event = group[i];
 
             // [THEN] We expect that PostAppoggiatura is only applied to the grace note events
-            EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
-            EXPECT_TRUE(note_event.expression_ctx().articulations.contains(expected_articulations.at(i)));
+            EXPECT_EQ(result.note_articulations(note_event).size(), 1);
+            EXPECT_TRUE(contains_articulation(result.note_articulations(note_event), expected_articulations.at(i)));
 
             // [THEN] We expect that each sub-note has expected duration
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_duration, expected_durations.at(i));
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_timestamp, expected_timestamps.at(i));
+            EXPECT_EQ(note_event.nominal_duration, expected_durations.at(i));
+            EXPECT_EQ(note_event.nominal_timestamp, expected_timestamps.at(i));
 
             // [THEN] We expect that each note event will match expected pitch disclosure
-            EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
+            EXPECT_EQ(note_event.nominal_pitch_level, expected_pitches.at(i));
         }
     }
     delete score;
@@ -1662,26 +1682,26 @@ TEST_F(EngravingPlaybackEventsRendererTests, Chord_Arpeggio) {
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord
-    PlaybackEventsMap result;
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    TrackEvents result;
+    render(chord, 0, ctx, result);
 
-    for (const auto &pair : result) {
+    for (const auto group : note_groups(result)) {
         // [THEN] We expect that rendered note events number will match expectations
-        EXPECT_EQ(pair.second.size(), expected_sub_notes_count);
+        EXPECT_EQ(group.size(), expected_sub_notes_count);
 
-        for (size_t i = 0; i < pair.second.size(); ++i) {
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(pair.second.at(i));
+        for (size_t i = 0; i < group.size(); ++i) {
+            const NoteRecord &note_event = group[i];
 
             // [THEN] We expect that each note event has only one articulation applied
-            EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
-            EXPECT_TRUE(note_event.expression_ctx().articulations.contains(ArticulationType::ARPEGGIO));
+            EXPECT_EQ(result.note_articulations(note_event).size(), 1);
+            EXPECT_TRUE(contains_articulation(result.note_articulations(note_event), ArticulationType::ARPEGGIO));
 
             // [THEN] We expect that each sub-note has expected timestamp and duration
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_timestamp, expected_timestamp.at(i));
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_duration, expected_durations.at(i));
+            EXPECT_EQ(note_event.nominal_timestamp, expected_timestamp.at(i));
+            EXPECT_EQ(note_event.nominal_duration, expected_durations.at(i));
 
             // [THEN] We expect that each note event will match expected pitch disclosure
-            EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
+            EXPECT_EQ(note_event.nominal_pitch_level, expected_pitches.at(i));
         }
     }
     delete score;
@@ -1719,16 +1739,16 @@ TEST_F(EngravingPlaybackEventsRendererTests, Chord_Arpeggio_Grace) {
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord
-    PlaybackEventsMap result;
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    TrackEvents result;
+    render(chord, 0, ctx, result);
 
-    for (const auto &pair : result) {
+    for (const auto group : note_groups(result)) {
         // [THEN] The grace note is rendered along with the arpeggiated notes
-        ASSERT_EQ(pair.second.size(), expected_pitches.size());
+        ASSERT_EQ(group.size(), expected_pitches.size());
 
-        for (size_t i = 0; i < pair.second.size(); ++i) {
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(pair.second.at(i));
-            EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
+        for (size_t i = 0; i < group.size(); ++i) {
+            const NoteRecord &note_event = group[i];
+            EXPECT_EQ(note_event.nominal_pitch_level, expected_pitches.at(i));
         }
     }
     delete score;
@@ -1778,26 +1798,26 @@ TEST_F(EngravingPlaybackEventsRendererTests, Chord_Arpeggio_Up) {
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord
-    PlaybackEventsMap result;
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    TrackEvents result;
+    render(chord, 0, ctx, result);
 
-    for (const auto &pair : result) {
+    for (const auto group : note_groups(result)) {
         // [THEN] We expect that rendered note events number will match expectations
-        EXPECT_EQ(pair.second.size(), expected_sub_notes_count);
+        EXPECT_EQ(group.size(), expected_sub_notes_count);
 
-        for (size_t i = 0; i < pair.second.size(); ++i) {
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(pair.second.at(i));
+        for (size_t i = 0; i < group.size(); ++i) {
+            const NoteRecord &note_event = group[i];
 
             // [THEN] We expect that each note event has only one articulation applied
-            EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
-            EXPECT_TRUE(note_event.expression_ctx().articulations.contains(ArticulationType::ARPEGGIO_UP));
+            EXPECT_EQ(result.note_articulations(note_event).size(), 1);
+            EXPECT_TRUE(contains_articulation(result.note_articulations(note_event), ArticulationType::ARPEGGIO_UP));
 
             // [THEN] We expect that each sub-note has expected timestamp and duration
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_timestamp, expected_timestamp.at(i));
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_duration, expected_durations.at(i));
+            EXPECT_EQ(note_event.nominal_timestamp, expected_timestamp.at(i));
+            EXPECT_EQ(note_event.nominal_duration, expected_durations.at(i));
 
             // [THEN] We expect that each note event will match expected pitch disclosure
-            EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
+            EXPECT_EQ(note_event.nominal_pitch_level, expected_pitches.at(i));
         }
     }
     delete score;
@@ -1849,27 +1869,27 @@ TEST_F(EngravingPlaybackEventsRendererTests, Chord_Arpeggio_Up_TiedNotes) {
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord
-    PlaybackEventsMap result;
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    TrackEvents result;
+    render(chord, 0, ctx, result);
 
-    for (const auto &pair : result) {
+    for (const auto group : note_groups(result)) {
         // [THEN] We expect that rendered note events number will match expectations
-        EXPECT_EQ(pair.second.size(), expected_sub_notes_count);
+        EXPECT_EQ(group.size(), expected_sub_notes_count);
 
-        for (size_t i = 0; i < pair.second.size(); ++i) {
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(pair.second.at(i));
+        for (size_t i = 0; i < group.size(); ++i) {
+            const NoteRecord &note_event = group[i];
 
             // [THEN] We expect that each note event has only one articulation applied
-            EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
-            EXPECT_TRUE(note_event.expression_ctx().articulations.contains(ArticulationType::ARPEGGIO_UP));
+            EXPECT_EQ(result.note_articulations(note_event).size(), 1);
+            EXPECT_TRUE(contains_articulation(result.note_articulations(note_event), ArticulationType::ARPEGGIO_UP));
 
             // [THEN] We expect that each sub-note has expected duration
             // [THEN] We expect that each sub-note has expected timestamp and duration
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_timestamp, expected_timestamp.at(i));
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_duration, expected_durations.at(i));
+            EXPECT_EQ(note_event.nominal_timestamp, expected_timestamp.at(i));
+            EXPECT_EQ(note_event.nominal_duration, expected_durations.at(i));
 
             // [THEN] We expect that each note event will match expected pitch disclosure
-            EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
+            EXPECT_EQ(note_event.nominal_pitch_level, expected_pitches.at(i));
         }
     }
     delete score;
@@ -1919,26 +1939,26 @@ TEST_F(EngravingPlaybackEventsRendererTests, Chord_Arpeggio_Down) {
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord
-    PlaybackEventsMap result;
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    TrackEvents result;
+    render(chord, 0, ctx, result);
 
-    for (const auto &pair : result) {
+    for (const auto group : note_groups(result)) {
         // [THEN] We expect that rendered note events number will match expectations
-        EXPECT_EQ(pair.second.size(), expected_sub_notes_count);
+        EXPECT_EQ(group.size(), expected_sub_notes_count);
 
-        for (size_t i = 0; i < pair.second.size(); ++i) {
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(pair.second.at(i));
+        for (size_t i = 0; i < group.size(); ++i) {
+            const NoteRecord &note_event = group[i];
 
             // [THEN] We expect that each note event has only one articulation applied
-            EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
-            EXPECT_TRUE(note_event.expression_ctx().articulations.contains(ArticulationType::ARPEGGIO_DOWN));
+            EXPECT_EQ(result.note_articulations(note_event).size(), 1);
+            EXPECT_TRUE(contains_articulation(result.note_articulations(note_event), ArticulationType::ARPEGGIO_DOWN));
 
             // [THEN] We expect that each sub-note has expected timestamp and duration
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_timestamp, expected_timestamp.at(i));
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_duration, expected_durations.at(i));
+            EXPECT_EQ(note_event.nominal_timestamp, expected_timestamp.at(i));
+            EXPECT_EQ(note_event.nominal_duration, expected_durations.at(i));
 
             // [THEN] We expect that each note event will match expected pitch disclosure
-            EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
+            EXPECT_EQ(note_event.nominal_pitch_level, expected_pitches.at(i));
         }
     }
     delete score;
@@ -1988,26 +2008,26 @@ TEST_F(EngravingPlaybackEventsRendererTests, Chord_Arpeggio_Straight_Down) {
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord
-    PlaybackEventsMap result;
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    TrackEvents result;
+    render(chord, 0, ctx, result);
 
-    for (const auto &pair : result) {
+    for (const auto group : note_groups(result)) {
         // [THEN] We expect that rendered note events number will match expectations
-        EXPECT_EQ(pair.second.size(), expected_sub_notes_count);
+        EXPECT_EQ(group.size(), expected_sub_notes_count);
 
-        for (size_t i = 0; i < pair.second.size(); ++i) {
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(pair.second.at(i));
+        for (size_t i = 0; i < group.size(); ++i) {
+            const NoteRecord &note_event = group[i];
 
             // [THEN] We expect that each note event has only one articulation applied
-            EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
-            EXPECT_TRUE(note_event.expression_ctx().articulations.contains(ArticulationType::ARPEGGIO_STRAIGHT_DOWN));
+            EXPECT_EQ(result.note_articulations(note_event).size(), 1);
+            EXPECT_TRUE(contains_articulation(result.note_articulations(note_event), ArticulationType::ARPEGGIO_STRAIGHT_DOWN));
 
             // [THEN] We expect that each sub-note has expected timestamp and duration
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_timestamp, expected_timestamp.at(i));
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_duration, expected_durations.at(i));
+            EXPECT_EQ(note_event.nominal_timestamp, expected_timestamp.at(i));
+            EXPECT_EQ(note_event.nominal_duration, expected_durations.at(i));
 
             // [THEN] We expect that each note event will match expected pitch disclosure
-            EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
+            EXPECT_EQ(note_event.nominal_pitch_level, expected_pitches.at(i));
         }
     }
     delete score;
@@ -2057,26 +2077,26 @@ TEST_F(EngravingPlaybackEventsRendererTests, Chord_Arpeggio_Straight_Up) {
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord
-    PlaybackEventsMap result;
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    TrackEvents result;
+    render(chord, 0, ctx, result);
 
-    for (const auto &pair : result) {
+    for (const auto group : note_groups(result)) {
         // [THEN] We expect that rendered note events number will match expectations
-        EXPECT_EQ(pair.second.size(), expected_sub_notes_count);
+        EXPECT_EQ(group.size(), expected_sub_notes_count);
 
-        for (size_t i = 0; i < pair.second.size(); ++i) {
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(pair.second.at(i));
+        for (size_t i = 0; i < group.size(); ++i) {
+            const NoteRecord &note_event = group[i];
 
             // [THEN] We expect that each note event has only one articulation applied
-            EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
-            EXPECT_TRUE(note_event.expression_ctx().articulations.contains(ArticulationType::ARPEGGIO_STRAIGHT_UP));
+            EXPECT_EQ(result.note_articulations(note_event).size(), 1);
+            EXPECT_TRUE(contains_articulation(result.note_articulations(note_event), ArticulationType::ARPEGGIO_STRAIGHT_UP));
 
             // [THEN] We expect that each sub-note has expected timestamp and duration
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_timestamp, expected_timestamp.at(i));
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_duration, expected_durations.at(i));
+            EXPECT_EQ(note_event.nominal_timestamp, expected_timestamp.at(i));
+            EXPECT_EQ(note_event.nominal_duration, expected_durations.at(i));
 
             // [THEN] We expect that each note event will match expected pitch disclosure
-            EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
+            EXPECT_EQ(note_event.nominal_pitch_level, expected_pitches.at(i));
         }
     }
     delete score;
@@ -2119,25 +2139,25 @@ TEST_F(EngravingPlaybackEventsRendererTests, Chord_Arpeggio_Bracket) {
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord
-    PlaybackEventsMap result;
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    TrackEvents result;
+    render(chord, 0, ctx, result);
 
-    for (const auto &pair : result) {
+    for (const auto group : note_groups(result)) {
         // [THEN] We expect that rendered note events number will match expectations
-        EXPECT_EQ(pair.second.size(), expected_sub_notes_count);
+        EXPECT_EQ(group.size(), expected_sub_notes_count);
 
-        for (size_t i = 0; i < pair.second.size(); ++i) {
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(pair.second.at(i));
+        for (size_t i = 0; i < group.size(); ++i) {
+            const NoteRecord &note_event = group[i];
 
             // [THEN] We expect that each note event has only one articulation applied
-            EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
-            EXPECT_TRUE(note_event.expression_ctx().articulations.contains(ArticulationType::STANDARD));
+            EXPECT_EQ(result.note_articulations(note_event).size(), 1);
+            EXPECT_TRUE(contains_articulation(result.note_articulations(note_event), ArticulationType::STANDARD));
 
             // [THEN] We expect that each sub-note has expected duration
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_duration, expected_durations.at(i));
+            EXPECT_EQ(note_event.nominal_duration, expected_durations.at(i));
 
             // [THEN] We expect that each note event will match expected pitch disclosure
-            EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
+            EXPECT_EQ(note_event.nominal_pitch_level, expected_pitches.at(i));
         }
     }
     delete score;
@@ -2158,7 +2178,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, PartiallyTiedArpeggio) {
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Render the score
-    PlaybackEventsMap result;
+    TrackEvents result;
     for (const RepeatSegment *repeat : score->repeat_list()) {
         const int tick_position_offset = repeat->utick - repeat->tick;
 
@@ -2169,7 +2189,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, PartiallyTiedArpeggio) {
                     continue;
                 }
 
-                renderer_.render(to_chord(el), tick_position_offset, default_profile_, ctx, result);
+                render(to_chord(el), tick_position_offset, ctx, result);
             }
         }
     }
@@ -2188,19 +2208,14 @@ TEST_F(EngravingPlaybackEventsRendererTests, PartiallyTiedArpeggio) {
 
     size_t arpeggio_num = 0;
 
-    for (const auto &pair : result) {
-        if (pair.second.empty()) {
-            continue;
-        }
+    for (const auto group : note_groups(result)) {
+        for (size_t i = 0; i < group.size(); ++i) {
 
-        for (size_t i = 0; i < pair.second.size(); ++i) {
-            const PlaybackEvent &event = pair.second.at(i);
-            ASSERT_TRUE(std::holds_alternative<mpe::NoteEvent>(event));
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(event);
+            const NoteRecord &note_event = group[i];
 
             // [THEN] We expect that each note event has only one articulation applied
-            EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
-            ASSERT_TRUE(note_event.expression_ctx().articulations.contains(ArticulationType::ARPEGGIO_UP));
+            EXPECT_EQ(result.note_articulations(note_event).size(), 1);
+            ASSERT_TRUE(contains_articulation(result.note_articulations(note_event), ArticulationType::ARPEGGIO_UP));
 
             // [THEN] Each note event has the correct timestamp & duration
             ASSERT_TRUE(arpeggio_num < expected_arpeggio_timestamps.size());
@@ -2210,8 +2225,8 @@ TEST_F(EngravingPlaybackEventsRendererTests, PartiallyTiedArpeggio) {
             const timestamp_t expected_timestamp = expected_arpeggio_timestamps.at(arpeggio_num) + expected_offset;
             const duration_t expected_duration = expected_arpeggio_durations.at(arpeggio_num) - expected_offset;
 
-            EXPECT_EQ(note_event.arrangement_ctx().actual_timestamp, expected_timestamp);
-            EXPECT_EQ(note_event.arrangement_ctx().actual_duration, expected_duration);
+            EXPECT_EQ(note_event.actual_timestamp, expected_timestamp);
+            EXPECT_EQ(note_event.actual_duration, expected_duration);
         }
 
         arpeggio_num++;
@@ -2254,25 +2269,25 @@ TEST_F(EngravingPlaybackEventsRendererTests, Single_Note_Tremolo) {
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord
-    PlaybackEventsMap result;
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    TrackEvents result;
+    render(chord, 0, ctx, result);
 
-    for (const auto &pair : result) {
+    for (const auto group : note_groups(result)) {
         // [THEN] We expect that rendered note events number will match expectations
-        EXPECT_EQ(pair.second.size(), expected_sub_notes_count);
+        EXPECT_EQ(group.size(), expected_sub_notes_count);
 
-        for (size_t i = 0; i < pair.second.size(); ++i) {
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(pair.second.at(i));
+        for (size_t i = 0; i < group.size(); ++i) {
+            const NoteRecord &note_event = group[i];
 
             // [THEN] We expect that each note event has only one articulation applied
-            EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
-            EXPECT_TRUE(note_event.expression_ctx().articulations.contains(ArticulationType::TREMOLO8TH));
+            EXPECT_EQ(result.note_articulations(note_event).size(), 1);
+            EXPECT_TRUE(contains_articulation(result.note_articulations(note_event), ArticulationType::TREMOLO8TH));
 
             // [THEN] We expect that each sub-note has expected duration
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_duration, expected_durations.at(i));
+            EXPECT_EQ(note_event.nominal_duration, expected_durations.at(i));
 
             // [THEN] We expect that each note event will match expected pitch disclosure
-            EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(i));
+            EXPECT_EQ(note_event.nominal_pitch_level, expected_pitches.at(i));
         }
     }
     delete score;
@@ -2306,17 +2321,16 @@ TEST_F(EngravingPlaybackEventsRendererTests, Single_Note_Tremolo_OnTiedNote) {
     ASSERT_FALSE(first_tied_note->tie_back());
 
     // [WHEN] Request to render the 1st chord
-    PlaybackEventsMap result;
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    TrackEvents result;
+    render(chord, 0, ctx, result);
 
     // [THEN] Note event has normal duration and standard articulation (no tremolo)
-    ASSERT_EQ(result.size(), 1);
-    ASSERT_EQ(result.begin()->second.size(), 1);
-    mpe::NoteEvent resulting_note_event = std::get<mpe::NoteEvent>(result.begin()->second.at(0));
-    EXPECT_EQ(resulting_note_event.expression_ctx().articulations.size(), 1);
-    EXPECT_TRUE(resulting_note_event.expression_ctx().articulations.contains(ArticulationType::STANDARD));
-    EXPECT_EQ(resulting_note_event.pitch_ctx().nominal_pitch_level, pitch_level(PitchClass::A, 4));
-    EXPECT_EQ(resulting_note_event.arrangement_ctx().nominal_duration, ::half_note_duration);
+    ASSERT_EQ(result.notes.size(), 1u);
+    const NoteRecord &resulting_note_event = result.notes[0];
+    EXPECT_EQ(result.note_articulations(resulting_note_event).size(), 1);
+    EXPECT_TRUE(contains_articulation(result.note_articulations(resulting_note_event), ArticulationType::STANDARD));
+    EXPECT_EQ(resulting_note_event.nominal_pitch_level, pitch_level(PitchClass::A, 4));
+    EXPECT_EQ(resulting_note_event.nominal_duration, ::half_note_duration);
 
     // [GIVEN] Chord of the 2nd tied note (with tremolo)
     chord = find_chord(score, 2880);
@@ -2328,28 +2342,28 @@ TEST_F(EngravingPlaybackEventsRendererTests, Single_Note_Tremolo_OnTiedNote) {
     ASSERT_FALSE(last_tied_note->tie_for());
 
     // [WHEN] Request to render the 2nd chord
-    result.clear();
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    result = {};
+    render(chord, 0, ctx, result);
 
     constexpr int expected_sub_notes_count = 16;
     constexpr mpe::duration_t expected_duration = ::half_note_duration / expected_sub_notes_count;
 
-    for (const auto &pair : result) {
+    for (const auto group : note_groups(result)) {
         // [THEN] We expect that rendered note events number will match expectations
-        EXPECT_EQ(pair.second.size(), expected_sub_notes_count);
+        EXPECT_EQ(group.size(), expected_sub_notes_count);
 
-        for (size_t i = 0; i < pair.second.size(); ++i) {
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(pair.second.at(i));
+        for (size_t i = 0; i < group.size(); ++i) {
+            const NoteRecord &note_event = group[i];
 
             // [THEN] We expect that each note event has only one articulation applied
-            EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
-            EXPECT_TRUE(note_event.expression_ctx().articulations.contains(ArticulationType::TREMOLO32ND));
+            EXPECT_EQ(result.note_articulations(note_event).size(), 1);
+            EXPECT_TRUE(contains_articulation(result.note_articulations(note_event), ArticulationType::TREMOLO32ND));
 
             // [THEN] We expect that each sub-note has expected duration
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_duration, expected_duration);
+            EXPECT_EQ(note_event.nominal_duration, expected_duration);
 
             // [THEN] We expect that each note event will match expected pitch disclosure
-            EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, pitch_level(PitchClass::A, 4));
+            EXPECT_EQ(note_event.nominal_pitch_level, pitch_level(PitchClass::A, 4));
         }
     }
 
@@ -2405,25 +2419,24 @@ TEST_F(EngravingPlaybackEventsRendererTests, Single_Note_Tremolo_OnTiedNote_Play
     ASSERT_FALSE(first_tied_note->tie_back());
 
     // [WHEN] Request to render the first chord (without tremolo)
-    PlaybackEventsMap result;
-    renderer_.render(first_chord, 0, default_profile_, ctx, result);
+    TrackEvents result;
+    render(first_chord, 0, ctx, result);
 
     // [THEN] First note renders normally (standard articulation)
-    ASSERT_EQ(result.size(), 1);
-    ASSERT_EQ(result.begin()->second.size(), 1);
-    mpe::NoteEvent first_note_event = std::get<mpe::NoteEvent>(result.begin()->second.at(0));
-    EXPECT_EQ(first_note_event.expression_ctx().articulations.size(), 1);
-    EXPECT_TRUE(first_note_event.expression_ctx().articulations.contains(ArticulationType::STANDARD));
-    EXPECT_EQ(first_note_event.pitch_ctx().nominal_pitch_level, pitch_level(PitchClass::A, 4));
-    EXPECT_EQ(first_note_event.arrangement_ctx().nominal_duration, ::whole_note_duration); // Full note, not half note
+    ASSERT_EQ(result.notes.size(), 1u);
+    const NoteRecord &first_note_event = result.notes[0];
+    EXPECT_EQ(result.note_articulations(first_note_event).size(), 1);
+    EXPECT_TRUE(contains_articulation(result.note_articulations(first_note_event), ArticulationType::STANDARD));
+    EXPECT_EQ(first_note_event.nominal_pitch_level, pitch_level(PitchClass::A, 4));
+    EXPECT_EQ(first_note_event.nominal_duration, ::whole_note_duration); // Full note, not half note
 
     // [WHEN] Request to render the second chord (with tremolo disabled)
-    result.clear();
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    result = {};
+    render(chord, 0, ctx, result);
 
     // [THEN] Since tremolo playback is disabled, this should NOT render the tied note
     // This verifies that our fix prevents double playback when playTremolo = false
-    EXPECT_EQ(result.size(), 0); // No events should be rendered for disabled tremolo on tied note
+    EXPECT_EQ(note_groups(result).size(), 0); // No events should be rendered for disabled tremolo on tied note
 
     delete score;
 }
@@ -2463,27 +2476,27 @@ TEST_F(EngravingPlaybackEventsRendererTests, Single_Chord_Tremolo) {
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord
-    PlaybackEventsMap result;
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    TrackEvents result;
+    render(chord, 0, ctx, result);
 
     // [THEN] We expect that rendered note events number will match expectations
-    EXPECT_EQ(result.begin()->second.size(), expected_chords_count * expected_sub_notes_count);
+    EXPECT_EQ(result.notes.size(), expected_chords_count * expected_sub_notes_count);
 
     for (int chord_idx = 0; chord_idx < expected_chords_count; ++chord_idx) {
         for (int note_idx = 0; note_idx < expected_sub_notes_count; ++note_idx) {
             int event_idx = (chord_idx * expected_sub_notes_count) + note_idx;
 
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(result.begin()->second.at(event_idx));
+            const NoteRecord &note_event = result.notes[event_idx];
 
             // [THEN] We expect that each note event has only one articulation applied
-            EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
-            EXPECT_TRUE(note_event.expression_ctx().articulations.contains(ArticulationType::TREMOLO16TH));
+            EXPECT_EQ(result.note_articulations(note_event).size(), 1);
+            EXPECT_TRUE(contains_articulation(result.note_articulations(note_event), ArticulationType::TREMOLO16TH));
 
             // [THEN] We expect that each sub-note has expected duration
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_duration, expected_durations.at(chord_idx));
+            EXPECT_EQ(note_event.nominal_duration, expected_durations.at(chord_idx));
 
             // [THEN] We expect that each note event will match expected pitch disclosure
-            EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitches.at(note_idx));
+            EXPECT_EQ(note_event.nominal_pitch_level, expected_pitches.at(note_idx));
         }
     }
     delete score;
@@ -2503,25 +2516,31 @@ TEST_F(EngravingPlaybackEventsRendererTests, Single_Chord_Tremolo_TiedNotes) {
         ScoreRW::read_score(::playback_events_rendering_dir + u"single_chord_tremolo_tied_notes/single_chord_tremolo_tied_notes.mscx");
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    default_profile_->set_pattern(ArticulationType::TREMOLO32ND, dummy_pattern_);
+    auto sustained_pattern = dummy_pattern_;
+    auto later_segment = dummy_pattern_segment_;
+    later_segment.arrangement_pattern.duration_factor_value = fifty_percent;
+    constexpr dynamic_level_t later_level = dynamic_level_from_type(mpe::DynamicType::MF);
+    later_segment.expression_pattern = tests::create_simple_expression_pattern(later_level);
+    sustained_pattern.emplace(hundred_percent, later_segment);
+    default_profile_->set_pattern(ArticulationType::TREMOLO32ND, sustained_pattern);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Render the score
-    PlaybackEventsMap result;
+    TrackEvents result;
 
     for (const Measure *measure = score->first_measure(); measure; measure = measure->next_measure()) {
         for (const Segment *segment = measure->first(SegmentType::CHORD_REST); segment; segment = segment->next(SegmentType::CHORD_REST)) {
             const mu::engraving::EngravingItem *element = segment->element(0);
             if (element && element->is_chord()) {
-                renderer_.render(to_chord(element), 0, default_profile_, ctx, result);
+                render(to_chord(element), 0, ctx, result);
             }
         }
     }
 
     // [THEN] We expect 2 lists of events (for 2 tied notes)
-    EXPECT_EQ(result.size(), 2);
+    EXPECT_EQ(note_groups(result).size(), 2);
 
     constexpr timestamp_t expected_tremolo_timestamp = 2000000;                  // timestamp of the 1st tied note
     constexpr timestamp_t expected_tremolo_duration = ::whole_note_duration * 2; // total duration of all tied notes
@@ -2533,51 +2552,44 @@ TEST_F(EngravingPlaybackEventsRendererTests, Single_Chord_Tremolo_TiedNotes) {
     size_t tremolo_start_range_event_count = 0;
     size_t tremolo_end_range_event_count = 0;
 
-    for (const auto &pair : result) {
+    for (const auto group : note_groups(result)) {
         // [THEN] Expected number of sub-notes
-        EXPECT_EQ(pair.second.size(), 32);
+        EXPECT_EQ(group.size(), 32);
 
-        for (const PlaybackEvent &event : pair.second) {
-            ASSERT_TRUE(std::holds_alternative<mpe::NoteEvent>(event));
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(event);
+        for (std::size_t i = 0; i < group.size(); ++i) {
+            const NoteRecord &note_event = group[i];
 
             // [THEN] We expect that each note event has only one articulation applied
-            EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
-            ASSERT_TRUE(note_event.expression_ctx().articulations.contains(ArticulationType::TREMOLO32ND));
+            EXPECT_EQ(result.note_articulations(note_event).size(), 1);
+            ASSERT_TRUE(contains_articulation(result.note_articulations(note_event), ArticulationType::TREMOLO32ND));
 
             // [THEN] Each note event has the correct articulation time and duration
-            const ArticulationAppliedData &articulation_data = note_event.expression_ctx().articulations.at(ArticulationType::TREMOLO32ND);
-            EXPECT_EQ(articulation_data.meta.timestamp, expected_tremolo_timestamp);
-            EXPECT_EQ(articulation_data.meta.overall_duration, expected_tremolo_duration);
+            const ArticulationRecord &art = result.note_articulations(note_event).front();
+            EXPECT_EQ(art.type, ArticulationType::TREMOLO32ND);
+            EXPECT_EQ(art.timestamp, expected_tremolo_timestamp);
+            EXPECT_EQ(art.overall_duration, expected_tremolo_duration);
 
-            const timestamp_t note_timestamp_to =
-                note_event.arrangement_ctx().actual_timestamp + note_event.arrangement_ctx().actual_duration;
+            const timestamp_t note_timestamp_to = note_event.nominal_timestamp + note_event.nominal_duration;
 
-            // [THEN] Each note has the correct occupiedFrom/To
-            if (note_event.arrangement_ctx().nominal_timestamp == expected_tremolo_timestamp) {
-                EXPECT_EQ(articulation_data.occupied_from_value, 0);
-                EXPECT_NE(articulation_data.occupied_to_value, ::muse::mpe::hundred_percent);
+            // Count sub-notes at the two ends of the articulation.
+            if (note_event.nominal_timestamp == expected_tremolo_timestamp) {
                 tremolo_start_range_event_count++;
             } else if (note_timestamp_to == expected_tremolo_timestamp_to) {
-                EXPECT_NE(articulation_data.occupied_from_value, 0);
-                EXPECT_EQ(articulation_data.occupied_to_value, ::muse::mpe::hundred_percent);
                 tremolo_end_range_event_count++;
-            } else {
-                EXPECT_NE(articulation_data.occupied_from_value, 0);
-                EXPECT_NE(articulation_data.occupied_to_value, ::muse::mpe::hundred_percent);
             }
 
             // [THEN] Each note event has the correct pitch level
-            EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitch_level);
+            EXPECT_EQ(note_event.nominal_pitch_level, expected_pitch_level);
 
             // [THEN] Each note event has the correct duration
-            EXPECT_EQ(note_event.arrangement_ctx().actual_duration, expected_sub_note_duration);
-
-            // [THEN] Each note event has the correct pitch level
-            EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitch_level);
-
-            // [THEN] Each note event has the correct duration
-            EXPECT_EQ(note_event.arrangement_ctx().actual_duration, expected_sub_note_duration);
+            EXPECT_EQ(note_event.nominal_duration, expected_sub_note_duration);
+            EXPECT_EQ(note_event.nominal_timestamp, note_event.group_timestamp + static_cast<duration_t>(i) * expected_sub_note_duration);
+            EXPECT_EQ(note_event.actual_timestamp, note_event.nominal_timestamp);
+            // Subdivisions after the onset use the later segment, including after the tie.
+            const bool onset = note_event.nominal_timestamp == expected_tremolo_timestamp;
+            EXPECT_EQ(note_event.actual_duration, onset ? expected_sub_note_duration : expected_sub_note_duration / 2);
+            EXPECT_EQ(max_amplitude_level(result.expression_curve(note_event)),
+                      onset ? dynamic_level_from_type(mpe::DynamicType::NATURAL) : later_level);
         }
     }
 
@@ -2603,7 +2615,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, PartiallyTiedTremolo) {
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Render the score
-    PlaybackEventsMap result;
+    TrackEvents result;
     for (const RepeatSegment *repeat : score->repeat_list()) {
         const int tick_position_offset = repeat->utick - repeat->tick;
 
@@ -2614,13 +2626,13 @@ TEST_F(EngravingPlaybackEventsRendererTests, PartiallyTiedTremolo) {
                     continue;
                 }
 
-                renderer_.render(to_chord(el), tick_position_offset, default_profile_, ctx, result);
+                render(to_chord(el), tick_position_offset, ctx, result);
             }
         }
     }
 
     // [THEN] We expect 4 lists of events (for each note with tremolo)
-    EXPECT_EQ(result.size(), 4);
+    EXPECT_EQ(note_groups(result).size(), 4);
 
     const std::vector<timestamp_t> expected_tremolo_timestamps{
         0,        // 1st measure
@@ -2644,49 +2656,44 @@ TEST_F(EngravingPlaybackEventsRendererTests, PartiallyTiedTremolo) {
     size_t tremolo_start_range_event_count = 0;
     size_t tremolo_end_range_event_count = 0;
 
-    for (const auto &pair : result) {
+    for (const auto group : note_groups(result)) {
         // [THEN] Expected number of sub-notes
-        EXPECT_EQ(pair.second.size(), expected_sub_note_count);
+        EXPECT_EQ(group.size(), expected_sub_note_count);
 
         const timestamp_t expected_tremolo_timestamp = expected_tremolo_timestamps.at(tremolo_note_num);
         const duration_t expected_tremolo_duration = expected_tremolo_durations.at(tremolo_note_num);
         const timestamp_t expected_tremolo_timestamp_to = expected_tremolo_timestamp + expected_tremolo_duration;
 
-        for (const PlaybackEvent &event : pair.second) {
-            ASSERT_TRUE(std::holds_alternative<mpe::NoteEvent>(event));
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(event);
+        for (std::size_t i = 0; i < group.size(); ++i) {
+            const NoteRecord &note_event = group[i];
 
             // [THEN] We expect that each note event has only one articulation applied
-            EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
-            ASSERT_TRUE(note_event.expression_ctx().articulations.contains(ArticulationType::TREMOLO16TH));
+            EXPECT_EQ(result.note_articulations(note_event).size(), 1);
+            ASSERT_TRUE(contains_articulation(result.note_articulations(note_event), ArticulationType::TREMOLO16TH));
 
             // [THEN] Each note event has the correct articulation time and duration
-            const ArticulationAppliedData &articulation_data = note_event.expression_ctx().articulations.at(ArticulationType::TREMOLO16TH);
-            EXPECT_EQ(articulation_data.meta.timestamp, expected_tremolo_timestamp);
-            EXPECT_EQ(articulation_data.meta.overall_duration, expected_tremolo_duration);
+            const ArticulationRecord &art = result.note_articulations(note_event).front();
+            EXPECT_EQ(art.type, ArticulationType::TREMOLO16TH);
+            EXPECT_EQ(art.timestamp, expected_tremolo_timestamp);
+            EXPECT_EQ(art.overall_duration, expected_tremolo_duration);
 
-            const timestamp_t note_timestamp_to =
-                note_event.arrangement_ctx().actual_timestamp + note_event.arrangement_ctx().actual_duration;
+            const timestamp_t note_timestamp_to = note_event.nominal_timestamp + note_event.nominal_duration;
 
-            // [THEN] Each note has the correct occupiedFrom/To
-            if (note_event.arrangement_ctx().nominal_timestamp == expected_tremolo_timestamp) {
-                EXPECT_EQ(articulation_data.occupied_from_value, 0);
-                EXPECT_NE(articulation_data.occupied_to_value, ::muse::mpe::hundred_percent);
+            // Count sub-notes at the two ends of the articulation.
+            if (note_event.nominal_timestamp == expected_tremolo_timestamp) {
                 tremolo_start_range_event_count++;
             } else if (note_timestamp_to == expected_tremolo_timestamp_to) {
-                EXPECT_NE(articulation_data.occupied_from_value, 0);
-                EXPECT_EQ(articulation_data.occupied_to_value, ::muse::mpe::hundred_percent);
                 tremolo_end_range_event_count++;
-            } else {
-                EXPECT_NE(articulation_data.occupied_from_value, 0);
-                EXPECT_NE(articulation_data.occupied_to_value, ::muse::mpe::hundred_percent);
             }
 
             // [THEN] Each note event has the correct pitch level
-            EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitch_level);
+            EXPECT_EQ(note_event.nominal_pitch_level, expected_pitch_level);
 
             // [THEN] Each note event has the correct duration
-            EXPECT_EQ(note_event.arrangement_ctx().actual_duration, expected_sub_note_duration);
+            EXPECT_EQ(note_event.nominal_duration, expected_sub_note_duration);
+            EXPECT_EQ(note_event.nominal_timestamp, note_event.group_timestamp + static_cast<duration_t>(i) * expected_sub_note_duration);
+            EXPECT_EQ(note_event.actual_timestamp, note_event.nominal_timestamp);
+            EXPECT_EQ(note_event.actual_duration, expected_sub_note_duration);
         }
 
         tremolo_note_num++;
@@ -2736,30 +2743,30 @@ TEST_F(EngravingPlaybackEventsRendererTests, Two_Chords_Tremolo) {
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord
-    PlaybackEventsMap result;
-    renderer_.render(chord, 0, default_profile_, ctx, result);
+    TrackEvents result;
+    render(chord, 0, ctx, result);
 
     // [THEN] We expect that rendered note events number will match expectations
-    EXPECT_EQ(result.begin()->second.size(), expected_chords_count * chord_notes_count);
+    EXPECT_EQ(result.notes.size(), expected_chords_count * chord_notes_count);
 
     for (int chord_idx = 0; chord_idx < expected_chords_count; ++chord_idx) {
         for (int note_idx = 0; note_idx < chord_notes_count; ++note_idx) {
             int event_idx = (chord_idx * chord_notes_count) + note_idx;
 
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(result.begin()->second.at(event_idx));
+            const NoteRecord &note_event = result.notes[event_idx];
 
             // [THEN] We expect that each note event has only one articulation applied
-            EXPECT_EQ(note_event.expression_ctx().articulations.size(), 1);
-            EXPECT_TRUE(note_event.expression_ctx().articulations.contains(ArticulationType::TREMOLO16TH));
+            EXPECT_EQ(result.note_articulations(note_event).size(), 1);
+            EXPECT_TRUE(contains_articulation(result.note_articulations(note_event), ArticulationType::TREMOLO16TH));
 
             // [THEN] We expect that each sub-note has expected duration
-            EXPECT_EQ(note_event.arrangement_ctx().nominal_duration, expected_durations.at(chord_idx));
+            EXPECT_EQ(note_event.nominal_duration, expected_durations.at(chord_idx));
 
             // [THEN] We expect that each note event will match expected pitch disclosure
             if (chord_idx % 2 == 0) {
-                EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, first_chord_pitches.at(note_idx));
+                EXPECT_EQ(note_event.nominal_pitch_level, first_chord_pitches.at(note_idx));
             } else {
-                EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, second_chord_pitches.at(note_idx));
+                EXPECT_EQ(note_event.nominal_pitch_level, second_chord_pitches.at(note_idx));
             }
         }
     }
@@ -2783,7 +2790,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, Pauses) {
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Render the score
-    PlaybackEventsMap result;
+    TrackEvents result;
 
     for (const RepeatSegment *repeat_segment : score->repeat_list()) {
         int tick_position_offset = repeat_segment->utick - repeat_segment->tick;
@@ -2795,7 +2802,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, Pauses) {
                     continue;
                 }
 
-                renderer_.render(to_chord(el), tick_position_offset, default_profile_, ctx, result);
+                render(to_chord(el), tick_position_offset, ctx, result);
             }
         }
     }
@@ -2833,19 +2840,16 @@ TEST_F(EngravingPlaybackEventsRendererTests, Pauses) {
         {fifth_measure_time, ::half_note_duration},
     };
 
-    EXPECT_FALSE(result.empty());
+    EXPECT_FALSE(result.notes.empty());
 
     int tnd_num = 0;
-    for (const auto &pair : result) {
-        for (const mpe::PlaybackEvent &event : pair.second) {
-            ASSERT_TRUE(std::holds_alternative<mpe::NoteEvent>(event));
-
+    for (const auto group : note_groups(result)) {
+        for (const NoteRecord &note_event : group) {
             const TimestampAndDuration &expected_tn_d = expected_tn_d_list.at(tnd_num);
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(event);
 
-            EXPECT_EQ(pair.first, expected_tn_d.timestamp);
-            EXPECT_EQ(note_event.arrangement_ctx().actual_timestamp, expected_tn_d.timestamp);
-            EXPECT_EQ(note_event.arrangement_ctx().actual_duration, expected_tn_d.duration);
+            EXPECT_EQ(note_event.group_timestamp, expected_tn_d.timestamp);
+            EXPECT_EQ(note_event.actual_timestamp, expected_tn_d.timestamp);
+            EXPECT_EQ(note_event.actual_duration, expected_tn_d.duration);
 
             ++tnd_num;
         }
@@ -2872,7 +2876,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, TiedNotesAndRepeats) {
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Render the score
-    PlaybackEventsMap result;
+    TrackEvents result;
 
     for (const RepeatSegment *repeat_segment : score->repeat_list()) {
         const int tick_position_offset = repeat_segment->utick - repeat_segment->tick;
@@ -2884,7 +2888,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, TiedNotesAndRepeats) {
                     continue;
                 }
 
-                renderer_.render(to_chord(el), tick_position_offset, default_profile_, ctx, result);
+                render(to_chord(el), tick_position_offset, ctx, result);
             }
         }
     }
@@ -2941,20 +2945,17 @@ TEST_F(EngravingPlaybackEventsRendererTests, TiedNotesAndRepeats) {
     };
 
     ASSERT_EQ(expected_pitch_list.size(), expected_tn_d_list.size());
-    EXPECT_FALSE(result.empty());
+    EXPECT_FALSE(result.notes.empty());
 
     int event_num = 0;
-    for (const auto &pair : result) {
-        for (const mpe::PlaybackEvent &event : pair.second) {
-            ASSERT_TRUE(std::holds_alternative<mpe::NoteEvent>(event));
-
+    for (const auto group : note_groups(result)) {
+        for (const NoteRecord &note_event : group) {
             const TimestampAndDuration &expected_tn_d = expected_tn_d_list.at(event_num);
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(event);
 
-            EXPECT_EQ(pair.first, expected_tn_d.timestamp);
-            EXPECT_EQ(note_event.arrangement_ctx().actual_timestamp, expected_tn_d.timestamp);
-            EXPECT_EQ(note_event.arrangement_ctx().actual_duration, expected_tn_d.duration);
-            EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitch_list.at(event_num));
+            EXPECT_EQ(note_event.group_timestamp, expected_tn_d.timestamp);
+            EXPECT_EQ(note_event.actual_timestamp, expected_tn_d.timestamp);
+            EXPECT_EQ(note_event.actual_duration, expected_tn_d.duration);
+            EXPECT_EQ(note_event.nominal_pitch_level, expected_pitch_list.at(event_num));
 
             ++event_num;
         }
@@ -2979,7 +2980,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, PartialTie) {
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Render the score
-    PlaybackEventsMap result;
+    TrackEvents result;
 
     for (const RepeatSegment *repeat_segment : score->repeat_list()) {
         int tick_position_offset = repeat_segment->utick - repeat_segment->tick;
@@ -2991,7 +2992,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, PartialTie) {
                     continue;
                 }
 
-                renderer_.render(to_chord(el), tick_position_offset, default_profile_, ctx, result);
+                render(to_chord(el), tick_position_offset, ctx, result);
             }
         }
     }
@@ -3051,20 +3052,17 @@ TEST_F(EngravingPlaybackEventsRendererTests, PartialTie) {
     };
 
     ASSERT_EQ(expected_pitch_list.size(), expected_tn_d_list.size());
-    EXPECT_FALSE(result.empty());
+    EXPECT_FALSE(result.notes.empty());
 
     int event_num = 0;
-    for (const auto &pair : result) {
-        for (const mpe::PlaybackEvent &event : pair.second) {
-            ASSERT_TRUE(std::holds_alternative<mpe::NoteEvent>(event));
-
+    for (const auto group : note_groups(result)) {
+        for (const NoteRecord &note_event : group) {
             const TimestampAndDuration &expected_tn_d = expected_tn_d_list.at(event_num);
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(event);
 
-            EXPECT_EQ(pair.first, expected_tn_d.timestamp);
-            EXPECT_EQ(note_event.arrangement_ctx().actual_timestamp, expected_tn_d.timestamp);
-            EXPECT_EQ(note_event.arrangement_ctx().actual_duration, expected_tn_d.duration);
-            EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, expected_pitch_list.at(event_num));
+            EXPECT_EQ(note_event.group_timestamp, expected_tn_d.timestamp);
+            EXPECT_EQ(note_event.actual_timestamp, expected_tn_d.timestamp);
+            EXPECT_EQ(note_event.actual_duration, expected_tn_d.duration);
+            EXPECT_EQ(note_event.nominal_pitch_level, expected_pitch_list.at(event_num));
 
             ++event_num;
         }
@@ -3092,19 +3090,19 @@ TEST_F(EngravingPlaybackEventsRendererTests, TrillLine_TiedNotes) {
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Render the score
-    PlaybackEventsMap result;
+    TrackEvents result;
 
     for (const Measure *measure = score->first_measure(); measure; measure = measure->next_measure()) {
         for (const Segment *segment = measure->first(SegmentType::CHORD_REST); segment; segment = segment->next(SegmentType::CHORD_REST)) {
             const mu::engraving::EngravingItem *element = segment->element(0);
             if (element && element->is_chord()) {
-                renderer_.render(to_chord(element), 0, default_profile_, ctx, result);
+                render(to_chord(element), 0, ctx, result);
             }
         }
     }
 
     // [THEN] We expect 4 lists of events (for 4 tied notes)
-    EXPECT_EQ(result.size(), 4);
+    EXPECT_EQ(note_groups(result).size(), 4);
 
     constexpr timestamp_t expected_trill_timestamp = ::whole_note_duration; // timestamp of the 2nd tied note (where the trill starts)
     constexpr duration_t expected_trill_duration = ::whole_note_duration * 2;
@@ -3114,52 +3112,48 @@ TEST_F(EngravingPlaybackEventsRendererTests, TrillLine_TiedNotes) {
     size_t trill_start_range_event_count = 0;
     size_t trill_end_range_event_count = 0;
 
-    for (const auto &pair : result) {
-        for (const PlaybackEvent &event : pair.second) {
-            ASSERT_TRUE(std::holds_alternative<mpe::NoteEvent>(event));
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(event);
+    for (const auto group : note_groups(result)) {
+        for (std::size_t i = 0; i < group.size(); ++i) {
+            const NoteRecord &note_event = group[i];
 
             // [THEN] We expect that each note event has only one articulation applied
-            ASSERT_EQ(note_event.expression_ctx().articulations.size(), 1);
+            ASSERT_EQ(result.note_articulations(note_event).size(), 1);
 
             if (note_num == 0 || note_num == 3) {
                 // [THEN] Normal notes (no trill)
-                EXPECT_EQ(pair.second.size(), 1);
-                EXPECT_TRUE(note_event.expression_ctx().articulations.contains(ArticulationType::STANDARD));
-                EXPECT_EQ(note_event.pitch_ctx().nominal_pitch_level, pitch_level(PitchClass::A, 4));
+                EXPECT_EQ(group.size(), 1);
+                EXPECT_TRUE(contains_articulation(result.note_articulations(note_event), ArticulationType::STANDARD));
+                EXPECT_EQ(note_event.nominal_pitch_level, pitch_level(PitchClass::A, 4));
 
                 // [THEN] Each note event has the correct duration
-                EXPECT_EQ(note_event.arrangement_ctx().actual_duration, ::whole_note_duration);
+                EXPECT_EQ(note_event.actual_duration, ::whole_note_duration);
             } else {
                 // [THEN] Notes under the trill line
                 constexpr size_t expected_sub_notes = 32;
-                EXPECT_EQ(pair.second.size(), expected_sub_notes);
+                EXPECT_EQ(group.size(), expected_sub_notes);
 
                 // [THEN] Each note event has the correct articulation time and duration
-                const ArticulationAppliedData &articulation_data = note_event.expression_ctx().articulations.at(ArticulationType::TRILL);
-                EXPECT_EQ(articulation_data.meta.timestamp, expected_trill_timestamp);
-                EXPECT_EQ(articulation_data.meta.overall_duration, expected_trill_duration);
+                const ArticulationRecord &art = result.note_articulations(note_event).front();
+                EXPECT_EQ(art.type, ArticulationType::TRILL);
+                EXPECT_EQ(art.timestamp, expected_trill_timestamp);
+                EXPECT_EQ(art.overall_duration, expected_trill_duration);
 
-                const timestamp_t note_timestamp_to =
-                    note_event.arrangement_ctx().actual_timestamp + note_event.arrangement_ctx().actual_duration;
+                const timestamp_t note_timestamp_to = note_event.nominal_timestamp + note_event.nominal_duration;
 
-                // [THEN] Each note has the correct occupiedFrom/To
-                if (note_event.arrangement_ctx().nominal_timestamp == expected_trill_timestamp) {
-                    EXPECT_EQ(articulation_data.occupied_from_value, 0);
-                    EXPECT_NE(articulation_data.occupied_to_value, ::muse::mpe::hundred_percent);
+                // Count sub-notes at the two ends of the articulation.
+                if (note_event.nominal_timestamp == expected_trill_timestamp) {
                     trill_start_range_event_count++;
                 } else if (note_timestamp_to == expected_trill_timestamp_to) {
-                    EXPECT_NE(articulation_data.occupied_from_value, 0);
-                    EXPECT_EQ(articulation_data.occupied_to_value, ::muse::mpe::hundred_percent);
                     trill_end_range_event_count++;
-                } else {
-                    EXPECT_NE(articulation_data.occupied_from_value, 0);
-                    EXPECT_NE(articulation_data.occupied_to_value, ::muse::mpe::hundred_percent);
                 }
 
                 // [THEN] Each note event has the correct duration
                 constexpr duration_t expected_sub_note_duration = ::whole_note_duration / expected_sub_notes;
-                EXPECT_EQ(note_event.arrangement_ctx().actual_duration, expected_sub_note_duration);
+                EXPECT_EQ(note_event.nominal_duration, expected_sub_note_duration);
+                EXPECT_EQ(note_event.nominal_timestamp,
+                          note_event.group_timestamp + static_cast<duration_t>(i) * expected_sub_note_duration);
+                EXPECT_EQ(note_event.actual_timestamp, note_event.nominal_timestamp);
+                EXPECT_EQ(note_event.actual_duration, expected_sub_note_duration);
             }
         }
 
@@ -3212,14 +3206,14 @@ TEST_F(EngravingPlaybackEventsRendererTests, Trill_TiedNotes) {
     ASSERT_EQ(to_ornament(articulation)->sym_id(), SymId::ORNAMENT_TRILL);
 
     // [WHEN] Render the chord
-    PlaybackEventsMap result;
+    TrackEvents result;
     for (const RepeatSegment *repeat_segment : score->repeat_list()) {
         int tick_position_offset = repeat_segment->utick - repeat_segment->tick;
-        renderer_.render(to_chord(chord), tick_position_offset, default_profile_, ctx, result);
+        render(to_chord(chord), tick_position_offset, ctx, result);
     }
 
     // [THEN] We expect 2 lists of events (for each repeat segment)
-    EXPECT_EQ(result.size(), score->repeat_list().size());
+    EXPECT_EQ(note_groups(result).size(), score->repeat_list().size());
 
     constexpr duration_t expected_trill_duration = ::whole_note_duration * 2; // 2 tied notes
     const std::vector<timestamp_t> expected_trill_timestamps{
@@ -3231,47 +3225,42 @@ TEST_F(EngravingPlaybackEventsRendererTests, Trill_TiedNotes) {
     size_t trill_start_range_event_count = 0;
     size_t trill_end_range_event_count = 0;
 
-    for (const auto &pair : result) {
+    for (const auto group : note_groups(result)) {
         // [THEN] Sub-notes of the trill
         constexpr size_t expected_sub_notes = 64;
-        EXPECT_EQ(pair.second.size(), expected_sub_notes);
+        EXPECT_EQ(group.size(), expected_sub_notes);
 
         const timestamp_t expected_trill_timestamp = expected_trill_timestamps.at(repeat_segment_num);
         const timestamp_t expected_trill_timestamp_to = expected_trill_timestamp + expected_trill_duration;
         ++repeat_segment_num;
 
-        for (const PlaybackEvent &event : pair.second) {
-            ASSERT_TRUE(std::holds_alternative<mpe::NoteEvent>(event));
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(event);
+        for (std::size_t i = 0; i < group.size(); ++i) {
+            const NoteRecord &note_event = group[i];
 
             // [THEN] We expect that each note event has only one articulation applied
-            ASSERT_EQ(note_event.expression_ctx().articulations.size(), 1);
+            ASSERT_EQ(result.note_articulations(note_event).size(), 1);
 
             // [THEN] Each note event has the correct articulation time and duration
-            const ArticulationAppliedData &articulation_data = note_event.expression_ctx().articulations.at(ArticulationType::TRILL);
-            EXPECT_EQ(articulation_data.meta.timestamp, expected_trill_timestamp);
-            EXPECT_EQ(articulation_data.meta.overall_duration, expected_trill_duration);
+            const ArticulationRecord &art = result.note_articulations(note_event).front();
+            EXPECT_EQ(art.type, ArticulationType::TRILL);
+            EXPECT_EQ(art.timestamp, expected_trill_timestamp);
+            EXPECT_EQ(art.overall_duration, expected_trill_duration);
 
-            const timestamp_t note_timestamp_to =
-                note_event.arrangement_ctx().actual_timestamp + note_event.arrangement_ctx().actual_duration;
+            const timestamp_t note_timestamp_to = note_event.nominal_timestamp + note_event.nominal_duration;
 
-            // [THEN] Each note has the correct occupiedFrom/To
-            if (note_event.arrangement_ctx().nominal_timestamp == expected_trill_timestamp) {
-                EXPECT_EQ(articulation_data.occupied_from_value, 0);
-                EXPECT_NE(articulation_data.occupied_to_value, ::muse::mpe::hundred_percent);
+            // Count sub-notes at the two ends of the articulation.
+            if (note_event.nominal_timestamp == expected_trill_timestamp) {
                 trill_start_range_event_count++;
             } else if (note_timestamp_to == expected_trill_timestamp_to) {
-                EXPECT_NE(articulation_data.occupied_from_value, 0);
-                EXPECT_EQ(articulation_data.occupied_to_value, ::muse::mpe::hundred_percent);
                 trill_end_range_event_count++;
-            } else {
-                EXPECT_NE(articulation_data.occupied_from_value, 0);
-                EXPECT_NE(articulation_data.occupied_to_value, ::muse::mpe::hundred_percent);
             }
 
             // [THEN] Each note event has the correct duration
             constexpr duration_t expected_sub_note_duration = expected_trill_duration / expected_sub_notes;
-            EXPECT_EQ(note_event.arrangement_ctx().actual_duration, expected_sub_note_duration);
+            EXPECT_EQ(note_event.nominal_duration, expected_sub_note_duration);
+            EXPECT_EQ(note_event.nominal_timestamp, note_event.group_timestamp + static_cast<duration_t>(i) * expected_sub_note_duration);
+            EXPECT_EQ(note_event.actual_timestamp, note_event.nominal_timestamp);
+            EXPECT_EQ(note_event.actual_duration, expected_sub_note_duration);
         }
     }
 
@@ -3294,26 +3283,24 @@ TEST_F(EngravingPlaybackEventsRendererTests, CountIn) {
     ASSERT_TRUE(anacrusis_measure_1_4);
 
     // [WHEN] Render the anacrusis measure
-    PlaybackEventsMap result;
+    TrackEvents result;
+    FreezeProgress progress;
     duration_t count_in_duration = 0;
     int start_tick = anacrusis_measure_1_4->tick().ticks();
-    renderer_.render_count_in(score, start_tick, 0, default_profile_, result, count_in_duration);
+    renderer_.render_count_in(score, start_tick, 0, default_profile_, result, progress, count_in_duration);
 
     // [THEN] 7 quarter note events
-    EXPECT_EQ(result.size(), 7);
+    EXPECT_EQ(note_groups(result).size(), 7);
     EXPECT_EQ(count_in_duration, ::quarter_note_duration * 7);
 
     timestamp_t expected_timestamp = 0;
 
-    for (const auto &pair : result) {
-        EXPECT_EQ(pair.second.size(), 1);
+    for (const auto group : note_groups(result)) {
+        EXPECT_EQ(group.size(), 1);
 
-        for (const PlaybackEvent &event : pair.second) {
-            ASSERT_TRUE(std::holds_alternative<mpe::NoteEvent>(event));
-
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(event);
-            EXPECT_EQ(note_event.arrangement_ctx().actual_duration, ::quarter_note_duration);
-            EXPECT_EQ(note_event.arrangement_ctx().actual_timestamp, expected_timestamp);
+        for (const NoteRecord &note_event : group) {
+            EXPECT_EQ(note_event.actual_duration, ::quarter_note_duration);
+            EXPECT_EQ(note_event.actual_timestamp, expected_timestamp);
 
             expected_timestamp += ::quarter_note_duration;
         }
@@ -3324,52 +3311,46 @@ TEST_F(EngravingPlaybackEventsRendererTests, CountIn) {
     ASSERT_TRUE(second_measure_4_4);
 
     // [WHEN] Render Count In events starting from the beginning of the measure (4/4)
-    result.clear();
+    result = {};
     count_in_duration = 0;
     start_tick = second_measure_4_4->tick().ticks();
-    renderer_.render_count_in(score, start_tick, 0, default_profile_, result, count_in_duration);
+    renderer_.render_count_in(score, start_tick, 0, default_profile_, result, progress, count_in_duration);
 
     // [THEN] 4 quarter note events
-    EXPECT_EQ(result.size(), 4);
+    EXPECT_EQ(note_groups(result).size(), 4);
     EXPECT_EQ(count_in_duration, ::quarter_note_duration * 4);
 
     expected_timestamp = 0;
 
-    for (const auto &pair : result) {
-        EXPECT_EQ(pair.second.size(), 1);
+    for (const auto group : note_groups(result)) {
+        EXPECT_EQ(group.size(), 1);
 
-        for (const PlaybackEvent &event : pair.second) {
-            ASSERT_TRUE(std::holds_alternative<mpe::NoteEvent>(event));
-
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(event);
-            EXPECT_EQ(note_event.arrangement_ctx().actual_duration, ::quarter_note_duration);
-            EXPECT_EQ(note_event.arrangement_ctx().actual_timestamp, expected_timestamp);
+        for (const NoteRecord &note_event : group) {
+            EXPECT_EQ(note_event.actual_duration, ::quarter_note_duration);
+            EXPECT_EQ(note_event.actual_timestamp, expected_timestamp);
 
             expected_timestamp += ::quarter_note_duration;
         }
     }
 
     // [WHEN] Render the same measure (4/4), but starting from the 3rd beat
-    result.clear();
+    result = {};
     count_in_duration = 0;
     start_tick = second_measure_4_4->tick().ticks() + 480 + 480;
-    renderer_.render_count_in(score, start_tick, 0, default_profile_, result, count_in_duration);
+    renderer_.render_count_in(score, start_tick, 0, default_profile_, result, progress, count_in_duration);
 
     // [THEN] 6 quarter note events
-    EXPECT_EQ(result.size(), 6);
+    EXPECT_EQ(note_groups(result).size(), 6);
     EXPECT_EQ(count_in_duration, ::quarter_note_duration * 6);
 
     expected_timestamp = 0;
 
-    for (const auto &pair : result) {
-        EXPECT_EQ(pair.second.size(), 1);
+    for (const auto group : note_groups(result)) {
+        EXPECT_EQ(group.size(), 1);
 
-        for (const PlaybackEvent &event : pair.second) {
-            ASSERT_TRUE(std::holds_alternative<mpe::NoteEvent>(event));
-
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(event);
-            EXPECT_EQ(note_event.arrangement_ctx().actual_duration, ::quarter_note_duration);
-            EXPECT_EQ(note_event.arrangement_ctx().actual_timestamp, expected_timestamp);
+        for (const NoteRecord &note_event : group) {
+            EXPECT_EQ(note_event.actual_duration, ::quarter_note_duration);
+            EXPECT_EQ(note_event.actual_timestamp, expected_timestamp);
 
             expected_timestamp += ::quarter_note_duration;
         }
@@ -3380,53 +3361,47 @@ TEST_F(EngravingPlaybackEventsRendererTests, CountIn) {
     ASSERT_TRUE(third_measure_3_8);
 
     // [WHEN] Render the 3rd measure (3/8)
-    result.clear();
+    result = {};
     count_in_duration = 0;
     start_tick = third_measure_3_8->tick().ticks();
-    renderer_.render_count_in(score, start_tick, 0, default_profile_, result, count_in_duration);
+    renderer_.render_count_in(score, start_tick, 0, default_profile_, result, progress, count_in_duration);
 
     // [THEN] 3 quaver note events
-    EXPECT_EQ(result.size(), 3);
+    EXPECT_EQ(note_groups(result).size(), 3);
     EXPECT_EQ(count_in_duration, ::quaver_note_duration * 3);
 
     expected_timestamp = 0;
 
-    for (const auto &pair : result) {
-        EXPECT_EQ(pair.second.size(), 1);
+    for (const auto group : note_groups(result)) {
+        EXPECT_EQ(group.size(), 1);
 
-        for (const PlaybackEvent &event : pair.second) {
-            ASSERT_TRUE(std::holds_alternative<mpe::NoteEvent>(event));
-
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(event);
-            EXPECT_EQ(note_event.arrangement_ctx().actual_duration, ::quaver_note_duration);
-            EXPECT_EQ(note_event.arrangement_ctx().actual_timestamp, expected_timestamp);
+        for (const NoteRecord &note_event : group) {
+            EXPECT_EQ(note_event.actual_duration, ::quaver_note_duration);
+            EXPECT_EQ(note_event.actual_timestamp, expected_timestamp);
 
             expected_timestamp += ::quaver_note_duration;
         }
     }
 
     // [WHEN] Render the 3rd measure (3/8) from some random tick that is not equal to any beat position
-    result.clear();
+    result = {};
     count_in_duration = 0;
     start_tick = third_measure_3_8->tick().ticks() + 333;
-    renderer_.render_count_in(score, start_tick, 0, default_profile_, result, count_in_duration); // tick: 240 + 93
+    renderer_.render_count_in(score, start_tick, 0, default_profile_, result, progress, count_in_duration); // tick: 240 + 93
 
     // [THEN] 5 quaver note events (3 + 2)
     constexpr int closest_main_beat = 2880;
-    EXPECT_EQ(result.size(), 5);
+    EXPECT_EQ(note_groups(result).size(), 5);
     EXPECT_EQ(count_in_duration, ::quaver_note_duration * 5 - duration_from_tempo_and_ticks(2.0, closest_main_beat - start_tick));
 
     expected_timestamp = 0;
 
-    for (const auto &pair : result) {
-        EXPECT_EQ(pair.second.size(), 1);
+    for (const auto group : note_groups(result)) {
+        EXPECT_EQ(group.size(), 1);
 
-        for (const PlaybackEvent &event : pair.second) {
-            ASSERT_TRUE(std::holds_alternative<mpe::NoteEvent>(event));
-
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(event);
-            EXPECT_EQ(note_event.arrangement_ctx().actual_duration, ::quaver_note_duration);
-            EXPECT_EQ(note_event.arrangement_ctx().actual_timestamp, expected_timestamp);
+        for (const NoteRecord &note_event : group) {
+            EXPECT_EQ(note_event.actual_duration, ::quaver_note_duration);
+            EXPECT_EQ(note_event.actual_timestamp, expected_timestamp);
 
             expected_timestamp += ::quaver_note_duration;
         }
@@ -3454,13 +3429,13 @@ TEST_F(EngravingPlaybackEventsRendererTests, HandbellsLetVibrate) {
     ctx->update(track_range.start_track, track_range.end_track, 0, last_tick);
 
     // [WHEN] Render the score
-    PlaybackEventsMap result;
+    TrackEvents result;
 
     for (const Measure *measure = score->first_measure(); measure; measure = measure->next_measure()) {
         for (const Segment *segment = measure->first(SegmentType::CHORD_REST); segment; segment = segment->next(SegmentType::CHORD_REST)) {
             const mu::engraving::EngravingItem *element = segment->element(0);
             if (element && element->is_chord()) {
-                renderer_.render(to_chord(element), 0, default_profile_, ctx, result);
+                render(to_chord(element), 0, ctx, result);
             }
         }
     }
@@ -3470,24 +3445,21 @@ TEST_F(EngravingPlaybackEventsRendererTests, HandbellsLetVibrate) {
     constexpr mpe::timestamp_t first_lv_end_timestamp = 2000000;    // 2nd measure: Damp
     constexpr mpe::timestamp_t second_lv_start_timestamp = 4000000; // 3rd measure: LV (no Damp)
 
-    EXPECT_FALSE(result.empty());
+    EXPECT_FALSE(result.notes.empty());
 
-    for (const auto &pair : result) {
-        EXPECT_FALSE(pair.second.empty());
+    for (const auto group : note_groups(result)) {
+        EXPECT_FALSE(group.empty());
 
-        for (const PlaybackEvent &event : pair.second) {
-            ASSERT_TRUE(std::holds_alternative<mpe::NoteEvent>(event));
+        for (const NoteRecord &note_event : group) {
+            const mpe::timestamp_t timestamp = note_event.actual_timestamp;
+            const auto articulations = result.note_articulations(note_event);
 
-            const mpe::NoteEvent &note_event = std::get<mpe::NoteEvent>(event);
-            const mpe::timestamp_t timestamp = note_event.arrangement_ctx().actual_timestamp;
-            const mpe::ArticulationMap &articulations = note_event.expression_ctx().articulations;
-
-            auto pedal_it = articulations.find(mpe::ArticulationType::PEDAL);
+            auto pedal_it = std::ranges::find(articulations, mpe::ArticulationType::PEDAL, &ArticulationRecord::type);
 
             if (timestamp < first_lv_end_timestamp) {
                 ASSERT_NE(pedal_it, articulations.end());
 
-                const mpe::ArticulationMeta &meta = pedal_it->second.meta;
+                const ArticulationRecord &meta = *pedal_it;
                 EXPECT_EQ(meta.timestamp, first_lv_start_timestamp);
                 EXPECT_EQ(meta.overall_duration, first_lv_end_timestamp);
             } else if (timestamp >= first_lv_end_timestamp && timestamp < second_lv_start_timestamp) {
@@ -3495,7 +3467,7 @@ TEST_F(EngravingPlaybackEventsRendererTests, HandbellsLetVibrate) {
             } else {
                 ASSERT_NE(pedal_it, articulations.end());
 
-                const mpe::ArticulationMeta &meta = pedal_it->second.meta;
+                const ArticulationRecord &meta = *pedal_it;
                 EXPECT_EQ(meta.timestamp, second_lv_start_timestamp);
                 EXPECT_EQ(meta.overall_duration, mpe::infinite_duration); // no Damp
             }

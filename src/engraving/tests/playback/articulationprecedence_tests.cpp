@@ -55,34 +55,14 @@ void add_articulation(ArticulationMap &map, const ArticulationType type, Articul
                           hundred_percent));
 }
 
-mpe::NoteEvent make_note(ArticulationMap articulations, const timestamp_t timestamp = 0, const duration_t duration = quarter_note_duration,
-                         const PitchCurve &pitch_curve = {}) {
-    articulations.pre_calculate_average_data();
-    return mpe::NoteEvent(timestamp, duration, 0, 0, pitch_level(PitchClass::C, 4), dynamic_level_from_type(mpe::DynamicType::NATURAL),
-                          std::move(articulations), 2.0, 0.f, pitch_curve);
-}
-
-mpe::NoteEvent make_typed_note(const std::vector<ArticulationType> &types) {
-    ArticulationMap articulations;
-    for (const ArticulationType type : types) {
-        add_articulation(articulations, type, blank_pattern(), 0, quarter_note_duration);
-    }
-    return make_note(std::move(articulations));
-}
-
 // Exposes the sequenced MIDI timeline that load() builds
 struct TimelineSequencer : FluidSequencer {
     using FluidSequencer::main_stream_events_;
 };
 
-void load_sequencer(TimelineSequencer &sequencer, const PlaybackSetupData &setup, const mpe::NoteEvent &event,
-                    const bool use_dynamic_events) {
-    sequencer.init(setup, std::nullopt, use_dynamic_events, k_fluid_channel_count);
-
-    PlaybackData data;
-    data.setup_data = setup;
-    data.origin_events.emplace(event.arrangement_ctx().actual_timestamp, PlaybackEventList{event});
-    sequencer.load(freeze_playback_data(data));
+void load_sequencer(TimelineSequencer &sequencer, const TrackEvents &track, const bool use_dynamic_events) {
+    sequencer.init(track.setup, std::nullopt, use_dynamic_events, k_fluid_channel_count);
+    sequencer.load(track);
 }
 
 std::vector<const midi::Event *> midi_events_at(const TimelineSequencer &sequencer, const timestamp_t timestamp,
@@ -121,17 +101,6 @@ ArticulationMap chord_articulations(const Chord *chord, const ArticulationsProfi
     return ctx.common_articulations;
 }
 
-std::vector<const mpe::NoteEvent *> note_events(const PlaybackEventsMap &result) {
-    std::vector<const mpe::NoteEvent *> notes;
-    for (const auto &pair : result) {
-        for (const PlaybackEvent &event : pair.second) {
-            if (std::holds_alternative<mpe::NoteEvent>(event)) {
-                notes.push_back(&std::get<mpe::NoteEvent>(event));
-            }
-        }
-    }
-    return notes;
-}
 } // namespace
 
 TEST(EngravingArticulationPrecedenceTests, GraceSelectionTable) {
@@ -218,29 +187,25 @@ TEST(EngravingArticulationPrecedenceTests, GraceBeforeAndAfterOneChord) {
         ASSERT_EQ(build_rendering_ctx(chord, 0, profile, playback_ctx).nominal_duration, quarter_note_duration);
 
         // [WHEN] Render the chord
-        PlaybackEventsMap result;
+        TrackEvents result;
+        FreezeProgress progress;
         PlaybackEventsRenderer renderer;
-        renderer.render(chord, 0, profile, playback_ctx, result);
+        renderer.render(chord, 0, profile, playback_ctx, result, progress);
 
         // [THEN] Before grace, delayed principal, after grace; the graces fill exactly half
-        std::vector<const mpe::NoteEvent *> notes;
-        for (const auto &pair : result) {
-            for (const PlaybackEvent &event : pair.second) {
-                notes.push_back(&std::get<mpe::NoteEvent>(event));
-            }
-        }
+        const auto &notes = result.notes;
 
         ASSERT_EQ(notes.size(), 3);
         EXPECT_EQ(c.before + c.after, quarter_note_duration / 2);
-        EXPECT_EQ(notes[0]->pitch_ctx().nominal_pitch_level, pitch_level(PitchClass::A, 4));
-        EXPECT_EQ(notes[0]->arrangement_ctx().nominal_timestamp, 0);
-        EXPECT_EQ(notes[0]->arrangement_ctx().nominal_duration, c.before);
-        EXPECT_EQ(notes[1]->pitch_ctx().nominal_pitch_level, pitch_level(PitchClass::F, 4));
-        EXPECT_EQ(notes[1]->arrangement_ctx().nominal_timestamp, c.before);
-        EXPECT_EQ(notes[1]->arrangement_ctx().nominal_duration, quarter_note_duration - c.before - c.after);
-        EXPECT_EQ(notes[2]->pitch_ctx().nominal_pitch_level, c.after_pitch);
-        EXPECT_EQ(notes[2]->arrangement_ctx().nominal_timestamp, quarter_note_duration - c.after);
-        EXPECT_EQ(notes[2]->arrangement_ctx().nominal_duration, c.after);
+        EXPECT_EQ(notes[0].nominal_pitch_level, pitch_level(PitchClass::A, 4));
+        EXPECT_EQ(notes[0].nominal_timestamp, 0);
+        EXPECT_EQ(notes[0].nominal_duration, c.before);
+        EXPECT_EQ(notes[1].nominal_pitch_level, pitch_level(PitchClass::F, 4));
+        EXPECT_EQ(notes[1].nominal_timestamp, c.before);
+        EXPECT_EQ(notes[1].nominal_duration, quarter_note_duration - c.before - c.after);
+        EXPECT_EQ(notes[2].nominal_pitch_level, c.after_pitch);
+        EXPECT_EQ(notes[2].nominal_timestamp, quarter_note_duration - c.after);
+        EXPECT_EQ(notes[2].nominal_duration, c.after);
 
         delete score;
     }
@@ -300,12 +265,14 @@ TEST(EngravingArticulationPrecedenceTests, GraceBeforeAndAfterInMultibend) {
     // [WHEN] Render the multibend from its first note
     const Chord *start_chord = find_chord(score, 480, 0);
     ASSERT_TRUE(start_chord);
-    PlaybackEventList events;
-    BendsRenderer::render(start_chord->notes().front(), build_rendering_ctx(start_chord, 0, profile, playback_ctx), events);
+    TrackEvents events;
+    FreezeProgress progress;
+    const auto ctx = build_rendering_ctx(start_chord, 0, profile, playback_ctx);
+    BendsRenderer::render(start_chord->notes().front(), ctx, NoteEmitter{events, ctx.nominal_timestamp, progress});
 
     // [THEN] Relative to EngravingBendsRendererTests.Multibend (G3 at 83%, after-graces at 91% and 95% of the
     //        3 s bend from 0.5 s), G3 moves to 3.125 s (87%) and the after-graces to 3.375 s (95%) and 3.4375 s (97%)
-    ASSERT_EQ(events.size(), 1);
+    ASSERT_EQ(events.notes.size(), 1);
     PitchCurve expected_pitch_curve;
     expected_pitch_curve.emplace(0, 0);
     expected_pitch_curve.emplace(1600, 100);
@@ -315,13 +282,29 @@ TEST(EngravingArticulationPrecedenceTests, GraceBeforeAndAfterInMultibend) {
     expected_pitch_curve.emplace(8700, 100); // A3 -> G3
     expected_pitch_curve.emplace(9500, 200); // G3 -> A3 (grace after)
     expected_pitch_curve.emplace(9700, 100); // A3 -> G3 (grace after)
-    EXPECT_EQ(std::get<mpe::NoteEvent>(events.front()).pitch_ctx().pitch_curve, expected_pitch_curve);
+    EXPECT_TRUE(tests::curve_matches(events.pitch_curve(events.notes.front()), expected_pitch_curve));
 
     delete score;
 }
 
 // (b) Program choice: technique over timbre, the next channel allocation and the bypasses
 TEST(EngravingArticulationPrecedenceTests, ProgramChoice) {
+    const auto make_typed_track = [](std::initializer_list<ArticulationType> types) {
+        ArticulationMap articulations;
+        for (const ArticulationType type : types) {
+            add_articulation(articulations, type, blank_pattern(), 0, quarter_note_duration);
+        }
+        articulations.pre_calculate_average_data();
+        TrackEvents track;
+        FreezeProgress progress;
+        emit_note(track, 0, {0, quarter_note_duration, 0, 0, pitch_level(PitchClass::C, 4)}, articulations, {}, progress);
+        return track;
+    };
+    const auto resolve = [](ChannelMap &channels, const TrackEvents &track) {
+        const auto &note = track.notes.front();
+        return channels.resolve_channel_for_event(note, track.note_articulations(note));
+    };
+
     struct Case {
         PlaybackSetupData setup;
         ArticulationType technique;
@@ -350,29 +333,30 @@ TEST(EngravingArticulationPrecedenceTests, ProgramChoice) {
         ASSERT_EQ(channels.channel_count(), 1);
 
         // [GIVEN] One note maps both articulations
-        const mpe::NoteEvent both = make_typed_note({c.timbre, c.technique});
-        ASSERT_EQ(both.expression_ctx().articulations.size(), 2);
-        EXPECT_EQ(channels.select_program_articulation(both.expression_ctx().articulations), c.technique);
+        const TrackEvents both = make_typed_track({c.timbre, c.technique});
+        const auto articulations = both.note_articulations(both.notes.front());
+        ASSERT_EQ(articulations.size(), 2);
+        EXPECT_EQ(channels.select_program_articulation(articulations), c.technique);
 
         // [THEN] The technique's program gets the next channel
-        EXPECT_EQ(channels.resolve_channel_for_event(both), 1);
+        EXPECT_EQ(resolve(channels, both), 1);
         ASSERT_EQ(added.size(), 2);
         EXPECT_EQ(added[1], std::make_pair(midi::channel_t(1), mapping.at(c.technique)));
 
         // [THEN] The timbre alone allocates the channel after it; the pair reuses its own
-        EXPECT_EQ(channels.resolve_channel_for_event(make_typed_note({c.timbre})), 2);
+        EXPECT_EQ(resolve(channels, make_typed_track({c.timbre})), 2);
         ASSERT_EQ(added.size(), 3);
         EXPECT_EQ(added[2], std::make_pair(midi::channel_t(2), mapping.at(c.timbre)));
-        EXPECT_EQ(channels.resolve_channel_for_event(make_typed_note({c.technique, c.timbre})), 1);
+        EXPECT_EQ(resolve(channels, make_typed_track({c.technique, c.timbre})), 1);
         EXPECT_EQ(channels.channel_count(), 3);
 
         // [THEN] STANDARD bypasses the table
-        EXPECT_EQ(channels.resolve_channel_for_event(make_typed_note({ArticulationType::STANDARD, c.technique, c.timbre})), 0);
+        EXPECT_EQ(resolve(channels, make_typed_track({ArticulationType::STANDARD, c.technique, c.timbre})), 0);
 
         // [THEN] A program override bypasses it too
         ChannelMap overridden;
         overridden.init(c.setup, midi::Program(0, 5), 16);
-        EXPECT_EQ(overridden.resolve_channel_for_event(both), 0);
+        EXPECT_EQ(resolve(overridden, both), 0);
         EXPECT_EQ(overridden.channel_count(), 1);
     }
 }
@@ -399,19 +383,24 @@ TEST(EngravingArticulationPrecedenceTests, NaturalFallback) {
         ArticulationMap articulations;
         add_articulation(articulations, ArticulationType::STACCATO, c.staccato, 0, quarter_note_duration);
         add_articulation(articulations, ArticulationType::TENUTO, c.tenuto, 0, quarter_note_duration);
-        const mpe::NoteEvent event = make_note(articulations);
-        const ArticulationMap &applied = event.expression_ctx().articulations;
-        ASSERT_EQ(applied.size(), 2);
+        articulations.pre_calculate_average_data();
+        constexpr NoteEmitInput note{
+            0, quarter_note_duration, 0, 0, pitch_level(PitchClass::C, 4), dynamic_level_from_type(mpe::DynamicType::NATURAL), 2.0};
+        TrackEvents track;
+        FreezeProgress progress;
+        emit_note(track, 0, note, articulations, {}, progress);
+        ASSERT_EQ(track.notes.size(), 1u);
+        ASSERT_EQ(track.note_articulations(track.notes.front()).size(), 2u);
 
         // [THEN] The cached averages come from STACCATO
-        EXPECT_EQ(applied.average_dynamic_offset_map().empty(), c.expect_empty);
-        EXPECT_EQ(applied.average_max_amplitude_level(), c.expect_empty ? 0 : dynamic_level_from_type(mpe::DynamicType::NATURAL));
-        EXPECT_EQ(event.expression_ctx().expression_curve.empty(), c.expect_empty);
+        EXPECT_EQ(articulations.average_dynamic_offset_map().empty(), c.expect_empty);
+        EXPECT_EQ(articulations.average_max_amplitude_level(), c.expect_empty ? 0 : dynamic_level_from_type(mpe::DynamicType::NATURAL));
+        EXPECT_EQ(track.expression_curve(track.notes.front()).empty(), c.expect_empty);
 
         for (const bool single_note_dynamics : {true, false}) {
-            const PlaybackSetupData setup(SoundId::PIANO, SoundCategory::KEYBOARDS, {}, single_note_dynamics);
+            track.setup = PlaybackSetupData(SoundId::PIANO, SoundCategory::KEYBOARDS, {}, single_note_dynamics);
             TimelineSequencer sequencer;
-            load_sequencer(sequencer, setup, event, single_note_dynamics);
+            load_sequencer(sequencer, track, single_note_dynamics);
             const auto note_on = midi_events_at(sequencer, 0, midi::Event::Opcode::NOTE_ON);
             ASSERT_EQ(note_on.size(), 1);
 
@@ -433,10 +422,7 @@ TEST(EngravingArticulationPrecedenceTests, NaturalFallback) {
 //     type order, so the higher type's value is the one that holds
 TEST(EngravingArticulationPrecedenceTests, OverlappingBendResetCollision) {
     constexpr timestamp_t collision = quarter_note_duration;
-    PitchCurve curve; // shared by both bends, with a key at 50%
-    curve.emplace(0, 0);
-    curve.emplace(fifty_percent, 100);
-    curve.emplace(hundred_percent, 100);
+    constexpr CurvePoint curve[]{{0, 0}, {fifty_percent, 100}, {hundred_percent, 100}};
 
     // the short bend resets at `collision`, where the long one samples its 50% key
     for (const bool short_is_lower : {true, false}) {
@@ -448,16 +434,20 @@ TEST(EngravingArticulationPrecedenceTests, OverlappingBendResetCollision) {
         ArticulationMap articulations;
         add_articulation(articulations, short_bend, blank_pattern(), 0, collision);
         add_articulation(articulations, long_bend, blank_pattern(), 0, 2 * collision);
-        const mpe::NoteEvent event = make_note(articulations, 0, 2 * collision, curve);
-
-        const ArticulationMap &applied = event.expression_ctx().articulations;
+        articulations.pre_calculate_average_data();
+        constexpr NoteEmitInput note{
+            0, 2 * collision, 0, 0, pitch_level(PitchClass::C, 4), dynamic_level_from_type(mpe::DynamicType::NATURAL), 2.0};
         ASSERT_TRUE(bend_supported_types.contains(short_bend));
         ASSERT_TRUE(bend_supported_types.contains(long_bend));
-        ASSERT_EQ(applied.at(short_bend).meta.timestamp + applied.at(short_bend).meta.overall_duration, collision);
-        ASSERT_EQ(applied.at(long_bend).meta.overall_duration * fifty_percent / hundred_percent, collision);
+        ASSERT_EQ(articulations.at(short_bend).meta.timestamp + articulations.at(short_bend).meta.overall_duration, collision);
+        ASSERT_EQ(articulations.at(long_bend).meta.overall_duration * fifty_percent / hundred_percent, collision);
 
+        TrackEvents track;
+        track.setup = PlaybackSetupData(SoundId::PIANO, SoundCategory::KEYBOARDS);
+        FreezeProgress progress;
+        emit_note(track, 0, note, articulations, curve, progress);
         TimelineSequencer sequencer;
-        load_sequencer(sequencer, PlaybackSetupData(SoundId::PIANO, SoundCategory::KEYBOARDS), event, false);
+        load_sequencer(sequencer, track, false);
 
         // [THEN] FALL's event comes first and MULTIBEND's last: a short MULTIBEND's reset wins over FALL's sample
         const auto bends = midi_events_at(sequencer, collision, midi::Event::Opcode::PITCH_BEND);
@@ -514,18 +504,19 @@ TEST(EngravingArticulationPrecedenceTests, ArpeggioOverOrnamentAndTremolo) {
         ASSERT_LT(other, ArticulationType::ARPEGGIO);
 
         // [WHEN] Render the chord
-        PlaybackEventsMap result;
+        TrackEvents result;
+        FreezeProgress progress;
         PlaybackEventsRenderer renderer;
-        renderer.render(chord, 0, profile, playback_ctx, result);
+        renderer.render(chord, 0, profile, playback_ctx, result, progress);
 
         // [THEN] Three rolled notes, one per pitch, staggered by a third of the arpeggio span
-        const std::vector<const mpe::NoteEvent *> notes = note_events(result);
+        const auto &notes = result.notes;
         constexpr duration_t sixteenth = quarter_note_duration / 4;
         const pitch_level_t pitches[] = {pitch_level(PitchClass::F, 4), pitch_level(PitchClass::A, 4), pitch_level(PitchClass::C, 5)};
         ASSERT_EQ(notes.size(), 3) << (tremolo ? "tremolo" : "trill");
         for (size_t i = 0; i < 3; ++i) {
-            EXPECT_EQ(notes[i]->pitch_ctx().nominal_pitch_level, pitches[i]);
-            EXPECT_EQ(notes[i]->arrangement_ctx().nominal_timestamp, static_cast<timestamp_t>(i) * (sixteenth / 3));
+            EXPECT_EQ(notes[i].nominal_pitch_level, pitches[i]);
+            EXPECT_EQ(notes[i].nominal_timestamp, static_cast<timestamp_t>(i) * (sixteenth / 3));
         }
 
         delete score;
@@ -566,22 +557,23 @@ TEST(EngravingArticulationPrecedenceTests, MixedBeforeGroupWithDefaultProfile) {
     ASSERT_TRUE(articulations.contains(ArticulationType::POST_APPOGGIATURA));
     ASSERT_EQ(select_grace_type(articulations), ArticulationType::PRE_APPOGGIATURA);
 
-    PlaybackEventsMap result;
+    TrackEvents result;
+    FreezeProgress progress;
     PlaybackEventsRenderer renderer;
-    renderer.render(chord, 0, profile, playback_ctx, result);
-    const std::vector<const mpe::NoteEvent *> notes = note_events(result);
+    renderer.render(chord, 0, profile, playback_ctx, result, progress);
+    const auto &notes = result.notes;
     ASSERT_EQ(notes.size(), 6);
 
-    const mpe::NoteEvent *principal = nullptr;
-    std::vector<const mpe::NoteEvent *> before, after;
-    for (const mpe::NoteEvent *note : notes) {
-        const pitch_level_t pitch = note->pitch_ctx().nominal_pitch_level;
+    const NoteRecord *principal = nullptr;
+    std::vector<const NoteRecord *> before, after;
+    for (const NoteRecord &note : notes) {
+        const pitch_level_t pitch = note.nominal_pitch_level;
         if (pitch == pitch_level(PitchClass::F, 4)) {
-            principal = note;
+            principal = &note;
         } else if (pitch == pitch_level(PitchClass::A, 4) || pitch == pitch_level(PitchClass::B, 4)) {
-            before.push_back(note);
+            before.push_back(&note);
         } else {
-            after.push_back(note);
+            after.push_back(&note);
         }
     }
     ASSERT_TRUE(principal);
@@ -589,33 +581,33 @@ TEST(EngravingArticulationPrecedenceTests, MixedBeforeGroupWithDefaultProfile) {
     ASSERT_EQ(after.size(), 3);
 
     // [THEN] The principal plays from its nominal start, 50 ms, and none of the grace types moves it
-    const mpe::ArrangementContext &p = principal->arrangement_ctx();
+    const NoteRecord &p = *principal;
     EXPECT_EQ(p.nominal_timestamp, 50000);
     EXPECT_EQ(p.nominal_duration, 250000);
     EXPECT_EQ(p.actual_timestamp, p.nominal_timestamp);
     for (const ArticulationType type :
          {ArticulationType::PRE_APPOGGIATURA, ArticulationType::ACCIACCATURA, ArticulationType::POST_APPOGGIATURA}) {
-        EXPECT_FALSE(principal->expression_ctx().articulations.contains(type));
+        EXPECT_FALSE(contains_articulation(result.note_articulations(*principal), type));
     }
 
     // [THEN] Each grace carries only its own type; every before-grace has sounded and ended before the principal,
     //        and every after-grace starts after the principal has ended, within the note
-    for (const mpe::NoteEvent *note : before) {
-        const bool is_acciaccatura = note->pitch_ctx().nominal_pitch_level == pitch_level(PitchClass::B, 4);
+    for (const NoteRecord *note : before) {
+        const bool is_acciaccatura = note->nominal_pitch_level == pitch_level(PitchClass::B, 4);
         const ArticulationType own = is_acciaccatura ? ArticulationType::ACCIACCATURA : ArticulationType::PRE_APPOGGIATURA;
-        EXPECT_TRUE(note->expression_ctx().articulations.contains(own));
-        EXPECT_FALSE(note->expression_ctx().articulations.contains(is_acciaccatura ? ArticulationType::PRE_APPOGGIATURA :
-                                                                                     ArticulationType::ACCIACCATURA));
-        EXPECT_FALSE(note->expression_ctx().articulations.contains(ArticulationType::POST_APPOGGIATURA));
-        EXPECT_LT(note->arrangement_ctx().actual_timestamp, p.actual_timestamp);
-        EXPECT_LE(note->arrangement_ctx().actual_timestamp + note->arrangement_ctx().actual_duration, p.actual_timestamp);
+        EXPECT_TRUE(contains_articulation(result.note_articulations(*note), own));
+        EXPECT_FALSE(contains_articulation(result.note_articulations(*note),
+                                           is_acciaccatura ? ArticulationType::PRE_APPOGGIATURA : ArticulationType::ACCIACCATURA));
+        EXPECT_FALSE(contains_articulation(result.note_articulations(*note), ArticulationType::POST_APPOGGIATURA));
+        EXPECT_LT(note->actual_timestamp, p.actual_timestamp);
+        EXPECT_LE(note->actual_timestamp + note->actual_duration, p.actual_timestamp);
     }
-    for (const mpe::NoteEvent *note : after) {
-        EXPECT_TRUE(note->expression_ctx().articulations.contains(ArticulationType::POST_APPOGGIATURA));
-        EXPECT_FALSE(note->expression_ctx().articulations.contains(ArticulationType::PRE_APPOGGIATURA));
-        EXPECT_FALSE(note->expression_ctx().articulations.contains(ArticulationType::ACCIACCATURA));
-        EXPECT_GE(note->arrangement_ctx().actual_timestamp, p.actual_timestamp + p.actual_duration);
-        EXPECT_LE(note->arrangement_ctx().actual_timestamp + note->arrangement_ctx().actual_duration, quarter_note_duration);
+    for (const NoteRecord *note : after) {
+        EXPECT_TRUE(contains_articulation(result.note_articulations(*note), ArticulationType::POST_APPOGGIATURA));
+        EXPECT_FALSE(contains_articulation(result.note_articulations(*note), ArticulationType::PRE_APPOGGIATURA));
+        EXPECT_FALSE(contains_articulation(result.note_articulations(*note), ArticulationType::ACCIACCATURA));
+        EXPECT_GE(note->actual_timestamp, p.actual_timestamp + p.actual_duration);
+        EXPECT_LE(note->actual_timestamp + note->actual_duration, quarter_note_duration);
     }
 
     delete score;
@@ -745,17 +737,18 @@ TEST(EngravingArticulationPrecedenceTests, MultibendInheritedGraceMarker) {
         ASSERT_TRUE(build_rendering_ctx(second, 0, profile, playback_ctx).time_signature_fraction.is_compound());
 
         // [WHEN] Render the first chord, which renders the whole multibend from its grace
-        PlaybackEventsMap result;
+        TrackEvents result;
+        FreezeProgress progress;
         PlaybackEventsRenderer renderer;
-        renderer.render(first, 0, profile, playback_ctx, result);
-        const mpe::NoteEvent *bend = nullptr;
-        for (const mpe::NoteEvent *note : note_events(result)) {
-            if (note->expression_ctx().articulations.contains(ArticulationType::MULTIBEND)) {
-                bend = note;
+        renderer.render(first, 0, profile, playback_ctx, result, progress);
+        const NoteRecord *bend = nullptr;
+        for (const NoteRecord &note : result.notes) {
+            if (contains_articulation(result.note_articulations(note), ArticulationType::MULTIBEND)) {
+                bend = &note;
             }
         }
         ASSERT_TRUE(bend);
-        const mpe::ArrangementContext &arrangement = bend->arrangement_ctx();
+        const NoteRecord &arrangement = *bend;
 
         if (after_only) {
             // [THEN] The after-graces keep the compound after-only rule, 2/3 of the quarter (333,333 us, not half),
@@ -765,9 +758,10 @@ TEST(EngravingArticulationPrecedenceTests, MultibendInheritedGraceMarker) {
             // [THEN] G4 is delayed by its own acciaccatura (31.25 ms), not by an appoggiatura rule: it arrives at
             //        531,250 us of the 0..1,000,000 bend (53%)
             EXPECT_EQ(arrangement.actual_timestamp + arrangement.actual_duration, 1000000);
-            const PitchCurve &curve = bend->pitch_ctx().pitch_curve;
-            ASSERT_TRUE(curve.contains(5300));
-            EXPECT_EQ(curve.at(5300), 150);
+            const auto curve = result.pitch_curve(*bend);
+            const auto point = std::ranges::find(curve, 5300, &CurvePoint::at);
+            ASSERT_NE(point, curve.end());
+            EXPECT_EQ(point->value, 150);
         }
 
         delete score;
@@ -801,42 +795,43 @@ TEST(EngravingArticulationPrecedenceTests, MixedBeforeGroupWithoutAfterGraces) {
     ASSERT_FALSE(articulations.contains(ArticulationType::POST_APPOGGIATURA));
     ASSERT_EQ(select_grace_type(articulations), ArticulationType::PRE_APPOGGIATURA);
 
-    PlaybackEventsMap result;
+    TrackEvents result;
+    FreezeProgress progress;
     PlaybackEventsRenderer renderer;
-    renderer.render(chord, 0, profile, playback_ctx, result);
-    const std::vector<const mpe::NoteEvent *> notes = note_events(result);
+    renderer.render(chord, 0, profile, playback_ctx, result, progress);
+    const auto &notes = result.notes;
     ASSERT_EQ(notes.size(), 3);
 
-    const mpe::NoteEvent *principal = nullptr;
-    std::vector<const mpe::NoteEvent *> graces;
-    for (const mpe::NoteEvent *note : notes) {
-        if (note->pitch_ctx().nominal_pitch_level == pitch_level(PitchClass::F, 4)) {
-            principal = note;
+    const NoteRecord *principal = nullptr;
+    std::vector<const NoteRecord *> graces;
+    for (const NoteRecord &note : notes) {
+        if (note.nominal_pitch_level == pitch_level(PitchClass::F, 4)) {
+            principal = &note;
         } else {
-            graces.push_back(note);
+            graces.push_back(&note);
         }
     }
     ASSERT_TRUE(principal);
     ASSERT_EQ(graces.size(), 2);
 
     // [THEN] The principal plays from its nominal start, 62.5 ms, without a grace type
-    const mpe::ArrangementContext &p = principal->arrangement_ctx();
+    const NoteRecord &p = *principal;
     EXPECT_EQ(p.nominal_timestamp, 62500);
     EXPECT_EQ(p.nominal_duration, quarter_note_duration - 62500);
     EXPECT_EQ(p.actual_timestamp, p.nominal_timestamp);
-    EXPECT_FALSE(principal->expression_ctx().articulations.contains(ArticulationType::PRE_APPOGGIATURA));
-    EXPECT_FALSE(principal->expression_ctx().articulations.contains(ArticulationType::ACCIACCATURA));
+    EXPECT_FALSE(contains_articulation(result.note_articulations(*principal), ArticulationType::PRE_APPOGGIATURA));
+    EXPECT_FALSE(contains_articulation(result.note_articulations(*principal), ArticulationType::ACCIACCATURA));
 
     // [THEN] Both graces carry only their own type, fill exactly the budget and have ended before the principal
     duration_t nominal_sum = 0;
-    for (const mpe::NoteEvent *note : graces) {
-        const bool is_acciaccatura = note->pitch_ctx().nominal_pitch_level == pitch_level(PitchClass::G, 4);
-        EXPECT_TRUE(note->expression_ctx().articulations.contains(is_acciaccatura ? ArticulationType::ACCIACCATURA :
-                                                                                    ArticulationType::PRE_APPOGGIATURA));
-        EXPECT_FALSE(note->expression_ctx().articulations.contains(is_acciaccatura ? ArticulationType::PRE_APPOGGIATURA :
-                                                                                     ArticulationType::ACCIACCATURA));
-        EXPECT_LE(note->arrangement_ctx().actual_timestamp + note->arrangement_ctx().actual_duration, p.actual_timestamp);
-        nominal_sum += note->arrangement_ctx().nominal_duration;
+    for (const NoteRecord *note : graces) {
+        const bool is_acciaccatura = note->nominal_pitch_level == pitch_level(PitchClass::G, 4);
+        EXPECT_TRUE(contains_articulation(result.note_articulations(*note),
+                                          is_acciaccatura ? ArticulationType::ACCIACCATURA : ArticulationType::PRE_APPOGGIATURA));
+        EXPECT_FALSE(contains_articulation(result.note_articulations(*note),
+                                           is_acciaccatura ? ArticulationType::PRE_APPOGGIATURA : ArticulationType::ACCIACCATURA));
+        EXPECT_LE(note->actual_timestamp + note->actual_duration, p.actual_timestamp);
+        nominal_sum += note->nominal_duration;
     }
     EXPECT_EQ(nominal_sum, 62500);
 

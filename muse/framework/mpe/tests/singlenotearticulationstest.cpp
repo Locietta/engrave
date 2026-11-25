@@ -75,8 +75,7 @@ TEST_F(MpeSingleNoteArticulationsTest, StandardPattern) {
     ArticulationPattern scope;
     scope.emplace(0, standard_pattern_);
 
-    ArticulationMeta standard_meta;
-    standard_meta.type = ArticulationType::STACCATO;
+    ArticulationMeta standard_meta(ArticulationType::STANDARD);
     standard_meta.pattern = std::make_shared<const ArticulationPattern>(scope);
     standard_meta.timestamp = nominal_timestamp_;
     standard_meta.overall_duration = nominal_duration_;
@@ -88,15 +87,20 @@ TEST_F(MpeSingleNoteArticulationsTest, StandardPattern) {
     applied_articulations.pre_calculate_average_data();
 
     // [WHEN] Note event with given parameters being built
-    NoteEvent event(nominal_timestamp_, nominal_duration_, voice_idx_, staff_idx_, pitch_level(pitch_class_, octave_), nominal_dynamic_,
-                    std::move(applied_articulations), 0);
+    TrackEvents track;
+    FreezeProgress progress;
+    emit_note(track, nominal_timestamp_,
+              {nominal_timestamp_, nominal_duration_, voice_idx_, staff_idx_, pitch_level(pitch_class_, octave_), nominal_dynamic_, 0},
+              applied_articulations, {}, progress);
+    ASSERT_EQ(track.notes.size(), 1u);
+    const NoteRecord &event = track.notes.front();
 
     // [THEN] We expect that expression curve will be using default curve from standard patterns
-    EXPECT_EQ(event.expression_ctx().expression_curve, standard_pattern_.expression_pattern.dynamic_offset_map);
+    EXPECT_TRUE(curve_matches(track.expression_curve(event), standard_pattern_.expression_pattern.dynamic_offset_map));
 
     // [THEN] We expect that there is no pitch offset at all on this note
-    for (const auto &pair : event.pitch_ctx().pitch_curve) {
-        EXPECT_EQ(pair.second, 0);
+    for (const CurvePoint &point : track.pitch_curve(event)) {
+        EXPECT_EQ(point.value, 0);
     }
 }
 
@@ -132,14 +136,19 @@ TEST_F(MpeSingleNoteArticulationsTest, StaccatoPattern) {
     applied_articulations.pre_calculate_average_data();
 
     // [WHEN] Note event with given parameters being built
-    NoteEvent event(nominal_timestamp_, nominal_duration_, voice_idx_, staff_idx_, pitch_level(pitch_class_, octave_), nominal_dynamic_,
-                    std::move(applied_articulations), 0);
+    TrackEvents track;
+    FreezeProgress progress;
+    emit_note(track, nominal_timestamp_,
+              {nominal_timestamp_, nominal_duration_, voice_idx_, staff_idx_, pitch_level(pitch_class_, octave_), nominal_dynamic_, 0},
+              applied_articulations, {}, progress);
+    ASSERT_EQ(track.notes.size(), 1u);
+    const NoteRecord &event = track.notes.front();
 
     // [THEN] We expect the nominal duration of a note to be unchanged
-    EXPECT_EQ(event.arrangement_ctx().nominal_duration, nominal_duration_);
+    EXPECT_EQ(event.nominal_duration, nominal_duration_);
 
     // [THEN] We expect the actual duration of the staccato note to be halved.
-    EXPECT_EQ(event.arrangement_ctx().actual_duration, nominal_duration_ * 0.5);
+    EXPECT_EQ(event.actual_duration, nominal_duration_ * 0.5);
 }
 
 /**
@@ -174,18 +183,23 @@ TEST_F(MpeSingleNoteArticulationsTest, AccentPattern) {
     applied_articulations.pre_calculate_average_data();
 
     // [WHEN] Note event with given parameters being built
-    NoteEvent event(nominal_timestamp_, nominal_duration_, voice_idx_, staff_idx_, pitch_level(pitch_class_, octave_), nominal_dynamic_,
-                    std::move(applied_articulations), 0);
+    TrackEvents track;
+    FreezeProgress progress;
+    emit_note(track, nominal_timestamp_,
+              {nominal_timestamp_, nominal_duration_, voice_idx_, staff_idx_, pitch_level(pitch_class_, octave_), nominal_dynamic_, 0},
+              applied_articulations, {}, progress);
+    ASSERT_EQ(track.notes.size(), 1u);
+    const NoteRecord &event = track.notes.front();
 
     // [THEN] We expect the nominal duration of a note to be unchanged,
     //        since accent doesn't affect any arrangement data
-    EXPECT_EQ(event.arrangement_ctx().nominal_duration, nominal_duration_);
+    EXPECT_EQ(event.nominal_duration, nominal_duration_);
 
     // [THEN] We expect the nominal dynamic type is still unchanged
-    EXPECT_EQ(event.expression_ctx().nominal_dynamic_level, dynamic_level_from_type(DynamicType::NATURAL));
+    EXPECT_EQ(event.nominal_dynamic_level, dynamic_level_from_type(DynamicType::NATURAL));
 
     // [THEN] However, an amplitude dynamic value in ExpressionCurve has been increased on single level due to Accent Pattern
-    EXPECT_EQ(event.expression_ctx().expression_curve.max_amplitude_level(), dynamic_level_from_type(DynamicType::MF));
+    EXPECT_EQ(max_amplitude_level(track.expression_curve(event)), dynamic_level_from_type(DynamicType::MF));
 }
 
 /**
@@ -226,18 +240,23 @@ TEST_F(MpeSingleNoteArticulationsTest, AccentPattern_Nominal_MezzoForte) {
     applied_articulations.pre_calculate_average_data();
 
     // [WHEN] Note event with given parameters being built
-    NoteEvent event(nominal_timestamp_, nominal_duration_, voice_idx_, staff_idx_, pitch_level(pitch_class_, octave_), nominal_dynamic_,
-                    std::move(applied_articulations), 0);
+    TrackEvents track;
+    FreezeProgress progress;
+    emit_note(track, nominal_timestamp_,
+              {nominal_timestamp_, nominal_duration_, voice_idx_, staff_idx_, pitch_level(pitch_class_, octave_), nominal_dynamic_, 0},
+              applied_articulations, {}, progress);
+    ASSERT_EQ(track.notes.size(), 1u);
+    const NoteRecord &event = track.notes.front();
 
     // [THEN] We expect the nominal duration of a note to be unchanged,
     //        since accent doesn't affect any arrangement data
-    EXPECT_EQ(event.arrangement_ctx().nominal_duration, nominal_duration_);
+    EXPECT_EQ(event.nominal_duration, nominal_duration_);
 
     // [THEN] We expect the nominal dynamic type is still unchanged
-    EXPECT_EQ(event.expression_ctx().nominal_dynamic_level, dynamic_level_from_type(DynamicType::MF));
+    EXPECT_EQ(event.nominal_dynamic_level, dynamic_level_from_type(DynamicType::MF));
 
     // [THEN] However, an amplitude dynamic value in ExpressionCurve has been increased on single level due to Accent Pattern
-    EXPECT_EQ(event.expression_ctx().expression_curve.max_amplitude_level(), dynamic_level_from_type(DynamicType::F));
+    EXPECT_EQ(max_amplitude_level(track.expression_curve(event)), dynamic_level_from_type(DynamicType::F));
 }
 
 /**
@@ -294,14 +313,19 @@ TEST_F(MpeSingleNoteArticulationsTest, PocoTenuto) {
     applied_articulations.pre_calculate_average_data();
 
     // [WHEN] Note event with given parameters being built
-    NoteEvent event(nominal_timestamp_, nominal_duration_, voice_idx_, staff_idx_, pitch_level(pitch_class_, octave_), nominal_dynamic_,
-                    std::move(applied_articulations), 0);
+    TrackEvents track;
+    FreezeProgress progress;
+    emit_note(track, nominal_timestamp_,
+              {nominal_timestamp_, nominal_duration_, voice_idx_, staff_idx_, pitch_level(pitch_class_, octave_), nominal_dynamic_, 0},
+              applied_articulations, {}, progress);
+    ASSERT_EQ(track.notes.size(), 1u);
+    const NoteRecord &event = track.notes.front();
 
     // [THEN] We expect the nominal duration of a note to be unchanged
-    EXPECT_EQ(event.arrangement_ctx().nominal_duration, nominal_duration_);
+    EXPECT_EQ(event.nominal_duration, nominal_duration_);
 
     // [THEN] We expect the actual duration of the note marked by staccato + tenuto to be equal to 0.75 of nominal duration
-    EXPECT_EQ(event.arrangement_ctx().actual_duration, nominal_duration_ * 0.75);
+    EXPECT_EQ(event.actual_duration, nominal_duration_ * 0.75);
 }
 
 /**
@@ -340,11 +364,16 @@ TEST_F(MpeSingleNoteArticulationsTest, QuickFall) {
     applied_articulations.pre_calculate_average_data();
 
     // [WHEN] Note event with given parameters being built
-    NoteEvent event(nominal_timestamp_, nominal_duration_, voice_idx_, staff_idx_, pitch_level(pitch_class_, octave_), nominal_dynamic_,
-                    std::move(applied_articulations), 0);
+    TrackEvents track;
+    FreezeProgress progress;
+    emit_note(track, nominal_timestamp_,
+              {nominal_timestamp_, nominal_duration_, voice_idx_, staff_idx_, pitch_level(pitch_class_, octave_), nominal_dynamic_, 0},
+              applied_articulations, {}, progress);
+    ASSERT_EQ(track.notes.size(), 1u);
+    const NoteRecord &event = track.notes.front();
 
     // [THEN] We expect the pitch curve of the note marked by quick fall articulation to be equal to the pitch curve from corresponding pattern
-    EXPECT_EQ(event.pitch_ctx().pitch_curve, quick_fall_pattern.pitch_pattern.pitch_offset_map);
+    EXPECT_TRUE(curve_matches(track.pitch_curve(event), quick_fall_pattern.pitch_pattern.pitch_offset_map));
 }
 
 /**
@@ -386,13 +415,18 @@ TEST_F(MpeSingleNoteArticulationsTest, Scoop) {
     applied_articulations.pre_calculate_average_data();
 
     // [WHEN] Note event with given parameters being built
-    NoteEvent event(nominal_timestamp_, nominal_duration_, voice_idx_, staff_idx_, pitch_level(pitch_class_, octave_), nominal_dynamic_,
-                    std::move(applied_articulations), 0);
+    TrackEvents track;
+    FreezeProgress progress;
+    emit_note(track, nominal_timestamp_,
+              {nominal_timestamp_, nominal_duration_, voice_idx_, staff_idx_, pitch_level(pitch_class_, octave_), nominal_dynamic_, 0},
+              applied_articulations, {}, progress);
+    ASSERT_EQ(track.notes.size(), 1u);
+    const NoteRecord &event = track.notes.front();
 
     // [THEN] We expect the pitch curve of the note marked by scoop articulation to be equal to the pitch curve from corresponding pattern
-    EXPECT_EQ(event.pitch_ctx().pitch_curve, scoop_pattern.pitch_pattern.pitch_offset_map);
+    EXPECT_TRUE(curve_matches(track.pitch_curve(event), scoop_pattern.pitch_pattern.pitch_offset_map));
 
     // [THEN] We expect that actual timestamp of the note will consider timestamp offset from the articulation pattern
     //        In other words, we'll start to playback a note with pitch offset and then finally land on the note being played
-    EXPECT_EQ(event.arrangement_ctx().actual_timestamp, nominal_timestamp_ + nominal_duration_ * percentage_to_factor(timestamp_offset));
+    EXPECT_EQ(event.actual_timestamp, nominal_timestamp_ + nominal_duration_ * percentage_to_factor(timestamp_offset));
 }

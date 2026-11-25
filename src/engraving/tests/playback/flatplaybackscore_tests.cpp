@@ -17,12 +17,13 @@
 #include "audio/engine/internal/synthesizers/fluidsynth/fluidsequencer.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/factory.h"
+#include "engraving/dom/harmony.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
 #include "engraving/dom/part.h"
 #include "engraving/dom/segment.h"
 #include "engraving/playback/flatplaybackscore.h"
-#include "engraving/playback/playbackeventsrenderer_impl.h"
+#include "engraving/playback/playbackeventsrenderer.h"
 #include "engraving/playback/playbackwalk.h"
 #include "global/hashmap.h"
 #include "mpe/tests/utils/articulationutils.h"
@@ -34,47 +35,36 @@ using namespace muse;
 using namespace muse::mpe;
 
 namespace {
-// A sink defined only here: it links against the renderer through playbackeventsrenderer_impl.h
-// without any change to the renderer unit (step-4a review finding 1)
-struct RecordingSink {
-    std::vector<std::pair<timestamp_t, std::size_t>> calls;
-
-    void operator()(const timestamp_t key, PlaybackEventList &&list) { calls.emplace_back(key, list.size()); }
-};
-
-static_assert(PlaybackEventSink<RecordingSink>);
-
 ArticulationAppliedData applied(const ArticulationType type, const timestamp_t timestamp, const duration_t duration) {
     return ArticulationAppliedData(ArticulationMeta(type, {}, timestamp, duration), 0, hundred_percent);
 }
 
-mpe::NoteEvent make_note(const timestamp_t at, const pitch_level_t pitch, const bool with_override) {
-    ArrangementContext arrangement;
-    arrangement.nominal_timestamp = at;
-    arrangement.actual_timestamp = at + 7;
-    arrangement.nominal_duration = 500000;
-    arrangement.actual_duration = 450001;
-    arrangement.voice_layer_index = 2;
-    arrangement.staff_layer_index = 3;
-    arrangement.bps = 2.125;
+void emit_fixture_note(TrackEvents &track, const timestamp_t at, const pitch_level_t pitch, const bool with_override,
+                       FreezeProgress &progress) {
+    ArticulationPatternSegment staccato;
+    staccato.arrangement_pattern = ArrangementPattern(8000, 1);
+    staccato.expression_pattern = ExpressionPattern(ArticulationMap::expected_size, ten_percent, 7000);
+    staccato.expression_pattern.dynamic_offset_map.at(hundred_percent) = 6500;
+    ArticulationPatternSegment tenuto;
+    tenuto.arrangement_pattern = ArrangementPattern(hundred_percent, 0);
 
-    PitchContext pitch_ctx;
-    pitch_ctx.nominal_pitch_level = pitch;
-    pitch_ctx.pitch_curve.emplace(0, 0);
-    pitch_ctx.pitch_curve.emplace(5000, -1200);
-
-    ExpressionContext expression;
-    // Inserted out of enum order: the map (and so the flat record) is in ascending ArticulationType
-    expression.articulations.emplace(ArticulationType::TENUTO, applied(ArticulationType::TENUTO, at, 400000));
-    expression.articulations.emplace(ArticulationType::STACCATO, applied(ArticulationType::STACCATO, at + 1, 300000));
-    expression.nominal_dynamic_level = dynamic_level_from_type(mpe::DynamicType::MF);
-    expression.expression_curve.emplace(0, 7000);
-    expression.expression_curve.emplace(10000, 6500);
-    if (with_override) {
-        expression.velocity_override = 0.375f;
-    }
-
-    return mpe::NoteEvent(std::move(arrangement), std::move(pitch_ctx), std::move(expression));
+    ArticulationMap articulations;
+    // Insert out of order so the test exercises the ascending articulation order stored on the note.
+    articulations.emplace(
+        ArticulationType::TENUTO,
+        ArticulationAppliedData(
+            {ArticulationType::TENUTO, std::make_shared<const ArticulationPattern>(ArticulationPattern{{0, tenuto}}), at, 400000}, 0,
+            hundred_percent));
+    articulations.emplace(
+        ArticulationType::STACCATO,
+        ArticulationAppliedData(
+            {ArticulationType::STACCATO, std::make_shared<const ArticulationPattern>(ArticulationPattern{{0, staccato}}), at + 1, 300000},
+            0, hundred_percent));
+    articulations.pre_calculate_average_data();
+    constexpr CurvePoint curve[]{{0, 0}, {5000, -1200}};
+    emit_note(track, at,
+              {at, 500000, 2, 3, pitch, dynamic_level_from_type(mpe::DynamicType::NATURAL), 2.125, false, with_override ? 0.375f : 0.f},
+              articulations, curve, progress);
 }
 
 TextArticulationEvent make_text(const char16_t *text, const layer_idx_t layer) {
@@ -122,8 +112,6 @@ struct FlatFixture {
     PlaybackScore flat;
     InstrumentTrackId id{ID(7), String(u"violin")};
 
-    void emit(const timestamp_t key, const PlaybackEventList &list) { freeze_events(flat.track(id), key, list, progress); }
-
     template <class Event>
     void emit_context(const timestamp_t key, const std::vector<Event> &events) {
         freeze_cold_events(flat.track(id), key, std::span{events}, progress);
@@ -141,10 +129,11 @@ struct FlatFixture {
         emit_context(0, std::vector<SyllableEvent>{make_syllable(u"la", 3)});
         emit_context(250000, std::vector<SoundPresetChangeEvent>{});
 
-        emit(0, PlaybackEventList{make_note(0, 6500, false), make_note(0, 6900, true)});
-        emit(125000, PlaybackEventList{});
-        emit(500000, PlaybackEventList{make_note(500000, 6600, false)});
-        emit(0, PlaybackEventList{make_note(0, 7300, false)}); // appended to an existing group
+        emit_fixture_note(track, 0, 6500, false, progress);
+        emit_fixture_note(track, 0, 6900, true, progress);
+        emit_empty_group(track, 125000, progress);
+        emit_fixture_note(track, 500000, 6600, false, progress);
+        emit_fixture_note(track, 0, 7300, false, progress);
     }
 
     static std::string flat_projection(const PlaybackScore &score) {
@@ -155,27 +144,27 @@ struct FlatFixture {
 };
 } // namespace
 
-TEST(FlatPlaybackStoreTests, PlaybackDataComparesDynamicsByContent) {
-    const auto make_curve = [](muse::real_t value) {
-        mpe::AutomationPoint point;
-        point.out_value = value;
-        return std::make_shared<const DynamicAutomationMap>(DynamicAutomationMap{{250000, point}});
-    };
-    PlaybackData first;
-    first.dynamics.emplace(2, make_curve(0.25));
-    PlaybackData second;
-    second.dynamics.emplace(2, make_curve(0.25));
-    EXPECT_EQ(first, second);
+TEST(FlatPlaybackStoreTests, FreezeDynamicsPreservesAutomationArrivalAndClearsOldLayers) {
+    TrackEvents track;
+    FreezeProgress progress;
+    freeze_dynamics(track, make_dynamics(), progress);
+    ASSERT_EQ(track.dynamic_layers.size(), 2u);
+    const auto points = track.layer_points(track.dynamic_layers.back());
+    ASSERT_EQ(points.size(), 2u);
+    EXPECT_EQ(points[1].at, 1000000);
+    const auto *arrival = std::get_if<mpe::AutomationPoint::ExplicitArrival>(&points[1].point.in_value);
+    ASSERT_NE(arrival, nullptr);
+    EXPECT_EQ(arrival->value.raw(), 0.75);
+    EXPECT_EQ(arrival->ease.t.raw(), 0.25);
+    EXPECT_EQ(arrival->ease.value.raw(), 0.625);
+    EXPECT_EQ(points[1].point.out_value.raw(), 0.5);
 
-    second.dynamics.at(2) = make_curve(0.5);
-    EXPECT_NE(first, second);
-
-    second.dynamics.erase(2);
-    second.dynamics.emplace(3, make_curve(0.25));
-    EXPECT_NE(first, second);
+    freeze_dynamics(track, {}, progress);
+    EXPECT_TRUE(track.dynamic_layers.empty());
+    EXPECT_TRUE(track.dynamic_points.empty());
 }
 
-TEST(FlatPlaybackStoreTests, FreezeKeepsLegacyOrderAndFields) {
+TEST(FlatPlaybackStoreTests, EmissionPreservesOrderAndFields) {
     FlatFixture fixture;
     fixture.build();
     const TrackEvents &track = fixture.flat.tracks.front().second;
@@ -196,9 +185,9 @@ TEST(FlatPlaybackStoreTests, FreezeKeepsLegacyOrderAndFields) {
 
     const NoteRecord &note = track.notes[1];
     EXPECT_EQ(note.nominal_timestamp, 0);
-    EXPECT_EQ(note.actual_timestamp, 7);
+    EXPECT_EQ(note.actual_timestamp, 50);
     EXPECT_EQ(note.nominal_duration, 500000);
-    EXPECT_EQ(note.actual_duration, 450001);
+    EXPECT_EQ(note.actual_duration, 450000);
     EXPECT_EQ(note.bps, 2.125);
     EXPECT_EQ(note.nominal_pitch_level, 6900);
     EXPECT_EQ(note.staff_layer, 3u);
@@ -219,8 +208,10 @@ TEST(FlatPlaybackStoreTests, FreezeKeepsLegacyOrderAndFields) {
     EXPECT_EQ(pitch[1].at, 5000);
     EXPECT_EQ(pitch[1].value, -1200);
     const auto expression = track.expression_curve(note);
-    ASSERT_EQ(expression.size(), 2u);
-    EXPECT_EQ(expression[0].value, 7000);
+    ASSERT_EQ(expression.size(), 11u);
+    EXPECT_EQ(expression.front().value, 7000);
+    EXPECT_EQ(expression.back().at, hundred_percent);
+    EXPECT_EQ(expression.back().value, 6500);
 
     const auto &preset = std::get<SoundPresetChangeEvent>(track.cold[0].event);
     EXPECT_EQ(preset.code, String(u"Engrave.Preset.Δ"));
@@ -237,67 +228,55 @@ TEST(FlatPlaybackStoreTests, FreezeKeepsLegacyOrderAndFields) {
     EXPECT_EQ(track.dynamic_points.size(), 4u);
 }
 
-TEST(FlatPlaybackStoreTests, FreezeRejectsEventsWithoutProducerAndKeyMismatch) {
+TEST(FlatPlaybackStoreTests, EmissionRejectsMismatchedArticulationKey) {
     TrackEvents track;
     FreezeProgress progress;
-    const PlaybackEventList monostate{PlaybackEvent{}};
-    EXPECT_THROW(freeze_events(track, 0, monostate, progress), std::logic_error);
-    const PlaybackEventList controller{ControllerChangeEvent{}};
-    EXPECT_THROW(freeze_events(track, 0, controller, progress), std::logic_error);
-
-    mpe::NoteEvent note = make_note(0, 6500, false);
-    ExpressionContext expression = note.expression_ctx();
-    expression.articulations.emplace(ArticulationType::ACCENT, applied(ArticulationType::MARCATO, 0, 1));
-    ArrangementContext arrangement = note.arrangement_ctx();
-    PitchContext pitch = note.pitch_ctx();
-    const PlaybackEventList mismatched{mpe::NoteEvent(std::move(arrangement), std::move(pitch), std::move(expression))};
-    EXPECT_THROW(freeze_events(track, 0, mismatched, progress), std::logic_error);
+    ArticulationMap articulations;
+    articulations.emplace(ArticulationType::ACCENT, applied(ArticulationType::MARCATO, 0, 1));
+    EXPECT_THROW(emit_note(track, 0, {}, articulations, {}, progress), std::logic_error);
+    EXPECT_TRUE(track.notes.empty());
 }
 
-// Design B3: curve entries keep percentage_t (32-bit signed across all platforms) so shared helpers see identical arithmetic
-TEST(FlatPlaybackStoreTests, CurveValuesKeepTheLegacyTypeAndHelperResults) {
-    static_assert(std::is_same_v<decltype(max_amplitude_level(std::declval<std::span<const CurvePoint>>())), percentage_t>);
-    static_assert(std::is_same_v<decltype(amplitude_value_point(std::declval<std::span<const CurvePoint>>()).second),
-                                 decltype(std::declval<PitchCurve>().amplitude_value_point().second)>);
+TEST(FlatPlaybackStoreTests, CurvePointsRetainSignedValuesAndAmplitude) {
+    static_assert(std::is_same_v<decltype(CurvePoint::value), std::int32_t>);
+    static_assert(std::is_same_v<decltype(CurvePoint::at), duration_percentage_t>);
 
-    static_assert(std::is_same_v<percentage_t, std::int32_t>);
+    constexpr auto min = std::numeric_limits<std::int32_t>::min();
+    constexpr auto max = std::numeric_limits<std::int32_t>::max();
+    const std::vector<std::vector<CurvePoint>> cases{{{0, 0}, {500, 500}, {1000, -340}}, {{0, max}, {500, -5}}, {{0, 7}, {500, min}}};
+    constexpr CurvePoint peaks[]{{500, 500}, {0, max}, {500, min}};
 
-    const std::vector<std::vector<percentage_t>> cases{
-        {0, 120, -340}, {std::numeric_limits<std::int32_t>::max(), -5}, {std::numeric_limits<std::int32_t>::min() + 1, 7}};
-
-    for (const auto &values : cases) {
-        mpe::NoteEvent note = make_note(0, 6500, false);
-        PitchContext pitch = note.pitch_ctx();
-        ExpressionContext expression = note.expression_ctx();
-        pitch.pitch_curve = PitchCurve{};
-        expression.expression_curve = ExpressionCurve{};
-        for (std::size_t i = 0; i < values.size(); ++i) {
-            pitch.pitch_curve.emplace(static_cast<duration_percentage_t>(i * 1000), values[i]);
-            expression.expression_curve.emplace(static_cast<duration_percentage_t>(i * 1000 + 500), values[i]);
+    for (std::size_t i = 0; i < cases.size(); ++i) {
+        ArticulationPatternSegment segment;
+        segment.arrangement_pattern.duration_factor_value = hundred_percent;
+        for (const auto &[at, value] : cases[i]) {
+            segment.expression_pattern.dynamic_offset_map.emplace(at, value);
         }
-        const PitchCurve pitch_curve = pitch.pitch_curve;
-        const ExpressionCurve expression_curve = expression.expression_curve;
-        ArrangementContext arrangement = note.arrangement_ctx();
-        const PlaybackEventList list{mpe::NoteEvent(std::move(arrangement), std::move(pitch), std::move(expression))};
+        auto pattern = std::make_shared<const ArticulationPattern>(ArticulationPattern{{0, segment}});
+        ArticulationMap articulations;
+        articulations.emplace(ArticulationType::STANDARD,
+                              ArticulationAppliedData({ArticulationType::STANDARD, pattern, 0, 1000}, 0, hundred_percent));
+        articulations.pre_calculate_average_data();
 
         TrackEvents track;
         FreezeProgress progress;
-        freeze_events(track, 0, list, progress);
+        emit_note(track, 0, {0, 1000, 0, 0, 6500, dynamic_level_from_type(mpe::DynamicType::NATURAL)}, articulations, cases[i], progress);
         ASSERT_EQ(track.notes.size(), 1u);
-        const auto flat_pitch = track.pitch_curve(track.notes[0]);
-        const auto flat_expression = track.expression_curve(track.notes[0]);
-        ASSERT_EQ(flat_pitch.size(), values.size());
-        for (std::size_t i = 0; i < values.size(); ++i) {
-            EXPECT_EQ(flat_pitch[i].value, values[i]);
-            EXPECT_EQ(flat_expression[i].value, values[i]);
+        const auto pitch = track.pitch_curve(track.notes.front());
+        const auto expression = track.expression_curve(track.notes.front());
+        ASSERT_EQ(pitch.size(), cases[i].size());
+        ASSERT_EQ(expression.size(), cases[i].size());
+        for (std::size_t j = 0; j < cases[i].size(); ++j) {
+            EXPECT_EQ(pitch[j].at, cases[i][j].at);
+            EXPECT_EQ(pitch[j].value, cases[i][j].value);
+            EXPECT_EQ(expression[j].at, cases[i][j].at);
+            EXPECT_EQ(expression[j].value, cases[i][j].value);
         }
-        // The helpers the sequencer uses, on the flat span and on the legacy curve
-        EXPECT_EQ(max_amplitude_level(flat_pitch), pitch_curve.max_amplitude_level());
-        EXPECT_EQ(amplitude_value_point(flat_expression), expression_curve.amplitude_value_point());
-        EXPECT_EQ(max_amplitude_level(flat_expression), expression_curve.max_amplitude_level());
-        const float span_fraction = velocity_fraction(flat_expression);
-        const float legacy_fraction = expression_curve.velocity_fraction();
-        EXPECT_EQ(std::bit_cast<std::uint32_t>(span_fraction), std::bit_cast<std::uint32_t>(legacy_fraction));
+        EXPECT_EQ(max_amplitude_level(pitch), peaks[i].value);
+        EXPECT_EQ(amplitude_value_point(expression), std::make_pair(peaks[i].at, peaks[i].value));
+        if (i == 0) {
+            EXPECT_FLOAT_EQ(velocity_fraction(expression), 0.5f);
+        }
     }
 }
 
@@ -317,17 +296,16 @@ TEST(FlatPlaybackStoreTests, FreezeLoopsPollWithinTheStride) {
         EXPECT_EQ(track.cold.size(), stride);
     }
     {
-        // One large chord list: notes, articulations and curve points all count
-        PlaybackEventList list;
-        for (std::uint32_t i = 0; i < stride; ++i) list.emplace_back(make_note(0, 6500, false));
+        // Two articulations, two pitch points, eleven expression points and the note count toward the same stride.
         TrackEvents track;
         std::uint32_t polls = 0;
         auto bump = [&polls] { ++polls; };
         FreezeProgress progress{.checkpoint = bump};
-        freeze_events(track, 0, list, progress);
-        const std::uint64_t records = track.notes.size() + track.articulations.size() + track.curve_points.size();
-        EXPECT_EQ(polls, records / stride);
-        EXPECT_EQ(progress.pending, records % stride);
+        for (std::uint32_t i = 0; i < stride + 1; ++i) {
+            emit_fixture_note(track, 0, 6500, false, progress);
+        }
+        EXPECT_EQ(polls, 16u);
+        EXPECT_EQ(progress.pending, 16u);
     }
     {
         // One layer with many automation points
@@ -370,7 +348,7 @@ TEST(FlatPlaybackStoreTests, ProjectionPreservesGroupOrderAndFloatBits) {
     const auto projection = FlatFixture::flat_projection(fixture.flat);
     EXPECT_NE(projection.find("group 0 6\npreset 3 16:"), std::string::npos);
     EXPECT_NE(projection.find("group 125000 0\ngroup 250000 0\ngroup 500000 1\n"), std::string::npos);
-    EXPECT_NE(projection.find("note 0 7 500000 450001 4001000000000000 6900 "), std::string::npos);
+    EXPECT_NE(projection.find("note 0 50 500000 450000 4001000000000000 6900 "), std::string::npos);
 }
 
 TEST(FlatPlaybackStoreTests, ProjectionDetectsCorruptedRecords) {
@@ -415,27 +393,27 @@ TEST(FlatPlaybackStoreTests, SequencerLowersRecordsInGroupOrder) {
         for (const auto &entry : sequencer.main_stream_events_.events) timeline.emplace_back(entry.timestamp, entry.event.note());
         return timeline;
     };
-    // Two groups whose notes start together: the legacy map order puts group 0's note first
-    const auto note_at = [](const pitch_level_t pitch) { return make_note(100, pitch, false); };
-
     for (const std::uint32_t count : {1u, 6000u}) {
-        PlaybackData legacy;
-        legacy.setup_data = PlaybackSetupData(String(u"piano"), SoundCategory::KEYBOARDS, StringList{});
         TrackEvents emitted;
-        emitted.setup = legacy.setup_data;
+        emitted.setup = PlaybackSetupData(String(u"piano"), SoundCategory::KEYBOARDS, StringList{});
         FreezeProgress progress;
-        // Emission in descending group order; each group holds one note, all at the same actual time
+        // Emit higher group keys first. Every note sounds at the same timestamp.
         for (std::uint32_t i = 0; i < count; ++i) {
             const timestamp_t group = static_cast<timestamp_t>(count - i) * 10;
-            const pitch_level_t pitch = static_cast<pitch_level_t>(2000 + (i % 24) * pitch_level_step);
-            PlaybackEventList list{note_at(pitch), note_at(pitch + pitch_level_step)};
-            legacy.origin_events[group].insert(legacy.origin_events[group].end(), list.begin(), list.end());
-            freeze_events(emitted, group, list, progress);
+            const pitch_level_t pitch = pitch_level(PitchClass::C, 4) + static_cast<pitch_level_t>(i % 24) * pitch_level_step;
+            const auto level = dynamic_level_from_type(mpe::DynamicType::NATURAL);
+            emit_note(emitted, group, {100, 1000, 0, 0, pitch, level}, {}, {}, progress);
+            emit_note(emitted, group, {100, 1000, 0, 0, pitch + pitch_level_step, level}, {}, {}, progress);
         }
-        const auto expected = lower(freeze_playback_data(legacy));
         const auto actual = lower(emitted);
-        ASSERT_FALSE(expected.empty());
-        EXPECT_EQ(actual, expected) << count;
+        ASSERT_EQ(actual.size(), 4u * count);
+        for (std::uint32_t i = 0; i < count; ++i) {
+            const std::uint32_t first = 60 + (count - 1 - i) % 24;
+            EXPECT_EQ(actual[2 * i], std::make_pair(timestamp_t{100}, first));
+            EXPECT_EQ(actual[2 * i + 1], std::make_pair(timestamp_t{100}, first + 1));
+            EXPECT_EQ(actual[2 * (count + i)], std::make_pair(timestamp_t{1100}, first));
+            EXPECT_EQ(actual[2 * (count + i) + 1], std::make_pair(timestamp_t{1100}, first + 1));
+        }
     }
 }
 
@@ -814,7 +792,7 @@ TEST_F(PlaybackScoreBuilderTests, BuilderReturnsNoTracksForNullScore) {
 }
 
 TEST_F(PlaybackScoreBuilderTests, RendererEmitsEmptyGroupsAndAppendsToExistingKeys) {
-    MasterScore *score = ScoreRW::read_score(u"playback/playbackmodel_data/repeat_range/repeat_range.mscx");
+    std::unique_ptr<MasterScore> score(ScoreRW::read_score(u"playback/playbackmodel_data/repeat_range/repeat_range.mscx"));
     ASSERT_TRUE(score);
     Segment *segment = score->first_measure()->first(SegmentType::CHORD_REST);
     ASSERT_TRUE(segment);
@@ -827,52 +805,45 @@ TEST_F(PlaybackScoreBuilderTests, RendererEmitsEmptyGroupsAndAppendsToExistingKe
     }
     ASSERT_TRUE(chord);
     // A chord without notes takes the fixed-event path and renders an empty list
-    Chord *empty_chord = Factory::create_chord(segment);
+    std::unique_ptr<Chord> empty_chord(Factory::create_chord(segment));
     empty_chord->set_track(chord->track());
     ASSERT_TRUE(empty_chord->notes().empty());
 
-    PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
+    PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score.get());
     const PlaybackEventsRenderer renderer;
     const dynamic_level_t level = dynamic_level_from_type(mpe::DynamicType::MF);
 
-    // Through the legacy wrapper, starting from an empty map
-    PlaybackEventsMap legacy;
-    renderer.render(empty_chord, 1000, 2000, level, ctx, profile_, legacy);
-    ASSERT_EQ(legacy.size(), 1u);
-    ASSERT_TRUE(legacy.contains(1000));
-    EXPECT_TRUE(legacy.at(1000).empty());
-
-    // Appending to an existing timestamp keeps the earlier events first
-    renderer.render(chord, 1000, 2000, level, ctx, profile_, legacy);
-    renderer.render(chord, 1000, 3000, level, ctx, profile_, legacy);
-    ASSERT_EQ(legacy.at(1000).size(), 2 * chord->notes().size());
-    EXPECT_EQ(std::get<mpe::NoteEvent>(legacy.at(1000).front()).arrangement_ctx().nominal_duration, 2000);
-    EXPECT_EQ(std::get<mpe::NoteEvent>(legacy.at(1000).back()).arrangement_ctx().nominal_duration, 3000);
-
-    PlaybackScore flat;
-    const InstrumentTrackId id{ID(1), String(u"test")};
-    auto &events = flat.track(id);
+    TrackEvents events;
     FreezeProgress progress;
-    FlatEventsSink sink{events, progress};
-    renderer.render(empty_chord, 1000, 2000, level, ctx, profile_, sink);
-    renderer.render(chord, 1000, 2000, level, ctx, profile_, sink);
-    renderer.render(chord, 1000, 3000, level, ctx, profile_, sink);
+    renderer.render(empty_chord.get(), 1000, 2000, level, ctx, profile_, events, progress);
     ASSERT_EQ(events.empty_groups.size(), 1u);
     EXPECT_EQ(events.empty_groups.front().group_timestamp, 1000);
-    ASSERT_EQ(events.notes.size(), 2 * chord->notes().size());
-    EXPECT_EQ(events.notes.front().nominal_duration, 2000);
-    EXPECT_EQ(events.notes.back().nominal_duration, 3000);
+    EXPECT_EQ(events.empty_groups.front().seq, 0u);
+    EXPECT_TRUE(events.notes.empty());
 
-    // A sink defined in this unit only
-    RecordingSink recording;
-    renderer.render(empty_chord, 1000, 2000, level, ctx, profile_, recording);
-    renderer.render(chord, 1500, 2000, level, ctx, profile_, recording);
-    ASSERT_EQ(recording.calls.size(), 2u);
-    EXPECT_EQ(recording.calls[0], std::make_pair(timestamp_t{1000}, std::size_t{0}));
-    EXPECT_EQ(recording.calls[1], std::make_pair(timestamp_t{1500}, chord->notes().size()));
+    renderer.render(chord, 1000, 2000, level, ctx, profile_, events, progress);
+    renderer.render(chord, 1000, 3000, level, ctx, profile_, events, progress);
+    const std::size_t chord_size = chord->notes().size();
+    ASSERT_EQ(events.notes.size(), 2 * chord_size);
+    for (std::size_t i = 0; i < events.notes.size(); ++i) {
+        EXPECT_EQ(events.notes[i].group_timestamp, 1000);
+        EXPECT_EQ(events.notes[i].seq, i + 1);
+        EXPECT_EQ(events.notes[i].nominal_duration, i < chord_size ? 2000 : 3000);
+    }
 
-    delete empty_chord;
-    delete score;
+    Harmony harmony(segment);
+    harmony.set_track(chord->track());
+    harmony.set_harmony(String(u"C"));
+    ASSERT_TRUE(harmony.is_realizable());
+    // Use a valid chord symbol with an empty realized voicing.
+    harmony.realized_harmony().set_dirty(false);
+    ASSERT_TRUE(harmony.get_realized_harmony().notes().empty());
+    const std::size_t previous_notes = events.notes.size();
+    renderer.render_chord_symbol(&harmony, 0, profile_, ctx, events, progress);
+    ASSERT_EQ(events.empty_groups.size(), 2u);
+    EXPECT_EQ(events.empty_groups.back().group_timestamp, 0);
+    EXPECT_EQ(events.empty_groups.back().seq, previous_notes + 1);
+    EXPECT_EQ(events.notes.size(), previous_notes);
 }
 
 namespace mu::engraving {

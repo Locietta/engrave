@@ -3,7 +3,7 @@
 
 //! NOTE: the flat MPE store (playback DoD design 4.1). One TrackEvents holds a track's frozen
 //! playback events as plain records in emission order: every record carries its legacy group
-//! key (the PlaybackEventsMap timestamp) and a per-track emission ordinal shared by notes, cold
+//! key (the renderer's group timestamp) and a per-track emission ordinal shared by notes, cold
 //! events and empty groups, so a stable order by (group, seq) is the legacy map order. Owner thread only
 
 #include <cstddef>
@@ -24,6 +24,7 @@
 #include "events.h"
 #include "flatmap.h"
 #include "global/fn.h"
+#include "playbacksetupdata.h"
 
 namespace muse::mpe {
 struct Span {
@@ -212,22 +213,14 @@ void emit_note(TrackEvents &track, timestamp_t group_timestamp, const NoteEmitIn
                std::span<const CurvePoint> custom_pitch_curve, FreezeProgress &progress);
 void emit_empty_group(TrackEvents &track, timestamp_t group_timestamp, FreezeProgress &progress);
 
-//! Appends one completed per-chord list under its group key. NoteEvents become NoteRecords, text,
-//! preset and syllable events become cold events; an empty list records the empty group.
-//! monostate and ControllerChangeEvent have no producer and throw std::logic_error
-void freeze_events(TrackEvents &track, timestamp_t group_timestamp, std::span<const PlaybackEvent> events, FreezeProgress &progress);
-
-//! Context events that the model inserts straight into the legacy map (presets, text, syllables)
+//! Empty context lists preserve their group timestamp.
 void freeze_cold_events(TrackEvents &track, timestamp_t group_timestamp, std::span<const SoundPresetChangeEvent> events,
                         FreezeProgress &progress);
 void freeze_cold_events(TrackEvents &track, timestamp_t group_timestamp, std::span<const TextArticulationEvent> events,
                         FreezeProgress &progress);
 void freeze_cold_events(TrackEvents &track, timestamp_t group_timestamp, std::span<const SyllableEvent> events, FreezeProgress &progress);
 
-//! Replaces the track's dynamics with a copy of the layers (an assignment, as in the legacy model)
+//! Replaces the track's dynamics with a copy of the layers
 void freeze_dynamics(TrackEvents &track, const DynamicAutomationLayers &dynamics, FreezeProgress &progress);
 
-//! One legacy track as a flat track: setup, dynamics, then every group in key order. For tests and
-//! oracle comparisons that build legacy data directly
-TrackEvents freeze_playback_data(const PlaybackData &data);
 } // namespace muse::mpe

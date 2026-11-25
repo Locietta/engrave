@@ -133,7 +133,7 @@ def validate_dump_records(root, name):
 PROJECTION_HEADER = b"projection-v2\n"
 # The step-0..4a probes wrote exactly this stub. A left capture's B must be this stub or a complete projection.
 DEFERRED_B_STUB = b"DEFERRED: independent flat-record projection extractors arrive in step 4b\n"
-EVENT_KINDS = {b"note": 1, b"text": 2, b"preset": 3, b"syllable": 4}  # PlaybackEvent variant indices, as in dump A
+EVENT_KINDS = {b"note": 1, b"text": 2, b"preset": 3, b"syllable": 4}  # Event IDs in dump A
 
 _INT = re.compile(rb"-?[0-9]+")
 _UINT = re.compile(rb"[0-9]+")

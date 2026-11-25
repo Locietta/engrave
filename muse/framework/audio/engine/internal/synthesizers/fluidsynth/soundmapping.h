@@ -1038,11 +1038,6 @@ struct ChannelMap {
         resolve_channel(0, mpe::ArticulationType::STANDARD, standard_program);
     }
 
-    midi::channel_t resolve_channel_for_event(const mpe::NoteEvent &event) {
-        return resolve_channel_for_note(event.arrangement_ctx().staff_layer_index, event.arrangement_ctx().voice_layer_index,
-                                        event.expression_ctx().articulations);
-    }
-
     //! The flat-record form: the note's layers and its articulations in ascending ArticulationType
     midi::channel_t resolve_channel_for_event(const mpe::NoteRecord &note, std::span<const mpe::ArticulationRecord> articulations) {
         return resolve_channel_for_note(note.staff_layer, note.voice_layer, articulations);
@@ -1064,17 +1059,12 @@ struct ChannelMap {
     muse::UniqueFn<void(midi::channel_t, const midi::Program &) const> on_channel_added;
 
 private:
-    static bool has_standard_articulation(const mpe::ArticulationMap &articulations) {
-        return articulations.contains(mpe::ArticulationType::STANDARD);
-    }
-
     static bool has_standard_articulation(std::span<const mpe::ArticulationRecord> articulations) {
         return mpe::contains_articulation(articulations, mpe::ArticulationType::STANDARD);
     }
 
-    template <class Articulations>
     midi::channel_t resolve_channel_for_note(const mpe::staff_layer_idx_t staff_layer, const mpe::voice_layer_idx_t voice_layer,
-                                             const Articulations &articulations) {
+                                             std::span<const mpe::ArticulationRecord> articulations) {
         //! NOTE: without single-note dynamics, voices don't need their own channel per staff
         const mpe::staff_layer_idx_t staff_idx = uses_staff_layers_ ? staff_layer : 0;
         const mpe::layer_idx_t layer_idx = mpe::make_layer_idx(staff_idx, voice_layer);

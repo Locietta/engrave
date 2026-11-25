@@ -6,15 +6,12 @@
 #include <memory>
 #include <span>
 
-#include "playbackeventsrenderer_impl.h"
 #include "playbackwalk.h"
 
 namespace mu::engraving {
 namespace {
 bool track_less(const std::pair<InstrumentTrackId, muse::mpe::TrackEvents> &entry, const InstrumentTrackId &id) { return entry.first < id; }
 
-//! The builder's walk target: the flat store only. A fresh build has no earlier lists, so the context
-//! events go straight to the freeze (the legacy gate in LegacyStore::apply_context is always true there)
 struct FlatStore {
     PlaybackScore &score;
     muse::mpe::FreezeProgress progress;
@@ -52,8 +49,7 @@ struct FlatStore {
 
     template <class Render>
     void emit(const InstrumentTrackId &track_id, Render &&render) {
-        FlatEventsSink sink{score.track(track_id), progress};
-        render(sink);
+        render(score.track(track_id), progress);
     }
 };
 } // namespace
@@ -140,6 +136,3 @@ PlaybackScore PlaybackScoreBuilder::build(Score *score, muse::FnRef<void()> chec
     return result;
 }
 } // namespace mu::engraving
-
-// The renderer entry points for the flat sinks live with the sinks, not in the renderer unit
-ENGRAVE_INSTANTIATE_PLAYBACK_EVENTS_RENDERER(mu::engraving::FlatEventsSink);

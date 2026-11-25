@@ -7,7 +7,7 @@ Executes upstream test suites:
 
 Parses GoogleTest console output, summarizes pass/fail statistics, and exits
 with non-zero if any test suite fails. The pinned inventory is asserted exactly
-(220 engraving playback tests in 10 suites, 21 MPE tests in 3 suites); zero tests,
+(220 engraving playback tests in 10 suites, 24 MPE tests in 3 suites); zero tests,
 a changed count, an unexpected skip or a disabled test also fail the lane. With
 an explicit ``--filter`` the subset size is unknown but zero tests, skips and
 disabled tests still fail.

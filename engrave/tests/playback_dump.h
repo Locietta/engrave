@@ -8,11 +8,9 @@
 #include <ostream>
 #include <stdexcept>
 #include <tuple>
-#include <type_traits>
 #include <variant>
 #include <vector>
 
-#include "mpe/events.h"
 #include "mpe/flatevents.h"
 
 namespace music::test {
@@ -49,11 +47,8 @@ struct LegacyDump {
         curve(value.expression_pattern.dynamic_offset_map);
     }
 
-    static constexpr std::size_t note_event_index = 1;
-    static_assert(std::is_same_v<std::variant_alternative_t<note_event_index, muse::mpe::PlaybackEvent>, muse::mpe::NoteEvent>);
-
     void note(const muse::mpe::TrackEvents &track, const muse::mpe::NoteRecord &n, const muse::mpe::ArticulationMap &articulations) {
-        out << "event " << note_event_index << '\n';
+        out << "event 1\n";
         out << "arrangement " << n.nominal_timestamp << ' ' << n.actual_timestamp << ' ' << n.nominal_duration << ' ' << n.actual_duration
             << ' ' << +n.voice_layer << ' ' << +n.staff_layer;
         bits(n.bps);
@@ -65,23 +60,6 @@ struct LegacyDump {
         out << '\n';
         curve(track.expression_curve(n));
         articulation_data(articulations);
-    }
-
-    void note_body(const muse::mpe::NoteEvent &e) {
-        const auto &a = e.arrangement_ctx();
-        const auto &p = e.pitch_ctx();
-        const auto &x = e.expression_ctx();
-        out << "arrangement " << a.nominal_timestamp << ' ' << a.actual_timestamp << ' ' << a.nominal_duration << ' ' << a.actual_duration
-            << ' ' << +a.voice_layer_index << ' ' << +a.staff_layer_index;
-        bits(a.bps);
-        out << '\n';
-        out << "pitch " << p.nominal_pitch_level << '\n';
-        curve(p.pitch_curve);
-        out << "expression " << x.nominal_dynamic_level << ' ' << x.velocity_override.has_value();
-        if (x.velocity_override) bits(*x.velocity_override);
-        out << '\n';
-        curve(x.expression_curve);
-        articulation_data(x.articulations);
     }
 
     void articulation_data(const muse::mpe::ArticulationMap &arts) {
@@ -106,32 +84,22 @@ struct LegacyDump {
         curve(arts.average_dynamic_offset_map());
     }
 
-    void event(const muse::mpe::PlaybackEvent &value) {
-        using namespace muse::mpe;
-        out << "event " << value.index() << '\n';
-        std::visit(
-            [&](const auto &e) {
-                using T = std::decay_t<decltype(e)>;
-                if constexpr (std::is_same_v<T, NoteEvent>) {
-                    note_body(e);
-                } else if constexpr (std::is_same_v<T, ControllerChangeEvent>) {
-                    out << "controller " << static_cast<int>(e.type) << ' ' << +e.layer_idx;
-                    bits(e.val.raw());
-                    out << '\n';
-                } else if constexpr (std::is_same_v<T, TextArticulationEvent> || std::is_same_v<T, SyllableEvent>) {
-                    out << "text " << +e.layer_idx << ' ' << static_cast<unsigned>(e.flags);
-                    text(e.text);
-                    out << '\n';
-                } else if constexpr (std::is_same_v<T, SoundPresetChangeEvent>) {
-                    out << "preset " << +e.layer_idx;
-                    text(e.code);
-                    out << '\n';
-                } else {
-                    static_assert(std::is_same_v<T, std::monostate>, "serialize new variants explicitly");
-                    out << "monostate\n";
-                }
-            },
-            value);
+    // These IDs are part of Dump A's format.
+    void cold_event(const muse::mpe::TextArticulationEvent &event) { text_event(2, event); }
+
+    void cold_event(const muse::mpe::SoundPresetChangeEvent &event) {
+        out << "event 3\npreset " << +event.layer_idx;
+        text(event.code);
+        out << '\n';
+    }
+
+    void cold_event(const muse::mpe::SyllableEvent &event) { text_event(4, event); }
+
+    template <class Event>
+    void text_event(const int id, const Event &event) {
+        out << "event " << id << "\ntext " << +event.layer_idx << ' ' << static_cast<unsigned>(event.flags);
+        text(event.text);
+        out << '\n';
     }
 
     void track_header(std::uint64_t id, const muse::String &instrument, const muse::mpe::PlaybackSetupData &s) {
@@ -158,22 +126,6 @@ struct LegacyDump {
             bits(v->ease.value.raw());
         }
         out << '\n';
-    }
-
-    void track(std::uint64_t id, const muse::String &instrument, const muse::mpe::PlaybackData &data) {
-        track_header(id, instrument, data.setup_data);
-        out << "dynamics " << data.dynamics.size() << '\n';
-        for (const auto &[layer, points] : data.dynamics) {
-            out << "layer " << +layer << ' ' << (points ? points->size() : 0) << '\n';
-            if (points) {
-                for (const auto &[at, point] : *points) dynamics_point(at, point);
-            }
-        }
-        out << "groups " << data.origin_events.size() << '\n';
-        for (const auto &[at, events] : data.origin_events) {
-            out << "group " << at << ' ' << events.size() << '\n';
-            for (const auto &e : events) event(e);
-        }
     }
 };
 
@@ -226,7 +178,7 @@ struct FlatDump {
                 if (entries[i].kind == Kind::NOTE)
                     out << track.note_dumps[entries[i].index];
                 else if (entries[i].kind == Kind::COLD)
-                    std::visit([&](const auto &event) { dump.event(PlaybackEvent{event}); }, track.cold[entries[i].index].event);
+                    std::visit([&](const auto &event) { dump.cold_event(event); }, track.cold[entries[i].index].event);
             }
             begin = end;
         }

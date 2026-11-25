@@ -34,12 +34,11 @@
 #include "global/flatmap.h"
 #include "global/flatset.h"
 #include "global/hashmap.h"
-#include "global/io/iodevice.h"
 #include "global/types/number.h"
 #include "global/types/ratio.h"
 #include "global/types/secs.h"
 #include "global/types/string.h"
-#include "mpe/events.h"
+#include "mpe/playbacksetupdata.h"
 
 // Forward-declared audioplugins aliases; audio must not depend on that module.
 namespace muse::audioplugins {
@@ -69,7 +68,6 @@ using TrackName = std::string;
 
 using aux_channel_idx_t = uint8_t;
 
-using PlaybackData = std::variant<mpe::PlaybackData, io::IODevice *>;
 using PlaybackSetupData = mpe::PlaybackSetupData;
 
 static constexpr TrackId invalid_track_id = -1;

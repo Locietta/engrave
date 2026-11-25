@@ -1,30 +1,33 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #include "playback_dump.h"
 
-#include <bit>
+#include <array>
 #include <sstream>
 #include <stdexcept>
 
 int main() {
     using namespace muse::mpe;
-    PlaybackData data;
-    data.origin_events[17]; // Empty keys are part of full identity.
-    data.origin_events[18].emplace_back(std::monostate{});
-    ControllerChangeEvent controller;
-    controller.type = ControllerChangeEvent::PITCH_BEND;
-    controller.layer_idx = 37;
-    controller.val = std::bit_cast<float>(std::uint32_t{0x80000000});
-    data.origin_events[18].emplace_back(controller);
+    TrackEvents track;
+    auto dump_note = [](const TrackEvents &events, const NoteRecord &note, const ArticulationMap &articulations) {
+        std::ostringstream out;
+        music::test::LegacyDump{out}.note(events, note, articulations);
+        return out.str();
+    };
+    FreezeProgress progress{.dump_note = dump_note};
     TextArticulationEvent text;
     text.text = muse::String(u"a\nb");
-    data.origin_events[18].emplace_back(text);
-    data.origin_events[18].emplace_back(SoundPresetChangeEvent{});
-    data.origin_events[18].emplace_back(SyllableEvent{});
-    data.origin_events[18].emplace_back(NoteEvent{});
+    freeze_cold_events(track, 18, std::span{&text, 1}, progress);
+    freeze_cold_events(track, 18, std::array{SoundPresetChangeEvent{}}, progress);
+    freeze_cold_events(track, 18, std::array{SyllableEvent{}}, progress);
+    emit_note(track, 18, {20, 1000, 0, 0, 6000, 5000, 2.0}, {}, {}, progress);
+    emit_empty_group(track, 17, progress);
+
     std::ostringstream out;
-    music::test::LegacyDump{out}.track(1, muse::String(u"test"), data);
+    music::test::FlatDump{out}.track(1, muse::String(u"test"), track);
     const auto value = out.str();
-    for (const auto *expected : {"group 17 0", "monostate", "controller 2 37 f32:80000000", "0061000a0062", "preset", "averages"}) {
-        if (value.find(expected) == std::string::npos) throw std::runtime_error(expected);
+    if (!value.contains("groups 2\ngroup 17 0\ngroup 18 4\nevent 2\ntext 0 0 3:0061000a0062\nevent 3\npreset 0 0:\n"
+                        "event 4\ntext 0 0 0:\nevent 1\narrangement 20 20 1000 1000 0 0 f64:4000000000000000\n"
+                        "pitch 6000\n curve 0\nexpression 5000 0\n curve 0\narticulations 0\n")) {
+        throw std::runtime_error(value);
     }
 }

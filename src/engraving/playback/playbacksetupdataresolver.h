@@ -23,7 +23,7 @@
 #ifndef MU_ENGRAVING_PLAYBACKSETUPDATARESOLVER_H
 #define MU_ENGRAVING_PLAYBACKSETUPDATARESOLVER_H
 
-#include "mpe/events.h"
+#include "mpe/playbacksetupdata.h"
 
 namespace mu::engraving {
 struct Instrument;
