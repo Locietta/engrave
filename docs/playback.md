@@ -103,7 +103,7 @@ Non-trivially copyable events stored separately in `std::vector<ColdEvent>`:
 `OfflineRenderSession` executes offline mixing in a deterministic order (`synthesize` and `mix` in `offlinerendersession.cpp`):
 
 1. **Per-Track Synthesis**: Each non-muted track synthesizes audio into one of its two output slots (`track.slots[i].buffer`) via `process_track` (which drives the track's source, insert effects, and level controls), then records whether its signal is silent in the same slot. Tracks run serially on the owner thread or in parallel on the worker pool (see below).
-2. **Combined Dry Accumulation and Aux Send Pass**: On the owner thread, in a single pass over active tracks in ascending index order, non-silent slot buffers are summed into the master output buffer while simultaneously scaling by active aux send amounts and accumulating into the reverb send buffer.
+2. **Combined Dry Accumulation and Aux Send Pass**: On the thread driving the render, in a single pass over active tracks in ascending index order, non-silent slot buffers are summed into the master output buffer while simultaneously scaling by active aux send amounts and accumulating into the reverb send buffer.
 3. **Aux Reverb Processing and Mixdown**: If reverb is present and active (or non-silent), the reverb send buffer is processed through `fx::ReverbProcessor` (Muse Reverb DSP) and its wet return is summed into the master output buffer.
 
 Disjoint track buffers isolate synthesis state from mixing, ensuring identical floating-point summation order across runs and thread counts. Cooperative cancellation is polled before synthesis, before reverb buffer zeroing, before each track's accumulation pass, and before reverb processing.

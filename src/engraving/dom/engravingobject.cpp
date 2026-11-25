@@ -52,7 +52,7 @@ const ElementStyle &EngravingObject::empty_style() {
     return style;
 }
 
-EngravingObject::EngravingObject(const ElementType &type, EngravingObject *parent) : type_(type), concrete_type_(type) {
+EngravingObject::EngravingObject(const ElementType &type, EngravingObject *parent) : type_(type) {
     IF_ASSERT_FAILED(this != parent) { return; }
 
     if (type != ElementType::SCORE) {
@@ -67,7 +67,7 @@ EngravingObject::EngravingObject(const ElementType &type, EngravingObject *paren
     }
 }
 
-EngravingObject::EngravingObject(const EngravingObject &se) : type_(se.type_), concrete_type_(se.concrete_type_) {
+EngravingObject::EngravingObject(const EngravingObject &se) : type_(se.type_) {
     do_set_parent(se.parent_);
     score_ = se.score_;
     element_style_ = se.styled_properties();

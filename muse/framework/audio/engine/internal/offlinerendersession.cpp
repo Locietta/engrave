@@ -224,9 +224,7 @@ bool OfflineRenderSession::synthesize(samples_t frames, int slot, bool async) {
     block_fp_mode_ = ScopedDenormalGuard::capture_mode();
     if (async) {
         if (OfflineTiming::enabled()) prefetch_start_ = std::chrono::steady_clock::now();
-        // Threads never shrink, so a granted pool always starts; otherwise finish inline.
-        if (!pool_->start(threads, order_.size(), block_task_))
-            for (std::size_t i = 0; i < order_.size(); ++i) block_task_(i);
+        if (!pool_->start(threads, order_.size(), block_task_)) return false;
         prefetched_frames_ = frames;
         return true;
     }

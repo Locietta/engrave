@@ -1,7 +1,10 @@
+#include "engraving/dom/articulation.h"
 #include "engraving/dom/beam.h"
 #include "engraving/dom/dummyparent.h"
 #include "engraving/dom/guitarbend.h"
 #include "engraving/dom/lyrics.h"
+#include "engraving/dom/ornament.h"
+#include "engraving/dom/sharedpart.h"
 #include "engraving/dom/tremolotwochord.h"
 #include "engraving/rendering/score/layoutdatastore.h"
 #include "read_test_fixture.h"
@@ -161,6 +164,21 @@ TEST(LayoutDataStore, ClosedDispatchKeepsColdDefaultsSparseAndPreservesLegacyPay
     EXPECT_EQ(item_cast<const BeamBase *>(static_cast<const EngravingItem *>(beam.get())), beam.get());
     EXPECT_EQ(item_cast<const BeamBase *>(static_cast<const EngravingItem *>(tremolo.get())), tremolo.get());
     EXPECT_EQ(item_cast<const BeamBase *>(static_cast<const EngravingItem *>(slice.get()), CastMode::MAYBE_BAD), nullptr);
+
+    // Direct base copy outside Factory must still report the constructed base's dynamic type.
+    std::unique_ptr<Ornament> ornament(Factory::create_ornament(master.dummy()));
+    Articulation direct_slice(*ornament);
+    const EngravingObject *sliced_obj = &direct_slice;
+    EXPECT_EQ(direct_slice.concrete_type(), ElementType::ARTICULATION);
+    EXPECT_EQ(item_cast<const Articulation *>(sliced_obj), &direct_slice);
+    EXPECT_EQ(item_cast<const Ornament *>(sliced_obj, CastMode::MAYBE_BAD), nullptr);
+    EXPECT_EQ(item_cast<const Ornament *>(static_cast<const EngravingObject *>(ornament.get())), ornament.get());
+
+    // SharedPart derives from Part with ElementType::SHARED_PART.
+    auto shared_part = std::make_unique<SharedPart>(&master);
+    const EngravingObject *part_obj = shared_part.get();
+    EXPECT_EQ(item_cast<const Part *>(part_obj), shared_part.get());
+    EXPECT_EQ(item_cast<const SharedPart *>(part_obj), shared_part.get());
 }
 
 TEST(LayoutDataStore, ItemCoordinatesKeepSegmentOffsetSemantics) {

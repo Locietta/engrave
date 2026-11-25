@@ -342,13 +342,10 @@ EngravingItem *Factory::create_item_by_name(const AsciiStringView &name, DummyPa
 #define MAKE_ITEM_IMPL(T, P, make_name, create_name) \
     std::shared_ptr<T> Factory::make_name(P parent) { return std::shared_ptr<T>(create_name(parent)); }
 
-#define COPY_ITEM_IMPL(T, copy_name)                                                                                   \
-    T *Factory::copy_name(const T &src) {                                                                              \
-        T *copy = new T(src);                                                                                          \
-        if constexpr (DeclaresItemType<T>) {                                                                           \
-            if (copy->declared_item_type() != ElementType::INVALID) copy->concrete_type_ = copy->declared_item_type(); \
-        }                                                                                                              \
-        return copy;                                                                                                   \
+#define COPY_ITEM_IMPL(T, copy_name)      \
+    T *Factory::copy_name(const T &src) { \
+        T *copy = new T(src);             \
+        return copy;                      \
     }
 
 CREATE_ITEM_IMPL(Accidental, DummyParentOr<EngravingItem>, create_accidental)
@@ -500,7 +497,6 @@ Rest *Factory::create_rest(DummyParentOr<Segment> parent, const TDuration &t) {
 
 Rest *Factory::copy_rest(const Rest &src, bool link) {
     Rest *copy = new Rest(src, link);
-    copy->concrete_type_ = ElementType::REST;
 
     return copy;
 }
@@ -602,10 +598,7 @@ Tie *Factory::copy_tie(const Tie &src) {
     if (src.is_laissez_vib()) {
         return new LaissezVib(*to_laissez_vib(&src));
     }
-    auto *copy = new Tie(src);
-    copy->concrete_type_ = ElementType::TIE;
-
-    return copy;
+    return new Tie(src);
 }
 
 CREATE_ITEM_IMPL(TimeSig, DummyParentOr<Segment>, create_time_sig)

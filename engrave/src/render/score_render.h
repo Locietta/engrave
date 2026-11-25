@@ -1,6 +1,9 @@
 #pragma once
 
+#include <atomic>
 #include <cstddef>
+#include <cstdint>
+#include <optional>
 #include <string>
 
 #include "engrave/src/score/export_options.h"
@@ -27,10 +30,20 @@ struct PngRaster {
     PngRaster &operator=(PngRaster &&other) noexcept;
     ~PngRaster();
 
+    enum class EncodeStatus { OK, LIMIT_EXCEEDED, STOPPED };
+
+    struct EncodedPage {
+        EncodeStatus status = EncodeStatus::OK;
+        std::string bytes;
+    };
+
     // Raw pixel memory; bounds how many pages may wait to be encoded.
     std::size_t bytes() const noexcept;
-    // Deflates the page and releases the surface; throws std::runtime_error on a Cairo failure.
-    std::string encode();
+    // Deflates the page and releases the surface; stops when shared_bytes + chunk
+    // exceeds max_bytes or shared_stop becomes true, and throws std::runtime_error
+    // on a Cairo failure.
+    EncodedPage encode(std::optional<std::uint64_t> max_bytes = {}, std::atomic<std::uint64_t> *shared_bytes = nullptr,
+                       const std::atomic<bool> *shared_stop = nullptr);
 
     int page = 0, dpi = 0;
     double raster_seconds = 0, encode_seconds = 0;

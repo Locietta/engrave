@@ -51,6 +51,8 @@ struct SegmentTrack {
 
 struct BatchGuard;
 
+bool can_defer_note_entry(const mu::engraving::MasterScore &master, const Batch &batch);
+
 struct EditContext {
     explicit EditContext(mu::engraving::MasterScore &master) : master_(master) {}
 

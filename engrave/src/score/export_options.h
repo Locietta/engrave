@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cstdint>
+#include <optional>
+
 #include "global/unique_fn.h"
 
 namespace music {
@@ -22,6 +25,7 @@ struct ExportOptions {
     bool draw_page_background = false;
     bool transparent = true;
     muse::UniqueFn<bool() const> cancelled;
+    std::optional<std::uint64_t> max_bytes;
     bool midi_expand_repeats = true;
     bool midi_export_rpns = true;
 };

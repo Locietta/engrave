@@ -250,8 +250,9 @@ struct EngravingObject {
 
     inline ElementType type() const { return type_; }
 
-    // Legacy retagging and sliced copies can leave type() out of sync with the C++ type.
-    ElementType concrete_type() const { return concrete_type_; }
+    // Legacy retagging and sliced copies can leave type() out of sync with the C++ type;
+    // concrete_type() dispatches through the vtable so it always reports the actual dynamic type.
+    virtual ElementType concrete_type() const noexcept { return type_; }
 
     inline bool is_type(ElementType t) const { return t == type_; }
 
@@ -361,7 +362,6 @@ private:
     void do_set_score(Score *sc);
 
     ElementType type_ = ElementType::INVALID;
-    ElementType concrete_type_;
 
     EngravingObject *parent_ = nullptr;
     EngravingObjectList children_;

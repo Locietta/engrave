@@ -28,9 +28,40 @@ struct PaintCancelled {
     std::exception_ptr callback_error;
 };
 
+struct PaintLimitExceeded {};
+
+struct BoundedStream {
+    std::string bytes;
+    std::optional<std::uint64_t> max_bytes;
+    std::atomic<std::uint64_t> *shared_bytes = nullptr;
+    const std::atomic<bool> *shared_stop = nullptr;
+    bool limit_exceeded = false;
+    bool stopped = false;
+};
+
 cairo_status_t append_bytes(void *context, const unsigned char *bytes, unsigned length) noexcept {
+    auto &stream = *static_cast<BoundedStream *>(context);
+    if (stream.shared_stop && stream.shared_stop->load(std::memory_order_relaxed)) {
+        stream.stopped = true;
+        return CAIRO_STATUS_WRITE_ERROR;
+    }
+    if (stream.max_bytes) {
+        if (stream.shared_bytes) {
+            std::uint64_t used = stream.shared_bytes->load(std::memory_order_relaxed);
+            for (;;) {
+                if (length > *stream.max_bytes || used > *stream.max_bytes - length) {
+                    stream.limit_exceeded = true;
+                    return CAIRO_STATUS_WRITE_ERROR;
+                }
+                if (stream.shared_bytes->compare_exchange_weak(used, used + length, std::memory_order_relaxed)) break;
+            }
+        } else if (length > *stream.max_bytes || stream.bytes.size() > *stream.max_bytes - length) {
+            stream.limit_exceeded = true;
+            return CAIRO_STATUS_WRITE_ERROR;
+        }
+    }
     try {
-        static_cast<std::string *>(context)->append(reinterpret_cast<const char *>(bytes), length);
+        stream.bytes.append(reinterpret_cast<const char *>(bytes), length);
         return CAIRO_STATUS_SUCCESS;
     } catch (...) {
         return CAIRO_STATUS_WRITE_ERROR;
@@ -111,18 +142,23 @@ engrave::Result<std::string> render_impl(const EngineContext &engine, mu::engrav
     if (!std::isfinite(width) || !std::isfinite(height) || width <= 0 || height <= 0 || width > 32767 || height > 32767 ||
         width * height > 64e6)
         return std::unexpected(engrave::Error{engrave::ErrorCode::RESOURCE_LIMIT, "Page dimensions exceed rendering limit"});
-    std::string output;
+    BoundedStream stream;
+    stream.max_bytes = options.max_bytes;
     RenderTiming timing;
     cairo_surface_t *raw = nullptr;
     if (format == "pdf")
-        raw = cairo_pdf_surface_create_for_stream(append_bytes, &output, width, height);
+        raw = cairo_pdf_surface_create_for_stream(append_bytes, &stream, width, height);
     else if (format == "svg")
-        raw = cairo_svg_surface_create_for_stream(append_bytes, &output, width, height);
+        raw = cairo_svg_surface_create_for_stream(append_bytes, &stream, width, height);
     else if (format == "png")
         raw = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, static_cast<int>(std::ceil(width)), static_cast<int>(std::ceil(height)));
     else
         return std::unexpected(engrave::Error{engrave::ErrorCode::INVALID_ARGUMENT, "Unsupported render format"});
     std::unique_ptr<cairo_surface_t, decltype(&cairo_surface_destroy)> surface(raw, cairo_surface_destroy);
+    if (stream.limit_exceeded) {
+        if (poll()) return std::unexpected(engrave::Error{engrave::ErrorCode::CANCELLED, "render cancelled"});
+        return std::unexpected(engrave::Error{engrave::ErrorCode::RESOURCE_LIMIT, "render exceeds output byte limit"});
+    }
     check(cairo_surface_status(surface.get()));
     std::unique_ptr<cairo_t, decltype(&cairo_destroy)> context(cairo_create(surface.get()), cairo_destroy);
     check(cairo_status(context.get()));
@@ -158,6 +194,7 @@ engrave::Result<std::string> render_impl(const EngineContext &engine, mu::engrav
             const auto encode_start = timing.begin_encode();
             cairo_show_page(context.get());
             timing.end_encode(encode_start);
+            if (stream.limit_exceeded) throw PaintLimitExceeded{};
             check(cairo_status(context.get()));
             poll_page(); // before drawing the next page
         };
@@ -167,6 +204,9 @@ engrave::Result<std::string> render_impl(const EngineContext &engine, mu::engrav
         } catch (const PaintCancelled &stop) {
             if (stop.callback_error) std::rethrow_exception(stop.callback_error);
             return std::unexpected(engrave::Error{engrave::ErrorCode::CANCELLED, "render cancelled"});
+        } catch (const PaintLimitExceeded &) {
+            if (poll()) return std::unexpected(engrave::Error{engrave::ErrorCode::CANCELLED, "render cancelled"});
+            return std::unexpected(engrave::Error{engrave::ErrorCode::RESOURCE_LIMIT, "render exceeds output byte limit"});
         } catch (const std::invalid_argument &error) {
             return std::unexpected(engrave::Error{engrave::ErrorCode::INVALID_ARGUMENT, error.what()});
         }
@@ -174,6 +214,8 @@ engrave::Result<std::string> render_impl(const EngineContext &engine, mu::engrav
     }
     if (poll())
         return std::unexpected(engrave::Error{engrave::ErrorCode::CANCELLED, "render cancelled"}); // final page drawn, before encoding
+    if (stream.limit_exceeded)
+        return std::unexpected(engrave::Error{engrave::ErrorCode::RESOURCE_LIMIT, "render exceeds output byte limit"});
     check(cairo_status(context.get()));
     if (raster) {
         cairo_surface_flush(surface.get());
@@ -185,18 +227,24 @@ engrave::Result<std::string> render_impl(const EngineContext &engine, mu::engrav
         return std::string();
     }
     const auto final_encode_start = timing.begin_encode();
+    cairo_status_t write_status = CAIRO_STATUS_SUCCESS;
     if (format == "png")
-        check(cairo_surface_write_to_png_stream(surface.get(), append_bytes, &output));
+        write_status = cairo_surface_write_to_png_stream(surface.get(), append_bytes, &stream);
     else
         cairo_show_page(context.get());
     cairo_surface_finish(surface.get());
     timing.end_encode(final_encode_start);
+    if (stream.limit_exceeded) {
+        if (poll()) return std::unexpected(engrave::Error{engrave::ErrorCode::CANCELLED, "render cancelled"});
+        return std::unexpected(engrave::Error{engrave::ErrorCode::RESOURCE_LIMIT, "render exceeds output byte limit"});
+    }
+    check(write_status);
     check(cairo_surface_status(surface.get()));
     const int report_first = format == "pdf" ? first_page_value : options.page;
     const int report_last = format == "pdf" ? last_page_value : options.page;
-    timing.report(format, report_first, report_last, dpi, output.size());
+    timing.report(format, report_first, report_last, dpi, stream.bytes.size());
     if (poll()) return std::unexpected(engrave::Error{engrave::ErrorCode::CANCELLED, "render cancelled"});
-    return output;
+    return std::move(stream.bytes);
 }
 } // namespace
 
@@ -249,17 +297,24 @@ std::size_t PngRaster::bytes() const noexcept {
            static_cast<std::size_t>(cairo_image_surface_get_height(surface_));
 }
 
-std::string PngRaster::encode() {
+PngRaster::EncodedPage PngRaster::encode(std::optional<std::uint64_t> max_bytes, std::atomic<std::uint64_t> *shared_bytes,
+                                         const std::atomic<bool> *shared_stop) {
     const std::unique_ptr<cairo_surface_t, decltype(&cairo_surface_destroy)> surface(std::exchange(surface_, nullptr),
                                                                                      cairo_surface_destroy);
     if (!surface) throw std::runtime_error("PNG page has no surface");
     const auto start = RenderTiming::enabled() ? RenderTiming::Clock::now() : RenderTiming::Clock::time_point();
-    std::string output;
-    check(cairo_surface_write_to_png_stream(surface.get(), append_bytes, &output));
+    BoundedStream stream;
+    stream.max_bytes = max_bytes;
+    stream.shared_bytes = shared_bytes;
+    stream.shared_stop = shared_stop;
+    const cairo_status_t write_status = cairo_surface_write_to_png_stream(surface.get(), append_bytes, &stream);
     cairo_surface_finish(surface.get());
     if (RenderTiming::enabled()) encode_seconds = std::chrono::duration<double>(RenderTiming::Clock::now() - start).count();
+    if (stream.limit_exceeded) return {EncodeStatus::LIMIT_EXCEEDED, {}};
+    if (stream.stopped) return {EncodeStatus::STOPPED, {}};
+    check(write_status);
     check(cairo_surface_status(surface.get()));
-    return output;
+    return {EncodeStatus::OK, std::move(stream.bytes)};
 }
 
 bool render_timing_enabled() { return RenderTiming::enabled(); }

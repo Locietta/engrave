@@ -464,6 +464,101 @@ TEST(Output, ParallelPngCancellationAndCallbackExceptionsStopEveryPage) {
     EXPECT_TRUE(recovered->pages == baseline->pages);
 }
 
+TEST(Output, RenderMaxBytesStopsExcessPagesAndPreservesCancellationPrecedence) {
+    if (std::getenv("ENGRAVE_AUDIO_THREADS")) GTEST_SKIP() << "ENGRAVE_AUDIO_THREADS overrides the thread counts under test";
+    const auto document = open_multi_page_score();
+    ASSERT_TRUE(document);
+    const std::int32_t pages = *document->page_count();
+    ASSERT_GE(pages, 4);
+
+    engrave::RenderOptions options;
+    options.format = engrave::RenderFormat::PNG;
+    options.dpi = 72;
+    const auto full = document->render(options);
+    ASSERT_TRUE(full);
+    ASSERT_EQ(full->pages.size(), static_cast<std::size_t>(pages));
+    std::uint64_t total_bytes = 0;
+    for (const auto &page : full->pages) total_bytes += page.size();
+
+    for (const std::int32_t threads : {1, 4}) {
+        SCOPED_TRACE(threads);
+        const RenderThreads mode(*document, threads);
+
+        options.max_bytes = total_bytes;
+        options.cancelled = {};
+        const auto exact = document->render(options);
+        ASSERT_TRUE(exact) << exact.error().message;
+        EXPECT_TRUE(exact->pages == full->pages);
+
+        options.max_bytes = total_bytes - 1;
+        const auto under_total = document->render(options);
+        ASSERT_FALSE(under_total);
+        EXPECT_EQ(under_total.error().code, engrave::ErrorCode::RESOURCE_LIMIT);
+
+        // One-byte budget fails on the first completed page without rendering the whole score.
+        int polls = 0;
+        options.max_bytes = 1;
+        options.cancelled = [&] {
+            ++polls;
+            return false;
+        };
+        const auto tiny = document->render(options);
+        ASSERT_FALSE(tiny);
+        EXPECT_EQ(tiny.error().code, engrave::ErrorCode::RESOURCE_LIMIT);
+        if (threads == 1) EXPECT_EQ(polls, 3);
+
+        // Cancellation observed after the byte limit is already hit must still win.
+        if (threads == 1) {
+            int stop_polls = 0;
+            options.cancelled = [&] { return ++stop_polls == 3; };
+            const auto cancelled = document->render(options);
+            ASSERT_FALSE(cancelled);
+            EXPECT_EQ(cancelled.error().code, engrave::ErrorCode::CANCELLED);
+            EXPECT_EQ(stop_polls, 3);
+        } else {
+            bool cancel_after_join = false;
+            bool joined = false;
+
+            struct ClearHook {
+                ~ClearHook() { engrave::api::on_png_encoders_joined_for_test() = {}; }
+            } clear_hook;
+
+            engrave::api::on_png_encoders_joined_for_test() = [&] {
+                joined = true;
+                cancel_after_join = true;
+            };
+            options.cancelled = [&] { return cancel_after_join; };
+            const auto cancelled = document->render(options);
+            EXPECT_TRUE(joined);
+            ASSERT_FALSE(cancelled);
+            EXPECT_EQ(cancelled.error().code, engrave::ErrorCode::CANCELLED);
+        }
+    }
+
+    // PDF enforces max_bytes inside the Cairo stream callback: poll 1 runs before
+    // page 0, poll 2 before cairo_show_page emits page 0 (exceeding the 1-byte cap),
+    // and poll 3 is the post-limit cancellation check inside catch (PaintLimitExceeded).
+    engrave::RenderOptions pdf;
+    pdf.format = engrave::RenderFormat::PDF;
+    pdf.max_bytes = 1;
+    int pdf_polls = 0;
+    pdf.cancelled = [&] {
+        ++pdf_polls;
+        return false;
+    };
+    const auto pdf_limit = document->render(pdf);
+    ASSERT_FALSE(pdf_limit);
+    EXPECT_EQ(pdf_limit.error().code, engrave::ErrorCode::RESOURCE_LIMIT);
+    EXPECT_EQ(pdf_polls, 3);
+
+    int pdf_stop_polls = 0;
+    pdf.cancelled = [&] { return ++pdf_stop_polls == 3; };
+    const auto pdf_cancelled = document->render(pdf);
+    ASSERT_FALSE(pdf_cancelled);
+    EXPECT_EQ(pdf_cancelled.error().code, engrave::ErrorCode::CANCELLED);
+    EXPECT_EQ(pdf_stop_polls, 3);
+}
+
 TEST(Output, PdfPageBoundaryPropagatesCallbackException) {
     auto opened = music::test::open("slurs.mscz");
     ASSERT_TRUE(opened.document);

@@ -1085,6 +1085,73 @@ TEST(Edit, DeferredNoteEntryPublishesThePrefixAfterARejection) {
     EXPECT_TRUE(master.find_cr(third_tick, 0)->is_chord());
 }
 
+TEST(Edit, DeferredNoteEntryDeclinesUnrepresentableAndHugeDenominatorOffsets) {
+    auto made = g_engine->create_document({.template_id = "Treble_Clef"});
+    ASSERT_TRUE(made);
+    auto &document = **made;
+    auto &master = engrave::harness::master_of(document);
+    const auto first = document.outline()->measures.front().id;
+    ASSERT_TRUE(document.edit({{engrave::InsertMeasures{first, 4}}}));
+
+    // Each negative batch pairs the target entry with a valid disjoint entry in
+    // measure 1 so only the intended representability guard declines deferral.
+    const engrave::EnterNotes disjoint_ok{engrave::RelativePosition{engrave::MeasureIndex{1}, 0, 0, {0, 1}}, {1, 4}, {{64}}};
+
+    // 1. rel_end fails int32 representability (den = 4 * 2147483647 > INT_MAX).
+    const Batch overflow_rel_end{{
+        engrave::EnterNotes{engrave::RelativePosition{engrave::MeasureIndex{0}, 0, 0, {1, 2147483647}}, {1, 4}, {{60}}},
+        disjoint_ok,
+    }};
+    EXPECT_FALSE(engrave::api::can_defer_note_entry(master, overflow_rel_end));
+
+    // 2. rel_end fits int32 (400000001/1600000000), but start = onset(4/1) + offset exceeds INT_MAX numerator.
+    const Batch overflow_start{{
+        engrave::EnterNotes{engrave::RelativePosition{engrave::MeasureIndex{4}, 0, 0, {1, 1600000000}}, {1, 4}, {{60}}},
+        disjoint_ok,
+    }};
+    EXPECT_FALSE(engrave::api::can_defer_note_entry(master, overflow_start));
+    const auto rejected_start = document.edit(overflow_start);
+    ASSERT_TRUE(rejected_start) << rejected_start.error().message;
+    ASSERT_TRUE(rejected_start->rejection);
+    EXPECT_EQ(rejected_start->rejection->op_index, 0u);
+    EXPECT_EQ(rejected_start->rejection->error.code, engrave::ErrorCode::EDIT_REJECTED);
+
+    // 3. Both rel_end (350000001/1000000000) and start (2100000001/1000000000 in measure 2)
+    // fit int32, while abs_end = start + 1/4 (2350000001/1000000000) exceeds INT_MAX.
+    const Batch overflow_abs_end{{
+        engrave::EnterNotes{engrave::RelativePosition{engrave::MeasureIndex{2}, 0, 0, {100000001, 1000000000}}, {1, 4}, {{60}}},
+        disjoint_ok,
+    }};
+    EXPECT_FALSE(engrave::api::can_defer_note_entry(master, overflow_abs_end));
+
+    // 4. All three sums fit int32 and spans are disjoint under large denominators.
+    const Batch large_disjoint{{
+        engrave::EnterNotes{engrave::RelativePosition{engrave::MeasureIndex{0}, 0, 0, {500000001, 999999996}}, {1, 4}, {{62}}},
+        engrave::EnterNotes{engrave::RelativePosition{engrave::MeasureIndex{0}, 0, 0, {1, 1000000000}}, {1, 4}, {{60}}},
+    }};
+    EXPECT_TRUE(engrave::api::can_defer_note_entry(master, large_disjoint));
+}
+
+TEST(Edit, NonemptyPrefixEditPollsCancellationBeforeMutating) {
+    auto made = g_engine->create_document({.template_id = "Treble_Clef"});
+    ASSERT_TRUE(made);
+    auto &document = **made;
+    auto &master = engrave::harness::master_of(document);
+    const auto revision = document.revision();
+    int polls = 0;
+    const auto result =
+        document.edit({{engrave::EnterNotes{engrave::RelativePosition{engrave::MeasureIndex{0}, 0, 0, {0, 1}}, {1, 4}, {{60}}}}},
+                      {.mode = engrave::EditMode::Prefix, .cancelled = [&] {
+                           ++polls;
+                           return true;
+                       }});
+    ASSERT_FALSE(result);
+    EXPECT_EQ(result.error().code, engrave::ErrorCode::CANCELLED);
+    EXPECT_EQ(polls, 1);
+    EXPECT_EQ(document.revision(), revision);
+    EXPECT_TRUE(master.find_cr({0, 1}, 0)->is_rest());
+}
+
 TEST(Edit, OpensMeasureRestAtBeatTwoInPrimaryAndUnusedVoices) {
     for (int voice : {0, 1}) {
         SCOPED_TRACE(voice);

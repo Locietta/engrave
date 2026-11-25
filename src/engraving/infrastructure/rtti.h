@@ -33,6 +33,7 @@ void report_bad_cast(const char *from, const char *to, const char *file, int lin
 #define DECLARE_CLASSOF(Type)                                                     \
 public:                                                                           \
     constexpr ElementType declared_item_type() const noexcept { return Type; }    \
+    ElementType concrete_type() const noexcept override { return Type; }          \
     static bool classof(const ElementType type) noexcept { return type == Type; } \
     static bool classof(const EngravingObject *item) noexcept { return item->type() == Type; }
 
@@ -43,6 +44,7 @@ struct ChordRest;
 struct LyricsLine;
 struct LyricsLineSegment;
 struct MeasureBase;
+struct Part;
 struct Rest;
 struct SLine;
 struct Slur;
@@ -63,54 +65,128 @@ concept DeclaresItemType = requires(const T &item) {
     requires std::is_same_v<decltype(&T::declared_item_type), decltype(item.declared_item_type()) (T::*)() const noexcept>;
 };
 
+template <typename Tag>
+constexpr bool is_text_line_base_concrete_type(Tag type) noexcept {
+    switch (type) {
+        case Tag::HAIRPIN:
+        case Tag::LET_RING:
+        case Tag::GRADUAL_TEMPO_CHANGE:
+        case Tag::TEXTLINE:
+        case Tag::OTTAVA:
+        case Tag::PALM_MUTE:
+        case Tag::PICK_SCRAPE:
+        case Tag::WHAMMY_BAR:
+        case Tag::RASGUEADO:
+        case Tag::HARMONIC_MARK:
+        case Tag::PEDAL:
+        case Tag::VOLTA:
+        case Tag::NOTELINE: return true;
+        default: return false;
+    }
+}
+
+template <typename Tag>
+constexpr bool is_s_line_concrete_type(Tag type) noexcept {
+    switch (type) {
+        case Tag::TRILL:
+        case Tag::GLISSANDO:
+        case Tag::VIBRATO:
+        case Tag::GUITAR_BEND:
+        case Tag::GUITAR_BEND_HOLD:
+        case Tag::LYRICSLINE:
+        case Tag::PARTIAL_LYRICSLINE: return true;
+        default: return is_text_line_base_concrete_type(type);
+    }
+}
+
+template <typename Tag>
+constexpr bool is_text_base_concrete_type(Tag type) noexcept {
+    switch (type) {
+        case Tag::TEXT:
+        case Tag::LYRICS:
+        case Tag::DYNAMIC:
+        case Tag::EXPRESSION:
+        case Tag::FINGERING:
+        case Tag::HARMONY:
+        case Tag::MARKER:
+        case Tag::JUMP:
+        case Tag::STAFF_TEXT:
+        case Tag::STAVE_SHARING_LABEL:
+        case Tag::SYSTEM_TEXT:
+        case Tag::TRIPLET_FEEL:
+        case Tag::PLAY_COUNT_TEXT:
+        case Tag::PLAYTECH_ANNOTATION:
+        case Tag::CAPO:
+        case Tag::STRING_TUNINGS:
+        case Tag::REHEARSAL_MARK:
+        case Tag::INSTRUMENT_CHANGE:
+        case Tag::FIGURED_BASS:
+        case Tag::TEMPO_TEXT:
+        case Tag::INSTRUMENT_NAME:
+        case Tag::MEASURE_NUMBER:
+        case Tag::MMREST_RANGE:
+        case Tag::STICKING:
+        case Tag::HARP_DIAGRAM:
+        case Tag::GUITAR_BEND_TEXT:
+        case Tag::HAMMER_ON_PULL_OFF_TEXT:
+        case Tag::TAPPING_TEXT: return true;
+        default: return false;
+    }
+}
+
 template <typename T, typename From>
     requires DeclaresItemType<T> || std::is_same_v<T, ChordRest> || std::is_same_v<T, MeasureBase> || std::is_same_v<T, SLine> ||
              std::is_same_v<T, Spanner> || std::is_same_v<T, StaffTextBase> || std::is_same_v<T, TextBase> ||
              std::is_same_v<T, TextLineBase>
 bool item_type_allows(const From *item) noexcept {
+    const auto type = item->concrete_type();
+    using Tag = decltype(type);
     if constexpr (std::is_same_v<T, Arpeggio>) {
-        return item->is_arpeggio() || item->is_chord_bracket();
+        return type == Tag::ARPEGGIO || type == Tag::CHORD_BRACKET;
     } else if constexpr (std::is_same_v<T, Articulation>) {
-        return item->is_articulation_family();
+        return type == Tag::ARTICULATION || type == Tag::ORNAMENT || type == Tag::TAPPING;
     } else if constexpr (std::is_same_v<T, BeamBase>) {
-        using Tag = decltype(item->concrete_type());
-        return item->concrete_type() == Tag::BEAM || item->concrete_type() == Tag::TREMOLO_TWOCHORD;
+        return type == Tag::BEAM || type == Tag::TREMOLO_TWOCHORD;
     } else if constexpr (std::is_same_v<T, ChordRest>) {
-        return item->is_chord_rest();
+        return type == Tag::CHORD || type == Tag::REST || type == Tag::MMREST || type == Tag::MEASURE_REPEAT;
     } else if constexpr (std::is_same_v<T, LyricsLine>) {
-        return item->is_lyrics_line();
+        return type == Tag::LYRICSLINE || type == Tag::PARTIAL_LYRICSLINE;
     } else if constexpr (std::is_same_v<T, LyricsLineSegment>) {
-        return item->is_lyrics_line_segment();
+        return type == Tag::LYRICSLINE_SEGMENT || type == Tag::PARTIAL_LYRICSLINE_SEGMENT;
     } else if constexpr (std::is_same_v<T, MeasureBase>) {
-        return item->is_measure_base();
+        return type == Tag::MEASURE || type == Tag::HBOX || type == Tag::VBOX || type == Tag::TBOX || type == Tag::FBOX;
+    } else if constexpr (std::is_same_v<T, Part>) {
+        return type == Tag::PART || type == Tag::SHARED_PART;
     } else if constexpr (std::is_same_v<T, Rest>) {
-        return item->is_rest_family();
+        return type == Tag::REST || type == Tag::MMREST || type == Tag::MEASURE_REPEAT;
     } else if constexpr (std::is_same_v<T, SLine>) {
-        return item->is_s_line() || item->is_lyrics_line();
+        return is_s_line_concrete_type(type);
     } else if constexpr (std::is_same_v<T, Slur>) {
-        return item->is_slur();
+        return type == Tag::SLUR || type == Tag::HAMMER_ON_PULL_OFF || type == Tag::TAPPING_HALF_SLUR;
     } else if constexpr (std::is_same_v<T, SlurSegment>) {
-        return item->is_slur_segment();
+        return type == Tag::SLUR_SEGMENT || type == Tag::HAMMER_ON_PULL_OFF_SEGMENT || type == Tag::TAPPING_HALF_SLUR_SEGMENT;
     } else if constexpr (std::is_same_v<T, Spanner>) {
-        return item->is_spanner();
+        return type == Tag::SLUR || type == Tag::HAMMER_ON_PULL_OFF || type == Tag::TAPPING_HALF_SLUR || type == Tag::TIE ||
+               type == Tag::LAISSEZ_VIB || type == Tag::PARTIAL_TIE || is_s_line_concrete_type(type);
     } else if constexpr (std::is_same_v<T, StaffTextBase>) {
-        return item->is_staff_text_base();
+        return type == Tag::STAFF_TEXT || type == Tag::STAVE_SHARING_LABEL || type == Tag::SYSTEM_TEXT || type == Tag::TRIPLET_FEEL ||
+               type == Tag::PLAYTECH_ANNOTATION || type == Tag::CAPO || type == Tag::STRING_TUNINGS;
     } else if constexpr (std::is_same_v<T, Symbol>) {
-        return item->is_symbol() || item->is_hook() || item->is_note_head() || item->is_system_divider();
+        return type == Tag::SYMBOL || type == Tag::HOOK || type == Tag::NOTEHEAD || type == Tag::SYSTEM_DIVIDER;
     } else if constexpr (std::is_same_v<T, SystemText>) {
-        return item->is_system_text() || item->is_triplet_feel();
+        return type == Tag::SYSTEM_TEXT || type == Tag::TRIPLET_FEEL;
     } else if constexpr (std::is_same_v<T, TextBase>) {
-        return item->is_text_base() || item->is_tapping_text();
+        return is_text_base_concrete_type(type);
     } else if constexpr (std::is_same_v<T, TextLineBase>) {
-        return item->is_text_line_base();
+        return is_text_line_base_concrete_type(type);
     } else if constexpr (std::is_same_v<T, Tie>) {
-        return item->is_tie();
+        return type == Tag::TIE || type == Tag::LAISSEZ_VIB || type == Tag::PARTIAL_TIE;
     } else if constexpr (std::is_same_v<T, TieSegment>) {
-        return item->is_tie_segment();
+        return type == Tag::TIE_SEGMENT || type == Tag::LAISSEZ_VIB_SEGMENT || type == Tag::PARTIAL_TIE_SEGMENT;
     } else if constexpr (std::is_same_v<T, VBox>) {
-        return item->is_v_box_base();
+        return type == Tag::VBOX || type == Tag::TBOX || type == Tag::FBOX;
     } else {
-        return T::classof(item->concrete_type());
+        return T::classof(type);
     }
 }
 

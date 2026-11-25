@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <functional>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -117,6 +118,10 @@ struct Document::Impl {
 };
 
 // Internal access for engine integration and tests.
+namespace api {
+std::function<void()> &on_png_encoders_joined_for_test();
+} // namespace api
+
 struct DocumentAccess {
     static Document::Impl &impl(Document &document) { return *document.impl_; }
 

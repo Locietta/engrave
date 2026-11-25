@@ -140,6 +140,10 @@ struct RenderOptions {
     // Same callback contract as CaptureOptions. Polled before drawing, between
     // pages, before encoding, and after encoding. Cancellation returns no output.
     std::function<bool()> cancelled;
+    // Optional cumulative encoded byte cap across all output in this render()
+    // call. When exceeded, render() stops without keeping excess pages and
+    // returns RESOURCE_LIMIT.
+    std::optional<std::uint64_t> max_bytes;
 };
 
 // What render() produced: exactly one of the two is filled, according to the

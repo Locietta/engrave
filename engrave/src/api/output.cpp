@@ -54,7 +54,8 @@ constexpr std::size_t k_max_queued_png_bytes = 256u << 20;
 // surfaces handed to them and see the stop flag. The destructor stops and joins
 // the workers and frees every surface not yet encoded.
 struct PngEncoders {
-    explicit PngEncoders(std::size_t pages) : encoded(pages), encode_seconds(pages) {}
+    explicit PngEncoders(std::size_t pages, std::optional<std::uint64_t> max_bytes)
+        : encoded(pages), encode_seconds(pages), max_bytes(max_bytes) {}
 
     ~PngEncoders() { stop_and_join(); }
 
@@ -93,10 +94,17 @@ struct PngEncoders {
             }
             const std::size_t bytes = raster.bytes();
             const auto index = static_cast<std::size_t>(raster.page - first);
+            std::vector<std::byte> page_bytes;
+            auto status = music::PngRaster::EncodeStatus::OK;
+            double seconds = 0.0;
             std::exception_ptr failure;
             try {
-                encoded[index] = bytes_of(raster.encode());
-                encode_seconds[index] = raster.encode_seconds;
+                auto result = raster.encode(max_bytes, &encoded_bytes, &stop);
+                status = result.status;
+                if (status == music::PngRaster::EncodeStatus::OK) {
+                    page_bytes = bytes_of(result.bytes);
+                    seconds = raster.encode_seconds;
+                }
             } catch (...) {
                 failure = std::current_exception();
             }
@@ -107,45 +115,54 @@ struct PngEncoders {
                 if (failure) {
                     if (!error) error = std::move(failure);
                     stop.store(true, std::memory_order_relaxed);
+                } else if (status == music::PngRaster::EncodeStatus::LIMIT_EXCEEDED) {
+                    limit_exceeded = true;
+                    stop.store(true, std::memory_order_relaxed);
+                } else if (status == music::PngRaster::EncodeStatus::OK && !stop.load(std::memory_order_relaxed)) {
+                    encoded[index] = std::move(page_bytes);
+                    encode_seconds[index] = seconds;
                 }
             }
             progress.signal();
         }
     }
 
-    // Written by one worker per page, read after the workers have joined.
+    // Written under mutex while workers run; read after the workers have joined.
     std::vector<std::vector<std::byte>> encoded;
     std::vector<double> encode_seconds;
+    std::optional<std::uint64_t> max_bytes;
     std::mutex mutex;
     std::condition_variable work;
     muse::PollWait progress;
     std::vector<std::thread> threads;
     std::atomic<bool> stop{false};
+    std::atomic<std::uint64_t> encoded_bytes{0};
     // Guarded by mutex. in_flight counts surfaces queued or being encoded.
     std::deque<music::PngRaster> queue;
     std::size_t in_flight = 0, in_flight_bytes = 0;
     bool closed = false;
+    bool limit_exceeded = false;
     std::exception_ptr error;
 };
 
 // Empty when no worker thread could start.
 std::optional<Result<RenderOutput>> render_png_pages(const music::EngineContext &context, mu::engraving::Score &score,
                                                      music::ExportOptions &backend, std::int32_t first, std::int32_t last,
-                                                     std::size_t workers) {
+                                                     std::size_t workers, std::optional<std::uint64_t> max_bytes) {
     const auto count = static_cast<std::size_t>(last - first + 1);
-    PngEncoders encoders(count);
+    PngEncoders encoders(count, max_bytes);
     workers = encoders.start(workers, first);
     if (workers == 0) return std::nullopt;
     const auto poll = [&] { return backend.cancelled && backend.cancelled(); };
     const auto cancelled = [] { return fail(ErrorCode::CANCELLED, "render cancelled"); };
     std::vector<double> raster_seconds(count);
     std::vector<int> dpis(count);
-    // Waits, polling cancellation, until `ready` holds or an encoder failed;
+    // Waits, polling cancellation, until `ready` holds or an encoder stopped;
     // false when the render was cancelled.
     const auto wait_until = [&](std::unique_lock<std::mutex> &lock, const auto &ready) {
-        while (!encoders.error && !ready()) {
+        while (!encoders.error && !encoders.limit_exceeded && !ready()) {
             encoders.progress.wait(lock);
-            if (encoders.error || ready()) break;
+            if (encoders.error || encoders.limit_exceeded || ready()) break;
             lock.unlock();
             const bool stop = poll();
             lock.lock();
@@ -154,6 +171,7 @@ std::optional<Result<RenderOutput>> render_png_pages(const music::EngineContext 
         return true;
     };
     for (std::int32_t page = first; page <= last; ++page) {
+        if (encoders.stop.load(std::memory_order_relaxed)) break;
         backend.page = page;
         auto raster = music::rasterize_png(context, &score, backend);
         if (!raster) return std::unexpected(std::move(raster.error()));
@@ -166,7 +184,7 @@ std::optional<Result<RenderOutput>> render_png_pages(const music::EngineContext 
             return encoders.in_flight < workers && (encoders.in_flight == 0 || encoders.in_flight_bytes + bytes <= k_max_queued_png_bytes);
         });
         if (!proceed) return cancelled();
-        if (encoders.error) break;
+        if (encoders.error || encoders.limit_exceeded) break;
         ++encoders.in_flight;
         encoders.in_flight_bytes += bytes;
         encoders.queue.push_back(std::move(*raster));
@@ -182,8 +200,10 @@ std::optional<Result<RenderOutput>> render_png_pages(const music::EngineContext 
         if (!wait_until(lock, [&] { return encoders.in_flight == 0; })) return cancelled();
     }
     encoders.stop_and_join();
-    if (encoders.error) std::rethrow_exception(encoders.error);
+    if (const auto &hook = api::on_png_encoders_joined_for_test()) hook();
     if (poll()) return cancelled();
+    if (encoders.error) std::rethrow_exception(encoders.error);
+    if (encoders.limit_exceeded) return fail(ErrorCode::RESOURCE_LIMIT, "render exceeds output byte limit");
     RenderOutput output;
     output.pages = std::move(encoders.encoded);
     if (music::render_timing_enabled()) {
@@ -196,6 +216,13 @@ std::optional<Result<RenderOutput>> render_png_pages(const music::EngineContext 
 }
 
 } // namespace
+
+namespace api {
+std::function<void()> &on_png_encoders_joined_for_test() {
+    thread_local std::function<void()> hook;
+    return hook;
+}
+} // namespace api
 
 Result<std::int32_t> Document::page_count(const ScoreSel &selection) {
     impl_->engine->check_thread();
@@ -241,6 +268,7 @@ Result<RenderOutput> Document::render(const RenderOptions &options) {
     const std::string format = format_name;
     RenderOutput output;
     if (options.format == RenderFormat::PDF) {
+        backend.max_bytes = options.max_bytes;
         auto data = music::render_score(*impl_->engine->context, &score, format, backend);
         if (!data) return std::unexpected(std::move(data.error()));
         output.document = bytes_of(*data);
@@ -257,7 +285,7 @@ Result<RenderOutput> Document::render(const RenderOptions &options) {
     if (options.format == RenderFormat::PNG && last > first) {
         workers = std::min(music::render_worker_threads(impl_->engine->audio_threads), static_cast<std::size_t>(last - first + 1));
         if (workers > 1) {
-            if (auto encoded = render_png_pages(*impl_->engine->context, score, backend, first, last, workers)) {
+            if (auto encoded = render_png_pages(*impl_->engine->context, score, backend, first, last, workers, options.max_bytes)) {
                 if (*encoded) report_wall();
                 return std::move(*encoded);
             }
@@ -265,10 +293,13 @@ Result<RenderOutput> Document::render(const RenderOptions &options) {
         }
     }
     output.pages.reserve(static_cast<std::size_t>(last - first + 1));
+    std::uint64_t total_bytes = 0;
     for (std::int32_t page = first; page <= last; ++page) {
         backend.page = page;
+        if (options.max_bytes) backend.max_bytes = *options.max_bytes - total_bytes;
         auto data = music::render_score(*impl_->engine->context, &score, format, backend);
         if (!data) return std::unexpected(std::move(data.error()));
+        total_bytes += data->size();
         output.pages.push_back(bytes_of(*data));
     }
     report_wall();
