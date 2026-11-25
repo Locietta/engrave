@@ -2,7 +2,12 @@
 #include "rendering/score/layoutdatastore.h"
 
 #include <algorithm>
+#include <cassert>
+#include <cstdint>
 #include <stdexcept>
+#include <tuple>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "dom/accidental.h"
@@ -33,6 +38,7 @@
 #include "dom/rest.h"
 #include "dom/score.h"
 #include "dom/segment.h"
+#include "dom/sharedpart.h"
 #include "dom/spacer.h"
 #include "dom/spanner.h"
 #include "dom/stafflines.h"
@@ -48,7 +54,8 @@
 #include "dom/tuplet.h"
 #include "engraving/dom/dummyparent.h"
 #include "global/hashmap.h"
-#include "rendering/score/layoutdatafactory.h"
+#include "global/slab_pool.h"
+#include "rendering/score/layoutdatadispatch.h"
 #include "rendering/score/scorerenderer.h"
 
 namespace mu::engraving::rendering::score {
@@ -221,14 +228,59 @@ struct LayoutDataStore::RetireEntry {
     std::vector<const EngravingItem *> retired;
 };
 
-struct LayoutDataStore::Records {
-    struct Record {
-        EngravingItem *item;
-        std::unique_ptr<EngravingItem::LayoutData> data;
-    };
+namespace {
+template <typename Binding>
+using LayoutPool = muse::SlabPool<typename Binding::Data, EngravingItem, Binding::chunk_size>;
 
-    muse::HashMap<const EngravingItem *, Record> items;
+template <typename Dispatch>
+struct LayoutDataPools;
+
+template <typename... Bindings>
+struct LayoutDataPools<LayoutDataDispatch<Bindings...>> : LayoutPool<Bindings>... {
+    template <typename Data>
+    auto &pool() {
+        constexpr auto chunk_size = (std::size_t{0} + ... + (std::is_same_v<Data, typename Bindings::Data> ? Bindings::chunk_size : 0));
+        return static_cast<muse::SlabPool<Data, EngravingItem, chunk_size> &>(*this);
+    }
+
+    void for_each_live(muse::FnRef<void(EngravingItem &, ItemLayoutData &)> visit) { (LayoutPool<Bindings>::for_each_live(visit), ...); }
+
+    void for_each_live_data(muse::FnRef<void(ItemLayoutData &)> visit) { (LayoutPool<Bindings>::for_each_live_data(visit), ...); }
+
+    EngravingItem *first_live_owner() const noexcept {
+        EngravingItem *owner = nullptr;
+        std::ignore = ((owner = LayoutPool<Bindings>::first_live_owner()) || ...);
+        return owner;
+    }
+
+    void release_all_chunks() noexcept { (LayoutPool<Bindings>::release_all_chunks(), ...); }
+
+    template <typename Fn>
+    void for_each_beam_data(Fn &&visit) {
+        pool<Beam::LayoutData>().for_each_live_data(visit);
+        pool<TremoloTwoChord::LayoutData>().for_each_live_data(visit);
+    }
+
+    template <typename Fn>
+    void for_each_chord_rest_data(Fn &&visit) {
+        pool<Chord::LayoutData>().for_each_live_data(visit);
+        pool<Rest::LayoutData>().for_each_live_data(visit);
+        pool<MMRest::LayoutData>().for_each_live_data(visit);
+        pool<MeasureRepeat::LayoutData>().for_each_live_data(visit);
+    }
 };
+
+template <typename Pool, typename Data>
+struct SlotDestroyGuard {
+    Pool &pool;
+    std::uint32_t slot;
+    Data *data;
+
+    ~SlotDestroyGuard() noexcept { pool.finish_destroy(slot, data); }
+};
+} // namespace
+
+struct LayoutDataStore::Records : LayoutDataPools<LayoutDataTypes> {};
 
 LayoutDataStore::RetireScope::RetireScope(LayoutDataStore &store, std::vector<const EngravingItem *> retired) {
     if (retired.empty()) return;
@@ -298,74 +350,86 @@ void LayoutDataStore::retire_layout_copy(const EngravingItem &item) {
     std::erase_if(layout_copies_, [&](const auto &entry) { return entry.first == &item || entry.second == &item; });
 }
 
-size_t LayoutDataStore::size() const { return records_->items.size(); }
+size_t LayoutDataStore::size() const { return total_size_; }
 
-const EngravingItem::LayoutData *LayoutDataStore::find(const EngravingItem &item) const {
-    const auto it = records_->items.find(&item);
-    return it == records_->items.end() ? nullptr : it->second.data.get();
+const ItemLayoutData *LayoutDataStore::find(const EngravingItem &item) const {
+    return item.layout_store_ == this ? item.layout_data_ : nullptr;
 }
 
-EngravingItem::LayoutData *LayoutDataStore::mut_data(EngravingItem &item) {
+ItemLayoutData *LayoutDataStore::mut_data(EngravingItem &item) {
     if (item.layout_data_) {
         if (item.layout_store_ != this) throw std::logic_error("layout payload belongs to a different store");
         return item.layout_data_;
     }
-    return adopt(item, make_layout_data(item.layout_type_));
-}
-
-EngravingItem::LayoutData *LayoutDataStore::adopt(EngravingItem &item, std::unique_ptr<EngravingItem::LayoutData> data) {
-    if (item.layout_store_ || item.layout_data_) throw std::logic_error("layout payload already bound");
-    data->item_ = &item;
-    auto *result = data.get();
-    records_->items.emplace(&item, Records::Record{&item, std::move(data)});
-    item.layout_store_ = this;
-    item.layout_data_ = result;
-    return result;
+    return LayoutDataTypes::dispatch(item.layout_type_, [&]<typename Data>() -> ItemLayoutData * {
+        const auto [slot, data] = records_->pool<Data>().emplace(&item);
+        data->item_ = &item;
+        item.layout_store_ = this;
+        item.layout_data_ = data;
+        item.layout_slot_ = slot;
+        ++total_size_;
+        return data;
+    });
 }
 
 void LayoutDataStore::erase(EngravingItem &item) {
-    const auto it = records_->items.find(&item);
-    if (it == records_->items.end()) return;
+    if (item.layout_store_ != this) return;
     if (item.is_measure_base()) {
-        const auto *data = static_cast<const MeasureBase::LayoutData *>(it->second.data.get());
+        const auto *data = static_cast<const MeasureBase::LayoutData *>(item.layout_data_);
         // The base destructor has already unlinked placement before erasing here.
         if (auto *system = data->system) system->remove_measure(to_measure_base(&item));
     }
     if (auto *shared = item.shared_item()) EngravingItem::disconnect_shared_item(shared, &item);
     EngravingItem::disconnect_all_origin_items(&item);
-    // Extract before running destructors: Chord payloads still own generated
-    // ledger shells, whose destruction recursively retires other records (L3).
-    RetireScope scope;
-    auto data = std::move(it->second.data);
-    records_->items.erase(it);
-    data->disconnect_snapped_items();
-    item.layout_data_ = nullptr;
-    item.layout_store_ = nullptr;
-    if (!clearing_ && !suppress_shape_prune_ && has_borrower_containers()) {
-        std::vector<const EngravingItem *> targets;
-        muse::HashSet<const EngravingItem *> seen;
-        if (!is_retired_in_flight(item)) {
-            targets.push_back(&item);
-            seen.insert(&item);
-        }
-        add_layout_payload_children(item, *data, [&](const EngravingItem *child) {
-            if (child && !is_retired_in_flight(*child)) collect_owned_subtree(*child, targets, seen);
-        });
-        std::erase_if(targets, [&](const EngravingItem *candidate) { return is_retired_in_flight(*candidate); });
-        scope = begin_retire_scope(std::move(targets));
-    }
-    // Destroy data while RetireScope guards nested teardown against redundant rescans.
-    data.reset();
+
+    LayoutDataTypes::dispatch(item.layout_type_, [&]<typename Data>() {
+        auto &pool = records_->pool<Data>();
+        const auto slot = item.layout_slot_;
+        auto *data = pool.detach(slot);
+        --total_size_;
+        item.layout_data_ = nullptr;
+        item.layout_store_ = nullptr;
+        item.layout_slot_ = EngravingItem::invalid_layout_slot;
+
+        // Keep the retirement scope active while the payload destroys owned children.
+        RetireScope scope;
+        const SlotDestroyGuard guard{pool, slot, data};
+        data->disconnect_snapped_items();
+        scope = retire_payload_children(item, *data);
+    });
 }
 
-void LayoutDataStore::for_each_output(muse::FnRef<void(EngravingItem &, EngravingItem::LayoutData &)> complete) {
-    for (auto &record : records_->items.values()) complete(*record.second.item, *record.second.data);
+LayoutDataStore::RetireScope LayoutDataStore::retire_payload_children(const EngravingItem &item, const ItemLayoutData &data) {
+    if (clearing_ || suppress_shape_prune_ || !has_borrower_containers()) return {};
+    std::vector<const EngravingItem *> targets;
+    muse::HashSet<const EngravingItem *> seen;
+    if (!is_retired_in_flight(item)) {
+        targets.push_back(&item);
+        seen.insert(&item);
+    }
+    add_layout_payload_children(item, data, [&](const EngravingItem *child) {
+        if (child && !is_retired_in_flight(*child)) collect_owned_subtree(*child, targets, seen);
+    });
+    std::erase_if(targets, [&](const EngravingItem *candidate) { return is_retired_in_flight(*candidate); });
+    return begin_retire_scope(std::move(targets));
+}
+
+void LayoutDataStore::for_each_output(muse::FnRef<void(EngravingItem &, ItemLayoutData &)> complete) { records_->for_each_live(complete); }
+
+void LayoutDataStore::drain_records() {
+    BoolGuard guard(clearing_, true);
+    // Erasing a payload can delete other owners, including owners in the same pool.
+    while (total_size_ > 0) {
+        auto *owner = records_->first_live_owner();
+        assert(owner);
+        erase(*owner);
+    }
+    records_->release_all_chunks();
 }
 
 void LayoutDataStore::detach_score() {
     discard_score_output();
-    BoolGuard guard(clearing_, true);
-    while (!records_->items.empty()) erase(*records_->items.begin()->second.item);
+    drain_records();
     if (score_ && score_->layout_data_store() == this) score_->bind_layout_data_store(nullptr);
     score_ = nullptr;
 }
@@ -376,8 +440,7 @@ void LayoutDataStore::clear() {
         score_->invalidate_layout(Fraction(0, 1), Fraction(-1, 1));
     }
     discard_score_output();
-    BoolGuard guard(clearing_, true);
-    while (!records_->items.empty()) erase(*records_->items.begin()->second.item);
+    drain_records();
 }
 
 static void clear_output_anchors(Score &score, const Measure *measure = nullptr) {
@@ -406,9 +469,7 @@ bool LayoutDataStore::is_retired_in_flight(const EngravingItem &item) const {
     return false;
 }
 
-bool LayoutDataStore::has_borrower_containers() const {
-    return !records_->items.empty() || !output_.pages.empty() || !output_.systems.empty();
-}
+bool LayoutDataStore::has_borrower_containers() const { return total_size_ != 0 || !output_.pages.empty() || !output_.systems.empty(); }
 
 LayoutDataStore::RetireScope LayoutDataStore::begin_retire_scope(std::vector<const EngravingItem *> targets) {
     if (clearing_ || suppress_shape_prune_ || targets.empty()) return {};
@@ -447,54 +508,43 @@ std::vector<LayoutDataStore::RetireScope> LayoutDataStore::retire_batch_for_disp
 }
 
 void LayoutDataStore::prune_shape_borrowers(std::span<const EngravingItem *const> retired, const BeamBase *beam) {
-    if (retired.empty() && !beam) return;
     if (!retired.empty()) {
         for (auto *page : output_.pages) page->invalidate_bsp_tree_if_referenced(retired);
-    }
-    const auto borrows_retired = [&](const ShapeElement &element) { return contains_retired(retired, element.item()); };
-    // Reusable tail systems live outside ScoreOutput during a range pass.
-    // Records include them and the completed systems whose collisions must stay.
-    for (auto &record : records_->items.values()) {
-        auto *item = record.second.item;
-        auto &data = *record.second.data;
-        if (!retired.empty()) {
+        const auto borrows_retired = [&](const ShapeElement &element) { return contains_retired(retired, element.item()); };
+        records_->for_each_live_data([&](ItemLayoutData &data) {
             if (data.is_set_shape()) data.mut_shape().remove_if(borrows_retired);
             if (data.mask_.has_value()) data.mask_.mut_value().remove_if(borrows_retired);
-            if (item->is_system()) {
-                for (auto *staff : to_system(item)->staves()) {
-                    std::erase_if(staff->skyline().north().elements(), borrows_retired);
-                    std::erase_if(staff->skyline().south().elements(), borrows_retired);
-                }
-            } else if (item->is_segment()) {
-                auto *owner = to_segment(item);
-                const auto size = static_cast<const Segment *>(owner)->shapes().size();
-                for (size_t i = 0; i < size; ++i) owner->staff_shape(i).remove_if(borrows_retired);
-            } else if (item->is_chord()) {
-                to_chord(item)->remove_spanner_borrowers([&](const Spanner *span) { return contains_retired(retired, span); });
-            }
-        }
-        if (beam) {
-            if (item->is_beam() || item->type() == ElementType::TREMOLO_TWOCHORD) {
-                auto *beam_data = static_cast<BeamBase::LayoutData *>(&data);
-                if (beam_data->beam == beam) beam_data->beam = nullptr;
-                if (beam_data->trem == beam) beam_data->trem = nullptr;
-            }
-            if (item->is_chord_rest()) {
-                auto *cr = to_chord_rest(item);
-                auto *ld = static_cast<ChordRest::LayoutData *>(&data);
-                if (ld->rendered_beam == beam) ld->rendered_beam = nullptr;
-                if (ld->beamlet && ld->beamlet->parent_element == beam) cr->set_beamlet(nullptr);
-            }
-        }
-    }
-    if (!retired.empty()) {
-        for (auto *system : output_.systems) {
-            if (system->has_layout_data()) continue;
-            for (auto *staff : system->staves()) {
+        });
+        const auto prune_skyline = [&](System &system) {
+            for (auto *staff : system.staves()) {
                 std::erase_if(staff->skyline().north().elements(), borrows_retired);
                 std::erase_if(staff->skyline().south().elements(), borrows_retired);
             }
+        };
+        // Reusable tail systems live outside ScoreOutput during a range pass.
+        records_->pool<System::LayoutData>().for_each_live(
+            [&](EngravingItem &owner, System::LayoutData &) { prune_skyline(*to_system(&owner)); });
+        for (auto *system : output_.systems) {
+            if (!system->has_layout_data()) prune_skyline(*system);
         }
+        records_->pool<Segment::LayoutData>().for_each_live([&](EngravingItem &owner, Segment::LayoutData &) {
+            auto *segment = to_segment(&owner);
+            const auto size = std::as_const(*segment).shapes().size();
+            for (size_t i = 0; i < size; ++i) segment->staff_shape(i).remove_if(borrows_retired);
+        });
+        records_->pool<Chord::LayoutData>().for_each_live([&](EngravingItem &owner, Chord::LayoutData &) {
+            to_chord(&owner)->remove_spanner_borrowers([&](const Spanner *span) { return contains_retired(retired, span); });
+        });
+    }
+    if (beam) {
+        records_->for_each_beam_data([&](BeamBase::LayoutData &data) {
+            if (data.beam == beam) data.beam = nullptr;
+            if (data.trem == beam) data.trem = nullptr;
+        });
+        records_->for_each_chord_rest_data([&](ChordRest::LayoutData &data) {
+            if (data.rendered_beam == beam) data.rendered_beam = nullptr;
+            if (data.beamlet && data.beamlet->parent_element == beam) data.beamlet = nullptr;
+        });
     }
 }
 
@@ -542,8 +592,13 @@ void LayoutDataStore::retire_item_borrowers(const EngravingItem &item) {
 
 void LayoutDataStore::prune_spanner_segments() {
     std::vector<Spanner *> spanners;
-    for (auto &record : records_->items.values())
-        if (record.second.item->is_spanner()) spanners.push_back(to_spanner(record.second.item));
+    records_->pool<Spanner::LayoutData>().for_each_live([&](EngravingItem &owner, Spanner::LayoutData &) {
+        if (owner.is_spanner()) spanners.push_back(to_spanner(&owner));
+    });
+    const auto collect = [&](EngravingItem &owner, Spanner::LayoutData &) { spanners.push_back(to_spanner(&owner)); };
+    records_->pool<SlurTie::LayoutData>().for_each_live(collect);
+    records_->pool<Hairpin::LayoutData>().for_each_live(collect);
+    records_->pool<GuitarBend::LayoutData>().for_each_live(collect);
     for (auto *spanner : spanners) spanner->erase_detached_segments();
     std::erase_if(output_.beams, [](Beam *beam) {
         if (!beam->rendered_elements().empty()) return false;
@@ -559,10 +614,10 @@ void LayoutDataStore::retire_measure_borrowers(Measure &measure) {
     if (!system) return;
     if (auto *page = system->page()) page->invalidate_bsp_tree();
     for (auto *staff : system->staves()) staff->skyline().clear();
-    for (auto &record : records_->items.values()) {
-        auto *item = record.second.item;
-        if (item->is_segment() && to_segment(item)->measure()->system() == system) to_segment(item)->clear_shapes();
-    }
+    records_->pool<Segment::LayoutData>().for_each_live([&](EngravingItem &owner, Segment::LayoutData &) {
+        auto *segment = to_segment(&owner);
+        if (segment->measure()->system() == system) segment->clear_shapes();
+    });
     if (score_->master_score()->cmd_state().locked()) return;
     retire_shared_auxiliary_output();
     // An edit can delete a source node together with its generated children
@@ -595,13 +650,13 @@ void LayoutDataStore::retire_shared_auxiliary_output() {
         for (auto *system : output_.systems)
             for (auto *staff : system->staves()) staff->skyline().clear();
         const muse::HashSet<Spanner *> retired(output_.shared_spanners.begin(), output_.shared_spanners.end());
-        for (auto &record : records_->items.values()) {
-            auto *item = record.second.item;
-            if (item->is_segment()) to_segment(item)->clear_shapes();
-            // A range pass can retain display chords after their shared spanners are retired.
-            if (item->is_chord() && !retired.empty()) {
-                to_chord(item)->remove_spanner_borrowers([&](Spanner *span) { return retired.contains(span); });
-            }
+        records_->pool<Segment::LayoutData>().for_each_live(
+            [](EngravingItem &owner, Segment::LayoutData &) { to_segment(&owner)->clear_shapes(); });
+        // A range pass can retain display chords after their shared spanners are retired.
+        if (!retired.empty()) {
+            records_->pool<Chord::LayoutData>().for_each_live([&](EngravingItem &owner, Chord::LayoutData &) {
+                to_chord(&owner)->remove_spanner_borrowers([&](Spanner *span) { return retired.contains(span); });
+            });
         }
     }
     // Note borrowers must be detached while the display notes are still alive.
@@ -617,10 +672,10 @@ void LayoutDataStore::retire_shared_auxiliary_output() {
 void LayoutDataStore::discard_score_output() {
     // Payload destruction can retire spanners after notes and their dots. Clear
     // every copied collision before the first display child can be freed.
-    for (auto &record : records_->items.values()) {
-        record.second.data->clear_shape();
-        record.second.data->mask_.reset();
-    }
+    records_->for_each_live_data([](ItemLayoutData &data) {
+        data.clear_shape();
+        data.mask_.reset();
+    });
     if (score_) {
         clear_output_anchors(*score_);
         // These legacy L5 caches can retain pointers to output-owned ledger and
@@ -629,33 +684,29 @@ void LayoutDataStore::discard_score_output() {
         for (auto *system : output_.systems) {
             for (auto *staff : system->staves()) staff->skyline().clear();
         }
-        // Ownership traversal includes hidden and MMR display measures, unlike
-        // drawing/source timeline scans. Retain each segment's staff slots.
+        // Staff shapes live on the segment even when its layout payload is absent.
         const auto clear_segments = [&](auto &&self, EngravingObject &owner) -> void {
-            if (owner.is_segment()) to_segment(&owner)->clear_shapes();
+            if (owner.is_segment()) {
+                auto *segment = to_segment(&owner);
+                if (!find(*segment)) segment->clear_shapes();
+            }
             for (auto *child : owner.children()) {
                 if (child->score() == score_) self(self, *child);
             }
         };
         clear_segments(clear_segments, *score_);
-        // Detached scratch segments can also have prepared collision shapes.
-        for (auto &record : records_->items.values()) {
-            if (record.second.item->is_segment()) to_segment(record.second.item)->clear_shapes();
-        }
     }
-    for (auto &record : records_->items.values()) {
-        if (record.second.item->is_beam()) static_cast<Beam::LayoutData *>(record.second.data.get())->members.reset();
-        if (record.second.item->is_beam() || record.second.item->type() == ElementType::TREMOLO_TWOCHORD) {
-            auto *beam_data = static_cast<BeamBase::LayoutData *>(record.second.data.get());
-            beam_data->beam = nullptr;
-            beam_data->trem = nullptr;
-        }
-        if (record.second.item->is_chord_rest()) {
-            auto *data = static_cast<ChordRest::LayoutData *>(record.second.data.get());
-            data->beamlet = nullptr;
-            data->rendered_beam.reset();
-        }
-    }
+    records_->pool<Segment::LayoutData>().for_each_live(
+        [](EngravingItem &owner, Segment::LayoutData &) { to_segment(&owner)->clear_shapes(); });
+    records_->for_each_beam_data([](auto &data) {
+        if constexpr (std::is_same_v<std::remove_reference_t<decltype(data)>, Beam::LayoutData>) data.members.reset();
+        data.beam = nullptr;
+        data.trem = nullptr;
+    });
+    records_->for_each_chord_rest_data([](ChordRest::LayoutData &data) {
+        data.beamlet = nullptr;
+        data.rendered_beam.reset();
+    });
     layout_copies_.clear();
     output_.stave_sharing_states.clear();
     output_.suspended_shared_parts.clear();

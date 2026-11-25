@@ -6,17 +6,26 @@
 #include <span>
 #include <vector>
 
-#include "dom/engravingitem.h"
-#include "dom/sharedpart.h"
+#include "engraving/types/stavesharing.h"
 #include "global/fn.h"
 #include "global/unique_fn.h"
 
 namespace mu::engraving {
+struct Beam;
 struct BeamBase;
+struct EngravingItem;
+struct ItemLayoutData;
+struct Measure;
+struct Page;
+struct Score;
+struct SharedPart;
+struct Spanner;
+struct SpannerSegment;
+struct System;
+struct Tuplet;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-// Item addresses are lifetime-qualified by explicit erase before destruction/address reuse.
 struct LayoutDataStore {
     explicit LayoutDataStore(Score &score);
     ~LayoutDataStore();
@@ -78,25 +87,27 @@ struct LayoutDataStore {
     [[nodiscard]] RetireScope retire_for_disposal(const EngravingItem &item);
 
     size_t size() const;
-    const EngravingItem::LayoutData *find(const EngravingItem &item) const;
-    EngravingItem::LayoutData *mut_data(EngravingItem &item);
-    EngravingItem::LayoutData *adopt(EngravingItem &item, std::unique_ptr<EngravingItem::LayoutData> data);
+    const ItemLayoutData *find(const EngravingItem &item) const;
+    ItemLayoutData *mut_data(EngravingItem &item);
     void erase(EngravingItem &item);
     // Invalidate geometry before retiring payloads and their generated children.
     // Call only after active layout borrowers have unwound.
     void clear();
     void detach_score();
     // Explicit producer pass. The callback may mutate payloads, not membership.
-    void for_each_output(muse::FnRef<void(EngravingItem &, EngravingItem::LayoutData &)> complete);
+    void for_each_output(muse::FnRef<void(EngravingItem &, ItemLayoutData &)> complete);
 
 private:
+    void drain_records();
     bool is_retired_in_flight(const EngravingItem &item) const;
     bool has_borrower_containers() const;
+    RetireScope retire_payload_children(const EngravingItem &item, const ItemLayoutData &data);
     RetireScope begin_retire_scope(std::vector<const EngravingItem *> targets);
     void prune_shape_borrowers(std::span<const EngravingItem *const> retired, const BeamBase *beam);
 
     struct Records;
     std::unique_ptr<Records> records_;
+    size_t total_size_ = 0;
     Score *score_;
     ScoreOutput output_;
     std::vector<std::pair<const EngravingItem *, EngravingItem *>> layout_copies_;

@@ -21,13 +21,10 @@
  */
 #pragma once
 
-#include "global/btree.h"
-#include "global/flatmap.h"
+#include "../types/stavesharing.h"
 #include "part.h"
 
 namespace mu::engraving {
-// Map from origin track to shared track
-using SharedTrackMap = muse::BTreeMap<track_idx_t, track_idx_t>;
 std::string dump(const SharedTrackMap &map);
 
 struct AuthoredStaveSharingState {
@@ -37,15 +34,6 @@ struct AuthoredStaveSharingState {
 };
 
 using AuthoredStaveSharingStates = std::vector<std::pair<Fraction, AuthoredStaveSharingState>>;
-
-struct RenderedStaveSharingState {
-    SharedTrackMap shared_track_map;
-    bool is_user_map_valid = false;
-    bool capacity_exhausted = false;
-    bool operator==(const RenderedStaveSharingState &) const = default;
-};
-
-using RenderedStaveSharingStates = muse::FlatMap<Fraction, RenderedStaveSharingState>;
 
 struct SharedPart final : Part {
 private:

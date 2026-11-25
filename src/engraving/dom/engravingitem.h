@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <memory>
 
 #include "../infrastructure/ld_access.h"
@@ -129,6 +130,152 @@ enum class KerningType : unsigned char {
 // ea2b00ee48 (times 100) and must not move when enumerators are added or deleted.
 int default_z(ElementType type);
 
+struct ItemLayoutData {
+
+    struct SharingLinks {
+        EngravingItem *shared_item = nullptr;
+        std::vector<EngravingItem *> origin_items;
+    };
+
+    SharingLinks sharing_links;
+    virtual ~ItemLayoutData() = default;
+
+    virtual void reset() {
+        shape_.reset();
+        mask_.reset();
+        //! NOTE Temporary removed, have problems, need investigation
+        //pos_.reset();
+    }
+
+    virtual bool is_valid() const { return shape_.has_value() && shape_.value().bbox().is_valid(); }
+
+    bool is_skip_draw() const { return is_skip_draw_; }
+
+    void set_is_skip_draw(bool val) { is_skip_draw_ = val; }
+
+    double mag() const { return mag_; }
+
+    void set_mag(double val) { mag_ = val; }
+
+    bool is_set_pos() const { return pos_.has_value(); }
+
+    const PointF &pos(LdAccess mode = LdAccess::CHECK) const {
+        //! NOTE Temporarily to mute a lot of messages
+        mode = (LdAccess::CHECK == mode) ? LdAccess::MAYBE_NOTINITED : mode;
+        return pos_.value(mode);
+    }
+
+    void set_pos(const PointF &p) { do_set_pos(p.x(), p.y()); }
+
+    void set_pos(double x, double y) { do_set_pos(x, y); }
+
+    void set_pos_x(double x) { do_set_pos(x, pos(LdAccess::MAYBE_NOTINITED).y()); }
+
+    void set_pos_y(double y) { do_set_pos(pos(LdAccess::MAYBE_NOTINITED).x(), y); }
+
+    void move(const PointF &p) { do_set_pos(pos(LdAccess::MAYBE_NOTINITED).x() + p.x(), pos(LdAccess::MAYBE_NOTINITED).y() + p.y()); }
+
+    void move_x(double x) { do_set_pos(pos(LdAccess::MAYBE_NOTINITED).x() + x, pos(LdAccess::MAYBE_NOTINITED).y()); }
+
+    void move_y(double y) { do_set_pos(pos(LdAccess::MAYBE_NOTINITED).x(), pos(LdAccess::MAYBE_NOTINITED).y() + y); }
+
+    bool is_set_bbox() const { return shape_.has_value(); }
+
+    void clear_bbox() { shape_.reset(); }
+
+    RectF bbox(LdAccess mode = LdAccess::CHECK) const;
+
+    bool is_set_shape() const { return shape_.has_value(); }
+
+    void clear_shape() { shape_.reset(); }
+
+    Shape shape(LdAccess mode = LdAccess::CHECK) const;
+
+    void set_shape(const Shape &sh) { shape_.set_value(sh); }
+
+    void set_bbox(const RectF &r);
+
+    void set_bbox(double x, double y, double w, double h) { set_bbox(RectF(x, y, w, h)); }
+
+    void add_bbox(const RectF &r) {
+        DO_ASSERT(!std::isnan(r.x()) && !std::isinf(r.x()));
+        DO_ASSERT(!std::isnan(r.y()) && !std::isinf(r.y()));
+        DO_ASSERT(!std::isnan(r.width()) && !std::isinf(r.width()));
+        DO_ASSERT(!std::isnan(r.height()) && !std::isinf(r.height()));
+
+        //DO_ASSERT(!isShapeComposite());
+        mut_shape().add_b_box(r);
+    }
+
+    void set_height(double v) {
+        RectF r = bbox();
+        r.set_height(v);
+        set_bbox(r);
+    }
+
+    void set_width(double v) {
+#ifndef NDEBUG
+        set_width_debug_hook(v);
+#endif
+        RectF r = bbox();
+        r.set_width(v);
+        set_bbox(r);
+    }
+
+    void set_mask(const Shape &m) { mask_.set_value(m); }
+
+    const Shape &mask() const { return mask_.value(); }
+
+    void connect_item_snapped_before(EngravingItem *item_before);
+    void disconnect_item_snapped_before();
+    void connect_item_snapped_after(EngravingItem *item_after);
+    void disconnect_item_snapped_after();
+
+    void disconnect_snapped_items() {
+        disconnect_item_snapped_before();
+        disconnect_item_snapped_after();
+    }
+
+    EngravingItem *item_snapped_before() const { return item_snapped_before_; }
+
+    EngravingItem *item_snapped_after() const { return item_snapped_after_; }
+
+    void dump(std::stringstream &ss) const;
+
+protected:
+
+    void sup_dump([[maybe_unused]] std::stringstream &ss) const {}
+
+#ifndef NDEBUG
+    void do_set_pos_debug_hook(double x, double y);
+    void set_width_debug_hook(double w);
+#endif
+
+    inline void do_set_pos(double x, double y) {
+#ifndef NDEBUG
+        do_set_pos_debug_hook(x, y);
+#endif
+        pos_.mut_value().set_x(x), pos_.mut_value().set_y(y);
+    }
+
+    Shape &mut_shape() { return shape_.mut_value(); }
+
+    bool is_shape_composite() const { return shape_.has_value() && shape_.value().is_composite(); }
+
+    friend struct EngravingItem;
+    friend struct rendering::score::LayoutDataStore;
+
+    const EngravingItem *item_ = nullptr;
+    bool is_skip_draw_ = false;
+    double mag_ = 1.0;             // standard magnification (derived value)
+    ld_field<PointF> pos_ = "pos"; // Reference position, relative to _parent, set by autoplace
+    ld_field<Shape> shape_ = "shape";
+    ld_field<Shape> mask_ = "mask";
+
+    EngravingItem *item_snapped_before_ = nullptr;
+    EngravingItem *item_snapped_after_ = nullptr;
+};
+
 ///     \brief Base class of score layout elements
 ///
 ///     The EngravingItem class is the virtual base class of all
@@ -139,8 +286,12 @@ private:
     M_PROPERTY2(bool, is_position_linked_to_master, set_position_linked_to_master, true)
     M_PROPERTY2(bool, is_appearance_linked_to_master, set_appearance_linked_to_master, true)
     M_PROPERTY2(bool, exclude_from_other_parts, set_exclude_from_other_parts, false)
+    bool exclude_vertical_align_ = false;
 
 public:
+    using LayoutData = ItemLayoutData;
+    using SharingLinks = LayoutData::SharingLinks;
+
     AuthoredChildKey authored_child;
 
     virtual ~EngravingItem();
@@ -433,151 +584,6 @@ public:
     virtual EngravingItem *find_linked_in_score(const Score *score) const;
     EngravingItem *find_linked_in_staff(const Staff *staff) const;
 
-    struct SharingLinks {
-        EngravingItem *shared_item = nullptr;
-        std::vector<EngravingItem *> origin_items;
-    };
-
-    struct LayoutData {
-        SharingLinks sharing_links;
-        virtual ~LayoutData() = default;
-
-        virtual void reset() {
-            shape_.reset();
-            mask_.reset();
-            //! NOTE Temporary removed, have problems, need investigation
-            //pos_.reset();
-        }
-
-        virtual bool is_valid() const { return shape_.has_value() && shape_.value().bbox().is_valid(); }
-
-        bool is_skip_draw() const { return is_skip_draw_; }
-
-        void set_is_skip_draw(bool val) { is_skip_draw_ = val; }
-
-        double mag() const { return mag_; }
-
-        void set_mag(double val) { mag_ = val; }
-
-        bool is_set_pos() const { return pos_.has_value(); }
-
-        const PointF &pos(LdAccess mode = LdAccess::CHECK) const {
-            //! NOTE Temporarily to mute a lot of messages
-            mode = (LdAccess::CHECK == mode) ? LdAccess::MAYBE_NOTINITED : mode;
-            return pos_.value(mode);
-        }
-
-        void set_pos(const PointF &p) { do_set_pos(p.x(), p.y()); }
-
-        void set_pos(double x, double y) { do_set_pos(x, y); }
-
-        void set_pos_x(double x) { do_set_pos(x, pos(LdAccess::MAYBE_NOTINITED).y()); }
-
-        void set_pos_y(double y) { do_set_pos(pos(LdAccess::MAYBE_NOTINITED).x(), y); }
-
-        void move(const PointF &p) { do_set_pos(pos(LdAccess::MAYBE_NOTINITED).x() + p.x(), pos(LdAccess::MAYBE_NOTINITED).y() + p.y()); }
-
-        void move_x(double x) { do_set_pos(pos(LdAccess::MAYBE_NOTINITED).x() + x, pos(LdAccess::MAYBE_NOTINITED).y()); }
-
-        void move_y(double y) { do_set_pos(pos(LdAccess::MAYBE_NOTINITED).x(), pos(LdAccess::MAYBE_NOTINITED).y() + y); }
-
-        bool is_set_bbox() const { return shape_.has_value(); }
-
-        void clear_bbox() { shape_.reset(); }
-
-        RectF bbox(LdAccess mode = LdAccess::CHECK) const;
-
-        bool is_set_shape() const { return shape_.has_value(); }
-
-        void clear_shape() { shape_.reset(); }
-
-        Shape shape(LdAccess mode = LdAccess::CHECK) const;
-
-        void set_shape(const Shape &sh) { shape_.set_value(sh); }
-
-        void set_bbox(const RectF &r);
-
-        void set_bbox(double x, double y, double w, double h) { set_bbox(RectF(x, y, w, h)); }
-
-        void add_bbox(const RectF &r) {
-            DO_ASSERT(!std::isnan(r.x()) && !std::isinf(r.x()));
-            DO_ASSERT(!std::isnan(r.y()) && !std::isinf(r.y()));
-            DO_ASSERT(!std::isnan(r.width()) && !std::isinf(r.width()));
-            DO_ASSERT(!std::isnan(r.height()) && !std::isinf(r.height()));
-
-            //DO_ASSERT(!isShapeComposite());
-            mut_shape().add_b_box(r);
-        }
-
-        void set_height(double v) {
-            RectF r = bbox();
-            r.set_height(v);
-            set_bbox(r);
-        }
-
-        void set_width(double v) {
-#ifndef NDEBUG
-            set_width_debug_hook(v);
-#endif
-            RectF r = bbox();
-            r.set_width(v);
-            set_bbox(r);
-        }
-
-        void set_mask(const Shape &m) { mask_.set_value(m); }
-
-        const Shape &mask() const { return mask_.value(); }
-
-        void connect_item_snapped_before(EngravingItem *item_before);
-        void disconnect_item_snapped_before();
-        void connect_item_snapped_after(EngravingItem *item_after);
-        void disconnect_item_snapped_after();
-
-        void disconnect_snapped_items() {
-            disconnect_item_snapped_before();
-            disconnect_item_snapped_after();
-        }
-
-        EngravingItem *item_snapped_before() const { return item_snapped_before_; }
-
-        EngravingItem *item_snapped_after() const { return item_snapped_after_; }
-
-        void dump(std::stringstream &ss) const;
-
-    protected:
-
-        void sup_dump([[maybe_unused]] std::stringstream &ss) const {}
-
-#ifndef NDEBUG
-        void do_set_pos_debug_hook(double x, double y);
-        void set_width_debug_hook(double w);
-#endif
-
-        inline void do_set_pos(double x, double y) {
-#ifndef NDEBUG
-            do_set_pos_debug_hook(x, y);
-#endif
-            pos_.mut_value().set_x(x), pos_.mut_value().set_y(y);
-        }
-
-        Shape &mut_shape() { return shape_.mut_value(); }
-
-        bool is_shape_composite() const { return shape_.has_value() && shape_.value().is_composite(); }
-
-        friend struct EngravingItem;
-        friend struct rendering::score::LayoutDataStore;
-
-        const EngravingItem *item_ = nullptr;
-        bool is_skip_draw_ = false;
-        double mag_ = 1.0;             // standard magnification (derived value)
-        ld_field<PointF> pos_ = "pos"; // Reference position, relative to _parent, set by autoplace
-        ld_field<Shape> shape_ = "shape";
-        ld_field<Shape> mask_ = "mask";
-
-        EngravingItem *item_snapped_before_ = nullptr;
-        EngravingItem *item_snapped_after_ = nullptr;
-    };
-
     const LayoutData *ldata() const;
     LayoutData *mutldata();
 
@@ -675,6 +681,10 @@ protected:
     int z_ = 0;
     Color color_; // element color attribute
 
+private:
+    mutable ElementFlags flags_;
+
+protected:
     track_idx_t track_ = muse::nidx; // staffIdx * VOICES + voice
 
     static bool element_applies_to_track(const track_idx_t element_track, const track_idx_t ref_track,
@@ -692,9 +702,8 @@ private:
     PointF offset_; // offset from reference position, set by autoplace or user
 
     Spatium min_distance_; // autoplace min distance
-    mutable ElementFlags flags_;
-
-    bool exclude_vertical_align_ = false;
+    static constexpr std::uint32_t invalid_layout_slot = ~std::uint32_t{0};
+    std::uint32_t layout_slot_ = invalid_layout_slot;
     // Payload provenance survives the legacy MeasureRepeat -> Rest type hack.
     // Copies retain a compatible payload prefix even when an owner is sliced.
     const ElementType layout_type_;
@@ -707,6 +716,8 @@ private:
     void set_has_left_parenthesis(bool v, bool add_to_linked = true, bool generated = false);
     void set_has_right_parenthesis(bool v, bool add_to_linked = true, bool generated = false);
 };
+
+static_assert(sizeof(void *) != 8 || sizeof(EngravingItem) <= 208);
 
 using ElementPtr = std::shared_ptr<EngravingItem>;
 

@@ -1,3 +1,8 @@
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <stdexcept>
+
 #include "engraving/dom/articulation.h"
 #include "engraving/dom/beam.h"
 #include "engraving/dom/dummyparent.h"
@@ -7,9 +12,89 @@
 #include "engraving/dom/sharedpart.h"
 #include "engraving/dom/tremolotwochord.h"
 #include "engraving/rendering/score/layoutdatastore.h"
+#include "global/slab_pool.h"
 #include "read_test_fixture.h"
 
 using namespace read_test;
+
+namespace {
+struct alignas(8) SlabValue {
+    std::size_t value;
+};
+
+struct alignas(8) ThrowingSlabValue {
+    explicit ThrowingSlabValue(bool fail) {
+        if (fail) throw std::runtime_error("slot construction failed");
+    }
+};
+} // namespace
+
+TEST(LayoutDataSlabPool, GrowthKeepsPayloadsStableAndVisitsOnlyLiveSlots) {
+    std::array<std::size_t, 300> owners{};
+    std::array<SlabValue *, owners.size()> payloads{};
+    muse::SlabPool<SlabValue, std::size_t, 64> pool;
+    for (std::size_t i = 0; i < owners.size(); ++i) {
+        owners[i] = i;
+        const auto [slot, data] = pool.emplace(&owners[i]);
+        ASSERT_EQ(slot, i);
+        EXPECT_EQ(data->value, 0u);
+        data->value = i + 1000;
+        payloads[i] = data;
+    }
+    EXPECT_EQ(pool.live_count(), owners.size());
+    EXPECT_EQ(pool.first_live_owner(), &owners.front());
+
+    auto *dying = pool.detach(0);
+    EXPECT_EQ(dying, payloads[0]);
+    EXPECT_EQ(pool.live_count(), owners.size() - 1);
+    EXPECT_EQ(pool.first_live_owner(), &owners[1]);
+    auto [fresh_slot, fresh] = pool.emplace(&owners[0], 1000u);
+    EXPECT_EQ(fresh_slot, owners.size());
+    EXPECT_NE(fresh, dying);
+    pool.finish_destroy(0, dying);
+    auto [reused_slot, reused] = pool.emplace(&owners[0], 1000u);
+    EXPECT_EQ(reused_slot, 0u);
+    EXPECT_EQ(reused, payloads[0]);
+    pool.finish_destroy(fresh_slot, pool.detach(fresh_slot));
+
+    std::size_t visited = 0;
+    pool.for_each_live([&](std::size_t &owner, SlabValue &data) {
+        ASSERT_LT(owner, owners.size());
+        EXPECT_EQ(&owner, &owners[owner]);
+        EXPECT_EQ(&data, payloads[owner]);
+        EXPECT_EQ(data.value, owner + 1000);
+        ++visited;
+    });
+    EXPECT_EQ(visited, owners.size());
+    for (std::uint32_t slot = 0; slot < owners.size(); ++slot) pool.finish_destroy(slot, pool.detach(slot));
+    EXPECT_TRUE(pool.empty());
+    EXPECT_EQ(pool.first_live_owner(), nullptr);
+    pool.release_all_chunks();
+    const auto [first_slot, first] = pool.emplace(&owners[0]);
+    EXPECT_EQ(first_slot, 0u);
+    EXPECT_EQ(first->value, 0u);
+}
+
+TEST(LayoutDataSlabPool, FailedConstructionLeavesNoLiveSlotAndPreservesReuse) {
+    int owner = 0;
+    muse::SlabPool<ThrowingSlabValue, int, 16> pool;
+    EXPECT_THROW(pool.emplace(&owner, true), std::runtime_error);
+    EXPECT_TRUE(pool.empty());
+    EXPECT_EQ(pool.first_live_owner(), nullptr);
+    const auto [first_slot, first] = pool.emplace(&owner, false);
+    EXPECT_EQ(first_slot, 0u);
+    const auto [second_slot, second] = pool.emplace(&owner, false);
+    EXPECT_EQ(second_slot, 1u);
+    pool.finish_destroy(second_slot, pool.detach(second_slot));
+    EXPECT_THROW(pool.emplace(&owner, true), std::runtime_error);
+    EXPECT_EQ(pool.live_count(), 1u);
+    EXPECT_EQ(pool.first_live_owner(), &owner);
+    const auto [reused_slot, reused] = pool.emplace(&owner, false);
+    EXPECT_EQ(reused_slot, second_slot);
+    EXPECT_EQ(reused, second);
+    EXPECT_EQ(pool.detach(first_slot), first);
+    pool.finish_destroy(first_slot, first);
+}
 
 TEST(LayoutDataStore, RepeatedDiscardRebuildPreservesMusicOverridesAndPublishedGeometry) {
     for (const char *fixture : {"tests/data/inputs/golden/chordline_path.mscx", "tests/data/inputs/golden/layout_elements.mscx",
@@ -238,7 +323,7 @@ TEST(LayoutDataStore, TeardownClearsBorrowersBeforeItemDestruction) {
     std::unique_ptr<Note> note(Factory::create_note(chord));
     {
         rendering::score::LayoutDataStore scratch(master);
-        scratch.adopt(*note, std::make_unique<Note::LayoutData>());
+        scratch.mut_data(*note);
         ASSERT_TRUE(note->has_layout_data());
         note->mutldata()->set_pos(3.25, 4.5);
     }
@@ -278,6 +363,39 @@ TEST(LayoutDataStore, RecursiveLedgerTeardownRetiresEveryPayload) {
     ledger->mutldata()->set_pos(1.25, 2.5);
     chord.reset();
     EXPECT_EQ(store.size(), before);
+}
+
+TEST(LayoutDataStore, RecursiveMeasureTeardownPreservesLiveSiblingAndReusesSlots) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    rendering::score::LayoutDataStore scratch(master);
+    std::unique_ptr<Measure> outer(Factory::create_measure(&master));
+    std::unique_ptr<Measure> sibling(Factory::create_measure(&master));
+    auto *mm_rest = Factory::create_measure(&master);
+    const auto *outer_data = scratch.mut_data(*outer);
+    const auto *mm_rest_data = scratch.mut_data(*mm_rest);
+    const auto *sibling_data = scratch.mut_data(*sibling);
+    outer->set_mm_rest(mm_rest);
+    sibling->mutldata()->set_pos(3.0, 4.0);
+    ASSERT_EQ(scratch.size(), 3u);
+
+    scratch.erase(*outer);
+    EXPECT_FALSE(outer->has_layout_data());
+    EXPECT_EQ(scratch.find(*outer), nullptr);
+    EXPECT_EQ(scratch.size(), 1u);
+    EXPECT_EQ(scratch.find(*sibling), sibling_data);
+    EXPECT_EQ(sibling->ldata()->pos(), muse::PointF(3.0, 4.0));
+
+    std::unique_ptr<Measure> replacement(Factory::create_measure(&master));
+    EXPECT_EQ(scratch.mut_data(*outer), outer_data);
+    EXPECT_EQ(scratch.mut_data(*replacement), mm_rest_data);
+    EXPECT_EQ(outer->mm_rest(), nullptr);
+    EXPECT_EQ(scratch.size(), 3u);
+    scratch.clear();
+    EXPECT_EQ(scratch.size(), 0u);
+    EXPECT_FALSE(sibling->has_layout_data());
 }
 
 TEST(LayoutDataStore, HarmonyOutputOwnsRenderedChildrenAndColdDestructionDoesNotAllocate) {

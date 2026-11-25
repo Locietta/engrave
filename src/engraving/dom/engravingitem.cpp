@@ -1980,7 +1980,7 @@ bool EngravingItem::element_applies_to_track(const track_idx_t element_track, co
     return false;
 }
 
-void EngravingItem::LayoutData::set_bbox(const RectF &r) {
+void ItemLayoutData::set_bbox(const RectF &r) {
     DO_ASSERT(!std::isnan(r.x()) && !std::isinf(r.x()));
     DO_ASSERT(!std::isnan(r.y()) && !std::isinf(r.y()));
     DO_ASSERT(!std::isnan(r.width()) && !std::isinf(r.width()));
@@ -1990,7 +1990,7 @@ void EngravingItem::LayoutData::set_bbox(const RectF &r) {
     shape_.set_value(Shape(r, item_, Shape::Type::FIXED));
 }
 
-void EngravingItem::LayoutData::connect_item_snapped_before(EngravingItem *item_before) {
+void ItemLayoutData::connect_item_snapped_before(EngravingItem *item_before) {
     IF_ASSERT_FAILED(item_before && item_before != item_ && item_before != item_snapped_after_ &&
                      item_before->ldata()->item_snapped_before() != item_) {
         return;
@@ -2001,7 +2001,7 @@ void EngravingItem::LayoutData::connect_item_snapped_before(EngravingItem *item_
     item_before->mutldata()->item_snapped_after_ = const_cast<EngravingItem *>(item_);
 }
 
-void EngravingItem::LayoutData::disconnect_item_snapped_before() {
+void ItemLayoutData::disconnect_item_snapped_before() {
     if (!item_snapped_before_) {
         return;
     }
@@ -2009,7 +2009,7 @@ void EngravingItem::LayoutData::disconnect_item_snapped_before() {
     item_snapped_before_ = nullptr;
 }
 
-void EngravingItem::LayoutData::connect_item_snapped_after(EngravingItem *item_after) {
+void ItemLayoutData::connect_item_snapped_after(EngravingItem *item_after) {
     IF_ASSERT_FAILED(item_after && item_after != item_ && item_after != item_snapped_before_ &&
                      item_after->ldata()->item_snapped_after() != item_) {
         return;
@@ -2020,7 +2020,7 @@ void EngravingItem::LayoutData::connect_item_snapped_after(EngravingItem *item_a
     item_after->mutldata()->item_snapped_before_ = const_cast<EngravingItem *>(item_);
 }
 
-void EngravingItem::LayoutData::disconnect_item_snapped_after() {
+void ItemLayoutData::disconnect_item_snapped_after() {
     if (!item_snapped_after_) {
         return;
     }
@@ -2051,7 +2051,7 @@ void EngravingItem::scan_connected_items_in_snapping_chain(const System *system,
     }
 }
 
-RectF EngravingItem::LayoutData::bbox([[maybe_unused]] LdAccess mode) const {
+RectF ItemLayoutData::bbox([[maybe_unused]] LdAccess mode) const {
     //! NOTE Temporary disabled CHECK - a lot of messages
     const Shape &sh = shape_.value(LdAccess::MAYBE_NOTINITED);
 
@@ -2069,7 +2069,7 @@ RectF EngravingItem::LayoutData::bbox([[maybe_unused]] LdAccess mode) const {
     return sh.bbox();
 }
 
-Shape EngravingItem::LayoutData::shape([[maybe_unused]] LdAccess mode) const {
+Shape ItemLayoutData::shape([[maybe_unused]] LdAccess mode) const {
     //! NOTE Temporary disabled CHECK - a lot of messages
     Shape sh = shape_.value(LdAccess::MAYBE_NOTINITED);
 
@@ -2125,13 +2125,13 @@ Shape EngravingItem::LayoutData::shape([[maybe_unused]] LdAccess mode) const {
 }
 
 #ifndef NDEBUG
-void EngravingItem::LayoutData::do_set_pos_debug_hook([[maybe_unused]] double x, [[maybe_unused]] double y) {}
+void ItemLayoutData::do_set_pos_debug_hook([[maybe_unused]] double x, [[maybe_unused]] double y) {}
 
-void EngravingItem::LayoutData::set_width_debug_hook([[maybe_unused]] double w) {}
+void ItemLayoutData::set_width_debug_hook([[maybe_unused]] double w) {}
 
 #endif
 
-void EngravingItem::LayoutData::dump(std::stringstream &ss) const {
+void ItemLayoutData::dump(std::stringstream &ss) const {
     ss << "\n";
     if (!item_) {
         ss << "unlaid layout data\n";
