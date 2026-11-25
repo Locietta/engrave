@@ -23,7 +23,6 @@
 
 #include <memory>
 #include <type_traits>
-#include <variant>
 
 #include "engraving/rendering/paintoptions.h"
 #include "engraving/types/types.h"
@@ -50,8 +49,6 @@ struct Chord;
 struct Clef;
 
 struct Dynamic;
-
-struct EngravingItem;
 
 struct FiguredBassItem;
 
@@ -122,26 +119,9 @@ struct ScoreRenderer {
         muse::UniqueFn<void() const> on_new_page;
     };
 
-    // Temporary compatibility interface
-    using Supported = std::variant<std::monostate, Accidental *, Arpeggio *, BarLine *, Box *, Bracket *, Clef *, Dynamic *,
-                                   FiguredBassItem *, FretDiagram *, Harmony *, Image *, IndicatorIcon *, KeySig *, LedgerLine *, SLine *,
-                                   LineSegment *, Lyrics *, NoteDot *, Parenthesis *, Rest *, Spanner *, Slur *, SlurTie *, Spacer *,
-                                   StaffText *, Stem *, TextBase *, Text *, TimeSig *>;
-
-    template <typename T>
-    static void check_supported_static(T item) {
-        if constexpr (std::is_same<T, EngravingItem *>::value) {
-            // supported
-        } else {
-            [[maybe_unused]] Supported check(item);
-        }
-    }
-
     template <typename T>
     void layout_item(T item) {
-#ifndef NDEBUG
-        check_supported_static(item);
-#endif
+        static_assert(is_supported_v<T>, "unsupported ScoreRenderer::layout_item target");
         do_layout_item(static_cast<EngravingItem *>(item));
     }
 
@@ -171,6 +151,16 @@ struct ScoreRenderer {
     bool score_has_timestamp_headers_footers(const Score *score) const;
 
 private:
+    template <typename T, typename... Ts>
+    static constexpr bool is_supported_ptr_v = std::is_pointer_v<T> && (std::is_convertible_v<T, Ts *> || ...);
+
+    template <typename T>
+    static constexpr bool is_supported_v =
+        std::is_same_v<T, EngravingItem *> ||
+        is_supported_ptr_v<T, Accidental, Arpeggio, BarLine, Box, Bracket, Clef, Dynamic, FiguredBassItem, FretDiagram, Harmony, Image,
+                           IndicatorIcon, KeySig, LedgerLine, SLine, LineSegment, Lyrics, NoteDot, Parenthesis, Rest, Spanner, Slur,
+                           SlurTie, Spacer, StaffText, Stem, TextBase, Text, TimeSig>;
+
     struct ScratchLayouts;
     std::unique_ptr<ScratchLayouts> scratch_layouts_;
     // Layout Single Item

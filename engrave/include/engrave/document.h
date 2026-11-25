@@ -9,7 +9,6 @@
 #include <vector>
 
 #include <engrave/audio.h>
-#include <engrave/edit.h>
 #include <engrave/error.h>
 #include <engrave/handle.h>
 #include <engrave/output.h>
@@ -17,6 +16,8 @@
 
 namespace engrave {
 
+struct Batch;
+struct EditResult;
 struct MusicRange;
 struct MusicWindow;
 struct Phrase;
