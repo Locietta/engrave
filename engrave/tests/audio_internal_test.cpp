@@ -6,6 +6,7 @@
 #include <cfenv>
 #include <chrono>
 #include <cmath>
+#include <condition_variable>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -516,14 +517,23 @@ TEST(AudioInternal, CancellationGranularityAndRecovery) {
 
     const auto path = std::filesystem::temp_directory_path() / "engrave-granularity.wav";
     for (int phase = 0; phase < 4; ++phase) {
-        bool armed = false, cancelled = false;
+        bool armed = false, cancelled = false, started_signal = false;
         int write_polls = 0;
+        std::latch work_started{1};
+        std::latch signal_sent{1};
         std::atomic<bool> external{false};
         music::AudioRenderRequest request;
         const auto utf8 = path.generic_u8string();
         request.output_path.assign(utf8.begin(), utf8.end());
         request.cancelled = [&] {
             if (armed && ++write_polls == 3) cancelled = true;
+            if (phase == 3 && !started_signal &&
+                muse::audio::OfflineCancellation::phase == muse::audio::OfflineCancellation::Phase::SYNTHESIS) {
+                started_signal = true;
+                work_started.count_down();
+                signal_sent.wait();
+                return false;
+            }
             return cancelled || external.load();
         };
         if (phase == 0)
@@ -537,12 +547,17 @@ TEST(AudioInternal, CancellationGranularityAndRecovery) {
         std::thread transport;
         if (phase == 3)
             transport = std::thread([&] {
-                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                work_started.wait();
                 external.store(true);
+                signal_sent.count_down();
             });
         const auto result = music::export_score_audio(audio, master, request);
-        if (transport.joinable()) transport.join();
+        if (transport.joinable()) {
+            if (!started_signal) work_started.count_down();
+            transport.join();
+        }
         music::set_engine_audio_midi_event_hook(audio, {});
+        if (phase == 3) ASSERT_TRUE(started_signal);
         ASSERT_EQ(result.failure, music::AudioRenderResult::Failure::CANCELLED) << "phase=" << phase;
         ASSERT_FALSE(std::filesystem::exists(path)) << "phase=" << phase;
         EXPECT_EQ(render(), baseline) << "cancellation poisoned the SoundFont cache (phase=" << phase << ")";
@@ -1726,19 +1741,19 @@ TEST(AudioInternal, WorkerPoolRunsEachTaskOnceStopsAndRethrows) {
     EXPECT_FALSE(pool.in_flight());
     check_counts();
     // Starting a second block while one is in flight is rejected without disturbing the running block.
-    std::atomic<bool> release{false};
-    std::atomic<int> entered{0}, completed{0};
+    std::latch entered{1}, release{1};
+    std::atomic<int> started_gated{0}, completed{0};
     const auto gated_task = [&](std::size_t) {
-        entered.fetch_add(1);
-        while (!release.load(std::memory_order_acquire)) std::this_thread::sleep_for(1ms);
+        if (started_gated.fetch_add(1) == 0) entered.count_down();
+        release.wait();
         completed.fetch_add(1);
     };
     ASSERT_TRUE(pool.start(2, 10, gated_task));
-    while (entered.load() == 0) std::this_thread::sleep_for(1ms);
+    entered.wait();
     EXPECT_THROW(pool.start(2, 10, count_task), std::logic_error);
     EXPECT_TRUE(pool.in_flight());
     EXPECT_FALSE(pool.stopping());
-    release.store(true, std::memory_order_release);
+    release.count_down();
     EXPECT_TRUE(pool.finish(never));
     EXPECT_FALSE(pool.in_flight());
     EXPECT_EQ(completed.load(), 10);
@@ -1746,8 +1761,14 @@ TEST(AudioInternal, WorkerPoolRunsEachTaskOnceStopsAndRethrows) {
     // abandon() stops a started block, returns once its running tasks have, and drops task errors.
     started = 0;
     finished = 0;
-    ASSERT_TRUE(pool.start(4, 100, until_stopped));
-    while (started.load() == 0) std::this_thread::sleep_for(1ms);
+    std::latch abandon_entered{1};
+    const auto until_stopped_notified = [&](std::size_t) {
+        if (started.fetch_add(1) == 0) abandon_entered.count_down();
+        while (!pool.stopping()) std::this_thread::sleep_for(1ms);
+        finished.fetch_add(1);
+    };
+    ASSERT_TRUE(pool.start(4, 100, until_stopped_notified));
+    abandon_entered.wait();
     pool.abandon();
     EXPECT_FALSE(pool.in_flight());
     EXPECT_EQ(started.load(), finished.load());
@@ -2072,7 +2093,24 @@ struct EncoderRecord {
     int begun = 0, encoded = 0, ended = 0;
     // Read by the caller's cancellation callback while the encoder runs.
     std::atomic<int> blocks{0};
-    std::chrono::milliseconds delay{0};
+    bool hold_encode = false;
+    std::mutex gate_mutex;
+    std::condition_variable gate_cv;
+    bool released = false;
+
+    void wait_if_held() {
+        if (!hold_encode) return;
+        std::unique_lock lock(gate_mutex);
+        gate_cv.wait(lock, [this] { return released; });
+    }
+
+    void release() {
+        {
+            std::lock_guard lock(gate_mutex);
+            released = true;
+        }
+        gate_cv.notify_all();
+    }
 };
 
 struct RecordingEncoder final {
@@ -2090,7 +2128,7 @@ struct RecordingEncoder final {
     size_t encode(muse::audio::samples_t samples, const float *input) {
         note();
         ++record_.encoded;
-        if (record_.delay.count()) std::this_thread::sleep_for(record_.delay);
+        record_.wait_if_held();
         if (record_.encoded == 3 && record_.mode == EncoderRecord::Mode::ENCODE_FAILS) return 0;
         if (record_.encoded == 3 && record_.mode == EncoderRecord::Mode::ENCODE_THROWS) throw std::runtime_error("encoder threw");
         const auto bytes = static_cast<size_t>(samples) * 2 * sizeof(float);
@@ -2327,7 +2365,14 @@ TEST(AudioInternal, AsyncEncodeCancellationDrainsAndRecovers) {
     for (int scenario = 0; scenario < 3; ++scenario) {
         SCOPED_TRACE(scenario);
         EncoderRecord record;
-        if (scenario < 2) record.delay = std::chrono::milliseconds(3);
+        if (scenario < 2) record.hold_encode = true;
+
+        struct ReleaseOnExit {
+            EncoderRecord &record;
+
+            ~ReleaseOnExit() { record.release(); }
+        } release_guard{record};
+
         auto request = request_for(path);
         request.encoder_factory = [&record](const muse::audio::SoundTrackFormat &format, muse::io::IODevice &device) {
             return std::make_unique<RecordingEncoder>(format, device, record);
@@ -2340,6 +2385,7 @@ TEST(AudioInternal, AsyncEncodeCancellationDrainsAndRecovers) {
             const bool armed = scenario < 2 ? phase == Phase::ENCODING : phase == Phase::SYNTHESIS && record.blocks.load() >= 3;
             if (fired || !armed || ++phase_polls < 3) return fired;
             fired = true;
+            record.release();
             if (scenario == 1) throw std::runtime_error("encode-wait cancellation callback");
             return true;
         };
