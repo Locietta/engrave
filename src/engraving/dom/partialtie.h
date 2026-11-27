@@ -48,6 +48,7 @@ private:
 
 public:
     PartialTie(DummyParentOr<Note> parent);
+    PartialTie(const PartialTie &);
 
     Note *parent_note() const { return parent() ? to_note(parent()) : nullptr; }
 

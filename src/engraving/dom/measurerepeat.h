@@ -35,7 +35,7 @@ private:
 
 public:
     MeasureRepeat(DummyParentOr<Segment> parent);
-    MeasureRepeat(const MeasureRepeat &) = default;
+    MeasureRepeat(const MeasureRepeat &);
     MeasureRepeat &operator=(const MeasureRepeat &) = delete;
 
     MeasureRepeat *clone() const override { return new MeasureRepeat(*this); }

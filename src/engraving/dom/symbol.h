@@ -86,6 +86,8 @@ public:
     void reset() override;
 
 protected:
+    Symbol(ElementType type, const Symbol &);
+
     SymId sym_ = SymId::NO_SYM;
     std::shared_ptr<EngravingFont> score_font_ = nullptr;
     double symbols_size_ = 1.0;

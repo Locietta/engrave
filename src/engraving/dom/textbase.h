@@ -478,6 +478,7 @@ protected:
              ElementFlags = ElementFlag::NOTHING);
     TextBase(const ElementType &type, EngravingObject *parent, ElementFlags);
     TextBase(const TextBase &);
+    TextBase(ElementType type, const TextBase &);
 
     bool prepare_format(const String &token, CharFormat &format) const;
 

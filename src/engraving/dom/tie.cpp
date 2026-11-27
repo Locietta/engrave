@@ -58,7 +58,9 @@ TieSegment::TieSegment(Tie *sp) : SlurTieSegment(ElementType::TIE_SEGMENT, sp) {
 
 TieSegment::TieSegment(const ElementType &type, Tie *sp) : SlurTieSegment(type, sp) {}
 
-TieSegment::TieSegment(const TieSegment &s) : SlurTieSegment(s) {}
+TieSegment::TieSegment(const TieSegment &s) : TieSegment(ElementType::TIE_SEGMENT, s) {}
+
+TieSegment::TieSegment(ElementType type, const TieSegment &s) : SlurTieSegment(type, s) {}
 
 void TieSegment::consolidate_adjustment_offset_into_user_offset() {
     for (size_t i = 0; i < adjustment_offsets_.size(); ++i) {
@@ -232,7 +234,9 @@ const TieJumpPointList *Tie::tie_jump_points() const { return start_note() ? sta
 
 Tie::Tie(EngravingObject *parent) : SlurTie(ElementType::TIE, parent) {}
 
-Tie::Tie(const Tie &t) : SlurTie(t) {
+Tie::Tie(const Tie &t) : Tie(ElementType::TIE, t) {}
+
+Tie::Tie(ElementType type, const Tie &t) : SlurTie(type, t) {
     is_inside_ = t.is_inside_;
     tie_placement_ = t.tie_placement_;
     // Jump points must be recalculated for this tie

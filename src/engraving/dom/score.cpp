@@ -497,13 +497,7 @@ void Score::rebuild_time_sig_map(Measure *measure) {
     }
 }
 
-void Score::set_show_invisible(bool v) {
-    show_invisible_ = v;
-    // BSP tree does not include elements which are not
-    // displayed, so we need to refresh it to get
-    // invisible elements displayed or properly hidden.
-    rebuild_bsp_tree();
-}
+void Score::set_show_invisible(bool v) { show_invisible_ = v; }
 
 void Score::set_show_unprintable(bool v) { show_unprintable_ = v; }
 
@@ -2670,9 +2664,13 @@ void Score::insert_time(const Fraction &tick, const Fraction &len, const std::ve
 
 void Score::on_time_inserted(const Fraction &, const Fraction &, const std::vector<RepeatSegmentInfo> &) {}
 
-void Score::add_unmanaged_spanner(Spanner *s) { unmanaged_spanner_.insert(s); }
+void Score::add_unmanaged_spanner(Spanner *s) {
+    if (!muse::contains(unmanaged_spanner_, s)) {
+        unmanaged_spanner_.push_back(s);
+    }
+}
 
-void Score::remove_unmanaged_spanner(Spanner *s) { unmanaged_spanner_.erase(s); }
+void Score::remove_unmanaged_spanner(Spanner *s) { muse::remove(unmanaged_spanner_, s); }
 
 std::vector<staff_idx_t> Score::unique_staves() const {
     std::vector<staff_idx_t> sl;
@@ -3281,12 +3279,6 @@ bool Score::all_staves_invisible() const {
     }
 
     return true;
-}
-
-void Score::rebuild_bsp_tree() {
-    for (Page *page : pages()) {
-        page->invalidate_bsp_tree();
-    }
 }
 
 //    scan all elements

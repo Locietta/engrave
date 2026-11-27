@@ -228,12 +228,12 @@ struct AudioRenderResult {
 // finalizes the encoder, and returns through the existing public ByteSink
 // adapter (which uses a seekable temporary file for header finalization).
 //
-// The metronome and chord-symbol tracks are added when the score walk creates
-// them, but are always muted (the metronome/chord playback switches
-// are off, like PlaybackController::trackOutputParams). request.tracks is
-// indexed by the track list for the same excerpt (engine_audio_tracks);
-// tracks outside the excerpt keep neutral values but are muted as described
-// above.
+// Muted tracks (including metronome, chord-symbol, solo-excluded, and
+// excerpt-excluded tracks) and note-free tracks are skipped instead of added
+// to the render session, so no FluidSynth instance is created for them.
+// request.tracks is indexed by the track list for the same excerpt
+// (engine_audio_tracks); tracks outside the excerpt keep neutral values and
+// are skipped as muted.
 //
 // Never throws for a bad score/format/engine state; inspect AudioRenderResult.
 // Exceptions from request.cancelled are rethrown after closing/removing the
@@ -255,6 +255,9 @@ struct PreparedAudioRender {
     // False once run_prepared_audio() has taken the session (even when that run
     // failed or threw) and after a move.
     bool ready() const noexcept;
+    // Active FluidSynth tracks instantiated in this session (excludes muted,
+    // metronome, chord-symbol, excerpt-excluded, and note-free tracks).
+    std::size_t synth_track_count() const noexcept;
 
     struct Impl;
     std::unique_ptr<Impl> impl;

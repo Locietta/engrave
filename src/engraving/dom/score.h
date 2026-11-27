@@ -238,8 +238,6 @@ public:
 
     DummyParent *dummy() const { return dummy_; }
 
-    void rebuild_bsp_tree();
-
     bool no_staves() const { return staves_.empty(); }
 
     void insert_part(Part *, size_t target_part_idx);
@@ -788,7 +786,7 @@ public:
     void add_spanner(Spanner *, bool compute_start_end = true);
     void check_spanner(const Fraction &start_tick, const Fraction &last_tick, bool remove_orphans = true);
 
-    const muse::BTreeSet<Spanner *> &unmanaged_spanners() const { return unmanaged_spanner_; }
+    const std::vector<Spanner *> &unmanaged_spanners() const { return unmanaged_spanner_; }
 
     void add_unmanaged_spanner(Spanner *);
     void remove_unmanaged_spanner(Spanner *);
@@ -941,7 +939,7 @@ private:
     RangeLocks page_locks_;
 
     SpannerMap spanner_;
-    muse::BTreeSet<Spanner *> unmanaged_spanner_;
+    std::vector<Spanner *> unmanaged_spanner_;
 
     std::vector<std::vector<BracketItem *>> brackets_;
 

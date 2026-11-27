@@ -56,6 +56,7 @@ public:
     Color cur_color(const rendering::PaintOptions &opt) const override;
 
 protected:
+    SlurSegment(ElementType type, const SlurSegment &ss);
 };
 
 //---------------------------------------------------------
@@ -126,6 +127,9 @@ public:
     bool is_outgoing() const;
 
     void undo_change_start_end_elements(ChordRest *scr, ChordRest *ecr);
+
+protected:
+    Slur(ElementType type, const Slur &);
 
 private:
     M_PROPERTY2(ConnectedElement, connected_element, set_connected_element, ConnectedElement::NONE)

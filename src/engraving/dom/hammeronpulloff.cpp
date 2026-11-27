@@ -35,11 +35,12 @@
 namespace mu::engraving {
 HammerOnPullOff::HammerOnPullOff(DummyParentOr<EngravingItem> parent) : Slur(parent, ElementType::HAMMER_ON_PULL_OFF) {}
 
-HammerOnPullOff::HammerOnPullOff(const HammerOnPullOff &other) : Slur(other) {}
+HammerOnPullOff::HammerOnPullOff(const HammerOnPullOff &other) : Slur(ElementType::HAMMER_ON_PULL_OFF, other) {}
 
 HammerOnPullOffSegment::HammerOnPullOffSegment(HammerOnPullOff *sp) : SlurSegment(sp, ElementType::HAMMER_ON_PULL_OFF_SEGMENT) {}
 
-HammerOnPullOffSegment::HammerOnPullOffSegment(const HammerOnPullOffSegment &other) : SlurSegment(other) {}
+HammerOnPullOffSegment::HammerOnPullOffSegment(const HammerOnPullOffSegment &other)
+    : SlurSegment(ElementType::HAMMER_ON_PULL_OFF_SEGMENT, other) {}
 
 Color HammerOnPullOffSegment::cur_color(const rendering::PaintOptions &opt) const {
     if (!opt.is_printing && MScore::warn_guitar_bends && !is_valid()) {

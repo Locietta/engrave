@@ -147,6 +147,8 @@ PreparedAudioRender::~PreparedAudioRender() = default;
 
 bool PreparedAudioRender::ready() const noexcept { return impl && impl->session; }
 
+std::size_t PreparedAudioRender::synth_track_count() const noexcept { return impl && impl->session ? impl->session->track_count() : 0; }
+
 EngineAudio::EngineAudio(const muse::mpe::ArticulationProfilesRepository &profiles) : state_(std::make_unique<State>(profiles)) {}
 
 EngineAudio::~EngineAudio() = default;
@@ -693,37 +695,44 @@ std::expected<PreparedAudioRender, AudioRenderResult> prepare_score_audio(Engine
         // playback and the metronome are off.
         const bool force_mute = !is_metronome && has_solo && !mix.solo;
 
-        TrackParams params;
         const int font = mix.soundfont < 0 ? 0 : mix.soundfont;
         if (static_cast<std::size_t>(font) >= state.resources.font_inputs.size()) {
             return fail(AudioRenderResult::Failure::ENGINE_FAILURE, "track names an unknown SoundFont");
         }
+
+        // Muted tracks never run FluidTrack::process() and note-free tracks
+        // trigger neither a FluidSynth voice nor a MIDI observer event
+        // (last_staff_ remains -1), so skip instantiating a synth for them.
+        const bool muted =
+            mix.muted || force_mute || is_chord_symbols || is_metronome || (excerpt_selected && muted_parts.count(track_id.part_id) > 0);
+        if (muted || events.notes.empty()) {
+            continue;
+        }
+
+        TrackParams params;
         params.source = state.resources.font_inputs[static_cast<std::size_t>(font)];
         set_track_control(params.control, mix);
-        params.control.muted =
-            mix.muted || force_mute || is_chord_symbols || is_metronome || (excerpt_selected && muted_parts.count(track_id.part_id) > 0);
-        if (!is_metronome) {
-            // Desktop adds the two Fluid default sends only for non-metronome
-            // tracks (playbackcontroller.cpp:1220-1227; defaultAuxSendValue is
-            // 0.30 for both, playbackconfiguration.cpp:272-289). Mixer index 0
-            // feeds the first aux track (muse/framework/audio/engine/internal/
-            // mixer.cpp:283-309), which is the reverb added below. With the
-            // reverb off the first send stays at zero, so the master is the dry
-            // mix; the aux tracks are still added, so the graph keeps its shape.
-            //
-            // The second send must stay at zero: 5.0 always gives an aux track
-            // an FxChain (AudioContext::onFxChainParamsChanged builds one even
-            // for an empty AudioFxChain, audiocontext.cpp:355-369) and the
-            // mixer only skips an aux whose chain *pointer* is null
-            // (mixer.cpp:275-277, 291-293), so the empty "Aux 2" track is a
-            // pass-through that would add 0.30 x the track signal - i.e. 1.3x
-            // dry, +2.28 dB - to the master. 4.7.6 skipped an aux whose fx
-            // chain *params* were empty (4.7.6 mixer.cpp:507-509, 527-529), so
-            // that send was discarded there; keeping it zero reproduces the
-            // 4.7.6 mix bit-exactly.
-            const double send = request.reverb ? request.reverb_send : 0.0;
-            params.aux_sends = {AuxSendParams{static_cast<gain_t>(send), true}, AuxSendParams{0.0f, true}};
-        }
+        params.control.muted = false;
+        // Desktop adds the two Fluid default sends only for non-metronome
+        // tracks (playbackcontroller.cpp:1220-1227; defaultAuxSendValue is
+        // 0.30 for both, playbackconfiguration.cpp:272-289). Mixer index 0
+        // feeds the first aux track (muse/framework/audio/engine/internal/
+        // mixer.cpp:283-309), which is the reverb added below. With the
+        // reverb off the first send stays at zero, so the master is the dry
+        // mix; the aux tracks are still added, so the graph keeps its shape.
+        //
+        // The second send must stay at zero: 5.0 always gives an aux track
+        // an FxChain (AudioContext::onFxChainParamsChanged builds one even
+        // for an empty AudioFxChain, audiocontext.cpp:355-369) and the
+        // mixer only skips an aux whose chain *pointer* is null
+        // (mixer.cpp:275-277, 291-293), so the empty "Aux 2" track is a
+        // pass-through that would add 0.30 x the track signal - i.e. 1.3x
+        // dry, +2.28 dB - to the master. 4.7.6 skipped an aux whose fx
+        // chain *params* were empty (4.7.6 mixer.cpp:507-509, 527-529), so
+        // that send was discarded there; keeping it zero reproduces the
+        // 4.7.6 mix bit-exactly.
+        const double send = request.reverb ? request.reverb_send : 0.0;
+        params.aux_sends = {AuxSendParams{static_cast<gain_t>(send), true}, AuxSendParams{0.0f, true}};
 
         const std::string name = track_name(master_score, track_id);
         RetVal2<TrackId, TrackParams> added;

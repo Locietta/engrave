@@ -116,6 +116,8 @@ TripletFeel::TripletFeel(DummyParentOr<Segment> parent, TripletFeelType triplet_
     init_element_style(&::mu::engraving::triplet_feel_style);
 }
 
+TripletFeel::TripletFeel(const TripletFeel &tf) : SystemText(ElementType::TRIPLET_FEEL, tf), triplet_feel_type_(tf.triplet_feel_type_) {}
+
 void TripletFeel::set_triplet_property() {
     set_swing(true);
 

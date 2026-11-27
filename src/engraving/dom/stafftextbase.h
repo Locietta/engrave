@@ -42,6 +42,7 @@ struct StaffTextBase : TextBase {
 
 public:
     StaffTextBase(const ElementType &type, DummyParentOr<Segment> parent, TextStyleType tid, ElementFlags = ElementFlag::ON_STAFF);
+    StaffTextBase(const StaffTextBase &st);
 
     void clear();
 
@@ -84,6 +85,9 @@ public:
 
     void added() override;
     void removed() override;
+
+protected:
+    StaffTextBase(ElementType type, const StaffTextBase &st);
 
 private:
     String channel_names_[4];

@@ -41,6 +41,9 @@ MeasureRepeat::MeasureRepeat(DummyParentOr<Segment> parent) : Rest(ElementType::
     set_duration_type(DurationType::V_MEASURE);
 }
 
+MeasureRepeat::MeasureRepeat(const MeasureRepeat &r)
+    : Rest(ElementType::MEASURE_REPEAT, r, false), num_measures_(r.num_measures_), number_offset_(r.number_offset_) {}
+
 void MeasureRepeat::set_num_measures(int n) {
     IF_ASSERT_FAILED(n <= ::mu::engraving::MeasureRepeat::max_num_measures) {
         num_measures_ = ::mu::engraving::MeasureRepeat::max_num_measures;

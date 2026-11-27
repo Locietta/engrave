@@ -376,10 +376,9 @@ Chord *Score::add_chord(const Fraction &tick, TDuration d, Chord *oc, bool gen_t
 
 ChordRest *Score::add_clone(ChordRest *cr, const Fraction &tick, const TDuration &d) {
     ChordRest *newcr;
-    // change a MeasureRepeat into an Rest
+    // change a MeasureRepeat into a Rest
     if (cr->is_measure_repeat()) {
         newcr = Factory::copy_rest(*to_rest(cr));
-        to_rest(newcr)->hack_to_rest_type();
     } else {
         newcr = to_chord_rest(cr->clone());
     }

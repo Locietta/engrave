@@ -256,11 +256,6 @@ void ScorePageViewLayout::layout_finished(Score *score, LayoutContext &ctx) {
             score->pages().pop_back();
             delete p;
         }
-    } else {
-        Page *p = state.cur_system()->page();
-        if (p && (p != state.page())) {
-            p->invalidate_bsp_tree();
-        }
     }
 
     score->systems().insert(score->systems().end(), state.system_list().begin(), state.system_list().end());
@@ -282,14 +277,12 @@ void ScorePageViewLayout::layout_headers_footers(LayoutContext &ctx) {
     LAYOUT_CALL();
 
     do_layout_headers_footers(ctx);
-    for (Page *page : ctx.dom().pages()) page->rebuild_bsp_tree();
 
     LAYOUT_CALL_PRINT();
 }
 
 void ScorePageViewLayout::do_layout_headers_footers(LayoutContext &ctx) {
     for (const auto &page : ctx.dom().pages()) {
-        page->invalidate_bsp_tree();
         HeaderFooterLayout::layout_header_footer(ctx, page);
     }
 }

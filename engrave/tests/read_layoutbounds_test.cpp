@@ -525,7 +525,7 @@ TEST(LayoutBounds, ClonedMeasureDoesNotBorrowDeletedSourceCollisionShapes) {
     EXPECT_EQ(rendered->pages, expected_svg->pages);
 }
 
-TEST(LayoutBounds, MultiPageRetirementPreservesUnrelatedPageBspAndBinarySearches) {
+TEST(LayoutBounds, SegmentRenderedTraversalMatchesOrderAndInvalidation) {
     using namespace mu::engraving;
     const auto input_path = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "tests/data/inputs/golden/slurs.mscz";
     auto opened = g_engine->open(input_path);
@@ -533,30 +533,44 @@ TEST(LayoutBounds, MultiPageRetirementPreservesUnrelatedPageBspAndBinarySearches
     auto &document = **opened;
     auto &master = master_of(document);
     ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
-    ASSERT_EQ(master.pages().size(), 2u);
 
-    auto *page0 = master.pages()[0];
-    auto *page1 = master.pages()[1];
-    page0->rebuild_bsp_tree();
-    page1->rebuild_bsp_tree();
-    const auto page0_items = page0->items(page0->ldata()->bbox());
-    const auto page1_items = page1->items(page1->ldata()->bbox());
-    ASSERT_FALSE(page0_items.empty());
-    ASSERT_FALSE(page1_items.empty());
+    auto *measure = master.first_measure();
+    ASSERT_NE(measure, nullptr);
+    const auto &rendered = measure->ldata()->rendered;
+    ASSERT_GE(rendered.size(), 2u);
 
-    // Collect >= 17 items strictly on page 1 so BspTree::contains_any exercises binary_search.
-    std::vector<const EngravingItem *> page1_only;
-    muse::HashSet<const EngravingItem *> page0_set(page0_items.begin(), page0_items.end());
-    for (const auto *item : page1_items) {
-        if (!page0_set.contains(item)) page1_only.push_back(item);
-        if (page1_only.size() >= 18) break;
-    }
-    ASSERT_GT(page1_only.size(), 16u);
-    std::sort(page1_only.begin(), page1_only.end(), std::less<>{});
+    std::vector<Segment *> forward;
+    for (auto *s = measure->rendered_first(); s; s = s->rendered_next()) forward.push_back(s);
+    EXPECT_EQ(forward, rendered);
 
-    page0->invalidate_bsp_tree_if_referenced(page1_only);
-    EXPECT_EQ(page0->items(page0->ldata()->bbox()), page0_items);
+    std::vector<Segment *> reverse;
+    for (auto *s = measure->rendered_last(); s; s = s->rendered_prev()) reverse.push_back(s);
+    std::reverse(reverse.begin(), reverse.end());
+    EXPECT_EQ(reverse, rendered);
 
-    page1->invalidate_bsp_tree_if_referenced(page1_only);
-    EXPECT_TRUE(page1->items(page1->ldata()->bbox()).empty());
+    // An output segment inserted into the measure must update cached indices for all siblings.
+    auto *extra = Factory::create_segment(measure, SegmentType::TIME_TICK, Fraction(1, 8));
+    measure->add_output_segment(extra);
+    const auto &after_insert = measure->ldata()->rendered;
+    ASSERT_EQ(after_insert.size(), forward.size() + 1);
+    std::vector<Segment *> rebuilt_forward;
+    for (auto *s = measure->rendered_first(); s; s = s->rendered_next()) rebuilt_forward.push_back(s);
+    EXPECT_EQ(rebuilt_forward, after_insert);
+    std::vector<Segment *> rebuilt_reverse;
+    for (auto *s = measure->rendered_last(); s; s = s->rendered_prev()) rebuilt_reverse.push_back(s);
+    std::reverse(rebuilt_reverse.begin(), rebuilt_reverse.end());
+    EXPECT_EQ(rebuilt_reverse, after_insert);
+
+    // An orphan segment not present in rendered must return nullptr rather than mis-indexing.
+    std::unique_ptr<Segment> orphan(Factory::create_segment(measure, SegmentType::TIME_TICK, Fraction(1, 16)));
+    EXPECT_EQ(orphan->rendered_next(), nullptr);
+    EXPECT_EQ(orphan->rendered_prev(), nullptr);
+
+    // Clearing rendered falls back to the source linked list.
+    measure->mutldata()->rendered.clear();
+    std::vector<Segment *> source_forward;
+    for (auto *s = measure->rendered_first(); s; s = s->rendered_next()) source_forward.push_back(s);
+    std::vector<Segment *> expected_source;
+    for (auto *s = measure->first(); s; s = s->next()) expected_source.push_back(s);
+    EXPECT_EQ(source_forward, expected_source);
 }

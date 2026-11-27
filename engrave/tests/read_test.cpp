@@ -3160,8 +3160,6 @@ TEST(Read, UnlaidElementsHaveImmutableTypedLayoutDefaults) {
     // Reading a default must leave it unresolved; explicit copies preserve z separately.
     std::unique_ptr<mu::engraving::MeasureRepeat> z_probe(mu::engraving::Factory::create_measure_repeat(master.dummy()));
     EXPECT_EQ(z_probe->z(), mu::engraving::default_z(mu::engraving::ElementType::MEASURE_REPEAT));
-    z_probe->hack_to_rest_type();
-    EXPECT_EQ(z_probe->z(), mu::engraving::default_z(mu::engraving::ElementType::REST));
     EXPECT_EQ(query.get_property(mu::engraving::Pid::Z).to_int(), query.z());
     EXPECT_FALSE(first.has_layout_data());
     mu::engraving::EngravingItem::disconnect_all_origin_items(&first);
@@ -3188,7 +3186,7 @@ TEST(Read, MeasureRepeatCopiesPreserveZWhenConvertedToRest) {
                 EXPECT_EQ(repeat->z(), expected);
             }
             std::unique_ptr<mu::engraving::Rest> rest(mu::engraving::Factory::copy_rest(*repeat));
-            rest->hack_to_rest_type();
+            EXPECT_EQ(rest->type(), mu::engraving::ElementType::REST);
             EXPECT_EQ(rest->z(), expected);
             muse::ByteArray bytes;
             muse::io::Buffer buffer(&bytes);

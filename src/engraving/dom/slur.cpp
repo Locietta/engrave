@@ -47,7 +47,9 @@ using namespace muse::draw;
 namespace mu::engraving {
 SlurSegment::SlurSegment(Slur *sp, ElementType type) : SlurTieSegment(type, sp) {}
 
-SlurSegment::SlurSegment(const SlurSegment &ss) : SlurTieSegment(ss) {}
+SlurSegment::SlurSegment(const SlurSegment &ss) : SlurSegment(ElementType::SLUR_SEGMENT, ss) {}
+
+SlurSegment::SlurSegment(ElementType type, const SlurSegment &ss) : SlurTieSegment(type, ss) {}
 
 //---------------------------------------------------------
 //   searchCR
@@ -97,7 +99,9 @@ Color SlurSegment::cur_color(const rendering::PaintOptions &opt) const {
     return EngravingItem::cur_color(get_property(Pid::VISIBLE).to_bool(), get_property(Pid::COLOR).value<Color>(), opt);
 }
 
-Slur::Slur(const Slur &s) : SlurTie(s) {
+Slur::Slur(const Slur &s) : Slur(ElementType::SLUR, s) {}
+
+Slur::Slur(ElementType type, const Slur &s) : SlurTie(type, s) {
     connected_element_value = s.connected_element_value;
     partial_spanner_direction_value = s.partial_spanner_direction_value;
 }

@@ -58,6 +58,13 @@ static const String fret_box_diagrams_separator = u",";
 
 Box::Box(const ElementType &type, Score *parent) : MeasureBase(type, parent) {}
 
+Box::Box(const Box &b) : Box(b.type(), b) {}
+
+Box::Box(ElementType type, const Box &b)
+    : MeasureBase(type, b), box_width_(b.box_width_), box_height_(b.box_height_), top_gap_(b.top_gap_), bottom_gap_(b.bottom_gap_),
+      left_margin_(b.left_margin_), right_margin_(b.right_margin_), top_margin_(b.top_margin_), bottom_margin_(b.bottom_margin_),
+      is_auto_size_enabled_(b.is_auto_size_enabled_) {}
+
 void HBox::compute_min_width() {
     set_width(absolute_from_spatium(box_width() + top_gap() + bottom_gap())); // top/bottom is really left/right
 }
@@ -281,6 +288,11 @@ VBox::VBox(const ElementType &type, Score *parent) : Box(type, parent) {
 
 VBox::VBox(Score *parent) : VBox(ElementType::VBOX, parent) {}
 
+VBox::VBox(const VBox &v) : VBox(ElementType::VBOX, v) {}
+
+VBox::VBox(ElementType type, const VBox &v)
+    : Box(type, v), padding_to_notation_above_(v.padding_to_notation_above_), padding_to_notation_below_(v.padding_to_notation_below_) {}
+
 void VBox::add(EngravingItem *e) {
     IF_ASSERT_FAILED(e) { return; }
     if (e->is_layout_break()) {
@@ -345,6 +357,11 @@ FBox::FBox(Score *parent) : VBox(ElementType::FBOX, parent) {
     reset_property(Pid::APPEARANCE_LINKED_TO_MASTER);
     reset_property(Pid::POSITION_LINKED_TO_MASTER);
 }
+
+FBox::FBox(const FBox &f)
+    : VBox(ElementType::FBOX, f), text_scale_(f.text_scale_), diagram_scale_(f.diagram_scale_), column_gap_(f.column_gap_),
+      row_gap_(f.row_gap_), chords_per_row_(f.chords_per_row_), needs_rebuild_(f.needs_rebuild_),
+      content_alignment_h_(f.content_alignment_h_), diagrams_order_in_score_(f.diagrams_order_in_score_) {}
 
 void FBox::init() {
     StringList old_diagrams_names;
@@ -535,7 +552,7 @@ TBox::TBox(Score *parent) : VBox(ElementType::TBOX, parent) {
     text_->set_layout_to_parent_width(true);
 }
 
-TBox::TBox(const TBox &tbox) : VBox(tbox) {
+TBox::TBox(const TBox &tbox) : VBox(ElementType::TBOX, tbox) {
     if (tbox.text_) {
         add(Factory::copy_text(*(tbox.text_)));
     }

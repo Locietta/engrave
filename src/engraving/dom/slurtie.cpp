@@ -37,7 +37,9 @@ using namespace mu::engraving;
 namespace mu::engraving {
 SlurTieSegment::SlurTieSegment(const ElementType &type, SlurTie *sp) : SpannerSegment(type, sp) { set_flag(ElementFlag::ON_STAFF, true); }
 
-SlurTieSegment::SlurTieSegment(const SlurTieSegment &b) : SpannerSegment(b) {
+SlurTieSegment::SlurTieSegment(const SlurTieSegment &b) : SlurTieSegment(b.type(), b) {}
+
+SlurTieSegment::SlurTieSegment(ElementType type, const SlurTieSegment &b) : SpannerSegment(type, b) {
     for (int i = 0; i < int(Grip::GRIPS); ++i) {
         ups_[i] = b.ups_[i];
         ups_[i].p = PointF();
@@ -147,7 +149,9 @@ SlurTie::SlurTie(const ElementType &type, EngravingObject *parent) : Spanner(typ
     mask_slur_tie_ = AutoOnOff::AUTO;
 }
 
-SlurTie::SlurTie(const SlurTie &t) : Spanner(t) {
+SlurTie::SlurTie(const SlurTie &t) : SlurTie(t.type(), t) {}
+
+SlurTie::SlurTie(ElementType type, const SlurTie &t) : Spanner(type, t) {
     slur_direction_ = t.slur_direction_;
     style_type_ = t.style_type_;
     mask_slur_tie_ = t.mask_slur_tie_;

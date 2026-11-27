@@ -23,6 +23,7 @@
 #include "page.h"
 
 #include "factory.h"
+#include "global/hashmap.h"
 #include "measurebase.h"
 #include "mscore.h"
 #include "rootitem.h"
@@ -36,7 +37,7 @@ using namespace mu::engraving;
 //   Page
 //---------------------------------------------------------
 
-Page::Page(Score *parent) : EngravingItem(ElementType::PAGE, parent, ElementFlag::NOT_SELECTABLE) { bsp_tree_valid_ = false; }
+Page::Page(Score *parent) : EngravingItem(ElementType::PAGE, parent, ElementFlag::NOT_SELECTABLE) {}
 
 void Page::set_ownership_parent(Score *score) { EngravingItem::set_ownership_parent(score); }
 
@@ -76,13 +77,14 @@ MeasureBase *Page::last_measure_base() const {
 //---------------------------------------------------------
 
 std::vector<EngravingItem *> Page::items(const RectF &rect) {
-    if (!bsp_tree_valid_) return {};
-    return bsp_tree.items(rect);
-}
-
-std::vector<EngravingItem *> Page::items(const PointF &point) {
-    if (!bsp_tree_valid_) return {};
-    return bsp_tree.items(point);
+    std::vector<EngravingItem *> result;
+    muse::HashSet<EngravingItem *> seen;
+    scan_elements([&](EngravingItem *item) {
+        if (item->collect_for_drawing() && item->page_bounding_rect().intersects(rect) && seen.insert(item).second) {
+            result.push_back(item);
+        }
+    });
+    return result;
 }
 
 //---------------------------------------------------------
@@ -118,61 +120,6 @@ void Page::scan_elements(muse::FnRef<void(EngravingItem *)> func) {
             func(t);
         }
     }
-}
-
-//---------------------------------------------------------
-//   doRebuildBspTree
-//---------------------------------------------------------
-
-void Page::invalidate_bsp_tree() {
-    bsp_tree_valid_ = false;
-    bsp_tree.clear();
-    if (Score::is_alive(score())) score()->invalidate_layout(Fraction(0, 1), Fraction(-1, 1));
-}
-
-void Page::invalidate_bsp_tree_if_referenced(std::span<const EngravingItem *const> sorted_targets) {
-    if (bsp_tree_valid_ && bsp_tree.contains_any(sorted_targets)) {
-        invalidate_bsp_tree();
-    }
-}
-
-void Page::rebuild_bsp_tree() {
-    if (bsp_tree_valid_) return;
-    int n = 0;
-    auto count_elements = [&](EngravingItem *item) {
-        if (item->collect_for_drawing()) {
-            ++n;
-        }
-    };
-
-    scan_elements(count_elements);
-
-    RectF r;
-    if (score()->linear_mode()) {
-        double w = 0.0;
-        double h = 0.0;
-        if (!systems_.empty()) {
-            h = systems_.front()->height();
-            if (!systems_.front()->measures().empty()) {
-                MeasureBase *mb = systems_.front()->measures().back();
-                w = mb->x() + mb->width();
-            }
-        }
-        r = RectF(0.0, 0.0, w, h);
-    } else {
-        r = page_bounding_rect();
-    }
-
-    bsp_tree.initialize(r, n);
-
-    auto bsp_insert = [&](EngravingItem *item) {
-        if (item->collect_for_drawing()) {
-            bsp_tree.insert(item);
-        }
-    };
-    scan_elements(bsp_insert);
-
-    bsp_tree_valid_ = true;
 }
 
 //---------------------------------------------------------

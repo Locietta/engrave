@@ -483,10 +483,26 @@ TEST(StaveSharingOutput, AuxiliaryRetirementInvalidatesEveryBorrowingPage) {
     }
     ASSERT_TRUE((*opened)->render({.format = engrave::RenderFormat::SVG}));
     ASSERT_EQ(master.pages().size(), 2u);
-    for (auto *page : master.pages()) EXPECT_FALSE(page->items(muse::RectF(0, 0, 10000, 10000)).empty());
+    muse::HashSet<const EngravingItem *> retired_segments;
+    for (const auto *spanner : master.layout_data_store()->score_output().shared_spanners) {
+        for (const auto *seg : spanner->spanner_segments()) retired_segments.insert(seg);
+    }
+    ASSERT_FALSE(retired_segments.empty());
+    bool saw_shared_segment = false;
+    for (auto *page : master.pages()) {
+        const auto items = page->items(muse::RectF(0, 0, 10000, 10000));
+        EXPECT_FALSE(items.empty());
+        for (const auto *item : items) {
+            if (retired_segments.contains(item)) saw_shared_segment = true;
+        }
+    }
+    EXPECT_TRUE(saw_shared_segment);
     master.layout_data_store()->retire_measure_borrowers(*master.first_measure());
-    for (auto *page : master.pages()) EXPECT_TRUE(page->items(muse::RectF(0, 0, 10000, 10000)).empty());
     EXPECT_TRUE(master.layout_data_store()->score_output().shared_spanners.empty());
+    for (auto *page : master.pages()) {
+        const auto items = page->items(muse::RectF(0, 0, 10000, 10000));
+        for (const auto *item : items) EXPECT_FALSE(retired_segments.contains(item));
+    }
 }
 
 TEST(StaveSharingOutput, MultipleVoicesUseRenderedNotesWithoutChangingSourceVoiceFlags) {

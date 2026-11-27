@@ -34,6 +34,7 @@ private:
 
 public:
     Hook(DummyParentOr<Chord> parent);
+    Hook(const Hook &h);
 
     Hook *clone() const override { return new Hook(*this); }
 

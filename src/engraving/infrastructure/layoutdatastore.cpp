@@ -378,7 +378,7 @@ ItemLayoutData *LayoutDataStore::mut_data(EngravingItem &item) {
         if (item.layout_store_ != this) throw std::logic_error("layout payload belongs to a different store");
         return item.layout_data_;
     }
-    return LayoutDataTypes::dispatch(item.layout_type_, [&]<typename Data>() -> ItemLayoutData * {
+    return LayoutDataTypes::dispatch(item.type(), [&]<typename Data>() -> ItemLayoutData * {
         const auto [slot, data] = records_->pool<Data>().emplace(&item);
         data->item_ = &item;
         item.layout_store_ = this;
@@ -399,7 +399,7 @@ void LayoutDataStore::erase(EngravingItem &item) {
     if (auto *shared = item.shared_item()) EngravingItem::disconnect_shared_item(shared, &item);
     EngravingItem::disconnect_all_origin_items(&item);
 
-    LayoutDataTypes::dispatch(item.layout_type_, [&]<typename Data>() {
+    LayoutDataTypes::dispatch(item.type(), [&]<typename Data>() {
         auto &pool = records_->pool<Data>();
         const auto slot = item.layout_slot_;
         auto *data = pool.detach(slot);
@@ -524,11 +524,10 @@ std::vector<LayoutDataStore::RetireScope> LayoutDataStore::retire_batch_for_disp
 
 void LayoutDataStore::prune_shape_borrowers(std::span<const EngravingItem *const> retired, const BeamBase *beam) {
     if (!retired.empty()) {
-        for (auto *page : output_.pages) page->invalidate_bsp_tree_if_referenced(retired);
         const auto borrows_retired = [&](const ShapeElement &element) { return contains_retired(retired, element.item()); };
         records_->for_each_live_data([&](ItemLayoutData &data) {
             if (data.is_set_shape()) data.mut_shape().remove_if(borrows_retired);
-            if (data.mask_.has_value()) data.mask_.mut_value().remove_if(borrows_retired);
+            if (data.is_set_mask()) data.mut_mask().remove_if(borrows_retired);
         });
         const auto prune_skyline = [&](System &system) {
             for (auto *staff : system.staves()) {
@@ -640,7 +639,6 @@ void LayoutDataStore::retire_measure_borrowers(Measure &measure) {
     clear_output_anchors(*score_, &measure);
     auto *system = measure.system();
     if (!system) return;
-    if (auto *page = system->page()) page->invalidate_bsp_tree();
     for (auto *staff : system->staves()) staff->skyline().clear();
     records_->pool<Segment::LayoutData>().for_each_live([&](EngravingItem &owner, Segment::LayoutData &) {
         auto *segment = to_segment(&owner);
@@ -674,7 +672,6 @@ std::vector<Spanner *> LayoutDataStore::rendered_spanners(int first_tick, int la
 void LayoutDataStore::retire_shared_auxiliary_output() {
     if (!output_.shared_spanners.empty() || !output_.shared_tuplets.empty()) {
         // Auxiliary output may span systems beyond the edited measure.
-        for (auto *page : output_.pages) page->invalidate_bsp_tree();
         for (auto *system : output_.systems)
             for (auto *staff : system->staves()) staff->skyline().clear();
         const muse::HashSet<Spanner *> retired(output_.shared_spanners.begin(), output_.shared_spanners.end());
@@ -702,13 +699,12 @@ void LayoutDataStore::discard_score_output() {
     // every copied collision before the first display child can be freed.
     records_->for_each_live_data([](ItemLayoutData &data) {
         data.clear_shape();
-        data.mask_.reset();
+        data.clear_mask();
     });
     if (score_) {
         clear_output_anchors(*score_);
         // These legacy L5 caches can retain pointers to output-owned ledger and
         // Harmony parenthesis shells. Retire their views before deleting shells.
-        for (auto *page : output_.pages) page->invalidate_bsp_tree();
         for (auto *system : output_.systems) {
             for (auto *staff : system->staves()) staff->skyline().clear();
         }

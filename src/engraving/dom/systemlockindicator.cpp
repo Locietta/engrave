@@ -25,7 +25,6 @@
 #include "engraving/rendering/score/scorerenderer.h"
 #include "measure.h"
 #include "measurebase.h"
-#include "page.h"
 #include "rangelock.h"
 #include "system.h"
 
@@ -36,7 +35,6 @@ SystemLockIndicator::SystemLockIndicator(DummyParentOr<System> parent, const Ran
 void SystemLockIndicator::set_selected(bool v) {
     EngravingItem::set_selected(v);
     renderer()->layout_item(this);
-    system()->page()->invalidate_bsp_tree();
 }
 
 String SystemLockIndicator::format_bars_and_beats() const {

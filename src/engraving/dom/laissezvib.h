@@ -52,6 +52,7 @@ private:
 
 public:
     LaissezVib(DummyParentOr<Note> parent);
+    LaissezVib(const LaissezVib &);
 
     LaissezVib *clone() const override { return new LaissezVib(*this); }
 

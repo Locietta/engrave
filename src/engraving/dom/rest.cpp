@@ -63,7 +63,9 @@ Rest::Rest(const ElementType &type, DummyParentOr<Segment> parent, const TDurati
     }
 }
 
-Rest::Rest(const Rest &r, bool link) : ChordRest(r, link) {
+Rest::Rest(const Rest &r, bool link) : Rest(ElementType::REST, r, link) {}
+
+Rest::Rest(ElementType type, const Rest &r, bool link) : ChordRest(type, r, link) {
     clone_authored_overrides(authored_overrides, r.authored_overrides, *master_score()->eid_register());
     if (link) {
         score()->apply_link(this, const_cast<Rest *>(&r));
@@ -79,8 +81,6 @@ Rest::Rest(const Rest &r, bool link) : ChordRest(r, link) {
         }
     }
 }
-
-void Rest::hack_to_rest_type() { hack_set_type(ElementType::REST); }
 
 //   setOffset, overridden from EngravingItem
 //    (- raster vertical position in spatium units) -> no

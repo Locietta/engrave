@@ -51,6 +51,12 @@ Arpeggio::Arpeggio(DummyParentOr<Chord> parent, ElementType type) : EngravingIte
     }
 }
 
+Arpeggio::Arpeggio(const Arpeggio &a) : Arpeggio(ElementType::ARPEGGIO, a) {}
+
+Arpeggio::Arpeggio(ElementType type, const Arpeggio &a)
+    : EngravingItem(type, a), arpeggio_type_(a.arpeggio_type_), user_len1_(a.user_len1_), user_len2_(a.user_len2_), span_(a.span_),
+      play_arpeggio_(a.play_arpeggio_), stretch_(a.stretch_) {}
+
 Arpeggio::~Arpeggio() {
     // Remove reference to this arpeggio in any chords it may have spanned
     Chord *chord_value = chord();

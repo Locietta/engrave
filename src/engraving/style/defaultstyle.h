@@ -46,8 +46,8 @@ private:
     static bool do_load_style(MStyle *style, const muse::io::PathT &file_path);
 
     struct LegacyStyleCache {
-        MStyle style;
-        bool loaded = false;
+        std::unique_ptr<MStyle> style;
+        bool attempted = false;
     };
 
     MStyle base_style_;    // builtin initial style

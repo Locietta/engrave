@@ -170,6 +170,7 @@ public:
 
 protected:
     LyricsLine(const ElementType &type, DummyParentOr<EngravingItem> parent, ElementFlags = ElementFlag::NOTHING);
+    LyricsLine(ElementType type, const LyricsLine &);
 
     bool is_in_spanner_map() const override { return false; }
 
@@ -189,6 +190,7 @@ private:
 
 public:
     LyricsLineSegment(LyricsLine *);
+    LyricsLineSegment(const LyricsLineSegment &);
 
     LyricsLineSegment *clone() const override { return new LyricsLineSegment(*this); }
 
@@ -229,6 +231,7 @@ public:
 
 protected:
     LyricsLineSegment(const ElementType &type, LyricsLine *sp, ElementFlags f = ElementFlag::NOTHING);
+    LyricsLineSegment(ElementType type, const LyricsLineSegment &);
 };
 
 struct PartialLyricsLine final : LyricsLine {
@@ -284,6 +287,7 @@ private:
 
 public:
     PartialLyricsLineSegment(PartialLyricsLine *);
+    PartialLyricsLineSegment(const PartialLyricsLineSegment &);
 
     LyricsLineSegment *clone() const override { return new PartialLyricsLineSegment(*this); }
 

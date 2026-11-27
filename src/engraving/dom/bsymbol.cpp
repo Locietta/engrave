@@ -44,7 +44,9 @@ BSymbol::BSymbol(const ElementType &type, EngravingObject *parent, ElementFlags 
     align_ = {AlignH::LEFT, AlignV::BASELINE};
 }
 
-BSymbol::BSymbol(const BSymbol &s) : EngravingItem(s) {
+BSymbol::BSymbol(const BSymbol &s) : BSymbol(s.type(), s) {}
+
+BSymbol::BSymbol(ElementType type, const BSymbol &s) : EngravingItem(type, s) {
     align_ = s.align_;
     for (EngravingItem *e : s.leafs_) {
         EngravingItem *ee = e->clone();

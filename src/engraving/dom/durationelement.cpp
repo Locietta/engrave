@@ -44,7 +44,9 @@ DurationElement::DurationElement(const ElementType &type, EngravingObject *paren
 //   DurationElement
 //---------------------------------------------------------
 
-DurationElement::DurationElement(const DurationElement &e, bool link) : EngravingItem(e, link) {
+DurationElement::DurationElement(const DurationElement &e, bool link) : DurationElement(e.type(), e, link) {}
+
+DurationElement::DurationElement(ElementType type, const DurationElement &e, bool link) : EngravingItem(type, e, link) {
     tuplet_ = 0; // e._tuplet;
     duration_ = e.duration_;
 }

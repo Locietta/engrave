@@ -35,6 +35,7 @@ struct Box : MeasureBase {
 
 public:
     Box(const ElementType &type, Score *parent);
+    Box(const Box &);
 
     virtual void add(EngravingItem *e) override;
     virtual double absolute_from_spatium(const Spatium &val) const override;
@@ -91,6 +92,9 @@ public:
 
     void manage_exclusion_from_parts(bool exclude) override;
 
+protected:
+    Box(ElementType type, const Box &);
+
 private:
     Spatium box_width_;  // only valid for HBox
     Spatium box_height_; // only valid for VBox
@@ -139,6 +143,7 @@ private:
 
 public:
     VBox(Score *parent);
+    VBox(const VBox &);
 
     VBox *clone() const override { return new VBox(*this); }
 
@@ -157,6 +162,7 @@ public:
 
 protected:
     VBox(const ElementType &type, Score *parent);
+    VBox(ElementType type, const VBox &);
 
 private:
     Spatium padding_to_notation_above_;
@@ -171,6 +177,7 @@ private:
 
 public:
     FBox(Score *parent);
+    FBox(const FBox &);
 
     FBox *clone() const override { return new FBox(*this); }
 

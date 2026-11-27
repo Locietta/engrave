@@ -802,7 +802,9 @@ TextBase::TextBase(const ElementType &type, EngravingObject *parent, TextStyleTy
 
 TextBase::TextBase(const ElementType &type, EngravingObject *parent, ElementFlags f) : TextBase(type, parent, TextStyleType::DEFAULT, f) {}
 
-TextBase::TextBase(const TextBase &st) : EngravingItem(st) {
+TextBase::TextBase(const TextBase &st) : TextBase(st.type(), st) {}
+
+TextBase::TextBase(ElementType type, const TextBase &st) : EngravingItem(type, st) {
     cursor_ = new TextCursor(this);
     cursor_->set_format(*(st.cursor()->format()));
     text_ = st.text_;

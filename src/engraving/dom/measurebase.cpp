@@ -55,7 +55,9 @@ EngravingItem *MeasureBase::layout_parent() const {
     return EngravingItem::layout_parent();
 }
 
-MeasureBase::MeasureBase(const MeasureBase &m) : EngravingItem(m) {
+MeasureBase::MeasureBase(const MeasureBase &m) : MeasureBase(m.type(), m) {}
+
+MeasureBase::MeasureBase(ElementType type, const MeasureBase &m) : EngravingItem(type, m) {
     next_ = m.next_;
     prev_ = m.prev_;
     tick_ = m.tick_;

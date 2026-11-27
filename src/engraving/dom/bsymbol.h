@@ -59,6 +59,7 @@ public:
 protected:
     BSymbol(const ElementType &type, EngravingObject *parent, ElementFlags f = ElementFlag::NOTHING);
     BSymbol(const BSymbol &);
+    BSymbol(ElementType type, const BSymbol &);
 
 private:
 

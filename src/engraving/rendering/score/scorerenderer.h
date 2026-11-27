@@ -108,7 +108,6 @@ struct ScoreRenderer {
         bool is_set_viewport = true;
         bool is_multi_page = false;
         bool print_page_background = true;
-        RectF frame_rect;
         int from_page = -1; // 0 is first
         int to_page = -1;
         int copy_count = 1;

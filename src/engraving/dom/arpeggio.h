@@ -40,7 +40,7 @@ private:
     DECLARE_CLASSOF(ElementType::ARPEGGIO)
 
 public:
-
+    Arpeggio(const Arpeggio &a);
     ~Arpeggio() override;
 
     Arpeggio *clone() const override { return new Arpeggio(*this); }
@@ -114,6 +114,7 @@ protected:
     friend struct Factory;
 
     Arpeggio(DummyParentOr<Chord> parent, ElementType type = ElementType::ARPEGGIO);
+    Arpeggio(ElementType type, const Arpeggio &a);
 
 private:
     void spatium_changed(double /*oldValue*/, double /*newValue*/) override;

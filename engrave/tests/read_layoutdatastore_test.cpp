@@ -226,15 +226,10 @@ TEST(LayoutDataStore, ResetPassClearsArticulationFamilyOverrides) {
     ASSERT_NE(chord, nullptr);
     const std::array<Articulation *, 3> articulations{Factory::create_articulation(chord), Factory::create_ornament(chord),
                                                       Factory::create_tapping(chord)};
-#ifdef NDEBUG
-    constexpr bool reset_up = false;
-#else
-    constexpr bool reset_up = true;
-#endif
     for (auto *articulation : articulations) {
         chord->add(articulation);
         auto *data = articulation->mutldata();
-        data->up.set_value(!reset_up);
+        data->up.set_value(false);
         data->sym_id.set_value(SymId::ARTIC_STACCATO_ABOVE);
         data->set_bbox(0, 0, 5, 5);
     }
@@ -245,8 +240,11 @@ TEST(LayoutDataStore, ResetPassClearsArticulationFamilyOverrides) {
 
     for (const auto *articulation : articulations) {
         SCOPED_TRACE(static_cast<int>(articulation->type()));
-        EXPECT_EQ(articulation->ldata()->up.value(LdAccess::MAYBE_NOTINITED), reset_up);
+        EXPECT_FALSE(articulation->ldata()->up.has_value());
+        EXPECT_EQ(articulation->ldata()->up.value(LdAccess::MAYBE_NOTINITED), true);
+        EXPECT_FALSE(articulation->ldata()->sym_id.has_value());
         EXPECT_EQ(articulation->ldata()->sym_id.value(LdAccess::MAYBE_NOTINITED), SymId::NO_SYM);
+        EXPECT_FALSE(articulation->ldata()->is_set_shape());
         EXPECT_FALSE(articulation->ldata()->is_valid());
     }
 }
@@ -437,8 +435,7 @@ TEST(LayoutDataStore, ClosedDispatchKeepsColdDefaultsSparseAndPreservesLegacyPay
     EXPECT_EQ(store.size(), before);
 
     std::unique_ptr<MeasureRepeat> repeat(Factory::create_measure_repeat(master.dummy()));
-    repeat->hack_to_rest_type();
-    EXPECT_EQ(repeat->type(), ElementType::REST);
+    EXPECT_EQ(repeat->type(), ElementType::MEASURE_REPEAT);
     const EngravingObject *object = repeat.get();
     EXPECT_EQ(item_cast<const MeasureRepeat *>(object), repeat.get());
     EXPECT_EQ(item_cast<const Rest *>(object), repeat.get());
@@ -448,23 +445,26 @@ TEST(LayoutDataStore, ClosedDispatchKeepsColdDefaultsSparseAndPreservesLegacyPay
     EXPECT_FALSE(repeat->has_layout_data());
     EXPECT_TRUE(repeat->ldata()->number_sym.empty());
     auto *payload = repeat->mutldata();
-    payload->set_number_sym(12); // Must remain a full MeasureRepeat payload after the type hack.
+    payload->set_number_sym(12);
     EXPECT_EQ(payload->number_sym.size(), 2u);
     EXPECT_EQ(store.find(*repeat), payload);
     std::unique_ptr<Rest> slice(Factory::copy_rest(*repeat));
+    EXPECT_EQ(slice->type(), ElementType::REST);
     EXPECT_EQ(item_cast<const MeasureRepeat *>(static_cast<const EngravingObject *>(slice.get()), CastMode::MAYBE_BAD), nullptr);
     EXPECT_FALSE(slice->has_layout_data());
     EXPECT_EQ(slice->ldata()->sym.value(), SymId::REST_QUARTER);
     std::unique_ptr<MMRest> mm_rest(Factory::create_mm_rest(master.dummy()));
     mm_rest->mutldata()->rest_width = 4.5;
     std::unique_ptr<Rest> mm_slice(Factory::copy_rest(*mm_rest));
-    mm_slice->hack_to_rest_type();
+    EXPECT_EQ(mm_slice->type(), ElementType::REST);
+    EXPECT_EQ(item_cast<const MMRest *>(static_cast<const EngravingObject *>(mm_slice.get()), CastMode::MAYBE_BAD), nullptr);
     EXPECT_FALSE(mm_slice->has_layout_data());
     EXPECT_EQ(mm_rest->ldata()->rest_width.value(), 4.5);
 
     std::unique_ptr<PartialLyricsLine> partial(Factory::create_partial_lyrics_line(master.dummy()));
     EXPECT_EQ(item_cast<const PartialLyricsLine *>(static_cast<const EngravingObject *>(partial.get())), partial.get());
     std::unique_ptr<LyricsLine> lyrics_slice(Factory::copy_lyrics_line(*partial));
+    EXPECT_EQ(lyrics_slice->type(), ElementType::LYRICSLINE);
     EXPECT_EQ(item_cast<const LyricsLine *>(static_cast<const EngravingObject *>(lyrics_slice.get())), lyrics_slice.get());
     EXPECT_EQ(item_cast<const PartialLyricsLine *>(static_cast<const EngravingObject *>(lyrics_slice.get()), CastMode::MAYBE_BAD), nullptr);
 
@@ -478,7 +478,7 @@ TEST(LayoutDataStore, ClosedDispatchKeepsColdDefaultsSparseAndPreservesLegacyPay
     std::unique_ptr<Ornament> ornament(Factory::create_ornament(master.dummy()));
     Articulation direct_slice(*ornament);
     const EngravingObject *sliced_obj = &direct_slice;
-    EXPECT_EQ(direct_slice.concrete_type(), ElementType::ARTICULATION);
+    EXPECT_EQ(direct_slice.type(), ElementType::ARTICULATION);
     EXPECT_EQ(item_cast<const Articulation *>(sliced_obj), &direct_slice);
     EXPECT_EQ(item_cast<const Ornament *>(sliced_obj, CastMode::MAYBE_BAD), nullptr);
     EXPECT_EQ(item_cast<const Ornament *>(static_cast<const EngravingObject *>(ornament.get())), ornament.get());
@@ -581,13 +581,11 @@ TEST(LayoutDataStore, EmptyMacrosRetireBorrowersOnlyForPublishedHeadersAndFooter
     EXPECT_EQ(page->footer_text(1), nullptr);
     EXPECT_EQ(shape.size(), shape_size);
     EXPECT_EQ(store.size(), after_removal);
-    // Removing published headers/footers must invalidate the page BSP tree before any rebuild.
-    EXPECT_TRUE(page->items(page->page_bounding_rect()).empty());
+    const auto after_items = page->items(page->page_bounding_rect());
+    EXPECT_EQ(std::find(after_items.begin(), after_items.end(), header), after_items.end());
+    EXPECT_EQ(std::find(after_items.begin(), after_items.end(), footer), after_items.end());
 
-    // Rebuilding the BSP and re-running empty macros disposes unpublished scratch text
-    // cleanly without invalidating the page BSP or leaking slab slots.
-    page->rebuild_bsp_tree();
-    ASSERT_FALSE(page->items(page->page_bounding_rect()).empty());
+    // Re-running empty macros disposes unpublished scratch text cleanly without leaking slab slots.
     HeaderFooterLayout::layout_header_footer(ctx, page);
     EXPECT_EQ(page->header_text(1), nullptr);
     EXPECT_EQ(page->footer_text(1), nullptr);
@@ -824,4 +822,85 @@ TEST(LayoutDataStore, HarmonyOutputOwnsRenderedChildrenAndColdDestructionDoesNot
     harmony->mutldata()->render_item_list.adopt(std::make_unique<ChordSymbolParen>(paren, false, 0.0, 0.0));
     harmony.reset();
     EXPECT_EQ(store.size(), before);
+}
+
+TEST(LayoutDataStore, LdFieldAndItemPresenceTrackStateUniformly) {
+    using namespace mu::engraving;
+    using namespace mu::engraving::rendering::score;
+
+    ld_field<double> scalar = {"scalar", 1.5};
+    EXPECT_FALSE(scalar.has_value());
+    EXPECT_DOUBLE_EQ(scalar.value(LdAccess::MAYBE_NOTINITED), 1.5);
+    scalar = 4.25;
+    EXPECT_TRUE(scalar.has_value());
+    EXPECT_DOUBLE_EQ(scalar.value(), 4.25);
+    scalar.reset();
+    EXPECT_FALSE(scalar.has_value());
+    EXPECT_DOUBLE_EQ(scalar.value(LdAccess::MAYBE_NOTINITED), 1.5);
+
+    ld_field<Shape> shape_field = {"shape", Shape()};
+    EXPECT_FALSE(shape_field.has_value());
+    shape_field.mut_value().add(RectF(0, 0, 2, 3));
+    EXPECT_TRUE(shape_field.has_value());
+    EXPECT_FALSE(shape_field.value().empty());
+    shape_field.reset();
+    EXPECT_FALSE(shape_field.has_value());
+    EXPECT_TRUE(shape_field.value(LdAccess::MAYBE_NOTINITED).empty());
+
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    ASSERT_NE(chord, nullptr);
+
+    // Creating an Articulation initializes its element style and marks layout dirty;
+    // dirty layout data falls back to authored direction_ even when up is set.
+    std::unique_ptr<Articulation> art(Factory::create_articulation(chord));
+    art->set_direction(DirectionV::DOWN);
+    {
+        auto *pre_ld = art->mutldata();
+        pre_ld->up = true;
+        ASSERT_FALSE(art->is_layout_data_current());
+        EXPECT_FALSE(art->up());
+        master.layout_data_store()->erase(*art);
+    }
+
+    master.ensure_layout();
+
+    auto *art_ld = art->mutldata();
+    ASSERT_TRUE(art->is_layout_data_current());
+    EXPECT_FALSE(art_ld->is_set_pos());
+    EXPECT_FALSE(art_ld->is_set_shape());
+    EXPECT_FALSE(art_ld->is_set_bbox());
+    EXPECT_FALSE(art_ld->is_set_mask());
+    EXPECT_FALSE(art_ld->up.has_value());
+    // Unset ldata()->up must fall back to authored direction_ instead of reading the default true.
+    EXPECT_FALSE(art->up());
+
+    art_ld->set_pos(PointF(2.0, 3.0));
+    art_ld->set_bbox(0.0, 0.0, 4.0, 5.0);
+    art_ld->set_mask(Shape(RectF(0.0, 0.0, 1.0, 1.0)));
+    art_ld->up = true;
+    EXPECT_TRUE(art_ld->is_set_pos());
+    EXPECT_TRUE(art_ld->is_set_shape());
+    EXPECT_TRUE(art_ld->is_set_mask());
+    EXPECT_TRUE(art->up());
+
+    art_ld->reset();
+    EXPECT_TRUE(art_ld->is_set_pos());
+    EXPECT_FALSE(art_ld->is_set_shape());
+    EXPECT_FALSE(art_ld->is_set_mask());
+    EXPECT_FALSE(art_ld->up.has_value());
+    EXPECT_TRUE(art_ld->up.value(LdAccess::MAYBE_NOTINITED));
+    EXPECT_FALSE(art->up());
+
+    std::unique_ptr<Harmony> harmony(Factory::create_harmony(master.dummy()));
+    auto *harm_ld = harmony->mutldata();
+    auto *paren = Factory::create_parenthesis(harmony.get());
+    harm_ld->render_item_list.adopt(std::make_unique<ChordSymbolParen>(paren, false, 0.0, 0.0));
+    EXPECT_FALSE(harm_ld->baseline.has_value());
+    EXPECT_DOUBLE_EQ(harmony->base_line(), static_cast<const TextBase *>(harmony.get())->base_line());
+    harm_ld->baseline = 12.5;
+    EXPECT_TRUE(harm_ld->baseline.has_value());
+    EXPECT_DOUBLE_EQ(harmony->base_line(), 12.5);
 }

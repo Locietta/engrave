@@ -85,7 +85,9 @@ ChordRest::ChordRest(const ElementType &type, DummyParentOr<Segment> parent) : D
     cross_measure_ = CrossMeasure::UNKNOWN;
 }
 
-ChordRest::ChordRest(const ChordRest &cr, bool link) : DurationElement(cr, link) {
+ChordRest::ChordRest(const ChordRest &cr, bool link) : ChordRest(cr.type(), cr, link) {}
+
+ChordRest::ChordRest(ElementType type, const ChordRest &cr, bool link) : DurationElement(type, cr, link) {
     duration_type_ = cr.duration_type_;
     staff_move_ = cr.staff_move_;
     beam_ = 0;

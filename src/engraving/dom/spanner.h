@@ -150,6 +150,7 @@ protected:
 
     SpannerSegment(const ElementType &type, Spanner *, ElementFlags f = ElementFlag::ON_STAFF | ElementFlag::MOVABLE);
     SpannerSegment(const SpannerSegment &);
+    SpannerSegment(ElementType type, const SpannerSegment &);
 
     PointF p2_;
     PointF offset2_;
@@ -308,6 +309,7 @@ protected:
 
     Spanner(const ElementType &type, EngravingObject *parent, ElementFlags = ElementFlag::NOTHING);
     Spanner(const Spanner &);
+    Spanner(ElementType type, const Spanner &);
 
     virtual void do_compute_start_element();
     virtual void do_compute_end_element();

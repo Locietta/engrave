@@ -69,8 +69,6 @@ public:
 
     ~Rest() = default;
 
-    void hack_to_rest_type();
-
     Rest &operator=(const Rest &) = delete;
 
     Rest *clone() const override { return new Rest(*this, false); }
@@ -145,6 +143,7 @@ protected:
     Rest(const ElementType &type, DummyParentOr<Segment> parent);
     Rest(const ElementType &type, DummyParentOr<Segment> parent, const TDuration &);
     Rest(const Rest &, bool link = false);
+    Rest(ElementType type, const Rest &, bool link = false);
 
     Sid get_property_style(Pid pid) const override;
 

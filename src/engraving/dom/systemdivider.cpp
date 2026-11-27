@@ -49,7 +49,8 @@ SystemDivider::SystemDivider(DummyParentOr<System> parent)
 //   SystemDivider
 //---------------------------------------------------------
 
-SystemDivider::SystemDivider(const SystemDivider &sd) : Symbol(sd), divider_type_(sd.divider_type_), authored_sym_(sd.authored_sym_) {}
+SystemDivider::SystemDivider(const SystemDivider &sd)
+    : Symbol(ElementType::SYSTEM_DIVIDER, sd), divider_type_(sd.divider_type_), authored_sym_(sd.authored_sym_) {}
 
 SystemDivider::~SystemDivider() {
     // BSymbol's ordinary teardown parks nested symbols on the dummy. Divider

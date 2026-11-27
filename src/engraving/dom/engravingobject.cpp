@@ -67,7 +67,9 @@ EngravingObject::EngravingObject(const ElementType &type, EngravingObject *paren
     }
 }
 
-EngravingObject::EngravingObject(const EngravingObject &se) : type_(se.type_) {
+EngravingObject::EngravingObject(const EngravingObject &se) : EngravingObject(se.type_, se) {}
+
+EngravingObject::EngravingObject(ElementType type, const EngravingObject &se) : type_(type) {
     do_set_parent(se.parent_);
     score_ = se.score_;
     element_style_ = se.styled_properties();

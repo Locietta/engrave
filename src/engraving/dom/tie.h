@@ -71,6 +71,7 @@ public:
 
 protected:
     TieSegment(const ElementType &type, Tie *sp);
+    TieSegment(ElementType type, const TieSegment &s);
 
 private:
     int staff_move_ = 0;
@@ -155,6 +156,7 @@ public:
 
 protected:
     Tie(const ElementType &type, EngravingObject *parent = nullptr);
+    Tie(ElementType type, const Tie &t);
 
     bool is_in_spanner_map() const override { return false; }
 

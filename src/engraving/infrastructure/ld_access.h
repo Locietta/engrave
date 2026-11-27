@@ -22,8 +22,9 @@
 #ifndef MU_ENGRAVING_LD_ACCESS_DEV_H
 #define MU_ENGRAVING_LD_ACCESS_DEV_H
 
-#include <optional>
 #include <tuple>
+#include <type_traits>
+#include <utility>
 
 #ifdef MUE_ENABLE_ENGRAVING_LD_ACCESS
 #include "log.h"
@@ -53,86 +54,101 @@ enum class LdAccess : unsigned char {
 // mark as independent
 #define LD_INDEPENDENT
 
+namespace detail {
+template <typename T, bool Scalar = std::is_scalar_v<T>>
+struct LdFieldDefault {
+    constexpr LdFieldDefault(const T &def) noexcept : def_(def) {}
+
+    constexpr T default_value() const noexcept { return def_; }
+
+private:
+    T def_;
+};
+
+// Non-scalar layout fields always default-construct; EBO avoids storing a second Shape/vector.
 template <typename T>
-struct LdFieldDebug {
+struct LdFieldDefault<T, false> {
+    constexpr LdFieldDefault(const T &) noexcept {}
 
-    LdFieldDebug(const char *name, T def = T()) : name_(name), def_(def) {}
+    T default_value() const { return T{}; }
+};
+} // namespace detail
 
-    inline void reset() { val_.reset(); }
+template <typename T>
+struct LdField : private detail::LdFieldDefault<T> {
+    LdField(const char *name = nullptr, T def = T())
+        : detail::LdFieldDefault<T>(def),
+#ifdef MUE_ENABLE_ENGRAVING_LD_ACCESS
+          name_(name),
+#endif
+          val_(std::move(def)) {
+#ifndef MUE_ENABLE_ENGRAVING_LD_ACCESS
+        std::ignore = name;
+#endif
+    }
 
-    inline bool has_value() const { return val_.has_value(); }
+    LdField(const LdField &) = default;
+    LdField(LdField &&) = default;
+    LdField &operator=(const LdField &) = default;
+    LdField &operator=(LdField &&) = default;
+
+    inline void reset() {
+        val_ = this->default_value();
+        has_value_ = false;
+    }
+
+    inline bool has_value() const noexcept { return has_value_; }
 
     inline const T &value([[maybe_unused]] LdAccess mode = LdAccess::CHECK) const {
-        if (!val_.has_value()) {
 #ifdef MUE_ENABLE_ENGRAVING_LD_ACCESS
-            if (mode == LdAccess::CHECK) {
-                LOGE_T("LD_ACCESS")() << "BAD ACCESS to: " << name_;
-            }
-#endif
-            return def_;
+        if (!has_value_ && mode == LdAccess::CHECK) {
+            LOGE_T("LD_ACCESS")() << "BAD ACCESS to: " << name_;
         }
-        return val_.value();
+#endif
+        return val_;
     }
 
     inline const T &operator()() const { return value(); }
 
     operator T() const { return value(); }
 
-    inline T &mut_value() {
-        if (!val_.has_value()) {
-            val_ = std::make_optional<T>(def_);
-        }
-        return val_.value();
+    inline T &mut_value() noexcept {
+        has_value_ = true;
+        return val_;
     }
 
-    inline void set_value(const T &v) { val_ = std::make_optional<T>(v); }
-
-    LdFieldDebug &operator=(const T &v) {
+    inline void set_value(const T &v) {
         val_ = v;
+        has_value_ = true;
+    }
+
+    inline void set_value(T &&v) {
+        val_ = std::move(v);
+        has_value_ = true;
+    }
+
+    LdField &operator=(const T &v) {
+        val_ = v;
+        has_value_ = true;
+        return *this;
+    }
+
+    LdField &operator=(T &&v) {
+        val_ = std::move(v);
+        has_value_ = true;
         return *this;
     }
 
 private:
+#ifdef MUE_ENABLE_ENGRAVING_LD_ACCESS
     const char *name_ = nullptr;
-    T def_;
-    std::optional<T> val_;
-};
-
-template <typename T>
-struct LdFieldProd {
-
-    LdFieldProd(const char *, T def = T()) : val_(def) {}
-
-    inline void reset() { val_ = T(); }
-
-    inline bool has_value() const { return true; }
-
-    inline const T &value(LdAccess = LdAccess::CHECK) const { return val_; }
-
-    inline const T &operator()() const { return value(); }
-
-    operator T() const { return value(); }
-
-    inline T &mut_value() { return val_; }
-
-    inline void set_value(const T &v) { val_ = v; }
-
-    LdFieldProd &operator=(const T &v) {
-        val_ = v;
-        return *this;
-    }
-
-private:
-    T val_;
-};
-
-#ifdef NDEBUG
-template <typename T>
-using ld_field = LdFieldProd<T>;
-#else
-template <typename T>
-using ld_field = LdFieldDebug<T>;
 #endif
+    T val_;
+    bool has_value_ = false;
+};
+
+template <typename T>
+using ld_field = LdField<T>;
 } // namespace mu::engraving
 
 #endif // MU_ENGRAVING_LD_ACCESS_DEV_H

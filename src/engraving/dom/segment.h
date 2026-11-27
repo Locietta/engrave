@@ -220,6 +220,8 @@ public:
         bool enabled = true;
         bool header = false;
         bool trailer = false;
+        static constexpr std::uint32_t invalid_rendered_index = ~std::uint32_t{0};
+        std::uint32_t rendered_index = invalid_rendered_index;
     };
     DECLARE_LAYOUTDATA_METHODS(Segment)
 

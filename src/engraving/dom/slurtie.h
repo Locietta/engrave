@@ -111,6 +111,7 @@ public:
 protected:
     SlurTieSegment(const ElementType &type, SlurTie *sp);
     SlurTieSegment(const SlurTieSegment &);
+    SlurTieSegment(ElementType type, const SlurTieSegment &);
 
     struct UP ups_[int(Grip::GRIPS)];
 };
@@ -124,6 +125,11 @@ struct SlurTie : Spanner {
 public:
     SlurTie(const ElementType &type, EngravingObject *parent);
     SlurTie(const SlurTie &);
+
+protected:
+    SlurTie(ElementType type, const SlurTie &);
+
+public:
     ~SlurTie();
 
     struct LayoutData : Spanner::LayoutData {

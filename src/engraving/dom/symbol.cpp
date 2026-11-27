@@ -45,7 +45,9 @@ Symbol::Symbol(const ElementType &type, EngravingObject *parent, ElementFlags f)
 
 Symbol::Symbol(EngravingObject *parent, ElementFlags f) : Symbol(ElementType::SYMBOL, parent, f) {}
 
-Symbol::Symbol(const Symbol &s) : BSymbol(s) {
+Symbol::Symbol(const Symbol &s) : Symbol(ElementType::SYMBOL, s) {}
+
+Symbol::Symbol(ElementType type, const Symbol &s) : BSymbol(type, s) {
     sym_ = s.sym_;
     score_font_ = s.score_font_;
     symbols_size_ = s.symbols_size_;

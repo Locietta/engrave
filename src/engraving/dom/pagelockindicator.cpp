@@ -36,7 +36,6 @@ PageLockIndicator::PageLockIndicator(DummyParentOr<System> parent, const RangeLo
 void PageLockIndicator::set_selected(bool v) {
     EngravingItem::set_selected(v);
     renderer()->layout_item(this);
-    system()->page()->invalidate_bsp_tree();
 }
 
 const Page *PageLockIndicator::page() const { return system() ? system()->page() : nullptr; }

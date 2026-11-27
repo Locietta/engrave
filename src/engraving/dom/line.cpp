@@ -49,7 +49,9 @@ using namespace mu::engraving;
 namespace mu::engraving {
 LineSegment::LineSegment(const ElementType &type, SLine *sp, ElementFlags f) : SpannerSegment(type, sp, f) {}
 
-LineSegment::LineSegment(const LineSegment &s) : SpannerSegment(s) {}
+LineSegment::LineSegment(const LineSegment &s) : LineSegment(s.type(), s) {}
+
+LineSegment::LineSegment(ElementType type, const LineSegment &s) : SpannerSegment(type, s) {}
 
 void LineSegment::spatium_changed(double ov, double nv) {
     EngravingItem::spatium_changed(ov, nv);
@@ -92,7 +94,9 @@ SLine::SLine(const ElementType &type, EngravingObject *parent, ElementFlags f) :
     line_width_ = 0.15_sp;
 }
 
-SLine::SLine(const SLine &s) : Spanner(s) {
+SLine::SLine(const SLine &s) : SLine(s.type(), s) {}
+
+SLine::SLine(ElementType type, const SLine &s) : Spanner(type, s) {
     diagonal_ = s.diagonal_;
     line_width_ = s.line_width_;
     line_color_ = s.line_color_;

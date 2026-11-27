@@ -31,6 +31,8 @@ using namespace mu::engraving;
 
 Hook::Hook(DummyParentOr<Chord> parent) : Symbol(ElementType::HOOK, parent, ElementFlag::NOTHING) { set_z(default_z(type())); }
 
+Hook::Hook(const Hook &h) : Symbol(ElementType::HOOK, h), hook_type_(h.hook_type_) {}
+
 EngravingItem *Hook::element_base() const { return chord(); }
 
 void Hook::set_hook_type(int i) {

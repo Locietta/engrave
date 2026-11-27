@@ -446,8 +446,6 @@ void PageLayout::collect_page(LayoutContext &ctx, std::span<System *const> *fitt
     MaskLayout::compute_masks(ctx, page);
 
     layout_system_dividers(ctx, page);
-
-    page->invalidate_bsp_tree();
 }
 
 void PageLayout::layout_cross_staff_elements(LayoutContext &ctx, Page *page) {
@@ -571,7 +569,6 @@ void PageLayout::repair_shared_spanners(Score &score) {
 
     for (auto *page : pages) {
         page->systems().clear();
-        page->invalidate_bsp_tree();
     }
     state.set_page(pages.front());
     state.set_cur_system(systems.front());

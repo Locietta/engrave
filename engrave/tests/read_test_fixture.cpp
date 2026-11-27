@@ -518,7 +518,7 @@ void expect_discard_rebuild_parity(engrave::Document &document, mu::engraving::S
     for (int cycle = 0; cycle < 3; ++cycle) {
         SCOPED_TRACE(cycle);
         ASSERT_GT(store->size(), 0u);
-        // Populate the legacy drawing index while it still contains live shells.
+        // Exercise page item queries while layout output still contains live shells.
         for (auto *page : score.pages()) std::ignore = page->items(page->page_bounding_rect());
         const auto layouts = layout_count(score);
         engrave::DocumentAccess::impl(document).discard_layout_output(score);

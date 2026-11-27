@@ -33,7 +33,7 @@
 namespace mu::engraving {
 Tapping::Tapping(DummyParentOr<ChordRest> parent) : Articulation(parent, ElementType::TAPPING) {}
 
-Tapping::Tapping(const Tapping &other) : Articulation(other) {
+Tapping::Tapping(const Tapping &other) : Articulation(ElementType::TAPPING, other) {
     hand_ = other.hand_;
     clone_authored_overrides(authored_overrides, other.authored_overrides, *master_score()->eid_register());
 }
@@ -85,11 +85,12 @@ TranslatableString Tapping::subtype_user_name() const {
 
 TappingHalfSlur::TappingHalfSlur(EngravingItem *parent) : Slur(parent, ElementType::TAPPING_HALF_SLUR) {}
 
-TappingHalfSlur::TappingHalfSlur(const TappingHalfSlur &other) : Slur(other) {}
+TappingHalfSlur::TappingHalfSlur(const TappingHalfSlur &other) : Slur(ElementType::TAPPING_HALF_SLUR, other) {}
 
 TappingHalfSlurSegment::TappingHalfSlurSegment(TappingHalfSlur *sp) : SlurSegment(sp, ElementType::TAPPING_HALF_SLUR_SEGMENT) {}
 
-TappingHalfSlurSegment::TappingHalfSlurSegment(const TappingHalfSlurSegment &other) : SlurSegment(other) {}
+TappingHalfSlurSegment::TappingHalfSlurSegment(const TappingHalfSlurSegment &other)
+    : SlurSegment(ElementType::TAPPING_HALF_SLUR_SEGMENT, other) {}
 
 static ElementStyle tap_text_style;
 

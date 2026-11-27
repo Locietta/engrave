@@ -618,6 +618,9 @@ void Measure::rebuild_rendered_segments() {
     for (auto *s : ldata()->segments) {
         if (!find_segment_r(s->segment_type(), s->rtick())) insert(s);
     }
+    for (size_t i = 0; i < rendered.size(); ++i) {
+        rendered[i]->mutldata()->rendered_index = static_cast<std::uint32_t>(i);
+    }
 }
 
 void Measure::reconcile_output_segments() {

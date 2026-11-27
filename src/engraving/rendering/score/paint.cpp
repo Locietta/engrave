@@ -85,22 +85,7 @@ void Paint::paint_score(Painter *painter, Score *score, const ScoreRenderer::Sco
                 page_rect = page->tbbox().adjusted(-trim_margin, -trim_margin, trim_margin, trim_margin);
             }
 
-            //! NOTE Check draw rect, usually for optimisation drawing on screen (draw only what we see)
-            RectF draw_rect;
             RectF page_abs_rect = page_rect.translated(page_pos);
-            if (opt.frame_rect.is_valid()) {
-                if (page_abs_rect.right() < opt.frame_rect.left()) {
-                    continue;
-                }
-
-                if (page_abs_rect.left() > opt.frame_rect.right()) {
-                    break;
-                }
-
-                draw_rect = opt.frame_rect;
-            } else {
-                draw_rect = page_abs_rect;
-            }
 
             //! NOTE Notify about new page (usually for paged paint device, ex pdf, printer)
             if (!first_page) {
@@ -115,7 +100,7 @@ void Paint::paint_score(Painter *painter, Score *score, const ScoreRenderer::Sco
             if (opt.is_printing && painter->has_clipping()) {
                 // prevent elements from being drawn off the edge of the page (e.g. too many staves),
                 // for now only in "Publish" mode (opt.isPrinting == true)
-                painter->set_clip_rect(page_abs_rect.intersected(draw_rect));
+                painter->set_clip_rect(page_abs_rect);
             }
 
             if (opt.is_multi_page) {
@@ -140,7 +125,7 @@ void Paint::paint_score(Painter *painter, Score *score, const ScoreRenderer::Sco
                 disable_clipping = true;
             }
 
-            std::vector<EngravingItem *> elements = page->items(draw_rect.translated(-page_pos));
+            std::vector<EngravingItem *> elements = page->items(page_rect);
             paint_items(*painter, elements, opt);
 
             if (disable_clipping) {
@@ -219,18 +204,52 @@ void Paint::paint_item(Painter &painter, const EngravingItem *item, const PaintO
     painter.translate(-item_position);
 }
 
+namespace {
+struct PaintSortEntry {
+    const EngravingItem *item;
+    int z;
+    bool selected;
+    bool visible;
+    track_idx_t track;
+    PointF page_pos;
+};
+
+bool paint_entry_less(const PaintSortEntry &a, const PaintSortEntry &b) noexcept {
+    if (a.z != b.z) return a.z < b.z;
+    if (a.selected != b.selected) return !a.selected && b.selected;
+    if (a.visible != b.visible) return !a.visible && b.visible;
+    return a.track < b.track;
+}
+} // namespace
+
 void Paint::paint_items(Painter &painter, const std::vector<EngravingItem *> &items, const PaintOptions &opt) {
-    std::vector<EngravingItem *> sorted_items(items.begin(), items.end());
+    std::vector<PaintSortEntry> sorted_items;
+    sorted_items.reserve(items.size());
 
-    // Preserve deterministic BSP/DOM scan order when (z, selected, visible, track) tie.
-    std::stable_sort(sorted_items.begin(), sorted_items.end(), mu::engraving::element_less_than);
-
-    for (const EngravingItem *item : sorted_items) {
+    for (const EngravingItem *item : items) {
         const bool visible = item->display_visible();
         if (!visible && (opt.is_printing || !item->score()->is_show_invisible())) {
             continue;
         }
+        if (item->ldata()->is_skip_draw()) {
+            continue;
+        }
+        sorted_items.push_back(PaintSortEntry{
+            .item = item,
+            .z = item->z(),
+            .selected = item->selected(),
+            .visible = visible,
+            .track = item->track(),
+            .page_pos = item->page_pos(),
+        });
+    }
 
-        paint_item(painter, item, opt);
+    // Preserve deterministic DOM scan order when (z, selected, visible, track) tie.
+    std::stable_sort(sorted_items.begin(), sorted_items.end(), paint_entry_less);
+
+    for (const PaintSortEntry &entry : sorted_items) {
+        painter.translate(entry.page_pos);
+        TDraw::draw_item(entry.item, &painter, opt);
+        painter.translate(-entry.page_pos);
     }
 }

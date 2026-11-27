@@ -190,6 +190,7 @@ public:
 protected:
     MeasureBase(const ElementType &type, Score *parent);
     MeasureBase(const MeasureBase &);
+    MeasureBase(ElementType type, const MeasureBase &);
 
     Fraction len_{Fraction(0, 1)}; // actual length of measure
 

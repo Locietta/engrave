@@ -36,6 +36,7 @@ private:
 
 public:
     SystemText(DummyParentOr<Segment> parent, TextStyleType = TextStyleType::SYSTEM, ElementType type = ElementType::SYSTEM_TEXT);
+    SystemText(const SystemText &st);
 
     SystemText *clone() const override { return new SystemText(*this); }
 
@@ -44,6 +45,7 @@ public:
     bool can_be_excluded_from_other_parts() const override { return true; }
 
 protected:
+    SystemText(ElementType type, const SystemText &st);
     PropertyValue property_default(Pid id) const override;
 };
 } // namespace mu::engraving

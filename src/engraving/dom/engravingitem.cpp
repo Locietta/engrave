@@ -256,15 +256,16 @@ static_assert(legacy_z_matches_enum(), "legacy_z rows must follow ElementType or
 
 int default_z(ElementType type) { return legacy_z[static_cast<std::size_t>(type)].ordinal * 100; }
 
-EngravingItem::EngravingItem(const ElementType &type, EngravingObject *parent, ElementFlags f)
-    : EngravingObject(type, parent), layout_type_(type) {
+EngravingItem::EngravingItem(const ElementType &type, EngravingObject *parent, ElementFlags f) : EngravingObject(type, parent) {
     flags_ = f;
     color_ = configuration()->default_color();
     z_ = -1;
     min_distance_ = 0.0_sp;
 }
 
-EngravingItem::EngravingItem(const EngravingItem &e, bool link) : EngravingObject(e), layout_type_(e.layout_type_) {
+EngravingItem::EngravingItem(const EngravingItem &e, bool link) : EngravingItem(e.type(), e, link) {}
+
+EngravingItem::EngravingItem(ElementType type, const EngravingItem &e, bool link) : EngravingObject(type, e) {
     offset_ = e.offset_;
     track_ = e.track_;
     flags_ = e.flags_;
@@ -1939,7 +1940,7 @@ bool EngravingItem::is_layout_data_current() const {
 }
 
 const EngravingItem::LayoutData *EngravingItem::ldata() const {
-    return layout_data_ ? layout_data_ : &rendering::score::empty_layout_data(layout_type_);
+    return layout_data_ ? layout_data_ : &rendering::score::empty_layout_data(type());
 }
 
 EngravingItem::LayoutData *EngravingItem::mutldata() {
@@ -1987,7 +1988,8 @@ void ItemLayoutData::set_bbox(const RectF &r) {
     DO_ASSERT(!std::isnan(r.height()) && !std::isinf(r.height()));
 
     //DO_ASSERT(!isShapeComposite());
-    shape_.set_value(Shape(r, item_, Shape::Type::FIXED));
+    shape_ = Shape(r, item_, Shape::Type::FIXED);
+    has_shape_ = true;
 }
 
 void ItemLayoutData::connect_item_snapped_before(EngravingItem *item_before) {
@@ -2052,8 +2054,7 @@ void EngravingItem::scan_connected_items_in_snapping_chain(const System *system,
 }
 
 RectF ItemLayoutData::bbox([[maybe_unused]] LdAccess mode) const {
-    //! NOTE Temporary disabled CHECK - a lot of messages
-    const Shape &sh = shape_.value(LdAccess::MAYBE_NOTINITED);
+    const Shape &sh = shape_;
 
     //! NOTE Temporary
     {
@@ -2089,9 +2090,9 @@ LdAccess ItemLayoutData::shape_access() const {
 
 Shape ItemLayoutData::shape([[maybe_unused]] LdAccess mode) const {
     const auto access = shape_access();
-    if (access == LdAccess::CHECK) return shape_.value(access);
+    if (access == LdAccess::CHECK) return shape_;
 
-    Shape result = shape_.value(access);
+    Shape result = shape_;
     if (item_) {
         for (const auto *paren : {item_->left_paren(), item_->right_paren()}) {
             if (paren && paren->add_to_skyline()) paren->append_shape(result, paren->pos());
@@ -2104,12 +2105,11 @@ void ItemLayoutData::append_shape(Shape &dst, const PointF &offset) const { appe
 
 void ItemLayoutData::append_shape(Shape &dst, const ShapeOffset &offset) const {
     const auto access = shape_access();
-    const auto &stored = shape_.value(access);
     if (!offset.outer) {
-        dst.add_translated(stored, offset.position);
+        dst.add_translated(shape_, offset.position);
     } else {
         // Translate inner rectangles before outer ones to keep rounding identical to nested shapes.
-        for (auto element : stored.elements()) {
+        for (auto element : shape_.elements()) {
             for (auto step = &offset; step; step = step->outer) element.translate(step->position);
             dst.add(element);
         }
@@ -2128,7 +2128,7 @@ bool ItemLayoutData::intersects_shape_translated(const PointF &offset, const Ite
     if (has_shape_parentheses() || other.has_shape_parentheses()) {
         return shape().intersects_translated(offset, other.shape(), other_offset);
     }
-    return shape_.value(shape_access()).intersects_translated(offset, other.shape_.value(other.shape_access()), other_offset);
+    return shape_.intersects_translated(offset, other.shape_, other_offset);
 }
 
 #ifndef NDEBUG
@@ -2150,11 +2150,19 @@ void ItemLayoutData::dump(std::stringstream &ss) const {
     ss << "mag: " << mag_ << "\n";
 
     ss << "pos: ";
-    mu::engraving::dump(pos_, ss);
+    if (has_pos_) {
+        muse::dump(pos_, ss);
+    } else {
+        ss << "no value";
+    }
     ss << "\n";
 
     ss << "shape: ";
-    mu::engraving::dump(shape_, ss);
+    if (has_shape_) {
+        mu::engraving::dump(shape_, ss);
+    } else {
+        ss << "no value";
+    }
     ss << "\n";
 
     sup_dump(ss);

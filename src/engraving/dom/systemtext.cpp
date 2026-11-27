@@ -46,6 +46,10 @@ SystemText::SystemText(DummyParentOr<Segment> parent, TextStyleType tid, Element
     reset_property(Pid::MUSIC_SYMBOL_SIZE);
 }
 
+SystemText::SystemText(const SystemText &st) : SystemText(ElementType::SYSTEM_TEXT, st) {}
+
+SystemText::SystemText(ElementType type, const SystemText &st) : StaffTextBase(type, st) {}
+
 //---------------------------------------------------------
 //   propertyDefault
 //---------------------------------------------------------

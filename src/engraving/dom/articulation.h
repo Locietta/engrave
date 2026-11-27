@@ -97,8 +97,7 @@ private:
     DECLARE_CLASSOF(ElementType::ARTICULATION)
 
 public:
-
-    Articulation(const Articulation &) = default;
+    Articulation(const Articulation &);
     Articulation &operator=(const Articulation &) = delete;
 
     virtual Articulation *clone() const override { return new Articulation(*this); }
@@ -207,6 +206,7 @@ public:
 protected:
     friend struct mu::engraving::Factory;
     Articulation(DummyParentOr<ChordRest> parent, ElementType type = ElementType::ARTICULATION);
+    Articulation(ElementType type, const Articulation &);
 
 private:
 

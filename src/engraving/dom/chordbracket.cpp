@@ -14,6 +14,9 @@ ChordBracket::ChordBracket(DummyParentOr<Chord> parent) : Arpeggio(parent, Eleme
     init_element_style(&::mu::engraving::chord_bracket_style);
 }
 
+ChordBracket::ChordBracket(const ChordBracket &cb)
+    : Arpeggio(ElementType::CHORD_BRACKET, cb), hook_length_(cb.hook_length_), hook_pos_(cb.hook_pos_), right_side_(cb.right_side_) {}
+
 PropertyValue ChordBracket::get_property(Pid property_id) const {
     switch (property_id) {
         case Pid::BRACKET_HOOK_LEN: return hook_length_;

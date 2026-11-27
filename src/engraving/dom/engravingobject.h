@@ -250,10 +250,6 @@ struct EngravingObject {
 
     inline ElementType type() const { return type_; }
 
-    // Legacy retagging and sliced copies can leave type() out of sync with the C++ type;
-    // concrete_type() dispatches through the vtable so it always reports the actual dynamic type.
-    virtual ElementType concrete_type() const noexcept { return type_; }
-
     inline bool is_type(ElementType t) const { return t == type_; }
 
     const char *type_name() const;
@@ -338,10 +334,9 @@ struct EngravingObject {
     void set_links(LinkedObjects *le);
 
 protected:
-    virtual int get_property_flags_idx(Pid id) const;
+    EngravingObject(ElementType type, const EngravingObject &se);
 
-    //! NOTE For compatibility reasons, hope, we will remove the need for this method.
-    void hack_set_type(const ElementType &t) { type_ = t; }
+    virtual int get_property_flags_idx(Pid id) const;
 
     void add_child(EngravingObject *o);
     void remove_child(EngravingObject *o);
@@ -361,7 +356,7 @@ private:
     void do_set_parent(EngravingObject *p);
     void do_set_score(Score *sc);
 
-    ElementType type_ = ElementType::INVALID;
+    const ElementType type_ = ElementType::INVALID;
 
     EngravingObject *parent_ = nullptr;
     EngravingObjectList children_;

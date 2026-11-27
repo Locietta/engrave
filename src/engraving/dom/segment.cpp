@@ -191,15 +191,23 @@ void Segment::remove_generated(EngravingItem *item) {
 Segment *Segment::rendered_next() const {
     const auto &items = measure()->ldata()->rendered;
     if (items.empty()) return next();
-    auto it = std::find(items.begin(), items.end(), this);
-    return it != items.end() && ++it != items.end() ? *it : nullptr;
+    const std::uint32_t idx = ldata()->rendered_index;
+    if (idx < items.size() && items[idx] == this) {
+        return idx + 1 < items.size() ? items[idx + 1] : nullptr;
+    }
+    assert(std::find(items.begin(), items.end(), this) == items.end());
+    return nullptr;
 }
 
 Segment *Segment::rendered_prev() const {
     const auto &items = measure()->ldata()->rendered;
     if (items.empty()) return prev();
-    auto it = std::find(items.begin(), items.end(), this);
-    return it != items.end() && it != items.begin() ? *--it : nullptr;
+    const std::uint32_t idx = ldata()->rendered_index;
+    if (idx < items.size() && items[idx] == this) {
+        return idx > 0 ? items[idx - 1] : nullptr;
+    }
+    assert(std::find(items.begin(), items.end(), this) == items.end());
+    return nullptr;
 }
 
 Segment *Segment::rendered_next1() const {

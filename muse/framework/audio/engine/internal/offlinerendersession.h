@@ -53,6 +53,8 @@ struct OfflineRenderSession {
     static bool serial_only();
 
     OfflineControl &master_control() { return outer_master_; }
+
+    std::size_t track_count() const noexcept { return tracks_.size(); }
 private:
     struct Slot {
         std::vector<float> buffer;

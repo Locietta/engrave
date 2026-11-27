@@ -51,7 +51,9 @@ SpannerSegment::SpannerSegment(const ElementType &type, Spanner *sp, ElementFlag
     set_spanner_segment_type(SpannerSegmentType::SINGLE);
 }
 
-SpannerSegment::SpannerSegment(const SpannerSegment &s) : EngravingItem(s) {
+SpannerSegment::SpannerSegment(const SpannerSegment &s) : SpannerSegment(s.type(), s) {}
+
+SpannerSegment::SpannerSegment(ElementType type, const SpannerSegment &s) : EngravingItem(type, s) {
     spanner_segment_type_ = s.spanner_segment_type_;
     p2_ = s.p2_;
     offset2_ = s.offset2_;
@@ -258,7 +260,9 @@ TranslatableString SpannerSegment::subtype_user_name() const { return spanner()-
 
 Spanner::Spanner(const ElementType &type, EngravingObject *parent, ElementFlags f) : EngravingItem(type, parent, f) {}
 
-Spanner::Spanner(const Spanner &s) : EngravingItem(s) {
+Spanner::Spanner(const Spanner &s) : Spanner(s.type(), s) {}
+
+Spanner::Spanner(ElementType type, const Spanner &s) : EngravingItem(type, s) {
     clone_authored_overrides(authored_overrides, s.authored_overrides, *master_score()->eid_register());
     play_spanner_ = s.play_spanner_;
     start_element_ = s.start_element_;

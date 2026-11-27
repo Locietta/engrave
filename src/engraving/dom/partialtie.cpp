@@ -9,6 +9,9 @@
 namespace mu::engraving {
 PartialTie::PartialTie(DummyParentOr<Note> parent) : Tie(ElementType::PARTIAL_TIE, parent) {}
 
+PartialTie::PartialTie(const PartialTie &pt)
+    : Tie(ElementType::PARTIAL_TIE, pt), partial_spanner_direction_value(pt.partial_spanner_direction_value) {}
+
 mu::engraving::PropertyValue mu::engraving::PartialTie::get_property(Pid property_id) const {
     switch (property_id) {
         case Pid::PARTIAL_SPANNER_DIRECTION: return partial_spanner_direction();
@@ -83,7 +86,7 @@ Note *PartialTie::start_note() const {
 
 PartialTieSegment::PartialTieSegment(PartialTie *sp) : TieSegment(ElementType::PARTIAL_TIE_SEGMENT, sp) {}
 
-PartialTieSegment::PartialTieSegment(const PartialTieSegment &s) : TieSegment(s) {}
+PartialTieSegment::PartialTieSegment(const PartialTieSegment &s) : TieSegment(ElementType::PARTIAL_TIE_SEGMENT, s) {}
 
 String PartialTieSegment::format_bars_and_beats() const {
     const PartialTie *pt = this->partial_tie();

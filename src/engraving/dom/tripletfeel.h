@@ -37,6 +37,7 @@ private:
 
 public:
     TripletFeel(DummyParentOr<Segment> parent, TripletFeelType triplet_fill_type = TripletFeelType::NONE);
+    TripletFeel(const TripletFeel &tf);
     void set_triplet_property();
 
     TripletFeel *clone() const override { return new TripletFeel(*this); }

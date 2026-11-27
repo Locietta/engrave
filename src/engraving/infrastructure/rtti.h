@@ -33,7 +33,6 @@ void report_bad_cast(const char *from, const char *to, const char *file, int lin
 #define DECLARE_CLASSOF(Type)                                                     \
 public:                                                                           \
     constexpr ElementType declared_item_type() const noexcept { return Type; }    \
-    ElementType concrete_type() const noexcept override { return Type; }          \
     static bool classof(const ElementType type) noexcept { return type == Type; } \
     static bool classof(const EngravingObject *item) noexcept { return item->type() == Type; }
 
@@ -139,7 +138,7 @@ template <typename T, typename From>
              std::is_same_v<T, Spanner> || std::is_same_v<T, StaffTextBase> || std::is_same_v<T, TextBase> ||
              std::is_same_v<T, TextLineBase>
 bool item_type_allows(const From *item) noexcept {
-    const auto type = item->concrete_type();
+    const auto type = item->type();
     using Tag = decltype(type);
     if constexpr (std::is_same_v<T, Arpeggio>) {
         return type == Tag::ARPEGGIO || type == Tag::CHORD_BRACKET;

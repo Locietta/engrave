@@ -38,7 +38,7 @@ MMRest::MMRest(DummyParentOr<Segment> s) : Rest(ElementType::MMREST, s) {
     set_placement(PlacementV::ABOVE);
 }
 
-MMRest::MMRest(const MMRest &r, bool link) : Rest(r, link) { number_visible_ = r.number_visible_; }
+MMRest::MMRest(const MMRest &r, bool link) : Rest(ElementType::MMREST, r, link) { number_visible_ = r.number_visible_; }
 
 bool MMRest::should_show_number_by_default() const {
     bool should_show = is_old_style() && ldata()->number == 1 ? style().style_b(Sid::SINGLE_MEASURE_MM_REST_SHOW_NUMBER) : true;

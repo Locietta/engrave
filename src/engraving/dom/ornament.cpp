@@ -47,7 +47,7 @@ Ornament::Ornament(DummyParentOr<ChordRest> parent) : Articulation(parent, Eleme
     start_on_upper_note_value = false;
 }
 
-Ornament::Ornament(const Ornament &o) : Articulation(o) {
+Ornament::Ornament(const Ornament &o) : Articulation(ElementType::ORNAMENT, o) {
     interval_above_value = o.interval_above_value;
     interval_below_value = o.interval_below_value;
     show_accidental_value = o.show_accidental_value;

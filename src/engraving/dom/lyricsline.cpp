@@ -55,7 +55,9 @@ LyricsLine::LyricsLine(const ElementType &type, DummyParentOr<EngravingItem> par
     next_lyrics_ = 0;
 }
 
-LyricsLine::LyricsLine(const LyricsLine &g) : SLine(g) { next_lyrics_ = 0; }
+LyricsLine::LyricsLine(const LyricsLine &g) : LyricsLine(ElementType::LYRICSLINE, g) {}
+
+LyricsLine::LyricsLine(ElementType type, const LyricsLine &g) : SLine(type, g) { next_lyrics_ = 0; }
 
 //---------------------------------------------------------
 //   createLineSegment
@@ -140,6 +142,10 @@ LyricsLineSegment::LyricsLineSegment(LyricsLine *sp) : LineSegment(ElementType::
 
 LyricsLineSegment::LyricsLineSegment(const ElementType &type, LyricsLine *sp, ElementFlags f) : LineSegment(type, sp, f) {}
 
+LyricsLineSegment::LyricsLineSegment(const LyricsLineSegment &s) : LyricsLineSegment(ElementType::LYRICSLINE_SEGMENT, s) {}
+
+LyricsLineSegment::LyricsLineSegment(ElementType type, const LyricsLineSegment &s) : LineSegment(type, s) {}
+
 double LyricsLineSegment::base_line_shift() const {
     if (lyrics_line()->is_end_melisma()) {
         return -0.5 * absolute_from_spatium(line_width());
@@ -195,7 +201,7 @@ PartialLyricsLine::PartialLyricsLine(DummyParentOr<EngravingItem> parent) : Lyri
     init_element_style(&::mu::engraving::partial_lyrics_line_element_style);
 }
 
-PartialLyricsLine::PartialLyricsLine(const PartialLyricsLine &other) : LyricsLine(other) {
+PartialLyricsLine::PartialLyricsLine(const PartialLyricsLine &other) : LyricsLine(ElementType::PARTIAL_LYRICSLINE, other) {
     is_end_melisma_ = other.is_end_melisma_;
     center_between_staves_ = other.center_between_staves_;
 }
@@ -291,6 +297,9 @@ PartialLyricsLineSegment::PartialLyricsLineSegment(PartialLyricsLine *line)
     set_generated(false);
     init_element_style(&::mu::engraving::partial_lyrics_line_segment_element_style);
 }
+
+PartialLyricsLineSegment::PartialLyricsLineSegment(const PartialLyricsLineSegment &s)
+    : LyricsLineSegment(ElementType::PARTIAL_LYRICSLINE_SEGMENT, s) {}
 
 double PartialLyricsLineSegment::line_spacing() const {
     const Lyrics *lyrics = lyrics_line()->find_adjacent_lyrics_or_default();

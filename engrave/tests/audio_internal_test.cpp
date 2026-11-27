@@ -45,6 +45,7 @@
 #include "engrave/src/api/state.h"
 #include "engrave/src/audio/engine_audio.h"
 #include "engrave/src/runtime/resource_filesystem.h"
+#include "engrave/src/score/score_excerpts.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
 #include "global/btree.h"
@@ -568,7 +569,24 @@ TEST(AudioInternal, CancellationGranularityAndRecovery) {
 TEST(AudioInternal, FlatPlanConstructionFailureDestroysTracksAndRecovers) {
     using muse::audio::engine::OfflineRenderSession;
     using muse::audio::synth::FluidTrack;
-    auto opened = music::test::g_engine->open(music::test::corpus_file("ghost_note.mscx"));
+    constexpr std::string_view two_parts = R"(<?xml version="1.0"?>
+<score-partwise version="4.0">
+  <part-list>
+    <score-part id="P1"><part-name>Piano</part-name></score-part>
+    <score-part id="P2"><part-name>Violin</part-name></score-part>
+  </part-list>
+  <part id="P1"><measure number="1">
+    <attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>
+    <note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><type>whole</type></note>
+  </measure></part>
+  <part id="P2"><measure number="1">
+    <attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>
+    <note><pitch><step>G</step><octave>4</octave></pitch><duration>4</duration><type>whole</type></note>
+  </measure></part>
+</score-partwise>)";
+    engrave::OpenOptions open_options;
+    open_options.format = engrave::Format::MUSIC_XML;
+    auto opened = music::test::g_engine->open(std::as_bytes(std::span(two_parts.data(), two_parts.size())), open_options);
     ASSERT_TRUE(opened);
     auto &document = **opened;
     auto render = [&] {
@@ -2811,4 +2829,273 @@ TEST(AudioInternal, BackgroundRunCancellationStaysOnTheRunThread) {
         EXPECT_FALSE(std::filesystem::exists(output.path));
     }
     EXPECT_TRUE(render_chars(document, {}) == baseline);
+}
+
+namespace {
+
+constexpr std::string_view k_multi_part_with_chords_and_rest = R"(<?xml version="1.0"?>
+<score-partwise version="4.0">
+  <part-list>
+    <score-part id="P1"><part-name>Piano</part-name><midi-instrument id="I1"><midi-channel>1</midi-channel><midi-program>1</midi-program></midi-instrument></score-part>
+    <score-part id="P2"><part-name>Violin</part-name><midi-instrument id="I2"><midi-channel>2</midi-channel><midi-program>41</midi-program></midi-instrument></score-part>
+    <score-part id="P3"><part-name>Cello</part-name><midi-instrument id="I3"><midi-channel>3</midi-channel><midi-program>43</midi-program></midi-instrument></score-part>
+    <score-part id="P4"><part-name>Flute</part-name><midi-instrument id="I4"><midi-channel>4</midi-channel><midi-program>74</midi-program></midi-instrument></score-part>
+  </part-list>
+  <part id="P1"><measure number="1">
+    <attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>
+    <harmony><root><root-step>C</root-step></root><kind>major</kind></harmony>
+    <note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><type>whole</type></note>
+  </measure></part>
+  <part id="P2"><measure number="1">
+    <attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>
+    <note><pitch><step>E</step><octave>4</octave></pitch><duration>4</duration><type>whole</type></note>
+  </measure></part>
+  <part id="P3"><measure number="1">
+    <attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>F</sign><line>4</line></clef></attributes>
+    <note><pitch><step>G</step><octave>3</octave></pitch><duration>4</duration><type>whole</type></note>
+  </measure></part>
+  <part id="P4"><measure number="1">
+    <attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>
+    <note><rest/><duration>4</duration><type>whole</type></note>
+  </measure></part>
+</score-partwise>)";
+
+std::optional<std::pair<std::size_t, std::size_t>> find_wav_data_chunk(std::span<const char> bytes) {
+    if (bytes.size() < 12) return std::nullopt;
+    const auto u32 = [&](std::size_t at) {
+        std::uint32_t value = 0;
+        for (int i = 0; i < 4; ++i) value |= static_cast<std::uint32_t>(static_cast<unsigned char>(bytes[at + i])) << (8 * i);
+        return value;
+    };
+    std::size_t offset = 12;
+    while (offset + 8 <= bytes.size()) {
+        const std::uint32_t size = u32(offset + 4);
+        if (offset + 8 + size > bytes.size()) return std::nullopt;
+        if (std::memcmp(bytes.data() + offset, "data", 4) == 0) {
+            return std::pair<std::size_t, std::size_t>{offset + 8, size};
+        }
+        offset += 8 + size + (size & 1u);
+    }
+    return std::nullopt;
+}
+
+} // namespace
+
+TEST(AudioInternal, SkipsSynthInstantiationForMutedExcludedAndNoteFreeTracks) {
+    engrave::OpenOptions open_options;
+    open_options.format = engrave::Format::MUSIC_XML;
+    auto opened = music::test::g_engine->open(
+        std::as_bytes(std::span(k_multi_part_with_chords_and_rest.data(), k_multi_part_with_chords_and_rest.size())), open_options);
+    ASSERT_TRUE(opened) << opened.error().message;
+    auto &document = **opened;
+    // Ensure audio services and SoundFonts are initialized for direct prepare_score_audio calls.
+    ASSERT_TRUE(document.render_audio({}, [](std::span<const std::byte>) {}));
+
+    auto &audio = engrave::DocumentAccess::context(document).audio();
+    auto *master = engrave::DocumentAccess::master_score(document);
+    music::generate_score_excerpts(master);
+    const auto tracks = music::engine_audio_tracks(master);
+
+    std::size_t chord_tracks = 0;
+    std::optional<std::size_t> part1_idx, part2_idx, part3_idx, part4_idx;
+    for (std::size_t i = 0; i < tracks.size(); ++i) {
+        if (tracks[i].chord_symbols) {
+            ++chord_tracks;
+        } else if (tracks[i].part_index == 0) {
+            part1_idx = i;
+        } else if (tracks[i].part_index == 1) {
+            part2_idx = i;
+        } else if (tracks[i].part_index == 2) {
+            part3_idx = i;
+        } else if (tracks[i].part_index == 3) {
+            part4_idx = i;
+        }
+    }
+    ASSERT_GE(chord_tracks, 1u) << "fixture must exercise ChordSymbols track skipping";
+    ASSERT_TRUE(part1_idx && part2_idx && part3_idx && part4_idx);
+
+    // Default mix: 3 playable parts instantiate synths; Metronome, ChordSymbols, and rest-only Part 4 are skipped.
+    {
+        music::AudioRenderRequest request;
+        request.tracks.resize(tracks.size());
+        auto prepared = music::prepare_score_audio(audio, master, request);
+        ASSERT_TRUE(prepared) << prepared.error().error;
+        EXPECT_EQ(prepared->synth_track_count(), 3u);
+#ifdef ENGRAVE_PLAYBACK_HARNESS
+        EXPECT_EQ(muse::audio::synth::FluidTrack::live_instances(), 3);
+#endif
+    }
+#ifdef ENGRAVE_PLAYBACK_HARNESS
+    EXPECT_EQ(muse::audio::synth::FluidTrack::live_instances(), 0);
+#endif
+
+    // Explicitly muting Part 2 leaves 2 active synths.
+    {
+        music::AudioRenderRequest request;
+        request.tracks.resize(tracks.size());
+        request.tracks[*part2_idx].muted = true;
+        auto prepared = music::prepare_score_audio(audio, master, request);
+        ASSERT_TRUE(prepared) << prepared.error().error;
+        EXPECT_EQ(prepared->synth_track_count(), 2u);
+    }
+
+    const auto render_prepared = [&](const music::AudioRenderRequest &request, std::size_t expected_synths,
+                                     std::vector<std::uint64_t> *midi_frames = nullptr) {
+        const RemoveFile out{temp_output("engrave-skip-synth", ".wav")};
+        if (midi_frames) {
+            music::set_engine_audio_midi_event_hook(
+                audio, [midi_frames](const muse::midi::Event &, std::uint64_t frame) { midi_frames->push_back(frame); });
+        }
+        auto prepared = music::prepare_score_audio(audio, master, request);
+        EXPECT_TRUE(prepared) << (prepared ? "" : prepared.error().error);
+        std::vector<char> bytes;
+        if (prepared) {
+            EXPECT_EQ(prepared->synth_track_count(), expected_synths);
+            const auto run = music::run_prepared_audio(*prepared, out.path.generic_string(), {});
+            EXPECT_TRUE(run.ok) << run.error;
+            if (run.ok) bytes = read_file(out.path);
+        }
+        if (midi_frames) music::set_engine_audio_midi_event_hook(audio, {});
+        return bytes;
+    };
+
+    // Soloing Part 1, muting Parts 2+3, and rendering Excerpt 0 (Part 1) must each instantiate 1 synth
+    // and produce byte-identical WAV output.
+    music::AudioRenderRequest solo_p1;
+    solo_p1.tracks.resize(tracks.size());
+    solo_p1.tracks[*part1_idx].solo = true;
+
+    music::AudioRenderRequest mute_p2_p3;
+    mute_p2_p3.tracks.resize(tracks.size());
+    mute_p2_p3.tracks[*part2_idx].muted = true;
+    mute_p2_p3.tracks[*part3_idx].muted = true;
+
+    music::AudioRenderRequest excerpt_p1;
+    excerpt_p1.excerpt_id = 0;
+
+    const auto wav_solo = render_prepared(solo_p1, 1u);
+    const auto wav_muted = render_prepared(mute_p2_p3, 1u);
+    const auto wav_excerpt = render_prepared(excerpt_p1, 1u);
+    ASSERT_FALSE(wav_solo.empty());
+    EXPECT_TRUE(wav_solo == wav_muted);
+    EXPECT_TRUE(wav_solo == wav_excerpt);
+
+    // Note-free Part 4 unmuted vs explicitly muted produces byte-identical WAV and MIDI observer streams.
+    music::AudioRenderRequest p4_unmuted;
+    p4_unmuted.tracks.resize(tracks.size());
+    music::AudioRenderRequest p4_muted;
+    p4_muted.tracks.resize(tracks.size());
+    p4_muted.tracks[*part4_idx].muted = true;
+
+    std::vector<std::uint64_t> midi_unmuted, midi_muted;
+    const auto wav_p4_unmuted = render_prepared(p4_unmuted, 3u, &midi_unmuted);
+    const auto wav_p4_muted = render_prepared(p4_muted, 3u, &midi_muted);
+    ASSERT_FALSE(wav_p4_unmuted.empty());
+    ASSERT_FALSE(midi_unmuted.empty());
+    EXPECT_TRUE(wav_p4_unmuted == wav_p4_muted);
+    EXPECT_EQ(midi_unmuted, midi_muted);
+
+    // Invalid SoundFont index on a muted track must still be rejected before skipping.
+    {
+        music::AudioRenderRequest invalid_font;
+        invalid_font.tracks.resize(tracks.size());
+        invalid_font.tracks[*part2_idx].muted = true;
+        invalid_font.tracks[*part2_idx].soundfont = 99;
+        auto prepared = music::prepare_score_audio(audio, master, invalid_font);
+        ASSERT_FALSE(prepared);
+        EXPECT_EQ(prepared.error().failure, music::AudioRenderResult::Failure::ENGINE_FAILURE);
+    }
+}
+
+TEST(AudioInternal, AllMutedAndRestOnlyScoresEmitExactSilentAudioWithZeroSynths) {
+    engrave::OpenOptions open_options;
+    open_options.format = engrave::Format::MUSIC_XML;
+    auto opened = music::test::g_engine->open(
+        std::as_bytes(std::span(k_multi_part_with_chords_and_rest.data(), k_multi_part_with_chords_and_rest.size())), open_options);
+    ASSERT_TRUE(opened) << opened.error().message;
+    auto &document = **opened;
+
+    // Baseline unmuted render gives the authoritative duration and frame count.
+    const auto unmuted_result = document.render_audio({}, [](std::span<const std::byte>) {});
+    ASSERT_TRUE(unmuted_result) << unmuted_result.error().message;
+    ASSERT_GT(unmuted_result->frames, 0u);
+
+    auto &audio = engrave::DocumentAccess::context(document).audio();
+    auto *master = engrave::DocumentAccess::master_score(document);
+    const auto tracks = music::engine_audio_tracks(master);
+
+    // Exercise both serial (1 thread) and async-encode (4 threads) paths when zero synths are instantiated.
+    const AutomaticAudioThreads restore{document};
+    for (const int thread_count : {1, 4}) {
+        if (std::getenv("ENGRAVE_AUDIO_THREADS") && thread_count == 1) continue;
+        SCOPED_TRACE(thread_count);
+        set_audio_threads(document, thread_count);
+
+        music::AudioRenderRequest all_muted;
+        all_muted.tracks.resize(tracks.size());
+        for (auto &t : all_muted.tracks) t.muted = true;
+
+        const RemoveFile out{temp_output("engrave-all-muted", ".wav")};
+        auto prepared = music::prepare_score_audio(audio, master, all_muted);
+        ASSERT_TRUE(prepared) << prepared.error().error;
+        EXPECT_EQ(prepared->synth_track_count(), 0u);
+#ifdef ENGRAVE_PLAYBACK_HARNESS
+        EXPECT_EQ(muse::audio::synth::FluidTrack::live_instances(), 0);
+#endif
+        const auto run = music::run_prepared_audio(*prepared, out.path.generic_string(), {});
+        ASSERT_TRUE(run.ok) << run.error;
+        EXPECT_EQ(run.frames, unmuted_result->frames);
+        EXPECT_DOUBLE_EQ(run.duration_secs, unmuted_result->seconds);
+
+        const auto bytes = read_file(out.path);
+        const auto data = find_wav_data_chunk(bytes);
+        ASSERT_TRUE(data);
+        EXPECT_EQ(data->second, run.frames * 2u * sizeof(float));
+        EXPECT_TRUE(std::all_of(bytes.begin() + static_cast<std::ptrdiff_t>(data->first),
+                                bytes.begin() + static_cast<std::ptrdiff_t>(data->first + data->second), [](char b) { return b == 0; }));
+    }
+
+    // All-muted renders through the public API must succeed across every codec with matching frame count.
+    for (const auto format :
+         {engrave::AudioFormat::WAV, engrave::AudioFormat::FLAC, engrave::AudioFormat::OPUS, engrave::AudioFormat::MP3}) {
+        SCOPED_TRACE(engrave::to_string(format));
+        engrave::AudioOptions options;
+        options.format = format;
+        for (std::size_t i = 0; i < tracks.size(); ++i) {
+            options.tracks.push_back(engrave::AudioTrackOptions{.track = static_cast<std::int32_t>(i), .mute = true});
+        }
+        std::size_t delivered = 0;
+        const auto result = document.render_audio(options, [&](std::span<const std::byte> chunk) { delivered += chunk.size(); });
+        ASSERT_TRUE(result) << result.error().message;
+        EXPECT_EQ(result->frames, unmuted_result->frames);
+        EXPECT_GT(delivered, 0u);
+    }
+
+    // A rest-only score has zero playable notes, instantiates zero synths, and emits exact silent WAV duration.
+    constexpr std::string_view rest_only = R"(<?xml version="1.0"?>
+<score-partwise version="4.0">
+  <part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
+  <part id="P1"><measure number="1">
+    <attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>
+    <note><rest/><duration>4</duration><type>whole</type></note>
+  </measure></part>
+</score-partwise>)";
+    auto opened_rest = music::test::g_engine->open(std::as_bytes(std::span(rest_only.data(), rest_only.size())), open_options);
+    ASSERT_TRUE(opened_rest) << opened_rest.error().message;
+    auto &rest_doc = **opened_rest;
+    auto *rest_master = engrave::DocumentAccess::master_score(rest_doc);
+    auto prepared_rest = music::prepare_score_audio(audio, rest_master, {});
+    ASSERT_TRUE(prepared_rest) << prepared_rest.error().error;
+    EXPECT_EQ(prepared_rest->synth_track_count(), 0u);
+    const RemoveFile rest_out{temp_output("engrave-rest-only", ".wav")};
+    const auto rest_run = music::run_prepared_audio(*prepared_rest, rest_out.path.generic_string(), {});
+    ASSERT_TRUE(rest_run.ok) << rest_run.error;
+    EXPECT_EQ(rest_run.frames, unmuted_result->frames);
+    const auto rest_bytes = read_file(rest_out.path);
+    const auto rest_data = find_wav_data_chunk(rest_bytes);
+    ASSERT_TRUE(rest_data);
+    EXPECT_EQ(rest_data->second, rest_run.frames * 2u * sizeof(float));
+    EXPECT_TRUE(std::all_of(rest_bytes.begin() + static_cast<std::ptrdiff_t>(rest_data->first),
+                            rest_bytes.begin() + static_cast<std::ptrdiff_t>(rest_data->first + rest_data->second),
+                            [](char b) { return b == 0; }));
 }

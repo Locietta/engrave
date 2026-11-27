@@ -357,9 +357,9 @@ void DomAccessor::add_unmanaged_spanner(Spanner *s) {
     score()->add_unmanaged_spanner(s);
 }
 
-const muse::BTreeSet<Spanner *> &DomAccessor::unmanaged_spanners() const {
+const std::vector<Spanner *> &DomAccessor::unmanaged_spanners() const {
     IF_ASSERT_FAILED(score()) {
-        static const muse::BTreeSet<Spanner *> dummy;
+        static const std::vector<Spanner *> dummy;
         return dummy;
     }
     return score()->unmanaged_spanners();

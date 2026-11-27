@@ -69,6 +69,13 @@ Articulation::Articulation(DummyParentOr<ChordRest> parent, ElementType type) : 
     setup_show_on_tab_styles();
 }
 
+Articulation::Articulation(const Articulation &a) : Articulation(ElementType::ARTICULATION, a) {}
+
+Articulation::Articulation(ElementType type, const Articulation &a)
+    : EngravingItem(type, a), categories_(a.categories_), sym_id_(a.sym_id_), direction_(a.direction_), channel_name_(a.channel_name_),
+      text_type_(a.text_type_), text_(a.text_), anchor_(a.anchor_), ornament_style_(a.ornament_style_),
+      play_articulation_(a.play_articulation_), show_on_tab_styles_(a.show_on_tab_styles_) {}
+
 //---------------------------------------------------------
 //   setSymId
 //---------------------------------------------------------

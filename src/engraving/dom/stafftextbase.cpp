@@ -34,6 +34,17 @@ StaffTextBase::StaffTextBase(const ElementType &type, DummyParentOr<Segment> par
     set_swing_parameters(Constants::division / 2, 60);
 }
 
+StaffTextBase::StaffTextBase(const StaffTextBase &st) : StaffTextBase(st.type(), st) {}
+
+StaffTextBase::StaffTextBase(ElementType type, const StaffTextBase &st)
+    : TextBase(type, st), channel_actions_(st.channel_actions_), swing_parameters_(st.swing_parameters_),
+      set_aeolus_stops_(st.set_aeolus_stops_), swing_(st.swing_), capo_(st.capo_) {
+    for (size_t i = 0; i < 4; ++i) {
+        channel_names_[i] = st.channel_names_[i];
+        aeolus_stops_[i] = st.aeolus_stops_[i];
+    }
+}
+
 void StaffTextBase::clear() {
     for (voice_idx_t voice = 0; voice < ::mu::engraving::voices; ++voice) {
         channel_names_[voice].clear();

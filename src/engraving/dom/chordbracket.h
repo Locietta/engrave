@@ -31,6 +31,8 @@ private:
     DECLARE_CLASSOF(ElementType::CHORD_BRACKET)
 
 public:
+    ChordBracket(const ChordBracket &cb);
+
     ChordBracket *clone() const override { return new ChordBracket(*this); }
 
     PropertyValue get_property(Pid property_id) const override;

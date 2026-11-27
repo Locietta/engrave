@@ -203,7 +203,7 @@ struct DomAccessor {
     void undo_change_parent(EngravingItem *element, EngravingItem *parent, staff_idx_t staff, bool change_links_parents = true);
 
     void add_unmanaged_spanner(Spanner *s);
-    const muse::BTreeSet<Spanner *> &unmanaged_spanners() const;
+    const std::vector<Spanner *> &unmanaged_spanners() const;
 
 private:
     LayoutContext *get_score_ = nullptr;

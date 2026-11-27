@@ -52,6 +52,7 @@ private:
 public:
     ChordRest(const ElementType &type, DummyParentOr<Segment> parent);
     ChordRest(const ChordRest &, bool link = false);
+    ChordRest(ElementType type, const ChordRest &, bool link = false);
     ChordRest &operator=(const ChordRest &) = delete;
     ~ChordRest();
 

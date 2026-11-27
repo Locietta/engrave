@@ -144,15 +144,15 @@ struct ItemLayoutData {
     // Non-virtual: Articulation::LayoutData shadows reset() for ARTICULATION, ORNAMENT, and TAPPING.
     // Generic EngravingItem* callers must dispatch explicitly (see passresetlayoutdata.cpp).
     void reset() {
-        shape_.reset();
-        mask_.reset();
+        clear_shape();
+        clear_mask();
         //! NOTE Temporary removed, have problems, need investigation
         //pos_.reset();
     }
 
     // Non-virtual: shadowed by Accidental::LayoutData and BeamBase::LayoutData (BEAM, TREMOLO_TWOCHORD).
     // Generic EngravingItem* callers must dispatch explicitly (see measurelayout.cpp).
-    bool is_valid() const { return shape_.has_value() && shape_.value().bbox().is_valid(); }
+    bool is_valid() const { return has_shape_ && shape_.bbox().is_valid(); }
 
     bool is_skip_draw() const { return is_skip_draw_; }
 
@@ -162,13 +162,9 @@ struct ItemLayoutData {
 
     void set_mag(double val) { mag_ = val; }
 
-    bool is_set_pos() const { return pos_.has_value(); }
+    bool is_set_pos() const { return has_pos_; }
 
-    const PointF &pos(LdAccess mode = LdAccess::CHECK) const {
-        //! NOTE Temporarily to mute a lot of messages
-        mode = (LdAccess::CHECK == mode) ? LdAccess::MAYBE_NOTINITED : mode;
-        return pos_.value(mode);
-    }
+    const PointF &pos([[maybe_unused]] LdAccess mode = LdAccess::CHECK) const { return pos_; }
 
     void set_pos(const PointF &p) { do_set_pos(p.x(), p.y()); }
 
@@ -184,15 +180,18 @@ struct ItemLayoutData {
 
     void move_y(double y) { do_set_pos(pos(LdAccess::MAYBE_NOTINITED).x(), pos(LdAccess::MAYBE_NOTINITED).y() + y); }
 
-    bool is_set_bbox() const { return shape_.has_value(); }
+    bool is_set_bbox() const { return has_shape_; }
 
-    void clear_bbox() { shape_.reset(); }
+    void clear_bbox() { clear_shape(); }
 
     RectF bbox(LdAccess mode = LdAccess::CHECK) const;
 
-    bool is_set_shape() const { return shape_.has_value(); }
+    bool is_set_shape() const { return has_shape_; }
 
-    void clear_shape() { shape_.reset(); }
+    void clear_shape() {
+        shape_ = Shape();
+        has_shape_ = false;
+    }
 
     Shape shape(LdAccess mode = LdAccess::CHECK) const;
     void append_shape(Shape &dst, const PointF &offset) const;
@@ -204,7 +203,10 @@ struct ItemLayoutData {
         return shape;
     }
 
-    void set_shape(const Shape &sh) { shape_.set_value(sh); }
+    void set_shape(const Shape &sh) {
+        shape_ = sh;
+        has_shape_ = true;
+    }
 
     void set_bbox(const RectF &r);
 
@@ -235,9 +237,19 @@ struct ItemLayoutData {
         set_bbox(r);
     }
 
-    void set_mask(const Shape &m) { mask_.set_value(m); }
+    bool is_set_mask() const { return has_mask_; }
 
-    const Shape &mask() const { return mask_.value(); }
+    void clear_mask() {
+        mask_ = Shape();
+        has_mask_ = false;
+    }
+
+    void set_mask(const Shape &m) {
+        mask_ = m;
+        has_mask_ = true;
+    }
+
+    const Shape &mask() const { return mask_; }
 
     void connect_item_snapped_before(EngravingItem *item_before);
     void disconnect_item_snapped_before();
@@ -268,12 +280,22 @@ protected:
 #ifndef NDEBUG
         do_set_pos_debug_hook(x, y);
 #endif
-        pos_.mut_value().set_x(x), pos_.mut_value().set_y(y);
+        pos_.set_x(x);
+        pos_.set_y(y);
+        has_pos_ = true;
     }
 
-    Shape &mut_shape() { return shape_.mut_value(); }
+    Shape &mut_shape() {
+        has_shape_ = true;
+        return shape_;
+    }
 
-    bool is_shape_composite() const { return shape_.has_value() && shape_.value().is_composite(); }
+    Shape &mut_mask() {
+        has_mask_ = true;
+        return mask_;
+    }
+
+    bool is_shape_composite() const { return has_shape_ && shape_.is_composite(); }
 
 private:
 
@@ -293,16 +315,20 @@ protected:
 
     const EngravingItem *item_ = nullptr;
     bool is_skip_draw_ = false;
-    double mag_ = 1.0;             // standard magnification (derived value)
-    ld_field<PointF> pos_ = "pos"; // Reference position, relative to _parent, set by autoplace
-    ld_field<Shape> shape_ = "shape";
-    ld_field<Shape> mask_ = "mask";
+    bool has_pos_ = false;
+    bool has_shape_ = false;
+    bool has_mask_ = false;
+    double mag_ = 1.0; // standard magnification (derived value)
+    PointF pos_;       // Reference position, relative to _parent, set by autoplace
+    Shape shape_;
+    Shape mask_;
 
     EngravingItem *item_snapped_before_ = nullptr;
     EngravingItem *item_snapped_after_ = nullptr;
 };
 
 static_assert(!std::is_polymorphic_v<ItemLayoutData>);
+static_assert(sizeof(void *) != 8 || sizeof(std::vector<int>) != 24 || sizeof(ItemLayoutData) <= 152);
 
 ///     \brief Base class of score layout elements
 ///
@@ -315,6 +341,8 @@ private:
     M_PROPERTY2(bool, is_appearance_linked_to_master, set_appearance_linked_to_master, true)
     M_PROPERTY2(bool, exclude_from_other_parts, set_exclude_from_other_parts, false)
     bool exclude_vertical_align_ = false;
+    static constexpr std::uint32_t invalid_layout_slot = ~std::uint32_t{0};
+    std::uint32_t layout_slot_ = invalid_layout_slot;
 
 public:
     using LayoutData = ItemLayoutData;
@@ -706,6 +734,7 @@ public:
 protected:
     EngravingItem(const ElementType &type, EngravingObject *parent = nullptr, ElementFlags = ElementFlag::NOTHING);
     EngravingItem(const EngravingItem &, bool link = false);
+    EngravingItem(ElementType type, const EngravingItem &, bool link = false);
     void release_layout_data();
 
     int z_ = 0;
@@ -732,11 +761,6 @@ private:
     PointF offset_; // offset from reference position, set by autoplace or user
 
     Spatium min_distance_; // autoplace min distance
-    static constexpr std::uint32_t invalid_layout_slot = ~std::uint32_t{0};
-    std::uint32_t layout_slot_ = invalid_layout_slot;
-    // Payload provenance survives the legacy MeasureRepeat -> Rest type hack.
-    // Copies retain a compatible payload prefix even when an owner is sliced.
-    const ElementType layout_type_;
 
     LayoutData *layout_data_ = nullptr;
     rendering::score::LayoutDataStore *layout_store_ = nullptr; // borrowed; runtime owns payloads

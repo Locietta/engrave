@@ -172,9 +172,16 @@ def staged_binary_group(name, srcs):
         output_group = "runtime_dynamic_libraries",
         visibility = ["//visibility:private"],
     )
+    pdb = name + "_pdb"
+    native.filegroup(
+        name = pdb,
+        srcs = srcs,
+        output_group = "pdb_file",
+        visibility = ["//visibility:private"],
+    )
     native.filegroup(
         name = name,
-        srcs = srcs + [":" + runtime],
+        srcs = srcs + [":" + runtime, ":" + pdb],
     )
 
 def _win_manifest_res_impl(ctx):

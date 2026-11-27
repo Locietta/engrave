@@ -59,6 +59,7 @@ public:
     double absolute_from_spatium(const Spatium &sp) const override;
 
 protected:
+    LineSegment(ElementType type, const LineSegment &);
 };
 
 ///    virtual base class for Hairpin, Trill and TextLine
@@ -68,6 +69,11 @@ struct SLine : Spanner {
 public:
     SLine(const ElementType &type, EngravingObject *parent, ElementFlags = ElementFlag::NOTHING);
     SLine(const SLine &);
+
+protected:
+    SLine(ElementType type, const SLine &);
+
+public:
 
     virtual LineSegment *create_line_segment() = 0;
     void set_len(double l);

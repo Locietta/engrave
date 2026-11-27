@@ -36,6 +36,8 @@ LaissezVib::LaissezVib(DummyParentOr<Note> parent) : Tie(ElementType::LAISSEZ_VI
     init_element_style(&::mu::engraving::laissez_vib_style);
 }
 
+LaissezVib::LaissezVib(const LaissezVib &lv) : Tie(ElementType::LAISSEZ_VIB, lv), min_length_(lv.min_length_) {}
+
 PropertyValue LaissezVib::get_property(Pid property_id) const {
     switch (property_id) {
         case Pid::MIN_LENGTH: return min_length();
@@ -73,7 +75,7 @@ void LaissezVib::set_end_element([[maybe_unused]] EngravingItem *e) { ASSERT_X("
 
 LaissezVibSegment::LaissezVibSegment(LaissezVib *sp) : TieSegment(ElementType::LAISSEZ_VIB_SEGMENT, sp) {}
 
-LaissezVibSegment::LaissezVibSegment(const LaissezVibSegment &s) : TieSegment(s) {}
+LaissezVibSegment::LaissezVibSegment(const LaissezVibSegment &s) : TieSegment(ElementType::LAISSEZ_VIB_SEGMENT, s) {}
 
 String LaissezVibSegment::format_bars_and_beats() const {
     const Spanner *spanner = this->spanner();

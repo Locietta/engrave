@@ -25,7 +25,6 @@
 #include <array>
 #include <vector>
 
-#include "bsp.h"
 #include "engravingitem.h"
 #include "global/fn.h"
 #include "mscore.h"
@@ -88,11 +87,6 @@ public:
     void scan_elements(muse::FnRef<void(EngravingItem *)> func) override;
 
     std::vector<EngravingItem *> items(const RectF &r);
-    std::vector<EngravingItem *> items(const PointF &p);
-
-    void invalidate_bsp_tree();
-    void invalidate_bsp_tree_if_referenced(std::span<const EngravingItem *const> sorted_targets);
-    void rebuild_bsp_tree();
 
     PointF page_pos() const override { return PointF(); } ///< position in page coordinates
 
@@ -122,8 +116,5 @@ private:
 
     std::array<Text *, ::mu::engraving::max_headers> header_texts_{};
     std::array<Text *, ::mu::engraving::max_footers> footer_texts_{};
-
-    BspTree bsp_tree;
-    bool bsp_tree_valid_ = false;
 };
 } // namespace mu::engraving

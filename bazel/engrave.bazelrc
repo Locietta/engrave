@@ -15,7 +15,7 @@ build:windows --platforms=@xclang//platforms:x86_64-pc-windows-msvc
 build:windows --copt=-D_MT
 build:release -c opt --features=gc_sections
 build:dist --config=release --copt=-flto=thin --linkopt=-flto=thin --features=thinlto_cache
-build:releasedbg -c opt --copt=-g
+build:releasedbg -c opt --copt=-g --features=generate_pdb_file
 build:debug -c dbg
 build:asan -c fastbuild --strip=never --copt=-O1 --copt=-gline-tables-only --features=asan --features=ubsan
 # ThreadSanitizer for parallel synthesis, async encoding, background audio, and

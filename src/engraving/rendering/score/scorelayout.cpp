@@ -66,7 +66,6 @@ void ScoreLayout::layout_range(Score *score, const Fraction &st, const Fraction 
         LOGD() << "empty score";
         ctx.mut_layout_data().discard_score_output();
         PageLayout::get_next_page(ctx);
-        for (Page *page : score->pages()) page->rebuild_bsp_tree();
         return;
     }
 
@@ -107,7 +106,6 @@ void ScoreLayout::layout_range(Score *score, const Fraction &st, const Fraction 
             if (end && !source_object(*end) && end->find_measure() == measure) spanner->set_end_element(nullptr);
         }
         if (auto *system = measure->system()) {
-            if (auto *page = system->page()) page->invalidate_bsp_tree();
             for (auto *staff : system->staves()) staff->skyline().clear();
             for (auto *base : system->measures()) {
                 if (!base->is_measure()) continue;
@@ -170,6 +168,4 @@ void ScoreLayout::layout_range(Score *score, const Fraction &st, const Fraction 
     ctx.mut_layout_data().prune_spanner_segments();
     ctx.mut_layout_data().for_each_output(
         [&](EngravingItem &item, EngravingItem::LayoutData &data) { TLayout::complete_item_shape(item, data, ctx.conf()); });
-
-    for (Page *page : score->pages()) page->rebuild_bsp_tree();
 }

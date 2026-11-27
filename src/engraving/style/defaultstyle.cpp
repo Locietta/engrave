@@ -112,10 +112,14 @@ const MStyle *DefaultStyle::default_style_for_parts() { return instance()->defau
 
 const MStyle &DefaultStyle::resolve_style_defaults(const int defaults_version) {
     auto load = [](LegacyStyleCache &entry, const String &path) -> const MStyle & {
-        if (!entry.loaded) {
-            entry.loaded = do_load_style(&entry.style, path);
+        if (!entry.attempted) {
+            entry.attempted = true;
+            auto style = std::make_unique<MStyle>();
+            if (do_load_style(style.get(), path)) {
+                entry.style = std::move(style);
+            }
         }
-        return entry.style;
+        return entry.style ? *entry.style : base_style();
     };
 
     DefaultStyle *self = instance();

@@ -77,7 +77,9 @@ private:
 
 public:
     NoteHead(DummyParentOr<Note> parent);
-    NoteHead(const NoteHead &) = default;
+
+    NoteHead(const NoteHead &nh) : Symbol(ElementType::NOTEHEAD, nh) {}
+
     NoteHead &operator=(const NoteHead &) = delete;
 
     NoteHead *clone() const override { return new NoteHead(*this); }
