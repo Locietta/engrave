@@ -1,6 +1,7 @@
 #include "transaction.h"
 
 #include <algorithm>
+#include <exception>
 #include <limits>
 #include <stdexcept>
 #include <utility>
@@ -474,19 +475,17 @@ void TransactionManager::transaction(const muse::TranslatableString &description
         return;
     }
     begin_transaction(description);
-
-    struct RollbackGuard {
-        TransactionManager &manager;
-        bool committed = false;
-
-        ~RollbackGuard() noexcept {
-            if (!committed) manager.end_transaction(true);
-        }
-    } guard{*this};
-
-    func(transaction_);
-    end_transaction();
-    guard.committed = true;
+    std::exception_ptr error;
+    try {
+        func(transaction_);
+        end_transaction();
+    } catch (...) {
+        error = std::current_exception();
+    }
+    if (error) {
+        end_transaction(true);
+        std::rethrow_exception(error);
+    }
 }
 
 void TransactionManager::begin_transaction([[maybe_unused]] const muse::TranslatableString &description) {

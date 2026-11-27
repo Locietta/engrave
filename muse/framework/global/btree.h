@@ -61,10 +61,10 @@ using BTreeMultiSet = gtl::btree_multiset<Key, Compare>;
 
 // Indirected string-keyed B-tree map usable with incomplete value types
 // (e.g., recursive glz::generic_json). Empty instances hold nullptr with zero
-// heap allocation and keep sizeof == sizeof(void*).
+// heap allocation and keep sizeof == sizeof(void*). Unlike std::map, insertions
+// and erasures invalidate references and iterators into the same object.
 template <class Value>
-class IndirectStringBTreeMap {
-public:
+struct IndirectStringBTreeMap {
     using map_type = gtl::btree_map<std::string, Value, gtl::Less<std::string>>;
     using key_type = std::string;
     using mapped_type = Value;
@@ -82,22 +82,17 @@ public:
 
     IndirectStringBTreeMap &operator=(const IndirectStringBTreeMap &other) {
         if (this == &other) return *this;
-        if (!other.map_ || other.map_->empty()) {
-            if (map_) map_->clear();
-            return *this;
-        }
-        if (map_) {
-            *map_ = *other.map_;
-        } else {
-            map_ = new map_type(*other.map_);
-        }
+        // Allocate the copy before destroying old storage: other may live inside *map_.
+        map_type *copy = other.map_ && !other.map_->empty() ? new map_type(*other.map_) : nullptr;
+        delete std::exchange(map_, copy);
         return *this;
     }
 
     IndirectStringBTreeMap &operator=(IndirectStringBTreeMap &&other) noexcept {
         if (this != &other) {
-            delete map_;
-            map_ = std::exchange(other.map_, nullptr);
+            // Detach incoming storage before deleting old storage: other may live inside *map_.
+            map_type *incoming = std::exchange(other.map_, nullptr);
+            delete std::exchange(map_, incoming);
         }
         return *this;
     }

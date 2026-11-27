@@ -64,6 +64,7 @@ def find_compile_commands(repo_root: Path) -> Path:
     """Return the freshest compilation database, generating one only if none exists."""
     candidates = [
         repo_root / "build/release/compile_commands.json",
+        repo_root / "build/dist/compile_commands.json",
         repo_root / "build/debug/compile_commands.json",
         repo_root / "build/releasedbg/compile_commands.json",
         repo_root / "build/asan/compile_commands.json",

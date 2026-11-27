@@ -20,16 +20,6 @@ config_setting(
 )
 
 config_setting(
-    name = "opt_msvc",
-    constraint_values = [
-        "@platforms//os:windows",
-        "@xclang//platforms/libc:msvc",
-    ],
-    values = {"compilation_mode": "opt"},
-    visibility = ["//visibility:public"],
-)
-
-config_setting(
     name = "opt_msvc_gc",
     constraint_values = [
         "@platforms//os:windows",

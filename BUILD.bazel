@@ -608,7 +608,6 @@ cc_binary(
     copts = ENGINE_COPTS,
     linkopts = select({
         "//bazel:windows_msvc": ["-Wl,psapi.lib"],
-        "@platforms//os:windows": ["-lpsapi"],
         "//conditions:default": [],
     }),
     deps = [
@@ -754,7 +753,6 @@ cc_binary(
     copts = ENGINE_COPTS,
     linkopts = select({
         "//bazel:windows_msvc": ["-Wl,psapi.lib"],
-        "@platforms//os:windows": ["-lpsapi"],
         "//conditions:default": [],
     }),
     local_defines = [
@@ -783,7 +781,6 @@ cc_binary(
     copts = ENGINE_COPTS,
     linkopts = select({
         "//bazel:windows_msvc": ["-Wl,psapi.lib"],
-        "@platforms//os:windows": ["-lpsapi"],
         "//conditions:default": [],
     }),
     local_defines = [

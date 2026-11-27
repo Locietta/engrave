@@ -2,8 +2,11 @@
 #include "engraving/types/propertyvalue.h"
 
 #include <cstdio>
+#include <limits>
 
 #include <gtest/gtest.h>
+
+#include "engraving/types/fraction.h"
 
 using namespace mu::engraving;
 
@@ -151,4 +154,25 @@ TEST(StringValue, IndependentStorageAndMoves) {
     empty.append(u'x');
     EXPECT_EQ(empty, u"x");
     std::printf("sizeof(String)=%zu sizeof(PropertyValue)=%zu\n", sizeof(String), sizeof(PropertyValue));
+}
+
+TEST(FractionValue, NegativeIntMinWidensBeforeNegating) {
+    constexpr int min_int = std::numeric_limits<int>::min();
+    constexpr int64_t abs_min = -static_cast<int64_t>(min_int);
+
+    constexpr Fraction both_min(min_int, min_int);
+    static_assert(both_min.numerator64() == abs_min);
+    static_assert(both_min.denominator64() == abs_min);
+    EXPECT_EQ(both_min.numerator64(), abs_min);
+    EXPECT_EQ(both_min.denominator64(), abs_min);
+    EXPECT_EQ(both_min.reduced(), Fraction(1, 1));
+
+    Fraction mutated(1, 2);
+    mutated.set_denominator(min_int);
+    EXPECT_EQ(mutated.numerator64(), -1);
+    EXPECT_EQ(mutated.denominator64(), abs_min);
+
+    mutated.set(min_int, -1);
+    EXPECT_EQ(mutated.numerator64(), abs_min);
+    EXPECT_EQ(mutated.denominator64(), 1);
 }

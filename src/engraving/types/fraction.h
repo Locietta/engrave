@@ -42,7 +42,9 @@ public:
     // no implicit conversion from int to Fraction:
     constexpr Fraction() noexcept = default;
 
-    constexpr Fraction(int z, int n) noexcept : numerator_{n < 0 ? -z : z}, denominator_{n < 0 ? -n : n} {}
+    constexpr Fraction(int z, int n) noexcept
+        : numerator_{n < 0 ? -static_cast<int64_t>(z) : static_cast<int64_t>(z)},
+          denominator_{n < 0 ? -static_cast<int64_t>(n) : static_cast<int64_t>(n)} {}
 
     constexpr int numerator() const noexcept { return static_cast<int>(numerator_); }
 
@@ -61,7 +63,7 @@ public:
     constexpr void set_denominator(int v) noexcept {
         if (v < 0) {
             numerator_ = -numerator_;
-            denominator_ = -v;
+            denominator_ = -static_cast<int64_t>(v);
         } else {
             denominator_ = v;
         }
@@ -69,8 +71,8 @@ public:
 
     constexpr void set(int z, int n) noexcept {
         if (n < 0) {
-            numerator_ = -z;
-            denominator_ = -n;
+            numerator_ = -static_cast<int64_t>(z);
+            denominator_ = -static_cast<int64_t>(n);
         } else {
             numerator_ = z;
             denominator_ = n;

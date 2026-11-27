@@ -34,7 +34,7 @@ ENGINE_COPTS = [
     "-Wno-overloaded-virtual",
     "-Wno-switch",
 ] + select({
-    "//bazel:opt_msvc": [
+    "//bazel:windows_msvc": [
         "-fstrict-aliasing",
         "-fno-wrapv",
     ],
@@ -63,14 +63,13 @@ ENGINE_COPTS = [
 
 ENGINE_LINKOPTS = select({
     "//bazel:windows_msvc": ["-Wl,/STACK:16777216"],
-    "@platforms//os:windows": ["-Wl,--stack,16777216"],
     "//conditions:default": [
         "-pthread",
         "-ldl",
         "-lm",
     ],
 }) + select({
-    "//bazel:opt_msvc_gc": ["-Wl,/OPT:ICF"],
+    "//bazel:opt_msvc_gc": ["-Wl,/OPT:SAFEICF"],
     "//bazel:opt_linux_gc": ["-Wl,--icf=safe"],
     "//conditions:default": [],
 })

@@ -83,34 +83,31 @@ void Document::Impl::bind_layout_boundary(mu::engraving::MasterScore &master, La
 
 void Document::Impl::ensure_layout(mu::engraving::Score &score) {
     adopt_layout_output(score);
-
-    struct LayoutGuard {
-        Document::Impl &impl;
-        mu::engraving::Score &score;
-        bool committed = false;
-
-        ~LayoutGuard() noexcept {
-            // LayoutContext and its borrowed payloads have unwound. A later geometry
-            // request must rebuild a complete view, including after a range failure.
-            if (!committed) impl.discard_layout_output(score);
+    std::exception_ptr error;
+    try {
+        if (score.layout_state.revision != revision && !score.layout_state.dirty)
+            score.invalidate_layout(mu::engraving::Fraction(0, 1), mu::engraving::Fraction(-1, 1));
+        if (score.layout_state.font_generation != engine->font_generation) {
+            // Justified fragments retain font-dependent splits, not only geometry.
+            score.scan_elements([](mu::engraving::EngravingItem *item) {
+                if (item->is_text_base()) mu::engraving::to_text_base(item)->mutldata()->layout_invalid = true;
+            });
+            score.invalidate_layout(mu::engraving::Fraction(0, 1), mu::engraving::Fraction(-1, 1));
+            score.layout_if_dirty();
+            score.layout_state.font_generation = engine->font_generation;
+        } else {
+            score.layout_if_dirty();
         }
-    } guard{*this, score};
-
-    if (score.layout_state.revision != revision && !score.layout_state.dirty)
-        score.invalidate_layout(mu::engraving::Fraction(0, 1), mu::engraving::Fraction(-1, 1));
-    if (score.layout_state.font_generation != engine->font_generation) {
-        // Justified fragments retain font-dependent splits, not only geometry.
-        score.scan_elements([](mu::engraving::EngravingItem *item) {
-            if (item->is_text_base()) mu::engraving::to_text_base(item)->mutldata()->layout_invalid = true;
-        });
-        score.invalidate_layout(mu::engraving::Fraction(0, 1), mu::engraving::Fraction(-1, 1));
-        score.layout_if_dirty();
-        score.layout_state.font_generation = engine->font_generation;
-    } else {
-        score.layout_if_dirty();
+        score.layout_state.revision = revision;
+    } catch (...) {
+        error = std::current_exception();
     }
-    score.layout_state.revision = revision;
-    guard.committed = true;
+    if (error) {
+        // LayoutContext and its borrowed payloads have unwound. A later geometry
+        // request must rebuild a complete view, including after a range failure.
+        discard_layout_output(score);
+        std::rethrow_exception(error);
+    }
 }
 
 void Document::Impl::discard_layout_output(mu::engraving::Score &score) {

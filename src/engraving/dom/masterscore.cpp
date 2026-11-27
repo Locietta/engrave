@@ -22,6 +22,7 @@
 #include "masterscore.h"
 
 #include <algorithm>
+#include <exception>
 #include <stdexcept>
 
 #include "automation/internal/scoreautomationcontroller.h"
@@ -235,7 +236,17 @@ void MasterScore::add_excerpt(Excerpt *ex, size_t index) {
     for (size_t i = at; i < excerpts().size(); ++i)
         if (auto *score = excerpts()[i]->excerpt_score()) touch_source_subtree(*score);
     excerpts().insert(excerpts().begin() + at, ex);
-    source_child_added(*this, ex->excerpt_score());
+    std::exception_ptr error;
+    try {
+        source_child_added(*this, ex->excerpt_score());
+    } catch (...) {
+        error = std::current_exception();
+    }
+    if (error) {
+        // Keep ownership transfer all-or-nothing when observer notification fails.
+        excerpts().erase(excerpts().begin() + at);
+        std::rethrow_exception(error);
+    }
     set_excerpts_changed(true);
 }
 
