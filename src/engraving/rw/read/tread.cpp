@@ -27,7 +27,7 @@
 #include <cmath>
 #include <stdexcept>
 
-#include "../../compat/midi/event.h"
+#include "../../compat/midi/midicoreevent.h"
 #include "../../dom/accidental.h"
 #include "../../dom/ambitus.h"
 #include "../../dom/arpeggio.h"
@@ -1071,11 +1071,7 @@ void TRead::read(InstrChannel *item, XmlReader &e, ReadContext &ctx, Part *part,
                 case CTRL_CHORUS_SEND: item->set_chorus(value); break;
                 case CTRL_REVERB_SEND: item->set_reverb(value); break;
                 default: {
-                    Event ev(ME_CONTROLLER);
-                    ev.set_ontime(-1);
-                    ev.set_channel(0);
-                    ev.set_data_a(ctrl);
-                    ev.set_data_b(value);
+                    MidiCoreEvent ev(ME_CONTROLLER, 0, static_cast<uint8_t>(ctrl), static_cast<uint8_t>(value));
                     item->add_to_init(ev);
                 } break;
             }

@@ -86,7 +86,6 @@ struct Bracket;
 struct Chord;
 struct ChordRest;
 struct Element;
-struct EventsHolder;
 struct Excerpt;
 struct FiguredBass;
 struct Harmony;

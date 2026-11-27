@@ -2,7 +2,7 @@
  "bend.gp": {
   "audio.json": "71cd8c7c4d4d9c25dedb25d531604717ff9d343954fdcff679d67e224b0790c7",
   "measurePositions.json": "06c153fdbb2caa42aa80b9fc67552c5671239e27c76bc773cf5b02924351c261",
-  "midi.json": "f37661b991c34ff0488ac0e96cb3e0bbc8e0366b5cd8c1ba7306d10b5f567105",
+  "midi.json": "6c3eb41b7e8b77f4af9cfb12dd703e9208e745f3cba71bc78d8075b3af486db7",
   "mscz.json": "ea356e14c6498f02409ffecedf0495000d3a432854b0a286d5723760c45acf1b",
   "musicxml-semantic.json": "7727f00cc642381e6a02d5bb5a9badb1c8b0f3a7c7f51f1f622d2815f7f6cc8f",
   "mxl.json": "67227c345a0b86cd346f34bb3b38d85edd9e14b464c8e8502a33dced93830b1c",
@@ -18,7 +18,7 @@
  "bends.mid": {
   "audio.json": "c7e8266c6b399acdf76b5f505c046ca90dfc584ddf3f6cd6dfd28b7885597267",
   "measurePositions.json": "efc0f27947111206228345182ac18b34a36cc28abb3cb5038f974f9325c77779",
-  "midi.json": "042681a31d8fb552ac4ade70bed1fcb096a4c2bcaed0640383c41fe80e802124",
+  "midi.json": "36bf542b322bfe0ebf0a936bec87a301d6439ccce9cf651dc53424fc11e82b1b",
   "mscz.json": "f89c2c03f52fe09682babde8a19f6a6919b53ccbc00a40448165ee0f22555e78",
   "musicxml-semantic.json": "d1581e15c3c5755b41fae46b7d82db2e484fbedf4265d8de26aab5c01942c562",
   "mxl.json": "f4ee8f23df00d1b21e4551962078a356a3aba43ace575fa275fad8dfafee4d9a",
@@ -33,18 +33,18 @@
  },
  "chordline_path.mscx": {
   "audio.json": "17f9889312a75a1ac35bad04a104993da420b12581665f91ec74d2e4ad3cab73",
-  "excerpt-0/midi.json": "1e674cd131049743169f93d84c77974b897c5c6c53e9ae72d543a3dc4e302514",
+  "excerpt-0/midi.json": "bed753874a63261f9328a40a01898d0404de3ef640d07cf1971e88ff1acdf5f5",
   "excerpt-0/musicxml-semantic.json": "fa0c7f824cf446d8a90c8419e802dda84d88e1a329d6eee1e91db20e21c30526",
   "excerpt-0/page-0.svg": "0c4504fd808a8d2a82f98582824022d3296b437829e795c3312ecb94f6a1f547",
   "excerpt-0/score.mscx": "05c341efe2f9ad49306e420cf5dc4d347d7dd4decfc8edc3d3d6470ca21214ca",
   "excerpt-0/score.musicxml": "148f8bda9b2e34133c6bdafc765eff51e07b1ce0eff049255b1e917f6a4d5d6b",
-  "excerpt-1/midi.json": "995020e2f777a59eff693b670f911b75a6a79e258279a4c9b0175c06842e296a",
+  "excerpt-1/midi.json": "5addbbb8c77125b3fa85c1306d62c2e41831ab6da5cb074c0b5d186193e7ba18",
   "excerpt-1/musicxml-semantic.json": "cb71723c67b050372374ca21b35477dc5256eb911b4e2b1652a4ce1946ba536b",
   "excerpt-1/page-0.svg": "e793ba3c6457ea366e46c89d1a64abdf62de550b3145910311d290bbf39c7bbc",
   "excerpt-1/score.mscx": "4bd8b0361bd571d7b3b66aa1de1e622da6adf2335bd7a1440b02c14ef052080e",
   "excerpt-1/score.musicxml": "935b07c5025ee6e12ff5a40c2941c7b2994e252fecbb3a3d47a31cb224a03762",
   "measurePositions.json": "bc5f2dbd7fb9a9efe6c95dc604a8461aef79a4c8402186dc917dd3668f58024d",
-  "midi.json": "c9cea9f8d7bb739dfa4e19b53f0ac15c1c664acd2b79eb300492c94c2e50abad",
+  "midi.json": "aa1ad6a193c1706bf2169671103c615d351b489bf0a333d5dd15a28d5ed34c2f",
   "mscz.json": "54e7e32fccc0a065cb15a47ca1a2d14c6025a7facd7d51d2e0cd009611104d1a",
   "musicxml-semantic.json": "2e78d2664bb8954838ce051c1d3f241e0ad94105eb3e1dec9f660d17017f2c68",
   "mxl.json": "e4ce2edb9b5f40f668d8cd8338d80571f3b6ff344991d8b6188ea69f2645ad46",
@@ -60,7 +60,7 @@
  "coverage.musicxml": {
   "audio.json": "2088fe4022b308765334d3699b674bddb1d1485ef40cedd5362e67c15d73b125",
   "measurePositions.json": "8151f99c775bef68d4f3a283ab179354331b3c788d64bdbbba2509444fc94869",
-  "midi.json": "e65c0d43472e9fcf5d65c41d3095a856c86536a057cf7b6f1896df41722b7a72",
+  "midi.json": "e3db4ac53d23a3fd1f384584975075ee6281348ad8b06f44c97d106c7ba387a8",
   "mscz.json": "b7f882ffc7d2e2a754df44bff394cce73581915d81d3baf2ba57a3d5de7d23a5",
   "musicxml-semantic.json": "931c5aed8afb8110eaac5f342008b1a43bf7b48bc0458bdb8a0958e22b993193",
   "mxl.json": "4c2a2a01a737d2788280d2d3cd1cdb7d585fedd0637573af01f77002eb88fd61",
@@ -76,7 +76,7 @@
  "created.json": {
   "audio.json": "49af6711ee06e72d28c9e787f055e492f5c2afd0233fe4351d5beeec1a22e569",
   "measurePositions.json": "d6c41c379fe8685934b070985abeb26c2e4666efab724a8945f8d88bc0e07396",
-  "midi.json": "9a209a8fe163a25a999ca996dbc810bbe03b82521a3f704187ca459c714e18ee",
+  "midi.json": "950ca4680148e9edcba8f0032d3375a2bfa0b6b94e910b436b3fafdb7a0007d0",
   "mscz.json": "838c98475b77b011e191768d7b56f0889e659f591b39146bfaa4cb8036ba9a9a",
   "musicxml-semantic.json": "b1ba861dc1f541982edcb8e7f0851ddf824af9efbdb366636fa8ecd8be6abee5",
   "mxl.json": "b62b61d0c8f8295ba8ecdad6dac769a9da4c789dda7b1efada026b211c48f4c1",
@@ -91,7 +91,7 @@
  "custom_part_name.mscx": {
   "audio.json": "d28db2cf1147075e662bdfa9a6c7d9c6fb414033ca5c210b9c05a83d605c0039",
   "measurePositions.json": "fe22080c27621eeefdfedf9145926c2fd5c7450bb0ebd87c84e226bf8bad1950",
-  "midi.json": "dc1ff2a13f969b794a64bda03ae0e07486d753595bc889ca37a1db72f2267b99",
+  "midi.json": "578c1d79d8da0b3bddce5ae7366626fe4aac1527d53b2ca17869a24e443b0792",
   "mscz.json": "5c4a227d01a8ed7435bc367d82e1c56d22da27af37094bbb0797a563ea7e6bce",
   "musicxml-semantic.json": "e6ad0db9f66b1ddff7f74406b338414e09e5c350b1614995f6d95cc68e174b4b",
   "mxl.json": "2c86891e7387aa71f7409c46c14cfc0293f73e2ce25d83524937beaee6e6ff82",
@@ -107,7 +107,7 @@
  "drums_import.musicxml": {
   "audio.json": "1a6757f1c6b97d04263d0be97f097a49b9a7b96ad654bdfa84221d772eeaf426",
   "measurePositions.json": "cc6629fcdc4ca46e481951b6e33745ed55f448ba3f027d2804b100257b1b5558",
-  "midi.json": "61cf9c53e87d354009b9a491d41a814776c86385ec2f69753954bda3b539676f",
+  "midi.json": "4fc9c7c65710bf3d77bade3157b921ae47b1eeff2f9e47f761a17625ab736c51",
   "mscz.json": "d7913f843eb891ded0a4e93cc621be31188dada72d7eefc7ac09d1fc8cd0137e",
   "musicxml-semantic.json": "bad514f65e739ff685df482012c4e8b0b34992c405f770e637b8cd050e1e4ea3",
   "mxl.json": "d5f714bf3de392e6a01d7b1cb5388fe669bd26cf996042dc43e8c32bb2cf3ee2",
@@ -121,21 +121,21 @@
   "semantic.json": "651064a84b32d29f24418d86087467e43fe2ea021c3c1ff750f015a182cb1280"
  },
  "edit-replace-measures": {
-  "midi.json": "d995dfed9360b2fb993b9807e073411b89f394e3ee118fc612bddce2a8ed6022",
+  "midi.json": "b81cfc0269214e90cbaa7e0f03d59956123683db703f4e97b6f51b9db31b46ec",
   "musicxml-semantic.json": "c34f77cd4cb0646ad58de9b2e31269ac7d2ba74fbac33c6ae8db82aa705134e4",
   "score.mscx": "52132b11917f9959627da194aed594f445f6e09603e4b9a2c06017b74b462f6e",
   "score.musicxml": "0314eecf94f2306cc743ce6a95da9d688cf147850984940f08770be12922fea4",
   "semantic.json": "cf1f6927285a87d1782833f89c5a2f4568896a8ae41eefd450ddc0c55cb5f24c"
  },
  "edit-set-pitches-coverage": {
-  "midi.json": "4b87d4876b0ff6112693ce8296a06b27e877dc1d2f76bbd7651fd0f8c5277693",
+  "midi.json": "f8827301fbc0f6b2f36a43cab9c6d162036750e078b27f98de6a3bd0f4aac6b5",
   "musicxml-semantic.json": "244204588746c44070d0161f590a0922c28731bfa2da92ba4702f687df77304e",
   "score.mscx": "99c4459a82df89215fed140623fa99888e76df799d96b5206615da58a085782c",
   "score.musicxml": "bda7323478f6e39f266b31ca73494273d41cc1cc51a03533f84c790d9f924e04",
   "semantic.json": "60459c21f8954b417ba935d2664c6f45777a5cae1db1162087d10a62adc382e0"
  },
  "edit-set-pitches-linked": {
-  "midi.json": "7d705ac09bbbe42a2245efe15f74559c16542eebf349d419c48d70107b65b310",
+  "midi.json": "1964d70f2ee0603eefe2c0ab249cb4f8a5709e6fcbc0d7789916b7b25d863bf3",
   "musicxml-semantic.json": "f77287b4a3130979a17b59718e54a22190c2e07e74d47087123f56ac71e6ee68",
   "score.mscx": "7d3a367eb56a5e97da9e2f45fddc0af232c9935a129afb8a6759cdc08f251fae",
   "score.musicxml": "06af4401f78816bd1067ad63fb030c6889304b5865aec003b45a4cbb81da7148",
@@ -144,7 +144,7 @@
  "evening.musicxml": {
   "audio.json": "a5371a9e9a1aac01b3e59026d29fdc0423edf7d1e92811671ced52998bee1b90",
   "measurePositions.json": "03cd09efa7c92df7a0562439109e593765bd8caa4aae2e2ae9612a6fb326f8f3",
-  "midi.json": "e9404aef97155208656342761ae1326f25f1d0e86aba196792342850ee3dbd02",
+  "midi.json": "5f27310f5d67549fb9405e8fa06131f154753bac9d2353f4546cb73411e98470",
   "mscz.json": "bed06ce57ebb3fc64d1d0b0b56dd8b2161593722945c52dc30f69ef9789b9d72",
   "musicxml-semantic.json": "d51a694249c0fdf3abb3f544cecc422d54476a54b644b8003d41ed8b2e626402",
   "mxl.json": "e6f452d4ddec4afd01665e0b57d7e7e09dee14a6ec79812c7ba423b51ac0e79a",
@@ -160,7 +160,7 @@
  "ghost_note.mscx": {
   "audio.json": "deddce961e3b19aea2645cba4b074aede8b12de9c5d411dbfce60371350ff5a5",
   "measurePositions.json": "086d2caf3419b8c05be66b20911c42e33c2efc2c70d2532c9ef1d1c40c61009a",
-  "midi.json": "b8674907ac6127a40676eb7c6cc6129a96580c87c4be735f1d4fff4c0b355326",
+  "midi.json": "3c015c88a58650f9f2b2b8aff9273e25a47a0ef4d02abe7949674053137797ef",
   "mscz.json": "687fa1cd11614c796580691f0963334d265862141d193b71a19ad18a8f368dca",
   "musicxml-semantic.json": "c9fb1a730552c7b7649530075c61f8f58df6bc641da758a544a78c5d14352ac1",
   "mxl.json": "e6123b3c21d349833232cf76494b1ee2e44af96d3aa788c2462292cd04572052",
@@ -176,7 +176,7 @@
  "graceArps.mnx": {
   "audio.json": "f529ee6ecacd62c12399249acba4ab51b5c8b26965476cc395305639699bbca3",
   "measurePositions.json": "376c656236d8ae9fcf8c785647a6ba374d149f64685215395939328ade9c5dbb",
-  "midi.json": "51e4314118eb9e4104665629871df3172863e9116fd53f11da8c29943c0d0d76",
+  "midi.json": "7416f57f76cef5c76517cc5110bba92fb6bba84b8dcfdc7e70ac933e7f9b9aaf",
   "mscz.json": "37913a82b04eb39d0740826a0d3ed8adc9de4c9aa6a9e41ca10cc97b987be6c3",
   "musicxml-semantic.json": "1079cc1839e148802d4b812bec5ac15ed7fefb803c9b9b2f32e079f3ce2cbf8a",
   "mxl.json": "a48e392ed69a651bf26880f8c3b65740bebbb752d60090ed992679fb09a12915",
@@ -191,7 +191,7 @@
  "hairpins_and_repeats.mscx": {
   "audio.json": "d28db2cf1147075e662bdfa9a6c7d9c6fb414033ca5c210b9c05a83d605c0039",
   "measurePositions.json": "fe22080c27621eeefdfedf9145926c2fd5c7450bb0ebd87c84e226bf8bad1950",
-  "midi.json": "dc1ff2a13f969b794a64bda03ae0e07486d753595bc889ca37a1db72f2267b99",
+  "midi.json": "578c1d79d8da0b3bddce5ae7366626fe4aac1527d53b2ca17869a24e443b0792",
   "mscz.json": "5c4a227d01a8ed7435bc367d82e1c56d22da27af37094bbb0797a563ea7e6bce",
   "musicxml-semantic.json": "e6ad0db9f66b1ddff7f74406b338414e09e5c350b1614995f6d95cc68e174b4b",
   "mxl.json": "2c86891e7387aa71f7409c46c14cfc0293f73e2ce25d83524937beaee6e6ff82",
@@ -207,7 +207,7 @@
  "layout_elements.mscx": {
   "audio.json": "d47f80b5fa96ec2aabea2a01a5225bd687413c007d43e295fd536393f44a9012",
   "measurePositions.json": "704c4cc83dc563c79b84c727860b6ad645844572ec72bc7cd59aa2c54f4379c3",
-  "midi.json": "b107280cc5ab5b1b656518b5a8f9a94e23372a9e00449474902915092c10ba86",
+  "midi.json": "5e50d4e26202a07fdd78f14f49d882dcd046bfc4de61eda919b245e5b583cb81",
   "mscz.json": "a3041f275cec135dcc7fd39f7f4bb5cc7e2b8cfbc738f1669e97cae90aa4d0d3",
   "musicxml-semantic.json": "7fd97b34bcfc2c2d945091a897fd9533fb8a64d07ff2808e7b7fc6c69b0e91ed",
   "mxl.json": "6115c111ea6bb81b97a3387a8ef0b16331193d35c7190be2153f70528f7649dc",
@@ -222,13 +222,13 @@
  },
  "linked_parts.mscx": {
   "audio.json": "b82fd27fb133b1ca053df69284f2e725b0775ea17ba4be596d8a9e96a26000fa",
-  "excerpt-0/midi.json": "88d8867bb8db5fbcadbd17011b09f5fc6a29b77042b76e405531daf322b53ce2",
+  "excerpt-0/midi.json": "ba031e5dd7fa22728c2d46b18555b6541aaaa1f7f30c113aa9e0e96ba72ea3f4",
   "excerpt-0/musicxml-semantic.json": "6f61a114debcbbd74d6e1499d28354110b67fe3418c0fc2bff4e5310da948393",
   "excerpt-0/page-0.svg": "0039a873844b328e5744d3f29a4bc0b78a4e367039682c850c4377f8f2913b5a",
   "excerpt-0/score.mscx": "36c043a2e0b428673e70107a5bd9dadaf9e55288c7e5303f708c830c8ba6fa78",
   "excerpt-0/score.musicxml": "61621d9741640d1becd1ae68b6bb59a06963895d81867df3c521e2b617080aee",
   "measurePositions.json": "dae51c8fef4ec75234ee07fe7259844ca96e26d449d9b3b04415fbabfddae005",
-  "midi.json": "88d8867bb8db5fbcadbd17011b09f5fc6a29b77042b76e405531daf322b53ce2",
+  "midi.json": "ba031e5dd7fa22728c2d46b18555b6541aaaa1f7f30c113aa9e0e96ba72ea3f4",
   "mscz.json": "eba57f03d0f02391678d024746b4c3ea591d6d5f5f5a951223fff02aa923c98f",
   "musicxml-semantic.json": "6f61a114debcbbd74d6e1499d28354110b67fe3418c0fc2bff4e5310da948393",
   "mxl.json": "b3e9c2893209a577cb7ca5671b0a617b21f72736841e88da9b48e7ea94dd05fe",
@@ -244,7 +244,7 @@
  "lyrics.mscx": {
   "audio.json": "8aaf37862116196b263e15d4cfaf8dd0ea65cb8fc471dbaaeac71544edab769d",
   "measurePositions.json": "cfd92895789e958e7e32573d63cd600bf8b9b251d90d7504fc5cb857beadd108",
-  "midi.json": "bb73ae0f5b258f3fcaebb0a04628f6b6f270012c02d3f3c4aef308bd9d55defb",
+  "midi.json": "1c88459b5c630f313fe8c8aa7a9ce27c219d3da6d5c66448206382c7d7013865",
   "mscz.json": "762919b2e1169c0024805aecdd2c9dc1bfe7b5812cb0e934dd138e5d5fb9805b",
   "musicxml-semantic.json": "1705a0d3ca7b373dabc2edf02d6efdc8d866d6e23f34fc27a50f759d4ef5e8c9",
   "mxl.json": "ccdb3288ffc36b454cb091cf94f1d20ab53e5af7478944a54c4301269923238a",
@@ -260,7 +260,7 @@
  "named_noteheads_perc.musicxml": {
   "audio.json": "8566f82488855da93b5821fdecc48e4b14822b80da450aa0d1ae275d0c5b44c5",
   "measurePositions.json": "cbd667ef74dd4391ad71009fd1eac2f99bd7b42f4c722b1e9ee2e9d5588c9635",
-  "midi.json": "a9a7ba371f784549db241b8661cdb9f9a66a55a9c6fdfad57324bdc2b04b3649",
+  "midi.json": "a31fdb4f38a816938f7e27a88eaeb8814be0d0bcad88f65bd22fa9cd5d073c47",
   "mscz.json": "5df58b9a7398fdca6f820f8bd536f6961dc04bd1d2011153f23890c4e54e4b48",
   "musicxml-semantic.json": "171320990dff89590f3490fc8d4409e68c6e40aeb155e9aea794036b0f75eb1a",
   "mxl.json": "e4d40ee3316f275933538907f41baa260106c715c0707de1d7b1d8a1ebaf19e8",
@@ -276,7 +276,7 @@
  "pedal.mscx": {
   "audio.json": "d3c63e3504596a6652c828888ab5099280c6b179cfc6c315373e59f6f85e70b9",
   "measurePositions.json": "6a9041d5477b010378e38c005d88886aa1cfcb10d7f01d7159b8f4761b26f16b",
-  "midi.json": "1a918a0083795fa128b7481c45d994c59524815ed709d44393c66029ec6a0980",
+  "midi.json": "4cb6f1ab4394375b795702995631a03e6fc215b0ad99e9219a5fb763f49ef975",
   "mscz.json": "9da06f7b144896c9a2f9262ea00a4a440d30b7de2ef19e6d77776750e698af8b",
   "musicxml-semantic.json": "cf74c1d08e23a1bb502bcbcff1c93f5e7798b0e579c7f6dd5ab4b2a745dd4c3a",
   "mxl.json": "9357a28603c696a1c6a965fab5d0461f245dea25a6a7b18729d4df68fc0b5a34",
@@ -292,7 +292,7 @@
  "perc_stem_dir.musicxml": {
   "audio.json": "073a9db2c8cfa725351f64080c2db5f39776cd6c6472e31a282ae92c3bd74b23",
   "measurePositions.json": "74a501664139b8d176f95aa90649a4da62bc6de9dec408fb81bb20d7a1788d3a",
-  "midi.json": "d94ac1a2998716ea8fa051cfc9d9f5b722faf44e19d44a0e69c9085a8af1c03e",
+  "midi.json": "bdc965ae1e8cbe919156f956e8f65913b2d521df3994ac35378df0dfee3eb655",
   "mscz.json": "32b452af1db03cf1da6334b9877c6a45eef110f69768ea7543561e1f03197e11",
   "musicxml-semantic.json": "dcb5903eeb117607663c16c2e36efa3eaabac81d05f3d38fcbf705d3b4d87dee",
   "mxl.json": "f576a4adf3b7a1aaa478de227816106c036ea5057b42b427c2550fd27241ad8f",
@@ -308,7 +308,7 @@
  "percussionKit.mnx": {
   "audio.json": "2b6309d3a1326a35d12d093de382752366d3b6adeaf876a73143e68615ad6a45",
   "measurePositions.json": "b7111c1103fb7020254cbe3831cb3b8541979967f5d1a00ab367e6f4120e693c",
-  "midi.json": "9e05e49b2566d1d0bfc68826f46ef8683ff20b67ad925d3e017583f7c07865b1",
+  "midi.json": "abd075c15d7a70d2d03698a0e3281794b0b0809f7eb0878cf3a1d8d0f6598ff6",
   "mscz.json": "855f40a0f955c58bd0378fc407e6884ee91798838b40f508684b26c7491ddb5b",
   "musicxml-semantic.json": "44b204432ae42b84baa002922fd31f5e747099c36e984380a447d16ad6b0e271",
   "mxl.json": "2ea3c0ec08c03c8a35520d5e0a3d26bd39e6f7d947bbfd24b6d2a904b60ea33c",
@@ -323,7 +323,7 @@
  "repeat70.mscx": {
   "audio.json": "7790143ee433d11c8e2a2edcb764505ab8a6e6bd83ef1485464771fadeb32a93",
   "measurePositions.json": "fcb72c65f5db56e11a8639a65f895e24badf222ea0c995fa7639210bbdfc0918",
-  "midi.json": "f7cffb7d71ac488ed1e3d6b2c26d686ccbd8aaade493e51db88f8086506291f6",
+  "midi.json": "58b65e2123ae22decb402d94f91e06aeb570bbf167130c561d0b437c09f8d070",
   "mscz.json": "30174d757c064baa72f815c905dd59a886d0efe445b0913d47ced4af99ed4cf6",
   "musicxml-semantic.json": "56289ef3c675343108978b454f695541bc3ec5577fdb60c6d0e644b0dba7b7c7",
   "mxl.json": "1b0560f6cc556e75e9676b2669a55b544f4f49cbe6f06973316f1df9ae1919f2",
@@ -339,7 +339,7 @@
  "repeat71.mscx": {
   "audio.json": "7790143ee433d11c8e2a2edcb764505ab8a6e6bd83ef1485464771fadeb32a93",
   "measurePositions.json": "0086dddbb29bbc21b62a5bb79337b2a1fa4ee65513a819ddd2be6a55efc4e0a8",
-  "midi.json": "f7cffb7d71ac488ed1e3d6b2c26d686ccbd8aaade493e51db88f8086506291f6",
+  "midi.json": "58b65e2123ae22decb402d94f91e06aeb570bbf167130c561d0b437c09f8d070",
   "mscz.json": "e9a3c551e6a04584a1666bd86740713e8ca4c7498b52cd564415cfa582d1843b",
   "musicxml-semantic.json": "910446b56cdf88776cfcb7c844f37d6b1aeb58d38a7b7613b4862aae299f193c",
   "mxl.json": "5203370af6c81229e8bb5a5c6ceac95c2cb67283270db5079c4fc6c13f8476d2",
@@ -355,7 +355,7 @@
  "repeat72.mscx": {
   "audio.json": "7790143ee433d11c8e2a2edcb764505ab8a6e6bd83ef1485464771fadeb32a93",
   "measurePositions.json": "fcb72c65f5db56e11a8639a65f895e24badf222ea0c995fa7639210bbdfc0918",
-  "midi.json": "f7cffb7d71ac488ed1e3d6b2c26d686ccbd8aaade493e51db88f8086506291f6",
+  "midi.json": "58b65e2123ae22decb402d94f91e06aeb570bbf167130c561d0b437c09f8d070",
   "mscz.json": "5f18395994b7dfdfdfe94b115b9f5dfcf4938ecceba1bab5e25da44f86a665e8",
   "musicxml-semantic.json": "136b0055b55fff8727a997fbcd356498a637c3281ebc08045886a1ae9251e9ba",
   "mxl.json": "433a03ccbdb74847637b93974ce5ea902a965dfcbc839c40da29b725dc1517f7",
@@ -371,7 +371,7 @@
  "repeat_with_2_voltas.mscx": {
   "audio.json": "7c289bf816cf9f84c1a70f2522b4579c07ea31fc1bf6e13f3771368d69025712",
   "measurePositions.json": "53204d833d9ff73fb8155d78d1112a112c315ac0979e39511f4d8debc7210c30",
-  "midi.json": "a26f2d4826a44355732877ada99d6a66f220943f56b2fa51d41d5ca99a6c6f3b",
+  "midi.json": "dc034c01ee38e142b27adbb147e0d7567e3c80995a59e2f0e034e5aed6036757",
   "mscz.json": "661493ce76e75f25e4e3a4d214914a73d2737b852355e46ffe55a57ddfeb86a1",
   "musicxml-semantic.json": "dce304b18e1f0ee76717dfd01a67cc658d1dbdefee4cb422b18d8335dc26afd1",
   "mxl.json": "3b1b1a7c994e67162a6247a9dd0f4d473c340befc2b842cdd5f2c311d67451c2",
@@ -387,7 +387,7 @@
  "slurs.mscz": {
   "audio.json": "1fe7a36f406e45988af6011ca5b7e2469bfa439b3faf2500601a12e833393119",
   "measurePositions.json": "f0d3ad251958f7ca8431cf639a8b141da26da9ef0af8da0eadeefe969ac9c7b6",
-  "midi.json": "1350049378c9cd5a99867fbc01206fce7093f05fde0a7ca87676549877b95235",
+  "midi.json": "6689ea9cdf81e14a8fd5ced897f31b517b99ab2635a64024a6e10d592160a09a",
   "mscz.json": "aeface9afd061156cefb780d6cdf309f652b31582686ed5459b62250744e31aa",
   "musicxml-semantic.json": "aa8dd14c2cb03e7a4c4ee68956d121924c36fbe1a628976c5861fcc4d5a4f70c",
   "mxl.json": "eeb232340c16e8ea97749be7b2ae7f3e0668ade3ff8e281026cb9a8425309845",
@@ -404,7 +404,7 @@
  "tab_grace_prebend.mscx": {
   "audio.json": "db8ce47074b1884304fb2dae441d82e15039a6018fcd281b04c0a37565d9d057",
   "measurePositions.json": "757249f8bc043f87a1cd60d9395c1caddb58b311013f7fe57201f94d97fa6d25",
-  "midi.json": "7ee8f8e690a092f8d6e71c0b30b4d331c6fdf6e528da8be18fc55cbba5db571f",
+  "midi.json": "904ce86ea13c5d79cd4c671b1f5d16016dc49be53c6d017e52787e8638fdd11e",
   "mscz.json": "9996a5840efb794e11565c6689ce7e1bc661f44f7f436ee2dca147d7ce033277",
   "musicxml-semantic.json": "9c1f143d3e7400419d38f1d17890553747ba5d2aaefe2a13f507ba79874e8e47",
   "mxl.json": "e0068755719abf548d5f45c9e95db2fea0d127e1ec460ac1db3cb6393d35fbcd",
@@ -420,7 +420,7 @@
  "tupletSimple.mnx": {
   "audio.json": "c7119907625ef6b52c354dd09c600ee9058a673f0dc8ef42031882883751450a",
   "measurePositions.json": "20a1088a6b54952b17e211c587b14b645df0a773eb515df34792fede7ad1cb7a",
-  "midi.json": "92aa03aea329040a85d540dcc82f88c6cea51087fb698b2518d03027ad3991ed",
+  "midi.json": "e0f630014254d7c2c56bdbdfe8d521246401ae7896786cc51a3ed241384d44eb",
   "mscz.json": "230108e25d93d7566ab1d19526fe5744c1df553d0e79d83198853951de139986",
   "musicxml-semantic.json": "ba31c40c55461ae0f1a3ecca22791465aa9b97851847efa009e69d471689f98a",
   "mxl.json": "9d0e40b2a6692f6d1b82ed9a7aaae9f46648399860ebb73fe826bb41a622cfa1",
@@ -435,7 +435,7 @@
  "two-notes.mnx": {
   "audio.json": "632f3b6a77b3d464bfb1f6e89727af69bfb27d63d8f3f70333fa6440615cb8c9",
   "measurePositions.json": "034e768c4699409905da4c93151e0d854ae6f65c40cda96996d2f588efcf8a3b",
-  "midi.json": "f37042b4e22bff900460d7fdac0eb45d0d4f77aace72acc1ae89d638d81cdd48",
+  "midi.json": "03fd22fd6add9749873eb3d54b4c169a4fd11099d45dc8d9f1b4f3075d295103",
   "mscz.json": "cf484ff9c9121f9b0cbbfb07d5b04fe47cd132c4331825103869dbf32d637da9",
   "musicxml-semantic.json": "f100fcb9dcee7f541d5b3804022572f031f0fb179300ed38fa84aa9f92e4bbf4",
   "mxl.json": "1c6fec8e566340fd2521c9567c7796b1b412b3c939da6d94467a92a9a2c7c224",

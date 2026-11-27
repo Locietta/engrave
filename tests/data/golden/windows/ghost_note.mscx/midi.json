@@ -22,16 +22,16 @@
    [
     0,
     {
-     "data": "0000",
-     "metaType": 89,
+     "data": "06c81c",
+     "metaType": 81,
      "type": "meta"
     }
    ],
    [
     0,
     {
-     "data": "06c81c",
-     "metaType": 81,
+     "data": "0000",
+     "metaType": 89,
      "type": "meta"
     }
    ],
@@ -151,7 +151,7 @@
     }
    ],
    [
-    479,
+    475,
     {
      "ch": 4,
      "pitch": 59,
@@ -165,11 +165,11 @@
      "ch": 4,
      "pitch": 57,
      "type": "note_on",
-     "vel": 57
+     "vel": 96
     }
    ],
    [
-    959,
+    955,
     {
      "ch": 4,
      "pitch": 57,
@@ -178,7 +178,7 @@
     }
    ],
    [
-    960,
+    956,
     {
      "data": "",
      "metaType": 47,

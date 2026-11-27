@@ -29,6 +29,7 @@
 
 #include "containers.h"
 #include "global/btree.h"
+#include "global/io/writebudget.h"
 #include "log.h"
 
 using namespace mu::engraving;
@@ -151,6 +152,10 @@ bool MidiFile::write_track(const MidiTrack &t) {
     status = -1;
     int tick = 0;
     for (const auto &i : t.events()) {
+        if (auto *budget = muse::io::active_write_budget; budget && !budget->poll()) {
+            write_error = true;
+            return true;
+        }
         int ntick = i.first;
         putvl(ntick - tick); // write tick delta
         //
@@ -159,6 +164,9 @@ bool MidiFile::write_track(const MidiTrack &t) {
         //
         if (t.out_channel() != -1) {
             write_event(i.second);
+        }
+        if (write_error) {
+            return true;
         }
         tick = ntick;
     }

@@ -1274,6 +1274,11 @@ Err PowerTab::read() {
             s->set_plain_text(String::from_std_string(valid));
             m->add(s);
         }
+        for (Part *part : score->parts()) {
+            for (const auto &pair : part->instruments()) {
+                pair.second->update_instrument_id();
+            }
+        }
         return Err::NO_ERROR;
     } catch (const std::exception &e) {
         LOGE() << "PowerTab import failed: " << e.what();

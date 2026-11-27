@@ -11,6 +11,8 @@
 #include "global/btree.h"
 #include "global/flatset.h"
 #include "global/hashmap.h"
+#include "global/io/buffer.h"
+#include "importexport/midi/internal/midishared/midifile.h"
 #include "read_test_fixture.h"
 
 using namespace read_test;
@@ -4093,7 +4095,8 @@ TEST(Read, MscxMasterExportRetainsStyle) {
 TEST(Read, ScoreCaptureLimitsAndCancellation) {
     auto document = open_path(corpus_file({".mscx"}));
     ASSERT_TRUE(document);
-    for (const auto format : {engrave::Format::MSCX, engrave::Format::MSCZ, engrave::Format::MUSIC_XML, engrave::Format::MXL}) {
+    for (const auto format :
+         {engrave::Format::MSCX, engrave::Format::MSCZ, engrave::Format::MUSIC_XML, engrave::Format::MXL, engrave::Format::MIDI}) {
         SCOPED_TRACE(engrave::to_string(format));
         auto tick = std::time(nullptr) / 2;
         auto original = document->export_score({.format = format});
@@ -4122,8 +4125,6 @@ TEST(Read, ScoreCaptureLimitsAndCancellation) {
         expect_code(cancelled, ErrorCode::CANCELLED, "cancelled score capture");
         EXPECT_EQ(checks, 20);
     }
-    expect_code(document->export_score({.format = engrave::Format::MIDI, .capture = {.max_bytes = 64}}), ErrorCode::UNSUPPORTED,
-                "bounded MIDI capture");
     int checks = 0;
     EXPECT_THROW(std::ignore =
                      document->export_score({.format = engrave::Format::MSCZ, .capture = {.cancelled = [&]() -> bool {
@@ -4134,6 +4135,92 @@ TEST(Read, ScoreCaptureLimitsAndCancellation) {
                  std::runtime_error);
     EXPECT_EQ(checks, 20);
     EXPECT_TRUE(document->export_score({.format = engrave::Format::MSCZ}));
+}
+
+TEST(Read, MpeMidiExportRendersGuitarBendAndHonorsOptions) {
+    using namespace mu::engraving;
+    using namespace mu::iex::midi;
+    const auto parse_smf = [](const std::vector<std::byte> &bytes) {
+        muse::ByteArray raw(reinterpret_cast<const char *>(bytes.data()), bytes.size());
+        muse::io::Buffer buf(&raw);
+        EXPECT_TRUE(buf.open(muse::io::IODevice::READ_ONLY));
+        MidiFile mf;
+        EXPECT_TRUE(mf.read(&buf));
+        return mf;
+    };
+
+    // Defect 032: modern GuitarBend renders pitch-bend curves in MIDI export too.
+    {
+        auto opened = g_engine->open(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "tests/data/inputs/golden/bend.gp");
+        ASSERT_TRUE(opened) << opened.error().message;
+        auto &doc = **opened;
+        const auto rpn_on = doc.export_score({.format = engrave::Format::MIDI, .midi_rpns = true});
+        const auto rpn_off = doc.export_score({.format = engrave::Format::MIDI, .midi_rpns = false});
+        ASSERT_TRUE(rpn_on && rpn_off);
+        EXPECT_NE(*rpn_on, *rpn_off);
+
+        const MidiFile mf_on = parse_smf(*rpn_on);
+        const MidiFile mf_off = parse_smf(*rpn_off);
+        ASSERT_EQ(mf_on.tracks().size(), master_of(doc).nstaves());
+        int non_center_bends = 0;
+        int center_resets = 0;
+        bool saw_rpn_range_12 = false;
+        int note_ons_on = 0;
+        for (const MidiTrack &tr : mf_on.tracks()) {
+            for (const auto &[tick, ev] : tr.events()) {
+                if (ev.type() == ME_PITCHBEND) {
+                    if (ev.data_a() == 0 && ev.data_b() == 64)
+                        ++center_resets;
+                    else
+                        ++non_center_bends;
+                } else if (ev.type() == ME_CONTROLLER && ev.controller() == CTRL_HDATA && ev.value() == 12) {
+                    saw_rpn_range_12 = true;
+                } else if (ev.type() == ME_NOTEON && ev.velo() > 0) {
+                    ++note_ons_on;
+                }
+            }
+        }
+        EXPECT_GT(non_center_bends, 0) << "GuitarBend must emit non-center SMF pitch-bend events";
+        EXPECT_GT(center_resets, 0) << "GuitarBend must reset pitch bend back to center";
+        EXPECT_TRUE(saw_rpn_range_12);
+        EXPECT_GT(note_ons_on, 0);
+
+        int rpn_ccs_off = 0;
+        int note_ons_off = 0;
+        for (const MidiTrack &tr : mf_off.tracks()) {
+            for (const auto &[tick, ev] : tr.events()) {
+                if (ev.type() == ME_CONTROLLER &&
+                    (ev.controller() == CTRL_LRPN || ev.controller() == CTRL_HRPN || ev.controller() == CTRL_HDATA)) {
+                    ++rpn_ccs_off;
+                } else if (ev.type() == ME_NOTEON && ev.velo() > 0) {
+                    ++note_ons_off;
+                }
+            }
+        }
+        EXPECT_EQ(rpn_ccs_off, 0);
+        EXPECT_EQ(note_ons_off, note_ons_on);
+    }
+
+    // Repeat expansion toggle.
+    {
+        auto opened =
+            g_engine->open(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "tests/data/inputs/golden/hairpins_and_repeats.mscx");
+        ASSERT_TRUE(opened) << opened.error().message;
+        const auto exp = (*opened)->export_score({.format = engrave::Format::MIDI, .midi_expand_repeats = true});
+        const auto unexp = (*opened)->export_score({.format = engrave::Format::MIDI, .midi_expand_repeats = false});
+        ASSERT_TRUE(exp && unexp);
+        const auto count_notes = [&](const std::vector<std::byte> &b) {
+            int n = 0;
+            for (const MidiTrack &tr : parse_smf(b).tracks()) {
+                for (const auto &[tick, ev] : tr.events()) {
+                    if (ev.type() == ME_NOTEON && ev.velo() > 0) ++n;
+                }
+            }
+            return n;
+        };
+        EXPECT_GT(count_notes(*exp), count_notes(*unexp));
+        EXPECT_GT(count_notes(*unexp), 0);
+    }
 }
 
 TEST(Read, LargeScoreCaptureStopsBeforeMaterializingTheOutput) {

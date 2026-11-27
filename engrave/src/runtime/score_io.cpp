@@ -319,7 +319,7 @@ engrave::Result<std::string> export_native_score(const EngineContext &context, c
             }
         }
     } else if (format == "midi") {
-        // The legacy renderer selects a repeat view. Keep that per-export choice
+        // PlaybackScoreBuilder selects a repeat view. Keep that per-export choice
         // from changing subsequent semantic reads or audio requests.
         struct RestoreRepeats {
             engraving::MasterScore *master;
@@ -328,7 +328,7 @@ engrave::Result<std::string> export_native_score(const EngineContext &context, c
             ~RestoreRepeats() { master->set_expand_repeats(expanded); }
         } restore{score->master_score(), score->master_score()->expand_repeats()};
 
-        iex::midi::ExportMidi writer(score);
+        iex::midi::ExportMidi writer(score, &context.articulation_profiles());
         success = writer.write(&buffer, options.midi_expand_repeats, options.midi_export_rpns);
     } else
         return std::unexpected(engrave::Error{engrave::ErrorCode::INVALID_ARGUMENT, "Unsupported export format"});

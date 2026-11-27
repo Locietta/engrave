@@ -22,14 +22,6 @@
    [
     0,
     {
-     "data": "0400",
-     "metaType": 89,
-     "type": "meta"
-    }
-   ],
-   [
-    0,
-    {
      "data": "065b9b",
      "metaType": 81,
      "type": "meta"
@@ -38,6 +30,14 @@
    [
     0,
     {
+     "data": "0400",
+     "metaType": 89,
+     "type": "meta"
+    }
+   ],
+   [
+    0,
+    {
      "ch": 0,
      "num": 121,
      "type": "cc",
@@ -136,9 +136,214 @@
    [
     0,
     {
+     "ch": 1,
+     "num": 121,
+     "type": "cc",
+     "val": 0
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 1,
+     "num": 100,
+     "type": "cc",
+     "val": 0
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 1,
+     "num": 101,
+     "type": "cc",
+     "val": 0
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 1,
+     "num": 6,
+     "type": "cc",
+     "val": 12
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 1,
+     "num": 100,
+     "type": "cc",
+     "val": 127
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 1,
+     "num": 101,
+     "type": "cc",
+     "val": 127
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 1,
+     "program": 0,
+     "type": "program"
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 1,
+     "num": 7,
+     "type": "cc",
+     "val": 100
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 1,
+     "num": 10,
+     "type": "cc",
+     "val": 64
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 1,
+     "num": 91,
+     "type": "cc",
+     "val": 30
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 1,
+     "num": 93,
+     "type": "cc",
+     "val": 30
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 2,
+     "num": 121,
+     "type": "cc",
+     "val": 0
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 2,
+     "num": 100,
+     "type": "cc",
+     "val": 0
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 2,
+     "num": 101,
+     "type": "cc",
+     "val": 0
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 2,
+     "num": 6,
+     "type": "cc",
+     "val": 12
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 2,
+     "num": 100,
+     "type": "cc",
+     "val": 127
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 2,
+     "num": 101,
+     "type": "cc",
+     "val": 127
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 2,
+     "program": 0,
+     "type": "program"
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 2,
+     "num": 7,
+     "type": "cc",
+     "val": 100
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 2,
+     "num": 10,
+     "type": "cc",
+     "val": 64
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 2,
+     "num": 91,
+     "type": "cc",
+     "val": 30
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 2,
+     "num": 93,
+     "type": "cc",
+     "val": 30
+    }
+   ],
+   [
+    0,
+    {
      "data": "00",
      "metaType": 33,
      "type": "meta"
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 0,
+     "num": 64,
+     "type": "cc",
+     "val": 127
     }
    ],
    [
@@ -147,223 +352,11 @@
      "ch": 0,
      "pitch": 61,
      "type": "note_on",
-     "vel": 80
+     "vel": 64
     }
    ],
    [
-    0,
-    {
-     "ch": 1,
-     "num": 121,
-     "type": "cc",
-     "val": 0
-    }
-   ],
-   [
-    0,
-    {
-     "ch": 1,
-     "num": 100,
-     "type": "cc",
-     "val": 0
-    }
-   ],
-   [
-    0,
-    {
-     "ch": 1,
-     "num": 101,
-     "type": "cc",
-     "val": 0
-    }
-   ],
-   [
-    0,
-    {
-     "ch": 1,
-     "num": 6,
-     "type": "cc",
-     "val": 12
-    }
-   ],
-   [
-    0,
-    {
-     "ch": 1,
-     "num": 100,
-     "type": "cc",
-     "val": 127
-    }
-   ],
-   [
-    0,
-    {
-     "ch": 1,
-     "num": 101,
-     "type": "cc",
-     "val": 127
-    }
-   ],
-   [
-    0,
-    {
-     "ch": 1,
-     "program": 0,
-     "type": "program"
-    }
-   ],
-   [
-    0,
-    {
-     "ch": 1,
-     "num": 7,
-     "type": "cc",
-     "val": 100
-    }
-   ],
-   [
-    0,
-    {
-     "ch": 1,
-     "num": 10,
-     "type": "cc",
-     "val": 64
-    }
-   ],
-   [
-    0,
-    {
-     "ch": 1,
-     "num": 91,
-     "type": "cc",
-     "val": 30
-    }
-   ],
-   [
-    0,
-    {
-     "ch": 1,
-     "num": 93,
-     "type": "cc",
-     "val": 30
-    }
-   ],
-   [
-    0,
-    {
-     "data": "00",
-     "metaType": 33,
-     "type": "meta"
-    }
-   ],
-   [
-    0,
-    {
-     "ch": 2,
-     "num": 121,
-     "type": "cc",
-     "val": 0
-    }
-   ],
-   [
-    0,
-    {
-     "ch": 2,
-     "num": 100,
-     "type": "cc",
-     "val": 0
-    }
-   ],
-   [
-    0,
-    {
-     "ch": 2,
-     "num": 101,
-     "type": "cc",
-     "val": 0
-    }
-   ],
-   [
-    0,
-    {
-     "ch": 2,
-     "num": 6,
-     "type": "cc",
-     "val": 12
-    }
-   ],
-   [
-    0,
-    {
-     "ch": 2,
-     "num": 100,
-     "type": "cc",
-     "val": 127
-    }
-   ],
-   [
-    0,
-    {
-     "ch": 2,
-     "num": 101,
-     "type": "cc",
-     "val": 127
-    }
-   ],
-   [
-    0,
-    {
-     "ch": 2,
-     "program": 0,
-     "type": "program"
-    }
-   ],
-   [
-    0,
-    {
-     "ch": 2,
-     "num": 7,
-     "type": "cc",
-     "val": 100
-    }
-   ],
-   [
-    0,
-    {
-     "ch": 2,
-     "num": 10,
-     "type": "cc",
-     "val": 64
-    }
-   ],
-   [
-    0,
-    {
-     "ch": 2,
-     "num": 91,
-     "type": "cc",
-     "val": 30
-    }
-   ],
-   [
-    0,
-    {
-     "ch": 2,
-     "num": 93,
-     "type": "cc",
-     "val": 30
-    }
-   ],
-   [
-    0,
-    {
-     "data": "00",
-     "metaType": 33,
-     "type": "meta"
-    }
-   ],
-   [
-    320,
+    238,
     {
      "ch": 0,
      "pitch": 61,
@@ -372,12 +365,12 @@
     }
    ],
    [
-    321,
+    240,
     {
      "ch": 0,
      "pitch": 62,
      "type": "note_on",
-     "vel": 82
+     "vel": 75
     }
    ],
    [
@@ -395,11 +388,11 @@
      "ch": 0,
      "pitch": 63,
      "type": "note_on",
-     "vel": 84
+     "vel": 78
     }
    ],
    [
-    959,
+    955,
     {
      "ch": 0,
      "pitch": 63,
@@ -413,11 +406,11 @@
      "ch": 0,
      "pitch": 64,
      "type": "note_on",
-     "vel": 88
+     "vel": 84
     }
    ],
    [
-    1439,
+    1435,
     {
      "ch": 0,
      "pitch": 64,
@@ -431,16 +424,25 @@
      "ch": 0,
      "pitch": 66,
      "type": "note_on",
-     "vel": 92
+     "vel": 90
     }
    ],
    [
-    1919,
+    1915,
     {
      "ch": 0,
      "pitch": 66,
      "type": "note_off",
      "vel": 0
+    }
+   ],
+   [
+    1920,
+    {
+     "ch": 0,
+     "num": 64,
+     "type": "cc",
+     "val": 0
     }
    ],
    [
@@ -453,15 +455,7 @@
     }
    ],
    [
-    1920,
-    {
-     "data": "4c79",
-     "metaType": 5,
-     "type": "meta"
-    }
-   ],
-   [
-    2079,
+    2078,
     {
      "ch": 0,
      "pitch": 61,
@@ -479,7 +473,7 @@
     }
    ],
    [
-    2239,
+    2232,
     {
      "ch": 0,
      "pitch": 63,
@@ -497,7 +491,7 @@
     }
    ],
    [
-    2399,
+    2392,
     {
      "ch": 0,
      "pitch": 64,
@@ -515,23 +509,7 @@
     }
    ],
    [
-    2400,
-    {
-     "data": "7269637320",
-     "metaType": 5,
-     "type": "meta"
-    }
-   ],
-   [
-    3360,
-    {
-     "data": "6c79",
-     "metaType": 5,
-     "type": "meta"
-    }
-   ],
-   [
-    4319,
+    4224,
     {
      "ch": 0,
      "pitch": 68,
@@ -545,27 +523,11 @@
      "ch": 0,
      "pitch": 68,
      "type": "note_on",
-     "vel": 100
+     "vel": 84
     }
    ],
    [
-    4320,
-    {
-     "data": "72696373",
-     "metaType": 5,
-     "type": "meta"
-    }
-   ],
-   [
-    4800,
-    {
-     "data": "6c7920",
-     "metaType": 5,
-     "type": "meta"
-    }
-   ],
-   [
-    5279,
+    5232,
     {
      "ch": 0,
      "pitch": 68,
@@ -579,11 +541,11 @@
      "ch": 0,
      "pitch": 69,
      "type": "note_on",
-     "vel": 108
+     "vel": 92
     }
    ],
    [
-    5519,
+    5508,
     {
      "ch": 0,
      "pitch": 69,
@@ -597,32 +559,23 @@
      "ch": 0,
      "pitch": 71,
      "type": "note_on",
-     "vel": 110
+     "vel": 94
     }
    ],
    [
-    5639,
+    5745,
+    {
+     "ch": 0,
+     "pitch": 67,
+     "type": "note_on",
+     "vel": 96
+    }
+   ],
+   [
+    5748,
     {
      "ch": 0,
      "pitch": 71,
-     "type": "note_off",
-     "vel": 0
-    }
-   ],
-   [
-    5640,
-    {
-     "ch": 2,
-     "pitch": 67,
-     "type": "note_on",
-     "vel": 112
-    }
-   ],
-   [
-    5759,
-    {
-     "ch": 2,
-     "pitch": 67,
      "type": "note_off",
      "vel": 0
     }
@@ -636,18 +589,27 @@
     }
    ],
    [
-    5760,
+    5788,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 67,
-     "type": "note_on",
-     "vel": 112
+     "type": "note_off",
+     "vel": 0
     }
    ],
    [
-    7679,
+    5790,
     {
-     "ch": 2,
+     "ch": 0,
+     "pitch": 67,
+     "type": "note_on",
+     "vel": 96
+    }
+   ],
+   [
+    7585,
+    {
+     "ch": 0,
      "pitch": 67,
      "type": "note_off",
      "vel": 0
@@ -664,16 +626,16 @@
    [
     7680,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 69,
      "type": "note_on",
-     "vel": 112
+     "vel": 64
     }
    ],
    [
-    8159,
+    8136,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 69,
      "type": "note_off",
      "vel": 0
@@ -682,16 +644,16 @@
    [
     8160,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 71,
      "type": "note_on",
-     "vel": 112
+     "vel": 96
     }
    ],
    [
-    8639,
+    8616,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 71,
      "type": "note_off",
      "vel": 0
@@ -700,16 +662,16 @@
    [
     8640,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 73,
      "type": "note_on",
-     "vel": 112
+     "vel": 96
     }
    ],
    [
-    8879,
+    8878,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 73,
      "type": "note_off",
      "vel": 0
@@ -718,16 +680,16 @@
    [
     8880,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 73,
      "type": "note_on",
-     "vel": 112
+     "vel": 96
     }
    ],
    [
-    9119,
+    9118,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 73,
      "type": "note_off",
      "vel": 0
@@ -752,61 +714,61 @@
    [
     11520,
     {
-     "ch": 2,
-     "pitch": 48,
-     "type": "note_on",
-     "vel": 112
-    }
-   ],
-   [
-    11520,
-    {
      "data": "41",
      "metaType": 6,
      "type": "meta"
     }
    ],
    [
-    11596,
+    11520,
     {
-     "ch": 2,
-     "pitch": 52,
-     "type": "note_on",
-     "vel": 112
-    }
-   ],
-   [
-    11673,
-    {
-     "ch": 2,
-     "pitch": 55,
-     "type": "note_on",
-     "vel": 112
-    }
-   ],
-   [
-    11998,
-    {
-     "ch": 2,
-     "pitch": 52,
-     "type": "note_off",
-     "vel": 0
-    }
-   ],
-   [
-    11998,
-    {
-     "ch": 2,
-     "pitch": 55,
-     "type": "note_off",
-     "vel": 0
-    }
-   ],
-   [
-    11999,
-    {
-     "ch": 2,
+     "ch": 0,
      "pitch": 48,
+     "type": "note_on",
+     "vel": 96
+    }
+   ],
+   [
+    11589,
+    {
+     "ch": 0,
+     "pitch": 52,
+     "type": "note_on",
+     "vel": 96
+    }
+   ],
+   [
+    11658,
+    {
+     "ch": 0,
+     "pitch": 55,
+     "type": "note_on",
+     "vel": 96
+    }
+   ],
+   [
+    11995,
+    {
+     "ch": 0,
+     "pitch": 48,
+     "type": "note_off",
+     "vel": 0
+    }
+   ],
+   [
+    11996,
+    {
+     "ch": 0,
+     "pitch": 52,
+     "type": "note_off",
+     "vel": 0
+    }
+   ],
+   [
+    11997,
+    {
+     "ch": 0,
+     "pitch": 55,
      "type": "note_off",
      "vel": 0
     }
@@ -814,124 +776,124 @@
    [
     12000,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 48,
      "type": "note_on",
-     "vel": 112
+     "vel": 96
     }
    ],
    [
-    12317,
+    12068,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 48,
      "type": "note_off",
      "vel": 0
     }
    ],
    [
-    12318,
+    12069,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 49,
      "type": "note_on",
-     "vel": 112
+     "vel": 96
+    }
+   ],
+   [
+    12136,
+    {
+     "ch": 0,
+     "pitch": 49,
+     "type": "note_off",
+     "vel": 0
+    }
+   ],
+   [
+    12137,
+    {
+     "ch": 0,
+     "pitch": 50,
+     "type": "note_on",
+     "vel": 96
+    }
+   ],
+   [
+    12205,
+    {
+     "ch": 0,
+     "pitch": 50,
+     "type": "note_off",
+     "vel": 0
+    }
+   ],
+   [
+    12206,
+    {
+     "ch": 0,
+     "pitch": 51,
+     "type": "note_on",
+     "vel": 96
+    }
+   ],
+   [
+    12274,
+    {
+     "ch": 0,
+     "pitch": 51,
+     "type": "note_off",
+     "vel": 0
+    }
+   ],
+   [
+    12274,
+    {
+     "ch": 0,
+     "pitch": 52,
+     "type": "note_on",
+     "vel": 96
     }
    ],
    [
     12342,
     {
-     "ch": 2,
-     "pitch": 49,
-     "type": "note_off",
-     "vel": 0
-    }
-   ],
-   [
-    12344,
-    {
-     "ch": 2,
-     "pitch": 50,
-     "type": "note_on",
-     "vel": 112
-    }
-   ],
-   [
-    12368,
-    {
-     "ch": 2,
-     "pitch": 50,
-     "type": "note_off",
-     "vel": 0
-    }
-   ],
-   [
-    12371,
-    {
-     "ch": 2,
-     "pitch": 51,
-     "type": "note_on",
-     "vel": 112
-    }
-   ],
-   [
-    12395,
-    {
-     "ch": 2,
-     "pitch": 51,
-     "type": "note_off",
-     "vel": 0
-    }
-   ],
-   [
-    12397,
-    {
-     "ch": 2,
-     "pitch": 52,
-     "type": "note_on",
-     "vel": 112
-    }
-   ],
-   [
-    12421,
-    {
-     "ch": 2,
+     "ch": 0,
      "pitch": 52,
      "type": "note_off",
      "vel": 0
     }
    ],
    [
-    12423,
+    12343,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 53,
      "type": "note_on",
-     "vel": 112
+     "vel": 96
     }
    ],
    [
-    12447,
+    12411,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 53,
      "type": "note_off",
      "vel": 0
     }
    ],
    [
-    12449,
+    12411,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 54,
      "type": "note_on",
-     "vel": 112
+     "vel": 96
     }
    ],
    [
-    12477,
+    12479,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 54,
      "type": "note_off",
      "vel": 0
@@ -940,16 +902,16 @@
    [
     12480,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 55,
      "type": "note_on",
-     "vel": 112
+     "vel": 96
     }
    ],
    [
-    12959,
+    12936,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 55,
      "type": "note_off",
      "vel": 0
@@ -966,53 +928,53 @@
    [
     14400,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 48,
      "type": "note_on",
-     "vel": 112
+     "vel": 96
     }
    ],
    [
-    14476,
+    14469,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 52,
      "type": "note_on",
-     "vel": 112
+     "vel": 96
     }
    ],
    [
-    14553,
+    14538,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 55,
      "type": "note_on",
-     "vel": 112
+     "vel": 96
     }
    ],
    [
-    14878,
+    14875,
     {
-     "ch": 2,
+     "ch": 0,
+     "pitch": 48,
+     "type": "note_off",
+     "vel": 0
+    }
+   ],
+   [
+    14876,
+    {
+     "ch": 0,
      "pitch": 52,
      "type": "note_off",
      "vel": 0
     }
    ],
    [
-    14878,
+    14877,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 55,
-     "type": "note_off",
-     "vel": 0
-    }
-   ],
-   [
-    14879,
-    {
-     "ch": 2,
-     "pitch": 48,
      "type": "note_off",
      "vel": 0
     }
@@ -1020,124 +982,124 @@
    [
     14880,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 48,
      "type": "note_on",
-     "vel": 112
+     "vel": 96
     }
    ],
    [
-    15197,
+    14948,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 48,
      "type": "note_off",
      "vel": 0
     }
    ],
    [
-    15198,
+    14949,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 49,
      "type": "note_on",
-     "vel": 112
+     "vel": 96
+    }
+   ],
+   [
+    15016,
+    {
+     "ch": 0,
+     "pitch": 49,
+     "type": "note_off",
+     "vel": 0
+    }
+   ],
+   [
+    15017,
+    {
+     "ch": 0,
+     "pitch": 50,
+     "type": "note_on",
+     "vel": 96
+    }
+   ],
+   [
+    15085,
+    {
+     "ch": 0,
+     "pitch": 50,
+     "type": "note_off",
+     "vel": 0
+    }
+   ],
+   [
+    15086,
+    {
+     "ch": 0,
+     "pitch": 51,
+     "type": "note_on",
+     "vel": 96
+    }
+   ],
+   [
+    15154,
+    {
+     "ch": 0,
+     "pitch": 51,
+     "type": "note_off",
+     "vel": 0
+    }
+   ],
+   [
+    15154,
+    {
+     "ch": 0,
+     "pitch": 52,
+     "type": "note_on",
+     "vel": 96
     }
    ],
    [
     15222,
     {
-     "ch": 2,
-     "pitch": 49,
-     "type": "note_off",
-     "vel": 0
-    }
-   ],
-   [
-    15224,
-    {
-     "ch": 2,
-     "pitch": 50,
-     "type": "note_on",
-     "vel": 112
-    }
-   ],
-   [
-    15248,
-    {
-     "ch": 2,
-     "pitch": 50,
-     "type": "note_off",
-     "vel": 0
-    }
-   ],
-   [
-    15251,
-    {
-     "ch": 2,
-     "pitch": 51,
-     "type": "note_on",
-     "vel": 112
-    }
-   ],
-   [
-    15275,
-    {
-     "ch": 2,
-     "pitch": 51,
-     "type": "note_off",
-     "vel": 0
-    }
-   ],
-   [
-    15277,
-    {
-     "ch": 2,
-     "pitch": 52,
-     "type": "note_on",
-     "vel": 112
-    }
-   ],
-   [
-    15301,
-    {
-     "ch": 2,
+     "ch": 0,
      "pitch": 52,
      "type": "note_off",
      "vel": 0
     }
    ],
    [
-    15303,
+    15223,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 53,
      "type": "note_on",
-     "vel": 112
+     "vel": 96
     }
    ],
    [
-    15327,
+    15291,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 53,
      "type": "note_off",
      "vel": 0
     }
    ],
    [
-    15329,
+    15291,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 54,
      "type": "note_on",
-     "vel": 112
+     "vel": 96
     }
    ],
    [
-    15357,
+    15359,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 54,
      "type": "note_off",
      "vel": 0
@@ -1146,23 +1108,23 @@
    [
     15360,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 55,
      "type": "note_on",
-     "vel": 112
+     "vel": 96
     }
    ],
    [
-    15839,
+    15816,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 55,
      "type": "note_off",
      "vel": 0
     }
    ],
    [
-    15840,
+    15817,
     {
      "data": "",
      "metaType": 47,
@@ -1199,34 +1161,18 @@
     0,
     {
      "ch": 0,
-     "pitch": 66,
-     "type": "note_on",
-     "vel": 80
-    }
-   ],
-   [
-    0,
-    {
-     "data": "00",
-     "metaType": 33,
-     "type": "meta"
-    }
-   ],
-   [
-    0,
-    {
-     "data": "00",
-     "metaType": 33,
-     "type": "meta"
-    }
-   ],
-   [
-    2,
-    {
-     "ch": 0,
      "num": 64,
      "type": "cc",
      "val": 127
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 0,
+     "pitch": 66,
+     "type": "note_on",
+     "vel": 64
     }
    ],
    [
@@ -1244,16 +1190,33 @@
      "ch": 0,
      "pitch": 64,
      "type": "note_on",
-     "vel": 80
+     "vel": 64
     }
    ],
    [
-    479,
+    476,
     {
      "ch": 0,
      "pitch": 64,
      "type": "note_off",
      "vel": 0
+    }
+   ],
+   [
+    1920,
+    {
+     "data": "4c79",
+     "metaType": 5,
+     "type": "meta"
+    }
+   ],
+   [
+    1920,
+    {
+     "ch": 0,
+     "num": 64,
+     "type": "cc",
+     "val": 0
     }
    ],
    [
@@ -1266,29 +1229,20 @@
     }
    ],
    [
-    1920,
-    {
-     "data": "4c79",
-     "metaType": 5,
-     "type": "meta"
-    }
-   ],
-   [
-    1921,
-    {
-     "ch": 0,
-     "num": 64,
-     "type": "cc",
-     "val": 0
-    }
-   ],
-   [
-    2399,
+    2376,
     {
      "ch": 0,
      "pitch": 73,
      "type": "note_off",
      "vel": 0
+    }
+   ],
+   [
+    2400,
+    {
+     "data": "7269637320",
+     "metaType": 5,
+     "type": "meta"
     }
    ],
    [
@@ -1301,15 +1255,7 @@
     }
    ],
    [
-    2400,
-    {
-     "data": "7269637320",
-     "metaType": 5,
-     "type": "meta"
-    }
-   ],
-   [
-    2879,
+    2856,
     {
      "ch": 0,
      "pitch": 76,
@@ -1327,12 +1273,20 @@
     }
    ],
    [
-    3359,
+    3336,
     {
      "ch": 0,
      "pitch": 78,
      "type": "note_off",
      "vel": 0
+    }
+   ],
+   [
+    3360,
+    {
+     "data": "6c79",
+     "metaType": 5,
+     "type": "meta"
     }
    ],
    [
@@ -1345,15 +1299,7 @@
     }
    ],
    [
-    3360,
-    {
-     "data": "6c79",
-     "metaType": 5,
-     "type": "meta"
-    }
-   ],
-   [
-    3839,
+    3816,
     {
      "ch": 0,
      "pitch": 76,
@@ -1367,25 +1313,16 @@
      "ch": 0,
      "pitch": 73,
      "type": "note_on",
-     "vel": 96
+     "vel": 80
     }
    ],
    [
-    4319,
+    4296,
     {
      "ch": 0,
      "pitch": 73,
      "type": "note_off",
      "vel": 0
-    }
-   ],
-   [
-    4320,
-    {
-     "ch": 0,
-     "pitch": 76,
-     "type": "note_on",
-     "vel": 100
     }
    ],
    [
@@ -1397,21 +1334,21 @@
     }
    ],
    [
-    4799,
+    4320,
+    {
+     "ch": 0,
+     "pitch": 76,
+     "type": "note_on",
+     "vel": 84
+    }
+   ],
+   [
+    4776,
     {
      "ch": 0,
      "pitch": 76,
      "type": "note_off",
      "vel": 0
-    }
-   ],
-   [
-    4800,
-    {
-     "ch": 0,
-     "pitch": 64,
-     "type": "note_on",
-     "vel": 104
     }
    ],
    [
@@ -1423,7 +1360,16 @@
     }
    ],
    [
-    5759,
+    4800,
+    {
+     "ch": 0,
+     "pitch": 64,
+     "type": "note_on",
+     "vel": 88
+    }
+   ],
+   [
+    5712,
     {
      "ch": 0,
      "pitch": 64,
@@ -1442,16 +1388,16 @@
    [
     11520,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 81,
      "type": "note_on",
-     "vel": 112
+     "vel": 96
     }
    ],
    [
-    11999,
+    11976,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 81,
      "type": "note_off",
      "vel": 0
@@ -1460,16 +1406,16 @@
    [
     12000,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 70,
      "type": "note_on",
-     "vel": 112
+     "vel": 96
     }
    ],
    [
-    12479,
+    12456,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 70,
      "type": "note_off",
      "vel": 0
@@ -1478,16 +1424,16 @@
    [
     12480,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 72,
      "type": "note_on",
-     "vel": 112
+     "vel": 96
     }
    ],
    [
-    12959,
+    12936,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 72,
      "type": "note_off",
      "vel": 0
@@ -1496,16 +1442,16 @@
    [
     12960,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 74,
      "type": "note_on",
-     "vel": 112
+     "vel": 96
     }
    ],
    [
-    13439,
+    13416,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 74,
      "type": "note_off",
      "vel": 0
@@ -1514,16 +1460,16 @@
    [
     13440,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 76,
      "type": "note_on",
-     "vel": 112
+     "vel": 96
     }
    ],
    [
-    13919,
+    13896,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 76,
      "type": "note_off",
      "vel": 0
@@ -1532,16 +1478,16 @@
    [
     13920,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 77,
      "type": "note_on",
-     "vel": 112
+     "vel": 96
     }
    ],
    [
-    14399,
+    14376,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 77,
      "type": "note_off",
      "vel": 0
@@ -1550,203 +1496,59 @@
    [
     14400,
     {
-     "ch": 1,
-     "pitch": 36,
-     "type": "note_on",
-     "vel": 112
-    }
-   ],
-   [
-    14400,
-    {
-     "ch": 1,
-     "pitch": 60,
-     "type": "note_on",
-     "vel": 112
-    }
-   ],
-   [
-    14400,
-    {
-     "ch": 1,
-     "pitch": 64,
-     "type": "note_on",
-     "vel": 112
-    }
-   ],
-   [
-    14400,
-    {
-     "ch": 1,
-     "pitch": 67,
-     "type": "note_on",
-     "vel": 112
-    }
-   ],
-   [
-    14400,
-    {
-     "ch": 2,
+     "ch": 0,
      "pitch": 69,
      "type": "note_on",
-     "vel": 112
+     "vel": 96
     }
    ],
    [
     14400,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 72,
      "type": "note_on",
-     "vel": 112
+     "vel": 96
     }
    ],
    [
     14400,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 76,
      "type": "note_on",
-     "vel": 112
+     "vel": 96
     }
    ],
    [
-    15120,
+    16224,
     {
-     "ch": 1,
-     "pitch": 36,
-     "type": "note_off",
-     "vel": 0
-    }
-   ],
-   [
-    15120,
-    {
-     "ch": 1,
-     "pitch": 60,
-     "type": "note_off",
-     "vel": 0
-    }
-   ],
-   [
-    15120,
-    {
-     "ch": 1,
-     "pitch": 64,
-     "type": "note_off",
-     "vel": 0
-    }
-   ],
-   [
-    15120,
-    {
-     "ch": 1,
-     "pitch": 67,
-     "type": "note_off",
-     "vel": 0
-    }
-   ],
-   [
-    15120,
-    {
-     "ch": 1,
-     "pitch": 38,
-     "type": "note_on",
-     "vel": 112
-    }
-   ],
-   [
-    15120,
-    {
-     "ch": 1,
-     "pitch": 62,
-     "type": "note_on",
-     "vel": 112
-    }
-   ],
-   [
-    15120,
-    {
-     "ch": 1,
-     "pitch": 66,
-     "type": "note_on",
-     "vel": 112
-    }
-   ],
-   [
-    15120,
-    {
-     "ch": 1,
-     "pitch": 69,
-     "type": "note_on",
-     "vel": 112
-    }
-   ],
-   [
-    16319,
-    {
-     "ch": 2,
+     "ch": 0,
      "pitch": 69,
      "type": "note_off",
      "vel": 0
     }
    ],
    [
-    16319,
+    16224,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 72,
      "type": "note_off",
      "vel": 0
     }
    ],
    [
-    16319,
+    16224,
     {
-     "ch": 2,
+     "ch": 0,
      "pitch": 76,
      "type": "note_off",
      "vel": 0
     }
    ],
    [
-    17280,
-    {
-     "ch": 1,
-     "pitch": 38,
-     "type": "note_off",
-     "vel": 0
-    }
-   ],
-   [
-    17280,
-    {
-     "ch": 1,
-     "pitch": 62,
-     "type": "note_off",
-     "vel": 0
-    }
-   ],
-   [
-    17280,
-    {
-     "ch": 1,
-     "pitch": 66,
-     "type": "note_off",
-     "vel": 0
-    }
-   ],
-   [
-    17280,
-    {
-     "ch": 1,
-     "pitch": 69,
-     "type": "note_off",
-     "vel": 0
-    }
-   ],
-   [
-    17281,
+    16225,
     {
      "data": "",
      "metaType": 47,

@@ -24,35 +24,30 @@
 #define EXPORTMIDI_H
 
 #include "../midishared/midifile.h"
-#include "engraving/compat/midi/compatmidirenderinternal.h"
-#include "engraving/compat/midi/pausemap.h"
 #include "io/path.h"
+
+namespace muse::mpe {
+struct ArticulationProfilesRepository;
+} // namespace muse::mpe
 
 namespace mu::engraving {
 struct Score;
-struct SynthesizerState;
 } // namespace mu::engraving
 
 namespace mu::iex::midi {
 using MidiPath = muse::io::PathT;
 
-//---------------------------------------------------------
-//   ExportMidi
-//---------------------------------------------------------
-
 struct ExportMidi {
-    ExportMidi(engraving::Score *s) { score_ = s; }
+    explicit ExportMidi(engraving::Score *s, const muse::mpe::ArticulationProfilesRepository *profiles = nullptr)
+        : score_(s), profiles_(profiles) {}
 
     bool write(const MidiPath &name, bool midi_expand_repeats, bool export_rp_ns);
     bool write(MidiIODevice *device, bool midi_expand_repeats, bool export_rp_ns);
-    bool write(const MidiPath &name, bool midi_expand_repeats, bool export_rp_ns, const engraving::SynthesizerState &synth_state);
-    bool write(MidiIODevice *device, bool midi_expand_repeats, bool export_rp_ns, const engraving::SynthesizerState &synth_state);
 
 private:
-    void write_header(const engraving::CompatMidiRendererInternal::Context &context);
-
     MidiFile midi_file_;
     engraving::Score *score_ = nullptr;
+    const muse::mpe::ArticulationProfilesRepository *profiles_ = nullptr;
 };
 } // namespace mu::iex::midi
 #endif // EXPORTMIDI_H

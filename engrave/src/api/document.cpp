@@ -338,9 +338,6 @@ Result<ExportOutput> Document::export_score_with_warnings(const ExportOptions &o
                                          ExportWarningObject{"request", "version:" + options.native_version}});
         return std::unexpected(std::move(error));
     }
-    if (options.format == Format::MIDI && (options.capture.max_bytes || options.capture.max_working_bytes || options.capture.cancelled)) {
-        return std::unexpected(Error{ErrorCode::UNSUPPORTED, "bounded MIDI capture is not supported by the playback-event builder"});
-    }
     const auto excerpt = excerpt_id_of(*impl_->project->master_score(), options.score);
     if (!excerpt) return std::unexpected(excerpt.error());
     const auto selected = select_score(*impl_->project->master_score(), options.score);

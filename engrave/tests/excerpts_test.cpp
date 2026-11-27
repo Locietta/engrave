@@ -51,7 +51,7 @@ std::string export_selection(const music::EngineContext &context, mu::engraving:
     muse::io::Buffer buffer(&bytes);
     buffer.open(muse::io::IODevice::WRITE_ONLY);
     if (midi) {
-        mu::iex::midi::ExportMidi writer(score);
+        mu::iex::midi::ExportMidi writer(score, &context.articulation_profiles());
         expect(writer.write(&buffer, true, true), "Excerpt MIDI export failed");
     } else
         expect(mu::iex::musicxml::save_xml(score, &buffer, context.music_xml()), "Excerpt XML export failed");

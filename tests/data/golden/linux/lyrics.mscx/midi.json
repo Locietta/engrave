@@ -22,16 +22,16 @@
    [
     0,
     {
-     "data": "0000",
-     "metaType": 89,
+     "data": "07a120",
+     "metaType": 81,
      "type": "meta"
     }
    ],
    [
     0,
     {
-     "data": "07a120",
-     "metaType": 81,
+     "data": "0000",
+     "metaType": 89,
      "type": "meta"
     }
    ],
@@ -144,30 +144,22 @@
    [
     0,
     {
+     "data": "313233323120",
+     "metaType": 5,
+     "type": "meta"
+    }
+   ],
+   [
+    0,
+    {
      "ch": 0,
      "pitch": 72,
      "type": "note_on",
-     "vel": 80
+     "vel": 64
     }
    ],
    [
-    0,
-    {
-     "data": "313233323120",
-     "metaType": 5,
-     "type": "meta"
-    }
-   ],
-   [
-    0,
-    {
-     "data": "313233323120",
-     "metaType": 5,
-     "type": "meta"
-    }
-   ],
-   [
-    1343,
+    1824,
     {
      "ch": 0,
      "pitch": 72,
@@ -178,14 +170,22 @@
    [
     1920,
     {
-     "ch": 0,
-     "pitch": 60,
-     "type": "note_on",
-     "vel": 80
+     "data": "313233323120",
+     "metaType": 5,
+     "type": "meta"
     }
    ],
    [
     1920,
+    {
+     "ch": 0,
+     "pitch": 60,
+     "type": "note_on",
+     "vel": 64
+    }
+   ],
+   [
+    3744,
     {
      "ch": 0,
      "pitch": 60,
@@ -194,23 +194,7 @@
     }
    ],
    [
-    1920,
-    {
-     "data": "313233323120",
-     "metaType": 5,
-     "type": "meta"
-    }
-   ],
-   [
-    1920,
-    {
-     "data": "313233323120",
-     "metaType": 5,
-     "type": "meta"
-    }
-   ],
-   [
-    1921,
+    3745,
     {
      "data": "",
      "metaType": 47,
@@ -246,30 +230,22 @@
    [
     0,
     {
+     "data": "313233323120",
+     "metaType": 5,
+     "type": "meta"
+    }
+   ],
+   [
+    0,
+    {
      "ch": 0,
      "pitch": 48,
      "type": "note_on",
-     "vel": 80
+     "vel": 64
     }
    ],
    [
-    0,
-    {
-     "data": "313233323120",
-     "metaType": 5,
-     "type": "meta"
-    }
-   ],
-   [
-    0,
-    {
-     "data": "313233323120",
-     "metaType": 5,
-     "type": "meta"
-    }
-   ],
-   [
-    1343,
+    1824,
     {
      "ch": 0,
      "pitch": 48,
@@ -280,30 +256,22 @@
    [
     1920,
     {
+     "data": "313233323120",
+     "metaType": 5,
+     "type": "meta"
+    }
+   ],
+   [
+    1920,
+    {
      "ch": 0,
      "pitch": 60,
      "type": "note_on",
-     "vel": 80
+     "vel": 64
     }
    ],
    [
-    1920,
-    {
-     "data": "313233323120",
-     "metaType": 5,
-     "type": "meta"
-    }
-   ],
-   [
-    1920,
-    {
-     "data": "313233323120",
-     "metaType": 5,
-     "type": "meta"
-    }
-   ],
-   [
-    3263,
+    3744,
     {
      "ch": 0,
      "pitch": 60,
@@ -312,7 +280,7 @@
     }
    ],
    [
-    3264,
+    3745,
     {
      "data": "",
      "metaType": 47,
