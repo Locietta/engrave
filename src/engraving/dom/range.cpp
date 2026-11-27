@@ -596,13 +596,13 @@ bool TrackList::write(Score *score, const Fraction &tick, WrittenChordMap *writt
         if (e->is_duration_element()) {
             Fraction duration = to_duration_element(e)->ticks();
             if (!check_rest(remains, m, duration)) { // go to next measure, if necessary
-                MScore::set_error(MsError::CORRUPTED_MEASURE);
+                if (auto *master = score->master_score()) master->cmd_state().set_error(MsError::CORRUPTED_MEASURE);
                 return false;
             }
             if (duration > remains && e->is_tuplet()) {
                 // experimental: allow tuplet split in the middle
                 if (duration != remains * 2) {
-                    MScore::set_error(MsError::CANNOT_SPLIT_TUPLET);
+                    if (auto *master = score->master_score()) master->cmd_state().set_error(MsError::CANNOT_SPLIT_TUPLET);
                     return false;
                 }
             }
@@ -631,7 +631,7 @@ bool TrackList::write(Score *score, const Fraction &tick, WrittenChordMap *writt
                     Fraction du = std::min(remains, duration);
                     std::vector<TDuration> dl = to_duration_list(du, e->is_chord());
                     if (dl.empty()) {
-                        MScore::set_error(MsError::CORRUPTED_MEASURE);
+                        if (auto *master = score->master_score()) master->cmd_state().set_error(MsError::CORRUPTED_MEASURE);
                         return false;
                     }
                     for (const TDuration &k : dl) {
@@ -679,7 +679,7 @@ bool TrackList::write(Score *score, const Fraction &tick, WrittenChordMap *writt
                 firstpart = false;
                 if (duration > Fraction(0, 1)) {
                     if (!check_rest(remains, m, duration)) { // go to next measure, if necessary
-                        MScore::set_error(MsError::CORRUPTED_MEASURE);
+                        if (auto *master = score->master_score()) master->cmd_state().set_error(MsError::CORRUPTED_MEASURE);
                         return false;
                     }
                 }

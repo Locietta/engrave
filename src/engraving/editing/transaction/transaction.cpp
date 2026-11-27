@@ -492,19 +492,18 @@ void TransactionManager::begin_transaction([[maybe_unused]] const muse::Translat
     if (active_) return;
     cleanup_detached();
     master_score_->cmd_state().reset();
-    MScore::set_error(MsError::MS_NO_ERROR);
     active_ = true;
 }
 
 void TransactionManager::prepare_commit() {
     if (!active_) throw std::logic_error("no active mutation batch");
-    if (master_score_->read_only() || (MScore::error != MsError::MS_NO_ERROR && !MScore::error_is_warning))
+    auto &state = master_score_->cmd_state();
+    if (master_score_->read_only() || (state.error != MsError::MS_NO_ERROR && !state.error_is_warning))
         throw std::runtime_error("the engine rejected the mutation batch");
     if (master_score_->source_revision() == std::numeric_limits<uint64_t>::max()) throw std::overflow_error("source revision exhausted");
     master_score_->update(false, NormalizeMode::TRANSACTION);
     master_score_->invalidate_repeat_list();
     master_score_->update_repeat_list(true);
-    auto &state = master_score_->cmd_state();
     auto &changes = state.changes;
     changes.tick_from = state.start_tick().ticks();
     changes.tick_to = state.end_tick().ticks();
@@ -520,9 +519,10 @@ void TransactionManager::prepare_commit() {
 }
 
 void TransactionManager::commit_prepared() {
-    const bool changed = master_score_->cmd_state().mutation_count != 0;
+    const auto &state = master_score_->cmd_state();
+    const bool changed = state.mutation_count != 0;
     if (changed) {
-        if (MScore::error != MsError::MS_NO_ERROR && !MScore::error_is_warning)
+        if (state.error != MsError::MS_NO_ERROR && !state.error_is_warning)
             throw std::runtime_error("the engine rejected batch finalization");
         master_score_->advance_source_revision();
     }

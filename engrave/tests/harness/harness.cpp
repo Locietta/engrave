@@ -20,7 +20,6 @@
 #include "engraving/dom/engravingobject.h"
 #include "engraving/dom/excerpt.h"
 #include "engraving/dom/masterscore.h"
-#include "engraving/dom/mscore.h"
 #include "engraving/dom/part.h"
 #include "engraving/dom/score.h"
 #include "engraving/dom/select.h"
@@ -35,7 +34,6 @@ namespace engrave::harness {
 namespace {
 using mu::engraving::EngravingObject;
 using mu::engraving::MasterScore;
-using mu::engraving::MScore;
 using mu::engraving::Score;
 
 muse::FlatMap<std::string, std::string> mscz_files(const std::vector<std::byte> &bytes) {
@@ -145,7 +143,7 @@ Fingerprint fingerprint(Document &document) {
     }
     std::ranges::sort(print.ids);
     print.revision = document.revision();
-    print.engine_error = static_cast<int>(MScore::error);
+    print.engine_error = static_cast<int>(master.cmd_state().error);
     int index = 0;
     for (Score *score : master.score_list()) {
         if (score->npages() > 0)

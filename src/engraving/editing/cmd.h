@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "../dom/engravingobject.h"
+#include "../dom/mscore.h"
 #include "../types/types.h"
 #include "engraving/dom/property.h"
 #include "global/hashmap.h"
@@ -74,6 +75,15 @@ struct CmdState {
 
     bool excerpts_changed = false;
     bool instruments_changed = false;
+    MsError error = MsError::MS_NO_ERROR;
+    bool error_is_warning = false;
+
+    void set_error(MsError err, bool is_warning = false) {
+        error = err;
+        error_is_warning = is_warning;
+    }
+
+    void clear_error() { set_error(MsError::MS_NO_ERROR, false); }
 
     void reset();
 

@@ -7,7 +7,10 @@
 #include <variant>
 #include <vector>
 
+#include "engraving/dom/property.h"
 #include "engraving/infrastructure/sourcehandle.h"
+#include "engraving/style/styledef.h"
+#include "engraving/types/propertyvalue.h"
 #include "engraving/types/types.h"
 #include "global/unique_fn.h"
 #include <engrave/document.h>
@@ -16,9 +19,11 @@
 
 namespace mu::engraving {
 struct ChordRest;
+struct EngravingItem;
 struct EngravingObject;
 struct MasterScore;
 struct Measure;
+struct MeasureBase;
 struct Score;
 struct Segment;
 } // namespace mu::engraving
@@ -51,12 +56,51 @@ struct SegmentTrack {
 
 struct BatchGuard;
 
+// Typed inverse log for provably-closed leaf edits in EditMode::Atomic.
+struct EditDeltaLog {
+    struct PropertyDelta {
+        mu::engraving::SourceHandle handle;
+        mu::engraving::Pid pid;
+        mu::engraving::PropertyValue old_value;
+        mu::engraving::PropertyFlags old_flags;
+        bool is_item = false;
+        bool old_generated = false;
+        bool old_pos_linked = false;
+        bool old_app_linked = false;
+    };
+
+    struct StyleDelta {
+        mu::engraving::SourceHandle score_handle;
+        mu::engraving::Sid sid;
+        mu::engraving::PropertyValue old_value;
+    };
+
+    struct AddedBreakDelta {
+        mu::engraving::SourceHandle measure_handle;
+        mu::engraving::SourceHandle break_handle;
+    };
+
+    using Entry = std::variant<PropertyDelta, StyleDelta, AddedBreakDelta>;
+
+    std::vector<Entry> entries;
+    std::uint64_t source_revision = 0;
+    std::uint64_t saved_revision = 0;
+    std::uint64_t document_revision = 0;
+
+    void record_property(mu::engraving::MasterScore &master, mu::engraving::EngravingObject &target, mu::engraving::Pid pid);
+    void record_style(mu::engraving::MasterScore &master, mu::engraving::Score &score, mu::engraving::Sid sid);
+    void record_added_break(mu::engraving::MasterScore &master, mu::engraving::MeasureBase &measure, mu::engraving::EngravingItem &added);
+    void rollback(mu::engraving::MasterScore &master);
+};
+
 bool can_defer_note_entry(const mu::engraving::MasterScore &master, const Batch &batch);
 
 struct EditContext {
     explicit EditContext(mu::engraving::MasterScore &master) : master_(master) {}
 
     mu::engraving::MasterScore &master() const { return master_; }
+
+    EditDeltaLog *delta_log() const { return delta_log_; }
 
     // The operation being prepared or run.
     std::size_t op() const { return op_; }
@@ -89,6 +133,7 @@ private:
     Result<void> check_scope(const mu::engraving::EngravingObject &object) const;
 
     mu::engraving::MasterScore &master_;
+    EditDeltaLog *delta_log_ = nullptr;
     std::optional<ScoreSel> scope_;
     mu::engraving::Score *scoped_score_ = nullptr;
     std::size_t op_ = 0;
@@ -151,9 +196,13 @@ private:
     Result<std::vector<Step>> prepare_batch(const Batch &batch);
     Result<EditResult> execute(std::vector<Step> steps, EditMode mode);
 
+    void attach_delta_log(EditDeltaLog *log) { context_.delta_log_ = log; }
+
     Document &document_;
     EditContext context_;
     bool defer_note_entry_ = false;
+    bool defer_leaf_semantics_ = false;
+    bool delta_rollback_eligible_ = false;
 };
 
 } // namespace engrave::api

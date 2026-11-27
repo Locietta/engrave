@@ -186,16 +186,77 @@ Result<Document::Impl::Snapshot> Document::Impl::capture_snapshot(const std::fun
         if (zip.file_info_list().empty() || zip.has_error())
             return std::unexpected(Error{ErrorCode::RESOURCE_LIMIT, "the snapshot exceeds the native ZIP reader limits"});
         if (!budget.poll()) return stopped();
-        snapshot.runtime_tempo = master.runtime_tempo_state();
-        snapshot.source_revision = master.source_revision();
-        snapshot.saved_revision = master.saved_revision();
-        snapshot.revision = revision;
-        snapshot.versions.reserve(scores.size());
+        snapshot.meta.runtime_tempo = master.runtime_tempo_state();
+        snapshot.meta.source_revision = master.source_revision();
+        snapshot.meta.saved_revision = master.saved_revision();
+        snapshot.meta.revision = revision;
+        snapshot.meta.versions.reserve(scores.size());
         for (const auto *score : scores) {
             if (!budget.poll()) return stopped();
-            snapshot.versions.push_back({score->mscore_version().to_std_u16_string(), score->mscore_revision(), score->msc_version()});
+            snapshot.meta.versions.push_back({score->mscore_version().to_std_u16_string(), score->mscore_revision(), score->msc_version()});
         }
         snapshot.byte_count = byte_limit - remaining + snapshot.bytes.size();
+        if (!budget.poll()) return stopped();
+        return snapshot;
+    } catch (const muse::io::WriteBudgetStop &) {
+        return stopped();
+    } catch (const std::exception &error) {
+        if (budget.failure != muse::io::WriteBudget::Failure::NONE) return stopped();
+        return std::unexpected(Error{ErrorCode::IO, std::format("cannot capture the snapshot: {}", error.what())});
+    }
+}
+
+Result<Document::Impl::RollbackSnapshot> Document::Impl::capture_rollback_snapshot(const std::function<bool()> &cancelled,
+                                                                                   std::size_t byte_limit) const {
+    muse::io::WriteBudget budget;
+    const auto poll = [&]() -> bool { return cancelled(); };
+    if (cancelled) budget.cancelled = muse::FnRef<bool() const>(poll);
+    muse::io::WriteBudgetScope scope(budget);
+    const auto stopped = [&]() -> std::unexpected<Error> {
+        if (budget.failure == muse::io::WriteBudget::Failure::CANCELLED)
+            return std::unexpected(Error{ErrorCode::CANCELLED, "snapshot capture cancelled"});
+        return std::unexpected(Error{ErrorCode::RESOURCE_LIMIT, "snapshot capture byte limit exceeded"});
+    };
+    try {
+        if (!budget.poll()) return stopped();
+        auto &master = *project->master_score();
+        auto remaining = byte_limit;
+        const auto reserve = [&](std::size_t count, std::size_t width = 1) {
+            if (count > remaining / width) return false;
+            remaining -= count * width;
+            return true;
+        };
+        if (!reserve(sizeof(RollbackSnapshot)) || !reserve(1)) return stopped();
+        if (const auto *timeline = master.tempo_timeline_override()) {
+            constexpr auto pause_bytes = sizeof(mu::engraving::PausesMap::value_type) + 4 * sizeof(void *);
+            if (!reserve(timeline->points().size(), sizeof(mu::engraving::TempoTimePoint)) ||
+                !reserve(timeline->pauses().size(), pause_bytes))
+                return stopped();
+        }
+        const auto scores = master.score_list();
+        if (!reserve(scores.size(), sizeof(SnapshotMeta::Versions))) return stopped();
+        for (const auto *score : scores) {
+            if (!budget.poll() || !reserve(score->mscore_version().size(), sizeof(char16_t)) || !reserve(1, sizeof(char16_t)))
+                return stopped();
+        }
+        budget.output = remaining;
+        budget.archive_entry = std::min<std::size_t>(remaining, max_uncompressed_file_bytes);
+        budget.working = 16 * static_cast<std::uint64_t>(remaining);
+        auto archived = music::capture_memory_snapshot(project);
+        if (!budget.poll()) return stopped();
+        if (!archived)
+            return std::unexpected(Error{ErrorCode::IO, std::format("cannot capture the snapshot: {}", archived.error().message)});
+        RollbackSnapshot snapshot;
+        snapshot.archive = *std::move(archived);
+        snapshot.meta.runtime_tempo = master.runtime_tempo_state();
+        snapshot.meta.source_revision = master.source_revision();
+        snapshot.meta.saved_revision = master.saved_revision();
+        snapshot.meta.revision = revision;
+        snapshot.meta.versions.reserve(scores.size());
+        for (const auto *score : scores) {
+            if (!budget.poll()) return stopped();
+            snapshot.meta.versions.push_back({score->mscore_version().to_std_u16_string(), score->mscore_revision(), score->msc_version()});
+        }
         if (!budget.poll()) return stopped();
         return snapshot;
     } catch (const muse::io::WriteBudgetStop &) {
@@ -237,18 +298,14 @@ Result<void> Document::restore_checkpoint(std::string_view name) {
     return impl_->restore_snapshot(found->snapshot, true);
 }
 
-Result<void> Document::Impl::restore_snapshot(const Snapshot &snapshot, bool advance_revision) try {
-    if (advance_revision && revision == std::numeric_limits<std::uint64_t>::max())
-        return std::unexpected(Error{ErrorCode::RESOURCE_LIMIT, "document revision exhausted"});
+Result<void> Document::Impl::apply_restored_project(music::ScoreProject restored, const SnapshotMeta &meta, bool advance_revision) {
     LayoutOutputs restored_outputs;
-    auto restored = music::load_native_score(*engine->context, snapshot.bytes, "mscz", true);
-    if (!restored) return std::unexpected(Error{ErrorCode::IO, std::format("cannot restore the snapshot: {}", restored.error().message)});
     mu::engraving::ScoreLoad load;
-    auto &master = *(*restored)->master_score();
+    auto &master = *restored->master_score();
     const auto scores = master.score_list();
-    if (scores.size() != snapshot.versions.size())
+    if (scores.size() != meta.versions.size())
         return std::unexpected(Error{ErrorCode::IO, "the restored snapshot has a different number of linked scores"});
-    auto versions = snapshot.versions.begin();
+    auto versions = meta.versions.begin();
     for (auto *score : scores) {
         score->set_mscore_version(muse::String(std::u16string_view(versions->version)));
         score->set_mscore_revision(versions->revision);
@@ -259,22 +316,40 @@ Result<void> Document::Impl::restore_snapshot(const Snapshot &snapshot, bool adv
     mu::engraving::normalize_document(master, {.mode = mu::engraving::NormalizeMode::LOAD});
     master.invalidate_repeat_list();
     master.init_automation();
-    master.restore_runtime_tempo_state(snapshot.runtime_tempo);
-    master.restore_source_revisions(snapshot.source_revision, snapshot.saved_revision);
+    master.restore_runtime_tempo_state(meta.runtime_tempo);
+    master.restore_source_revisions(meta.source_revision, meta.saved_revision);
     assign_missing_ids(master);
     bind_layout_boundary(master, restored_outputs);
-    const auto restored_revision = advance_revision ? revision + 1 : snapshot.revision;
+    const auto restored_revision = advance_revision ? revision + 1 : meta.revision;
     for (auto *score : scores) {
         score->layout_state.revision = restored_revision;
         score->layout_state.font_generation = engine->font_generation;
         score->invalidate_layout(mu::engraving::Fraction(0, 1), mu::engraving::Fraction(-1, 1));
     }
     // The old project needs its layout stores throughout DOM teardown.
-    project = *std::move(restored);
+    project = std::move(restored);
     layout_outputs.swap(restored_outputs);
     revision = restored_revision;
     poisoned = false;
     return {};
+}
+
+Result<void> Document::Impl::restore_snapshot(const Snapshot &snapshot, bool advance_revision) try {
+    if (advance_revision && revision == std::numeric_limits<std::uint64_t>::max())
+        return std::unexpected(Error{ErrorCode::RESOURCE_LIMIT, "document revision exhausted"});
+    auto restored = music::load_native_score(*engine->context, snapshot.bytes, "mscz", true);
+    if (!restored) return std::unexpected(Error{ErrorCode::IO, std::format("cannot restore the snapshot: {}", restored.error().message)});
+    return apply_restored_project(*std::move(restored), snapshot.meta, advance_revision);
+} catch (const std::exception &error) {
+    return std::unexpected(Error{ErrorCode::IO, std::format("cannot restore the snapshot: {}", error.what())});
+} catch (...) {
+    return std::unexpected(Error{ErrorCode::IO, "cannot restore the snapshot: the engine threw an unknown exception"});
+}
+
+Result<void> Document::Impl::restore_rollback_snapshot(const RollbackSnapshot &snapshot) try {
+    auto restored = music::load_memory_snapshot(*engine->context, snapshot.archive);
+    if (!restored) return std::unexpected(Error{ErrorCode::IO, std::format("cannot restore the snapshot: {}", restored.error().message)});
+    return apply_restored_project(*std::move(restored), snapshot.meta, false);
 } catch (const std::exception &error) {
     return std::unexpected(Error{ErrorCode::IO, std::format("cannot restore the snapshot: {}", error.what())});
 } catch (...) {

@@ -66,7 +66,8 @@ void MscWriter::close() {
             // A failed bounded write may unwind through this destructor. Do
             // not build archive metadata while an exception or budget failure
             // is already in flight: its text writer can interrupt as well.
-            if (std::uncaught_exceptions() == 0 && (!active_write_budget || active_write_budget->failure == WriteBudget::Failure::NONE)) {
+            if (params_.mode != MscIoMode::MEMORY && std::uncaught_exceptions() == 0 &&
+                (!active_write_budget || active_write_budget->failure == WriteBudget::Failure::NONE)) {
                 write_meta();
             }
             writer_->close();
@@ -88,6 +89,7 @@ MscWriter::Writer *MscWriter::writer() const {
             case MscIoMode::ZIP: writer_ = new Writer(std::in_place_type<ZipFileWriter>, params_.compress); break;
             case MscIoMode::DIR: writer_ = new Writer(std::in_place_type<DirWriter>); break;
             case MscIoMode::XML_FILE: writer_ = new Writer(std::in_place_type<XmlFileWriter>); break;
+            case MscIoMode::MEMORY: writer_ = new Writer(std::in_place_type<MemoryWriter>, params_.memory); break;
             case MscIoMode::UNKNOWN: UNREACHABLE; break;
         }
     }
@@ -360,5 +362,37 @@ bool MscWriter::XmlFileWriter::add_file_data(const String &file_name, const Byte
     ts << "]]>\n";
     ts << "</file>\n";
 
+    return true;
+}
+
+Ret MscWriter::MemoryWriter::open(io::IODevice *, const PathT &) {
+    IF_ASSERT_FAILED(archive_) { return make_ret(Ret::Code::INTERNAL_ERROR); }
+    archive_->entries.clear();
+    opened_ = true;
+    return true;
+}
+
+void MscWriter::MemoryWriter::close() { opened_ = false; }
+
+bool MscWriter::MemoryWriter::is_opened() const { return opened_; }
+
+bool MscWriter::MemoryWriter::has_error() const { return false; }
+
+bool MscWriter::MemoryWriter::add_file_data(const String &file_name, const ByteArray &data) {
+    if (!opened_ || !archive_) {
+        return false;
+    }
+    if (active_write_budget) {
+        if (!active_write_budget->poll() || !active_write_budget->entry_size(data.size())) throw WriteBudgetStop{};
+        active_write_budget->archive_written += data.size();
+        if (!active_write_budget->output_size(active_write_budget->archive_written)) throw WriteBudgetStop{};
+    }
+    for (auto &entry : archive_->entries) {
+        if (entry.name == file_name) {
+            entry.data = data;
+            return true;
+        }
+    }
+    archive_->entries.push_back({file_name, data});
     return true;
 }

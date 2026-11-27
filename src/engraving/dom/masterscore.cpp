@@ -518,7 +518,7 @@ MeasureBase *MasterScore::insert_measure(MeasureBase *before_measure, const Inse
             }
             for (size_t staff_idx = 0; staff_idx < nstaves(); ++staff_idx) {
                 if (to_measure(before_measure)->is_measure_repeat_group_with_prev_m(staff_idx)) {
-                    MScore::set_error(MsError::CANNOT_SPLIT_MEASURE_REPEAT);
+                    cmd_state().set_error(MsError::CANNOT_SPLIT_MEASURE_REPEAT);
                     return nullptr;
                 }
             }

@@ -101,6 +101,7 @@ void CmdState::reset() {
     mutation_count = 0;
     excerpts_changed = false;
     instruments_changed = false;
+    clear_error();
     layout_flags = LayoutFlag::NO_FLAGS;
     update_mode_ = UpdateMode::DO_NOTHING;
     start_tick_ = Fraction(-1, 1);

@@ -41,6 +41,7 @@ struct MscReader {
         muse::io::PathT file_path;
         muse::String main_file_name;
         MscIoMode mode = MscIoMode::ZIP;
+        const MscMemoryArchive *memory = nullptr;
     };
 
     MscReader() = default;
@@ -116,9 +117,24 @@ private:
         bool self_device_owner_ = false;
     };
 
+    struct MemoryReader {
+        explicit MemoryReader(const MscMemoryArchive *archive) : archive_(archive) {}
+
+        muse::Ret open(muse::io::IODevice *device, const muse::io::PathT &file_path);
+        void close();
+        bool is_opened() const;
+        bool is_container() const;
+        muse::StringList file_list() const;
+        bool file_exists(const muse::String &file_name) const;
+        muse::ByteArray file_data(const muse::String &file_name) const;
+    private:
+        const MscMemoryArchive *archive_ = nullptr;
+        bool opened_ = false;
+    };
+
     struct Reader {
-        template <typename T>
-        explicit Reader(std::in_place_type_t<T> type) : implementation(type) {}
+        template <typename T, typename... Args>
+        explicit Reader(std::in_place_type_t<T> type, Args &&...args) : implementation(type, std::forward<Args>(args)...) {}
 
         muse::Ret open(muse::io::IODevice *device, const muse::io::PathT &file_path) {
             return std::visit([&](auto &backend) -> muse::Ret { return backend.open(device, file_path); }, implementation);
@@ -148,7 +164,7 @@ private:
             return std::visit([&](auto &backend) -> muse::ByteArray { return backend.file_data(file_name); }, implementation);
         }
 
-        std::variant<ZipFileReader, DirReader, XmlFileReader> implementation;
+        std::variant<ZipFileReader, DirReader, XmlFileReader, MemoryReader> implementation;
     };
 
     Reader *reader() const;

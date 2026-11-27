@@ -46,7 +46,7 @@ size_t utf16_chunk_size(std::u16string_view text) {
 struct XmlStreamWriter::Impl {
     std::vector<std::string> stack;
     TextStream stream;
-    bool indent = XmlStreamWriter::indent;
+    bool indent = true;
 
     void put_level() {
         if (!indent) return;
@@ -68,6 +68,14 @@ XmlStreamWriter::~XmlStreamWriter() {
     flush();
     delete impl_;
 }
+
+void XmlStreamWriter::set_indent(bool indent) { impl_->indent = indent; }
+
+bool XmlStreamWriter::indent() const { return impl_->indent; }
+
+void XmlStreamWriter::set_round_trip_doubles(bool round_trip_doubles) { impl_->stream.set_round_trip_doubles(round_trip_doubles); }
+
+bool XmlStreamWriter::round_trip_doubles() const { return impl_->stream.round_trip_doubles(); }
 
 void XmlStreamWriter::set_device(io::IODevice *dev) { impl_->stream.set_device(dev); }
 
@@ -92,7 +100,7 @@ std::string XmlStreamWriter::escape_code_point(const char32_t c) {
     }
 }
 
-std::string XmlStreamWriter::escape_string(const std::string_view str) {
+std::string XmlStreamWriter::escape_string(const std::string_view str, bool compact) {
     // XML escaping can expand one input byte to six output bytes. Account for
     // that temporary before constructing it, and poll inside a large value.
     auto *budget = io::active_write_budget;
@@ -101,7 +109,6 @@ std::string XmlStreamWriter::escape_string(const std::string_view str) {
         const auto amount = str.size() > max / 6 ? max : static_cast<std::uint64_t>(str.size()) * 6;
         if (!budget->charge(amount)) throw io::WriteBudgetStop{};
     }
-    const bool compact = !indent;
     std::string escaped{};
     auto it = str.begin();
     auto next_poll = it;
@@ -121,16 +128,17 @@ std::string XmlStreamWriter::escape_string(const std::string_view str) {
 }
 
 void XmlStreamWriter::write_escaped(std::string_view value) {
+    const bool compact = !impl_->indent;
     if (const auto *budget = io::active_write_budget; budget && budget->archive_entry) {
         while (value.size() > 4096) {
             std::size_t length = 4096;
             // Keep a multibyte code point in the next chunk if it straddles the boundary.
             while (length > 4093 && (static_cast<unsigned char>(value[length]) & 0xc0) == 0x80) --length;
-            impl_->stream << escape_string(value.substr(0, length));
+            impl_->stream << escape_string(value.substr(0, length), compact);
             value.remove_prefix(length);
         }
     }
-    impl_->stream << escape_string(value);
+    impl_->stream << escape_string(value, compact);
 }
 
 void XmlStreamWriter::write_value(const Value &v) {

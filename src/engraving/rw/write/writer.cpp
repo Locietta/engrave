@@ -49,6 +49,10 @@ bool Writer::write_score(Score *score, io::IODevice *device, rw::WriteInOutData 
     if (inout) {
         ctx = inout->ctx;
     }
+    if (ctx.transaction_snapshot()) {
+        xml.set_indent(false);
+        xml.set_round_trip_doubles(true);
+    }
 
     xml.start_document();
 
@@ -73,6 +77,10 @@ bool Writer::write_score(Score *score, io::IODevice *device, rw::WriteInOutData 
 }
 
 void Writer::write(Score *score, XmlWriter &xml, WriteContext &ctx, compat::WriteScoreHook &hook) {
+    if (ctx.transaction_snapshot()) {
+        xml.set_indent(false);
+        xml.set_round_trip_doubles(true);
+    }
 
     xml.start_element(score);
 

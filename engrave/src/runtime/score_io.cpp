@@ -26,9 +26,7 @@
 #include "global/io/buffer.h"
 #include "global/io/writebudget.h"
 #include "global/log.h"
-#include "global/serialization/textstream.h"
 #include "global/serialization/xmlstreamreader.h"
-#include "global/serialization/xmlstreamwriter.h"
 #include "global/serialization/zipreader.h"
 #include "global/serialization/zipwriter.h"
 #include "importexport/midi/internal/midiexport/exportmidi.h"
@@ -213,6 +211,40 @@ engrave::Result<ScoreProject> load_native_score_dir(const EngineContext &context
     return project;
 }
 
+engrave::Result<engraving::MscMemoryArchive> capture_memory_snapshot(const ScoreProject &project) {
+    engraving::MscMemoryArchive archive;
+    engraving::MscWriter::Params params;
+    params.main_file_name = u"score.mscx";
+    params.mode = engraving::MscIoMode::MEMORY;
+    params.memory = &archive;
+    engraving::MscWriter writer(params);
+    if (!writer.open()) return std::unexpected(engrave::Error{engrave::ErrorCode::IO, "cannot open in-memory snapshot writer"});
+    engraving::write::WriteContext write_ctx(project->master_score());
+    write_ctx.set_transaction_snapshot(true);
+    const bool ok = project->write_mscz(writer, &write_ctx);
+    writer.close();
+    if (!ok || writer.has_error() || archive.entries.empty())
+        return std::unexpected(engrave::Error{engrave::ErrorCode::IO, "in-memory snapshot capture failed"});
+    return archive;
+}
+
+engrave::Result<ScoreProject> load_memory_snapshot(const EngineContext &context, const engraving::MscMemoryArchive &archive) {
+    engraving::ScoreLoad score_load;
+    auto project = engraving::EngravingProject::create(context.engraving());
+    project->set_file_info_provider(std::make_shared<engraving::LocalFileInfoProvider>("Untitled.mscz"));
+    engraving::MscReader::Params params;
+    params.main_file_name = u"score.mscx";
+    params.mode = engraving::MscIoMode::MEMORY;
+    params.memory = &archive;
+    engraving::MscReader reader(params);
+    if (auto opened = reader.open(); !opened) return invalid_input(opened.to_string());
+    engraving::rw::ReadInOutData inout;
+    inout.transaction_snapshot = true;
+    if (auto loaded = project->load_mscz(reader, &inout, false); !loaded) return load_error(loaded);
+    finish_load(*project);
+    return project;
+}
+
 engrave::Result<std::string> export_native_score(const EngineContext &context, const ScoreProject &project, const std::string &format,
                                                  int page) {
     ExportOptions options;
@@ -222,20 +254,6 @@ engrave::Result<std::string> export_native_score(const EngineContext &context, c
 
 engrave::Result<std::string> export_native_score(const EngineContext &context, const ScoreProject &project, const std::string &format,
                                                  const ExportOptions &options) {
-    struct RestoreXmlOptions {
-        bool precision = TextStream::round_trip_doubles;
-        bool indent = XmlStreamWriter::indent;
-
-        ~RestoreXmlOptions() {
-            TextStream::round_trip_doubles = precision;
-            XmlStreamWriter::indent = indent;
-        }
-    } restore_xml_options;
-
-    if (options.transaction_snapshot) {
-        TextStream::round_trip_doubles = true;
-        XmlStreamWriter::indent = false;
-    }
     // Audio formats are rendered by the worker's MuseScore engine; the
     // SoundFont parameter is retained for source compatibility.
     auto *score = options.transaction_snapshot ? project->master_score() : select_score(project->master_score(), options.excerpt_id);
@@ -262,6 +280,7 @@ engrave::Result<std::string> export_native_score(const EngineContext &context, c
             engraving::rw::WriteInOutData inout(score);
             inout.ctx.set_inline_style(true);
             inout.ctx.set_inline_excerpts(true);
+            inout.ctx.set_transaction_snapshot(options.transaction_snapshot);
             success = engraving::rw::RWRegister::writer()->write_score(score, &buffer, &inout);
         } else if (format == "mscx" && options.standalone_score && options.excerpt_id >= 0 && io::active_write_budget) {
             // The archive path serializes this same score XML, compresses it,
@@ -272,6 +291,7 @@ engrave::Result<std::string> export_native_score(const EngineContext &context, c
             engraving::rw::WriteInOutData inout(score);
             inout.ctx.set_standalone(true);
             inout.ctx.set_inline_style(true);
+            inout.ctx.set_transaction_snapshot(options.transaction_snapshot);
             inout.ctx.metadata_override = &effective_tags;
             success = engraving::rw::RWRegister::writer()->write_score(score, &buffer, &inout);
         } else {
@@ -282,7 +302,9 @@ engrave::Result<std::string> export_native_score(const EngineContext &context, c
             engraving::MscWriter writer(params);
             check(writer.open());
             if (options.excerpt_id == -1) {
-                success = project->write_mscz(writer);
+                engraving::write::WriteContext write_ctx(project->master_score());
+                write_ctx.set_transaction_snapshot(options.transaction_snapshot);
+                success = project->write_mscz(writer, options.transaction_snapshot ? &write_ctx : nullptr);
             } else {
                 // Excerpt archives use the export style and inherit master metadata unless the excerpt overrides it.
                 auto effective_tags = project->master_score()->meta_tags();
@@ -291,11 +313,12 @@ engrave::Result<std::string> export_native_score(const EngineContext &context, c
                 io::Buffer style_buffer(&style_data), score_buffer(&score_data);
                 style_buffer.open(io::IODevice::WRITE_ONLY);
                 score_buffer.open(io::IODevice::WRITE_ONLY);
-                score->style().write(&style_buffer);
+                score->style().write(&style_buffer, options.transaction_snapshot);
                 engraving::rw::WriteInOutData inout(score);
                 inout.ctx.set_standalone(options.standalone_score);
                 // Only the score file of this archive is kept for an MSCX.
                 inout.ctx.set_inline_style(format == "mscx" && options.standalone_score);
+                inout.ctx.set_transaction_snapshot(options.transaction_snapshot);
                 inout.ctx.metadata_override = &effective_tags;
                 success = engraving::rw::RWRegister::writer()->write_score(score, &score_buffer, &inout);
                 writer.write_style_file(style_data);

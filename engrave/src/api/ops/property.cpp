@@ -53,6 +53,7 @@ Result<Step> prepare(EditContext &context, const SetProperty &op) {
     return [target = *target, pid = *pid, value = *value](EditContext &context) -> Result<void> {
         const auto object = settable_object(context, target, pid);
         if (!object) return std::unexpected(object.error());
+        if (auto *delta = context.delta_log()) delta->record_property(context.master(), **object, pid);
         // A styled property that is given a value of its own stops following the style.
         const PropertyFlags flags = (*object)->property_flags(pid);
         (*object)->undo_change_property(pid, value, flags == PropertyFlags::STYLED ? PropertyFlags::UNSTYLED : flags);
@@ -72,6 +73,7 @@ Result<Step> prepare(EditContext &context, const ResetProperty &op) {
     return [target = *target, pid = *pid](EditContext &context) -> Result<void> {
         const auto object = settable_object(context, target, pid);
         if (!object) return std::unexpected(object.error());
+        if (auto *delta = context.delta_log()) delta->record_property(context.master(), **object, pid);
         (*object)->undo_reset_property(pid);
         return {};
     };
@@ -90,6 +92,7 @@ Result<Step> prepare(EditContext &context, const SetStyle &op) {
     return [selection = *selection, sid, value = *value](EditContext &context) -> Result<void> {
         auto score = context.score(selection);
         if (!score) return std::unexpected(score.error());
+        if (auto *delta = context.delta_log()) delta->record_style(context.master(), **score, sid);
         (*score)->undo_change_style_val(sid, value);
         return {};
     };

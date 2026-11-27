@@ -34,12 +34,15 @@ struct IODevice;
 } // namespace io
 
 struct TextStream {
-    static inline thread_local bool round_trip_doubles = false;
     TextStream() = default;
     explicit TextStream(io::IODevice *device);
     ~TextStream();
 
     void set_device(io::IODevice *device);
+
+    void set_round_trip_doubles(bool value) { round_trip_doubles_ = value; }
+
+    bool round_trip_doubles() const { return round_trip_doubles_; }
 
     void flush();
     void require_entry_space(size_t bytes) const;
@@ -60,5 +63,6 @@ private:
     void write(const char *ch, size_t len);
     io::IODevice *device_ = nullptr;
     std::vector<uint8_t> buf_;
+    bool round_trip_doubles_ = false;
 };
 } // namespace muse

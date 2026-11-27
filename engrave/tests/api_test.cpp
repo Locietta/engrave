@@ -887,11 +887,8 @@ TEST_F(EngineLifecycle, LastDocumentReleasesRuntimeForAnotherEngine) {
     muse::settings()->begin_transaction();
     sm_drumset->set_percussion_panel_columns(42);
     MScore::test_mode = true;
-    MScore::set_error(MsError::NO_NOTE_SELECTED, true);
     other->reset();
     EXPECT_FALSE(MScore::test_mode);
-    EXPECT_EQ(MScore::error, MsError::MS_NO_ERROR);
-    EXPECT_FALSE(MScore::error_is_warning);
 
     const auto second = engrave::Engine::create({.resources = g_resources});
     ASSERT_TRUE(second) << second.error().message;

@@ -32,9 +32,6 @@
 namespace mu::engraving {
 bool MScore::test_mode = false;
 
-MsError MScore::error{MsError::MS_NO_ERROR};
-bool MScore::error_is_warning = false;
-
 std::string MScore::error_to_string(MsError err) {
     switch (err) {
         case MsError::MS_NO_ERROR: return "MS_NO_ERROR";

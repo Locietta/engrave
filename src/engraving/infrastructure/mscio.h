@@ -23,8 +23,11 @@
 #define MU_ENGRAVING_MSCIO_H
 
 #include <string>
+#include <vector>
 
 #include "io/path.h"
+#include "types/bytearray.h"
+#include "types/string.h"
 
 namespace mu::engraving {
 //! NOTE The main format is MuseScore, is a zip archive with a specific structure
@@ -52,7 +55,22 @@ inline bool is_muse_score_file(const std::string &suffix) {
            suffix == ::mu::engraving::mscz_backup;
 }
 
-enum class MscIoMode : unsigned char { UNKNOWN = 0, ZIP, DIR, XML_FILE };
+enum class MscIoMode : unsigned char { UNKNOWN = 0, ZIP, DIR, XML_FILE, MEMORY };
+
+struct MscMemoryArchive {
+    struct Entry {
+        muse::String name;
+        muse::ByteArray data;
+    };
+
+    std::vector<Entry> entries;
+
+    std::size_t total_bytes() const noexcept {
+        std::size_t total = 0;
+        for (const auto &entry : entries) total += entry.data.size();
+        return total;
+    }
+};
 
 inline MscIoMode msc_io_mode_by_suffix(const std::string &suffix) {
     if (suffix == ::mu::engraving::mscz || suffix == ::mu::engraving::mscz_backup) {

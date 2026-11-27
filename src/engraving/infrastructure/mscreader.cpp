@@ -80,6 +80,7 @@ MscReader::Reader *MscReader::reader() const {
             case MscIoMode::ZIP: reader_ = new Reader(std::in_place_type<ZipFileReader>); break;
             case MscIoMode::DIR: reader_ = new Reader(std::in_place_type<DirReader>); break;
             case MscIoMode::XML_FILE: reader_ = new Reader(std::in_place_type<XmlFileReader>); break;
+            case MscIoMode::MEMORY: reader_ = new Reader(std::in_place_type<MemoryReader>, params_.memory); break;
             case MscIoMode::UNKNOWN: UNREACHABLE; break;
         }
     }
@@ -469,5 +470,41 @@ ByteArray MscReader::XmlFileReader::file_data(const String &file_name) const {
         }
     }
 
+    return ByteArray();
+}
+
+Ret MscReader::MemoryReader::open(IODevice *, const PathT &) {
+    IF_ASSERT_FAILED(archive_) { return make_ret(Ret::Code::INTERNAL_ERROR); }
+    opened_ = true;
+    return muse::make_ok();
+}
+
+void MscReader::MemoryReader::close() { opened_ = false; }
+
+bool MscReader::MemoryReader::is_opened() const { return opened_; }
+
+bool MscReader::MemoryReader::is_container() const { return true; }
+
+StringList MscReader::MemoryReader::file_list() const {
+    StringList files;
+    if (!archive_) return files;
+    files.reserve(archive_->entries.size());
+    for (const auto &entry : archive_->entries) files << entry.name;
+    return files;
+}
+
+bool MscReader::MemoryReader::file_exists(const String &file_name) const {
+    if (!archive_) return false;
+    for (const auto &entry : archive_->entries) {
+        if (entry.name == file_name) return true;
+    }
+    return false;
+}
+
+ByteArray MscReader::MemoryReader::file_data(const String &file_name) const {
+    if (!archive_) return ByteArray();
+    for (const auto &entry : archive_->entries) {
+        if (entry.name == file_name) return entry.data;
+    }
     return ByteArray();
 }

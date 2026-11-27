@@ -87,7 +87,7 @@ bool tuplets_fit_rewrite(Score *score, Measure *first, const Fraction &length, c
                     const Fraction bars = (tuplet->tick() - origin) / length;
                     const Fraction boundary = origin + length * Fraction(bars.numerator() / bars.denominator() + 1, 1);
                     if (tuplet->end_tick() > boundary) {
-                        MScore::set_error(MsError::CANNOT_SPLIT_TUPLET);
+                        if (auto *master = score->master_score()) master->cmd_state().set_error(MsError::CANNOT_SPLIT_TUPLET);
                         return false;
                     }
                 }
@@ -357,7 +357,8 @@ bool EditTimeSig::rewrite_measures(Transaction &tx, Score *score, Measure *fm, c
 
             if (!rewrite_measures(tx, score, fm1, lm, ns, staff_idx)) {
                 if (staff_idx != muse::nidx) {
-                    MScore::set_error(MsError::CANNOT_CHANGE_LOCAL_TIMESIG_MEASURE_NOT_EMPTY);
+                    if (auto *master = score->master_score())
+                        master->cmd_state().set_error(MsError::CANNOT_CHANGE_LOCAL_TIMESIG_MEASURE_NOT_EMPTY);
                     // restore measure rests that were prematurely modified
                     Fraction fr(score->staff(staff_idx)->time_sig(fm->tick())->sig());
                     for (Measure *m = fm1; m; m = m->next_measure()) {

@@ -513,7 +513,7 @@ public:
     bool read(const String &name);
     bool read(muse::io::IODevice *device);
     bool write(const String &) const;
-    bool write(muse::io::IODevice *device) const;
+    bool write(muse::io::IODevice *device, bool transaction_snapshot = false) const;
     bool loaded() const;
 
     bool has_symbols() const { return !symbols_.empty(); }

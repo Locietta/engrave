@@ -644,11 +644,12 @@ TEST(EditAtomic, LateRejectionRestoresLinkedIdsRevisionsVersionsAndCheckpoints) 
 TEST(EditAtomic, CancelsDuringRollbackCaptureBeforeApplyingEdits) {
     auto document = open(fixture_name);
     ASSERT_TRUE(document);
-    const auto note = find_id(*document, "Note");
-    const auto color = property(*document, note, "color");
+    const auto outline = document->outline();
+    ASSERT_TRUE(outline);
+    const auto measure_count = outline->measures.size();
     const auto revision = document->revision();
     int polls = 0;
-    const Batch batch{{SetProperty{note, "color", Color{255, 0, 0}}}};
+    const Batch batch{{engrave::InsertMeasures{outline->measures.front().id, 1}}};
     const auto rejected = document->edit(batch, engrave::EditOptions{.cancelled = [&] { return ++polls == 64; }});
     ASSERT_FALSE(rejected);
     EXPECT_EQ(rejected.error().code, ErrorCode::CANCELLED);
@@ -656,9 +657,10 @@ TEST(EditAtomic, CancelsDuringRollbackCaptureBeforeApplyingEdits) {
     EXPECT_FALSE(rejected.error().poisoned);
     EXPECT_EQ(polls, 64);
     EXPECT_EQ(document->revision(), revision);
-    EXPECT_EQ(property(*document, note, "color"), color);
+    EXPECT_EQ(document->outline()->measures.size(), measure_count);
     ASSERT_TRUE(document->edit(batch, engrave::EditOptions{}));
     EXPECT_EQ(document->revision(), revision + 1);
+    EXPECT_EQ(document->outline()->measures.size(), measure_count + 1);
 }
 
 TEST(EditAtomic, RestoresAfterRejectionDuringMeasureRewrite) {
@@ -718,19 +720,81 @@ TEST(EditAtomic, RejectsSnapshotLargerThanZipEntryLimitBeforeWriting) {
     auto document = open(fixture_name);
     ASSERT_TRUE(document);
     auto &master = engrave::harness::master_of(*document);
+    const auto outline = document->outline();
+    ASSERT_TRUE(outline);
+    const auto measure_count = outline->measures.size();
     // The writer serializes each ampersand as five bytes of XML.
     master.meta_tags()[u"large metadata"] = muse::String::from_std_string(std::string(14 * 1024 * 1024, '&'));
-    const auto note = find_id(*document, "Note");
-    const auto color = property(*document, note, "color");
     const auto revision = document->revision();
     const auto source_revision = master.source_revision();
-    const auto result = document->edit({{SetProperty{note, "color", Color{255, 0, 0}}}}, engrave::EditOptions{});
+    const auto result = document->edit({{engrave::InsertMeasures{outline->measures.front().id, 1}}}, engrave::EditOptions{});
     ASSERT_FALSE(result);
     EXPECT_EQ(result.error().code, ErrorCode::RESOURCE_LIMIT);
     EXPECT_FALSE(result.error().poisoned);
     EXPECT_EQ(document->revision(), revision);
     EXPECT_EQ(engrave::harness::master_of(*document).source_revision(), source_revision);
-    EXPECT_EQ(property(*document, note, "color"), color);
+    EXPECT_EQ(document->outline()->measures.size(), measure_count);
+}
+
+TEST(EditAtomic, DeltaRollbackRestoresLinkedPropertiesStyleAndBreakWithoutSnapshot) {
+    auto document = open("linked_parts.mscx");
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    ASSERT_FALSE(master.excerpts().empty());
+    auto &excerpt = *master.excerpts().front()->excerpt_score();
+    const auto excerpt_id = engrave::from_engine(excerpt.eid());
+    const auto notes = document->query({.types = {"Note"}});
+    ASSERT_TRUE(notes);
+    const auto linked = std::ranges::find_if(notes->elements, [](const auto &note) { return note.links.size() > 1; });
+    ASSERT_NE(linked, notes->elements.end());
+    const auto note_id = linked->id;
+    const auto first_measure_id = engrave::from_engine(master.first_measure()->eid());
+
+    const auto before = native_source(*document);
+    const engrave::ExportOptions master_xml{.format = engrave::Format::MSCX};
+    const engrave::ExportOptions excerpt_xml{.format = engrave::Format::MSCX, .score = engrave::ScoreSel{excerpt_id}};
+    const auto public_before = document->export_score(master_xml);
+    const auto excerpt_before = document->export_score(excerpt_xml);
+    ASSERT_TRUE(public_before && excerpt_before);
+    const auto revision = document->revision();
+    const auto source_revision = master.source_revision();
+    const auto original_color = property(*document, note_id, "color");
+
+    // Mutates linked note color, master & excerpt styles, and adds a line break before failing on OpRef.
+    const auto rejected = document->edit(
+        {{SetProperty{note_id, "color", Color{255, 0, 0}}, SetStyle{{}, "staffDistance", 13.5},
+          SetStyle{engrave::ScoreSel{excerpt_id}, "staffDistance", 15.25}, engrave::SetLayoutBreak{first_measure_id, "line", true},
+          SetProperty{engrave::OpRef{0, 0}, "color", Color{0, 255, 0}}}},
+        engrave::EditOptions{.expected_revision = revision});
+    ASSERT_TRUE(rejected) << rejected.error().message;
+    ASSERT_TRUE(rejected->rejection);
+    EXPECT_EQ(rejected->rejection->op_index, 4u);
+    EXPECT_FALSE(rejected->rejection->error.poisoned);
+    EXPECT_EQ(rejected->applied, 0u);
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_EQ(master.source_revision(), source_revision);
+    EXPECT_FALSE(master.normalize_state.dirty);
+    EXPECT_EQ(property(*document, note_id, "color"), original_color);
+    EXPECT_EQ(native_source(*document), before);
+    EXPECT_EQ(document->export_score(master_xml).value(), *public_before);
+    EXPECT_EQ(document->export_score(excerpt_xml).value(), *excerpt_before);
+
+    // Leaf delta edits succeed and roll back even when XML metadata exceeds the 64 MiB snapshot entry limit.
+    master.meta_tags()[u"large metadata"] = muse::String::from_std_string(std::string(14 * 1024 * 1024, '&'));
+    const auto committed =
+        document->edit({{SetProperty{note_id, "color", Color{0, 0, 255}}, SetStyle{{}, "staffDistance", 12.0}}}, engrave::EditOptions{});
+    ASSERT_TRUE(committed) << committed.error().message;
+    EXPECT_FALSE(committed->rejection);
+    EXPECT_EQ(committed->applied, 2u);
+    EXPECT_EQ(document->revision(), revision + 1);
+    EXPECT_EQ(property(*document, note_id, "color"), (engrave::Value{Color{0, 0, 255}}));
+
+    const auto reset_rejected = document->edit(
+        {{engrave::ResetProperty{note_id, "color"}, SetProperty{engrave::OpRef{0, 0}, "color", Color{1, 2, 3}}}}, engrave::EditOptions{});
+    ASSERT_TRUE(reset_rejected) << reset_rejected.error().message;
+    ASSERT_TRUE(reset_rejected->rejection);
+    EXPECT_EQ(document->revision(), revision + 1);
+    EXPECT_EQ(property(*document, note_id, "color"), (engrave::Value{Color{0, 0, 255}}));
 }
 
 TEST(EditAtomic, MasterReadLeavesTheExactAggregateZipBudgetAvailable) {

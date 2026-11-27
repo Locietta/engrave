@@ -147,9 +147,6 @@ struct MScoreError {
 //---------------------------------------------------------
 
 struct MScore {
-    static MsError error;
-    static bool error_is_warning;
-
     static constexpr bool vertical_orientation() { return false; }
 
     static constexpr bool warn_pitch_range = true;
@@ -170,11 +167,6 @@ struct MScore {
     static constexpr double vertical_page_gap = 0.35 * ::mu::engraving::dpmm;
     static constexpr double horizontal_page_gap_even = 0.07 * ::mu::engraving::dpmm;
     static constexpr double horizontal_page_gap_odd = 3.5 * ::mu::engraving::dpmm;
-
-    static void set_error(MsError e, bool warning = false) {
-        error = e;
-        error_is_warning = warning;
-    }
 
     static std::string error_to_string(MsError err);
 };

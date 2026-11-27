@@ -84,6 +84,10 @@ struct WriteContext {
 
     bool inline_excerpts() const { return inline_excerpts_value; }
 
+    void set_transaction_snapshot(bool value) { transaction_snapshot_value = value; }
+
+    bool transaction_snapshot() const { return transaction_snapshot_value; }
+
     bool should_write_range() const { return range_value.has_value(); }
 
     const std::optional<WriteRange> &range() const { return range_value; }
@@ -94,8 +98,9 @@ struct WriteContext {
         return cur_tick_value == c.cur_tick_value && tick_diff_value == c.tick_diff_value && cur_track_value == c.cur_track_value &&
                track_diff_value == c.track_diff_value && clipboardmode_value == c.clipboardmode_value &&
                standalone_value == c.standalone_value && inline_style_value == c.inline_style_value &&
-               inline_excerpts_value == c.inline_excerpts_value && standalone_links == c.standalone_links &&
-               written_segments == c.written_segments && metadata_override == c.metadata_override && range_value == c.range_value;
+               inline_excerpts_value == c.inline_excerpts_value && transaction_snapshot_value == c.transaction_snapshot_value &&
+               standalone_links == c.standalone_links && written_segments == c.written_segments &&
+               metadata_override == c.metadata_override && range_value == c.range_value;
     }
 
     inline bool operator!=(const WriteContext &c) const { return !this->operator==(c); }
@@ -113,6 +118,7 @@ private:
     bool standalone_value{false};
     bool inline_style_value{false};
     bool inline_excerpts_value{false};
+    bool transaction_snapshot_value{false};
     muse::HashMap<const void *, EID> standalone_links;
 
     std::optional<WriteRange> range_value;

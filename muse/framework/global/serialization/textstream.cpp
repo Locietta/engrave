@@ -90,8 +90,8 @@ TextStream &TextStream::operator<<(double val) {
     // emulate std::stringstream default behavior
     constexpr auto format = std::chars_format::general;
     constexpr int precision = 6;
-    const auto [last, ec] = round_trip_doubles ? std::to_chars(buf.data(), buf.data() + buf.size(), val) :
-                                                 std::to_chars(buf.data(), buf.data() + buf.size(), val, format, precision);
+    const auto [last, ec] = round_trip_doubles_ ? std::to_chars(buf.data(), buf.data() + buf.size(), val) :
+                                                  std::to_chars(buf.data(), buf.data() + buf.size(), val, format, precision);
     IF_ASSERT_FAILED(ec == std::errc{}) { return *this; }
     write(buf.data(), static_cast<size_t>(last - buf.data()));
 #else

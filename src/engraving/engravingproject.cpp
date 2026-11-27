@@ -88,7 +88,7 @@ MasterScore *EngravingProject::master_score() const { return master_score_; }
 
 Ret EngravingProject::load_mscz(const MscReader &msc, rw::ReadInOutData *data, bool ignore_version_error) {
 
-    MScore::set_error(MsError::MS_NO_ERROR);
+    master_score_->cmd_state().clear_error();
 
     MscLoader loader;
     return loader.load_mscz(master_score_, msc, data, ignore_version_error);

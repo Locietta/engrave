@@ -646,8 +646,12 @@ void MStyle::read(XmlReader &e, compat::ReadChordListHook *read_chord_list_hook,
     }
 }
 
-bool MStyle::write(IODevice *device) {
+bool MStyle::write(IODevice *device, bool transaction_snapshot) {
     XmlWriter xml(device);
+    if (transaction_snapshot) {
+        xml.set_indent(false);
+        xml.set_round_trip_doubles(true);
+    }
     xml.start_document();
     xml.start_element("museScore", {{"version", Constants::msc_version_str}});
     save(xml, false);

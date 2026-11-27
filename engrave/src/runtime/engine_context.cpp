@@ -148,7 +148,6 @@ void EngineContext::Impl::teardown() noexcept {
     if (engraving_fonts) engraving_fonts->deinit();
     engraving_fonts.reset();
     MScore::test_mode = false;
-    MScore::set_error(MsError::MS_NO_ERROR);
 
     if (assets) {
         FontMetrics::set_provider(nullptr);

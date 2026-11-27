@@ -90,7 +90,7 @@ struct MStyle {
     int default_style_version() const;
 
     bool read(muse::io::IODevice *device, bool ign = false);
-    bool write(muse::io::IODevice *device);
+    bool write(muse::io::IODevice *device, bool transaction_snapshot = false);
     void save(XmlWriter &xml, bool optimize);
     static bool is_valid(muse::io::IODevice *device);
 

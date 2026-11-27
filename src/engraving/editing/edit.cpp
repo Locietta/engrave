@@ -143,7 +143,7 @@ static ChordRest *chord_or_rest(EngravingItem *el) {
 ChordRest *Score::get_selected_chord_rest() const {
     ChordRest *cr = chord_or_rest(selection().element());
     if (!cr) {
-        MScore::set_error(MsError::NO_NOTE_REST_SELECTED);
+        if (auto *master = master_score()) master->cmd_state().set_error(MsError::NO_NOTE_REST_SELECTED);
     }
 
     return cr;
@@ -1814,7 +1814,7 @@ MeasureBase *Score::insert_box(MeasureBase *box, MeasureBase *before_measure, co
             }
             for (size_t staff_idx = 0; staff_idx < nstaves(); ++staff_idx) {
                 if (m->is_measure_repeat_group_with_prev_m(staff_idx)) {
-                    MScore::set_error(MsError::CANNOT_SPLIT_MEASURE_REPEAT);
+                    if (auto *master = master_score()) master->cmd_state().set_error(MsError::CANNOT_SPLIT_MEASURE_REPEAT);
                     return nullptr;
                 }
             }
@@ -2251,7 +2251,7 @@ void Score::undo_change_bar_line_type(BarLine *bl, BarLineType bar_type, bool al
         case BarLineType::START_REPEAT: {
             for (size_t staff_idx = 0; staff_idx < m2->score()->nstaves(); ++staff_idx) {
                 if (m2->is_measure_repeat_group_with_prev_m(staff_idx)) {
-                    MScore::set_error(MsError::CANNOT_SPLIT_MEASURE_REPEAT);
+                    if (auto *master = m2->score()->master_score()) master->cmd_state().set_error(MsError::CANNOT_SPLIT_MEASURE_REPEAT);
                     return;
                 }
             }
@@ -2269,7 +2269,7 @@ void Score::undo_change_bar_line_type(BarLine *bl, BarLineType bar_type, bool al
         case BarLineType::END_REPEAT: {
             for (size_t staff_idx = 0; staff_idx < m2->score()->nstaves(); ++staff_idx) {
                 if (m2->is_measure_repeat_group_with_next_m(staff_idx)) {
-                    MScore::set_error(MsError::CANNOT_SPLIT_MEASURE_REPEAT);
+                    if (auto *master = m2->score()->master_score()) master->cmd_state().set_error(MsError::CANNOT_SPLIT_MEASURE_REPEAT);
                     return;
                 }
             }
@@ -2287,7 +2287,7 @@ void Score::undo_change_bar_line_type(BarLine *bl, BarLineType bar_type, bool al
         case BarLineType::END_START_REPEAT: {
             for (size_t staff_idx = 0; staff_idx < m2->score()->nstaves(); ++staff_idx) {
                 if (m2->is_measure_repeat_group_with_next_m(staff_idx)) {
-                    MScore::set_error(MsError::CANNOT_SPLIT_MEASURE_REPEAT);
+                    if (auto *master = m2->score()->master_score()) master->cmd_state().set_error(MsError::CANNOT_SPLIT_MEASURE_REPEAT);
                     return;
                 }
             }

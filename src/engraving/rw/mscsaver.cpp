@@ -53,13 +53,15 @@ bool MscSaver::write_mscz(MasterScore *score, MscWriter &msc_writer, const write
 
     IF_ASSERT_FAILED(msc_writer.is_opened()) { return false; }
 
+    const bool transaction_snapshot = ctx && ctx->transaction_snapshot();
+
     // Write style of MasterScore
     {
         //! NOTE The style is writing to a separate file only for the master score.
         //! At the moment, the style for the parts is still writing to the score file.
         ByteArray style_data;
         EntryBuffer style_buf(IODevice::WRITE_ONLY, style_data);
-        score->style().write(&style_buf);
+        score->style().write(&style_buf, transaction_snapshot);
         msc_writer.write_style_file(style_data);
     }
 
@@ -90,7 +92,8 @@ bool MscSaver::write_mscz(MasterScore *score, MscWriter &msc_writer, const write
                 ByteArray score_data;
             };
 
-            auto serialize_excerpt = [master_write_out_data, score](Excerpt *excerpt, size_t excerpt_index) -> ExcerptData {
+            auto serialize_excerpt = [master_write_out_data, score, transaction_snapshot](Excerpt *excerpt,
+                                                                                          size_t excerpt_index) -> ExcerptData {
                 Score *part_score = excerpt->excerpt_score();
                 IF_ASSERT_FAILED(part_score && part_score != score) { return ExcerptData(); }
 
@@ -98,7 +101,7 @@ bool MscSaver::write_mscz(MasterScore *score, MscWriter &msc_writer, const write
                 data.file_name = String(u"%1_%2").arg(String::number(excerpt_index), escape_file_name(excerpt->name()).to_string());
 
                 EntryBuffer style_buf(IODevice::WRITE_ONLY, data.style_data);
-                part_score->style().write(&style_buf);
+                part_score->style().write(&style_buf, transaction_snapshot);
 
                 WriteInOutData write_out_data = master_write_out_data;
                 EntryBuffer score_buf(IODevice::READ_WRITE, data.score_data);
@@ -123,7 +126,7 @@ bool MscSaver::write_mscz(MasterScore *score, MscWriter &msc_writer, const write
         if (chord_list->custom_chord_list() && !chord_list->empty()) {
             ByteArray chl_data;
             EntryBuffer chl_buf(IODevice::WRITE_ONLY, chl_data);
-            chord_list->write(&chl_buf);
+            chord_list->write(&chl_buf, transaction_snapshot);
             msc_writer.write_chord_list_file(chl_data);
         }
     }

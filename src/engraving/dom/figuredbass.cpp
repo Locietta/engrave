@@ -30,6 +30,7 @@
 #include "io/file.h"
 #include "linkedobjects.h"
 #include "log.h"
+#include "masterscore.h"
 #include "measure.h"
 #include "note.h"
 #include "rest.h"
@@ -970,7 +971,7 @@ bool FiguredBass::parentheses_mode() const {
 FiguredBass *Score::add_figured_bass() {
     EngravingItem *el = selection().element();
     if (!el || (!(el->is_note()) && !(el->is_rest()) && !(el->is_figured_bass()))) {
-        MScore::set_error(MsError::NO_NOTE_FIGUREDBASS_SELECTED);
+        if (auto *master = master_score()) master->cmd_state().set_error(MsError::NO_NOTE_FIGUREDBASS_SELECTED);
         return 0;
     }
 

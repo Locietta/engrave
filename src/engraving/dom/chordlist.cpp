@@ -2251,8 +2251,12 @@ bool ChordList::write(const String &name) const {
     return true;
 }
 
-bool ChordList::write(IODevice *device) const {
+bool ChordList::write(IODevice *device, bool transaction_snapshot) const {
     XmlWriter xml(device);
+    if (transaction_snapshot) {
+        xml.set_indent(false);
+        xml.set_round_trip_doubles(true);
+    }
     xml.start_document();
     xml.start_element("museScore", {{"version", Constants::msc_version_str}});
 

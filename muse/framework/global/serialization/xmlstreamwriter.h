@@ -33,14 +33,17 @@ namespace muse {
 struct TextStream;
 
 struct XmlStreamWriter {
-    inline static thread_local bool indent = true;
-
     XmlStreamWriter();
     explicit XmlStreamWriter(io::IODevice *dev);
     ~XmlStreamWriter();
 
     XmlStreamWriter(const XmlStreamWriter &) = delete;
     XmlStreamWriter &operator=(const XmlStreamWriter &) = delete;
+
+    void set_indent(bool indent);
+    bool indent() const;
+    void set_round_trip_doubles(bool round_trip_doubles);
+    bool round_trip_doubles() const;
 
     using Value = std::variant<std::monostate, int, unsigned int, signed long int, unsigned long int, signed long long, unsigned long long,
                                double, const char *, std::string_view, String>;
@@ -64,7 +67,7 @@ struct XmlStreamWriter {
     void comment(const String &text);
 
     static std::string escape_code_point(char32_t);
-    static std::string escape_string(std::string_view);
+    static std::string escape_string(std::string_view, bool compact = false);
 
 protected:
     void start_element_raw(const String &name);

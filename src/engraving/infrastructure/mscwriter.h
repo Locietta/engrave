@@ -43,6 +43,7 @@ struct MscWriter {
         muse::String main_file_name;
         MscIoMode mode = MscIoMode::ZIP;
         bool compress = true;
+        MscMemoryArchive *memory = nullptr;
     };
 
     MscWriter() = default;
@@ -109,6 +110,19 @@ private:
         muse::TextStream *stream_ = nullptr;
     };
 
+    struct MemoryWriter {
+        explicit MemoryWriter(MscMemoryArchive *archive) : archive_(archive) {}
+
+        muse::Ret open(muse::io::IODevice *device, const muse::io::PathT &file_path);
+        void close();
+        bool is_opened() const;
+        bool has_error() const;
+        bool add_file_data(const muse::String &file_name, const muse::ByteArray &data);
+    private:
+        MscMemoryArchive *archive_ = nullptr;
+        bool opened_ = false;
+    };
+
     struct Meta {
         std::vector<muse::String> files;
         bool is_written = false;
@@ -141,7 +155,7 @@ private:
             return std::visit([&](auto &backend) -> bool { return backend.add_file_data(file_name, data); }, implementation);
         }
 
-        std::variant<ZipFileWriter, DirWriter, XmlFileWriter> implementation;
+        std::variant<ZipFileWriter, DirWriter, XmlFileWriter, MemoryWriter> implementation;
     };
 
     Writer *writer() const;

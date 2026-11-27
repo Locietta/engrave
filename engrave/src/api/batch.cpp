@@ -12,13 +12,17 @@
 #include <variant>
 
 #include "engrave/src/api/handles.h"
+#include "engrave/src/api/pid_support.h"
 #include "engrave/src/api/state.h"
 #include "engrave/src/runtime/score_io.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/chordrest.h"
+#include "engraving/dom/engravingitem.h"
 #include "engraving/dom/engravingobject.h"
+#include "engraving/dom/layoutbreak.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
+#include "engraving/dom/measurebase.h"
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/note.h"
 #include "engraving/dom/score.h"
@@ -29,6 +33,7 @@
 #include "engraving/editing/cmd.h"
 #include "engraving/editing/transaction/transaction.h"
 #include "engraving/engravingproject.h"
+#include "engraving/style/style.h"
 
 namespace engrave {
 Result<EditResult> Document::edit(const Batch &batch, std::optional<std::uint64_t> expected_revision) {
@@ -37,7 +42,8 @@ Result<EditResult> Document::edit(const Batch &batch, std::optional<std::uint64_
 
 Result<EditResult> Document::edit(const Batch &batch, const EditOptions &options) {
     impl_->engine->check_thread();
-    std::optional<Impl::Snapshot> rollback;
+    std::optional<Impl::RollbackSnapshot> rollback;
+    std::optional<api::EditDeltaLog> delta_log;
     const auto attempt = [&]() -> Result<EditResult> {
         api::BatchGuard guard(*this);
         if (auto admitted = guard.admit(options.expected_revision); !admitted) return std::unexpected(admitted.error());
@@ -46,9 +52,23 @@ Result<EditResult> Document::edit(const Batch &batch, const EditOptions &options
         if (steps->empty() || options.mode == EditMode::Prefix) {
             if (options.cancelled && options.cancelled()) return std::unexpected(Error{ErrorCode::CANCELLED, "edit cancelled"});
         } else if (options.mode == EditMode::Atomic) {
-            auto captured = impl_->capture_snapshot(options.cancelled);
-            if (!captured) return std::unexpected(captured.error());
-            rollback.emplace(std::move(*captured));
+            if (impl_->revision == std::numeric_limits<std::uint64_t>::max())
+                return std::unexpected(Error{ErrorCode::RESOURCE_LIMIT, "document revision exhausted"});
+            auto &master = *impl_->project->master_score();
+            if (master.source_revision() == std::numeric_limits<std::uint64_t>::max())
+                return std::unexpected(Error{ErrorCode::EDIT_REJECTED, "the engine failed: source revision exhausted"});
+            if (guard.delta_rollback_eligible_) {
+                if (options.cancelled && options.cancelled()) return std::unexpected(Error{ErrorCode::CANCELLED, "edit cancelled"});
+                delta_log.emplace();
+                delta_log->source_revision = master.source_revision();
+                delta_log->saved_revision = master.saved_revision();
+                delta_log->document_revision = impl_->revision;
+                guard.attach_delta_log(&*delta_log);
+            } else {
+                auto captured = impl_->capture_rollback_snapshot(options.cancelled);
+                if (!captured) return std::unexpected(captured.error());
+                rollback.emplace(std::move(*captured));
+            }
         }
         return guard.execute(std::move(*steps), options.mode);
     };
@@ -62,12 +82,28 @@ Result<EditResult> Document::edit(const Batch &batch, const EditOptions &options
     } catch (...) {
         result = std::unexpected(Error{ErrorCode::EDIT_REJECTED, "the engine threw an unknown exception"});
     }
-    if (result || !rollback) return result;
+    if (result || (!rollback && !delta_log)) return result;
 
-    // The guard, its closures and the registry diff must be gone before the
-    // restore replaces the DOM they reference.
+    // The guard, its closures and the registry diff must be gone before rollback
+    // restores or replaces the DOM they reference.
     auto error = std::move(result.error());
-    if (auto restored = impl_->restore_snapshot(*rollback, false); !restored) {
+    if (delta_log) {
+        try {
+            delta_log->rollback(*impl_->project->master_score());
+            impl_->revision = delta_log->document_revision;
+            impl_->poisoned = false;
+        } catch (const std::exception &rollback_error) {
+            impl_->poisoned = true;
+            error.poisoned = true;
+            error.message += "; rollback failed: " + std::string(rollback_error.what());
+            return std::unexpected(std::move(error));
+        } catch (...) {
+            impl_->poisoned = true;
+            error.poisoned = true;
+            error.message += "; rollback failed: unknown exception";
+            return std::unexpected(std::move(error));
+        }
+    } else if (auto restored = impl_->restore_rollback_snapshot(*rollback); !restored) {
         impl_->poisoned = true;
         error.poisoned = true;
         error.message += "; rollback failed: " + restored.error().message;
@@ -94,9 +130,153 @@ std::unexpected<Error> fail(ErrorCode code, std::string message, std::optional<s
     return std::unexpected(std::move(error));
 }
 
-bool engine_failed() { return MScore::error != MsError::MS_NO_ERROR && !MScore::error_is_warning; }
+bool engine_failed(const MasterScore &master) {
+    const auto &state = master.cmd_state();
+    return state.error != MsError::MS_NO_ERROR && !state.error_is_warning;
+}
 
-bool engine_warned() { return MScore::error != MsError::MS_NO_ERROR && MScore::error_is_warning; }
+bool engine_warned(const MasterScore &master) {
+    const auto &state = master.cmd_state();
+    return state.error != MsError::MS_NO_ERROR && state.error_is_warning;
+}
+
+bool is_delta_eligible_pid(mu::engraving::Pid pid) {
+    using mu::engraving::Pid;
+    switch (pid) {
+        case Pid::COLOR:
+        case Pid::OFFSET:
+        case Pid::AUTOPLACE:
+        case Pid::MIN_DISTANCE:
+        case Pid::LEADING_SPACE:
+        case Pid::MAG:
+        case Pid::Z:
+        case Pid::SIZE_SPATIUM_DEPENDENT:
+        case Pid::ALIGN:
+        case Pid::FONT_FACE:
+        case Pid::FONT_SIZE:
+        case Pid::FONT_STYLE:
+        case Pid::FRAME_TYPE:
+        case Pid::FRAME_WIDTH:
+        case Pid::FRAME_PADDING:
+        case Pid::FRAME_ROUND:
+        case Pid::FRAME_FG_COLOR:
+        case Pid::FRAME_BG_COLOR:
+        case Pid::LINE_WIDTH:
+        case Pid::LINE_STYLE:
+        case Pid::DASH_LINE_LEN:
+        case Pid::DASH_GAP_LEN:
+        case Pid::STEM_DIRECTION:
+        case Pid::HEAD_GROUP:
+        case Pid::HEAD_TYPE:
+        case Pid::MIRROR_HEAD:
+        case Pid::DOT_POSITION:
+        case Pid::ACCIDENTAL_BRACKET:
+        case Pid::SMALL:
+        case Pid::NO_STEM:
+        case Pid::USER_LEN:
+        case Pid::DIRECTION:
+        case Pid::PLACEMENT: return true;
+        default: return false;
+    }
+}
+
+bool is_automation_or_structural_target(const EngravingObject &object) {
+    if (object.is_bracket_item()) return true;
+    using mu::engraving::ElementType;
+    switch (object.type()) {
+        case ElementType::DYNAMIC:
+        case ElementType::HAIRPIN:
+        case ElementType::HAIRPIN_SEGMENT:
+        case ElementType::MEASURE_REPEAT:
+        case ElementType::BREATH:
+        case ElementType::LAYOUT_BREAK:
+        case ElementType::FERMATA:
+        case ElementType::GRADUAL_TEMPO_CHANGE:
+        case ElementType::GRADUAL_TEMPO_CHANGE_SEGMENT:
+        case ElementType::TEMPO_TEXT:
+        case ElementType::VOLTA:
+        case ElementType::VOLTA_SEGMENT:
+        case ElementType::MARKER:
+        case ElementType::JUMP: return true;
+        default: return false;
+    }
+}
+
+bool is_delta_eligible_sid(mu::engraving::Sid sid) {
+    using mu::engraving::Sid;
+    if (sid == Sid::NOSTYLE || mu::engraving::style_value_refreshes_chords(sid)) return false;
+    switch (sid) {
+        case Sid::SPATIUM:
+        case Sid::DEFAULTS_VERSION:
+        case Sid::CREATE_MULTI_MEASURE_RESTS:
+        case Sid::CONCERT_PITCH:
+        case Sid::MUSICAL_SYMBOL_FONT:
+        case Sid::CHORD_STYLE:
+        case Sid::CHORDS_XML_FILE:
+        case Sid::CHORD_STACKED_MODIFIER_MAG: return false;
+        default: return true;
+    }
+}
+
+struct DeltaBatchClassification {
+    bool delta_rollback = false;
+    bool defer_leaf_semantics = false;
+};
+
+DeltaBatchClassification classify_delta_batch(MasterScore &master, const Batch &batch) {
+    if (batch.ops.empty()) return {};
+    for (const auto *score : master.score_list()) {
+        const auto &state = score->normalize_state;
+        if (state.dirty || state.rebuild_midi_mapping || !state.includes_hidden_staves || score->need_update_ticks_and_time_sig_map())
+            return {};
+    }
+
+    auto check_property_op = [&](const Ref &ref, const std::string &property) -> bool {
+        const auto pid = pid_of(property);
+        if (!is_delta_eligible_pid(pid)) return false;
+        if (std::holds_alternative<OpRef>(ref)) {
+            // No op in a delta batch creates elements, so an OpRef will fail cleanly before mutating.
+            return true;
+        }
+        const auto *id = std::get_if<ElementId>(&ref);
+        if (!id) return false;
+        const auto found = resolve(master, *id);
+        if (!found || !found->object) return false;
+        const EngravingObject &obj = *found->object;
+        if (is_automation_or_structural_target(obj)) return false;
+        if (pid == mu::engraving::Pid::PLACEMENT && obj.is_engraving_item() &&
+            mu::engraving::to_engraving_item(&obj)->has_voice_assignment_properties())
+            return false;
+        return true;
+    };
+
+    std::size_t layout_break_ops = 0;
+    for (const auto &op : batch.ops) {
+        if (const auto *set_prop = std::get_if<SetProperty>(&op)) {
+            if (!check_property_op(set_prop->target, set_prop->property)) return {};
+        } else if (const auto *reset_prop = std::get_if<ResetProperty>(&op)) {
+            if (!check_property_op(reset_prop->target, reset_prop->property)) return {};
+        } else if (const auto *set_style = std::get_if<SetStyle>(&op)) {
+            const auto sid = mu::engraving::MStyle::style_idx(muse::String::from_std_string(set_style->style));
+            if (!is_delta_eligible_sid(sid)) return {};
+        } else if (const auto *brk = std::get_if<SetLayoutBreak>(&op)) {
+            if (++layout_break_ops > 1 || !brk->on || brk->kind == "section") return {};
+            const auto *id = std::get_if<ElementId>(&brk->measure);
+            if (!id) return {};
+            const auto found = resolve(master, *id);
+            if (!found || !found->object || !found->object->is_measure_base()) return {};
+            const auto *mb = mu::engraving::to_measure_base(found->object);
+            if (mb->is_measure() && mu::engraving::to_measure(mb)->is_mm_rest()) mb = mu::engraving::to_measure(mb)->mm_rest_last();
+            if (!mb) return {};
+            for (const auto *item : mb->el()) {
+                if (item && item->is_layout_break()) return {};
+            }
+        } else {
+            return {};
+        }
+    }
+    return {.delta_rollback = true, .defer_leaf_semantics = (layout_break_ops == 0)};
+}
 
 std::string id_text(const EngravingObject &object) { return object.eid().is_valid() ? to_string(from_engine(object.eid())) : "(no id)"; }
 
@@ -531,7 +711,94 @@ Result<std::vector<Step>> BatchGuard::prepare_batch(const Batch &batch) {
         steps.push_back(std::move(*step));
     }
     defer_note_entry_ = can_defer_note_entry(context_.master(), batch);
+    const auto delta = classify_delta_batch(context_.master(), batch);
+    delta_rollback_eligible_ = delta.delta_rollback;
+    defer_leaf_semantics_ = delta.defer_leaf_semantics;
     return steps;
+}
+
+void EditDeltaLog::record_property(MasterScore &master, EngravingObject &target, mu::engraving::Pid pid) {
+    std::vector<EngravingObject *> affected;
+    auto push_unique = [&](EngravingObject *obj) {
+        if (!obj) return;
+        if (std::ranges::find(affected, obj) == affected.end()) affected.push_back(obj);
+    };
+    push_unique(&target);
+    for (EngravingObject *linked : target.link_list_for_property_propagation()) push_unique(linked);
+    if (target.is_engraving_item()) {
+        auto *item = mu::engraving::to_engraving_item(&target);
+        for (auto *origin : item->origin_items()) push_unique(origin);
+        if (auto *shared = item->shared_item()) push_unique(shared);
+    }
+    for (EngravingObject *obj : affected) {
+        PropertyDelta delta;
+        delta.handle = master.eid_register()->enroll(*obj);
+        delta.pid = pid;
+        delta.old_value = obj->get_property(pid);
+        delta.old_flags = obj->property_flags(pid);
+        if (obj->is_engraving_item()) {
+            const auto *item = mu::engraving::to_engraving_item(obj);
+            delta.is_item = true;
+            delta.old_generated = obj->get_property(mu::engraving::Pid::GENERATED).to_bool();
+            delta.old_pos_linked = item->is_position_linked_to_master();
+            delta.old_app_linked = item->is_appearance_linked_to_master();
+        }
+        entries.push_back(std::move(delta));
+    }
+}
+
+void EditDeltaLog::record_style(MasterScore &master, mu::engraving::Score &score, mu::engraving::Sid sid) {
+    entries.push_back(StyleDelta{master.eid_register()->enroll(score), sid, score.style().style_v(sid)});
+}
+
+void EditDeltaLog::record_added_break(MasterScore &master, mu::engraving::MeasureBase &measure, mu::engraving::EngravingItem &added) {
+    entries.push_back(AddedBreakDelta{master.eid_register()->enroll(measure), master.eid_register()->enroll(added)});
+}
+
+void EditDeltaLog::rollback(MasterScore &master) {
+    std::vector<mu::engraving::Score *> style_scores;
+    bool broke_automation = false;
+    for (auto it = entries.rbegin(); it != entries.rend(); ++it) {
+        std::visit(
+            [&](const auto &entry) {
+                using T = std::decay_t<decltype(entry)>;
+                if constexpr (std::is_same_v<T, PropertyDelta>) {
+                    auto *obj = master.eid_register()->live_item(entry.handle);
+                    if (!obj) return;
+                    obj->set_property(entry.pid, entry.old_value);
+                    obj->set_property_flags(entry.pid, entry.old_flags);
+                    if (entry.is_item) {
+                        obj->set_property(mu::engraving::Pid::GENERATED, entry.old_generated);
+                        obj->set_property(mu::engraving::Pid::POSITION_LINKED_TO_MASTER, entry.old_pos_linked);
+                        obj->set_property(mu::engraving::Pid::APPEARANCE_LINKED_TO_MASTER, entry.old_app_linked);
+                    }
+                    if (obj->is_engraving_item()) mu::engraving::to_engraving_item(obj)->trigger_layout();
+                } else if constexpr (std::is_same_v<T, StyleDelta>) {
+                    auto *obj = master.eid_register()->live_item(entry.score_handle);
+                    if (!obj || !obj->is_score()) return;
+                    auto *score = mu::engraving::to_score(obj);
+                    score->style().set(entry.sid, entry.old_value);
+                    if (std::ranges::find(style_scores, score) == style_scores.end()) style_scores.push_back(score);
+                } else if constexpr (std::is_same_v<T, AddedBreakDelta>) {
+                    if (auto *lb_obj = master.eid_register()->live_item(entry.break_handle); lb_obj && lb_obj->is_engraving_item()) {
+                        auto *lb = mu::engraving::to_engraving_item(lb_obj);
+                        lb->score()->remove_element(lb);
+                        delete lb;
+                        broke_automation = true;
+                    }
+                    if (auto *mb_obj = master.eid_register()->live_item(entry.measure_handle); mb_obj && mb_obj->is_engraving_item())
+                        mu::engraving::to_engraving_item(mb_obj)->trigger_layout();
+                }
+            },
+            *it);
+    }
+    for (auto *score : style_scores) score->style_changed();
+    for (auto *score : master.score_list()) score->invalidate_layout(mu::engraving::Fraction(0, 1), mu::engraving::Fraction(-1, 1));
+    mu::engraving::normalize_document(master, {.include_hidden_staves = true});
+    if (broke_automation) master.init_automation();
+    master.restore_source_revisions(source_revision, saved_revision);
+    master.invalidate_repeat_list();
+    master.cmd_state().reset();
 }
 
 Result<EditResult> BatchGuard::run(std::vector<Step> steps) {
@@ -569,7 +836,7 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, EditMode mode) {
             master.invalidate_repeat_list();
         }
         manager->end_transaction(true);
-        MScore::set_error(MsError::MS_NO_ERROR);
+        master.cmd_state().clear_error();
     };
     const auto report_failure = [&](Error error) -> Result<EditResult> {
         error.poisoned = document.poisoned;
@@ -577,11 +844,12 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, EditMode mode) {
         return std::unexpected(std::move(error));
     };
     const auto check_engine = [&](std::optional<std::size_t> op) {
-        if (engine_failed())
-            failure = Error{ErrorCode::EDIT_REJECTED, std::format("the engine refused it: {}", MScore::error_to_string(MScore::error)), op};
-        else if (engine_warned())
-            result.diagnostics.push_back({Severity::WARNING, MScore::error_to_string(MScore::error)});
-        MScore::set_error(MsError::MS_NO_ERROR);
+        if (engine_failed(master))
+            failure = Error{ErrorCode::EDIT_REJECTED,
+                            std::format("the engine refused it: {}", MScore::error_to_string(master.cmd_state().error)), op};
+        else if (engine_warned(master))
+            result.diagnostics.push_back({Severity::WARNING, MScore::error_to_string(master.cmd_state().error)});
+        master.cmd_state().clear_error();
         return !failure;
     };
     std::exception_ptr outer_unknown;
@@ -589,7 +857,7 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, EditMode mode) {
         master.start_cmd(muse::TranslatableString::untranslatable("engrave edit"));
         for (std::size_t i = 0; i < steps.size(); ++i) {
             context_.op_ = i;
-            if (!defer_note_entry_ || master.need_update_ticks_and_time_sig_map()) {
+            if (!defer_leaf_semantics_ && (!defer_note_entry_ || master.need_update_ticks_and_time_sig_map())) {
                 context_.prepare_semantics();
                 defer_note_entry_ = false;
             }
@@ -624,12 +892,12 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, EditMode mode) {
                 if (mode == EditMode::Prefix && master.cmd_state().mutation_count == marking) {
                     result.rejection = BatchRejection{i, std::move(*failure)};
                     failure.reset();
-                    MScore::set_error(MsError::MS_NO_ERROR);
+                    master.cmd_state().clear_error();
                 }
                 break;
             }
             applied_ops.push_back(i);
-            ++context_.epoch_;
+            if (!defer_leaf_semantics_) ++context_.epoch_;
         }
         if (!failure) {
             context_.op_ = steps.size();

@@ -62,20 +62,32 @@ struct Engine::Impl {
 };
 
 struct Document::Impl {
-    struct Snapshot {
+    struct SnapshotMeta {
         struct Versions {
             std::u16string version;
             int revision = 0;
             int msc_version = 0;
         };
 
-        std::string bytes;
         std::vector<Versions> versions;
         mu::engraving::RuntimeTempoState runtime_tempo;
         std::uint64_t source_revision = 0;
         std::uint64_t saved_revision = 0;
         std::uint64_t revision = 0;
+    };
+
+    struct Snapshot {
+        using Versions = SnapshotMeta::Versions;
+
+        std::string bytes;
+        SnapshotMeta meta;
         std::size_t byte_count = 0;
+    };
+
+    // Zero-ZIP in-memory entries used for structural atomic rollback.
+    struct RollbackSnapshot {
+        mu::engraving::MscMemoryArchive archive;
+        SnapshotMeta meta;
     };
 
     struct Checkpoint {
@@ -87,6 +99,10 @@ struct Document::Impl {
     Result<Snapshot> capture_snapshot(const std::function<bool()> &cancelled = {}, std::size_t byte_limit = 128 * 1024 * 1024,
                                       std::optional<std::size_t> checkpoint_name_size = {}) const;
     Result<void> restore_snapshot(const Snapshot &snapshot, bool advance_revision);
+    Result<RollbackSnapshot> capture_rollback_snapshot(const std::function<bool()> &cancelled = {},
+                                                       std::size_t byte_limit = 128 * 1024 * 1024) const;
+    Result<void> restore_rollback_snapshot(const RollbackSnapshot &snapshot);
+    Result<void> apply_restored_project(music::ScoreProject restored, const SnapshotMeta &meta, bool advance_revision);
 
     std::vector<Checkpoint> checkpoints;
     std::size_t checkpoint_byte_limit = 64 * 1024 * 1024;

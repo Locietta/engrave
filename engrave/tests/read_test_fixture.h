@@ -214,7 +214,7 @@ void expect_code(const engrave::Result<T> &result, ErrorCode expected, std::stri
 /// S6's; a read test drives the primitive the same way the handle tests do).
 struct Command {
     explicit Command(MasterScore &score) : score_(score) {
-        mu::engraving::MScore::set_error(mu::engraving::MsError::MS_NO_ERROR);
+        score_.cmd_state().clear_error();
         score_.start_cmd(muse::TranslatableString::untranslatable("engrave read test"));
     }
 

@@ -207,7 +207,7 @@ Result<Step> prepare(EditContext &context, const SetTimeSig &op) {
         temp->set_sig(sig, TimeSigType::NORMAL);
         const std::size_t before = pushed(context);
         mu::engraving::EditTimeSig::add_time_sig(transaction(context), score, *target, 0, temp, false);
-        if (mu::engraving::MScore::error != mu::engraving::MsError::MS_NO_ERROR) return {};
+        if (context.master().cmd_state().error != mu::engraving::MsError::MS_NO_ERROR) return {};
         if (pushed(context) <= before) return refused("the engine kept the existing time signature");
         return {};
     };
@@ -291,7 +291,18 @@ Result<Step> prepare(EditContext &context, const SetLayoutBreak &op) {
         if (!(*object)->is_measure_base()) {
             return invalid(std::format("a {} is not a measure or a frame", (*object)->type_name()));
         }
-        mu::engraving::to_measure_base(*object)->undo_set_break(on, kind);
+        auto *mb = mu::engraving::to_measure_base(*object);
+        mb->undo_set_break(on, kind);
+        if (auto *delta = context.delta_log(); delta && on) {
+            MeasureBase *target_mb =
+                (mb->is_measure() && mu::engraving::to_measure(mb)->is_mm_rest()) ? mu::engraving::to_measure(mb)->mm_rest_last() : mb;
+            for (auto *item : target_mb->el()) {
+                if (item && item->is_layout_break()) {
+                    delta->record_added_break(context.master(), *target_mb, *item);
+                    break;
+                }
+            }
+        }
         return {};
     };
 }

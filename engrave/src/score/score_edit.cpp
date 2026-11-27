@@ -167,7 +167,7 @@ struct ScoreCommandGuard {
     }
 
     void begin() {
-        MScore::set_error(MsError::MS_NO_ERROR);
+        score_->cmd_state().clear_error();
         score_->start_cmd(TranslatableString::untranslatable("MCP pitch edit"));
         active_ = score_->transaction_manager()->current_transaction() != nullptr;
         if (!active_) throw std::runtime_error("Failed to begin pitch edit");
@@ -182,9 +182,10 @@ private:
     bool active_ = false;
 };
 
-std::string engine_error_message() {
+std::string engine_error_message(const MasterScore &score) {
     std::string message = "Pitch edit was rejected by the engraving engine";
-    if (MScore::error != MsError::MS_NO_ERROR) message += ": " + MScore::error_to_string(MScore::error);
+    const MsError err = score.cmd_state().error;
+    if (err != MsError::MS_NO_ERROR) message += ": " + MScore::error_to_string(err);
     return message;
 }
 
@@ -377,14 +378,14 @@ NativePitchResult apply_score_pitch_edit(mu::engraving::MasterScore *score, cons
             if (change.old_pitch == change.pitch) continue;
             EditNote::undo_change_pitch(score, change.note, change.pitch, change.tpc1, change.tpc2);
         }
-        const bool engine_failed = MScore::error != MsError::MS_NO_ERROR && !MScore::error_is_warning;
-        const auto message = engine_failed ? engine_error_message() : std::string{};
+        const auto &cmd_state = score->cmd_state();
+        const bool engine_failed = cmd_state.error != MsError::MS_NO_ERROR && !cmd_state.error_is_warning;
+        const auto message = engine_failed ? engine_error_message(*score) : std::string{};
         command.finish(engine_failed);
         if (engine_failed) {
             throw NativeEditFailure(message, true);
         }
-        bool committed = !score->transaction_manager()->current_transaction() && score->source_revision() == before_revision + 1 &&
-                         (MScore::error == MsError::MS_NO_ERROR || MScore::error_is_warning);
+        bool committed = !score->transaction_manager()->current_transaction() && score->source_revision() == before_revision + 1;
         for (const auto &change : changes) committed = committed && change.note->pitch() == change.pitch;
         if (!committed) throw NativeEditFailure("Engraving transaction did not commit consistently", true);
     } catch (const NativeEditFailure &) {
