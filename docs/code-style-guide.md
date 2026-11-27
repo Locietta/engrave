@@ -40,19 +40,19 @@ Always use `struct`, do not use `class` for custom types. This avoids `public:` 
 
 - **Separate data from behavior**: Keep data as plain `struct` definitions with free functions or focused systems rather than monolithic stateful OOP hierarchies.
 - **Owned value semantics**: Value types own their data. Do not add copy-on-write wrappers, reference-counted buffers, or `std::shared_ptr` ownership graphs where single ownership or flat storage works. Avoid copies on hot paths by passing views (`std::string_view`, `std::span`) or references.
-- **Data-oriented layout and typed pools**: Prefer homogeneous contiguous typed pools (`amc::vector`, `std::vector`, or segmented slab pools when pointer stability is required) referenced by compact integer indices, spans, or tagged handles — over both pointer-chasing node graphs and heterogeneous polymorphic arrays (`std::vector<std::variant<...>>` or `std::vector<pro::proxy<...>>`). Typed pools eliminate cross-type padding, keep per-type passes cache-dense, cut allocator fragmentation, and keep consumer headers decoupled from concrete entity definitions.
+- **Data-oriented layout and typed pools**: Prefer homogeneous contiguous typed pools (`amc::vector`, `std::vector`, or segmented slab pools when pointer stability is required) referenced by compact integer indices, spans, or tagged handles — over both pointer-chasing node graphs and heterogeneous polymorphic arrays (`std::vector<std::variant<...>>` or `std::vector<dyn::Box<...>>`). Typed pools eliminate cross-type padding, keep per-type passes cache-dense, cut allocator fragmentation, and keep consumer headers decoupled from concrete entity definitions.
 
 ## Polymorphism and Callables
 
 Never introduce `virtual` functions, abstract base classes, or vtable hierarchies. Pick the mechanism that matches how the code varies and keep compile-time coupling bounded:
 
-- **Typed pools + handles (default for domain entities)**: When the type set is small and known and objects live in collections, store each concrete type in its own pool and reference heterogeneous sequences via compact handles. Project a transient `pro::proxy_view` on demand only when a consumer genuinely needs behavioral dispatch.
-- **Behavioral polymorphism via `ngcpp-proxy`**: Use `pro::proxy` (owning) or `pro::proxy_view` (non-owning) from `<proxy/proxy.h>` only for open behavioral seams where the facade is stable and adding new implementations should keep consumers decoupled (such as `AudioEncoder` codecs). Do not store owning `pro::proxy` objects in heterogeneous data arrays, and isolate `<proxy/proxy.h>` to seam headers rather than pulling it into ubiquitous core headers.
+- **Typed pools + handles (default for domain entities)**: When the type set is small and known and objects live in collections, store each concrete type in its own pool and reference heterogeneous sequences via compact handles rather than storing type-erased objects.
+- **Behavioral polymorphism via `dyn`**: Use `dyn::Box<Trait>` or `dyn::SmallBox<Trait, N>` from `<dyn/dyn.h>` only for open behavioral seams where the trait contract is stable and adding new implementations should keep consumers decoupled (such as `AudioEncoder` codecs). Do not store owning `dyn::Box` objects in heterogeneous data arrays, and isolate `<dyn/dyn.h>` to seam headers rather than pulling it into ubiquitous core headers.
 - **Closed sum types via `std::variant`**: Use `std::variant` only for genuine sum-type payloads where the set of alternatives is small and closed and callers mainly add new operations (such as wire DTOs, command/AST nodes, or small cold metadata unions). Avoid `std::vector<std::variant<...>>` for hot-path or large domain stores, and avoid pulling wide variants into widely included headers because every consumer inherits all alternative definitions.
 - **Single-signature callables**:
   - **Non-storing inline callbacks**: When a callback does not cross a compilation boundary and is not stored, prefer a template parameter (`template <class Fn>`).
-  - **Non-owning synchronous callbacks**: Use `muse::FnRef<Sig>` (`"global/fn.h"`) — a 16-byte trivially copyable view with zero heap allocation and no `<proxy/proxy.h>` include.
-  - **Owning stored callbacks**: Use `muse::UniqueFn<Sig>` (`"global/unique_fn.h"`) instead of `std::function` — self-contained with 32-byte SBO and no `<proxy/proxy.h>` include. Public `engrave/include/engrave/` headers stay on standard C++ (`std::function`) so they carry no third-party header dependencies.
+  - **Non-owning synchronous callbacks**: Use `muse::FnRef<Sig>` (`"global/fn.h"`) — a 16-byte trivially copyable view with zero heap allocation and no `<dyn/dyn.h>` include.
+  - **Owning stored callbacks**: Use `muse::UniqueFn<Sig>` (`"global/unique_fn.h"`) instead of `std::function` — self-contained with 32-byte SBO and no `<dyn/dyn.h>` include. Public `engrave/include/engrave/` headers stay on standard C++ (`std::function`) so they carry no third-party header dependencies.
 
 ## Containers and JSON
 
@@ -78,8 +78,8 @@ Use `#pragma once` (never `#ifndef` include guards). Group includes in the follo
 #include <string_view>
 
 // 3. Third-party headers
+#include <dyn/dyn.h>
 #include <glaze/glaze.hpp>
-#include <proxy/proxy.h>
 
 // 4. Project headers (muse/..., engraving/..., engrave/...)
 #include "global/hashmap.h"

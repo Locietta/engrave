@@ -23,7 +23,7 @@
 #ifndef MUSE_AUDIO_SIMDTYPES_NEON_H
 #define MUSE_AUDIO_SIMDTYPES_NEON_H
 
-#if _MSC_VER
+#if defined(_MSC_VER) && !defined(__clang__)
 #include <arm64_neon.h>
 #define __finl __forceinline
 #define __vecc __vectorcall
@@ -50,7 +50,7 @@ struct FloatX4 {
 
     /// enables assignments like: float_x4 a = {1.f, 2.f, 3.f, 4.f};
     __finl FloatX4(float v0, float v1, float v2, float v3) {
-#if _MSC_VER // aggregate initializer won't work unless we have {.n128_f32 = ..} in c++20
+#if defined(_MSC_VER) && !defined(__clang__) // aggregate initializer won't work unless we have {.n128_f32 = ..} in c++20
         s.n128_f32[0] = v0;
         s.n128_f32[1] = v1;
         s.n128_f32[2] = v2;

@@ -30,14 +30,14 @@ using namespace muse::draw;
 
 static constexpr double near_clip = 0.000001;
 
-Transform::Transform(double h11, double h12, double h21, double h22, double dx, double dy)
+Transform::Transform(double h11, double h12, double h21, double h22, double dx, double dy) noexcept
     : affine_(h11, h12, h21, h22, dx, dy), dirty_(TransformationType::SHEAR) {}
 
-Transform::Transform(double h11, double h12, double h13, double h21, double h22, double h23, double h31, double h32, double h33)
+Transform::Transform(double h11, double h12, double h13, double h21, double h22, double h23, double h31, double h32, double h33) noexcept
     : affine_(h11, h12, h21, h22, h31, h32), m13_(h13), m23_(h23), m33_(h33), type_(TransformationType::NONE),
       dirty_(TransformationType::PROJECT) {}
 
-Transform Transform::operator*(const Transform &m) const {
+Transform Transform::operator*(const Transform &m) const noexcept {
     const TransformationType other_type = m.inline_type();
 
     if (other_type == TransformationType::NONE) {
@@ -108,7 +108,7 @@ Transform Transform::operator*(const Transform &m) const {
     return t;
 }
 
-Transform &Transform::operator*=(const Transform &o) {
+Transform &Transform::operator*=(const Transform &o) noexcept {
     const TransformationType other_type = o.inline_type();
     if (other_type == TransformationType::NONE) {
         return *this;
@@ -178,7 +178,8 @@ Transform &Transform::operator*=(const Transform &o) {
     return *this;
 }
 
-void Transform::set_matrix(double m11, double m12, double m13, double m21, double m22, double m23, double m31, double m32, double m33) {
+void Transform::set_matrix(double m11, double m12, double m13, double m21, double m22, double m23, double m31, double m32,
+                           double m33) noexcept {
     affine_.m11_ = m11;
     affine_.m12_ = m12;
     m13_ = m13;
@@ -191,12 +192,12 @@ void Transform::set_matrix(double m11, double m12, double m13, double m21, doubl
     dirty_ = TransformationType::PROJECT;
 }
 
-void Transform::reset() {
+void Transform::reset() noexcept {
     affine_.m11_ = affine_.m22_ = m33_ = 1.0;
     affine_.m12_ = m13_ = affine_.m21_ = m23_ = affine_.dx_ = affine_.dy_ = 0.0;
 }
 
-Transform Transform::adjoint() const {
+Transform Transform::adjoint() const noexcept {
     double h11, h12, h13, h21, h22, h23, h31, h32, h33;
     h11 = affine_.m22_ * m33_ - m23_ * affine_.dy_;
     h21 = m23_ * affine_.dx_ - affine_.m21_ * m33_;
@@ -210,7 +211,7 @@ Transform Transform::adjoint() const {
     return Transform(h11, h12, h13, h21, h22, h23, h31, h32, h33);
 }
 
-Transform::TransformationType Transform::type() const {
+Transform::TransformationType Transform::type() const noexcept {
     if (dirty_ == TransformationType::NONE || dirty_ < type_) {
         return type_;
     }
@@ -251,7 +252,7 @@ Transform::TransformationType Transform::type() const {
     return type_;
 }
 
-PointF Transform::map(const PointF &p) const {
+PointF Transform::map(const PointF &p) const noexcept {
     double fx = p.x();
     double fy = p.y();
     double x = 0.0, y = 0.0;
@@ -283,7 +284,7 @@ PointF Transform::map(const PointF &p) const {
     return PointF(x, y);
 }
 
-LineF Transform::map(const LineF &l) const {
+LineF Transform::map(const LineF &l) const noexcept {
     double fx1 = l.x1();
     double fy1 = l.y1();
     double fx2 = l.x2();
@@ -419,7 +420,7 @@ PainterPath Transform::map(const PainterPath &path) const {
     return copy;
 }
 
-Transform &Transform::rotate(double a) {
+Transform &Transform::rotate(double a) noexcept {
     constexpr double deg2rad = 0.017453292519943295769; // pi/180
 
     if (real_is_null(a)) {
@@ -485,7 +486,7 @@ Transform &Transform::rotate(double a) {
     return *this;
 }
 
-Transform &Transform::rotate_radians(double a) {
+Transform &Transform::rotate_radians(double a) noexcept {
     double sina = std::sin(a);
     double cosa = std::cos(a);
     switch (inline_type()) {
@@ -534,7 +535,7 @@ Transform &Transform::rotate_radians(double a) {
     return *this;
 }
 
-Transform &Transform::translate(double dx, double dy) {
+Transform &Transform::translate(double dx, double dy) noexcept {
     if (real_is_null(dx) && real_is_null(dy)) {
         return *this;
     }
@@ -565,7 +566,7 @@ Transform &Transform::translate(double dx, double dy) {
     return *this;
 }
 
-Transform &Transform::scale(double sx, double sy) {
+Transform &Transform::scale(double sx, double sy) noexcept {
     if (real_is_equal(sx, 1) && real_is_equal(sy, 1)) {
         return *this;
     }
@@ -591,7 +592,7 @@ Transform &Transform::scale(double sx, double sy) {
     return *this;
 }
 
-Transform &Transform::shear(double sh, double sv) {
+Transform &Transform::shear(double sh, double sv) noexcept {
     if (real_is_null(sh) && real_is_null(sv)) {
         return *this;
     }
@@ -631,7 +632,7 @@ Transform &Transform::shear(double sh, double sv) {
     return *this;
 }
 
-Transform Transform::inverted() const {
+Transform Transform::inverted() const noexcept {
     Transform invert;
     bool inv = true;
     switch (inline_type()) {
@@ -670,7 +671,7 @@ Transform Transform::inverted() const {
     return invert;
 }
 
-void Transform::map_element(double &nx, double &ny, TransformationType t) const {
+void Transform::map_element(double &nx, double &ny, TransformationType t) const noexcept {
     double fx_value = nx;
     double fy_value = ny;
     switch (t) {

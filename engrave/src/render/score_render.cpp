@@ -181,12 +181,14 @@ engrave::Result<std::string> render_impl(const EngineContext &engine, mu::engrav
         paint_options.from_page = format == "pdf" ? first_page_value : options.page;
         paint_options.to_page = format == "pdf" ? last_page_value : options.page;
         const auto poll_page = [&] {
-            bool cancelled;
+            bool cancelled = false;
+            std::exception_ptr caught;
             try {
                 cancelled = poll();
             } catch (...) {
-                throw PaintCancelled{std::current_exception()};
+                caught = std::current_exception();
             }
+            if (caught) throw PaintCancelled{caught};
             if (cancelled) throw PaintCancelled{};
         };
         paint_options.on_new_page = [&] {

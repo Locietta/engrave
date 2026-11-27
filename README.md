@@ -32,7 +32,7 @@
   </p>
 </div>
 
-`engrave` is a native, headless C++ score engine library providing core music notation, layout, engraving, rendering, import/export, and audio synthesis capabilities. It is built with [Bazel](https://bazel.build/) and a hermetic Clang/libc++ (`xclang`) toolchain.
+`engrave` is a native, headless C++ score engine library providing core music notation, layout, engraving, rendering, import/export, and audio synthesis capabilities. It is built with [Bazel](https://bazel.build/) and a hermetic Clang 23 / `libc++` (`xclang`) toolchain (targeting the MSVC ABI on Windows).
 
 The library serves as the core engraving and playback engine for the [`engrave-mcp`](https://github.com/engrave-music/engrave-mcp) Model Context Protocol (MCP) host.
 
@@ -81,7 +81,7 @@ Capabilities can be queried programmatically via `Engine::capabilities()`.
 
 ## Building
 
-`engrave` uses [Bazel](https://bazel.build/) (pinned in `.bazelversion`) with a hermetic Clang 23 / `libc++` (`xclang`) C++23 toolchain across Windows and Linux. `xclang` module metadata (`MODULE.bazel` and SHA-256–pinned `source.json`) is checked into the local registry overlay at `bazel/registry` ahead of the Bazel Central Registry; keep standalone workspace paths free of spaces so Bazel's `file:///%workspace%/bazel/registry` URI parses cleanly.
+`engrave` uses [Bazel](https://bazel.build/) (pinned in `.bazelversion`) with a hermetic Clang 23 / `libc++` (`xclang`) C++23 toolchain across Windows and Linux (targeting the MSVC ABI on Windows via `@xclang//platforms:x86_64-pc-windows-msvc`). `bazel/engrave.bazelrc` resolves `xclang` and third-party Bzlmod modules from `https://raw.githubusercontent.com/engrave-music/bazel-registry/main` ahead of the Bazel Central Registry (`https://bcr.bazel.build/`).
 
 ### Prerequisites
 
@@ -89,7 +89,7 @@ Capabilities can be queried programmatically via `Engine::capabilities()`.
 - **Python** 3 and **Git** (for asset installation and manifest verification)
 - **[Pixi](https://pixi.sh/)**: Cairo, FreeType, and zlib are conda-forge builds pinned in `pixi.toml` / `pixi.lock`. Run `pixi install --locked` once; `bazel/deps.bzl` exposes them as `@pixi_deps//:cairo`, `@pixi_deps//:freetype`, and `@pixi_deps//:zlib`. A superproject consuming `@engrave` via Bzlmod supplies its own Pixi prefix via `--repo_env=ENGRAVE_PIXI_PREFIX=...`. Windows binaries need `.pixi/envs/default/Library/bin` on `PATH` at run time; Linux binaries load `.pixi/envs/default/lib`.
 
-All other C/C++ third-party dependencies (HarfBuzz, libflac, LAME, libopus, libopusenc, pugixml, utfcpp, glaze, proxy, amc, unordered_dense, gtl, GoogleTest) are fetched from hash-pinned archives in `MODULE.bazel` (`bazel/deps.bzl`) and built via `bazel/third_party/*.BUILD.bazel`. `glaze` is the engine's only JSON library.
+All other C/C++ third-party dependencies (HarfBuzz, libflac, LAME, libopus, libopusenc, pugixml, utfcpp, glaze, dyn, amc, unordered_dense, gtl, GoogleTest) are fetched as Bzlmod modules pinned in `MODULE.bazel` from `engrave-music/bazel-registry` / BCR. `glaze` is the engine's only JSON library.
 
 ### Build Commands (Windows and Linux)
 
@@ -100,7 +100,7 @@ bazelisk build --config=release //:engrave
 
 ### Configuration Flags
 
-- `--config=<release|debug|releasedbg|asan|tsan>`: Select optimization/debug/sanitizer profile (`bazel/engrave.bazelrc`).
+- `--config=<release|dist|debug|releasedbg|asan|tsan>`: Select optimization/debug/sanitizer profile (`bazel/engrave.bazelrc`).
 - `--//bazel:pch=false`: Disable binary precompiled headers for `//:engraving` (enabled by default).
 - `--//bazel:playback_harness=true`: Enable opt-in playback capture instrumentation (`ENGRAVE_PLAYBACK_HARNESS`).
 

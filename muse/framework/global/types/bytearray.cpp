@@ -26,7 +26,7 @@
 
 using namespace muse;
 
-ByteArray::ByteArray() = default;
+ByteArray::ByteArray() noexcept = default;
 
 ByteArray::ByteArray(const uint8_t *data, size_t size) : data_(size + 1, 0) {
     if (size) std::memcpy(data_.data(), data, size);
@@ -47,20 +47,20 @@ std::vector<uint8_t> &ByteArray::vdata() {
     return data_;
 }
 
-const uint8_t *ByteArray::const_data() const {
+const uint8_t *ByteArray::const_data() const noexcept {
     static constexpr uint8_t zero = 0;
     return data_.empty() ? &zero : data_.data();
 }
 
-const char *ByteArray::const_char() const { return reinterpret_cast<const char *>(const_data()); }
+const char *ByteArray::const_char() const noexcept { return reinterpret_cast<const char *>(const_data()); }
 
-const std::vector<uint8_t> &ByteArray::const_v_data() const { return data_; }
+const std::vector<uint8_t> &ByteArray::const_v_data() const noexcept { return data_; }
 
-size_t ByteArray::size() const { return data_.empty() ? 0 : data_.size() - 1; }
+size_t ByteArray::size() const noexcept { return data_.empty() ? 0 : data_.size() - 1; }
 
-bool ByteArray::empty() const { return size() == 0; }
+bool ByteArray::empty() const noexcept { return size() == 0; }
 
-bool ByteArray::operator==(const ByteArray &other) const {
+bool ByteArray::operator==(const ByteArray &other) const noexcept {
     return size() == other.size() && std::memcmp(const_data(), other.const_data(), size()) == 0;
 }
 
@@ -75,7 +75,7 @@ void ByteArray::truncate(size_t pos) {
     if (pos < size()) resize(pos);
 }
 
-void ByteArray::clear() { data_.clear(); }
+void ByteArray::clear() noexcept { data_.clear(); }
 
 ByteArray &ByteArray::insert(size_t pos, uint8_t b) {
     if (pos > size()) return *this;

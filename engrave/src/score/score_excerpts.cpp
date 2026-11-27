@@ -66,32 +66,41 @@ bool generate_score_excerpts(MasterScore *score) {
     mu::engraving::ScoreLoad score_load;
     std::vector<Excerpt *> pending = Excerpt::create_excerpts_from_parts(visible_parts, score);
     std::size_t added_count = 0;
-    try {
-        for (; added_count < pending.size(); ++added_count) {
-            Excerpt *excerpt = pending[added_count];
-            if (!excerpt) {
-                throw std::runtime_error("createExcerptsFromParts returned a null excerpt");
-            }
 
-            // initExcerpt() creates the excerpt score, enables
-            // Sid::createMultiMeasureRests before Excerpt::createExcerpt()
-            // lays it out, and marks the excerpt inited. addExcerpt() then
-            // performs the single ownership transfer into the document.
-            score->init_excerpt(excerpt);
-            score->add_excerpt(excerpt);
-        }
-    } catch (...) {
-        // Entries before added_count were transferred to MasterScore, so
-        // remove them before deleting. removeExcerpt() does not delete.
-        // The entry in progress and all later entries are still owned here.
-        for (std::size_t i = 0; i < pending.size(); ++i) {
-            if (i < added_count) {
-                score->remove_excerpt(pending[i]);
+    struct PendingGuard {
+        MasterScore *score;
+        std::vector<Excerpt *> &pending;
+        std::size_t &added_count;
+        bool committed = false;
+
+        ~PendingGuard() noexcept {
+            if (committed) return;
+            // Entries before added_count were transferred to MasterScore, so
+            // remove them before deleting. removeExcerpt() does not delete.
+            // The entry in progress and all later entries are still owned here.
+            for (std::size_t i = 0; i < pending.size(); ++i) {
+                if (i < added_count) {
+                    score->remove_excerpt(pending[i]);
+                }
+                delete pending[i];
             }
-            delete pending[i];
         }
-        throw;
+    } guard{score, pending, added_count};
+
+    for (; added_count < pending.size(); ++added_count) {
+        Excerpt *excerpt = pending[added_count];
+        if (!excerpt) {
+            throw std::runtime_error("createExcerptsFromParts returned a null excerpt");
+        }
+
+        // initExcerpt() creates the excerpt score, enables
+        // Sid::createMultiMeasureRests before Excerpt::createExcerpt()
+        // lays it out, and marks the excerpt inited. addExcerpt() then
+        // performs the single ownership transfer into the document.
+        score->init_excerpt(excerpt);
+        score->add_excerpt(excerpt);
     }
+    guard.committed = true;
 
     return !pending.empty();
 }

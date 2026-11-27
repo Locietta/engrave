@@ -9,6 +9,11 @@ exports_files([
     "engrave/tests/utf8.manifest",
 ])
 
+alias(
+    name = "freetype",
+    actual = "@pixi_deps//:freetype",
+)
+
 FLUIDSYNTH_DIR = "muse/framework/audio/thirdparty/fluidsynth/fluidsynth-2.3.3"
 
 FLUIDSYNTH_INCLUDES = [
@@ -222,6 +227,14 @@ cc_library(
 )
 
 cc_library(
+    name = "btree",
+    hdrs = ["muse/framework/global/btree.h"],
+    strip_include_prefix = "muse/framework",
+    visibility = ["//visibility:private"],
+    deps = ["@gtl"],
+)
+
+cc_library(
     name = "hashmap",
     hdrs = ["muse/framework/global/hashmap.h"],
     strip_include_prefix = "muse/framework",
@@ -356,7 +369,7 @@ cc_library(
         ":muse_mpe",
         ":native_fluidsynth",
         "@amc",
-        "@ngcpp_proxy",
+        "@dyn",
         "@unordered_dense",
     ],
 )
@@ -594,6 +607,7 @@ cc_binary(
     srcs = ["engrave/tests/engine_audio_probe.cpp"],
     copts = ENGINE_COPTS,
     linkopts = select({
+        "//bazel:windows_msvc": ["-Wl,psapi.lib"],
         "@platforms//os:windows": ["-lpsapi"],
         "//conditions:default": [],
     }),
@@ -614,7 +628,10 @@ cc_library(
     ],
     includes = ["."],
     visibility = ["//visibility:private"],
-    deps = ["@glaze"],
+    deps = [
+        ":btree",
+        "@glaze",
+    ],
 )
 
 cc_binary(
@@ -736,6 +753,7 @@ cc_binary(
     srcs = ["engrave/tests/playback_probe.cpp"],
     copts = ENGINE_COPTS,
     linkopts = select({
+        "//bazel:windows_msvc": ["-Wl,psapi.lib"],
         "@platforms//os:windows": ["-lpsapi"],
         "//conditions:default": [],
     }),
@@ -763,7 +781,11 @@ cc_binary(
         "engrave/tests/playback_probe.cpp",
     ],
     copts = ENGINE_COPTS,
-    linkopts = ["-lpsapi"],
+    linkopts = select({
+        "//bazel:windows_msvc": ["-Wl,psapi.lib"],
+        "@platforms//os:windows": ["-lpsapi"],
+        "//conditions:default": [],
+    }),
     local_defines = [
         "ENGRAVE_PLAYBACK_COUNTING",
         'ENGRAVE_PLAYBACK_BUILD_MODE=\\"bazel\\"',
@@ -812,7 +834,7 @@ cc_binary(
     }),
     deps = [
         "@amc",
-        "@ngcpp_proxy",
+        "@dyn",
         "@unordered_dense",
     ],
 )

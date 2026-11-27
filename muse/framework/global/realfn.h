@@ -39,7 +39,7 @@ inline double compare_double_null_value(::muse::default_compare_double_null);
 inline double compare_float_epsilon_value(::muse::default_compare_float_epsilon);
 inline double compare_float_null_value(::muse::default_compare_float_null);
 
-inline constexpr int pow10(int power) {
+inline constexpr int pow10(int power) noexcept {
     int result = 1;
     for (int i = 0; i < power; ++i) {
         result *= 10;
@@ -78,11 +78,11 @@ inline void set_default_compare_real_precision() {
     set_default_compare_float_precision();
 }
 
-inline bool real_is_equal(double p1, double p2) {
+inline bool real_is_equal(double p1, double p2) noexcept {
     return std::abs(p1 - p2) * compare_double_epsilon_value <= std::min(std::abs(p1), std::abs(p2));
 }
 
-inline bool real_is_equal(float p1, float p2) {
+inline bool real_is_equal(float p1, float p2) noexcept {
     return std::fabs(p1 - p2) * compare_float_epsilon_value <= std::min(std::fabs(p1), std::fabs(p2));
 }
 
@@ -114,17 +114,17 @@ inline bool real_is_equal(const std::vector<float> &v1, const std::vector<float>
     return true;
 }
 
-inline bool real_is_equal_or_more(double p1, double p2) { return p1 > p2 || real_is_equal(p1, p2); }
+inline bool real_is_equal_or_more(double p1, double p2) noexcept { return p1 > p2 || real_is_equal(p1, p2); }
 
-inline bool real_is_equal_or_less(double p1, double p2) { return p1 < p2 || real_is_equal(p1, p2); }
+inline bool real_is_equal_or_less(double p1, double p2) noexcept { return p1 < p2 || real_is_equal(p1, p2); }
 
-inline bool real_is_equal_or_more(float p1, float p2) { return p1 > p2 || real_is_equal(p1, p2); }
+inline bool real_is_equal_or_more(float p1, float p2) noexcept { return p1 > p2 || real_is_equal(p1, p2); }
 
-inline bool real_is_equal_or_less(float p1, float p2) { return p1 < p2 || real_is_equal(p1, p2); }
+inline bool real_is_equal_or_less(float p1, float p2) noexcept { return p1 < p2 || real_is_equal(p1, p2); }
 
-inline bool real_is_null(double d) { return std::abs(d) <= compare_double_null_value; }
+inline bool real_is_null(double d) noexcept { return std::abs(d) <= compare_double_null_value; }
 
-inline bool real_is_null(float d) { return std::fabs(d) <= compare_float_null_value; }
+inline bool real_is_null(float d) noexcept { return std::fabs(d) <= compare_float_null_value; }
 
 inline double real_round(double value, int prec) {
     int round = pow10(prec);

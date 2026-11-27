@@ -1429,7 +1429,7 @@ fluid_istream_gets(fluid_istream_t in, char *buf, int len)
             // usually read() is supposed to return '\n' as last valid character of the user input
             // when compiled with compatibility for WinXP however, read() may return 0 (EOF) rather than '\n'
             // this would cause the shell to exit early
-            n = read(in, &c, 1);
+            n = _read(in, &c, 1);
 
             if(n == -1)
             {
@@ -1512,7 +1512,7 @@ fluid_ostream_printf(fluid_ostream_t out, const char *format, ...)
         /* Handle write differently depending on if its a socket or file descriptor */
         if(!(out & FLUID_SOCKET_FLAG))
         {
-            return write(out, buf, (unsigned int)FLUID_STRLEN(buf));
+            return _write(out, buf, (unsigned int)FLUID_STRLEN(buf));
         }
 
 #ifdef NETWORK_SUPPORT

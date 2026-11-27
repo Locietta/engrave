@@ -27,12 +27,12 @@
 
 namespace muse::draw {
 struct Matrix {
-    Matrix() {}
+    Matrix() noexcept {}
 
-    Matrix(double m11, double m12, double m21, double m22, double dx, double dy)
+    Matrix(double m11, double m12, double m21, double m22, double dx, double dy) noexcept
         : m11_(m11), m12_(m12), m21_(m21), m22_(m22), dx_(dx), dy_(dy) {}
 
-    Matrix inverted(bool *invertible) const {
+    Matrix inverted(bool *invertible) const noexcept {
         double dtr = determinant();
         if (muse::real_is_null(dtr)) {
             if (invertible) {
@@ -49,21 +49,21 @@ struct Matrix {
         }
     }
 
-    double determinant() const { return m11_ * m22_ - m12_ * m21_; }
+    double determinant() const noexcept { return m11_ * m22_ - m12_ * m21_; }
 
-    double m11() const { return m11_; }
+    double m11() const noexcept { return m11_; }
 
-    double m12() const { return m12_; }
+    double m12() const noexcept { return m12_; }
 
-    double m21() const { return m21_; }
+    double m21() const noexcept { return m21_; }
 
-    double m22() const { return m22_; }
+    double m22() const noexcept { return m22_; }
 
-    double dx() const { return dx_; }
+    double dx() const noexcept { return dx_; }
 
-    double dy() const { return dy_; }
+    double dy() const noexcept { return dy_; }
 
-    bool operator==(const Matrix &other) const {
+    bool operator==(const Matrix &other) const noexcept {
         return real_is_equal(m11_, other.m11_) && real_is_equal(m12_, other.m12_) && real_is_equal(m21_, other.m21_) &&
                real_is_equal(m22_, other.m22_) && real_is_equal(dx_, other.dx_) && real_is_equal(dy_, other.dy_);
     }

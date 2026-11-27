@@ -184,12 +184,19 @@ void Transaction::change_mstaff(Measure *measure, MStaff *row, staff_idx_t index
 
 void Transaction::add_mstaff(Measure *measure, std::unique_ptr<MStaff> row, staff_idx_t index) {
     note_change(measure);
-    try {
-        measure->insert_m_staff(row.get(), index);
-    } catch (...) {
-        if (muse::contains(measure->mstaves(), row.get())) row.release();
-        throw;
-    }
+
+    struct MStaffGuard {
+        Measure *measure;
+        std::unique_ptr<MStaff> &row;
+        bool committed = false;
+
+        ~MStaffGuard() noexcept {
+            if (!committed && muse::contains(measure->mstaves(), row.get())) row.release();
+        }
+    } guard{measure, row};
+
+    measure->insert_m_staff(row.get(), index);
+    guard.committed = true;
     row.release();
 }
 
@@ -467,13 +474,19 @@ void TransactionManager::transaction(const muse::TranslatableString &description
         return;
     }
     begin_transaction(description);
-    try {
-        func(transaction_);
-        end_transaction();
-    } catch (...) {
-        end_transaction(true);
-        throw;
-    }
+
+    struct RollbackGuard {
+        TransactionManager &manager;
+        bool committed = false;
+
+        ~RollbackGuard() noexcept {
+            if (!committed) manager.end_transaction(true);
+        }
+    } guard{*this};
+
+    func(transaction_);
+    end_transaction();
+    guard.committed = true;
 }
 
 void TransactionManager::begin_transaction([[maybe_unused]] const muse::TranslatableString &description) {

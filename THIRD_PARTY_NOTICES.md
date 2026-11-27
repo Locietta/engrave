@@ -208,7 +208,7 @@ build dependencies are explicitly marked as such.
 
 ## 3. External Dependencies Managed by Bazel and Pixi
 
-The standalone Bazel build compiles the following third-party dependencies from the hash-pinned upstream archives in `bazel/deps.bzl` (`bazel/third_party/*.BUILD.bazel`), and takes cairo, FreeType, and zlib from the conda-forge builds pinned in `pixi.lock`:
+The standalone Bazel build resolves the following third-party Bzlmod dependencies from `engrave-music/bazel-registry` (`MODULE.bazel`), and takes cairo, FreeType, and zlib from the conda-forge builds pinned in `pixi.lock`:
 
 | Package                          | Pinned Version | Typical Upstream License         | Usage in engrave                                                                                                    |
 | -------------------------------- | -------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
@@ -222,7 +222,7 @@ The standalone Bazel build compiles the following third-party dependencies from 
 | **utfcpp**                       | 4.1.1          | Boost Software License 1.0       | UTF-8 conversion routines                                                                                           |
 | **zlib** (conda-forge, Pixi)     | 1.3.2          | zlib License                     | Compression for MSCZ and MXL zip archives                                                                           |
 | **glaze**                        | 9.1.0          | MIT License                      | JSON DOM and parsing for the engine's metadata, semantic dumps, positions and sniffing, and reading and writing MNX |
-| **proxy** (ngcpp/proxy)          | 4.1.0          | MIT License                      | Type-erased audio encoder seam                                                                                      |
+| **dyn** (engrave-music/dyn)      | 0.1.0          | MIT License                      | Type-erased audio encoder seam                                                                                      |
 | **amc**                          | 2.8.1          | MIT License                      | Small-buffer vectors and flat sets in the engine                                                                    |
 | **unordered_dense**              | 5.3.3          | MIT License                      | Dense open-addressing hash maps and sets                                                                            |
 | **gtl** (greg7mdp/gtl)           | 1.3.1          | Apache License 2.0               | B-tree ordered maps, sets, and multimaps                                                                            |

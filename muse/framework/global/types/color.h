@@ -30,19 +30,19 @@
 
 namespace muse {
 struct Color {
-    Color();
-    Color(const Color &other);
+    Color() noexcept;
+    Color(const Color &other) noexcept;
 
-    constexpr Color(int r, int g, int b, int a = ::muse::Color::default_alpha)
+    constexpr Color(int r, int g, int b, int a = ::muse::Color::default_alpha) noexcept
         : rgba_(rgba(r, g, b, a)), is_valid_(is_rgba_valid(r, g, b, a)) {}
 
     Color(const char *color);
 
     ~Color() = default;
 
-    Color &operator=(const Color &other);
+    Color &operator=(const Color &other) noexcept;
 
-    bool operator<(const Color &other) const;
+    bool operator<(const Color &other) const noexcept;
 
     std::string to_string() const;
     static Color from_string(const std::string &str);
@@ -51,24 +51,24 @@ struct Color {
 
     void set_named_color(const std::string &color);
     void set_named_color(const char *color);
-    void set_red(int value);
-    void set_green(int value);
-    void set_blue(int value);
-    void set_alpha(int value);
+    void set_red(int value) noexcept;
+    void set_green(int value) noexcept;
+    void set_blue(int value) noexcept;
+    void set_alpha(int value) noexcept;
 
-    void apply_tint(double tint);
+    void apply_tint(double tint) noexcept;
 
-    Color inverted() const;
+    Color inverted() const noexcept;
 
-    bool operator==(const Color &other) const;
-    bool operator!=(const Color &other) const;
+    bool operator==(const Color &other) const noexcept;
+    bool operator!=(const Color &other) const noexcept;
 
-    bool is_valid() const;
+    bool is_valid() const noexcept;
 
-    int red() const;
-    int green() const;
-    int blue() const;
-    int alpha() const;
+    int red() const noexcept;
+    int green() const noexcept;
+    int blue() const noexcept;
+    int alpha() const noexcept;
 
     static constexpr int default_alpha = 255;
 
@@ -81,8 +81,8 @@ struct Color {
 
 private:
 
-    void set_rgba(int r, int g, int b, int a);
-    void set_rgba(Rgba rgb);
+    void set_rgba(int r, int g, int b, int a) noexcept;
+    void set_rgba(Rgba rgb) noexcept;
 
     Rgba rgba_ = rgba(0, 0, 0, ::muse::Color::default_alpha);
     bool is_valid_ = false;
@@ -95,7 +95,7 @@ inline const Color Color::red_color = {255, 0, 0, 255};
 inline const Color Color::green_color = {0, 255, 0, 255};
 inline const Color Color::blue_color{0, 0, 255, 255};
 
-inline Color blend_colors(const Color &c1, const Color &c2) {
+inline Color blend_colors(const Color &c1, const Color &c2) noexcept {
     float alpha1 = c1.alpha() / 255.f;
     float alpha2 = c2.alpha() / 255.f;
 
@@ -111,7 +111,7 @@ inline Color blend_colors(const Color &c1, const Color &c2) {
     return Color(r, g, b, alpha_out * 255);
 }
 
-inline Color blend_colors(const Color &c1, const Color &c2, float alpha) {
+inline Color blend_colors(const Color &c1, const Color &c2, float alpha) noexcept {
     float alpha1 = 1.0;
     float alpha2 = alpha;
 

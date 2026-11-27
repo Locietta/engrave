@@ -192,179 +192,209 @@
     "https://bcr.bazel.build/modules/zlib/1.2.11/MODULE.bazel": "07b389abc85fdbca459b69e2ec656ae5622873af3f845e1c9d80fe179f3effa0",
     "https://bcr.bazel.build/modules/zlib/1.3.1.bcr.5/MODULE.bazel": "eec517b5bbe5492629466e11dae908d043364302283de25581e3eb944326c4ca",
     "https://bcr.bazel.build/modules/zlib/1.3.1.bcr.5/source.json": "22bc55c47af97246cfc093d0acf683a7869377de362b5d1c552c2c2e16b7a806",
-    "https://bcr.bazel.build/modules/zlib/1.3.1/MODULE.bazel": "751c9940dcfe869f5f7274e1295422a34623555916eb98c174c1e945594bf198"
+    "https://bcr.bazel.build/modules/zlib/1.3.1/MODULE.bazel": "751c9940dcfe869f5f7274e1295422a34623555916eb98c174c1e945594bf198",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/bazel_registry.json": "c8629eef5c67a70971adcbe811015c0b227084bf28fc5c8bc5562e8eb8d52fa4",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/abseil-cpp/20210324.2/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/abseil-cpp/20211102.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/abseil-cpp/20230125.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/abseil-cpp/20230802.0.bcr.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/abseil-cpp/20230802.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/abseil-cpp/20230802.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/abseil-cpp/20240116.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/abseil-cpp/20240116.2/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/abseil-cpp/20250127.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/abseil-cpp/20250512.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/abseil-cpp/20250814.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/amc/2.8.1/MODULE.bazel": "53bf35b276417cacbb038dcd4b7a32d3dd350b94e8f7017f9f2cd0bc680fc5fa",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/amc/2.8.1/source.json": "2c187638e6dd1da022b9b3e01ae2a373843e5800395ed419cb7b3839d87623d9",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/apple_support/1.11.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/apple_support/1.15.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/apple_support/1.21.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/apple_support/1.21.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/apple_support/2.5.2/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/apple_support/2.8.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/apple_support/2.9.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/bazel_features/1.1.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/bazel_features/1.10.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/bazel_features/1.11.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/bazel_features/1.15.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/bazel_features/1.17.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/bazel_features/1.18.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/bazel_features/1.19.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/bazel_features/1.21.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/bazel_features/1.23.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/bazel_features/1.27.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/bazel_features/1.28.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/bazel_features/1.3.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/bazel_features/1.30.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/bazel_features/1.33.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/bazel_features/1.4.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/bazel_features/1.42.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/bazel_features/1.50.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/bazel_features/1.9.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/bazel_skylib/1.0.3/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/bazel_skylib/1.1.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/bazel_skylib/1.2.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/bazel_skylib/1.2.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/bazel_skylib/1.3.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/bazel_skylib/1.4.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/bazel_skylib/1.4.2/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/bazel_skylib/1.5.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/bazel_skylib/1.6.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/bazel_skylib/1.7.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/bazel_skylib/1.7.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/bazel_skylib/1.8.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/bazel_skylib/1.8.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/bazel_skylib/1.8.2/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/bazel_skylib/1.9.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/buildozer/8.5.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/dyn/0.1.0/MODULE.bazel": "f10fdc6d207d8d6bd55ef5833117ab4de43697a30912b3985b846894a9c78af4",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/dyn/0.1.0/source.json": "edb673d2ae0e075e4669c2e40fb00ff0812919bc6b2c29937134cda541085c95",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/glaze/9.1.0/MODULE.bazel": "47016651a5fa19fbf3b3828ccf116bd2dcbdbfc4e26356bfa9f9eaa1ffdd0889",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/glaze/9.1.0/source.json": "a096f6de2c379503751a6f86bdd4f7e38301de24b6ef2aab5ad9cf5cc32c8736",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/google_benchmark/1.8.2/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/googletest/1.11.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/googletest/1.14.0.bcr.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/googletest/1.14.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/googletest/1.15.2/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/googletest/1.17.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/gtest/1.17.0/MODULE.bazel": "b0b0b611786deededdfdd05d8557aa75d2ef8d1a9ca5fc19ba459ecf06c4f8f2",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/gtest/1.17.0/source.json": "4ae0ffbf9ccb106c4841a791cec3d23cee45836b0e27003146083496170051e6",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/gtl/1.3.1/MODULE.bazel": "9d906585fc5de66e9578b9754ee62c87542861afed9d8a81f575b35ed66a4249",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/gtl/1.3.1/source.json": "ddbd3aa7c24bf054e8b0071615dec5bd9fced55fc122a0d50a6753262e51d923",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/harfbuzz/12.3.0/MODULE.bazel": "f135b81a38b9a0fc58b7f1b3d5205aef66d4ea14e720bf42eb63661dee5f3a5b",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/harfbuzz/12.3.0/source.json": "ad8b67a250540819833f237eb6ad7b973899a1be8167f903ae5eec3eb0cc1183",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/jsoncpp/1.9.5/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/jsoncpp/1.9.6/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/lame/3.100/MODULE.bazel": "cf54f5f1dc36c96b34db7cc5422804e96beafa272ce4bd6042ca93d1bb59fbf2",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/lame/3.100/source.json": "873dd9b7c19481560650b861ed7fae1fc5bd569f07bfdbb24d4100b31d2b563f",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/libflac/1.4.3/MODULE.bazel": "794f813643a81157b2f9e4a0a3308192b4022f4e15fd1f0a0f64b07c748a5bd6",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/libflac/1.4.3/source.json": "d020d09da84b2524ee08f3a32276676051caa2d530ee2ec2dc83dd70798cfcd2",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/libopus/1.5.2/MODULE.bazel": "5b04d08e41c332d6b4d80162f9fb32ef3b4627f8d778dc4bcf406b21f9a7a907",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/libopus/1.5.2/source.json": "28fc1016925b171fe6b8b7dc49b8479b6e808ddd475489cca73d0aa234f0312f",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/libopusenc/0.2.1/MODULE.bazel": "b2e78e01b2b10191eb45cbe501706ed613695d3828ed70d55d7904dfb26bb2c5",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/libopusenc/0.2.1/source.json": "72f9c817d8bf4a759d69d9fb872d91e9265d35daed3b29586dce93b464501593",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/libpfm/4.11.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/nlohmann_json/3.6.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/platforms/0.0.10/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/platforms/0.0.11/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/platforms/0.0.4/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/platforms/0.0.5/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/platforms/0.0.6/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/platforms/0.0.7/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/platforms/0.0.8/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/platforms/0.0.9/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/platforms/1.0.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/protobuf/21.7/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/protobuf/27.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/protobuf/29.0-rc2/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/protobuf/29.0-rc3/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/protobuf/29.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/protobuf/3.19.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/protobuf/32.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/protobuf/33.4/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/pugixml/1.15/MODULE.bazel": "31f13ffdc5b48d987e88bab0c30c252fd0e063a3fc7ea89ce00bad6fd38d50e9",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/pugixml/1.15/source.json": "be94d0585af58e24a31e8661fa1667c535536a70f330a38fb3996f214adccde3",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/pybind11_bazel/2.11.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/pybind11_bazel/2.12.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/re2/2023-09-01/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/re2/2024-07-02.bcr.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/re2/2024-07-02/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_android/0.1.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_apple/3.16.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_apple/4.1.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_cc/0.0.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_cc/0.0.10/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_cc/0.0.13/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_cc/0.0.15/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_cc/0.0.16/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_cc/0.0.17/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_cc/0.0.2/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_cc/0.0.6/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_cc/0.0.8/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_cc/0.0.9/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_cc/0.1.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_cc/0.1.2/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_cc/0.1.5/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_cc/0.2.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_cc/0.2.13/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_cc/0.2.15/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_cc/0.2.17/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_cc/0.2.20/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_cc/0.2.25/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_cc/0.2.28/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_foreign_cc/0.9.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_fuzzing/0.5.2/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_java/4.0.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_java/5.3.5/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_java/6.5.2/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_java/7.10.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_java/7.12.2/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_java/7.2.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_java/7.6.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_java/8.3.2/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_java/8.5.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_java/8.6.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_java/9.1.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_jvm_external/4.4.2/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_jvm_external/5.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_jvm_external/5.2/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_jvm_external/6.3/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_jvm_external/6.7/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_kotlin/1.9.6/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_license/0.0.3/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_license/0.0.7/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_license/1.0.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_pkg/0.7.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_pkg/1.0.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_proto/4.0.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_proto/5.3.0-21.7/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_proto/6.0.0-rc1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_proto/6.0.2/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_proto/7.1.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_python/0.10.2/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_python/0.23.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_python/0.25.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_python/0.28.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_python/0.31.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_python/0.33.2/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_python/0.4.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_python/1.3.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_python/1.4.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_python/1.6.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_python/1.7.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_shell/0.2.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_shell/0.3.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_shell/0.6.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_swift/1.16.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_swift/2.1.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_swift/2.4.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/rules_swift/3.1.2/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/stardoc/0.5.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/stardoc/0.5.3/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/stardoc/0.7.0/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/stardoc/0.7.2/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/swift_argument_parser/1.3.1.1/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/swift_argument_parser/1.3.1.2/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/unordered_dense/5.3.3/MODULE.bazel": "f42d5ff9d82d46fd2b0832f8d4d4f7a815b8fa3a1e0acf131bf317332276c9b7",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/unordered_dense/5.3.3/source.json": "83337545be79d33791e9345bf02fd0f37cf4e185d68a51c515d5323029797e69",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/upb/0.0.0-20220923-a547704/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/utfcpp/4.1.1/MODULE.bazel": "5e6c15d58220ac51abff2e90d4f00258512171b20d804c1d3f18898317e7bf5e",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/utfcpp/4.1.1/source.json": "4bb6e1bded69e39cc3c9088204cc7484b14c24a1ee1488d9a773670870cfc080",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/xclang/23.1.5.2/MODULE.bazel": "1db1f36b56bfd8c1851ed62e247f41e39fe4621567edcf79813202323a287dd9",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/xclang/23.1.5.2/source.json": "0ef3304200c90d029d1d8b7216dfc23f2cc2f9b1a0e0469cddf0733065e352b1",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/zlib/1.2.11/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/zlib/1.3.1.bcr.5/MODULE.bazel": "not found",
+    "https://raw.githubusercontent.com/engrave-music/bazel-registry/main/modules/zlib/1.3.1/MODULE.bazel": "not found"
   },
   "selectedYankedVersions": {},
   "moduleExtensions": {
     "//bazel:deps.bzl%engrave_deps": {
       "general": {
-        "bzlTransitiveDigest": "LRVsBF/C5aMqnoqy2j+d+WGR/nhH4YkwlYsygSuhzEc=",
+        "bzlTransitiveDigest": "wJgbN1vCgT/dF1aUnu2e7xHYbBPNT049KQ1ZBXTve0w=",
         "usagesDigest": "vsZZrqAkObMCOZqbg6QBTj6zySET+M08rFXOPqC299Y=",
-        "recordedInputs": [
-          "REPO_MAPPING:,bazel_tools bazel_tools"
-        ],
+        "recordedInputs": [],
         "generatedRepoSpecs": {
-          "amc": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
-            "attributes": {
-              "build_file": "@@//bazel/third_party:amc.BUILD.bazel",
-              "sha256": "1c0adc6a5deaf07853d16601b6db6cc662188a071c22f08e6de04e1bea6f3830",
-              "strip_prefix": "amc-2.8.1",
-              "urls": [
-                "https://github.com/AmadeusITGroup/amc/archive/refs/tags/v2.8.1.tar.gz"
-              ]
-            }
-          },
-          "gtl": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
-            "attributes": {
-              "build_file": "@@//bazel/third_party:gtl.BUILD.bazel",
-              "sha256": "7252bddc62a9075c9f5935c8348715244a8c7573ba95eccf1ce396f67deb11b2",
-              "strip_prefix": "gtl-1.3.1",
-              "urls": [
-                "https://github.com/greg7mdp/gtl/archive/refs/tags/v1.3.1.tar.gz"
-              ]
-            }
-          },
-          "unordered_dense": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
-            "attributes": {
-              "build_file": "@@//bazel/third_party:unordered_dense.BUILD.bazel",
-              "sha256": "862605ef21424c6c92881aac4cf8f09c3abd91c80588446c83892583228eca67",
-              "strip_prefix": "unordered_dense-5.3.3",
-              "urls": [
-                "https://github.com/martinus/unordered_dense/archive/refs/tags/v5.3.3.tar.gz"
-              ]
-            }
-          },
-          "ngcpp_proxy": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
-            "attributes": {
-              "build_file": "@@//bazel/third_party:ngcpp_proxy.BUILD.bazel",
-              "sha256": "f46fd0fbcaf461f4904f35416edf94abc62d5582b66d6e769e676fd7bd478311",
-              "strip_prefix": "proxy-4.1.0",
-              "urls": [
-                "https://github.com/ngcpp/proxy/archive/refs/tags/4.1.0.tar.gz"
-              ]
-            }
-          },
-          "glaze": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
-            "attributes": {
-              "build_file": "@@//bazel/third_party:glaze.BUILD.bazel",
-              "sha256": "55f8a675397c505f9bee6c160e1c26b0085868f185d04d7a7727531fdbff4bd4",
-              "strip_prefix": "glaze-9.1.0",
-              "urls": [
-                "https://github.com/stephenberry/glaze/archive/refs/tags/v9.1.0.tar.gz"
-              ]
-            }
-          },
-          "utfcpp": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
-            "attributes": {
-              "build_file": "@@//bazel/third_party:utfcpp.BUILD.bazel",
-              "sha256": "1ca68016f0abc24172998e39ce0d8f8e2b7a26f7579a0ff85d4e1b9a7aea56f8",
-              "strip_prefix": "utfcpp-4.1.1",
-              "urls": [
-                "https://github.com/nemtrif/utfcpp/archive/refs/tags/v4.1.1.tar.gz"
-              ]
-            }
-          },
-          "pugixml": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
-            "attributes": {
-              "build_file": "@@//bazel/third_party:pugixml.BUILD.bazel",
-              "sha256": "655ade57fa703fb421c2eb9a0113b5064bddb145d415dd1f88c79353d90d511a",
-              "strip_prefix": "pugixml-1.15",
-              "urls": [
-                "https://github.com/zeux/pugixml/releases/download/v1.15/pugixml-1.15.tar.gz"
-              ]
-            }
-          },
-          "harfbuzz": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
-            "attributes": {
-              "build_file": "@@//bazel/third_party:harfbuzz.BUILD.bazel",
-              "sha256": "8660ebd3c27d9407fc8433b5d172bafba5f0317cb0bb4339f28e5370c93d42b7",
-              "strip_prefix": "harfbuzz-12.3.0",
-              "urls": [
-                "https://github.com/harfbuzz/harfbuzz/releases/download/12.3.0/harfbuzz-12.3.0.tar.xz"
-              ]
-            }
-          },
-          "libflac": {
-            "repoRuleId": "@@//bazel:deps.bzl%configured_archive",
-            "attributes": {
-              "build_file": "@@//bazel/third_party:libflac.BUILD.bazel",
-              "extra_files": {
-                "config_include/config.h": "#pragma once\n#define CPU_IS_BIG_ENDIAN 0\n#define ENABLE_64_BIT_WORDS 1\n#define OGG_FOUND 0\n#define FLAC__HAS_OGG 0\n#define FLAC__HAS_X86INTRIN 1\n#define FLAC__HAS_NEONINTRIN 0\n#define FLAC__HAS_A64NEONINTRIN 0\n#define WITH_AVX 1\n#define FLAC__USE_AVX 1\n#define HAVE_BSWAP16 1\n#define HAVE_BSWAP32 1\n#define HAVE_CPUID_H 1\n#define HAVE_INTTYPES_H 1\n#define HAVE_LROUND 1\n#define HAVE_STDINT_H 1\n#define HAVE_STRING_H 1\n#define PACKAGE_VERSION \"1.4.3\"\n#define WORDS_BIGENDIAN 0\n#ifndef _WIN32\n#define HAVE_CLOCK_GETTIME 1\n#define HAVE_FSEEKO 1\n#define HAVE_SYS_PARAM_H 1\n#endif\n#ifndef _GNU_SOURCE\n#define _GNU_SOURCE 1\n#endif\n#ifndef _FILE_OFFSET_BITS\n#define _FILE_OFFSET_BITS 64\n#endif\n"
-              },
-              "sha256": "6c58e69cd22348f441b861092b825e591d0b822e106de6eb0ee4d05d27205b70",
-              "strip_prefix": "flac-1.4.3",
-              "urls": [
-                "https://github.com/xiph/flac/releases/download/1.4.3/flac-1.4.3.tar.xz"
-              ]
-            }
-          },
-          "libopus": {
-            "repoRuleId": "@@//bazel:deps.bzl%configured_archive",
-            "attributes": {
-              "build_file": "@@//bazel/third_party:libopus.BUILD.bazel",
-              "extra_files": {
-                "config_include/config.h": "#pragma once\n#define PACKAGE_VERSION \"1.5.2\"\n"
-              },
-              "sha256": "65c1d2f78b9f2fb20082c38cbe47c951ad5839345876e46941612ee87f9a7ce1",
-              "strip_prefix": "opus-1.5.2",
-              "urls": [
-                "https://github.com/xiph/opus/releases/download/v1.5.2/opus-1.5.2.tar.gz"
-              ]
-            }
-          },
-          "libopusenc": {
-            "repoRuleId": "@@//bazel:deps.bzl%configured_archive",
-            "attributes": {
-              "build_file": "@@//bazel/third_party:libopusenc.BUILD.bazel",
-              "extra_files": {
-                "config_include/config.h": "#pragma once\n#define PACKAGE_NAME \"libopusenc\"\n#define PACKAGE_VERSION \"0.2.1\"\n"
-              },
-              "header_copies": {
-                "staged_include/opus/opusenc.h": "include/opusenc.h"
-              },
-              "sha256": "56952a926ff962c62a468b43cc8506c069bda767cade4dc92824b74edd570d68",
-              "strip_prefix": "libopusenc-0.2.1",
-              "urls": [
-                "https://github.com/xiph/libopusenc/archive/v0.2.1.tar.gz"
-              ]
-            }
-          },
-          "lame": {
-            "repoRuleId": "@@//bazel:deps.bzl%configured_archive",
-            "attributes": {
-              "build_file": "@@//bazel/third_party:lame.BUILD.bazel",
-              "extra_files": {
-                "config_include/config.h": "#pragma once\n#define SIZEOF_DOUBLE 8\n#define SIZEOF_FLOAT 4\n#define SIZEOF_INT 4\n#define SIZEOF_SHORT 2\n#define SIZEOF_UNSIGNED_INT 4\n#define SIZEOF_UNSIGNED_SHORT 2\n#ifdef _WIN32\n#define SIZEOF_LONG 4\n#define SIZEOF_UNSIGNED_LONG 4\n#define SIZEOF_LONG_DOUBLE 12\n#else\n#define SIZEOF_LONG 8\n#define SIZEOF_UNSIGNED_LONG 8\n#define SIZEOF_LONG_DOUBLE 16\n#endif\n#define STDC_HEADERS 1\n#define HAVE_ERRNO_H 1\n#define HAVE_FCNTL_H 1\n#define HAVE_LIMITS_H 1\n#define HAVE_INTTYPES_H 1\n#define HAVE_STDINT_H 1\n#define HAVE_STRCHR 1\n#define HAVE_MEMCPY 1\n#define PACKAGE \"lame\"\n#define PROTOTYPES 1\n#define USE_FAST_LOG 1\n#define HAVE_XMMINTRIN_H 1\n#define LAME_LIBRARY_BUILD 1\ntypedef long double ieee854_float80_t;\ntypedef double ieee754_float64_t;\ntypedef float ieee754_float32_t;\n"
-              },
-              "header_copies": {
-                "staged_include/lame/lame.h": "include/lame.h"
-              },
-              "sha256": "ddfe36cab873794038ae2c1210557ad34857a4b6bdc515785d1da9e175b1da1e",
-              "strip_prefix": "lame-3.100",
-              "urls": [
-                "https://downloads.sourceforge.net/project/lame/lame/3.100/lame-3.100.tar.gz"
-              ]
-            }
-          },
-          "gtest": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
-            "attributes": {
-              "build_file": "@@//bazel/third_party:gtest.BUILD.bazel",
-              "sha256": "40d4ec942217dcc84a9ebe2a68584ada7d4a33a8ee958755763278ea1c5e18ff",
-              "strip_prefix": "googletest-1.17.0",
-              "urls": [
-                "https://github.com/google/googletest/archive/refs/tags/v1.17.0.zip"
-              ]
-            }
-          },
           "pixi_deps": {
             "repoRuleId": "@@//bazel:deps.bzl%pixi_deps_repo",
             "attributes": {}

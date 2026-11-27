@@ -32,7 +32,7 @@
   </p>
 </div>
 
-`engrave` 是一个原生、无头的 C++ 乐谱引擎库，提供核心记谱、排版、制谱、渲染、导入/导出与音频合成能力。项目采用 [Bazel](https://bazel.build/) 和隔离的 Clang/`libc++`（`xclang`）工具链构建。
+`engrave` 是一个原生、无头的 C++ 乐谱引擎库，提供核心记谱、排版、制谱、渲染、导入/导出与音频合成能力。项目采用 [Bazel](https://bazel.build/) 和隔离的 Clang 23 / `libc++`（`xclang`）工具链构建（Windows 面向 MSVC ABI）。
 
 该库作为 [`engrave-mcp`](https://github.com/engrave-music/engrave-mcp) Model Context Protocol（MCP）宿主的核心制谱与回放引擎使用。
 
@@ -81,7 +81,7 @@
 
 ## 构建
 
-`engrave` 在 Windows 与 Linux 上均使用 [Bazel](https://bazel.build/)（版本固定于 `.bazelversion`）及隔离的 Clang 23 / `libc++`（`xclang`）C++23 工具链构建。`xclang` 模块元数据（`MODULE.bazel` 与 SHA-256 固定的 `source.json`）已直接提交在 `bazel/registry` 本地注册表覆盖层中，优先于 Bazel Central Registry 解析；请保持独立仓库路径不含空格，以便 Bazel 正确解析 `file:///%workspace%/bazel/registry`。
+`engrave` 在 Windows 与 Linux 上均使用 [Bazel](https://bazel.build/)（版本固定于 `.bazelversion`）及隔离的 Clang 23 / `libc++`（`xclang`）C++23 工具链构建（Windows 经 `@xclang//platforms:x86_64-pc-windows-msvc` 面向 MSVC ABI）。`bazel/engrave.bazelrc` 配置优先从 `https://raw.githubusercontent.com/engrave-music/bazel-registry/main` 解析 `xclang` 与第三方 Bzlmod 模块，然后再回退到 Bazel Central Registry（`https://bcr.bazel.build/`）。
 
 ### 环境要求
 
@@ -89,7 +89,7 @@
 - **Python 3** 与 **Git**（用于资源安装与清单校验）
 - **[Pixi](https://pixi.sh/)**：Cairo、FreeType 与 zlib 使用固定在 `pixi.toml` / `pixi.lock` 中的 conda-forge 构建。运行一次 `pixi install --locked` 后，`bazel/deps.bzl` 会将它们暴露为 `@pixi_deps//:cairo`、`@pixi_deps//:freetype` 与 `@pixi_deps//:zlib`。通过 Bzlmod 引入 `@engrave` 的宿主项目可通过 `--repo_env=ENGRAVE_PIXI_PREFIX=...` 指定自身的 Pixi 前缀。Windows 二进制文件运行时需要将 `.pixi/envs/default/Library/bin` 加入 `PATH`；Linux 二进制文件从 `.pixi/envs/default/lib` 加载动态库。
 
-其余 C/C++ 第三方依赖（HarfBuzz、libflac、LAME、libopus、libopusenc、pugixml、utfcpp、glaze、proxy、amc、unordered_dense、gtl、GoogleTest）均在 `MODULE.bazel`（`bazel/deps.bzl`）中通过哈希固定的归档拉取，并由 `bazel/third_party/*.BUILD.bazel` 构建。`glaze` 是引擎唯一的 JSON 库。
+其余 C/C++ 第三方依赖（HarfBuzz、libflac、LAME、libopus、libopusenc、pugixml、utfcpp、glaze、dyn、amc、unordered_dense、gtl、GoogleTest）均作为 Bzlmod 模块固定在 `MODULE.bazel` 中，并由 `engrave-music/bazel-registry` 与 BCR 解析。`glaze` 是引擎唯一的 JSON 库。
 
 ### 构建命令（Windows 与 Linux）
 
@@ -100,7 +100,7 @@ bazelisk build --config=release //:engrave
 
 ### 配置标志
 
-- `--config=<release|debug|releasedbg|asan|tsan>`：选择优化/调试/消毒器配置（定义于 `bazel/engrave.bazelrc`）。
+- `--config=<release|dist|debug|releasedbg|asan|tsan>`：选择优化/调试/消毒器配置（定义于 `bazel/engrave.bazelrc`）。
 - `--//bazel:pch=false`：为 `//:engraving` 禁用二进制预编译头（默认启用）。
 - `--//bazel:playback_harness=true`：启用可选的回放采集插桩（`ENGRAVE_PLAYBACK_HARNESS`）。
 

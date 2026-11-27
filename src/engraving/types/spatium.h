@@ -32,100 +32,100 @@ namespace mu::engraving {
 //    - used for many layout items
 //---------------------------------------------------------
 struct Spatium {
-    constexpr Spatium() = default;
+    constexpr Spatium() noexcept = default;
 
-    explicit constexpr Spatium(double v) : val_(v) {}
+    explicit constexpr Spatium(double v) noexcept : val_(v) {}
 
-    constexpr double val() const { return val_; }
+    constexpr double val() const noexcept { return val_; }
 
-    constexpr double to_absolute(double spval) const { return val_ * spval; }
+    constexpr double to_absolute(double spval) const noexcept { return val_ * spval; }
 
-    static constexpr Spatium from_absolute(double absolute, double spval) { return Spatium(absolute / spval); }
+    static constexpr Spatium from_absolute(double absolute, double spval) noexcept { return Spatium(absolute / spval); }
 
-    constexpr bool operator>(const Spatium &a) const { return val_ > a.val_; }
+    constexpr bool operator>(const Spatium &a) const noexcept { return val_ > a.val_; }
 
-    constexpr bool operator<(const Spatium &a) const { return val_ < a.val_; }
+    constexpr bool operator<(const Spatium &a) const noexcept { return val_ < a.val_; }
 
-    bool operator==(const Spatium &a) const { return muse::real_is_equal(val_, a.val_); }
+    bool operator==(const Spatium &a) const noexcept { return muse::real_is_equal(val_, a.val_); }
 
-    bool operator!=(const Spatium &a) const { return val_ != a.val_; }
+    bool operator!=(const Spatium &a) const noexcept { return val_ != a.val_; }
 
-    bool is_zero() const { return muse::real_is_null(val_); }
+    bool is_zero() const noexcept { return muse::real_is_null(val_); }
 
-    constexpr Spatium &operator+=(const Spatium &a) {
+    constexpr Spatium &operator+=(const Spatium &a) noexcept {
         val_ += a.val_;
         return *this;
     }
 
-    constexpr Spatium operator+(const Spatium &a) const {
+    constexpr Spatium operator+(const Spatium &a) const noexcept {
         Spatium r(*this);
         r += a;
         return r;
     }
 
-    constexpr Spatium &operator-=(const Spatium &a) {
+    constexpr Spatium &operator-=(const Spatium &a) noexcept {
         val_ -= a.val_;
         return *this;
     }
 
-    constexpr Spatium operator-(const Spatium &a) const {
+    constexpr Spatium operator-(const Spatium &a) const noexcept {
         Spatium r(*this);
         r -= a;
         return r;
     }
 
-    constexpr Spatium &operator/=(double d) {
+    constexpr Spatium &operator/=(double d) noexcept {
         val_ /= d;
         return *this;
     }
 
-    constexpr double operator/(const Spatium &b) const { return val_ / b.val_; }
+    constexpr double operator/(const Spatium &b) const noexcept { return val_ / b.val_; }
 
-    constexpr Spatium operator/(double b) const {
+    constexpr Spatium operator/(double b) const noexcept {
         Spatium r(*this);
         r /= b;
         return r;
     }
 
-    constexpr Spatium &operator*=(int d) {
+    constexpr Spatium &operator*=(int d) noexcept {
         val_ *= d;
         return *this;
     }
 
-    constexpr Spatium &operator*=(double d) {
+    constexpr Spatium &operator*=(double d) noexcept {
         val_ *= d;
         return *this;
     }
 
-    constexpr Spatium operator*(int b) const {
+    constexpr Spatium operator*(int b) const noexcept {
         Spatium r(*this);
         r *= b;
         return r;
     }
 
-    constexpr Spatium operator*(double b) const {
+    constexpr Spatium operator*(double b) const noexcept {
         Spatium r(*this);
         r *= b;
         return r;
     }
 
-    constexpr Spatium operator-() const { return Spatium(-val_); }
+    constexpr Spatium operator-() const noexcept { return Spatium(-val_); }
 
 private:
     double val_ = 0.0;
 };
 
-constexpr Spatium operator""_sp(long double v) { return Spatium(static_cast<double>(v)); }
+constexpr Spatium operator""_sp(long double v) noexcept { return Spatium(static_cast<double>(v)); }
 
-constexpr Spatium operator""_sp(unsigned long long v) { return Spatium(static_cast<double>(v)); }
+constexpr Spatium operator""_sp(unsigned long long v) noexcept { return Spatium(static_cast<double>(v)); }
 
-constexpr Spatium operator*(int a, const Spatium &b) {
+constexpr Spatium operator*(int a, const Spatium &b) noexcept {
     Spatium r(b);
     r *= a;
     return r;
 }
 
-constexpr Spatium operator*(double a, const Spatium &b) {
+constexpr Spatium operator*(double a, const Spatium &b) noexcept {
     Spatium r(b);
     r *= a;
     return r;

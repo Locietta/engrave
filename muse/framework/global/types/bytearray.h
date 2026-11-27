@@ -30,24 +30,24 @@ namespace muse {
 struct ByteArray {
     typedef uint8_t value_type;
 
-    ByteArray();
+    ByteArray() noexcept;
     ByteArray(const uint8_t *data, size_t size);
     ByteArray(const char *str, size_t size = static_cast<size_t>(-1));
     ByteArray(size_t size);
 
     // Always owns its bytes; pointers and views borrow until the next mutation.
 
-    bool operator==(const ByteArray &other) const;
+    bool operator==(const ByteArray &other) const noexcept;
 
-    bool operator!=(const ByteArray &other) const { return !operator==(other); }
+    bool operator!=(const ByteArray &other) const noexcept { return !operator==(other); }
 
     uint8_t *data();
     std::vector<uint8_t> &vdata();
-    const uint8_t *const_data() const;
-    const char *const_char() const; // data as char*
-    const std::vector<uint8_t> &const_v_data() const;
-    size_t size() const;
-    bool empty() const;
+    const uint8_t *const_data() const noexcept;
+    const char *const_char() const noexcept; // data as char*
+    const std::vector<uint8_t> &const_v_data() const noexcept;
+    size_t size() const noexcept;
+    bool empty() const noexcept;
 
     ByteArray &insert(size_t pos, uint8_t b);
     void push_back(uint8_t b);
@@ -61,7 +61,7 @@ struct ByteArray {
     void reserve(size_t nsize);
     void resize(size_t nsize);
     void truncate(size_t pos);
-    void clear();
+    void clear() noexcept;
 
     ByteArray left(size_t len) const;
     ByteArray right(size_t len) const;

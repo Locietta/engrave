@@ -1,6 +1,7 @@
 #include "engrave/src/api/batch.h"
 
 #include <algorithm>
+#include <exception>
 #include <format>
 #include <limits>
 #include <new>
@@ -583,6 +584,7 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, EditMode mode) {
         MScore::set_error(MsError::MS_NO_ERROR);
         return !failure;
     };
+    std::exception_ptr outer_unknown;
     try {
         master.start_cmd(muse::TranslatableString::untranslatable("engrave edit"));
         for (std::size_t i = 0; i < steps.size(); ++i) {
@@ -592,6 +594,7 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, EditMode mode) {
                 defer_note_entry_ = false;
             }
             const auto marking = master.cmd_state().mutation_count;
+            std::exception_ptr unknown;
             try {
                 if (context_.scope_) {
                     auto selected = in_field(context_.score(*context_.scope_), "scope");
@@ -609,9 +612,13 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, EditMode mode) {
             } catch (const std::exception &error) {
                 failure = Error{ErrorCode::EDIT_REJECTED, std::format("the engine failed: {}", error.what()), i};
             } catch (...) {
-                if (mode == EditMode::Prefix) throw;
-                failure = Error{ErrorCode::EDIT_REJECTED, "the engine threw an unknown exception", i};
+                if (mode == EditMode::Prefix) {
+                    unknown = std::current_exception();
+                } else {
+                    failure = Error{ErrorCode::EDIT_REJECTED, "the engine threw an unknown exception", i};
+                }
             }
+            if (unknown) std::rethrow_exception(unknown);
             if (!failure) check_engine(i);
             if (failure) {
                 if (mode == EditMode::Prefix && master.cmd_state().mutation_count == marking) {
@@ -659,8 +666,9 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, EditMode mode) {
         if (mode == EditMode::Atomic)
             return report_failure({ErrorCode::EDIT_REJECTED, "the engine threw an unknown exception",
                                    context_.op_ < steps.size() ? std::optional(context_.op_) : std::nullopt});
-        throw;
+        outer_unknown = std::current_exception();
     }
+    if (outer_unknown) std::rethrow_exception(outer_unknown);
     close_failed_batch();
     return report_failure(std::move(*failure));
 }

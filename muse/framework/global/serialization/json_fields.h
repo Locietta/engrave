@@ -11,9 +11,12 @@
 
 #include <glaze/json/generic.hpp>
 
+#include "btree.h"
 #include "types/bytearray.h"
 
 namespace muse::json {
+
+using SortedJson = glz::generic_json<glz::num_mode::f64, muse::IndirectStringBTreeMap>;
 
 inline std::string_view text(const ByteArray &bytes) { return {bytes.const_char(), bytes.size()}; }
 

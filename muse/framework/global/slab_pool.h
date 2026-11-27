@@ -8,6 +8,7 @@
 #include <memory>
 #include <new>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -27,7 +28,7 @@ struct SlabPool {
     // Match ASan's 8-byte shadow-memory granularity so adjacent slots poison independently.
     static_assert(alignof(T) >= 8 && sizeof(T) % 8 == 0);
 
-    SlabPool() = default;
+    SlabPool() noexcept = default;
     SlabPool(const SlabPool &) = delete;
     SlabPool &operator=(const SlabPool &) = delete;
 
@@ -54,14 +55,25 @@ struct SlabPool {
         auto &storage = chunk.storage[local];
         unpoison(&storage, sizeof(storage));
         const InFlightGuard in_flight{in_flight_count_};
-        T *ptr;
-        try {
-            ptr = std::construct_at(reinterpret_cast<T *>(storage.bytes), std::forward<Args>(args)...);
-        } catch (...) {
-            poison(&storage, sizeof(storage));
-            free_slot(chunk, local, slot);
-            throw;
-        }
+
+        struct ConstructGuard {
+            SlabPool &pool;
+            Chunk &chunk;
+            std::size_t local;
+            std::uint32_t slot;
+            SlotStorage &storage;
+            bool constructed = false;
+
+            ~ConstructGuard() noexcept {
+                if (!constructed) {
+                    poison(&storage, sizeof(storage));
+                    pool.free_slot(chunk, local, slot);
+                }
+            }
+        } guard{*this, chunk, local, slot, storage};
+
+        T *ptr = std::construct_at(reinterpret_cast<T *>(storage.bytes), std::forward<Args>(args)...);
+        guard.constructed = true;
         chunk.meta[local].owner = owner;
         chunk.live_mask |= bit(local);
         ++live_count_;
@@ -96,7 +108,7 @@ struct SlabPool {
     // The callback must detach the passed owner. It may also erase, emplace, or release chunks once empty.
     // Insertions into already visited chunks are left for another pass.
     template <typename Fn>
-    void drain_owners(Fn &&fn) {
+    void drain_owners(Fn &&fn) noexcept(std::is_nothrow_invocable_v<Fn &, Owner &>) {
         if (empty()) return;
         for (std::size_t i = 0; i < chunks_.size(); ++i) {
             while (i < chunks_.size() && chunks_[i]->live_mask != 0) {
@@ -108,13 +120,16 @@ struct SlabPool {
 
     // Callbacks can modify payloads. Membership must stay fixed during iteration.
     template <typename Fn>
-    void for_each_live(Fn &&fn) {
-        for_each_live_slot([&](Chunk &chunk, std::size_t local) { fn(*chunk.meta[local].owner, *payload(chunk, local)); });
+    void for_each_live(Fn &&fn) noexcept(std::is_nothrow_invocable_v<Fn &, Owner &, T &>) {
+        for_each_live_slot([&](Chunk &chunk, std::size_t local) noexcept(std::is_nothrow_invocable_v<Fn &, Owner &, T &>) {
+            fn(*chunk.meta[local].owner, *payload(chunk, local));
+        });
     }
 
     template <typename Fn>
-    void for_each_live_data(Fn &&fn) {
-        for_each_live_slot([&](Chunk &chunk, std::size_t local) { fn(*payload(chunk, local)); });
+    void for_each_live_data(Fn &&fn) noexcept(std::is_nothrow_invocable_v<Fn &, T &>) {
+        for_each_live_slot(
+            [&](Chunk &chunk, std::size_t local) noexcept(std::is_nothrow_invocable_v<Fn &, T &>) { fn(*payload(chunk, local)); });
     }
 
     // Releases chunk storage only when no live, constructing, or detached slots remain.
@@ -157,7 +172,7 @@ private:
 
     static constexpr std::uint32_t invalid_slot = ~std::uint32_t{0};
 
-    static constexpr std::uint64_t bit(std::size_t local) { return std::uint64_t{1} << local; }
+    static constexpr std::uint64_t bit(std::size_t local) noexcept { return std::uint64_t{1} << local; }
 
     static T *payload(Chunk &chunk, std::size_t local) noexcept { return std::launder(reinterpret_cast<T *>(chunk.storage[local].bytes)); }
 
@@ -194,7 +209,7 @@ private:
     }
 
     template <typename Fn>
-    void for_each_live_slot(Fn &&fn) {
+    void for_each_live_slot(Fn &&fn) noexcept(std::is_nothrow_invocable_v<Fn &, Chunk &, std::size_t>) {
         if (empty()) return;
         for (const auto &chunk : chunks_) {
             for (auto live = chunk->live_mask; live != 0; live &= live - 1) {

@@ -44,7 +44,9 @@
 /* #undef HAVE_INTTYPES_H */
 
 /* Define to 1 if you have the <io.h> header file. */
-/* #undef HAVE_IO_H */
+#ifdef _WIN32
+#define HAVE_IO_H 1
+#endif
 
 /* whether or not we are supporting lash */
 /* #undef HAVE_LASH */

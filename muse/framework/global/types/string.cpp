@@ -100,7 +100,7 @@ static void trim_helper(std::u16string &s) {
 // ============================
 // Char
 // ============================
-char Char::to_ascii(char16_t c, bool *ok) {
+char Char::to_ascii(char16_t c, bool *ok) noexcept {
     if (is_ascii(c)) {
         if (ok) {
             *ok = true;
@@ -114,12 +114,12 @@ char Char::to_ascii(char16_t c, bool *ok) {
     }
 }
 
-bool Char::is_letter(char16_t c) {
+bool Char::is_letter(char16_t c) noexcept {
     //! TODO
     return std::isalpha(static_cast<unsigned char>(c));
 }
 
-bool Char::is_space(char16_t c) {
+bool Char::is_space(char16_t c) noexcept {
     //! Mirrors the code points QChar::isSpace() accepts above ASCII; keeping the
     //! set here explicit avoids narrowing c to unsigned char, which would alias
     //! non-Latin1 code points onto ASCII ones (u'\u4f20' onto a space, for instance).
@@ -133,23 +133,23 @@ bool Char::is_space(char16_t c) {
     return std::binary_search(std::begin(non_ascii_spaces), std::end(non_ascii_spaces), c);
 }
 
-bool Char::is_digit(char16_t c) { return c >= u'0' && c <= u'9'; }
+bool Char::is_digit(char16_t c) noexcept { return c >= u'0' && c <= u'9'; }
 
-int Char::digit_value() const {
+int Char::digit_value() const noexcept {
     if (!is_digit()) {
         return -1;
     }
     return ch_ - '0';
 }
 
-bool Char::is_punct(char16_t ch) { return std::ispunct(static_cast<unsigned char>(ch)); }
+bool Char::is_punct(char16_t ch) noexcept { return std::ispunct(static_cast<unsigned char>(ch)); }
 
-char16_t Char::to_lower(char16_t ch) {
+char16_t Char::to_lower(char16_t ch) noexcept {
     //! TODO
     return std::tolower(static_cast<unsigned char>(ch));
 }
 
-char16_t Char::to_upper(char16_t ch) {
+char16_t Char::to_upper(char16_t ch) noexcept {
     //! TODO
     return std::toupper(static_cast<unsigned char>(ch));
 }
@@ -157,7 +157,7 @@ char16_t Char::to_upper(char16_t ch) {
 // ============================
 // UtfCodec
 // ============================
-UtfCodec::Encoding UtfCodec::xml_encoding(std::string_view data) {
+UtfCodec::Encoding UtfCodec::xml_encoding(std::string_view data) noexcept {
     if (data.size() < 3) {
         return Encoding::UNKNOWN;
     }
@@ -241,7 +241,7 @@ void UtfCodec::replace_invalid(std::string_view src, std::string &dst) {
 // String
 // ============================
 
-String::String() = default;
+String::String() noexcept = default;
 
 String::String(const char16_t *str) : data_(str ? str : u"") {}
 
@@ -266,7 +266,7 @@ String::String(const Char *unicode, size_t size) {
 
 void String::reserve(size_t i) { data_.reserve(i); }
 
-bool String::is_equal_ignore_case(const String &s) const {
+bool String::is_equal_ignore_case(const String &s) const noexcept {
     const std::u16string_view a{const_str()};
     const std::u16string_view b{s.const_str()};
 
@@ -320,9 +320,9 @@ String &String::operator+=(const char16_t *s) {
     return *this;
 }
 
-char16_t String::operator[](size_t i) const { return const_str()[i]; }
+char16_t String::operator[](size_t i) const noexcept { return const_str()[i]; }
 
-char16_t &String::operator[](size_t i) { return data_[i]; }
+char16_t &String::operator[](size_t i) noexcept { return data_[i]; }
 
 String &String::append(Char ch) {
     data_ += ch.unicode();
@@ -513,11 +513,11 @@ std::u32string String::to_std_u32_string() const {
     return s32;
 }
 
-size_t String::size() const { return const_str().size(); }
+size_t String::size() const noexcept { return const_str().size(); }
 
-bool String::empty() const { return const_str().empty(); }
+bool String::empty() const noexcept { return const_str().empty(); }
 
-void String::clear() { data_.clear(); }
+void String::clear() noexcept { data_.clear(); }
 
 Char String::at(size_t i) const {
     IF_ASSERT_FAILED(i < size()) { return Char(); }
@@ -1081,27 +1081,27 @@ std::vector<std::string> StringList::to_std_string_list() const {
 // AsciiChar
 // ============================
 
-char AsciiChar::to_lower(char ch) { return static_cast<char>(std::tolower(static_cast<unsigned char>(ch))); }
+char AsciiChar::to_lower(char ch) noexcept { return static_cast<char>(std::tolower(static_cast<unsigned char>(ch))); }
 
-char AsciiChar::to_upper(char ch) { return static_cast<char>(std::toupper(static_cast<unsigned char>(ch))); }
+char AsciiChar::to_upper(char ch) noexcept { return static_cast<char>(std::toupper(static_cast<unsigned char>(ch))); }
 
 // ============================
 // AsciiStringView
 // ============================
-const char *AsciiStringView::ascii() const { return data_; }
+const char *AsciiStringView::ascii() const noexcept { return data_; }
 
-size_t AsciiStringView::size() const { return size_; }
+size_t AsciiStringView::size() const noexcept { return size_; }
 
-bool AsciiStringView::empty() const { return size_ == 0; }
+bool AsciiStringView::empty() const noexcept { return size_ == 0; }
 
 AsciiChar AsciiStringView::at(size_t i) const {
     IF_ASSERT_FAILED(i < size()) { return AsciiChar(); }
     return AsciiChar(data_[i]);
 }
 
-bool AsciiStringView::contains(char ch) const { return index_of(ch) != muse::nidx; }
+bool AsciiStringView::contains(char ch) const noexcept { return index_of(ch) != muse::nidx; }
 
-size_t AsciiStringView::index_of(char ch) const {
+size_t AsciiStringView::index_of(char ch) const noexcept {
     for (size_t i = 0; i < size_; ++i) {
         if (data_[i] == ch) {
             return i;

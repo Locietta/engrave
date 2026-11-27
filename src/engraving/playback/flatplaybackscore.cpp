@@ -127,12 +127,18 @@ PlaybackScore PlaybackScoreBuilder::build(Score *score, muse::FnRef<void()> chec
     PlaybackSetupDataResolver setup_resolver;
     PlaybackWalk<FlatStore> walk{score,      playback_ctx, renderer,          setup_resolver, &profiles,
                                  checkpoint, play_repeats, metronome_enabled, store};
-    try {
-        walk.update(0, score->last_measure()->end_tick().ticks(), 0, score->ntracks());
-    } catch (...) {
-        result.release();
-        throw;
-    }
+
+    struct ReleaseGuard {
+        PlaybackScore &score;
+        bool committed = false;
+
+        ~ReleaseGuard() noexcept {
+            if (!committed) score.release();
+        }
+    } guard{result};
+
+    walk.update(0, score->last_measure()->end_tick().ticks(), 0, score->ntracks());
+    guard.committed = true;
     return result;
 }
 } // namespace mu::engraving

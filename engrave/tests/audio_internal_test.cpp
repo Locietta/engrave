@@ -18,7 +18,6 @@
 #include <memory>
 #include <mutex>
 #include <optional>
-#include <set>
 #include <span>
 #include <stdexcept>
 #include <string>
@@ -48,6 +47,7 @@
 #include "engrave/src/runtime/resource_filesystem.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
+#include "global/btree.h"
 #include "global/io/iodevice.h"
 #include "mpe/articulationprofilebundle.h"
 #include "output_fixture.h"
@@ -1673,7 +1673,7 @@ TEST(AudioInternal, WorkerPoolRunsEachTaskOnceStopsAndRethrows) {
     const auto owner = std::this_thread::get_id();
     std::vector<std::atomic<int>> runs(200);
     std::mutex mutex;
-    std::set<std::thread::id> threads;
+    muse::BTreeSet<std::thread::id> threads;
     const auto count_task = [&](std::size_t index) {
         runs[index].fetch_add(1);
         const std::scoped_lock lock(mutex);
@@ -2089,7 +2089,7 @@ struct EncoderRecord {
     bool end_throws = false;
     bool throw_on_short_write = false;
     // Encoder-thread writes are read only after export_score_audio has joined that thread.
-    std::set<std::thread::id> threads;
+    muse::BTreeSet<std::thread::id> threads;
     int begun = 0, encoded = 0, ended = 0;
     // Read by the caller's cancellation callback while the encoder runs.
     std::atomic<int> blocks{0};

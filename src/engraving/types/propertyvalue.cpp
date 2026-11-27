@@ -26,9 +26,9 @@
 
 using namespace mu::engraving;
 
-bool PropertyValue::is_valid() const { return type_ != PType::UNDEFINED; }
+bool PropertyValue::is_valid() const noexcept { return type_ != PType::UNDEFINED; }
 
-PType PropertyValue::type() const { return type_; }
+PType PropertyValue::type() const noexcept { return type_; }
 
 bool PropertyValue::operator==(const PropertyValue &v) const {
     if (v.type_ == PType::UNDEFINED || type_ == PType::UNDEFINED) {

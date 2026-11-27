@@ -40,25 +40,25 @@ private:
 
 public:
     // no implicit conversion from int to Fraction:
-    constexpr Fraction() = default;
+    constexpr Fraction() noexcept = default;
 
-    constexpr Fraction(int z, int n) : numerator_{n < 0 ? -z : z}, denominator_{n < 0 ? -n : n} {}
+    constexpr Fraction(int z, int n) noexcept : numerator_{n < 0 ? -z : z}, denominator_{n < 0 ? -n : n} {}
 
-    constexpr int numerator() const { return static_cast<int>(numerator_); }
+    constexpr int numerator() const noexcept { return static_cast<int>(numerator_); }
 
-    constexpr int denominator() const { return static_cast<int>(denominator_); }
+    constexpr int denominator() const noexcept { return static_cast<int>(denominator_); }
 
     // Arithmetic can leave unreduced terms wider than the int inputs.
-    constexpr int64_t numerator64() const { return numerator_; }
+    constexpr int64_t numerator64() const noexcept { return numerator_; }
 
-    constexpr int64_t denominator64() const { return denominator_; }
+    constexpr int64_t denominator64() const noexcept { return denominator_; }
 
     /// Use this when you need to initialize a Fraction to an arbitrary high value
-    static constexpr Fraction max() { return Fraction(std::numeric_limits<int>::max(), 1); }
+    static constexpr Fraction max() noexcept { return Fraction(std::numeric_limits<int>::max(), 1); }
 
-    constexpr void set_numerator(int v) { numerator_ = v; }
+    constexpr void set_numerator(int v) noexcept { numerator_ = v; }
 
-    constexpr void set_denominator(int v) {
+    constexpr void set_denominator(int v) noexcept {
         if (v < 0) {
             numerator_ = -numerator_;
             denominator_ = -v;
@@ -67,7 +67,7 @@ public:
         }
     }
 
-    constexpr void set(int z, int n) {
+    constexpr void set(int z, int n) noexcept {
         if (n < 0) {
             numerator_ = -z;
             denominator_ = -n;
@@ -77,27 +77,27 @@ public:
         }
     }
 
-    constexpr bool is_zero() const { return numerator_ == 0; }
+    constexpr bool is_zero() const noexcept { return numerator_ == 0; }
 
-    constexpr bool is_not_zero() const { return numerator_ != 0; }
+    constexpr bool is_not_zero() const noexcept { return numerator_ != 0; }
 
-    constexpr bool negative() const { return numerator_ < 0; }
+    constexpr bool negative() const noexcept { return numerator_ < 0; }
 
-    constexpr bool positive() const { return numerator_ >= 0; }
+    constexpr bool positive() const noexcept { return numerator_ >= 0; }
 
-    constexpr bool is_valid() const { return denominator_ != 0; }
+    constexpr bool is_valid() const noexcept { return denominator_ != 0; }
 
     // check if two fractions are identical (numerator & denominator)
     // == operator checks for equal value:
-    constexpr bool identical(const Fraction &v) const { return (numerator_ == v.numerator_) && (denominator_ == v.denominator_); }
+    constexpr bool identical(const Fraction &v) const noexcept { return (numerator_ == v.numerator_) && (denominator_ == v.denominator_); }
 
-    Fraction abs_value() const { return Fraction(static_cast<int>(std::abs(numerator_)), static_cast<int>(denominator_)); }
+    Fraction abs_value() const noexcept { return Fraction(static_cast<int>(std::abs(numerator_)), static_cast<int>(denominator_)); }
 
-    constexpr Fraction inverse() const { return Fraction(static_cast<int>(denominator_), static_cast<int>(numerator_)); }
+    constexpr Fraction inverse() const noexcept { return Fraction(static_cast<int>(denominator_), static_cast<int>(numerator_)); }
 
     // reduction
 
-    constexpr void reduce() {
+    constexpr void reduce() noexcept {
         const int64_t g = std::gcd(numerator_, denominator_);
         if (g) {
             numerator_ /= g;
@@ -105,7 +105,7 @@ public:
         }
     }
 
-    constexpr Fraction reduced() const {
+    constexpr Fraction reduced() const noexcept {
         const int64_t g = std::gcd(numerator_, denominator_);
         if (g) {
             return Fraction(static_cast<int>(numerator_ / g), static_cast<int>(denominator_ / g));
@@ -115,21 +115,21 @@ public:
 
     // comparison
 
-    constexpr bool operator<(const Fraction &val) const { return numerator_ * val.denominator_ < val.numerator_ * denominator_; }
+    constexpr bool operator<(const Fraction &val) const noexcept { return numerator_ * val.denominator_ < val.numerator_ * denominator_; }
 
-    constexpr bool operator<=(const Fraction &val) const { return numerator_ * val.denominator_ <= val.numerator_ * denominator_; }
+    constexpr bool operator<=(const Fraction &val) const noexcept { return numerator_ * val.denominator_ <= val.numerator_ * denominator_; }
 
-    constexpr bool operator>=(const Fraction &val) const { return numerator_ * val.denominator_ >= val.numerator_ * denominator_; }
+    constexpr bool operator>=(const Fraction &val) const noexcept { return numerator_ * val.denominator_ >= val.numerator_ * denominator_; }
 
-    constexpr bool operator>(const Fraction &val) const { return numerator_ * val.denominator_ > val.numerator_ * denominator_; }
+    constexpr bool operator>(const Fraction &val) const noexcept { return numerator_ * val.denominator_ > val.numerator_ * denominator_; }
 
-    constexpr bool operator==(const Fraction &val) const { return numerator_ * val.denominator_ == val.numerator_ * denominator_; }
+    constexpr bool operator==(const Fraction &val) const noexcept { return numerator_ * val.denominator_ == val.numerator_ * denominator_; }
 
-    constexpr bool operator!=(const Fraction &val) const { return numerator_ * val.denominator_ != val.numerator_ * denominator_; }
+    constexpr bool operator!=(const Fraction &val) const noexcept { return numerator_ * val.denominator_ != val.numerator_ * denominator_; }
 
     // arithmetic
 
-    constexpr Fraction &operator+=(const Fraction &val) {
+    constexpr Fraction &operator+=(const Fraction &val) noexcept {
         if (denominator_ == val.denominator_) {
             // Common enough use case to be handled separately for efficiency
             numerator_ += val.numerator_;
@@ -144,7 +144,7 @@ public:
         return *this;
     }
 
-    constexpr Fraction &operator-=(const Fraction &val) {
+    constexpr Fraction &operator-=(const Fraction &val) noexcept {
         if (denominator_ == val.denominator_) {
             // Common enough use case to be handled separately for efficiency
             numerator_ -= val.numerator_;
@@ -159,7 +159,7 @@ public:
         return *this;
     }
 
-    constexpr Fraction &operator*=(const Fraction &val) {
+    constexpr Fraction &operator*=(const Fraction &val) noexcept {
         numerator_ *= val.numerator_;
         denominator_ *= val.denominator_;
         if (val.denominator_ > 1 || val.denominator_ < -1) {
@@ -169,12 +169,12 @@ public:
         return *this;
     }
 
-    constexpr Fraction &operator*=(int val) {
+    constexpr Fraction &operator*=(int val) noexcept {
         numerator_ *= val;
         return *this;
     }
 
-    constexpr Fraction &operator/=(const Fraction &val) {
+    constexpr Fraction &operator/=(const Fraction &val) noexcept {
         const int sign = (val.numerator_ >= 0 ? 1 : -1);
         numerator_ *= (sign * val.denominator_);
         denominator_ *= (sign * val.numerator_);
@@ -184,7 +184,7 @@ public:
         return *this;
     }
 
-    constexpr Fraction &operator/=(int val) {
+    constexpr Fraction &operator/=(int val) noexcept {
         denominator_ *= val;
         if (denominator_ < 0) {
             denominator_ = -denominator_;
@@ -194,20 +194,20 @@ public:
         return *this;
     }
 
-    constexpr Fraction operator+(const Fraction &v) const { return Fraction(*this) += v; }
+    constexpr Fraction operator+(const Fraction &v) const noexcept { return Fraction(*this) += v; }
 
-    constexpr Fraction operator-(const Fraction &v) const { return Fraction(*this) -= v; }
+    constexpr Fraction operator-(const Fraction &v) const noexcept { return Fraction(*this) -= v; }
 
-    constexpr Fraction operator-() const { return Fraction(static_cast<int>(-numerator_), static_cast<int>(denominator_)); }
+    constexpr Fraction operator-() const noexcept { return Fraction(static_cast<int>(-numerator_), static_cast<int>(denominator_)); }
 
-    constexpr Fraction operator*(const Fraction &v) const { return Fraction(*this) *= v; }
+    constexpr Fraction operator*(const Fraction &v) const noexcept { return Fraction(*this) *= v; }
 
-    constexpr Fraction operator/(const Fraction &v) const { return Fraction(*this) /= v; }
+    constexpr Fraction operator/(const Fraction &v) const noexcept { return Fraction(*this) /= v; }
 
-    constexpr Fraction operator/(int v) const { return Fraction(*this) /= v; }
+    constexpr Fraction operator/(int v) const noexcept { return Fraction(*this) /= v; }
 
     // conversion
-    constexpr int ticks() const {
+    constexpr int ticks() const noexcept {
         if (numerator_ == -1 && denominator_ == 1) { // HACK
             return -1;
         }
@@ -221,7 +221,7 @@ public:
         return static_cast<int>(result);
     }
 
-    static constexpr Fraction from_ticks(int ticks) {
+    static constexpr Fraction from_ticks(int ticks) noexcept {
         if (ticks == -1) {
             return Fraction(-1, 1); // HACK
         }
@@ -229,7 +229,7 @@ public:
     }
 
     // A very small fraction, corresponds to 1 MIDI tick
-    static constexpr Fraction eps() { return Fraction(1, Constants::division * 4); }
+    static constexpr Fraction eps() noexcept { return Fraction(1, Constants::division * 4); }
 
     muse::String to_string() const { return muse::String(u"%1/%2").arg(numerator_, denominator_); }
 
@@ -252,10 +252,10 @@ public:
         return Fraction(numerator, denominator);
     }
 
-    constexpr double to_double() const { return static_cast<double>(numerator_) / static_cast<double>(denominator_); }
+    constexpr double to_double() const noexcept { return static_cast<double>(numerator_) / static_cast<double>(denominator_); }
 };
 
-constexpr Fraction operator*(const Fraction &f, int v) { return Fraction(f) *= v; }
+constexpr Fraction operator*(const Fraction &f, int v) noexcept { return Fraction(f) *= v; }
 
-constexpr Fraction operator*(int v, const Fraction &f) { return Fraction(f) *= v; }
+constexpr Fraction operator*(int v, const Fraction &f) noexcept { return Fraction(f) *= v; }
 } // namespace mu::engraving

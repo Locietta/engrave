@@ -31,28 +31,28 @@ using Rgba = uint32_t;
 inline constexpr Rgba rgb_mask = 0x00ffffff;
 
 // set RGB value
-inline constexpr Rgba rgb(int r, int g, int b) { return (0xffu << 24) | ((r & 0xffu) << 16) | ((g & 0xffu) << 8) | (b & 0xffu); }
+inline constexpr Rgba rgb(int r, int g, int b) noexcept { return (0xffu << 24) | ((r & 0xffu) << 16) | ((g & 0xffu) << 8) | (b & 0xffu); }
 
 // set RGBA value
-inline constexpr Rgba rgba(int r, int g, int b, int a) {
+inline constexpr Rgba rgba(int r, int g, int b, int a) noexcept {
     return ((a & 0xffu) << 24) | ((r & 0xffu) << 16) | ((g & 0xffu) << 8) | (b & 0xffu);
 }
 
 // get red part of RGB
-inline constexpr int get_red(Rgba rgba) { return (rgba >> 16) & 0xff; }
+inline constexpr int get_red(Rgba rgba) noexcept { return (rgba >> 16) & 0xff; }
 
 // get green part of RGB
-inline constexpr int get_green(Rgba rgba) { return (rgba >> 8) & 0xff; }
+inline constexpr int get_green(Rgba rgba) noexcept { return (rgba >> 8) & 0xff; }
 
 // get blue part of RGB
-inline constexpr int get_blue(Rgba rgba) { return rgba & 0xff; }
+inline constexpr int get_blue(Rgba rgba) noexcept { return rgba & 0xff; }
 
 // get alpha part of RGBA
-inline constexpr int get_alpha(Rgba rgba) { return rgba >> 24; }
+inline constexpr int get_alpha(Rgba rgba) noexcept { return rgba >> 24; }
 
-inline constexpr bool is_valid_comp(int num) { return (num >= 0) && (num < 256); }
+inline constexpr bool is_valid_comp(int num) noexcept { return (num >= 0) && (num < 256); }
 
-inline constexpr bool is_rgba_valid(int r, int g, int b, int a) {
+inline constexpr bool is_rgba_valid(int r, int g, int b, int a) noexcept {
     return is_valid_comp(r) && is_valid_comp(g) && is_valid_comp(b) && is_valid_comp(a);
 }
 } // namespace muse

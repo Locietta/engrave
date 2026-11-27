@@ -116,7 +116,7 @@ muse::BTreeMap<String, std::vector<SymId>> Smufl::read_smufl_ranges_json() {
 
     const auto bytes = fi.read_all();
     const auto source = json::text(bytes);
-    const auto parsed = glz::read_json<glz::generic_sorted>(source);
+    const auto parsed = glz::read_json<json::SortedJson>(source);
     if (!parsed) {
         LOGE() << "Failed to parse " << fi.file_path() << ": " << glz::format_error(parsed.error(), source);
         return ranges;

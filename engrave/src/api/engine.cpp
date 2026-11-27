@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <exception>
 #include <format>
 #include <fstream>
 #include <iterator>
@@ -124,6 +125,7 @@ Result<std::unique_ptr<Engine>> Engine::create(const EngineOptions &options) {
     if (!s_active_engine.expired()) return fail(ErrorCode::UNSUPPORTED, "an Engine or one of its Documents is still active");
 
     auto state = std::make_shared<EngineState>();
+    std::exception_ptr oom;
     try {
         state->resources = resources;
         state->cache_dir =
@@ -136,10 +138,11 @@ Result<std::unique_ptr<Engine>> Engine::create(const EngineOptions &options) {
         mu::engraving::MScore::test_mode = options.deterministic_ids;
         for (const auto &font : options.fonts) state->context->assets().add_font(utf8(std::filesystem::absolute(font)));
     } catch (const std::bad_alloc &) {
-        throw;
+        oom = std::current_exception();
     } catch (const std::exception &error) {
         return fail(ErrorCode::INVALID_INPUT, error.what());
     }
+    if (oom) std::rethrow_exception(oom);
     std::unique_ptr<Engine> engine(new Engine(std::make_unique<Impl>(state)));
     s_active_engine = state;
     return engine;
@@ -262,6 +265,7 @@ Result<std::unique_ptr<Document>> Engine::Impl::open_input(const std::string &by
     if (bytes.size() > max_input_bytes && !uncompressed_xml(format))
         return fail(ErrorCode::RESOURCE_LIMIT, std::format("the input exceeds {} bytes", max_input_bytes));
     music::ScoreProject project;
+    std::exception_ptr oom;
     try {
         if (*format == Format::MNX) {
             auto opened = open_mnx(*state->context, bytes);
@@ -277,10 +281,11 @@ Result<std::unique_ptr<Document>> Engine::Impl::open_input(const std::string &by
             project = *std::move(loaded);
         }
     } catch (const std::bad_alloc &) {
-        throw;
+        oom = std::current_exception();
     } catch (const std::exception &error) {
         return fail(ErrorCode::INVALID_INPUT, std::format("cannot read the data as {}: {}", to_string(*format), error.what()));
     }
+    if (oom) std::rethrow_exception(oom);
     // An MSCZ can carry the project's default mixer settings. Read them from the
     // input, before the DOM exists and before anything can rewrite the archive.
     music::ScoreAudioMixDefaults audio_defaults;
@@ -334,6 +339,7 @@ Result<std::unique_ptr<Document>> Engine::create_document(const CreateOptions &o
     if (mscx.extension() != ".mscx") return fail(ErrorCode::INVALID_ARGUMENT, "a template is an .mscx file, not '" + utf8(mscx) + "'");
 
     music::ScoreProject project;
+    std::exception_ptr oom;
     try {
         auto loaded = music::load_native_score_dir(*impl_->state->context, utf8(std::filesystem::absolute(mscx)));
         if (!loaded) {
@@ -342,10 +348,11 @@ Result<std::unique_ptr<Document>> Engine::create_document(const CreateOptions &o
         }
         project = *std::move(loaded);
     } catch (const std::bad_alloc &) {
-        throw;
+        oom = std::current_exception();
     } catch (const std::exception &error) {
         return fail(ErrorCode::INVALID_INPUT, std::format("cannot read the template '{}': {}", utf8(mscx), error.what()));
     }
+    if (oom) std::rethrow_exception(oom);
     apply_metadata(project->master_score(), options);
     return Document::Impl::make(impl_->state, std::move(project), {}, {});
 }

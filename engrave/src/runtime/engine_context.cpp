@@ -173,46 +173,54 @@ EngineContext::EngineContext(const std::string &assets, const std::string &cache
         throw std::runtime_error("Only one active engine context per process is supported");
     }
     Impl &d = *impl_;
-    try {
-        d.file_system = std::make_unique<NativeFileSystem>(std::filesystem::u8path(assets));
-        io::set_file_system(d.file_system.get());
 
-        d.assets = std::make_unique<RuntimeAssets>(std::filesystem::u8path(cache_root));
-        FontMetrics::set_provider(&d.assets->font_provider());
+    struct InitGuard {
+        Impl &impl;
+        bool committed = false;
 
-        d.engraving_fonts = std::make_unique<EngravingFontsProvider>(d.assets->font_provider());
-        d.configuration = std::make_unique<EngravingConfiguration>();
-        d.renderer = std::make_unique<rendering::score::ScoreRenderer>();
-        d.articulation_profiles = std::make_unique<mpe::ArticulationProfilesRepository>(*d.file_system);
-        d.music_xml = std::make_unique<mu::iex::musicxml::MusicXmlConfiguration>();
-        d.context_configuration = std::make_unique<EngravingContextConfiguration>();
-        d.engraving.configuration = d.configuration.get();
-        d.engraving.engraving_fonts = d.engraving_fonts.get();
-        d.engraving.context_configuration = d.context_configuration.get();
-        d.engraving.renderer = d.renderer.get();
+        ~InitGuard() noexcept {
+            if (!committed) {
+                impl.teardown();
+                s_context_active = false;
+            }
+        }
+    } guard{d};
 
-        register_builtin_fonts(d.assets->fonts_database(), *d.engraving_fonts);
+    d.file_system = std::make_unique<NativeFileSystem>(std::filesystem::u8path(assets));
+    io::set_file_system(d.file_system.get());
 
-        muse::settings()->reset();
-        d.configuration->init();
-        DefaultStyle::instance()->init(d.configuration->default_style_file_path(), d.configuration->part_style_file_path(),
-                                       d.configuration->default_page_size());
-        StaffType::init_staff_types(d.configuration->default_color());
+    d.assets = std::make_unique<RuntimeAssets>(std::filesystem::u8path(cache_root));
+    FontMetrics::set_provider(&d.assets->font_provider());
 
-        Drumset::init_drumset();
-        FiguredBass::read_config_file(String());
-        FretDiagram::clear_harmony_caches();
+    d.engraving_fonts = std::make_unique<EngravingFontsProvider>(d.assets->font_provider());
+    d.configuration = std::make_unique<EngravingConfiguration>();
+    d.renderer = std::make_unique<rendering::score::ScoreRenderer>();
+    d.articulation_profiles = std::make_unique<mpe::ArticulationProfilesRepository>(*d.file_system);
+    d.music_xml = std::make_unique<mu::iex::musicxml::MusicXmlConfiguration>();
+    d.context_configuration = std::make_unique<EngravingContextConfiguration>();
+    d.engraving.configuration = d.configuration.get();
+    d.engraving.engraving_fonts = d.engraving_fonts.get();
+    d.engraving.context_configuration = d.context_configuration.get();
+    d.engraving.renderer = d.renderer.get();
 
-        d.music_xml->init();
+    register_builtin_fonts(d.assets->fonts_database(), *d.engraving_fonts);
 
-        d.images = std::make_unique<ImageStore>();
-        d.catalog = std::make_unique<InstrumentCatalog>();
-        load_instrument_templates(":/engraving/instruments/instruments.xml");
-    } catch (...) {
-        d.teardown();
-        s_context_active = false;
-        throw;
-    }
+    muse::settings()->reset();
+    d.configuration->init();
+    DefaultStyle::instance()->init(d.configuration->default_style_file_path(), d.configuration->part_style_file_path(),
+                                   d.configuration->default_page_size());
+    StaffType::init_staff_types(d.configuration->default_color());
+
+    Drumset::init_drumset();
+    FiguredBass::read_config_file(String());
+    FretDiagram::clear_harmony_caches();
+
+    d.music_xml->init();
+
+    d.images = std::make_unique<ImageStore>();
+    d.catalog = std::make_unique<InstrumentCatalog>();
+    load_instrument_templates(":/engraving/instruments/instruments.xml");
+    guard.committed = true;
 }
 
 EngineContext::~EngineContext() {

@@ -81,12 +81,19 @@ struct MidiTimeline {
     iterator insert(value_type event) {
         auto pos = index_.upper_bound(event.first);
         auto it = entries_.insert(pos == index_.end() ? end() : pos->second, std::move(event));
-        try {
-            index_.emplace_hint(pos, it->first, it);
-        } catch (...) {
-            entries_.erase(it);
-            throw;
-        }
+
+        struct InsertGuard {
+            std::list<value_type> &entries;
+            iterator it;
+            bool committed = false;
+
+            ~InsertGuard() noexcept {
+                if (!committed) entries.erase(it);
+            }
+        } guard{entries_, it};
+
+        index_.emplace_hint(pos, it->first, it);
+        guard.committed = true;
         return it;
     }
 

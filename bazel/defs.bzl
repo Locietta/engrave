@@ -16,6 +16,9 @@ ENGINE_PLATFORM_DEFINES = select({
     ],
     "//conditions:default": [],
 }) + select({
+    "//bazel:windows_msvc": ["_MT"],
+    "//conditions:default": [],
+}) + select({
     "//bazel:playback_harness_enabled": ["ENGRAVE_PLAYBACK_HARNESS"],
     "//conditions:default": [],
 })
@@ -31,6 +34,26 @@ ENGINE_COPTS = [
     "-Wno-overloaded-virtual",
     "-Wno-switch",
 ] + select({
+    "//bazel:opt_msvc": [
+        "-fstrict-aliasing",
+        "-fno-wrapv",
+    ],
+    "//conditions:default": [],
+}) + select({
+    # ASan's dynamic stack alloca disables Win64 reserved call frames, causing LLVM to emit
+    # dynamic `subq $0x20, %rsp` before calls inside WinEH catch$ funclets and corrupting
+    # RtlVirtualUnwind establisher frame lookup on rethrow.
+    "//bazel:asan_msvc": [
+        "-mllvm",
+        "-asan-stack-dynamic-alloca=0",
+    ],
+    "//conditions:default": [],
+}) + select({
+    # Under MSVC ABI, empty secondary base std::codecvt_base sits at the end of
+    # libc++'s std::codecvt with zero tail bytes, tripping UBSan object-size in fs::u8path.
+    "//bazel:ubsan_msvc": ["-fno-sanitize=object-size"],
+    "//conditions:default": [],
+}) + select({
     "@platforms//os:windows": [],
     "//conditions:default": [
         "-fPIC",
@@ -39,12 +62,17 @@ ENGINE_COPTS = [
 })
 
 ENGINE_LINKOPTS = select({
+    "//bazel:windows_msvc": ["-Wl,/STACK:16777216"],
     "@platforms//os:windows": ["-Wl,--stack,16777216"],
     "//conditions:default": [
         "-pthread",
         "-ldl",
         "-lm",
     ],
+}) + select({
+    "//bazel:opt_msvc_gc": ["-Wl,/OPT:ICF"],
+    "//bazel:opt_linux_gc": ["-Wl,--icf=safe"],
+    "//conditions:default": [],
 })
 
 def _cc_pch_impl(ctx):
@@ -150,73 +178,48 @@ def staged_binary_group(name, srcs):
         srcs = srcs + [":" + runtime],
     )
 
-def _win_manifest_asm_impl(ctx):
-    out = ctx.actions.declare_file(ctx.label.name + ".s")
-    manifest_bytes = ctx.file.manifest
-    asm = """\
-.section .rsrc,"dr"
-.p2align 2
-L_rsrc_root:
-    .long 0
-    .long 0
-    .short 0
-    .short 0
-    .short 0
-    .short 1
-    .long 24
-    .long (L_rsrc_type24 - L_rsrc_root) | 0x80000000
-L_rsrc_type24:
-    .long 0
-    .long 0
-    .short 0
-    .short 0
-    .short 0
-    .short 1
-    .long 1
-    .long (L_rsrc_id1 - L_rsrc_root) | 0x80000000
-L_rsrc_id1:
-    .long 0
-    .long 0
-    .short 0
-    .short 0
-    .short 0
-    .short 1
-    .long 0x0409
-    .long (L_rsrc_data - L_rsrc_root)
-L_rsrc_data:
-    .rva L_manifest_start
-    .long L_manifest_end - L_manifest_start
-    .long 0
-    .long 0
-.p2align 2
-L_manifest_start:
-    .incbin "%s"
-L_manifest_end:
-.p2align 2
-""" % manifest_bytes.path.replace("\\", "/")
-    ctx.actions.write(out, asm)
-    return [DefaultInfo(files = depset([out]))]
+def _win_manifest_res_impl(ctx):
+    cc_toolchain = find_cc_toolchain(ctx)
+    objcopy = cc_toolchain.objcopy_executable
+    windows_host = objcopy.endswith(".exe")
+    llvm_rc = "%s/llvm-rc%s" % (objcopy.rpartition("/")[0], ".exe" if windows_host else "")
+    rc_file = ctx.actions.declare_file(ctx.label.name + ".rc")
+    res_file = ctx.actions.declare_file(ctx.label.name + ".res")
+    manifest_path = ctx.file.manifest.path.replace("\\", "/")
+    ctx.actions.write(rc_file, '1 24 "%s"\n' % manifest_path)
+    ctx.actions.run(
+        executable = llvm_rc,
+        arguments = ["/no-preprocess", "/FO", res_file.path, rc_file.path],
+        inputs = depset(
+            direct = [rc_file, ctx.file.manifest],
+            transitive = [cc_toolchain.all_files],
+        ),
+        outputs = [res_file],
+        mnemonic = "WinManifestRes",
+        progress_message = "Compiling Windows manifest %{label}",
+    )
+    return [DefaultInfo(files = depset([res_file]))]
 
-_win_manifest_asm = rule(
-    implementation = _win_manifest_asm_impl,
+_win_manifest_res = rule(
+    implementation = _win_manifest_res_impl,
     attrs = {
         "manifest": attr.label(allow_single_file = True, mandatory = True),
     },
+    fragments = ["cpp"],
+    toolchains = use_cc_toolchain(),
 )
 
 def win_manifest_library(name, manifest, visibility = None):
-    asm_name = name + "_asm"
-    _win_manifest_asm(
-        name = asm_name,
+    res_name = name + "_res"
+    _win_manifest_res(
+        name = res_name,
         manifest = manifest,
         target_compatible_with = ["@platforms//os:windows"],
     )
     cc_library(
         name = name,
-        srcs = [":" + asm_name],
-        additional_compiler_inputs = [manifest],
-        alwayslink = True,
-        copts = ["-Wno-unused-command-line-argument"],
+        additional_linker_inputs = [":" + res_name],
+        linkopts = ["-Wl,$(execpath :%s)" % res_name],
         target_compatible_with = ["@platforms//os:windows"],
         visibility = visibility,
     )

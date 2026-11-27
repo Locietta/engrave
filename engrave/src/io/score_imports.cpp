@@ -1,6 +1,7 @@
 #include "score_imports.h"
 
 #include <cstddef>
+#include <exception>
 #include <new>
 #include <stdexcept>
 
@@ -43,13 +44,15 @@ engrave::Result<void> import_guitarpro_score(mu::engraving::MasterScore *score, 
     muse::io::ByteView buffer(std::span<const uint8_t>(reinterpret_cast<const uint8_t *>(bytes.data()), bytes.size()));
 
     mu::engraving::Err err = mu::engraving::Err::FILE_BAD_FORMAT;
+    std::exception_ptr oom;
     try {
         err = mu::iex::guitarpro::import_gtp(score, &buffer, false);
     } catch (const std::bad_alloc &) {
-        throw;
+        oom = std::current_exception();
     } catch (const std::exception &e) {
         return std::unexpected(engrave::Error{engrave::ErrorCode::INVALID_INPUT, std::string("Guitar Pro import failed: ") + e.what()});
     }
+    if (oom) std::rethrow_exception(oom);
 
     if (err != mu::engraving::Err::NO_ERROR) {
         return std::unexpected(engrave::Error{engrave::ErrorCode::INVALID_INPUT,

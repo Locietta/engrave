@@ -19,14 +19,16 @@
 #include <glaze/json/read.hpp>
 #include <glaze/json/write.hpp>
 
+#include "global/btree.h"
+
 namespace music {
 
 // Insertion-ordered DOM: the semantic dump and the harness evidence keep the
 // order in which their fields are built.
 using Json = glz::generic_u64;
-// Lexicographically ordered DOM: the legacy serializer's default json
-// (metadata, positions).
-using SortedJson = glz::generic_sorted_u64;
+// Lexicographically ordered DOM backed by gtl::btree_map (metadata, positions).
+using SortedJson = glz::generic_json<glz::num_mode::u64, muse::IndirectStringBTreeMap>;
+static_assert(sizeof(SortedJson) <= sizeof(Json));
 
 template <class J>
 J make_array() {

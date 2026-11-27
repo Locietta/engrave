@@ -28,7 +28,7 @@ OfflineRenderSession (Fixed-order mix)
 SoundTrackWriter (Render loop)
   │  pulls 4096-frame PCM chunks
   ▼
-AudioEncoder (pro::proxy runtime seam)
+AudioEncoder (dyn::Box runtime seam)
   │  encodes PCM to target format
   ▼
 ByteSink / IODevice (Stream output)
@@ -44,7 +44,7 @@ The pipeline enforces strict single ownership and avoids shared ownership graphs
 - **Render Session (`OfflineRenderSession`)**: Each export creates a fresh `OfflineRenderSession`. The session owns its track list, aux bus configurations, reverb effect processors (`fx::ReverbProcessor`), and intermediate mix buffers. Render configuration parameters (`OfflineRenderSettings`) are snapshotted and owned by value.
 - **Track Synthesis (`FluidTrack`)**: Each track owns its FluidSynth synthesizer instance (`std::unique_ptr<Fluid> fluid_`), its channel mapping (`ChannelMap`), and its sequencer (`FluidSequencer`). Synthesizers are not shared across tracks or exports.
 - **Flat MPE Store (`PlaybackScore`)**: Owned by the export orchestration in `engine_audio.cpp`. Tracks borrow event slices only while lowering their MIDI sequences; once lowered, the flat store is released before synthesis begins, draining cold event owners and the retained playback context in polled strides during the `EVENT_RELEASE` phase before freeing the flat buffers.
-- **Encoders (`AudioEncoder`)**: Format encoders are owned exclusively through type-erased proxy wrappers (`UniqueEncoder`), which enforce sole ownership via `std::unique_ptr`.
+- **Encoders (`AudioEncoder`)**: Format encoders are owned exclusively through type-erased `dyn::Box` wrappers (`UniqueEncoder`), which enforce sole ownership via `std::unique_ptr`.
 
 ### Prepared Renders and the Audio Lane
 
@@ -140,23 +140,18 @@ With more than one audio thread (and outside MIDI-hook, playback-harness capture
 
 With `ENGRAVE_AUDIO_TIMING` set, each export prints `offline_audio_seconds key=value` lines to stderr when its run returns. The setup timings (`setup`, `model`, `tracks`, `aux`, `create`, `fonts`) are measured on the preparing thread and carried in the prepared render to the run thread's report, which adds the run's own (`synth`, `mix`, `encode`, `teardown`); a setup that fails prints nothing. `synth` (equal to `synth_wall`) is the wall time of per-track synthesis; `mix` is summing, the reverb and the master stages; `encode` is encoder time on whichever thread ran it and `encode_wait` the owner's time blocked on the encoder thread; `synth_total` and `synth_max_track` sum each track's own synthesis time, whichever thread ran it. In a pipelined render the stages overlap (a prefetched block's `synth` runs from its start to its finish, while the owner mixes), so the stage times can sum to more than the wall time. A final `offline_audio_synth threads=N tracks=M` line gives the fan-out actually used. With `ENGRAVE_RENDER_TIMING` set, each export prints `render_seconds format=... page=...` (or `pages=A-B` for multi-page PDF) `dpi=... raster=... encode=... bytes=...`, splitting drawing from encoding (PNG deflate, or Cairo page emission and surface finish across the exported PDF page range); a multi-page PNG render also prints `render_wall format=png pages=A-B dpi=... workers=N seconds=...`, and its per-page `encode` times overlap.
 
-## Encoder Seam (`pro::proxy`)
+## Encoder Seam (`dyn::Box`)
 
-Format encoders are decoupled from the render loop using proxy (`pro::proxy`, ngcpp/proxy 4.1.0, the continuation of the archived microsoft/proxy) instead of virtual inheritance:
+Format encoders are decoupled from the render loop using `engrave-music/dyn` (`dyn::Box<EncoderTrait>` from `<dyn/dyn.h>`) instead of virtual inheritance:
 
-- **Facade Convention (`EncoderFacade`)**:
+- **Trait Definition (`EncoderTrait`)**:
   ```cpp
-  PRO_DEF_MEM_DISPATCH(EncoderBegin, begin);
-  PRO_DEF_MEM_DISPATCH(EncoderEncode, encode);
-  PRO_DEF_MEM_DISPATCH(EncoderEnd, end);
+  DYN_METHOD(EncoderBegin, begin);
+  DYN_METHOD(EncoderEncode, encode);
+  DYN_METHOD(EncoderEnd, end);
 
-  struct EncoderFacade : pro::facade_builder
-      ::add_convention<EncoderBegin, bool(samples_t)>
-      ::add_convention<EncoderEncode, size_t(samples_t, const float *)>
-      ::add_convention<EncoderEnd, Ret()>
-      ::build {};
-
-  using AudioEncoder = pro::proxy<EncoderFacade>;
+  using EncoderTrait = dyn::Trait<EncoderBegin<bool(samples_t)>, EncoderEncode<size_t(samples_t, const float *)>, EncoderEnd<Ret()>>;
+  using AudioEncoder = dyn::Box<EncoderTrait>;
   ```
 - **Unique Ownership (`UniqueEncoder`)**:
   `struct UniqueEncoder` wraps `AudioEncoder`, accepting only `std::unique_ptr<T>` from encoder factories. It normalizes null instances and rejects raw or shared pointers at compile time, guaranteeing sole ownership of encoder state.

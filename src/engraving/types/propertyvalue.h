@@ -139,7 +139,7 @@ enum class PType : unsigned char {
 };
 
 struct PropertyValue {
-    PropertyValue() = default;
+    PropertyValue() noexcept = default;
 
     PropertyValue(const PropertyValue &) = default;
 
@@ -334,13 +334,13 @@ struct PropertyValue {
     PropertyValue(InstrumentLabelVisibility v)
         : type_(PType::INSTRUMENT_LABEL_VISIBILITY), data_(make_data<InstrumentLabelVisibility>(v)) {}
 
-    bool is_valid() const;
+    bool is_valid() const noexcept;
 
-    PType type() const;
+    PType type() const noexcept;
 
-    bool is_enum() const { return type_ != PType::UNDEFINED && std::holds_alternative<EnumValue>(data_); }
+    bool is_enum() const noexcept { return type_ != PType::UNDEFINED && std::holds_alternative<EnumValue>(data_); }
 
-    const String *string_value() const { return std::get_if<String>(&data_); }
+    const String *string_value() const noexcept { return std::get_if<String>(&data_); }
 
     template <typename T>
     T value() const {
@@ -613,7 +613,7 @@ private:
     }
 
     template <typename T>
-    const T *get() const {
+    const T *get() const noexcept {
         if constexpr (std::is_same_v<T, PainterPath>) {
             const auto *path = std::get_if<PathValue>(&data_);
             return path ? path->value.get() : nullptr;

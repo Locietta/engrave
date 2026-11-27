@@ -26,36 +26,34 @@
 #include <memory>
 #include <utility>
 
-#include <proxy/proxy.h>
+#include <dyn/dyn.h>
 
 #include "audio/common/audiotypes.h"
 #include "global/types/ret.h"
 
 namespace muse::audio::encode {
-PRO_DEF_MEM_DISPATCH(EncoderBegin, begin);
-PRO_DEF_MEM_DISPATCH(EncoderEncode, encode);
-PRO_DEF_MEM_DISPATCH(EncoderEnd, end);
+DYN_METHOD(EncoderBegin, begin);
+DYN_METHOD(EncoderEncode, encode);
+DYN_METHOD(EncoderEnd, end);
 
-struct EncoderFacade : pro::facade_builder::add_convention<EncoderBegin, bool(samples_t)>::
-                           add_convention<EncoderEncode, size_t(samples_t, const float *)>::add_convention<EncoderEnd, Ret()>::build {};
-
-using AudioEncoder = pro::proxy<EncoderFacade>;
+using EncoderTrait = dyn::Trait<EncoderBegin<bool(samples_t)>, EncoderEncode<size_t(samples_t, const float *)>, EncoderEnd<Ret()>>;
+using AudioEncoder = dyn::Box<EncoderTrait>;
 
 // What encoder factories return: sole ownership of one encoder. Only a
 // std::unique_ptr converts, so raw and shared pointers are rejected at compile
-// time, and a null owner yields an empty encoder rather than an engaged proxy
+// time, and a null owner yields an empty encoder rather than an engaged box
 // around nullptr.
 struct UniqueEncoder {
     UniqueEncoder() = default;
 
     template <class T>
-    UniqueEncoder(std::unique_ptr<T> owner) { // NOLINT(google-explicit-constructor): factories return unique_ptr
-        if (owner) proxy_ = std::move(owner);
-    }
+        requires dyn::Impl<T, EncoderTrait>
+    UniqueEncoder(std::unique_ptr<T> owner) noexcept // NOLINT(google-explicit-constructor): factories return unique_ptr
+        : encoder_(std::move(owner)) {}
 
-    AudioEncoder take() && noexcept { return std::move(proxy_); }
+    AudioEncoder take() && noexcept { return std::move(encoder_); }
 
 private:
-    AudioEncoder proxy_;
+    AudioEncoder encoder_;
 };
 } // namespace muse::audio::encode

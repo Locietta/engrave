@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #include <cstdint>
+#include <exception>
 #include <flat_map>
 #include <iostream>
 #include <stdexcept>
@@ -7,14 +8,7 @@
 
 #include <amc/vector.hpp>
 #include <ankerl/unordered_dense.h>
-// Clang's MSVC compatibility mode advertises this C++26 facility in C++23
-// while rejecting the keyword proxy uses (seen with microsoft/proxy 4.0.1;
-// not rechecked with ngcpp/proxy 4.1.0). Exercise its ordinary
-// C++23 move fallback under that tool; the native MSVC probe is unchanged.
-#if defined(__clang__) && defined(_MSC_VER) && __cplusplus < 202400L
-#undef __cpp_trivial_relocatability
-#endif
-#include <proxy/proxy.h>
+#include <dyn/dyn.h>
 
 namespace {
 void check(bool value) {
@@ -37,10 +31,9 @@ struct MoveWitness {
     }
 };
 
-// Third-party macro emits its own lowercase accessor type.
-PRO_DEF_MEM_DISPATCH(MemValue, value); // NOLINT(readability-identifier-naming)
+DYN_METHOD(MemValue, value);
 
-struct ValueFacade : pro::facade_builder::add_convention<MemValue, int() const>::build {};
+using ValueTrait = dyn::Trait<MemValue<int() const>>;
 
 struct Value {
     int value() const { return 42; }
@@ -63,8 +56,8 @@ int main() {
     ankerl::unordered_dense::set<int> seen;
     seen.insert(3);
     check(seen.contains(3));
-    pro::proxy<ValueFacade> proxy = pro::make_proxy<ValueFacade, Value>();
-    check(proxy->value() == 42);
+    dyn::Box<ValueTrait> boxed = dyn::make_box<ValueTrait, Value>();
+    check(boxed->value() == 42);
     std::cout << "flat_map=" << __cpp_lib_flat_map << " cxx=" << __cplusplus << " move_calls=" << MoveWitness::moves
-              << " uint32_narrowing=0 unordered_dense=ok proxy=42\n";
+              << " uint32_narrowing=0 unordered_dense=ok dyn=42\n";
 }

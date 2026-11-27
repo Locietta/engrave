@@ -83,27 +83,34 @@ void Document::Impl::bind_layout_boundary(mu::engraving::MasterScore &master, La
 
 void Document::Impl::ensure_layout(mu::engraving::Score &score) {
     adopt_layout_output(score);
-    try {
-        if (score.layout_state.revision != revision && !score.layout_state.dirty)
-            score.invalidate_layout(mu::engraving::Fraction(0, 1), mu::engraving::Fraction(-1, 1));
-        if (score.layout_state.font_generation != engine->font_generation) {
-            // Justified fragments retain font-dependent splits, not only geometry.
-            score.scan_elements([](mu::engraving::EngravingItem *item) {
-                if (item->is_text_base()) mu::engraving::to_text_base(item)->mutldata()->layout_invalid = true;
-            });
-            score.invalidate_layout(mu::engraving::Fraction(0, 1), mu::engraving::Fraction(-1, 1));
-            score.layout_if_dirty();
-            score.layout_state.font_generation = engine->font_generation;
-        } else {
-            score.layout_if_dirty();
+
+    struct LayoutGuard {
+        Document::Impl &impl;
+        mu::engraving::Score &score;
+        bool committed = false;
+
+        ~LayoutGuard() noexcept {
+            // LayoutContext and its borrowed payloads have unwound. A later geometry
+            // request must rebuild a complete view, including after a range failure.
+            if (!committed) impl.discard_layout_output(score);
         }
-        score.layout_state.revision = revision;
-    } catch (...) {
-        // LayoutContext and its borrowed payloads have unwound. A later geometry
-        // request must rebuild a complete view, including after a range failure.
-        discard_layout_output(score);
-        throw;
+    } guard{*this, score};
+
+    if (score.layout_state.revision != revision && !score.layout_state.dirty)
+        score.invalidate_layout(mu::engraving::Fraction(0, 1), mu::engraving::Fraction(-1, 1));
+    if (score.layout_state.font_generation != engine->font_generation) {
+        // Justified fragments retain font-dependent splits, not only geometry.
+        score.scan_elements([](mu::engraving::EngravingItem *item) {
+            if (item->is_text_base()) mu::engraving::to_text_base(item)->mutldata()->layout_invalid = true;
+        });
+        score.invalidate_layout(mu::engraving::Fraction(0, 1), mu::engraving::Fraction(-1, 1));
+        score.layout_if_dirty();
+        score.layout_state.font_generation = engine->font_generation;
+    } else {
+        score.layout_if_dirty();
     }
+    score.layout_state.revision = revision;
+    guard.committed = true;
 }
 
 void Document::Impl::discard_layout_output(mu::engraving::Score &score) {
@@ -372,6 +379,7 @@ Result<ExportOutput> Document::export_score_with_warnings(const ExportOptions &o
             return std::unexpected(Error{ErrorCode::CANCELLED, "score capture cancelled"});
         return std::unexpected(Error{ErrorCode::RESOURCE_LIMIT, "score capture byte limit exceeded"});
     };
+    std::exception_ptr caught;
     try {
         if (options.native_version == "4.70") {
             auto result = write470::export_score(*impl_->engine->context, impl_->project, **selected, name, backend);
@@ -385,9 +393,10 @@ Result<ExportOutput> Document::export_score_with_warnings(const ExportOptions &o
         const auto *bytes = reinterpret_cast<const std::byte *>(data->data());
         return ExportOutput{std::vector<std::byte>(bytes, bytes + data->size()), {}};
     } catch (...) {
-        if (budget.failure != muse::io::WriteBudget::Failure::NONE) return stopped();
-        throw;
+        caught = std::current_exception();
     }
+    if (budget.failure != muse::io::WriteBudget::Failure::NONE) return stopped();
+    std::rethrow_exception(caught);
 }
 
 } // namespace engrave

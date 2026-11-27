@@ -44,20 +44,20 @@ enum SplitBehavior {
 // ============================
 struct AsciiChar {
 public:
-    constexpr AsciiChar() = default;
+    constexpr AsciiChar() noexcept = default;
 
-    constexpr explicit AsciiChar(char c) : ch_(c) {}
+    constexpr explicit AsciiChar(char c) noexcept : ch_(c) {}
 
     constexpr char ascii() const noexcept { return ch_; }
 
     constexpr char16_t unicode() const noexcept { return char16_t(ch_); }
 
-    inline char to_lower() const { return to_lower(ch_); }
+    inline char to_lower() const noexcept { return to_lower(ch_); }
 
-    inline char to_upper() const { return to_upper(ch_); }
+    inline char to_upper() const noexcept { return to_upper(ch_); }
 
-    static char to_lower(char ch);
-    static char to_upper(char ch);
+    static char to_lower(char ch) noexcept;
+    static char to_upper(char ch) noexcept;
 
 private:
     char ch_ = 0;
@@ -85,104 +85,104 @@ struct Char {
         LAST_VALID_CODE_POINT = 0x10ffff
     };
 
-    constexpr Char() = default;
+    constexpr Char() noexcept = default;
 
-    constexpr Char(char16_t c) : ch_(c) {}
+    constexpr Char(char16_t c) noexcept : ch_(c) {}
 
-    Char(AsciiChar c) : ch_(c.unicode()) {}
+    Char(AsciiChar c) noexcept : ch_(c.unicode()) {}
 
-    constexpr bool operator==(Char c) const { return ch_ == c.ch_; }
+    constexpr bool operator==(Char c) const noexcept { return ch_ == c.ch_; }
 
-    constexpr bool operator!=(Char c) const { return !operator==(c); }
+    constexpr bool operator!=(Char c) const noexcept { return !operator==(c); }
 
-    constexpr bool operator==(char16_t c) const { return ch_ == c; }
+    constexpr bool operator==(char16_t c) const noexcept { return ch_ == c; }
 
-    constexpr bool operator!=(char16_t c) const { return !operator==(c); }
+    constexpr bool operator!=(char16_t c) const noexcept { return !operator==(c); }
 
-    constexpr bool operator==(AsciiChar c) const { return ch_ == c.unicode(); }
+    constexpr bool operator==(AsciiChar c) const noexcept { return ch_ == c.unicode(); }
 
-    constexpr bool operator!=(AsciiChar c) const { return !operator==(c); }
+    constexpr bool operator!=(AsciiChar c) const noexcept { return !operator==(c); }
 
-    constexpr bool operator>(Char c) const { return ch_ > c.ch_; }
+    constexpr bool operator>(Char c) const noexcept { return ch_ > c.ch_; }
 
-    constexpr bool operator>(char16_t c) const { return ch_ > c; }
+    constexpr bool operator>(char16_t c) const noexcept { return ch_ > c; }
 
-    constexpr bool operator<(Char c) const { return ch_ < c.ch_; }
+    constexpr bool operator<(Char c) const noexcept { return ch_ < c.ch_; }
 
-    constexpr bool operator<(char16_t c) const { return ch_ < c; }
+    constexpr bool operator<(char16_t c) const noexcept { return ch_ < c; }
 
-    constexpr bool operator>=(Char c) const { return ch_ >= c.ch_; }
+    constexpr bool operator>=(Char c) const noexcept { return ch_ >= c.ch_; }
 
-    constexpr bool operator>=(char16_t c) const { return ch_ >= c; }
+    constexpr bool operator>=(char16_t c) const noexcept { return ch_ >= c; }
 
-    constexpr bool operator<=(Char c) const { return ch_ <= c.ch_; }
+    constexpr bool operator<=(Char c) const noexcept { return ch_ <= c.ch_; }
 
-    constexpr bool operator<=(char16_t c) const { return ch_ <= c; }
+    constexpr bool operator<=(char16_t c) const noexcept { return ch_ <= c; }
 
-    constexpr char16_t unicode() const { return ch_; }
+    constexpr char16_t unicode() const noexcept { return ch_; }
 
-    inline bool is_null() const { return ch_ == 0; }
+    inline bool is_null() const noexcept { return ch_ == 0; }
 
-    constexpr bool is_ascii() const { return is_ascii(ch_); }
+    constexpr bool is_ascii() const noexcept { return is_ascii(ch_); }
 
-    static constexpr bool is_ascii(char16_t c) { return c <= 0x7f; }
+    static constexpr bool is_ascii(char16_t c) noexcept { return c <= 0x7f; }
 
-    inline char to_ascii(bool *ok = nullptr) const { return to_ascii(ch_, ok); }
+    inline char to_ascii(bool *ok = nullptr) const noexcept { return to_ascii(ch_, ok); }
 
-    static char to_ascii(char16_t c, bool *ok = nullptr);
+    static char to_ascii(char16_t c, bool *ok = nullptr) noexcept;
 
-    static inline Char from_ascii(char c) { return static_cast<char16_t>(c); }
+    static inline Char from_ascii(char c) noexcept { return static_cast<char16_t>(c); }
 
-    inline bool is_letter() const { return is_letter(ch_); }
+    inline bool is_letter() const noexcept { return is_letter(ch_); }
 
-    static bool is_letter(char16_t c);
+    static bool is_letter(char16_t c) noexcept;
 
-    inline bool is_space() const { return is_space(ch_); }
+    inline bool is_space() const noexcept { return is_space(ch_); }
 
-    static bool is_space(char16_t c);
+    static bool is_space(char16_t c) noexcept;
 
-    inline bool is_digit() const { return is_digit(ch_); }
+    inline bool is_digit() const noexcept { return is_digit(ch_); }
 
-    static bool is_digit(char16_t c);
-    int digit_value() const;
+    static bool is_digit(char16_t c) noexcept;
+    int digit_value() const noexcept;
 
-    inline bool is_punct() const { return is_punct(ch_); }
+    inline bool is_punct() const noexcept { return is_punct(ch_); }
 
-    static bool is_punct(char16_t c);
+    static bool is_punct(char16_t c) noexcept;
 
-    inline bool is_lower() const { return to_lower() == ch_; }
+    inline bool is_lower() const noexcept { return to_lower() == ch_; }
 
-    inline Char to_lower() const { return to_lower(ch_); }
+    inline Char to_lower() const noexcept { return to_lower(ch_); }
 
-    static char16_t to_lower(char16_t ch);
+    static char16_t to_lower(char16_t ch) noexcept;
 
-    inline bool is_upper() const { return to_upper() == ch_; }
+    inline bool is_upper() const noexcept { return to_upper() == ch_; }
 
-    inline Char to_upper() const { return to_upper(ch_); }
+    inline Char to_upper() const noexcept { return to_upper(ch_); }
 
-    static char16_t to_upper(char16_t ch);
+    static char16_t to_upper(char16_t ch) noexcept;
 
-    inline bool is_high_surrogate() const { return is_high_surrogate(ch_); }
+    inline bool is_high_surrogate() const noexcept { return is_high_surrogate(ch_); }
 
-    inline bool is_low_surrogate() const { return is_low_surrogate(ch_); }
+    inline bool is_low_surrogate() const noexcept { return is_low_surrogate(ch_); }
 
-    inline bool is_surrogate() const { return is_surrogate(ch_); }
+    inline bool is_surrogate() const noexcept { return is_surrogate(ch_); }
 
-    static constexpr char32_t surrogate_to_ucs4(char16_t high, char16_t low) { return (char32_t(high) << 10) + low - 0x35fdc00; }
+    static constexpr char32_t surrogate_to_ucs4(char16_t high, char16_t low) noexcept { return (char32_t(high) << 10) + low - 0x35fdc00; }
 
-    static constexpr char32_t surrogate_to_ucs4(Char high, Char low) { return surrogate_to_ucs4(high.ch_, low.ch_); }
+    static constexpr char32_t surrogate_to_ucs4(Char high, Char low) noexcept { return surrogate_to_ucs4(high.ch_, low.ch_); }
 
-    static constexpr bool is_high_surrogate(char32_t ucs4) { return (ucs4 & 0xfffffc00) == 0xd800; }
+    static constexpr bool is_high_surrogate(char32_t ucs4) noexcept { return (ucs4 & 0xfffffc00) == 0xd800; }
 
-    static constexpr bool is_low_surrogate(char32_t ucs4) { return (ucs4 & 0xfffffc00) == 0xdc00; }
+    static constexpr bool is_low_surrogate(char32_t ucs4) noexcept { return (ucs4 & 0xfffffc00) == 0xdc00; }
 
-    static constexpr bool is_surrogate(char32_t ucs4) { return ucs4 - 0xd800u < 2048u; }
+    static constexpr bool is_surrogate(char32_t ucs4) noexcept { return ucs4 - 0xd800u < 2048u; }
 
-    static constexpr char16_t high_surrogate(char32_t ucs4) { return char16_t((ucs4 >> 10) + 0xd7c0); }
+    static constexpr char16_t high_surrogate(char32_t ucs4) noexcept { return char16_t((ucs4 >> 10) + 0xd7c0); }
 
-    static constexpr char16_t low_surrogate(char32_t ucs4) { return char16_t(ucs4 % 0x400 + 0xdc00); }
+    static constexpr char16_t low_surrogate(char32_t ucs4) noexcept { return char16_t(ucs4 % 0x400 + 0xdc00); }
 
-    static constexpr bool requires_surrogates(char32_t ucs4) { return ucs4 >= 0x10000; }
+    static constexpr bool requires_surrogates(char32_t ucs4) noexcept { return ucs4 >= 0x10000; }
 
 private:
     char16_t ch_ = 0;
@@ -199,9 +199,9 @@ struct UtfCodec {
         UTF_16BE,
     };
 
-    static Encoding xml_encoding(std::string_view data);
+    static Encoding xml_encoding(std::string_view data) noexcept;
 
-    static Encoding xml_encoding(const ByteArray &data) { return xml_encoding(std::string_view(data.const_char(), data.size())); }
+    static Encoding xml_encoding(const ByteArray &data) noexcept { return xml_encoding(std::string_view(data.const_char(), data.size())); }
 
     static void utf8to16(std::string_view src, std::u16string &dst);
     static void utf16to8(std::u16string_view src, std::string &dst);
@@ -219,7 +219,7 @@ struct AsciiStringView;
 
 struct String {
 
-    String();
+    String() noexcept;
     String(const char16_t *str);
     explicit String(std::u16string_view str);
     String(const Char &ch);
@@ -228,11 +228,11 @@ struct String {
     String &operator=(const char16_t *str);
     void reserve(size_t i);
 
-    inline bool operator==(const String &s) const { return const_str() == s.const_str(); }
+    inline bool operator==(const String &s) const noexcept { return const_str() == s.const_str(); }
 
-    inline bool operator!=(const String &s) const { return !operator==(s); }
+    inline bool operator!=(const String &s) const noexcept { return !operator==(s); }
 
-    bool is_equal_ignore_case(const String &s) const;
+    bool is_equal_ignore_case(const String &s) const noexcept;
 
     bool operator==(const AsciiStringView &s) const;
 
@@ -246,13 +246,13 @@ struct String {
 
     inline bool operator!=(const char *s) const { return !operator==(s); }
 
-    inline bool operator<(const String &s) const { return const_str() < s.const_str(); }
+    inline bool operator<(const String &s) const noexcept { return const_str() < s.const_str(); }
 
-    inline bool operator>(const String &s) const { return const_str() > s.const_str(); }
+    inline bool operator>(const String &s) const noexcept { return const_str() > s.const_str(); }
 
-    inline bool operator<=(const String &s) const { return const_str() <= s.const_str(); }
+    inline bool operator<=(const String &s) const noexcept { return const_str() <= s.const_str(); }
 
-    inline bool operator>=(const String &s) const { return const_str() >= s.const_str(); }
+    inline bool operator>=(const String &s) const noexcept { return const_str() >= s.const_str(); }
 
     inline String &operator+=(const String &s) { return append(s); }
 
@@ -278,8 +278,8 @@ struct String {
         return t;
     }
 
-    char16_t operator[](size_t i) const;
-    char16_t &operator[](size_t i);
+    char16_t operator[](size_t i) const noexcept;
+    char16_t &operator[](size_t i) noexcept;
 
     String &append(Char ch);
     String &append(const String &s);
@@ -301,18 +301,18 @@ struct String {
     std::string to_std_string() const;
     std::u16string to_std_u16_string() const;
 
-    std::u16string_view view() const { return data_; }
+    std::u16string_view view() const noexcept { return data_; }
 
     static String from_ucs4(const char32_t *str, size_t size = muse::nidx);
     static String from_ucs4(char32_t chr);
     std::u32string to_std_u32_string() const;
 
-    size_t size() const;
-    bool empty() const;
+    size_t size() const noexcept;
+    bool empty() const noexcept;
 
-    inline bool is_empty() const { return empty(); }
+    inline bool is_empty() const noexcept { return empty(); }
 
-    void clear();
+    void clear() noexcept;
     Char at(size_t i) const;
 
     Char front() const { return at(0); }
@@ -402,10 +402,10 @@ struct String {
     static String number(size_t n);
     static String number(double n, int prec = 6);
 
-    inline size_t hash() const { return std::hash<std::u16string>{}(const_str()); }
+    inline size_t hash() const noexcept { return std::hash<std::u16string>{}(const_str()); }
 
 private:
-    const std::u16string &const_str() const { return data_; }
+    const std::u16string &const_str() const noexcept { return data_; }
 
     void do_args(std::u16string &out, const std::vector<std::u16string_view> &args) const;
 
@@ -450,51 +450,51 @@ struct StringList : std::vector<String> {
 // ============================
 struct AsciiStringView {
 
-    constexpr AsciiStringView() = default;
+    constexpr AsciiStringView() noexcept = default;
 
-    constexpr AsciiStringView(const char *str) : size_(str ? std::char_traits<char>::length(str) : 0), data_(str) {}
+    constexpr AsciiStringView(const char *str) noexcept : size_(str ? std::char_traits<char>::length(str) : 0), data_(str) {}
 
-    constexpr AsciiStringView(const char *str, size_t size) : size_(size), data_(str) {}
+    constexpr AsciiStringView(const char *str, size_t size) noexcept : size_(size), data_(str) {}
 
-    AsciiStringView(const std::string &str) : size_(str.size()), data_(str.c_str()) {}
+    AsciiStringView(const std::string &str) noexcept : size_(str.size()), data_(str.c_str()) {}
 
-    operator std::string_view() const {
+    operator std::string_view() const noexcept {
         if (!data_) {
             return std::string_view{};
         }
         return std::string_view(data_, size_);
     }
 
-    inline bool operator==(const AsciiStringView &s) const {
+    inline bool operator==(const AsciiStringView &s) const noexcept {
         return size_ == s.size_ && (size_ == 0 || std::memcmp(data_, s.data_, size_) == 0);
     }
 
-    inline bool operator!=(const AsciiStringView &s) const { return !this->operator==(s); }
+    inline bool operator!=(const AsciiStringView &s) const noexcept { return !this->operator==(s); }
 
-    inline bool operator==(std::string_view s) const {
+    inline bool operator==(std::string_view s) const noexcept {
         return size_ == s.size() && (size_ == 0 || std::memcmp(data_, s.data(), size_) == 0);
     }
 
-    inline bool operator==(const char *s) const {
+    inline bool operator==(const char *s) const noexcept {
         size_t sz = (s ? std::char_traits<char>::length(s) : 0);
         return size_ == sz && (size_ == 0 || std::memcmp(data_, s, size_) == 0);
     }
 
-    inline bool operator!=(const char *s) const { return !this->operator==(s); }
+    inline bool operator!=(const char *s) const noexcept { return !this->operator==(s); }
 
-    inline bool operator<(const AsciiStringView &s) const {
+    inline bool operator<(const AsciiStringView &s) const noexcept {
         if (size_ != s.size_) {
             return size_ < s.size_;
         }
         return size_ > 0 && std::memcmp(data_, s.data_, size_) < 0;
     }
 
-    const char *ascii() const;
-    size_t size() const;
-    bool empty() const;
+    const char *ascii() const noexcept;
+    size_t size() const noexcept;
+    bool empty() const noexcept;
     AsciiChar at(size_t i) const;
-    bool contains(char ch) const;
-    size_t index_of(char ch) const;
+    bool contains(char ch) const noexcept;
+    size_t index_of(char ch) const noexcept;
 
     int to_int(bool *ok = nullptr, int base = 10) const;
     double to_double(bool *ok = nullptr) const;
@@ -520,9 +520,9 @@ inline String operator+(const char16_t *s1, const String &s2) {
 // ============================
 // Char (UTF-16)
 // ============================
-inline bool operator==(const char16_t c1, const muse::Char c2) { return c2 == c1; }
+inline bool operator==(const char16_t c1, const muse::Char c2) noexcept { return c2 == c1; }
 
-inline bool operator!=(const char16_t c1, const muse::Char c2) { return c2 != c1; }
+inline bool operator!=(const char16_t c1, const muse::Char c2) noexcept { return c2 != c1; }
 
 // ============================
 // String (UTF-16)
@@ -544,9 +544,9 @@ inline muse::logger::Stream &operator<<(muse::logger::Stream &s, const muse::Str
 // ============================
 // AsciiStringView (ASCII)
 // ============================
-inline bool operator==(const char *s1, const muse::AsciiStringView &s2) { return s2 == s1; }
+inline bool operator==(const char *s1, const muse::AsciiStringView &s2) noexcept { return s2 == s1; }
 
-inline bool operator!=(const char *s1, const muse::AsciiStringView &s2) { return s2 != s1; }
+inline bool operator!=(const char *s1, const muse::AsciiStringView &s2) noexcept { return s2 != s1; }
 
 inline muse::logger::Stream &operator<<(muse::logger::Stream &s, const muse::AsciiStringView &str) {
     s << str.ascii();

@@ -651,40 +651,47 @@ static void normalize_scores(MasterScore &master, const std::vector<Score *> &sc
         if (needs_normalization(*score, options)) work.push_back(score);
     if (work.empty()) return;
     for (auto *score : work) score->normalize_state.running = true;
-    try {
-        // All linked timelines/anchors are current before repeat identity is used
-        // by signature placement. Neither phase needs display measures.
-        for (auto *score : work) prepare_timeline(*score);
-        for (auto *score : work) prepare_source_anchors(*score, options);
-        master.invalidate_repeat_list();
-        master.update_repeat_list(false);
-        // Tie-jump cleanup can mark lyrics for repair or remove partial slurs.
-        // Do it before content normalization, in the same recording transaction.
-        if (options.mode == NormalizeMode::TRANSACTION && master.transaction_manager()->current_transaction()) {
-            master.update_repeat_list(true);
-            for (auto *score : work) score->spanner_map().update();
+
+    struct NormalizeGuard {
+        const std::vector<Score *> &work;
+        bool committed = false;
+
+        ~NormalizeGuard() noexcept {
+            if (committed) return;
+            for (auto *score : work) {
+                score->normalize_state.dirty = true;
+                score->normalize_state.running = false;
+            }
         }
-        for (auto *score : work) normalize_content(*score, options);
-        master.check_midi_mapping();
-        for (auto *score : work) {
-            if (score->need_update_ticks_and_time_sig_map()) score->update_ticks_and_time_sig_map(false);
-        }
-        master.invalidate_repeat_list();
-        master.update_repeat_list(false);
-        for (auto *score : work) {
-            auto &state = score->normalize_state;
-            state.dirty = false;
-            state.rebuild_midi_mapping = false;
-            state.includes_hidden_staves = options.include_hidden_staves;
-            state.running = false;
-        }
-    } catch (...) {
-        for (auto *score : work) {
-            score->normalize_state.dirty = true;
-            score->normalize_state.running = false;
-        }
-        throw;
+    } guard{work};
+
+    // All linked timelines/anchors are current before repeat identity is used
+    // by signature placement. Neither phase needs display measures.
+    for (auto *score : work) prepare_timeline(*score);
+    for (auto *score : work) prepare_source_anchors(*score, options);
+    master.invalidate_repeat_list();
+    master.update_repeat_list(false);
+    // Tie-jump cleanup can mark lyrics for repair or remove partial slurs.
+    // Do it before content normalization, in the same recording transaction.
+    if (options.mode == NormalizeMode::TRANSACTION && master.transaction_manager()->current_transaction()) {
+        master.update_repeat_list(true);
+        for (auto *score : work) score->spanner_map().update();
     }
+    for (auto *score : work) normalize_content(*score, options);
+    master.check_midi_mapping();
+    for (auto *score : work) {
+        if (score->need_update_ticks_and_time_sig_map()) score->update_ticks_and_time_sig_map(false);
+    }
+    master.invalidate_repeat_list();
+    master.update_repeat_list(false);
+    for (auto *score : work) {
+        auto &state = score->normalize_state;
+        state.dirty = false;
+        state.rebuild_midi_mapping = false;
+        state.includes_hidden_staves = options.include_hidden_staves;
+        state.running = false;
+    }
+    guard.committed = true;
 }
 
 void mu::engraving::normalize_document(MasterScore &master, NormalizeOptions options) {

@@ -13,6 +13,7 @@
 #include <filesystem>
 #include <fstream>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <thread>
 #include <utility>
@@ -993,11 +994,13 @@ std::vector<EngineAudioTrackInfo> engine_audio_tracks(MasterScore *master, int e
     }
 
     mu::engraving::Score *selected = nullptr;
+    std::optional<std::string> range_error;
     try {
         selected = select_score(master, excerpt_id);
     } catch (const std::out_of_range &error) {
-        throw std::invalid_argument(error.what());
+        range_error = error.what();
     }
+    if (range_error) throw std::invalid_argument(*range_error);
 
     std::vector<EngineAudioTrackInfo> result;
     for (const ScoreAudioTrackInfo &description : score_audio_track_info(selected)) {

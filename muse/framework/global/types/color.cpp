@@ -11,23 +11,23 @@ static std::string rgb2hex(int r, int g, int b, int a = Color::default_alpha);
 static std::string rgb2hex(Rgba rgba);
 static void insert_hex_component(int num, std::stringstream &ss);
 
-Color::Color() { is_valid_ = false; }
+Color::Color() noexcept { is_valid_ = false; }
 
-Color::Color(const Color &other) : rgba_(other.rgba_), is_valid_(other.is_valid_) {}
+Color::Color(const Color &other) noexcept : rgba_(other.rgba_), is_valid_(other.is_valid_) {}
 
 Color::Color(const char *color) { set_named_color(color); }
 
-Color &Color::operator=(const Color &other) {
+Color &Color::operator=(const Color &other) noexcept {
     rgba_ = other.rgba_;
     is_valid_ = other.is_valid_;
     return *this;
 }
 
-bool Color::operator==(const Color &other) const { return rgba_ == other.rgba_ && is_valid_ == other.is_valid_; }
+bool Color::operator==(const Color &other) const noexcept { return rgba_ == other.rgba_ && is_valid_ == other.is_valid_; }
 
-bool Color::operator!=(const Color &other) const { return !operator==(other); }
+bool Color::operator!=(const Color &other) const noexcept { return !operator==(other); }
 
-bool Color::operator<(const Color &other) const { return rgba_ < other.rgba_; }
+bool Color::operator<(const Color &other) const noexcept { return rgba_ < other.rgba_; }
 
 std::string Color::to_string() const { return rgb2hex(rgba_); }
 
@@ -45,15 +45,15 @@ Color Color::from_string(const char *str) {
 
 Color Color::from_string(const String &str) { return from_string(str.to_std_string()); }
 
-bool Color::is_valid() const { return is_valid_; }
+bool Color::is_valid() const noexcept { return is_valid_; }
 
-int Color::red() const { return get_red(rgba_); }
+int Color::red() const noexcept { return get_red(rgba_); }
 
-int Color::green() const { return get_green(rgba_); }
+int Color::green() const noexcept { return get_green(rgba_); }
 
-int Color::blue() const { return get_blue(rgba_); }
+int Color::blue() const noexcept { return get_blue(rgba_); }
 
-int Color::alpha() const { return get_alpha(rgba_); }
+int Color::alpha() const noexcept { return get_alpha(rgba_); }
 
 void Color::set_named_color(const std::string &color) {
     if (color.empty()) {
@@ -80,19 +80,19 @@ void Color::set_named_color(const char *color) {
     set_named_color(std::string(color));
 }
 
-void Color::set_red(int value) { set_rgba(value, green(), blue(), alpha()); }
+void Color::set_red(int value) noexcept { set_rgba(value, green(), blue(), alpha()); }
 
-void Color::set_green(int value) { set_rgba(red(), value, blue(), alpha()); }
+void Color::set_green(int value) noexcept { set_rgba(red(), value, blue(), alpha()); }
 
-void Color::set_blue(int value) { set_rgba(red(), green(), value, alpha()); }
+void Color::set_blue(int value) noexcept { set_rgba(red(), green(), value, alpha()); }
 
-void Color::set_alpha(int value) { set_rgba(red(), green(), blue(), value); }
+void Color::set_alpha(int value) noexcept { set_rgba(red(), green(), blue(), value); }
 
-void Color::apply_tint(double tint) {
+void Color::apply_tint(double tint) noexcept {
     set_rgba(red() + (255 - red()) * tint, green() + (255 - green()) * tint, blue() + (255 - blue()) * tint, alpha());
 }
 
-void Color::set_rgba(int r, int g, int b, int a) {
+void Color::set_rgba(int r, int g, int b, int a) noexcept {
     if (!is_rgba_valid(r, g, b, a)) {
         is_valid_ = false;
         return;
@@ -102,7 +102,7 @@ void Color::set_rgba(int r, int g, int b, int a) {
     is_valid_ = true;
 }
 
-void Color::set_rgba(Rgba rgba) {
+void Color::set_rgba(Rgba rgba) noexcept {
     if (!is_rgba_valid(get_red(rgba), get_green(rgba), get_blue(rgba), get_alpha(rgba))) {
         is_valid_ = false;
         return;
@@ -112,7 +112,7 @@ void Color::set_rgba(Rgba rgba) {
     is_valid_ = true;
 }
 
-Color Color::inverted() const {
+Color Color::inverted() const noexcept {
     int m = std::min(red() < green() ? red() : green(), blue());
     int M = std::max(red() > green() ? red() : green(), blue());
     int x = 255 - m - M;

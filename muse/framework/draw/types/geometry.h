@@ -34,7 +34,7 @@
 
 namespace muse {
 template <typename T>
-inline bool geometry_is_equal(T a1, T a2) {
+inline bool geometry_is_equal(T a1, T a2) noexcept {
     if constexpr (std::is_same<T, double>::value) {
         return real_is_equal(a1, a2);
     } else {
@@ -47,69 +47,69 @@ inline bool geometry_is_equal(T a1, T a2) {
 // ====================================
 template <typename T>
 struct PointX {
-    inline PointX() = default;
+    inline PointX() noexcept = default;
 
-    inline PointX(T x, T y) : x_(x), y_(y) {}
+    inline PointX(T x, T y) noexcept : x_(x), y_(y) {}
 
-    inline bool is_null() const { return x_.is_zero() && y_.is_zero(); }
+    inline bool is_null() const noexcept { return x_.is_zero() && y_.is_zero(); }
 
-    inline void set_x(T x) { x_ = x; }
+    inline void set_x(T x) noexcept { x_ = x; }
 
-    inline void set_y(T y) { y_ = y; }
+    inline void set_y(T y) noexcept { y_ = y; }
 
-    inline void set_xy(T x, T y) {
+    inline void set_xy(T x, T y) noexcept {
         x_ = x;
         y_ = y;
     }
 
-    inline T x() const { return x_; }
+    inline T x() const noexcept { return x_; }
 
-    inline T y() const { return y_; }
+    inline T y() const noexcept { return y_; }
 
     //! NOTE I don't like this methods, but now it a lot of using
-    inline NumberT<T> &rx() { return x_; }
+    inline NumberT<T> &rx() noexcept { return x_; }
 
-    inline NumberT<T> &ry() { return y_; }
+    inline NumberT<T> &ry() noexcept { return y_; }
 
-    inline bool operator==(const PointX<T> &p) const { return p.x_ == x_ && p.y_ == y_; }
+    inline bool operator==(const PointX<T> &p) const noexcept { return p.x_ == x_ && p.y_ == y_; }
 
-    inline bool operator!=(const PointX<T> &p) const { return !this->operator==(p); }
+    inline bool operator!=(const PointX<T> &p) const noexcept { return !this->operator==(p); }
 
-    inline PointX<T> operator-() const { return PointX<T>(-x_, -y_); }
+    inline PointX<T> operator-() const noexcept { return PointX<T>(-x_, -y_); }
 
-    inline PointX<T> operator-(const PointX<T> &p) const { return PointX<T>(x_ - p.x_, y_ - p.y_); }
+    inline PointX<T> operator-(const PointX<T> &p) const noexcept { return PointX<T>(x_ - p.x_, y_ - p.y_); }
 
-    inline PointX<T> operator+(const PointX<T> &p) const { return PointX<T>(x_ + p.x_, y_ + p.y_); }
+    inline PointX<T> operator+(const PointX<T> &p) const noexcept { return PointX<T>(x_ + p.x_, y_ + p.y_); }
 
-    inline PointX<T> &operator+=(const PointX<T> &p) {
+    inline PointX<T> &operator+=(const PointX<T> &p) noexcept {
         x_ += p.x_;
         y_ += p.y_;
         return *this;
     }
 
-    inline PointX<T> &operator-=(const PointX<T> &p) {
+    inline PointX<T> &operator-=(const PointX<T> &p) noexcept {
         x_ -= p.x_;
         y_ -= p.y_;
         return *this;
     }
 
-    inline PointX<T> &operator*=(T c) {
+    inline PointX<T> &operator*=(T c) noexcept {
         x_ *= c;
         y_ *= c;
         return *this;
     }
 
-    inline PointX<T> &operator/=(T divisor) {
+    inline PointX<T> &operator/=(T divisor) noexcept {
         x_ /= divisor;
         y_ /= divisor;
         return *this;
     }
 
-    inline T manhattan_length() const { return std::abs(x_) + std::abs(y_); }
+    inline T manhattan_length() const noexcept { return std::abs(x_) + std::abs(y_); }
 
-    static inline double dot_product(const PointX<T> &p1, const PointX<T> &p2) { return p1.x_ * p2.x_ + p1.y_ * p2.y_; }
+    static inline double dot_product(const PointX<T> &p1, const PointX<T> &p2) noexcept { return p1.x_ * p2.x_ + p1.y_ * p2.y_; }
 
-    inline void normalize() {
+    inline void normalize() noexcept {
         // Need some extra precision if the length is very small.
         double len = double(x_) * double(x_) + double(y_) * double(y_);
         if (real_is_null(len - 1.0f) || real_is_null(len)) {
@@ -122,7 +122,7 @@ struct PointX {
         y_ /= len;
     }
 
-    inline PointX<T> normalized() const {
+    inline PointX<T> normalized() const noexcept {
         PointX<T> copy = *this;
         copy.normalize();
         return copy;
@@ -149,17 +149,17 @@ inline std::string dump(const PointX<T> &p) {
 }
 
 template <typename T>
-inline PointX<T> operator*(const PointX<T> &p, T c) {
+inline PointX<T> operator*(const PointX<T> &p, T c) noexcept {
     return PointX<T>(p.x() * c, p.y() * c);
 }
 
 template <typename T>
-inline PointX<T> operator*(T c, const PointX<T> &p) {
+inline PointX<T> operator*(T c, const PointX<T> &p) noexcept {
     return PointX<T>(p.x() * c, p.y() * c);
 }
 
 template <typename T>
-inline PointX<T> operator/(const PointX<T> &p, T c) {
+inline PointX<T> operator/(const PointX<T> &p, T c) noexcept {
     return PointX<T>(p.x() / c, p.y() / c);
 }
 
@@ -176,47 +176,49 @@ using PairF = std::pair<double, double>;
 // ====================================
 template <typename T>
 struct LineX {
-    inline LineX() = default;
+    inline LineX() noexcept = default;
 
-    inline LineX(const PointX<T> &p1, const PointX<T> &p2) : p1_(p1), p2_(p2) {}
+    inline LineX(const PointX<T> &p1, const PointX<T> &p2) noexcept : p1_(p1), p2_(p2) {}
 
-    inline LineX(T x1, T y1, T x2, T y2) : p1_(PointX<T>(x1, y1)), p2_(PointX<T>(x2, y2)) {}
+    inline LineX(T x1, T y1, T x2, T y2) noexcept : p1_(PointX<T>(x1, y1)), p2_(PointX<T>(x2, y2)) {}
 
-    inline bool is_null() const { return p1_.is_null() && p2_.is_null(); }
+    inline bool is_null() const noexcept { return p1_.is_null() && p2_.is_null(); }
 
-    inline const PointX<T> &p1() const { return p1_; }
+    inline const PointX<T> &p1() const noexcept { return p1_; }
 
-    inline const PointX<T> &p2() const { return p2_; }
+    inline const PointX<T> &p2() const noexcept { return p2_; }
 
-    inline double x1() const { return p1_.x(); }
+    inline double x1() const noexcept { return p1_.x(); }
 
-    inline double y1() const { return p1_.y(); }
+    inline double y1() const noexcept { return p1_.y(); }
 
-    inline double x2() const { return p2_.x(); }
+    inline double x2() const noexcept { return p2_.x(); }
 
-    inline double y2() const { return p2_.y(); }
+    inline double y2() const noexcept { return p2_.y(); }
 
-    inline void set_p1(const PointX<T> &p) { p1_ = p; }
+    inline void set_p1(const PointX<T> &p) noexcept { p1_ = p; }
 
-    inline void set_p2(const PointX<T> &p) { p2_ = p; }
+    inline void set_p2(const PointX<T> &p) noexcept { p2_ = p; }
 
-    inline void set_line(T a_x1, T a_y1, T a_x2, T a_y2) {
+    inline void set_line(T a_x1, T a_y1, T a_x2, T a_y2) noexcept {
         p1_ = PointX<T>(a_x1, a_y1);
         p2_ = PointX<T>(a_x2, a_y2);
     }
 
-    inline bool operator==(const LineX<T> &l) const { return p1_ == l.p1_ && p2_ == l.p2_; }
+    inline bool operator==(const LineX<T> &l) const noexcept { return p1_ == l.p1_ && p2_ == l.p2_; }
 
-    inline bool operator!=(const LineX<T> &l) const { return !this->operator==(l); }
+    inline bool operator!=(const LineX<T> &l) const noexcept { return !this->operator==(l); }
 
-    inline PointX<T> point_at(T t) const { return PointX<T>(p1_.x() + (p2_.x() - p1_.x()) * t, p1_.y() + (p2_.y() - p1_.y()) * t); }
+    inline PointX<T> point_at(T t) const noexcept {
+        return PointX<T>(p1_.x() + (p2_.x() - p1_.x()) * t, p1_.y() + (p2_.y() - p1_.y()) * t);
+    }
 
-    inline void translate(const PointX<T> &point) {
+    inline void translate(const PointX<T> &point) noexcept {
         p1_ += point;
         p2_ += point;
     }
 
-    inline LineX<T> translated(const PointX<T> &p) const { return LineX<T>(p1_ + p, p2_ + p); }
+    inline LineX<T> translated(const PointX<T> &p) const noexcept { return LineX<T>(p1_ + p, p2_ + p); }
 
 
 private:
@@ -232,25 +234,25 @@ using Line = LineX<int>;
 // ====================================
 template <typename T>
 struct SizeX {
-    inline SizeX() = default;
+    inline SizeX() noexcept = default;
 
-    inline SizeX(T w, T h) : w_(w), h_(h) {}
+    inline SizeX(T w, T h) noexcept : w_(w), h_(h) {}
 
-    inline bool is_null() const { return w_.is_zero() && h_.is_zero(); }
+    inline bool is_null() const noexcept { return w_.is_zero() && h_.is_zero(); }
 
-    inline T width() const { return w_; }
+    inline T width() const noexcept { return w_; }
 
-    inline T height() const { return h_; }
+    inline T height() const noexcept { return h_; }
 
-    inline void set_width(T w) { w_ = w; }
+    inline void set_width(T w) noexcept { w_ = w; }
 
-    inline void set_height(T h) { h_ = h; }
+    inline void set_height(T h) noexcept { h_ = h; }
 
-    inline bool operator==(const SizeX<T> &s) const { return s.w_ == w_ && s.h_ == h_; }
+    inline bool operator==(const SizeX<T> &s) const noexcept { return s.w_ == w_ && s.h_ == h_; }
 
-    inline bool operator!=(const SizeX<T> &s) const { return !this->operator==(s); }
+    inline bool operator!=(const SizeX<T> &s) const noexcept { return !this->operator==(s); }
 
-    inline SizeX<T> transposed() const { return SizeX<T>(h_, w_); }
+    inline SizeX<T> transposed() const noexcept { return SizeX<T>(h_, w_); }
 
 
 private:
@@ -259,17 +261,17 @@ private:
 };
 
 template <typename T>
-inline SizeX<T> operator*(const SizeX<T> &s, double c) {
+inline SizeX<T> operator*(const SizeX<T> &s, double c) noexcept {
     return SizeX<T>(s.width() * c, s.height() * c);
 }
 
 template <typename T>
-inline SizeX<T> operator*(double c, const SizeX<T> &s) {
+inline SizeX<T> operator*(double c, const SizeX<T> &s) noexcept {
     return SizeX<T>(s.width() * c, s.height() * c);
 }
 
 template <typename T>
-inline SizeX<T> operator/(const SizeX<T> &s, T c) {
+inline SizeX<T> operator/(const SizeX<T> &s, T c) noexcept {
     assert(!geometry_is_equal(c, T()));
     return SizeX<T>(s.width() / c, s.height() / c);
 }
@@ -278,9 +280,9 @@ using Size = SizeX<int>;
 using SizeF = SizeX<double>;
 
 struct ScaleF : SizeX<double> {
-    ScaleF() = default;
+    ScaleF() noexcept = default;
 
-    ScaleF(double w, double h) : SizeX<double>(w, h) {}
+    ScaleF(double w, double h) noexcept : SizeX<double>(w, h) {}
 };
 
 // ====================================
@@ -288,31 +290,31 @@ struct ScaleF : SizeX<double> {
 // ====================================
 template <typename T>
 struct RectX {
-    inline RectX() = default;
+    inline RectX() noexcept = default;
 
-    inline RectX(T x, T y, T w, T h) : x_(x), y_(y), w_(w), h_(h) {}
+    inline RectX(T x, T y, T w, T h) noexcept : x_(x), y_(y), w_(w), h_(h) {}
 
-    inline RectX(const PointX<T> &top_left, const PointX<T> &bottom_right)
+    inline RectX(const PointX<T> &top_left, const PointX<T> &bottom_right) noexcept
         : x_(top_left.x()), y_(top_left.y()), w_(bottom_right.x() - top_left.x()), h_(bottom_right.y() - top_left.y()) {}
 
-    inline RectX(const PointX<T> &atop_left, const SizeX<T> &asize)
+    inline RectX(const PointX<T> &atop_left, const SizeX<T> &asize) noexcept
         : x_(atop_left.x()), y_(atop_left.y()), w_(asize.width()), h_(asize.height()) {}
 
-    inline bool is_null() const { return w_.is_zero() && h_.is_zero(); }
+    inline bool is_null() const noexcept { return w_.is_zero() && h_.is_zero(); }
 
-    inline bool is_empty() const { return w_ <= T() || h_ <= T(); }
+    inline bool is_empty() const noexcept { return w_ <= T() || h_ <= T(); }
 
-    inline bool is_valid() const { return w_ > T() && h_ > T(); }
+    inline bool is_valid() const noexcept { return w_ > T() && h_ > T(); }
 
-    inline T x() const { return x_; }
+    inline T x() const noexcept { return x_; }
 
-    inline T y() const { return y_; }
+    inline T y() const noexcept { return y_; }
 
-    inline T width() const { return w_; }
+    inline T width() const noexcept { return w_; }
 
-    inline T height() const { return h_; }
+    inline T height() const noexcept { return h_; }
 
-    inline SizeX<T> size() const { return SizeX<T>(w_, h_); }
+    inline SizeX<T> size() const noexcept { return SizeX<T>(w_, h_); }
 
     inline T left() const noexcept { return x_; }
 
@@ -322,128 +324,130 @@ struct RectX {
 
     inline T bottom() const noexcept { return y_ + h_; }
 
-    inline PointX<T> top_left() const { return PointX<T>(x_, y_); }
+    inline PointX<T> top_left() const noexcept { return PointX<T>(x_, y_); }
 
-    inline PointX<T> bottom_right() const { return PointX<T>(x_ + w_, y_ + h_); }
+    inline PointX<T> bottom_right() const noexcept { return PointX<T>(x_ + w_, y_ + h_); }
 
-    inline PointX<T> top_right() const { return PointX<T>(x_ + w_, y_); }
+    inline PointX<T> top_right() const noexcept { return PointX<T>(x_ + w_, y_); }
 
-    inline PointX<T> bottom_left() const { return PointX<T>(x_, y_ + h_); }
+    inline PointX<T> bottom_left() const noexcept { return PointX<T>(x_, y_ + h_); }
 
-    inline PointX<T> center() const { return PointX<T>(x_ + w_ / NumberT<T>::cast(2), y_ + h_ / NumberT<T>::cast(2)); }
+    inline PointX<T> center() const noexcept { return PointX<T>(x_ + w_ / NumberT<T>::cast(2), y_ + h_ / NumberT<T>::cast(2)); }
 
-    inline void set_coords(T xp1, T yp1, T xp2, T yp2) {
+    inline void set_coords(T xp1, T yp1, T xp2, T yp2) noexcept {
         x_ = xp1;
         y_ = yp1;
         w_ = xp2 - xp1;
         h_ = yp2 - yp1;
     }
 
-    inline void set_rect(double ax, double ay, double aaw, double aah) {
+    inline void set_rect(double ax, double ay, double aaw, double aah) noexcept {
         x_ = ax;
         y_ = ay;
         w_ = aaw;
         h_ = aah;
     }
 
-    inline void set_height(T h) { h_ = h; }
+    inline void set_height(T h) noexcept { h_ = h; }
 
-    inline void set_width(T w) { w_ = w; }
+    inline void set_width(T w) noexcept { w_ = w; }
 
-    inline void set_size(const SizeX<T> &s) {
+    inline void set_size(const SizeX<T> &s) noexcept {
         w_ = s.width();
         h_ = s.height();
     }
 
-    inline void set_left(T pos) {
+    inline void set_left(T pos) noexcept {
         T diff = pos - x_;
         x_ += diff;
         w_ -= diff;
     }
 
-    inline void set_right(T pos) { w_ = pos - x_; }
+    inline void set_right(T pos) noexcept { w_ = pos - x_; }
 
-    inline void set_top(T pos) {
+    inline void set_top(T pos) noexcept {
         T diff = pos - y_;
         y_ += diff;
         h_ -= diff;
     }
 
-    inline void set_bottom(T pos) { h_ = pos - y_; }
+    inline void set_bottom(T pos) noexcept { h_ = pos - y_; }
 
-    inline void set_x(T x) { x_ = x; }
+    inline void set_x(T x) noexcept { x_ = x; }
 
-    inline void set_y(T y) { y_ = y; }
+    inline void set_y(T y) noexcept { y_ = y; }
 
-    inline void set_top_left(const PointX<T> &p) {
+    inline void set_top_left(const PointX<T> &p) noexcept {
         set_left(p.x());
         set_top(p.y());
     }
 
-    inline void set_top_right(const PointX<T> &p) {
+    inline void set_top_right(const PointX<T> &p) noexcept {
         set_right(p.x());
         set_top(p.y());
     }
 
-    inline void set_bottom_left(const PointX<T> &p) {
+    inline void set_bottom_left(const PointX<T> &p) noexcept {
         set_left(p.x());
         set_bottom(p.y());
     }
 
-    inline void set_bottom_right(const PointX<T> &p) {
+    inline void set_bottom_right(const PointX<T> &p) noexcept {
         set_right(p.x());
         set_bottom(p.y());
     }
 
-    inline bool operator==(const RectX<T> &r) const { return r.x_ == x_ && r.y_ == y_ && r.w_ == w_ && r.h_ == h_; }
+    inline bool operator==(const RectX<T> &r) const noexcept { return r.x_ == x_ && r.y_ == y_ && r.w_ == w_ && r.h_ == h_; }
 
-    inline bool operator!=(const RectX<T> &r) const { return !this->operator==(r); }
+    inline bool operator!=(const RectX<T> &r) const noexcept { return !this->operator==(r); }
 
-    inline void move_to(double ax, double ay) {
+    inline void move_to(double ax, double ay) noexcept {
         x_ = ax;
         y_ = ay;
     }
 
-    inline void move_to(const PointX<T> &p) {
+    inline void move_to(const PointX<T> &p) noexcept {
         x_ = p.x();
         y_ = p.y();
     }
 
-    inline void move_center(const PointX<T> &p) {
+    inline void move_center(const PointX<T> &p) noexcept {
         x_ = p.x() - w_ / NumberT<T>::cast(2);
         y_ = p.y() - h_ / NumberT<T>::cast(2);
     }
 
-    inline void move_top(double pos) { y_ = pos; }
+    inline void move_top(double pos) noexcept { y_ = pos; }
 
-    inline void translate(T dx, T dy) {
+    inline void translate(T dx, T dy) noexcept {
         x_ += dx;
         y_ += dy;
     }
 
-    inline void translate(const PointX<T> &p) {
+    inline void translate(const PointX<T> &p) noexcept {
         x_ += p.x();
         y_ += p.y();
     }
 
-    inline RectX<T> translated(T dx, T dy) const { return RectX<T>(x_ + dx, y_ + dy, w_, h_); }
+    inline RectX<T> translated(T dx, T dy) const noexcept { return RectX<T>(x_ + dx, y_ + dy, w_, h_); }
 
-    inline RectX<T> translated(const PointX<T> &p) const { return RectX<T>(x_ + p.x(), y_ + p.y(), w_, h_); }
+    inline RectX<T> translated(const PointX<T> &p) const noexcept { return RectX<T>(x_ + p.x(), y_ + p.y(), w_, h_); }
 
-    inline void adjust(double xp1, double yp1, double xp2, double yp2) {
+    inline void adjust(double xp1, double yp1, double xp2, double yp2) noexcept {
         x_ += xp1;
         y_ += yp1;
         w_ += xp2 - xp1;
         h_ += yp2 - yp1;
     }
 
-    inline RectX<T> adjusted(T xp1, T yp1, T xp2, T yp2) const { return RectX<T>(x_ + xp1, y_ + yp1, w_ + xp2 - xp1, h_ + yp2 - yp1); }
+    inline RectX<T> adjusted(T xp1, T yp1, T xp2, T yp2) const noexcept {
+        return RectX<T>(x_ + xp1, y_ + yp1, w_ + xp2 - xp1, h_ + yp2 - yp1);
+    }
 
-    inline void pad(double p) { adjust(-p, -p, p, p); }
+    inline void pad(double p) noexcept { adjust(-p, -p, p, p); }
 
-    inline RectX<T> padded(double p) const { return adjusted(-p, -p, p, p); }
+    inline RectX<T> padded(double p) const noexcept { return adjusted(-p, -p, p, p); }
 
-    inline RectX<T> &scale(const SizeX<T> &mag) {
+    inline RectX<T> &scale(const SizeX<T> &mag) noexcept {
         x_ *= mag.width();
         y_ *= mag.height();
         w_ *= mag.width();
@@ -451,41 +455,41 @@ struct RectX {
         return *this;
     }
 
-    inline RectX<T> scaled(const SizeX<T> &mag) const {
+    inline RectX<T> scaled(const SizeX<T> &mag) const noexcept {
         return RectX<T>(x_ * mag.width(), y_ * mag.height(), w_ * mag.width(), h_ * mag.height());
     }
 
-    bool contains(const PointX<T> &p) const;
-    bool contains(const RectX<T> &r) const;
+    bool contains(const PointX<T> &p) const noexcept;
+    bool contains(const RectX<T> &r) const noexcept;
 
-    T distance_to(const PointX<T> &p) const;
+    T distance_to(const PointX<T> &p) const noexcept;
 
-    bool intersects(const RectX<T> &r) const;
+    bool intersects(const RectX<T> &r) const noexcept;
 
-    RectX<T> united(const RectX<T> &r) const;
+    RectX<T> united(const RectX<T> &r) const noexcept;
 
-    inline RectX<T> &unite(const RectX<T> &r) {
+    inline RectX<T> &unite(const RectX<T> &r) noexcept {
         *this = united(r);
         return *this;
     }
 
-    RectX<T> intersected(const RectX<T> &r) const;
+    RectX<T> intersected(const RectX<T> &r) const noexcept;
 
-    inline RectX<T> &intersect(const RectX<T> &r) {
+    inline RectX<T> &intersect(const RectX<T> &r) noexcept {
         *this = intersected(r);
         return *this;
     }
 
     //! NOTE I don't like this operators, but now it a lot of using
-    inline RectX<T> operator|(const RectX<T> &r) const { return united(r); }
+    inline RectX<T> operator|(const RectX<T> &r) const noexcept { return united(r); }
 
-    inline RectX<T> operator&(const RectX<T> &r) const { return intersected(r); }
+    inline RectX<T> operator&(const RectX<T> &r) const noexcept { return intersected(r); }
 
-    inline RectX<T> &operator|=(const RectX<T> &r) { return unite(r); }
+    inline RectX<T> &operator|=(const RectX<T> &r) noexcept { return unite(r); }
 
-    inline RectX<T> &operator&=(const RectX<T> &r) { return intersect(r); }
+    inline RectX<T> &operator&=(const RectX<T> &r) noexcept { return intersect(r); }
 
-    RectX<T> normalized() const;
+    RectX<T> normalized() const noexcept;
 
 
 private:
@@ -510,11 +514,11 @@ inline std::string dump(const RectX<T> &r) {
 using RectF = RectX<double>;
 
 struct Rect : RectX<int> {
-    inline Rect() : RectX<int>() {}
+    inline Rect() noexcept : RectX<int>() {}
 
-    inline Rect(int x, int y, int w, int h) : RectX<int>(x, y, w, h) {}
+    inline Rect(int x, int y, int w, int h) noexcept : RectX<int>(x, y, w, h) {}
 
-    inline RectF to_rect_f() const { return RectF(x(), y(), width(), height()); }
+    inline RectF to_rect_f() const noexcept { return RectF(x(), y(), width(), height()); }
 };
 
 // ====================================
@@ -523,7 +527,7 @@ struct Rect : RectX<int> {
 template <typename T>
 struct PolygonX : std::vector<PointX<T>> {
 
-    inline PolygonX() = default;
+    inline PolygonX() noexcept = default;
 
     inline PolygonX(const std::vector<PointX<T>> &v) : std::vector<PointX<T>>(v) {}
 
@@ -534,7 +538,7 @@ struct PolygonX : std::vector<PointX<T>> {
         return *this;
     }
 
-    inline void translate(const PointX<T> &offset) {
+    inline void translate(const PointX<T> &offset) noexcept {
         if (offset.is_null()) {
             return;
         }
@@ -554,7 +558,7 @@ struct PolygonX : std::vector<PointX<T>> {
         return copy;
     }
 
-    RectX<T> bounding_rect() const {
+    RectX<T> bounding_rect() const noexcept {
         const PointX<T> *pd = this->data();
         const PointX<T> *pe = pd + this->size();
         if (pd == pe) {
@@ -586,7 +590,7 @@ using Polygon = PolygonX<int>;
 
 // Implementation ==========================================
 template <typename T>
-RectX<T> RectX<T>::united(const RectX<T> &r) const {
+RectX<T> RectX<T>::united(const RectX<T> &r) const noexcept {
     if (is_null()) {
         return r;
     }
@@ -628,7 +632,7 @@ RectX<T> RectX<T>::united(const RectX<T> &r) const {
 }
 
 template <typename T>
-RectX<T> RectX<T>::intersected(const RectX<T> &r) const {
+RectX<T> RectX<T>::intersected(const RectX<T> &r) const noexcept {
     NumberT<T> l1 = x_;
     NumberT<T> r1 = x_;
     if (w_.is_negative()) {
@@ -684,7 +688,7 @@ RectX<T> RectX<T>::intersected(const RectX<T> &r) const {
 }
 
 template <typename T>
-bool RectX<T>::intersects(const RectX<T> &r) const {
+bool RectX<T>::intersects(const RectX<T> &r) const noexcept {
     NumberT<T> l1 = x_;
     NumberT<T> r1 = x_;
     if (w_.is_negative()) {
@@ -735,7 +739,7 @@ bool RectX<T>::intersects(const RectX<T> &r) const {
 }
 
 template <typename T>
-bool RectX<T>::contains(const PointX<T> &p) const {
+bool RectX<T>::contains(const PointX<T> &p) const noexcept {
     NumberT<T> l = x_;
     NumberT<T> r = x_;
     if (w_.is_negative()) {
@@ -766,7 +770,7 @@ bool RectX<T>::contains(const PointX<T> &p) const {
 }
 
 template <typename T>
-bool RectX<T>::contains(const RectX<T> &r) const {
+bool RectX<T>::contains(const RectX<T> &r) const noexcept {
     NumberT<T> l1 = x_;
     NumberT<T> r1 = x_;
     if (w_.is_negative()) {
@@ -817,14 +821,14 @@ bool RectX<T>::contains(const RectX<T> &r) const {
 }
 
 template <typename T>
-T RectX<T>::distance_to(const PointX<T> &p) const {
+T RectX<T>::distance_to(const PointX<T> &p) const noexcept {
     NumberT<T> dx = std::max({bottom_left().x() - p.x(), 0.0, p.x() - bottom_right().x()});
     NumberT<T> dy = std::max({bottom_left().y() - p.y(), 0.0, p.y() - top_left().y()});
     return std::sqrt(dx * dx + dy * dy);
 }
 
 template <typename T>
-RectX<T> RectX<T>::normalized() const {
+RectX<T> RectX<T>::normalized() const noexcept {
     RectX<T> r = *this;
     if (r.w_.is_negative()) {
         r.x_ += r.w_;

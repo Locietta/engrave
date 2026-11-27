@@ -4,7 +4,9 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <exception>
 #include <functional>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -367,6 +369,8 @@ NativePitchResult apply_score_pitch_edit(mu::engraving::MasterScore *score, cons
     if (result.changed_notes == 0) return result;
     const auto before_revision = score->source_revision();
     ScoreCommandGuard command(score);
+    std::exception_ptr native_failure;
+    std::optional<std::string> wrapped_error;
     try {
         command.begin();
         for (const auto &change : changes) {
@@ -384,12 +388,14 @@ NativePitchResult apply_score_pitch_edit(mu::engraving::MasterScore *score, cons
         for (const auto &change : changes) committed = committed && change.note->pitch() == change.pitch;
         if (!committed) throw NativeEditFailure("Engraving transaction did not commit consistently", true);
     } catch (const NativeEditFailure &) {
-        throw;
+        native_failure = std::current_exception();
     } catch (const std::exception &e) {
-        throw NativeEditFailure(e.what(), true);
+        wrapped_error = e.what();
     } catch (...) {
-        throw NativeEditFailure("Unknown engraving transaction failure", true);
+        wrapped_error = "Unknown engraving transaction failure";
     }
+    if (native_failure) std::rethrow_exception(native_failure);
+    if (wrapped_error) throw NativeEditFailure(*wrapped_error, true);
     return result;
 }
 

@@ -274,18 +274,25 @@ private:
                     encoder->end();
                 } catch (...) {}
             };
+
+            struct FailedStreamGuard {
+                const decltype(end_failed_stream) &fn;
+                bool ok = false;
+
+                ~FailedStreamGuard() noexcept {
+                    if (!ok) fn();
+                }
+            } guard{end_failed_stream};
+
             size_t encoded = 0;
-            try {
+            {
                 OfflineTimer timer(timing.encode);
                 encoded = encoder->encode(slot->frames, input);
-            } catch (...) {
-                end_failed_stream();
-                throw;
             }
             if (encoded == 0) {
-                end_failed_stream();
                 return Outcome::ENCODE_FAILED;
             }
+            guard.ok = true;
             {
                 const std::scoped_lock lock(mutex_);
                 ++consumed_;

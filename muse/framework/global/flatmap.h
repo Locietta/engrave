@@ -321,6 +321,10 @@ private:
     }
 
     Storage data_;
+#if defined(_MSC_VER)
+    [[msvc::no_unique_address]] Compare comp_{};
+#else
     [[no_unique_address]] Compare comp_{};
+#endif
 };
 } // namespace muse

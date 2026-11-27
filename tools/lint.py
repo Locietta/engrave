@@ -195,15 +195,6 @@ def lint_engine(args: argparse.Namespace, repo_root: Path) -> int:
         "--header-filter=^" + root_pattern + r"[\\/](engrave|src|muse)[\\/]",
         "--warnings-as-errors=readability-identifier-naming",
     ]
-    if sys.platform == "win32":
-        # MSVC vector algorithms use intrinsics unsupported by clang-tidy;
-        # clang-tidy's MSVC-compat frontend also trips ngcpp-proxy's clang-cl
-        # [[msvc::no_unique_address]] layout guard (llvm/llvm-project#143245),
-        # whereas cl.exe compiles the actual binary.
-        command += [
-            "--extra-arg=-D_USE_STD_VECTOR_ALGORITHMS=0",
-            "--extra-arg=-DMSFT_PROXY_V4_DETAIL_COMPATIBILITY_CHECK_H_",
-        ]
 
     def check(path: Path):
         result = subprocess.run([*command, str(path)], cwd=repo_root, capture_output=True, text=True, errors="replace")

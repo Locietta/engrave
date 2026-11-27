@@ -45,9 +45,9 @@ using namespace mu::engraving;
 namespace json = muse::json;
 
 struct EngravingFont::Metadata {
-    glz::generic_sorted anchors;
-    glz::generic_sorted alternates;
-    glz::generic_sorted defaults;
+    json::SortedJson anchors;
+    json::SortedJson alternates;
+    json::SortedJson defaults;
 
     struct glaze {
         using T = Metadata;

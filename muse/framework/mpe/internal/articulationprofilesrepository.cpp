@@ -43,7 +43,7 @@ static const FlatMap<ArticulationFamily, io::PathT> default_articulation_profile
 namespace {
 
 namespace json = muse::json;
-using ProfileInput = glz::generic_sorted;
+using ProfileInput = json::SortedJson;
 
 struct Offset {
     int offset_position;
