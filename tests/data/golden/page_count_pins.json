@@ -5,8 +5,8 @@
         "paths": 184,
         "total_uses": 286
       },
-      "reason": "Reviewed platform SVG counts; hash traces to main migration pins (independent hash audit at 7f9eb0d)",
-      "svg_sha256": "929c07ffd95dcf54a70fb234b449d195b9b00b229b3d2fe8835614d8c4ff802f"
+      "reason": "Reviewed platform SVG counts after Wave 1 BspTree removal and unmanaged_spanner_ determinism fix; counts unchanged (184 paths, 286 uses).",
+      "svg_sha256": "19d426a4d33192934c04c967735ab1b81379d7f2a70fe48b1122809b6fe27cbe"
     }
   },
   "windows": {
