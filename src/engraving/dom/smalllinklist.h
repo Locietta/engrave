@@ -39,6 +39,25 @@ struct SmallLinkList {
     using const_iterator = EngravingObject *const *;
 
     SmallLinkList() = default;
+    SmallLinkList(const SmallLinkList &) = default;
+    SmallLinkList &operator=(const SmallLinkList &) = default;
+
+    SmallLinkList(SmallLinkList &&other) noexcept : inline_(other.inline_), overflow_(std::move(other.overflow_)), size_(other.size_) {
+        other.overflow_.clear();
+        other.size_ = 0;
+    }
+
+    SmallLinkList &operator=(SmallLinkList &&other) noexcept {
+        if (this == &other) {
+            return *this;
+        }
+        inline_ = other.inline_;
+        overflow_ = std::move(other.overflow_);
+        size_ = other.size_;
+        other.overflow_.clear();
+        other.size_ = 0;
+        return *this;
+    }
 
     SmallLinkList(std::initializer_list<EngravingObject *> init) : SmallLinkList(init.begin(), init.end()) {}
 

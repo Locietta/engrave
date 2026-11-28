@@ -642,6 +642,7 @@ cc_binary(
         "engrave/tests/describe_test.cpp",
         "engrave/tests/diagnostics_test.cpp",
         "engrave/tests/digest.cpp",
+        "engrave/tests/export_midi_test.cpp",
         "engrave/tests/gp_import_test.cpp",
         "engrave/tests/handles_mmr_segment_test.cpp",
         "engrave/tests/handles_native_save_test.cpp",

@@ -75,6 +75,7 @@ struct MStyle {
     double value_absolute(Sid idx) const;
 
     void set(Sid idx, const PropertyValue &v);
+    void clear(Sid idx);
 
     double spatium() const { return style_d(Sid::SPATIUM); }
 

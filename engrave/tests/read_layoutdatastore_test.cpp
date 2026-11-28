@@ -979,3 +979,78 @@ TEST(LayoutDataStore, SingleOwnerChildrenAndBorrowerFastPathStaySound) {
     }
     EXPECT_EQ(output_seg->pre_appended_item(0), nullptr);
 }
+
+TEST(LayoutDataStore, SpannerDestructionAfterDiscardPrunesChordSpannerSets) {
+    using namespace mu::engraving;
+    constexpr std::string_view two_chord_mscx = R"(<?xml version="1.0" encoding="UTF-8"?>
+<museScore version="5.00"><Score><Division>480</Division>
+<Part id="1"><Staff id="1"/><Instrument id="piano"><trackName>Piano</trackName></Instrument></Part>
+<Staff id="1"><Measure><voice>
+  <Chord><durationType>quarter</durationType><Note><pitch>60</pitch><tpc>14</tpc></Note></Chord>
+  <Chord><durationType>quarter</durationType><Note><pitch>62</pitch><tpc>16</tpc></Note></Chord>
+  <Chord><durationType>quarter</durationType><Note><pitch>64</pitch><tpc>18</tpc></Note></Chord>
+  <Chord><durationType>quarter</durationType><Note><pitch>65</pitch><tpc>13</tpc></Note></Chord>
+</voice></Measure></Staff>
+</Score></museScore>)";
+    auto opened = g_engine->open(as_bytes(two_chord_mscx));
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    auto *measure = master.first_measure();
+    ASSERT_NE(measure, nullptr);
+
+    std::vector<Chord *> chords;
+    for (Segment *seg = measure->first(SegmentType::CHORD_REST); seg; seg = seg->next(SegmentType::CHORD_REST)) {
+        if (auto *el = seg->element(0); el && el->is_chord()) chords.push_back(to_chord(el));
+    }
+    ASSERT_EQ(chords.size(), 4u);
+
+    const auto attach_slur = [&](Chord *start, Chord *end) -> Slur * {
+        auto *slur = Factory::create_slur(master.dummy());
+        slur->set_track(0);
+        slur->set_track2(0);
+        slur->set_tick(start->tick());
+        slur->set_tick2(end->tick());
+        slur->set_start_element(start);
+        slur->set_end_element(end);
+        master.add_spanner(slur);
+        start->add_starting_spanner(slur);
+        end->add_ending_spanner(slur);
+        return slur;
+    };
+
+    auto *slur_with_ldata = attach_slur(chords[0], chords[1]);
+    auto *slur_cold = attach_slur(chords[2], chords[3]);
+    master.ensure_layout();
+    ASSERT_NE(chords[0]->starting_spanners().find(slur_with_ldata), chords[0]->starting_spanners().end());
+    ASSERT_NE(chords[1]->ending_spanners().find(slur_with_ldata), chords[1]->ending_spanners().end());
+    ASSERT_NE(chords[2]->starting_spanners().find(slur_cold), chords[2]->starting_spanners().end());
+    ASSERT_NE(chords[3]->ending_spanners().find(slur_cold), chords[3]->ending_spanners().end());
+
+    // Discard layout output: borrowed_in_layout_ is cleared on all live records and pools are drained.
+    engrave::DocumentAccess::impl(document).discard_layout_output(master);
+    ASSERT_FALSE(slur_with_ldata->is_borrowed_in_layout());
+    ASSERT_FALSE(slur_cold->is_borrowed_in_layout());
+    ASSERT_EQ(master.layout_data_store()->size(), 0u);
+
+    // Case 1: Destroying a spanner while Chord::LayoutData is drained (!has_borrower_containers())
+    // and end_element_ was invalidated (leaving remove_spanner unable to unlink end_chord directly).
+    slur_cold->set_property(Pid::SPANNER_TICKS, Fraction(1, 8));
+    master.remove_spanner(slur_cold);
+    delete slur_cold;
+    EXPECT_TRUE(chords[2]->starting_spanners().empty());
+    EXPECT_TRUE(chords[3]->ending_spanners().empty());
+
+    // Case 2: Chord::LayoutData is live while slur_with_ldata->is_borrowed_in_layout() remains false.
+    chords[0]->mutldata();
+    chords[1]->mutldata();
+    slur_with_ldata->set_property(Pid::SPANNER_TICKS, Fraction(1, 8));
+    master.remove_spanner(slur_with_ldata);
+    delete slur_with_ldata;
+    EXPECT_TRUE(chords[0]->starting_spanners().empty());
+    EXPECT_TRUE(chords[1]->ending_spanners().empty());
+
+    // Subsequent layout must traverse chord spanner sets without touching freed pointers.
+    master.set_layout_all();
+    master.ensure_layout();
+}

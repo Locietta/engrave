@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <utility>
 #include <vector>
@@ -42,8 +43,9 @@ struct PlaybackScoreBuilder {
 #endif
 
     // checkpoint runs between walk steps and inside the freeze loops and may throw to abort; the partial store
-    // is then discarded. Throws muse::mpe::StoreLimit when a buffer would leave the uint32 format. An empty
-    // score gives an empty store
-    PlaybackScore build(Score *score, muse::FnRef<void()> checkpoint = {}) const;
+    // is then discarded. charge_bytes, when set, receives incremental flat-store buffer growth in bytes as
+    // tracks and buffers expand and may throw to enforce working-memory budgets. Throws muse::mpe::StoreLimit
+    // when a buffer would leave the uint32 format. An empty score gives an empty store
+    PlaybackScore build(Score *score, muse::FnRef<void()> checkpoint = {}, muse::FnRef<void(std::uint64_t)> charge_bytes = {}) const;
 };
 } // namespace mu::engraving

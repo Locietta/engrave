@@ -76,7 +76,7 @@
  "created.json": {
   "audio.json": "49af6711ee06e72d28c9e787f055e492f5c2afd0233fe4351d5beeec1a22e569",
   "measurePositions.json": "d6c41c379fe8685934b070985abeb26c2e4666efab724a8945f8d88bc0e07396",
-  "midi.json": "950ca4680148e9edcba8f0032d3375a2bfa0b6b94e910b436b3fafdb7a0007d0",
+  "midi.json": "704c7fe5f54221313dce9665970d296e0dccf01959c7fb9b677d0628050ffcee",
   "mscz.json": "838c98475b77b011e191768d7b56f0889e659f591b39146bfaa4cb8036ba9a9a",
   "musicxml-semantic.json": "b1ba861dc1f541982edcb8e7f0851ddf824af9efbdb366636fa8ecd8be6abee5",
   "mxl.json": "b62b61d0c8f8295ba8ecdad6dac769a9da4c789dda7b1efada026b211c48f4c1",
@@ -121,7 +121,7 @@
   "semantic.json": "651064a84b32d29f24418d86087467e43fe2ea021c3c1ff750f015a182cb1280"
  },
  "edit-replace-measures": {
-  "midi.json": "b81cfc0269214e90cbaa7e0f03d59956123683db703f4e97b6f51b9db31b46ec",
+  "midi.json": "1e804bd8695c3202b6b6f9f38dcba0b31d9a5482e613b62143953ecf456fdb00",
   "musicxml-semantic.json": "c34f77cd4cb0646ad58de9b2e31269ac7d2ba74fbac33c6ae8db82aa705134e4",
   "score.mscx": "52132b11917f9959627da194aed594f445f6e09603e4b9a2c06017b74b462f6e",
   "score.musicxml": "0314eecf94f2306cc743ce6a95da9d688cf147850984940f08770be12922fea4",
@@ -144,7 +144,7 @@
  "evening.musicxml": {
   "audio.json": "a5371a9e9a1aac01b3e59026d29fdc0423edf7d1e92811671ced52998bee1b90",
   "measurePositions.json": "03cd09efa7c92df7a0562439109e593765bd8caa4aae2e2ae9612a6fb326f8f3",
-  "midi.json": "5f27310f5d67549fb9405e8fa06131f154753bac9d2353f4546cb73411e98470",
+  "midi.json": "0dfa7713ae2d0ca2a0e82eb6035124dc6adb02f9c166274c723ec27ea5f68a59",
   "mscz.json": "bed06ce57ebb3fc64d1d0b0b56dd8b2161593722945c52dc30f69ef9789b9d72",
   "musicxml-semantic.json": "d51a694249c0fdf3abb3f544cecc422d54476a54b644b8003d41ed8b2e626402",
   "mxl.json": "e6f452d4ddec4afd01665e0b57d7e7e09dee14a6ec79812c7ba423b51ac0e79a",
@@ -244,7 +244,7 @@
  "lyrics.mscx": {
   "audio.json": "8aaf37862116196b263e15d4cfaf8dd0ea65cb8fc471dbaaeac71544edab769d",
   "measurePositions.json": "cfd92895789e958e7e32573d63cd600bf8b9b251d90d7504fc5cb857beadd108",
-  "midi.json": "1c88459b5c630f313fe8c8aa7a9ce27c219d3da6d5c66448206382c7d7013865",
+  "midi.json": "a7eafdef84d7a3eb5a34d36a6391eb740d8dee8160a275e6596d45753e02d710",
   "mscz.json": "762919b2e1169c0024805aecdd2c9dc1bfe7b5812cb0e934dd138e5d5fb9805b",
   "musicxml-semantic.json": "1705a0d3ca7b373dabc2edf02d6efdc8d866d6e23f34fc27a50f759d4ef5e8c9",
   "mxl.json": "ccdb3288ffc36b454cb091cf94f1d20ab53e5af7478944a54c4301269923238a",

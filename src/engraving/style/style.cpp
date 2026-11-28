@@ -76,10 +76,12 @@ void MStyle::set(const Sid t, const PropertyValue &val) {
     } else {
         if (StyleDef::style_values[idx].value_type() == PType::SPATIUM) {
             double spatium_value = value(Sid::SPATIUM).to_real();
-            precomputed_values_[idx] = values_[idx].value<Spatium>().val() * spatium_value;
+            precomputed_values_[idx] = value(t).value<Spatium>().val() * spatium_value;
         }
     }
 }
+
+void MStyle::clear(const Sid idx) { set(idx, PropertyValue{}); }
 
 double MStyle::default_spatium() const { return StyleDef::style_values[static_cast<size_t>(Sid::SPATIUM)].default_value.to_double(); }
 

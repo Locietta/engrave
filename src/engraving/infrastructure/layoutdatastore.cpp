@@ -49,6 +49,23 @@ void collect_owned_subtree(const EngravingItem &item, std::vector<const Engravin
     if (item.has_layout_data()) for_each_layout_payload_child(item, *item.ldata(), visit);
     for_each_owned_item_child(item, visit);
 }
+
+template <typename Fn>
+void for_each_score_chord(Score *score, Fn &&visit) {
+    if (!score || !Score::is_alive(score)) return;
+    for (Measure *measure = score->first_measure(); measure; measure = measure->next_measure()) {
+        for (Segment *seg = measure->first(SegmentType::CHORD_REST); seg; seg = seg->next(SegmentType::CHORD_REST)) {
+            for (EngravingItem *el : seg->elist()) {
+                if (!el || !el->is_chord()) continue;
+                auto *chord = to_chord(el);
+                visit(*chord);
+                for (Chord *grace : chord->grace_notes()) {
+                    if (grace) visit(*grace);
+                }
+            }
+        }
+    }
+}
 } // namespace
 
 struct LayoutDataStore::RetireEntry {
@@ -292,7 +309,7 @@ void LayoutDataStore::erase(EngravingItem &item) {
 }
 
 LayoutDataStore::RetireScope LayoutDataStore::retire_payload_children(const EngravingItem &item, const ItemLayoutData &data) {
-    if (clearing_ || suppress_shape_prune_ || !has_borrower_containers()) return {};
+    if (clearing_ || suppress_shape_prune_) return {};
     std::vector<const EngravingItem *> targets;
     muse::HashSet<const EngravingItem *> seen;
     if (!is_retired_in_flight(item)) {
@@ -365,7 +382,8 @@ LayoutDataStore::RetireScope LayoutDataStore::begin_retire_scope(std::vector<con
     if (clearing_ || suppress_shape_prune_ || targets.empty()) return {};
     std::sort(targets.begin(), targets.end(), std::less<>{});
     targets.erase(std::unique(targets.begin(), targets.end()), targets.end());
-    if (has_borrower_containers()) prune_shape_borrowers(targets, nullptr);
+    const bool has_spanner = std::ranges::any_of(targets, [](const EngravingItem *item) { return item && item->is_spanner(); });
+    if (has_borrower_containers() || has_spanner) prune_shape_borrowers(targets, nullptr);
     return RetireScope(*this, std::move(targets));
 }
 
@@ -400,10 +418,13 @@ std::vector<LayoutDataStore::RetireScope> LayoutDataStore::retire_batch_for_disp
 void LayoutDataStore::prune_shape_borrowers(std::span<const EngravingItem *const> retired, const BeamBase *beam) {
     if (!retired.empty()) {
         std::vector<const EngravingItem *> borrowed;
+        std::vector<const EngravingItem *> retired_spanners;
         for (const EngravingItem *item : retired) {
-            if (item && item->is_borrowed_in_layout()) borrowed.push_back(item);
+            if (!item) continue;
+            if (item->is_borrowed_in_layout()) borrowed.push_back(item);
+            if (item->is_spanner()) retired_spanners.push_back(item);
         }
-        if (!borrowed.empty()) {
+        if (!borrowed.empty() && has_borrower_containers()) {
             const auto borrows_retired = [&](const ShapeElement &element) { return contains_retired(borrowed, element.item()); };
             for (EngravingItem *owner : shape_borrowers_) {
                 if (auto *data = owner->layout_data_) {
@@ -428,46 +449,61 @@ void LayoutDataStore::prune_shape_borrowers(std::span<const EngravingItem *const
                 const auto size = std::as_const(*segment).shapes().size();
                 for (size_t i = 0; i < size; ++i) segment->staff_shape(i).remove_if(borrows_retired);
             });
-            records_->pool<Chord::LayoutData>().for_each_live([&](EngravingItem &owner, Chord::LayoutData &) {
-                to_chord(&owner)->remove_spanner_borrowers([&](const Spanner *span) { return contains_retired(borrowed, span); });
+        }
+        if (!retired_spanners.empty()) {
+            // Chord spanner sets live on source DOM chords across discard_score_output(),
+            // even after borrowed_in_layout_ is cleared and Chord::LayoutData is drained.
+            const auto is_retired_spanner = [&](const Spanner *span) { return contains_retired(retired_spanners, span); };
+            records_->pool<Chord::LayoutData>().for_each_live(
+                [&](EngravingItem &owner, Chord::LayoutData &) { to_chord(&owner)->remove_spanner_borrowers(is_retired_spanner); });
+            for_each_score_chord(score_, [&](Chord &chord) {
+                if (!find(chord)) chord.remove_spanner_borrowers(is_retired_spanner);
             });
         }
 #ifndef NDEBUG
-        const auto has_retired_ref = [&](const ShapeElement &element) { return contains_retired(retired, element.item()); };
-        records_->for_each_live([&](EngravingItem &owner, ItemLayoutData &data) {
-            if (contains_retired(retired, &owner)) return;
-            if (data.is_set_shape()) {
-                for (const ShapeElement &el : data.shape_.elements()) assert(!has_retired_ref(el));
+        if (has_borrower_containers()) {
+            const auto has_retired_ref = [&](const ShapeElement &element) { return contains_retired(retired, element.item()); };
+            records_->for_each_live([&](EngravingItem &owner, ItemLayoutData &data) {
+                if (contains_retired(retired, &owner)) return;
+                if (data.is_set_shape()) {
+                    for (const ShapeElement &el : data.shape_.elements()) assert(!has_retired_ref(el));
+                }
+                if (data.is_set_mask()) {
+                    for (const ShapeElement &el : data.mask_.elements()) assert(!has_retired_ref(el));
+                }
+            });
+            const auto verify_skyline = [&](System &system) {
+                for (auto *staff : system.staves()) {
+                    for (const ShapeElement &el : staff->skyline().north().elements()) assert(!has_retired_ref(el));
+                    for (const ShapeElement &el : staff->skyline().south().elements()) assert(!has_retired_ref(el));
+                }
+            };
+            records_->pool<System::LayoutData>().for_each_live(
+                [&](EngravingItem &owner, System::LayoutData &) { verify_skyline(*to_system(&owner)); });
+            for (auto *system : output_.systems) {
+                if (!system->has_layout_data()) verify_skyline(*system);
             }
-            if (data.is_set_mask()) {
-                for (const ShapeElement &el : data.mask_.elements()) assert(!has_retired_ref(el));
-            }
-        });
-        const auto verify_skyline = [&](System &system) {
-            for (auto *staff : system.staves()) {
-                for (const ShapeElement &el : staff->skyline().north().elements()) assert(!has_retired_ref(el));
-                for (const ShapeElement &el : staff->skyline().south().elements()) assert(!has_retired_ref(el));
-            }
-        };
-        records_->pool<System::LayoutData>().for_each_live(
-            [&](EngravingItem &owner, System::LayoutData &) { verify_skyline(*to_system(&owner)); });
-        for (auto *system : output_.systems) {
-            if (!system->has_layout_data()) verify_skyline(*system);
+            records_->pool<Segment::LayoutData>().for_each_live([&](EngravingItem &owner, Segment::LayoutData &) {
+                auto *segment = to_segment(&owner);
+                for (const auto &shape : std::as_const(*segment).shapes()) {
+                    for (const ShapeElement &el : shape.elements()) assert(!has_retired_ref(el));
+                }
+            });
         }
-        records_->pool<Segment::LayoutData>().for_each_live([&](EngravingItem &owner, Segment::LayoutData &) {
-            auto *segment = to_segment(&owner);
-            for (const auto &shape : std::as_const(*segment).shapes()) {
-                for (const ShapeElement &el : shape.elements()) assert(!has_retired_ref(el));
-            }
-        });
-        records_->pool<Chord::LayoutData>().for_each_live([&](EngravingItem &owner, Chord::LayoutData &) {
-            auto *chord = to_chord(&owner);
-            for (const auto *span : chord->starting_spanners()) assert(!contains_retired(retired, span));
-            for (const auto *span : chord->ending_spanners()) assert(!contains_retired(retired, span));
-        });
+        const auto verify_chord_spanners = [&](const Chord &chord) {
+            for (const auto *span : chord.starting_spanners()) assert(!contains_retired(retired, span));
+            for (const auto *span : chord.ending_spanners()) assert(!contains_retired(retired, span));
+        };
+        records_->pool<Chord::LayoutData>().for_each_live(
+            [&](EngravingItem &owner, Chord::LayoutData &) { verify_chord_spanners(*to_chord(&owner)); });
+        if (!retired_spanners.empty()) {
+            for_each_score_chord(score_, [&](const Chord &chord) {
+                if (!find(chord)) verify_chord_spanners(chord);
+            });
+        }
 #endif
     }
-    if (beam) {
+    if (beam && has_borrower_containers()) {
         records_->for_each_beam_data([&](BeamBase::LayoutData &data) {
             if (data.beam == beam) data.beam = nullptr;
             if (data.trem == beam) data.trem = nullptr;
@@ -521,7 +557,8 @@ void LayoutDataStore::delete_unborrowed_scratch(EngravingItem *item) {
 void LayoutDataStore::retire_spanner_borrowers(const SpannerSegment &segment) { retire_shape_borrowers(segment); }
 
 void LayoutDataStore::retire_shape_borrowers(const EngravingItem &retired) {
-    if (clearing_ || suppress_shape_prune_ || !has_borrower_containers() || is_retired_in_flight(retired)) return;
+    if (clearing_ || suppress_shape_prune_ || is_retired_in_flight(retired)) return;
+    if (!has_borrower_containers() && !retired.is_spanner()) return;
     std::vector<const EngravingItem *> targets;
     muse::HashSet<const EngravingItem *> seen;
     collect_owned_subtree(retired, targets, seen);
@@ -533,7 +570,8 @@ void LayoutDataStore::retire_shape_borrowers(const EngravingItem &retired) {
 }
 
 void LayoutDataStore::retire_item_borrowers(const EngravingItem &item) {
-    if (clearing_ || suppress_shape_prune_ || is_retired_in_flight(item) || !has_borrower_containers()) return;
+    if (clearing_ || suppress_shape_prune_ || is_retired_in_flight(item)) return;
+    if (!has_borrower_containers() && !item.is_spanner()) return;
     const EngravingItem *target = &item;
     prune_shape_borrowers({&target, 1}, nullptr);
 }
@@ -596,8 +634,11 @@ void LayoutDataStore::retire_shared_auxiliary_output() {
             [](EngravingItem &owner, Segment::LayoutData &) { to_segment(&owner)->clear_shapes(); });
         // A range pass can retain display chords after their shared spanners are retired.
         if (!retired.empty()) {
-            records_->pool<Chord::LayoutData>().for_each_live([&](EngravingItem &owner, Chord::LayoutData &) {
-                to_chord(&owner)->remove_spanner_borrowers([&](Spanner *span) { return retired.contains(span); });
+            const auto is_retired = [&](Spanner *span) { return retired.contains(span); };
+            records_->pool<Chord::LayoutData>().for_each_live(
+                [&](EngravingItem &owner, Chord::LayoutData &) { to_chord(&owner)->remove_spanner_borrowers(is_retired); });
+            for_each_score_chord(score_, [&](Chord &chord) {
+                if (!find(chord)) chord.remove_spanner_borrowers(is_retired);
             });
         }
     }

@@ -797,6 +797,206 @@ TEST(EditAtomic, DeltaRollbackRestoresLinkedPropertiesStyleAndBreakWithoutSnapsh
     EXPECT_EQ(property(*document, note_id, "color"), (engrave::Value{Color{0, 0, 255}}));
 }
 
+TEST(EditAtomic, TextBaseRichTextAndFrameColorRollbackPreserveExactSource) {
+    auto made = g_engine->create_document({.template_id = "Treble_Clef"});
+    ASSERT_TRUE(made) << made.error().message;
+    const engrave::RelativePosition beat_one{engrave::MeasureIndex{0}, 0, 0, {0, 1}};
+    ASSERT_TRUE((*made)->edit({{engrave::EnterNotes{beat_one, {1, 4}, {{60}}}, engrave::AddText{beat_one, "staff", "seed"}}}));
+    const auto exported = (*made)->export_score({.format = engrave::Format::MSCX});
+    ASSERT_TRUE(exported) << exported.error().message;
+    std::string xml(reinterpret_cast<const char *>(exported->data()), exported->size());
+    const std::string needle = "<text>seed</text>";
+    const auto pos = xml.find(needle);
+    ASSERT_NE(pos, std::string::npos);
+    xml.replace(pos, needle.size(), "<text><b>Hello</b> <font size=\"14\"/>world</text>");
+
+    auto opened = g_engine->open(std::as_bytes(std::span<const char>(xml)), {.format = engrave::Format::MSCX});
+    ASSERT_TRUE(opened) << opened.error().message;
+    auto &document = **opened;
+    const auto texts = document.query({.types = {"StaffText"}});
+    ASSERT_TRUE(texts && texts->elements.size() == 1u);
+    const auto text_id = texts->elements.front().id;
+
+    const auto before = native_source(document);
+    EXPECT_NE(before.find("<b>Hello</b>"), std::string::npos);
+    EXPECT_NE(before.find("<font size=\"14\"/>world"), std::string::npos);
+
+    for (const engrave::Op &op : std::array<engrave::Op, 3>{
+             engrave::Op{ResetProperty{text_id, "FONT_SIZE"}},
+             engrave::Op{ResetProperty{text_id, "fontStyle"}},
+             engrave::Op{SetProperty{text_id, "FONT_SIZE", 18.0}},
+         }) {
+        const auto rejected = document.edit({{op, SetProperty{engrave::OpRef{0, 0}, "color", Color{0, 0, 0}}}}, engrave::EditOptions{});
+        ASSERT_TRUE(rejected) << rejected.error().message;
+        ASSERT_TRUE(rejected->rejection);
+        EXPECT_EQ(rejected->rejection->op_index, 1u);
+        EXPECT_FALSE(rejected->rejection->error.poisoned);
+        EXPECT_EQ(native_source(document), before);
+    }
+
+    const Color color_a{10, 20, 30};
+    const Color color_b{200, 50, 60};
+    ASSERT_TRUE(document.edit({{SetProperty{text_id, "color", color_a}, SetProperty{text_id, "frameFgColor", color_b}}}));
+    const auto before_colors = native_source(document);
+    const auto rejected_color = document.edit(
+        {{SetProperty{text_id, "color", color_b}, SetProperty{engrave::OpRef{0, 0}, "color", Color{0, 0, 0}}}}, engrave::EditOptions{});
+    ASSERT_TRUE(rejected_color) << rejected_color.error().message;
+    ASSERT_TRUE(rejected_color->rejection);
+    EXPECT_EQ(rejected_color->rejection->op_index, 1u);
+    EXPECT_EQ(property(document, text_id, "color"), engrave::Value{color_a});
+    EXPECT_EQ(property(document, text_id, "frameFgColor"), engrave::Value{color_b});
+    EXPECT_EQ(native_source(document), before_colors);
+}
+
+TEST(EditAtomic, NoteHeadGroupRollbackPreservesDeadNoteFlag) {
+    auto made = g_engine->create_document({.template_id = "Treble_Clef"});
+    ASSERT_TRUE(made) << made.error().message;
+    const engrave::RelativePosition beat_one{engrave::MeasureIndex{0}, 0, 0, {0, 1}};
+    ASSERT_TRUE((*made)->edit({{engrave::EnterNotes{beat_one, {1, 4}, {{60}}}}}));
+    const auto exported = (*made)->export_score({.format = engrave::Format::MSCX});
+    ASSERT_TRUE(exported) << exported.error().message;
+    std::string xml(reinterpret_cast<const char *>(exported->data()), exported->size());
+    const auto close_note = xml.find("</Note>");
+    ASSERT_NE(close_note, std::string::npos);
+    xml.insert(close_note, "<dead>1</dead>");
+
+    auto opened = g_engine->open(std::as_bytes(std::span<const char>(xml)), {.format = engrave::Format::MSCX});
+    ASSERT_TRUE(opened) << opened.error().message;
+    auto &document = **opened;
+    const auto notes = document.query({.types = {"Note"}});
+    ASSERT_TRUE(notes && notes->elements.size() == 1u);
+    const auto note_id = notes->elements.front().id;
+
+    const auto before = native_source(document);
+    ASSERT_NE(before.find("<dead>1</dead>"), std::string::npos);
+    EXPECT_EQ(property(document, note_id, "head"), engrave::Value{engrave::Enum{"normal"}});
+
+    const auto rejected = document.edit(
+        {{SetProperty{note_id, "head", engrave::Enum{"diamond"}}, SetProperty{engrave::OpRef{0, 0}, "color", Color{0, 0, 0}}}},
+        engrave::EditOptions{});
+    ASSERT_TRUE(rejected) << rejected.error().message;
+    ASSERT_TRUE(rejected->rejection);
+    EXPECT_EQ(rejected->rejection->op_index, 1u);
+    EXPECT_FALSE(rejected->rejection->error.poisoned);
+    EXPECT_EQ(native_source(document), before);
+}
+
+TEST(EditAtomic, StyleRollbackClearsUnsetMaskTiesFor470Export) {
+    auto made = g_engine->create_document({.template_id = "Treble_Clef"});
+    ASSERT_TRUE(made) << made.error().message;
+    auto &document = **made;
+    const engrave::RelativePosition beat_one{engrave::MeasureIndex{0}, 0, 0, {0, 1}};
+    const engrave::RelativePosition beat_two{engrave::MeasureIndex{0}, 0, 0, {1, 4}};
+    ASSERT_TRUE(document.edit({{engrave::EnterNotes{beat_one, {1, 4}, {{60}}}, engrave::EnterNotes{beat_two, {1, 4}, {{60}}}}}));
+    const auto notes = document.query({.types = {"Note"}});
+    ASSERT_TRUE(notes && notes->elements.size() == 2u);
+    ASSERT_TRUE(document.edit({{engrave::AddTie{notes->elements[0].id, notes->elements[1].id}}}));
+
+    auto &master = engrave::harness::master_of(document);
+    ASSERT_FALSE(master.style().has_explicit_value(mu::engraving::Sid::MASK_TIES));
+    master.style().clear(mu::engraving::Sid::STAFF_DISTANCE);
+    ASSERT_FALSE(master.style().has_explicit_value(mu::engraving::Sid::STAFF_DISTANCE));
+    const double expected_staff_dist_abs = master.style().style_s(mu::engraving::Sid::STAFF_DISTANCE).val() * master.style().spatium();
+    EXPECT_DOUBLE_EQ(master.style().style_absolute(mu::engraving::Sid::STAFF_DISTANCE), expected_staff_dist_abs);
+
+    const auto before = native_source(document);
+    const auto rejected = document.edit(
+        {{SetStyle{{}, "maskTies", true}, SetStyle{{}, "staffDistance", 13.5}, SetProperty{engrave::OpRef{0, 0}, "color", Color{0, 0, 0}}}},
+        engrave::EditOptions{});
+    ASSERT_TRUE(rejected) << rejected.error().message;
+    ASSERT_TRUE(rejected->rejection);
+    EXPECT_EQ(rejected->rejection->op_index, 2u);
+    EXPECT_FALSE(rejected->rejection->error.poisoned);
+    EXPECT_FALSE(master.style().has_explicit_value(mu::engraving::Sid::MASK_TIES));
+    EXPECT_FALSE(master.style().has_explicit_value(mu::engraving::Sid::STAFF_DISTANCE));
+    EXPECT_DOUBLE_EQ(master.style().style_absolute(mu::engraving::Sid::STAFF_DISTANCE), expected_staff_dist_abs);
+    EXPECT_EQ(native_source(document), before);
+
+    const auto exported470 = document.export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+    ASSERT_TRUE(exported470) << exported470.error().message;
+    EXPECT_TRUE(exported470->warnings.empty());
+}
+
+TEST(EditAtomic, DeltaEligiblePidSweepRestoresExactSourceWithoutSnapshot) {
+    auto made = g_engine->create_document({.template_id = "Treble_Clef"});
+    ASSERT_TRUE(made) << made.error().message;
+    auto &document = **made;
+    const engrave::RelativePosition beat_one{engrave::MeasureIndex{0}, 0, 0, {0, 1}};
+    const engrave::RelativePosition beat_two{engrave::MeasureIndex{0}, 0, 0, {1, 4}};
+    ASSERT_TRUE(document.edit({{engrave::EnterNotes{beat_one, {1, 4}, {{66}}}, engrave::EnterNotes{beat_two, {1, 4}, {{60}}}}}));
+    const auto chords = document.query({.types = {"Chord"}});
+    ASSERT_TRUE(chords && chords->elements.size() == 2u);
+    const auto chord0_id = chords->elements[0].id;
+    const auto chord1_id = chords->elements[1].id;
+    ASSERT_TRUE(document.edit({{engrave::Add{chord0_id, "Articulation", {{"symbol", engrave::Enum{"articAccentAbove"}}}},
+                                engrave::AddSpanner{"TextLine", chord0_id, chord1_id, {}}}}));
+
+    const auto notes = document.query({.types = {"Note"}});
+    const auto accidentals = document.query({.types = {"Accidental"}});
+    const auto articulations = document.query({.types = {"Articulation"}});
+    const auto text_lines = document.query({.types = {"TextLine"}});
+    ASSERT_TRUE(notes && !notes->elements.empty());
+    ASSERT_TRUE(accidentals && !accidentals->elements.empty());
+    ASSERT_TRUE(articulations && !articulations->elements.empty());
+    ASSERT_TRUE(text_lines && !text_lines->elements.empty());
+    const auto note_id = notes->elements.front().id;
+    const auto acc_id = accidentals->elements.front().id;
+    const auto artic_id = articulations->elements.front().id;
+    const auto line_id = text_lines->elements.front().id;
+
+    struct Case {
+        ElementId target;
+        const char *prop;
+        engrave::Value value;
+    };
+
+    const std::array<Case, 18> cases{{
+        {note_id, "color", Color{255, 0, 0}},
+        {note_id, "offset", engrave::Point{0.5, -0.25}},
+        {artic_id, "autoplace", false},
+        {artic_id, "minDistance", 1.25},
+        {note_id, "z", std::int64_t{4200}},
+        {line_id, "lineWidth", 0.35},
+        {line_id, "lineStyle", engrave::Enum{"dashed"}},
+        {line_id, "dashLineLength", 6.0},
+        {line_id, "dashGapLength", 4.0},
+        {chord0_id, "StemDirection", engrave::Enum{"down"}},
+        {note_id, "headType", engrave::Enum{"half"}},
+        {note_id, "mirror", engrave::Enum{"right"}},
+        {note_id, "dotPosition", engrave::Enum{"up"}},
+        {acc_id, "bracket", std::int64_t{1}},
+        {note_id, "small", true},
+        {chord0_id, "noStem", true},
+        {artic_id, "direction", engrave::Enum{"up"}},
+        {line_id, "placement", engrave::Enum{"below"}},
+    }};
+
+    auto &master = engrave::harness::master_of(document);
+    const auto before = native_source(document);
+    for (const auto &c : cases) {
+        const auto rejected = document.edit(
+            {{SetProperty{c.target, c.prop, c.value}, SetProperty{engrave::OpRef{0, 0}, "color", Color{1, 2, 3}}}}, engrave::EditOptions{});
+        ASSERT_TRUE(rejected) << c.prop << ": " << rejected.error().message;
+        ASSERT_TRUE(rejected->rejection) << c.prop;
+        EXPECT_EQ(rejected->rejection->op_index, 1u) << c.prop;
+        EXPECT_FALSE(rejected->rejection->error.poisoned) << c.prop;
+        EXPECT_EQ(rejected->applied, 0u) << c.prop;
+        EXPECT_FALSE(master.normalize_state.dirty) << c.prop;
+        EXPECT_EQ(native_source(document), before) << c.prop;
+    }
+
+    // Exceeding the 64 MiB snapshot entry limit confirms every case uses EditDeltaLog, not RollbackSnapshot.
+    master.meta_tags()[u"large metadata"] = muse::String::from_std_string(std::string(14 * 1024 * 1024, '&'));
+    for (const auto &c : cases) {
+        const auto rejected = document.edit(
+            {{SetProperty{c.target, c.prop, c.value}, SetProperty{engrave::OpRef{0, 0}, "color", Color{1, 2, 3}}}}, engrave::EditOptions{});
+        ASSERT_TRUE(rejected) << c.prop << " fell back to snapshot: " << rejected.error().message;
+        ASSERT_TRUE(rejected->rejection) << c.prop;
+        EXPECT_EQ(rejected->rejection->op_index, 1u) << c.prop;
+        EXPECT_FALSE(rejected->rejection->error.poisoned) << c.prop;
+    }
+}
+
 TEST(EditAtomic, MasterReadLeavesTheExactAggregateZipBudgetAvailable) {
     constexpr std::size_t entry_limit = 64 * 1024 * 1024;
     const muse::ByteArray master("<museScore version=\"5.00\"><Score/></museScore>");

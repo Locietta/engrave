@@ -147,33 +147,18 @@ bool is_delta_eligible_pid(mu::engraving::Pid pid) {
         case Pid::OFFSET:
         case Pid::AUTOPLACE:
         case Pid::MIN_DISTANCE:
-        case Pid::LEADING_SPACE:
-        case Pid::MAG:
         case Pid::Z:
-        case Pid::SIZE_SPATIUM_DEPENDENT:
-        case Pid::ALIGN:
-        case Pid::FONT_FACE:
-        case Pid::FONT_SIZE:
-        case Pid::FONT_STYLE:
-        case Pid::FRAME_TYPE:
-        case Pid::FRAME_WIDTH:
-        case Pid::FRAME_PADDING:
-        case Pid::FRAME_ROUND:
-        case Pid::FRAME_FG_COLOR:
-        case Pid::FRAME_BG_COLOR:
         case Pid::LINE_WIDTH:
         case Pid::LINE_STYLE:
         case Pid::DASH_LINE_LEN:
         case Pid::DASH_GAP_LEN:
         case Pid::STEM_DIRECTION:
-        case Pid::HEAD_GROUP:
         case Pid::HEAD_TYPE:
         case Pid::MIRROR_HEAD:
         case Pid::DOT_POSITION:
         case Pid::ACCIDENTAL_BRACKET:
         case Pid::SMALL:
         case Pid::NO_STEM:
-        case Pid::USER_LEN:
         case Pid::DIRECTION:
         case Pid::PLACEMENT: return true;
         default: return false;
@@ -181,10 +166,15 @@ bool is_delta_eligible_pid(mu::engraving::Pid pid) {
 }
 
 bool is_automation_or_structural_target(const EngravingObject &object) {
-    if (object.is_bracket_item()) return true;
+    // TextBase, BracketItem, and SpannerSegment have multi-field or delegated setters
+    // that cannot be inverted from a single (pid, value) snapshot.
+    if (object.is_bracket_item() || object.is_text_base() || object.is_spanner_segment()) return true;
     using mu::engraving::ElementType;
     switch (object.type()) {
+        case ElementType::AMBITUS:
+        case ElementType::BRACKET:
         case ElementType::DYNAMIC:
+        case ElementType::GUITAR_BEND:
         case ElementType::HAIRPIN:
         case ElementType::HAIRPIN_SEGMENT:
         case ElementType::MEASURE_REPEAT:
@@ -193,7 +183,12 @@ bool is_automation_or_structural_target(const EngravingObject &object) {
         case ElementType::FERMATA:
         case ElementType::GRADUAL_TEMPO_CHANGE:
         case ElementType::GRADUAL_TEMPO_CHANGE_SEGMENT:
+        case ElementType::STAFF:
+        case ElementType::STAFFTYPE_CHANGE:
+        case ElementType::STEM:
         case ElementType::TEMPO_TEXT:
+        case ElementType::TRILL:
+        case ElementType::VIBRATO:
         case ElementType::VOLTA:
         case ElementType::VOLTA_SEGMENT:
         case ElementType::MARKER:
@@ -243,7 +238,7 @@ DeltaBatchClassification classify_delta_batch(MasterScore &master, const Batch &
         const auto found = resolve(master, *id);
         if (!found || !found->object) return false;
         const EngravingObject &obj = *found->object;
-        if (is_automation_or_structural_target(obj)) return false;
+        if (is_automation_or_structural_target(obj) || obj.property_delegate(pid) != nullptr) return false;
         if (pid == mu::engraving::Pid::PLACEMENT && obj.is_engraving_item() &&
             mu::engraving::to_engraving_item(&obj)->has_voice_assignment_properties())
             return false;
@@ -748,7 +743,8 @@ void EditDeltaLog::record_property(MasterScore &master, EngravingObject &target,
 }
 
 void EditDeltaLog::record_style(MasterScore &master, mu::engraving::Score &score, mu::engraving::Sid sid) {
-    entries.push_back(StyleDelta{master.eid_register()->enroll(score), sid, score.style().style_v(sid)});
+    entries.push_back(StyleDelta{master.eid_register()->enroll(score), sid,
+                                 score.style().has_explicit_value(sid) ? score.style().style_v(sid) : mu::engraving::PropertyValue{}});
 }
 
 void EditDeltaLog::record_added_break(MasterScore &master, mu::engraving::MeasureBase &measure, mu::engraving::EngravingItem &added) {
@@ -768,16 +764,20 @@ void EditDeltaLog::rollback(MasterScore &master) {
                     obj->set_property(entry.pid, entry.old_value);
                     obj->set_property_flags(entry.pid, entry.old_flags);
                     if (entry.is_item) {
-                        obj->set_property(mu::engraving::Pid::GENERATED, entry.old_generated);
-                        obj->set_property(mu::engraving::Pid::POSITION_LINKED_TO_MASTER, entry.old_pos_linked);
-                        obj->set_property(mu::engraving::Pid::APPEARANCE_LINKED_TO_MASTER, entry.old_app_linked);
+                        auto *item = mu::engraving::to_engraving_item(obj);
+                        item->set_generated(entry.old_generated);
+                        item->set_position_linked_to_master(entry.old_pos_linked);
+                        item->set_appearance_linked_to_master(entry.old_app_linked);
+                        item->trigger_layout();
                     }
-                    if (obj->is_engraving_item()) mu::engraving::to_engraving_item(obj)->trigger_layout();
                 } else if constexpr (std::is_same_v<T, StyleDelta>) {
                     auto *obj = master.eid_register()->live_item(entry.score_handle);
                     if (!obj || !obj->is_score()) return;
                     auto *score = mu::engraving::to_score(obj);
-                    score->style().set(entry.sid, entry.old_value);
+                    if (entry.old_value.is_valid())
+                        score->style().set(entry.sid, entry.old_value);
+                    else
+                        score->style().clear(entry.sid);
                     if (std::ranges::find(style_scores, score) == style_scores.end()) style_scores.push_back(score);
                 } else if constexpr (std::is_same_v<T, AddedBreakDelta>) {
                     if (auto *lb_obj = master.eid_register()->live_item(entry.break_handle); lb_obj && lb_obj->is_engraving_item()) {

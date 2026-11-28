@@ -2548,8 +2548,23 @@ TEST(SmallLinkList, InlineOverflowAndUnlinkSnapshot) {
     EXPECT_EQ(overflow_list.size(), 12u);
     for (int i = 0; i < 12; ++i) EXPECT_EQ(overflow_list[static_cast<std::size_t>(i)], base + i);
     SmallLinkList moved_list = std::move(overflow_list);
+    EXPECT_TRUE(overflow_list.empty());
+    EXPECT_EQ(overflow_list.size(), 0u);
+    EXPECT_EQ(overflow_list.begin(), overflow_list.end());
+    for ([[maybe_unused]] const auto *unused : overflow_list) ADD_FAILURE() << "moved-from SmallLinkList must iterate empty";
     EXPECT_EQ(moved_list.size(), 12u);
     EXPECT_TRUE(moved_list.contains(base + 11));
+
+    SmallLinkList assigned_list;
+    assigned_list.push_back(base);
+    assigned_list = std::move(moved_list);
+    EXPECT_TRUE(moved_list.empty());
+    EXPECT_EQ(moved_list.size(), 0u);
+    for ([[maybe_unused]] const auto *unused : moved_list) ADD_FAILURE() << "move-assigned-from SmallLinkList must iterate empty";
+    auto *self_alias = &assigned_list;
+    assigned_list = std::move(*self_alias);
+    EXPECT_EQ(assigned_list.size(), 12u);
+    for (int i = 0; i < 12; ++i) EXPECT_EQ(assigned_list[static_cast<std::size_t>(i)], base + i);
 
     const std::string mscx = R"xml(<?xml version="1.0" encoding="UTF-8"?>
 <museScore version="5.00">

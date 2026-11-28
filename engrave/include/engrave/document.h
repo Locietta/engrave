@@ -53,19 +53,19 @@ struct Document {
     // Score selection errors are the same as outline(). Excerpts are standalone
     // scores in every supported format, including MSCX and compressed MusicXML.
     // With capture limits, the output buffer is capped while it grows and
-    // intermediate XML buffers and archive compression are charged against the
-    // cumulative working allowance. A conservative estimate for those buffers
-    // is three times that allowance plus twice max_bytes and 16 KiB, assuming
-    // vector capacity does not exceed twice its requested size and an old
-    // allocation may coexist with a new one. This excludes layout/repeat lists,
-    // archive metadata, encoder internals, and temporary strings used by the
-    // writer, so it is not a total-process memory bound. Cancellation is polled
-    // in the writer, but cannot interrupt layout or an in-progress deflate call.
-    // Bounded or cancellable MIDI is Unsupported because MIDI builds its full
-    // playback-event graph before writing. Throws std::runtime_error if the
-    // engine's writer fails. The restricted 4.70 writer also charges 64 times
-    // its intermediate score and style XML sizes before parsing; this can
-    // reject a capture whose final bytes would fit. Parsing itself cannot be
+    // intermediate XML buffers, MIDI playback/event buffers, and archive
+    // compression are charged against the cumulative working allowance. A
+    // conservative estimate for those buffers is three times that allowance
+    // plus twice max_bytes and 16 KiB, assuming vector capacity does not
+    // exceed twice its requested size and an old allocation may coexist with
+    // a new one. This excludes layout/repeat lists, archive metadata, encoder
+    // internals, and temporary strings used by the writer, so it is not a
+    // total-process memory bound. Cancellation is polled in the writer and
+    // during MIDI playback-store construction, but cannot interrupt layout or
+    // an in-progress deflate call. Throws std::runtime_error if the engine's
+    // writer fails. The restricted 4.70 writer also charges 64 times its
+    // intermediate score and style XML sizes before parsing; this can reject
+    // a capture whose final bytes would fit. Parsing itself cannot be
     // interrupted by the cancellation callback.
     Result<std::vector<std::byte>> export_score(const ExportOptions &options);
 
