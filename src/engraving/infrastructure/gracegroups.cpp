@@ -5,6 +5,7 @@
 #include "dom/score.h"
 #include "dom/segment.h"
 #include "global/hashmap.h"
+#include "infrastructure/domchildren.h"
 #include "rendering/score/layoutcontext.h"
 
 using namespace mu::engraving;
@@ -63,6 +64,14 @@ void LayoutContext::clear_grace_attachments(EngravingObject *object) const {
             if (grace_group(group->parent(), false) == group || grace_group(group->parent(), true) == group) {
                 segment->clear_pre_appended(track);
             }
+        }
+    }
+    if (object->is_engraving_item()) {
+        auto *item = to_engraving_item(object);
+        if (item->has_layout_data()) {
+            for_each_layout_payload_child(*item, *item->ldata(), [&](EngravingItem *child) {
+                if (child) clear_grace_attachments(child);
+            });
         }
     }
     // Traverse live ownership, not saved Segment pointers: layout may have moved

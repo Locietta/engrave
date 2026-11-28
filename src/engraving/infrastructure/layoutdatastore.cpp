@@ -9,51 +9,14 @@
 #include <utility>
 #include <vector>
 
-#include "dom/accidental.h"
-#include "dom/arpeggio.h"
-#include "dom/articulation.h"
-#include "dom/beam.h"
-#include "dom/chord.h"
-#include "dom/chordrest.h"
-#include "dom/deadslapped.h"
+#include "dom/dummyparent.h"
 #include "dom/factory.h"
-#include "dom/guitarbend.h"
-#include "dom/hammeronpulloff.h"
-#include "dom/hook.h"
-#include "dom/jianpudurationline.h"
-#include "dom/jianpuoctavedot.h"
-#include "dom/ledgerline.h"
-#include "dom/lyrics.h"
 #include "dom/masterscore.h"
-#include "dom/measure.h"
-#include "dom/measurebase.h"
-#include "dom/measurenumber.h"
-#include "dom/mmrest.h"
-#include "dom/mmrestrange.h"
-#include "dom/note.h"
-#include "dom/notedot.h"
 #include "dom/page.h"
-#include "dom/parenthesis.h"
-#include "dom/rest.h"
-#include "dom/score.h"
-#include "dom/segment.h"
-#include "dom/sharedpart.h"
-#include "dom/spacer.h"
-#include "dom/spanner.h"
-#include "dom/stafflines.h"
-#include "dom/stem.h"
-#include "dom/stemslash.h"
 #include "dom/system.h"
-#include "dom/tabdurationsymbol.h"
-#include "dom/tapping.h"
-#include "dom/text.h"
-#include "dom/textlinebase.h"
-#include "dom/tie.h"
-#include "dom/tremolotwochord.h"
-#include "dom/tuplet.h"
-#include "engraving/dom/dummyparent.h"
 #include "global/hashmap.h"
 #include "global/slab_pool.h"
+#include "infrastructure/domchildren.h"
 #include "rendering/score/layoutdatadispatch.h"
 #include "rendering/score/scorerenderer.h"
 
@@ -74,78 +37,6 @@ bool contains_retired(std::span<const EngravingItem *const> targets, const Engra
     return std::binary_search(targets.begin(), targets.end(), item, std::less<>{});
 }
 
-void add_layout_payload_children(const EngravingItem &owner, const EngravingItem::LayoutData &data,
-                                 muse::FnRef<void(const EngravingItem *)> visit) {
-    if (owner.is_chord_rest()) {
-        const auto *cr_data = static_cast<const ChordRest::LayoutData *>(&data);
-        visit(cr_data->tab_dur);
-        for (const auto *line : cr_data->jianpu_duration_lines) visit(line);
-    }
-    switch (owner.type()) {
-        case ElementType::NOTE: {
-            const auto *note_data = static_cast<const Note::LayoutData *>(&data);
-            for (const auto *dot : note_data->dots) visit(dot);
-            for (const auto *dot : note_data->jianpu_octave_dots) visit(dot);
-            break;
-        }
-        case ElementType::REST:
-        case ElementType::MMREST:
-        case ElementType::MEASURE_REPEAT: {
-            const auto *rest_data = static_cast<const Rest::LayoutData *>(&data);
-            for (const auto *dot : rest_data->dots) visit(dot);
-            break;
-        }
-        case ElementType::CHORD: {
-            const auto *chord_data = static_cast<const Chord::LayoutData *>(&data);
-            visit(chord_data->stem);
-            visit(chord_data->hook);
-            visit(chord_data->stem_slash);
-            for (const auto &group : chord_data->parentheses) {
-                visit(group.left);
-                visit(group.right);
-            }
-            for (const auto *line : chord_data->ledger_lines) visit(line);
-            break;
-        }
-        case ElementType::TUPLET: {
-            const auto *tuplet_data = static_cast<const Tuplet::LayoutData *>(&data);
-            visit(tuplet_data->number);
-            break;
-        }
-        case ElementType::GUITAR_BEND: {
-            const auto *bend_data = static_cast<const GuitarBend::LayoutData *>(&data);
-            visit(bend_data->hold_line);
-            for (const auto *seg : bend_data->segments) visit(seg);
-            break;
-        }
-        case ElementType::TAPPING: {
-            const auto *tapping_data = static_cast<const Tapping::LayoutData *>(&data);
-            visit(tapping_data->half_slur_above);
-            visit(tapping_data->half_slur_below);
-            break;
-        }
-        case ElementType::SEGMENT: {
-            const auto *seg_data = static_cast<const Segment::LayoutData *>(&data);
-            for (const auto *copy : seg_data->display_copies) visit(copy);
-            for (const auto *ann : seg_data->display_annotations) visit(ann);
-            for (const auto *gen : seg_data->generated) visit(gen);
-            break;
-        }
-        case ElementType::MEASURE: {
-            const auto *meas_data = static_cast<const Measure::LayoutData *>(&data);
-            visit(meas_data->mm_rest);
-            for (const auto *seg : meas_data->segments) visit(seg);
-            break;
-        }
-        default:
-            if (owner.is_spanner() || owner.type() == ElementType::TEXTLINE_BASE) {
-                const auto *span_data = static_cast<const Spanner::LayoutData *>(&data);
-                for (const auto *seg : span_data->segments) visit(seg);
-            }
-            break;
-    }
-}
-
 void collect_owned_subtree(const EngravingItem &item, std::vector<const EngravingItem *> &out, muse::HashSet<const EngravingItem *> &seen) {
     if (!seen.insert(&item).second) return;
     out.push_back(&item);
@@ -155,70 +46,8 @@ void collect_owned_subtree(const EngravingItem &item, std::vector<const Engravin
     for (const auto *child : item.children()) {
         if (child && child->is_engraving_item()) visit(to_engraving_item(child));
     }
-    visit(item.left_paren());
-    visit(item.right_paren());
-    if (item.has_layout_data()) add_layout_payload_children(item, *item.ldata(), visit);
-
-    if (item.is_chord_rest()) {
-        const auto *cr = to_chord_rest(&item);
-        for (const auto *lyric : cr->lyrics()) visit(lyric);
-        for (const auto *el : cr->el()) visit(el);
-    }
-    if (item.is_text_line_base_segment()) {
-        const auto *seg = to_text_line_base_segment(&item);
-        visit(seg->text());
-        visit(seg->end_text());
-    }
-    if (item.is_measure_base()) {
-        const auto *mb = to_measure_base(&item);
-        for (const auto *el : mb->el()) visit(el);
-    }
-
-    switch (item.type()) {
-        case ElementType::NOTE: {
-            const auto *note = to_note(&item);
-            visit(note->accidental());
-            visit(note->tie_for());
-            for (const auto *el : note->el()) visit(el);
-            break;
-        }
-        case ElementType::CHORD: {
-            const auto *chord = to_chord(&item);
-            for (const auto *note : chord->notes()) visit(note);
-            for (const auto *grace : chord->grace_notes()) visit(grace);
-            for (const auto *art : chord->articulations()) visit(art);
-            visit(chord->arpeggio());
-            break;
-        }
-        case ElementType::REST:
-        case ElementType::MMREST:
-        case ElementType::MEASURE_REPEAT: visit(to_rest(&item)->dead_slapped()); break;
-        case ElementType::TAPPING: visit(to_tapping(&item)->text()); break;
-        case ElementType::GUITAR_BEND_SEGMENT: visit(to_guitar_bend_segment(&item)->bend_text()); break;
-        case ElementType::HAMMER_ON_PULL_OFF_SEGMENT:
-            for (const auto *txt : to_hammer_on_pull_off_segment(&item)->hopo_text()) visit(txt);
-            break;
-        case ElementType::SEGMENT: {
-            const auto *seg = to_segment(&item);
-            for (const auto *el : seg->elist()) visit(el);
-            for (const auto *ann : seg->annotations()) visit(ann);
-            break;
-        }
-        case ElementType::MEASURE: {
-            const auto *m = to_measure(&item);
-            for (const auto *row : m->mstaves()) {
-                if (!row) continue;
-                visit(row->measure_number());
-                visit(row->mm_range_text());
-                visit(row->lines());
-                visit(row->vspacer_up());
-                visit(row->vspacer_down());
-            }
-            for (const auto *s = m->first(); s; s = s->next()) visit(s);
-            break;
-        }
-        default: break;
-    }
+    if (item.has_layout_data()) for_each_layout_payload_child(item, *item.ldata(), visit);
+    for_each_owned_item_child(item, visit);
 }
 } // namespace
 
@@ -333,39 +162,84 @@ LayoutDataStore::~LayoutDataStore() {
 
 void LayoutDataStore::register_layout_copy(const EngravingItem &source, EngravingItem &display) {
     if (&source == &display) return;
+    const auto collect_direct_children = [](const EngravingItem &owner) {
+        std::vector<EngravingItem *> result;
+        const auto add = [&](const EngravingItem *child) {
+            if (!child) return;
+            auto *mutable_child = const_cast<EngravingItem *>(child);
+            if (!muse::contains(result, mutable_child)) result.push_back(mutable_child);
+        };
+        for (const auto *child : owner.children()) {
+            if (child && child->is_engraving_item()) add(to_engraving_item(child));
+        }
+        for_each_owned_item_child(owner, add);
+        return result;
+    };
+    const auto source_children = collect_direct_children(source);
+    const auto display_children = collect_direct_children(display);
     display.set_layout_copy(true);
-    for (auto &entry : layout_copies_)
-        if (entry.second == &source) entry.second = &display;
-    std::erase_if(layout_copies_, [&](const auto &entry) { return entry.first == &source; });
-    layout_copies_.emplace_back(&source, &display);
+    if (auto it = layout_copy_sources_.find(&source); it != layout_copy_sources_.end()) {
+        auto origins = std::move(it->second);
+        layout_copy_sources_.erase(it);
+        auto &dest_origins = layout_copy_sources_[&display];
+        for (const auto *origin : origins) {
+            layout_copies_[origin] = &display;
+            dest_origins.push_back(origin);
+        }
+    }
+    if (auto prev = layout_copies_.find(&source); prev != layout_copies_.end()) {
+        if (auto rev = layout_copy_sources_.find(prev->second); rev != layout_copy_sources_.end()) {
+            std::erase(rev->second, &source);
+            if (rev->second.empty()) layout_copy_sources_.erase(rev);
+        }
+    }
+    layout_copies_[&source] = &display;
+    layout_copy_sources_[&display].push_back(&source);
     // Composite annotations (e.g. a fret diagram's harmony) keep their own IDs.
     // Reconnected ties can move relative to other types; order within a type is stable.
-    const auto &source_children = source.children();
-    const auto &display_children = display.children();
     muse::HashMap<ElementType, size_t> ordinals;
     for (const auto *child : source_children) {
-        if (!child->is_engraving_item()) continue;
         size_t ordinal = ordinals[child->type()]++;
         const auto match = std::find_if(display_children.begin(), display_children.end(), [&](const auto *copy) {
             if (copy->type() != child->type()) return false;
             return ordinal-- == 0;
         });
-        if (match != display_children.end()) register_layout_copy(*to_engraving_item(child), *to_engraving_item(*match));
+        if (match != display_children.end()) register_layout_copy(*child, **match);
     }
 }
 
 const EngravingItem *LayoutDataStore::layout_copy(const EngravingItem &source) const {
-    const auto found = std::ranges::find_if(layout_copies_, [&](const auto &entry) { return entry.first == &source; });
+    const auto found = layout_copies_.find(&source);
     return found != layout_copies_.end() ? found->second : nullptr;
 }
 
 void LayoutDataStore::clear_layout_copies(const Measure &display) {
-    std::erase_if(layout_copies_, [&](const auto &entry) { return entry.second->find_measure() == &display; });
+    std::vector<const EngravingItem *> doomed;
+    for (const auto &[copy, _] : layout_copy_sources_) {
+        if (copy->find_measure() == &display) doomed.push_back(copy);
+    }
+    for (const auto *copy : doomed) retire_layout_copy(*copy);
 }
 
 void LayoutDataStore::retire_layout_copy(const EngravingItem &item) {
-    std::erase_if(layout_copies_, [&](const auto &entry) { return entry.first == &item || entry.second == &item; });
+    if (auto it = layout_copies_.find(&item); it != layout_copies_.end()) {
+        if (auto rev = layout_copy_sources_.find(it->second); rev != layout_copy_sources_.end()) {
+            std::erase(rev->second, &item);
+            if (rev->second.empty()) layout_copy_sources_.erase(rev);
+        }
+        layout_copies_.erase(it);
+    }
+    if (auto rev = layout_copy_sources_.find(&item); rev != layout_copy_sources_.end()) {
+        for (const auto *origin : rev->second) {
+            if (auto it = layout_copies_.find(origin); it != layout_copies_.end() && it->second == &item) {
+                layout_copies_.erase(it);
+            }
+        }
+        layout_copy_sources_.erase(rev);
+    }
 }
+
+void LayoutDataStore::register_shape_borrower(EngravingItem &owner) { shape_borrowers_.insert(&owner); }
 
 size_t LayoutDataStore::size() const { return total_size_; }
 
@@ -403,6 +277,7 @@ void LayoutDataStore::erase(EngravingItem &item) {
         auto &pool = records_->pool<Data>();
         const auto slot = item.layout_slot_;
         auto *data = pool.detach(slot);
+        if (data->in_shape_borrowers_) shape_borrowers_.erase(&item);
         --total_size_;
         item.layout_data_ = nullptr;
         item.layout_store_ = nullptr;
@@ -424,7 +299,7 @@ LayoutDataStore::RetireScope LayoutDataStore::retire_payload_children(const Engr
         targets.push_back(&item);
         seen.insert(&item);
     }
-    add_layout_payload_children(item, data, [&](const EngravingItem *child) {
+    for_each_layout_payload_child(item, data, [&](const EngravingItem *child) {
         if (child && !is_retired_in_flight(*child)) collect_owned_subtree(*child, targets, seen);
     });
     std::erase_if(targets, [&](const EngravingItem *candidate) { return is_retired_in_flight(*candidate); });
@@ -524,31 +399,73 @@ std::vector<LayoutDataStore::RetireScope> LayoutDataStore::retire_batch_for_disp
 
 void LayoutDataStore::prune_shape_borrowers(std::span<const EngravingItem *const> retired, const BeamBase *beam) {
     if (!retired.empty()) {
-        const auto borrows_retired = [&](const ShapeElement &element) { return contains_retired(retired, element.item()); };
-        records_->for_each_live_data([&](ItemLayoutData &data) {
-            if (data.is_set_shape()) data.mut_shape().remove_if(borrows_retired);
-            if (data.is_set_mask()) data.mut_mask().remove_if(borrows_retired);
+        std::vector<const EngravingItem *> borrowed;
+        for (const EngravingItem *item : retired) {
+            if (item && item->is_borrowed_in_layout()) borrowed.push_back(item);
+        }
+        if (!borrowed.empty()) {
+            const auto borrows_retired = [&](const ShapeElement &element) { return contains_retired(borrowed, element.item()); };
+            for (EngravingItem *owner : shape_borrowers_) {
+                if (auto *data = owner->layout_data_) {
+                    if (data->is_set_shape()) data->mut_shape().remove_if(borrows_retired);
+                    if (data->is_set_mask()) data->mut_mask().remove_if(borrows_retired);
+                }
+            }
+            const auto prune_skyline = [&](System &system) {
+                for (auto *staff : system.staves()) {
+                    std::erase_if(staff->skyline().north().elements(), borrows_retired);
+                    std::erase_if(staff->skyline().south().elements(), borrows_retired);
+                }
+            };
+            // Reusable tail systems live outside ScoreOutput during a range pass.
+            records_->pool<System::LayoutData>().for_each_live(
+                [&](EngravingItem &owner, System::LayoutData &) { prune_skyline(*to_system(&owner)); });
+            for (auto *system : output_.systems) {
+                if (!system->has_layout_data()) prune_skyline(*system);
+            }
+            records_->pool<Segment::LayoutData>().for_each_live([&](EngravingItem &owner, Segment::LayoutData &) {
+                auto *segment = to_segment(&owner);
+                const auto size = std::as_const(*segment).shapes().size();
+                for (size_t i = 0; i < size; ++i) segment->staff_shape(i).remove_if(borrows_retired);
+            });
+            records_->pool<Chord::LayoutData>().for_each_live([&](EngravingItem &owner, Chord::LayoutData &) {
+                to_chord(&owner)->remove_spanner_borrowers([&](const Spanner *span) { return contains_retired(borrowed, span); });
+            });
+        }
+#ifndef NDEBUG
+        const auto has_retired_ref = [&](const ShapeElement &element) { return contains_retired(retired, element.item()); };
+        records_->for_each_live([&](EngravingItem &owner, ItemLayoutData &data) {
+            if (contains_retired(retired, &owner)) return;
+            if (data.is_set_shape()) {
+                for (const ShapeElement &el : data.shape_.elements()) assert(!has_retired_ref(el));
+            }
+            if (data.is_set_mask()) {
+                for (const ShapeElement &el : data.mask_.elements()) assert(!has_retired_ref(el));
+            }
         });
-        const auto prune_skyline = [&](System &system) {
+        const auto verify_skyline = [&](System &system) {
             for (auto *staff : system.staves()) {
-                std::erase_if(staff->skyline().north().elements(), borrows_retired);
-                std::erase_if(staff->skyline().south().elements(), borrows_retired);
+                for (const ShapeElement &el : staff->skyline().north().elements()) assert(!has_retired_ref(el));
+                for (const ShapeElement &el : staff->skyline().south().elements()) assert(!has_retired_ref(el));
             }
         };
-        // Reusable tail systems live outside ScoreOutput during a range pass.
         records_->pool<System::LayoutData>().for_each_live(
-            [&](EngravingItem &owner, System::LayoutData &) { prune_skyline(*to_system(&owner)); });
+            [&](EngravingItem &owner, System::LayoutData &) { verify_skyline(*to_system(&owner)); });
         for (auto *system : output_.systems) {
-            if (!system->has_layout_data()) prune_skyline(*system);
+            if (!system->has_layout_data()) verify_skyline(*system);
         }
         records_->pool<Segment::LayoutData>().for_each_live([&](EngravingItem &owner, Segment::LayoutData &) {
             auto *segment = to_segment(&owner);
-            const auto size = std::as_const(*segment).shapes().size();
-            for (size_t i = 0; i < size; ++i) segment->staff_shape(i).remove_if(borrows_retired);
+            for (const auto &shape : std::as_const(*segment).shapes()) {
+                for (const ShapeElement &el : shape.elements()) assert(!has_retired_ref(el));
+            }
         });
         records_->pool<Chord::LayoutData>().for_each_live([&](EngravingItem &owner, Chord::LayoutData &) {
-            to_chord(&owner)->remove_spanner_borrowers([&](const Spanner *span) { return contains_retired(retired, span); });
+            auto *chord = to_chord(&owner);
+            for (const auto *span : chord->starting_spanners()) assert(!contains_retired(retired, span));
+            for (const auto *span : chord->ending_spanners()) assert(!contains_retired(retired, span));
         });
+#endif
     }
     if (beam) {
         records_->for_each_beam_data([&](BeamBase::LayoutData &data) {
@@ -697,10 +614,13 @@ void LayoutDataStore::retire_shared_auxiliary_output() {
 void LayoutDataStore::discard_score_output() {
     // Payload destruction can retire spanners after notes and their dots. Clear
     // every copied collision before the first display child can be freed.
-    records_->for_each_live_data([](ItemLayoutData &data) {
+    records_->for_each_live([](EngravingItem &owner, ItemLayoutData &data) {
+        owner.clear_borrowed_in_layout();
         data.clear_shape();
         data.clear_mask();
+        data.in_shape_borrowers_ = false;
     });
+    shape_borrowers_.clear();
     if (score_) {
         clear_output_anchors(*score_);
         // These legacy L5 caches can retain pointers to output-owned ledger and
@@ -713,6 +633,13 @@ void LayoutDataStore::discard_score_output() {
             if (owner.is_segment()) {
                 auto *segment = to_segment(&owner);
                 if (!find(*segment)) segment->clear_shapes();
+            }
+            if (owner.is_measure() && find(*to_measure(&owner))) {
+                const auto *meas_data = to_measure(&owner)->ldata();
+                if (meas_data->mm_rest) self(self, *meas_data->mm_rest);
+                for (auto *seg : meas_data->segments) {
+                    if (seg && !find(*seg)) seg->clear_shapes();
+                }
             }
             for (auto *child : owner.children()) {
                 if (child->score() == score_) self(self, *child);
@@ -732,6 +659,7 @@ void LayoutDataStore::discard_score_output() {
         data.rendered_beam.reset();
     });
     layout_copies_.clear();
+    layout_copy_sources_.clear();
     output_.stave_sharing_states.clear();
     output_.suspended_shared_parts.clear();
     output_.suppressed_shared_spanners.clear();

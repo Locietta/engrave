@@ -174,6 +174,7 @@ void Segment::add_generated(EngravingItem *item) {
     generated.resize(std::max(generated.size(), score()->ntracks()));
     const auto track = item->track();
     assert(!generated[track] || generated[track] == item);
+    item->set_layout_owned(true);
     item->set_ownership_parent(this);
     generated[track] = item;
 }

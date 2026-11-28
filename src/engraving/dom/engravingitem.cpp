@@ -1021,7 +1021,7 @@ bool EngravingItem::set_property(Pid property_id, const PropertyValue &v) {
 
 void EngravingItem::manage_exclusion_from_parts(bool exclude) {
     if (exclude) {
-        const std::list<EngravingObject *> links = link_list();
+        const auto links = link_list();
         for (EngravingObject *linked_object : links) {
             if (linked_object->score() == score()) {
                 continue;
@@ -1979,6 +1979,49 @@ bool EngravingItem::element_applies_to_track(const track_idx_t element_track, co
         }
     }
     return false;
+}
+
+void ItemLayoutData::register_shape_borrower() {
+    if (in_shape_borrowers_ || !item_ || !item_->layout_store_) {
+        return;
+    }
+    in_shape_borrowers_ = true;
+    item_->layout_store_->register_shape_borrower(*const_cast<EngravingItem *>(item_));
+}
+
+Shape &ItemLayoutData::reset_composite_shape() {
+    register_shape_borrower();
+    auto &shape = mut_shape();
+    shape.clear(Shape::Type::COMPOSITE);
+    return shape;
+}
+
+void ItemLayoutData::set_shape(const Shape &sh) {
+    shape_ = sh;
+    has_shape_ = true;
+    bool has_foreign = false;
+    for (const ShapeElement &el : sh.elements()) {
+        if (const EngravingItem *ref = el.item(); ref && ref != item_) {
+            ref->mark_borrowed_in_layout();
+            has_foreign = true;
+        }
+    }
+    if (has_foreign) {
+        register_shape_borrower();
+    }
+}
+
+void ItemLayoutData::set_mask(const Shape &m) {
+    mask_ = m;
+    has_mask_ = true;
+    for (const ShapeElement &el : m.elements()) {
+        if (const EngravingItem *ref = el.item()) {
+            ref->mark_borrowed_in_layout();
+        }
+    }
+    if (!m.empty()) {
+        register_shape_borrower();
+    }
 }
 
 void ItemLayoutData::set_bbox(const RectF &r) {

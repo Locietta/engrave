@@ -33,7 +33,9 @@
 #include "engraving/dom/bend.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/drumset.h"
+#include "engraving/dom/dummyparent.h"
 #include "engraving/dom/factory.h"
+#include "engraving/dom/linkedobjects.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
 #include "engraving/dom/mscore.h"
@@ -41,6 +43,7 @@
 #include "engraving/dom/pitchspelling.h"
 #include "engraving/dom/repeatlist.h"
 #include "engraving/dom/segment.h"
+#include "engraving/dom/smalllinklist.h"
 #include "engraving/dom/spanner.h"
 #include "engraving/dom/staff.h"
 #include "engraving/dom/tie.h"
@@ -2520,4 +2523,71 @@ TEST(Export, LegacyBendPitchLabelsAndExtremeCurvesRenderAndExport) {
     const auto midi = (*document)->export_score({.format = Format::MIDI});
     ASSERT_TRUE(midi) << midi.error().message;
     EXPECT_FALSE(midi->empty());
+}
+
+TEST(SmallLinkList, InlineOverflowAndUnlinkSnapshot) {
+    using mu::engraving::EngravingObject;
+    using mu::engraving::SmallLinkList;
+
+    auto *base = reinterpret_cast<EngravingObject *>(0x1000);
+    SmallLinkList inline_list;
+    for (int i = 0; i < 8; ++i) inline_list.push_back(base + i);
+    EXPECT_EQ(inline_list.size(), 8u);
+    EXPECT_FALSE(inline_list.empty());
+    EXPECT_EQ(inline_list.front(), base);
+    EXPECT_EQ(inline_list.back(), base + 7);
+    const auto *inline_addr = reinterpret_cast<const char *>(&inline_list);
+    const auto *inline_data = reinterpret_cast<const char *>(inline_list.data());
+    EXPECT_GE(inline_data, inline_addr);
+    EXPECT_LT(inline_data, inline_addr + sizeof(SmallLinkList));
+    EXPECT_TRUE(inline_list.contains(base + 5));
+    EXPECT_FALSE(inline_list.contains(base + 9));
+
+    SmallLinkList overflow_list = inline_list;
+    for (int i = 8; i < 12; ++i) overflow_list.push_back(base + i);
+    EXPECT_EQ(overflow_list.size(), 12u);
+    for (int i = 0; i < 12; ++i) EXPECT_EQ(overflow_list[static_cast<std::size_t>(i)], base + i);
+    SmallLinkList moved_list = std::move(overflow_list);
+    EXPECT_EQ(moved_list.size(), 12u);
+    EXPECT_TRUE(moved_list.contains(base + 11));
+
+    const std::string mscx = R"xml(<?xml version="1.0" encoding="UTF-8"?>
+<museScore version="5.00">
+  <Score>
+    <Division>480</Division>
+    <Part id="1"><Staff id="1"/><Instrument id="piano"><trackName>Piano</trackName></Instrument></Part>
+    <Staff id="1"><Measure><voice><Chord><durationType>whole</durationType><Note><pitch>60</pitch><tpc>14</tpc></Note></Chord></voice></Measure></Staff>
+  </Score>
+</museScore>)xml";
+    const std::vector<std::byte> bytes(reinterpret_cast<const std::byte *>(mscx.data()),
+                                       reinterpret_cast<const std::byte *>(mscx.data() + mscx.size()));
+    auto document = g_engine->open(bytes, {.format = Format::MSCX});
+    ASSERT_TRUE(document) << document.error().message;
+    auto &master = engrave::harness::master_of(**document);
+    auto *seg = master.first_measure()->first(mu::engraving::SegmentType::CHORD_REST);
+    ASSERT_NE(seg, nullptr);
+    auto *chord = mu::engraving::to_chord(seg->element(0));
+    ASSERT_NE(chord, nullptr);
+    auto *origin = chord->up_note();
+    ASSERT_NE(origin, nullptr);
+
+    std::vector<std::unique_ptr<mu::engraving::Note>> clones;
+    for (int i = 0; i < 10; ++i) {
+        auto *clone = origin->clone();
+        clone->set_ownership_parent(master.dummy());
+        clone->link_to(origin);
+        clones.emplace_back(clone);
+    }
+    ASSERT_NE(origin->links(), nullptr);
+    EXPECT_EQ(origin->links()->size(), 11u);
+
+    std::vector<EngravingObject *> visited;
+    for (EngravingObject *linked : origin->link_list()) {
+        visited.push_back(linked);
+        if (linked != origin) linked->unlink();
+    }
+    EXPECT_EQ(visited.size(), 11u);
+    EXPECT_EQ(origin->links(), nullptr);
+    EXPECT_EQ(origin->link_list().size(), 1u);
+    EXPECT_EQ(origin->link_list().front(), origin);
 }

@@ -476,6 +476,9 @@ void Shape::add_b_box(const RectF &r) {
 
 void Shape::add(const Shape &s) {
     type_ = Type::COMPOSITE;
+    for (const ShapeElement &el : s.elements_) {
+        if (el.item()) el.item()->mark_borrowed_in_layout();
+    }
     elements_.insert(elements_.end(), s.elements_.begin(), s.elements_.end());
 }
 
@@ -486,6 +489,7 @@ void Shape::add_translated(const Shape &other, const PointF &offset) {
     if (required > elements_.capacity()) elements_.reserve(std::max(required, elements_.capacity() * 2));
     for (size_t i = 0; i < count; ++i) {
         auto element = other.elements_[i];
+        if (element.item()) element.item()->mark_borrowed_in_layout();
         element.translate(offset);
         elements_.push_back(element);
     }
@@ -493,6 +497,7 @@ void Shape::add_translated(const Shape &other, const PointF &offset) {
 
 void Shape::add(const ShapeElement &shape_el) {
     type_ = Type::COMPOSITE;
+    if (shape_el.item()) shape_el.item()->mark_borrowed_in_layout();
     elements_.push_back(shape_el);
 }
 

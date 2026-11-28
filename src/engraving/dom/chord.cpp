@@ -2048,11 +2048,23 @@ Note *Chord::first_grace_or_note() {
     return this->notes().back();
 }
 
+void Chord::add_starting_spanner(Spanner *spanner) {
+    if (spanner) spanner->mark_borrowed_in_layout();
+    starting_spanners_.insert(spanner);
+}
+
+void Chord::add_ending_spanner(Spanner *spanner) {
+    if (spanner) spanner->mark_borrowed_in_layout();
+    ending_spanners_.insert(spanner);
+}
+
 // GRACE NOTES
 
 GraceNotesGroup::GraceNotesGroup(DummyParentOr<Chord> c) : EngravingItem(ElementType::GRACE_NOTES_GROUP, c), parent_value(c.as<Chord>()) {
-    // LayoutContext owns this object. The source chord must never delete it.
-    move_to_dummy();
+    // LayoutContext owns this object; keep it detached from source ownership without polluting dummy()->children().
+    if (Score *sc = score(); sc && sc->dummy()) {
+        set_ownership_parent(sc->dummy());
+    }
 }
 
 EngravingItem *GraceNotesGroup::layout_parent() const { return parent_value; }

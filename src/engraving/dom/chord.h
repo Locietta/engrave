@@ -431,11 +431,11 @@ public:
 
     const muse::FlatSet<Spanner *> &ending_spanners() const { return ending_spanners_; }
 
-    void add_starting_spanner(Spanner *spanner) { starting_spanners_.insert(spanner); }
+    void add_starting_spanner(Spanner *spanner);
 
     void remove_starting_spanner(Spanner *spanner) { starting_spanners_.erase(spanner); }
 
-    void add_ending_spanner(Spanner *spanner) { ending_spanners_.insert(spanner); }
+    void add_ending_spanner(Spanner *spanner);
 
     void remove_ending_spanner(Spanner *spanner) { ending_spanners_.erase(spanner); }
 

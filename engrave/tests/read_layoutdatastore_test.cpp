@@ -904,3 +904,78 @@ TEST(LayoutDataStore, LdFieldAndItemPresenceTrackStateUniformly) {
     EXPECT_TRUE(harm_ld->baseline.has_value());
     EXPECT_DOUBLE_EQ(harmony->base_line(), 12.5);
 }
+
+TEST(LayoutDataStore, SingleOwnerChildrenAndBorrowerFastPathStaySound) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "tests/data/inputs/golden/slurs.mscz");
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+
+    // No layout-owned child may appear in any source object's children_ vector.
+    const auto verify_source_children = [&](auto &&self, const EngravingObject &owner) -> void {
+        for (const auto *child : owner.children()) {
+            EXPECT_FALSE(child->is_layout_owned()) << owner.type_name() << " -> " << child->type_name();
+            self(self, *child);
+        }
+    };
+    verify_source_children(verify_source_children, master);
+    verify_source_children(verify_source_children, *master.dummy());
+
+    auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    ASSERT_NE(chord, nullptr);
+    EXPECT_TRUE(chord->stem() == nullptr || chord->stem()->is_layout_owned());
+    EXPECT_TRUE(std::ranges::none_of(chord->children(), [](const auto *c) { return c->is_layout_owned(); }));
+
+    // Unborrowed items skip borrower sweeps; borrowed items are pruned cleanly from foreign shapes & masks.
+    auto &store = *master.layout_data_store();
+    std::unique_ptr<Articulation> unborrowed(Factory::create_articulation(master.dummy()));
+    EXPECT_FALSE(unborrowed->is_borrowed_in_layout());
+    unborrowed->mutldata()->set_bbox(0.0, 0.0, 2.0, 2.0);
+    EXPECT_FALSE(unborrowed->is_borrowed_in_layout());
+    unborrowed.reset();
+
+    std::unique_ptr<Articulation> borrowed_shape(Factory::create_articulation(master.dummy()));
+    std::unique_ptr<Articulation> borrowed_mask(Factory::create_articulation(master.dummy()));
+    std::unique_ptr<Articulation> holder(Factory::create_articulation(master.dummy()));
+    Shape composite(Shape::Type::COMPOSITE);
+    composite.add(RectF(0.0, 0.0, 3.0, 3.0), borrowed_shape.get());
+    holder->mutldata()->set_shape(composite);
+    holder->mutldata()->set_mask(Shape(RectF(1.0, 1.0, 2.0, 2.0), borrowed_mask.get()));
+    EXPECT_TRUE(borrowed_shape->is_borrowed_in_layout());
+    EXPECT_TRUE(borrowed_mask->is_borrowed_in_layout());
+
+    borrowed_shape.reset();
+    borrowed_mask.reset();
+    EXPECT_TRUE(holder->ldata()->shape().empty());
+    EXPECT_TRUE(holder->ldata()->mask().empty());
+
+    // HashMap layout_copies_ tracks registration, remapping, and retirement accurately.
+    std::unique_ptr<Articulation> src(Factory::create_articulation(master.dummy()));
+    std::unique_ptr<Articulation> copy1(Factory::create_articulation(master.dummy()));
+    std::unique_ptr<Articulation> copy2(Factory::create_articulation(master.dummy()));
+    store.register_layout_copy(*src, *copy1);
+    EXPECT_EQ(store.layout_copy(*src), copy1.get());
+    EXPECT_TRUE(copy1->is_layout_owned());
+    store.register_layout_copy(*copy1, *copy2);
+    EXPECT_EQ(store.layout_copy(*src), copy2.get());
+    EXPECT_EQ(store.layout_copy(*copy1), copy2.get());
+    store.retire_layout_copy(*copy2);
+    EXPECT_EQ(store.layout_copy(*src), nullptr);
+    EXPECT_EQ(store.layout_copy(*copy1), nullptr);
+
+    // LayoutContext teardown must clear grace-group pre-append links on layout-owned output segments.
+    auto *measure = master.first_measure();
+    ASSERT_NE(measure, nullptr);
+    auto *output_seg = Factory::create_segment(measure, SegmentType::END_BAR_LINE, measure->ticks());
+    measure->add_output_segment(output_seg);
+    ASSERT_TRUE(output_seg->is_layout_owned());
+    {
+        rendering::score::LayoutContext ctx(&master);
+        auto &group = ctx.update_grace_group(chord, true);
+        output_seg->pre_append(&group, 0);
+        ASSERT_EQ(output_seg->pre_appended_item(0), &group);
+    }
+    EXPECT_EQ(output_seg->pre_appended_item(0), nullptr);
+}

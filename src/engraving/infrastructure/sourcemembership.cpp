@@ -1,25 +1,5 @@
-#include "dom/accidental.h"
-#include "dom/arpeggio.h"
-#include "dom/articulation.h"
-#include "dom/beam.h"
-#include "dom/box.h"
-#include "dom/chord.h"
-#include "dom/engravingitem.h"
-#include "dom/lyrics.h"
 #include "dom/masterscore.h"
-#include "dom/measure.h"
-#include "dom/note.h"
-#include "dom/part.h"
-#include "dom/score.h"
-#include "dom/segment.h"
-#include "dom/sharedpart.h"
-#include "dom/spacer.h"
-#include "dom/staff.h"
-#include "dom/text.h"
-#include "dom/tie.h"
-#include "dom/tremolosinglechord.h"
-#include "dom/tremolotwochord.h"
-#include "dom/tuplet.h"
+#include "domchildren.h"
 #include "sourcehandle.h"
 
 namespace mu::engraving {
@@ -103,58 +83,34 @@ static void for_each_source_child(EngravingObject &item, const Function &adopt, 
         return;
     }
     if (item.is_measure_base()) {
-        auto &base = *to_measure_base(&item);
-        for (auto *child : base.el()) adopt(child);
+        for_each_owned_item_child(*to_engraving_item(&item), adopt);
         if (item.is_measure()) {
-            auto &measure = *to_measure(&item);
-            for (auto *row : measure.mstaves()) {
-                adopt(row->vspacer_up());
-                adopt(row->vspacer_down());
-            }
-            for (auto *segment = measure.first(); segment; segment = segment->next()) {
-                adopt(segment);
+            for (auto *segment = to_measure(&item)->first(); segment; segment = segment->next()) {
                 for (auto *element : segment->elist()) {
                     if (!element || !element->is_chord_rest()) continue;
                     for (auto *tuplet = to_chord_rest(element)->tuplet(); tuplet; tuplet = tuplet->tuplet()) adopt(tuplet);
                 }
             }
         }
-        if (item.is_t_box()) adopt(to_t_box(&item)->text());
         return;
     }
     if (item.is_segment()) {
-        auto &segment = *to_segment(&item);
-        for (auto *child : segment.elist())
-            if (child) adopt(child);
-        for (auto *child : segment.annotations()) adopt(child);
+        for_each_owned_item_child(*to_engraving_item(&item), adopt);
         return;
     }
     if (item.is_chord_rest()) {
         auto &rest = *to_chord_rest(&item);
-        for (auto *lyric : rest.lyrics()) adopt(lyric);
-        for (auto *child : rest.el()) adopt(child);
+        for_each_owned_item_child(rest, adopt);
         if (auto *measure = rest.measure(); live && measure) {
             for (auto *tuplet = rest.tuplet(); tuplet; tuplet = tuplet->tuplet()) source_child_added(*measure, tuplet);
         }
         if (live && rest.authored_beam()) source_child_added(*rest.score(), rest.authored_beam());
-        if (item.is_chord()) {
-            auto &chord = *to_chord(&item);
-            for (auto *note : chord.notes()) adopt(note);
-            for (auto *grace : chord.grace_notes()) adopt(grace);
-            for (auto *articulation : chord.articulations()) adopt(articulation);
-            adopt(chord.arpeggio());
-            adopt(chord.tremolo_single_chord());
-            // A two-chord tremolo is owned by its first chord only.
-            if (auto *tremolo = chord.tremolo_two_chord(); tremolo && tremolo->chord1() == &chord) adopt(tremolo);
-        }
         return;
     }
     if (item.is_note()) {
         auto &note = *to_note(&item);
-        adopt(note.accidental());
-        adopt(note.tie_for());
+        for_each_owned_item_child(note, adopt);
         if (auto *tie = note.tie_back(); tie && tie->is_partial_tie() && !tie->start_element()) adopt(tie);
-        for (auto *child : note.el()) adopt(child);
         for (auto *spanner : note.spanner_for())
             if (spanner->anchor() == Spanner::Anchor::NOTE) adopt(spanner);
         return;

@@ -31,6 +31,8 @@ using namespace mu::engraving;
 
 bool LinkedObjects::contains(const EngravingObject *o) const { return std::find(this->begin(), this->end(), o) != this->end(); }
 
+void LinkedObjects::remove(const EngravingObject *o) { std::erase(*this, o); }
+
 //---------------------------------------------------------
 //   mainElement
 //    Returns "main" linked element which is expected to

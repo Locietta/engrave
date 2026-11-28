@@ -2040,7 +2040,7 @@ void TextBase::undo_change_property(Pid id, const PropertyValue &v, PropertyFlag
         return;
     }
 
-    const std::list<EngravingObject *> linked_objects = link_list_for_property_propagation();
+    const auto linked_objects = link_list_for_property_propagation();
     for (EngravingObject *linked_object : linked_objects) {
         TextBase *linked_text = to_text_base(linked_object);
         if (linked_text == this) {

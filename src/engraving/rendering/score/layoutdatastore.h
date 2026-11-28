@@ -10,6 +10,7 @@
 #include "engraving/types/stavesharing.h"
 #include "global/flatmap.h"
 #include "global/fn.h"
+#include "global/hashmap.h"
 #include "global/unique_fn.h"
 
 namespace mu::engraving {
@@ -65,6 +66,7 @@ struct LayoutDataStore {
     Beam *create_beam();
     void retire_beam_borrowers(const BeamBase &beam);
     void retire_spanner_borrowers(const SpannerSegment &segment);
+    void register_shape_borrower(EngravingItem &owner);
     void retire_shape_borrowers(const EngravingItem &item);
     void retire_item_borrowers(const EngravingItem &item);
     static void delete_layout_child(EngravingItem *item);
@@ -119,7 +121,9 @@ private:
     size_t total_size_ = 0;
     Score *score_;
     ScoreOutput output_;
-    std::vector<std::pair<const EngravingItem *, EngravingItem *>> layout_copies_;
+    muse::HashMap<const EngravingItem *, EngravingItem *> layout_copies_;
+    muse::HashMap<const EngravingItem *, std::vector<const EngravingItem *>> layout_copy_sources_;
+    muse::HashSet<EngravingItem *> shape_borrowers_;
     std::vector<RetireEntry *> in_flight_retired_;
     bool clearing_ = false;
     bool suppress_shape_prune_ = false;

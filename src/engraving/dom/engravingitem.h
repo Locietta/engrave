@@ -197,16 +197,9 @@ struct ItemLayoutData {
     void append_shape(Shape &dst, const PointF &offset) const;
     bool intersects_shape_translated(const PointF &offset, const ItemLayoutData &other, const PointF &other_offset) const;
 
-    Shape &reset_composite_shape() {
-        auto &shape = mut_shape();
-        shape.clear(Shape::Type::COMPOSITE);
-        return shape;
-    }
+    Shape &reset_composite_shape();
 
-    void set_shape(const Shape &sh) {
-        shape_ = sh;
-        has_shape_ = true;
-    }
+    void set_shape(const Shape &sh);
 
     void set_bbox(const RectF &r);
 
@@ -244,10 +237,7 @@ struct ItemLayoutData {
         has_mask_ = false;
     }
 
-    void set_mask(const Shape &m) {
-        mask_ = m;
-        has_mask_ = true;
-    }
+    void set_mask(const Shape &m);
 
     const Shape &mask() const { return mask_; }
 
@@ -313,11 +303,14 @@ protected:
     friend struct EngravingItem;
     friend struct rendering::score::LayoutDataStore;
 
+    void register_shape_borrower();
+
     const EngravingItem *item_ = nullptr;
     bool is_skip_draw_ = false;
     bool has_pos_ = false;
     bool has_shape_ = false;
     bool has_mask_ = false;
+    bool in_shape_borrowers_ = false;
     double mag_ = 1.0; // standard magnification (derived value)
     PointF pos_;       // Reference position, relative to _parent, set by autoplace
     Shape shape_;
@@ -371,7 +364,16 @@ public:
     // A display-only clone; it never owns source identity or semantic caches.
     bool is_layout_copy() const { return flag(ElementFlag::LAYOUT_COPY); }
 
-    void set_layout_copy(bool value) { set_flag(ElementFlag::LAYOUT_COPY, value); }
+    void set_layout_copy(bool value) {
+        set_flag(ElementFlag::LAYOUT_COPY, value);
+        if (value) set_layout_owned(true);
+    }
+
+    bool is_borrowed_in_layout() const noexcept { return borrowed_in_layout_; }
+
+    void mark_borrowed_in_layout() const noexcept { borrowed_in_layout_ = true; }
+
+    void clear_borrowed_in_layout() const noexcept { borrowed_in_layout_ = false; }
 
     EngravingConfiguration *configuration() const;
     EngravingContextConfiguration *context_configuration() const;
@@ -742,6 +744,7 @@ protected:
 
 private:
     mutable ElementFlags flags_;
+    mutable bool borrowed_in_layout_ = false;
 
 protected:
     track_idx_t track_ = muse::nidx; // staffIdx * VOICES + voice
@@ -752,6 +755,7 @@ protected:
 private:
 
     friend struct Factory;
+    friend struct ItemLayoutData;
     friend struct rendering::score::LayoutDataStore;
     friend struct EngravingObject;
     void transfer_layout_data(Score *destination);

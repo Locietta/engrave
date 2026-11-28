@@ -24,26 +24,38 @@
 #include "dom/articulation.h"
 #include "dom/note.h"
 #include "dom/score.h"
+#include "infrastructure/domchildren.h"
 #include "layoutcontext.h"
+#include "layoutdatastore.h"
 
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
+static void reset_item_layout_data(EngravingItem &item) {
+    if (!item.has_layout_data()) {
+        return;
+    }
+    if (item.is_articulation_family()) {
+        to_articulation(&item)->mutldata()->reset();
+    } else {
+        item.mutldata()->reset();
+    }
+    if (item.is_note()) {
+        // A removed bend no longer produces these overrides on the next pass.
+        auto *ld = to_note(&item)->mutldata();
+        ld->visible.reset();
+        ld->ghost.reset();
+    }
+}
+
 static void reset_layout_data(EngravingObject *obj) {
     if (obj->is_engraving_item()) {
         EngravingItem *item = to_engraving_item(obj);
+        reset_item_layout_data(*item);
         if (item->has_layout_data()) {
-            if (item->is_articulation_family()) {
-                to_articulation(item)->mutldata()->reset();
-            } else {
-                item->mutldata()->reset();
-            }
-            if (item->is_note()) {
-                // A removed bend no longer produces these overrides on the next pass.
-                auto *ld = to_note(item)->mutldata();
-                ld->visible.reset();
-                ld->ghost.reset();
-            }
+            for_each_layout_payload_child(*item, *item->ldata(), [](EngravingItem *child) {
+                if (child) reset_layout_data(child);
+            });
         }
     }
 
@@ -54,7 +66,7 @@ static void reset_layout_data(EngravingObject *obj) {
 
 void PassResetLayoutData::do_run(Score *score, LayoutContext &ctx) {
     if (ctx.state().is_layout_all()) {
-        reset_layout_data(score);
+        ctx.mut_layout_data().for_each_output([](EngravingItem &item, ItemLayoutData &) { reset_item_layout_data(item); });
     } else {
         MeasureBase *m = ctx.mut_state().next_measure();
         while (m && m->tick() <= ctx.state().end_tick()) {

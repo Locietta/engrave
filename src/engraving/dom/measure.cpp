@@ -303,7 +303,10 @@ void Measure::set_mm_rest(Measure *measure) {
         score()->clear_layout_copies(*old);
     }
     mutldata()->mm_rest = measure;
-    if (measure) measure->mutldata()->mm_rest_first = this;
+    if (measure) {
+        measure->set_layout_owned(true);
+        measure->mutldata()->mm_rest_first = this;
+    }
     delete old;
 }
 
@@ -661,6 +664,7 @@ void Measure::reconcile_output_segments() {
 }
 
 void Measure::add_output_segment(Segment *segment) {
+    segment->set_layout_owned(true);
     segment->set_ownership_parent(this);
     mutldata()->segments.push_back(segment);
     rebuild_rendered_segments();

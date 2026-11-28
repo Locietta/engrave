@@ -112,6 +112,9 @@ void SkylineLine::add(const ShapeElement &r) {
     if (r.ignore_for_layout()) {
         return;
     }
+    if (r.item()) {
+        r.item()->mark_borrowed_in_layout();
+    }
 
     double x = r.x();
     double top = r.top();

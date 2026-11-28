@@ -651,7 +651,7 @@ bool FiguredBass::set_property(Pid property_id, const PropertyValue &v) {
 PropertyValue FiguredBass::property_default(Pid id) const { return TextBase::property_default(id); }
 
 void FiguredBass::clear_items() {
-    const std::list<EngravingObject *> links = link_list();
+    const auto links = link_list();
     for (EngravingObject *linked_object : links) {
         if (!linked_object || !linked_object->is_figured_bass()) {
             continue;
@@ -673,7 +673,7 @@ void FiguredBass::clear_items() {
 }
 
 void FiguredBass::add_item_to_linked(FiguredBassItem *item) {
-    const std::list<EngravingObject *> links = link_list();
+    const auto links = link_list();
     for (EngravingObject *linked_object : links) {
         if (!linked_object || !linked_object->is_figured_bass()) {
             continue;

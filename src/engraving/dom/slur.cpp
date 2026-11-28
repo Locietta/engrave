@@ -217,7 +217,7 @@ void Slur::undo_change_start_end_elements(ChordRest *scr, ChordRest *ecr) {
             EngravingItem *se = 0;
             EngravingItem *ee = 0;
             if (scr) {
-                std::list<EngravingObject *> sel = scr->link_list();
+                const auto sel = scr->link_list();
                 for (EngravingObject *lcr : sel) {
                     EngravingItem *le = to_engraving_item(lcr);
                     if (le->score() == sp->score() && le->track() == sp->track()) {
@@ -227,7 +227,7 @@ void Slur::undo_change_start_end_elements(ChordRest *scr, ChordRest *ecr) {
                 }
             }
             if (ecr) {
-                std::list<EngravingObject *> sel = ecr->link_list();
+                const auto sel = ecr->link_list();
                 for (EngravingObject *lcr : sel) {
                     EngravingItem *le = to_engraving_item(lcr);
                     if (le->score() == sp->score() && le->track() == sp->track2()) {

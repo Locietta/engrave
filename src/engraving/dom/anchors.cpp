@@ -145,7 +145,7 @@ void MoveElementAnchors::do_move_segment(EngravingItem *element, Segment *new_se
     Measure *parent_measure = to_measure(element->find_ancestor(ElementType::MEASURE));
     bool parent_measure_is_mm_rest = parent_measure && parent_measure->is_mm_rest();
 
-    std::list<EngravingObject *> linked_elements = element->link_list();
+    const auto linked_elements = element->link_list();
     for (EngravingObject *linked_element : linked_elements) {
         if (linked_element == element) {
             continue;

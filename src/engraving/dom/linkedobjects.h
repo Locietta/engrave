@@ -22,15 +22,16 @@
 #ifndef MU_ENGRAVING_LINKEDOBJECTS_H
 #define MU_ENGRAVING_LINKEDOBJECTS_H
 
-#include <list>
+#include <vector>
 
 #include "engravingobject.h"
 
 namespace mu::engraving {
-struct LinkedObjects : std::list<EngravingObject *> {
+struct LinkedObjects : std::vector<EngravingObject *> {
 
 public:
     bool contains(const EngravingObject *o) const;
+    void remove(const EngravingObject *o);
 
     EngravingObject *main_element();
 };

@@ -1023,10 +1023,10 @@ TEST(FlatPlaybackStoreTests, CancelsInsideContextMaterialization) {
 
     using Clock = std::chrono::steady_clock;
     const auto milliseconds = [](auto duration) { return std::chrono::duration<double, std::milli>(duration).count(); };
-    // ASan tracks allocations during materialization and unwind, so the latency budget belongs to the release lane.
+    // Sanitizers add instrumentation overhead during materialization and unwind, so the latency budget belongs to the release lane.
 #if defined(__clang__)
-    constexpr bool enforce_latency = !__has_feature(address_sanitizer);
-#elif defined(__SANITIZE_ADDRESS__)
+    constexpr bool enforce_latency = !__has_feature(address_sanitizer) && !__has_feature(thread_sanitizer);
+#elif defined(__SANITIZE_ADDRESS__) || defined(__SANITIZE_THREAD__)
     constexpr bool enforce_latency = false;
 #else
     constexpr bool enforce_latency = true;

@@ -231,7 +231,7 @@ void SpannerSegment::trigger_layout() const {
     }
 }
 
-std::list<EngravingObject *> SpannerSegment::link_list_for_property_propagation() const { return {const_cast<SpannerSegment *>(this)}; }
+SmallLinkList SpannerSegment::link_list_for_property_propagation() const { return {const_cast<SpannerSegment *>(this)}; }
 
 bool SpannerSegment::is_property_linked_to_master(Pid id) const {
     bool linked_for_spanner_segment = EngravingItem::is_property_linked_to_master(id);

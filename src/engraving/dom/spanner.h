@@ -139,7 +139,7 @@ public:
 
     void trigger_layout() const override;
 
-    std::list<EngravingObject *> link_list_for_property_propagation() const override;
+    SmallLinkList link_list_for_property_propagation() const override;
     bool is_property_linked_to_master(Pid id) const override;
 
     virtual bool is_user_modified() const override;

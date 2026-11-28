@@ -174,7 +174,7 @@ void Box::manage_exclusion_from_parts(bool exclude) {
 
     bool title_frame = is_title_frame();
     if (exclude) {
-        const std::list<EngravingObject *> links = link_list();
+        const auto links = link_list();
         for (EngravingObject *linked_object : links) {
             // Only remove title frame from score
             if (linked_object->score() == score() || (!this->score()->is_master() && title_frame && !linked_object->score()->is_master())) {

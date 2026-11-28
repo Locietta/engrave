@@ -32,6 +32,7 @@
 #include "../types/propertyvalue.h"
 #include "../types/types.h"
 #include "global/fn.h"
+#include "smalllinklist.h"
 
 namespace mu::engraving {
 struct StyledProperty;
@@ -250,6 +251,10 @@ struct EngravingObject {
 
     inline ElementType type() const { return type_; }
 
+    bool is_layout_owned() const noexcept { return layout_owned_; }
+
+    void set_layout_owned(bool v);
+
     inline bool is_type(ElementType t) const { return t == type_; }
 
     const char *type_name() const;
@@ -321,7 +326,7 @@ struct EngravingObject {
 
     void notify_property_change(Pid);
 
-    std::list<EngravingObject *> link_list() const;
+    SmallLinkList link_list() const;
 
     void link_to(EngravingObject *);
     void unlink();
@@ -340,6 +345,7 @@ protected:
 
     void add_child(EngravingObject *o);
     void remove_child(EngravingObject *o);
+    void detach_child_only(EngravingObject *o);
 
     const ElementStyle *element_style_{nullptr};
     PropertyFlags *property_flags_list_ = nullptr;
@@ -357,13 +363,14 @@ private:
     void do_set_score(Score *sc);
 
     const ElementType type_ = ElementType::INVALID;
+    bool layout_owned_ = false;
 
     EngravingObject *parent_ = nullptr;
     EngravingObjectList children_;
 
 public:
 
-    virtual std::list<EngravingObject *> link_list_for_property_propagation() const { return link_list(); }
+    virtual SmallLinkList link_list_for_property_propagation() const { return link_list(); }
 
     //---------------------------------------------------
     // check type

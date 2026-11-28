@@ -32,7 +32,6 @@
 #include "log.h"
 #include "measurelayout.h"
 #include "pagelayout.h"
-#include "passlayoutindependentitems.h"
 #include "passresetlayoutdata.h"
 #include "systemlayout.h"
 
@@ -188,17 +187,8 @@ void ScorePageViewLayout::layout_page_view(Score *score, LayoutContext &ctx, con
     prepare_score(score, ctx);
 
     //! NOTE Reset pass need anyway
-    //#ifdef MUE_ENABLE_ENGRAVING_LD_PASSES
     PassResetLayoutData reset_pass;
     reset_pass.run(score, ctx);
-    //#endif
-
-#ifdef MUE_ENABLE_ENGRAVING_LD_PASSES
-    if (ctx.state().is_layout_all()) {
-        PassLayoutIndependentItems independent_pass;
-        independent_pass.run(score, ctx);
-    }
-#endif
 
     do_layout(ctx);
 

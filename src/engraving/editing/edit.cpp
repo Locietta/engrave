@@ -964,7 +964,7 @@ void Score::delete_item(EngravingItem *el) {
 
                 Tuplet *tuplet = chord->tuplet();
                 if (tuplet) {
-                    std::list<EngravingObject *> tl = tuplet->link_list();
+                    const auto tl = tuplet->link_list();
                     for (EngravingObject *e : rest->link_list()) {
                         DurationElement *de = to_duration_element(e);
                         for (EngravingObject *ee : tl) {
@@ -1969,7 +1969,7 @@ void Score::undo_change_parent(EngravingItem *element, EngravingItem *parent, st
     Staff *dest_staff = staff(staff_idx);
     bool recreate_item_needed = false;
 
-    const std::list<EngravingObject *> links = element->link_list();
+    const auto links = element->link_list();
     for (EngravingObject *obj : links) {
         EngravingItem *item = to_engraving_item(obj);
         Score *linked_score = item->score();
@@ -2016,7 +2016,7 @@ void Score::undo_change_parent(EngravingItem *element, EngravingItem *parent, st
 
     if (recreate_item_needed) {
         // Need to create item in some parts
-        const std::list<EngravingObject *> dest_staff_links = dest_staff->link_list();
+        const auto dest_staff_links = dest_staff->link_list();
         for (EngravingObject *obj : dest_staff_links) {
             Staff *linked_dest = to_staff(obj);
             Score *linked_score = linked_dest->score();
@@ -2311,7 +2311,7 @@ void Score::undo_change_element(EngravingItem *old_element, EngravingItem *new_e
     if (!old_element) {
         undo_add_element(new_element);
     } else {
-        const std::list<EngravingObject *> links = old_element->link_list();
+        const auto links = old_element->link_list();
         for (EngravingObject *obj : links) {
             EngravingItem *item = to_engraving_item(obj);
             if (item == old_element) {
@@ -2973,7 +2973,7 @@ void Score::undo_add_element(EngravingItem *element, bool add_to_linked_staves, 
             //
             if (element->is_slur() && sp != nsp) {
                 if (sp->start_element()) {
-                    std::list<EngravingObject *> sel = sp->start_element()->link_list();
+                    const auto sel = sp->start_element()->link_list();
                     for (EngravingObject *ee : sel) {
                         EngravingItem *e = static_cast<EngravingItem *>(ee);
                         if (e->score() == nsp->score() && e->track() == nsp->track()) {
@@ -2983,7 +2983,7 @@ void Score::undo_add_element(EngravingItem *element, bool add_to_linked_staves, 
                     }
                 }
                 if (sp->end_element()) {
-                    std::list<EngravingObject *> eel = sp->end_element()->link_list();
+                    const auto eel = sp->end_element()->link_list();
                     for (EngravingObject *ee : eel) {
                         EngravingItem *e = static_cast<EngravingItem *>(ee);
                         if (e->score() == nsp->score() && e->track() == nsp->track2()) {

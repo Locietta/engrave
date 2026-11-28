@@ -47,12 +47,62 @@ using namespace mu;
 using namespace mu::engraving;
 
 namespace mu::engraving {
+namespace {
+bool is_inherently_layout_owned(ElementType type, const EngravingObject *parent) noexcept {
+    switch (type) {
+        case ElementType::NOTEDOT:
+        case ElementType::JIANPU_OCTAVE_DOT:
+        case ElementType::JIANPU_DURATION_LINE:
+        case ElementType::STEM:
+        case ElementType::HOOK:
+        case ElementType::STEM_SLASH:
+        case ElementType::LEDGER_LINE:
+        case ElementType::TAB_DURATION_SYMBOL:
+        case ElementType::GUITAR_BEND_HOLD:
+        case ElementType::TAPPING_HALF_SLUR:
+        case ElementType::GRACE_NOTES_GROUP:
+        case ElementType::PAGE:
+        case ElementType::SYSTEM:
+        case ElementType::SLUR_SEGMENT:
+        case ElementType::TIE_SEGMENT:
+        case ElementType::LAISSEZ_VIB_SEGMENT:
+        case ElementType::PARTIAL_TIE_SEGMENT:
+        case ElementType::HAMMER_ON_PULL_OFF_SEGMENT:
+        case ElementType::TAPPING_HALF_SLUR_SEGMENT:
+        case ElementType::TRILL_SEGMENT:
+        case ElementType::GLISSANDO_SEGMENT:
+        case ElementType::VIBRATO_SEGMENT:
+        case ElementType::GUITAR_BEND_SEGMENT:
+        case ElementType::GUITAR_BEND_HOLD_SEGMENT:
+        case ElementType::LYRICSLINE_SEGMENT:
+        case ElementType::PARTIAL_LYRICSLINE_SEGMENT:
+        case ElementType::HAIRPIN_SEGMENT:
+        case ElementType::LET_RING_SEGMENT:
+        case ElementType::GRADUAL_TEMPO_CHANGE_SEGMENT:
+        case ElementType::TEXTLINE_SEGMENT:
+        case ElementType::OTTAVA_SEGMENT:
+        case ElementType::PALM_MUTE_SEGMENT:
+        case ElementType::PICK_SCRAPE_SEGMENT:
+        case ElementType::WHAMMY_BAR_SEGMENT:
+        case ElementType::RASGUEADO_SEGMENT:
+        case ElementType::HARMONIC_MARK_SEGMENT:
+        case ElementType::PEDAL_SEGMENT:
+        case ElementType::VOLTA_SEGMENT:
+        case ElementType::NOTELINE_SEGMENT: return true;
+        case ElementType::TEXT: return parent && parent->is_tuplet();
+        case ElementType::PARENTHESIS: return parent && parent->is_chord();
+        default: return false;
+    }
+}
+} // namespace
+
 const ElementStyle &EngravingObject::empty_style() {
     static const ElementStyle style;
     return style;
 }
 
-EngravingObject::EngravingObject(const ElementType &type, EngravingObject *parent) : type_(type) {
+EngravingObject::EngravingObject(const ElementType &type, EngravingObject *parent)
+    : type_(type), layout_owned_(is_inherently_layout_owned(type, parent)) {
     IF_ASSERT_FAILED(this != parent) { return; }
 
     if (type != ElementType::SCORE) {
@@ -69,7 +119,8 @@ EngravingObject::EngravingObject(const ElementType &type, EngravingObject *paren
 
 EngravingObject::EngravingObject(const EngravingObject &se) : EngravingObject(se.type_, se) {}
 
-EngravingObject::EngravingObject(ElementType type, const EngravingObject &se) : type_(type) {
+EngravingObject::EngravingObject(ElementType type, const EngravingObject &se)
+    : type_(type), layout_owned_(se.layout_owned_ || is_inherently_layout_owned(type, se.parent_)) {
     do_set_parent(se.parent_);
     score_ = se.score_;
     element_style_ = se.styled_properties();
@@ -93,7 +144,11 @@ EngravingObject::~EngravingObject() {
         if (master && Score::is_alive(master)) master->eid_register()->on_item_destroyed(this);
     }
     if (parent_) {
-        parent_->remove_child(this);
+        if (!layout_owned_) {
+            parent_->remove_child(this);
+        } else {
+            parent_ = nullptr;
+        }
     }
 
     {
@@ -103,6 +158,7 @@ EngravingObject::~EngravingObject() {
         // copy because moveToDummy might modify children
         EngravingObjectList children = children_;
         for (EngravingObject *c : children) {
+            assert(!c->is_layout_owned());
             if (can_move_to_dummy) {
                 c->move_to_dummy();
             } else {
@@ -123,6 +179,20 @@ EngravingObject::~EngravingObject() {
     delete[] property_flags_list_;
 }
 
+void EngravingObject::set_layout_owned(bool v) {
+    if (layout_owned_ == v) {
+        return;
+    }
+    layout_owned_ = v;
+    if (parent_) {
+        if (v) {
+            parent_->detach_child_only(this);
+        } else {
+            parent_->add_child(this);
+        }
+    }
+}
+
 void EngravingObject::do_set_parent(EngravingObject *p) {
     if (parent_ == p) {
         return;
@@ -131,14 +201,20 @@ void EngravingObject::do_set_parent(EngravingObject *p) {
     IF_ASSERT_FAILED(p != this) { return; }
 
     if (parent_) {
-        parent_->remove_child(this);
+        if (!layout_owned_) {
+            parent_->remove_child(this);
+        } else {
+            parent_ = nullptr;
+        }
     }
 
     parent_ = p;
+    if (!layout_owned_ && is_inherently_layout_owned(type_, parent_)) {
+        layout_owned_ = true;
+    }
 
-    // These children borrow parent context; LayoutData controls their lifetime.
-    if (parent_ && type_ != ElementType::NOTEDOT && type_ != ElementType::JIANPU_OCTAVE_DOT && type_ != ElementType::JIANPU_DURATION_LINE &&
-        !(type_ == ElementType::TEXT && parent_->is_tuplet()) && !(type_ == ElementType::PARENTHESIS && parent_->is_chord())) {
+    // Layout-owned children borrow parent context without entering source children_.
+    if (parent_ && !layout_owned_) {
         parent_->add_child(this);
     }
 }
@@ -216,7 +292,11 @@ void EngravingObject::set_score(Score *s) {
     }
 
     if (parent_->is_type(ElementType::DUMMY)) {
-        move_to_dummy();
+        if (layout_owned_) {
+            do_set_parent(s ? s->dummy() : nullptr);
+        } else {
+            move_to_dummy();
+        }
     } else if (parent_->is_type(ElementType::SCORE)) {
         set_ownership_parent(s);
     }
@@ -224,8 +304,16 @@ void EngravingObject::set_score(Score *s) {
 
 void EngravingObject::add_child(EngravingObject *o) {
     IF_ASSERT_FAILED(o != this) { return; }
+    assert(!o->is_layout_owned());
 
     children_.push_back(o);
+}
+
+void EngravingObject::detach_child_only(EngravingObject *o) {
+    auto it = std::find(children_.rbegin(), children_.rend(), o);
+    if (it != children_.rend()) {
+        children_.erase(std::next(it).base());
+    }
 }
 
 void EngravingObject::remove_child(EngravingObject *o) {
@@ -236,10 +324,7 @@ void EngravingObject::remove_child(EngravingObject *o) {
     // still sits near the end of the list. That matters for the dummy, whose child list is
     // long-lived and large. Empirical evidence shows that searching from the back walks on
     // average orders-of-magnitude less list entries than searching from the front.
-    auto it = std::find(children_.rbegin(), children_.rend(), o);
-    if (it != children_.rend()) {
-        children_.erase(std::next(it).base());
-    }
+    detach_child_only(o);
 }
 
 EngravingObject *EngravingObject::parent() const { return parent_; }
@@ -596,14 +681,11 @@ void EngravingObject::set_links(LinkedObjects *le) { links_ = le; }
 //   linkList
 //---------------------------------------------------------
 
-std::list<EngravingObject *> EngravingObject::link_list() const {
-    std::list<EngravingObject *> el;
+SmallLinkList EngravingObject::link_list() const {
     if (links_) {
-        el = *links_;
-    } else {
-        el.push_back(const_cast<EngravingObject *>(this));
+        return SmallLinkList(links_->begin(), links_->end());
     }
-    return el;
+    return {const_cast<EngravingObject *>(this)};
 }
 
 //---------------------------------------------------------
